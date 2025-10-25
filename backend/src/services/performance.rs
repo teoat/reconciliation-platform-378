@@ -502,7 +502,7 @@ impl QueryOptimizer {
              ON files(status)",
         ];
         
-        Ok(optimizations)
+        Ok(optimizations.into_iter().map(|s| s.to_string()).collect())
     }
     
     pub async fn analyze_query_performance(&self, query: &str, duration: Duration) -> QueryAnalysis {

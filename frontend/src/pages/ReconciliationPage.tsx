@@ -19,11 +19,11 @@ import { useReconciliationJobs } from '../hooks/useApi'
 import { useReconciliationMatches } from '../hooks/useApi'
 import { FileDropzone } from '../components/EnhancedDropzone'
 import { DataTable, Column } from '../components/ui/DataTable'
-import { Button } from '../components/ui/Button'
-import { Card } from '../components/ui/Card'
-import { Modal } from '../components/ui/Modal'
-import { StatusBadge } from '../components/ui/StatusBadge'
-import { MetricCard } from '../components/ui/MetricCard'
+import Button from '../components/ui/Button'
+import Card from '../components/ui/Card'
+import Modal from '../components/ui/Modal'
+import StatusBadge from '../components/ui/StatusBadge'
+import MetricCard from '../components/ui/MetricCard'
 
 interface ReconciliationPageProps {}
 

@@ -120,7 +120,7 @@ pub struct DashboardPreferences {
 }
 
 /// Account status
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum AccountStatus {
     Active,
     Inactive,
@@ -313,10 +313,10 @@ impl EnhancedUserManagementService {
         };
 
         // Store roles
-        self.user_roles.write().unwrap().insert("admin".to_string(), admin_role);
-        self.user_roles.write().unwrap().insert("user".to_string(), user_role);
-        self.user_roles.write().unwrap().insert("analyst".to_string(), analyst_role);
-        self.user_roles.write().unwrap().insert("viewer".to_string(), viewer_role);
+        self.user_roles.write().await.insert("admin".to_string(), admin_role);
+        self.user_roles.write().await.insert("user".to_string(), user_role);
+        self.user_roles.write().await.insert("analyst".to_string(), analyst_role);
+        self.user_roles.write().await.insert("viewer".to_string(), viewer_role);
     }
 
     /// Create user profile

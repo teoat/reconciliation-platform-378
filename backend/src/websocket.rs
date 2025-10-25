@@ -148,6 +148,25 @@ pub struct BroadcastMetricsUpdate {
     pub metrics: serde_json::Value,
 }
 
+/// Job progress update message
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct JobProgressUpdate {
+    pub job_id: Uuid,
+    pub progress: f64,
+    pub status: String,
+    pub eta: Option<i64>,
+    pub message: Option<String>,
+}
+
+/// Metrics update message
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct MetricsUpdate {
+    pub metrics: serde_json::Value,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
+}
+
 /// WebSocket server actor
 pub struct WsServer {
     /// Database connection

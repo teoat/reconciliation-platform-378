@@ -14,16 +14,26 @@ import {
   Search
 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
-import { Button } from './ui/Button'
+import Button from '../ui/Button'
 
 interface NavigationProps {
   className?: string
+  currentProject?: any
+  onLogout?: () => void
+  currentPage?: string
+  onNavigate?: (page: string) => void
 }
 
-const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
+const Navigation: React.FC<NavigationProps> = ({
+  className = '',
+  currentProject,
+  onLogout,
+  currentPage,
+  onNavigate
+}) => {
   const navigate = useNavigate()
   const location = useLocation()
-  const { user, logout } = useAuth()
+  const { user, logout: authLogout } = useAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const navigationItems = [
@@ -36,11 +46,29 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
   ]
 
   const handleLogout = async () => {
-    await logout()
-    navigate('/login')
+    if (onLogout) {
+      onLogout()
+    } else {
+      await authLogout()
+      navigate('/login')
+    }
+  }
+
+  const handleNavigate = (path: string) => {
+    if (onNavigate) {
+      // Extract page name from path
+      const page = path.replace('/', '') || 'dashboard'
+      onNavigate(page)
+    } else {
+      navigate(path)
+    }
   }
 
   const isActive = (path: string) => {
+    if (currentPage) {
+      const page = path.replace('/', '') || 'dashboard'
+      return currentPage === page
+    }
     if (path === '/') {
       return location.pathname === '/'
     }
@@ -70,7 +98,7 @@ const Navigation: React.FC<NavigationProps> = ({ className = '' }) => {
             {navigationItems.map((item) => (
               <button
                 key={item.id}
-                onClick={() => navigate(item.path)}
+                onClick={() => handleNavigate(item.path)}
                 className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   isActive(item.path)
                     ? 'bg-blue-100 text-blue-700'

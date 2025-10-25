@@ -171,7 +171,7 @@ impl FileService {
         Ok(FileInfo {
             id: file_id,
             project_id,
-            filename: unique_filename,
+            filename: unique_filename.clone(),
             original_filename: filename,
             file_size: file_data.len() as i64,
             content_type,
@@ -338,7 +338,7 @@ impl FileService {
         headers: &[String],
         project_id: Uuid,
         conn: &mut diesel::PgConnection,
-    ) -> AppResult<()> {
+    ) -> AppResult<NewReconciliationRecord> {
         let mut external_id = String::new();
         let mut amount: Option<bigdecimal::BigDecimal> = None;
         let mut currency: Option<String> = None;
@@ -393,23 +393,19 @@ impl FileService {
         let record_id = uuid::Uuid::new_v4();
         let metadata_json = serde_json::to_string(&serde_json::Value::Object(metadata)).unwrap_or_default();
         
-        diesel::sql_query(sql)
-            .bind::<diesel::sql_types::Uuid, _>(record_id)
-            .bind::<diesel::sql_types::Uuid, _>(project_id)
-            .bind::<diesel::sql_types::Text, _>("csv_upload")
-            .bind::<diesel::sql_types::Text, _>(external_id)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Numeric>, _>(amount)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(currency)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>, _>(transaction_date)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(description)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Jsonb>, _>(metadata_json)
-            .bind::<diesel::sql_types::Text, _>("pending")
-            .bind::<diesel::sql_types::Timestamptz, _>(chrono::Utc::now())
-            .bind::<diesel::sql_types::Timestamptz, _>(chrono::Utc::now())
-            .execute(conn)
-            .map_err(|e| AppError::Database(e))?;
+        // Create reconciliation record
+        let reconciliation_record = NewReconciliationRecord {
+            project_id,
+            source_system: "csv_upload".to_string(),
+            external_id,
+            amount,
+            currency,
+            transaction_date,
+            description,
+            metadata: Some(serde_json::Value::Object(metadata)),
+        };
         
-        Ok(())
+        Ok(reconciliation_record)
     }
     
     /// Parse date field from various formats
@@ -440,7 +436,7 @@ impl FileService {
                     Ok(chrono::DateTime::from_timestamp(timestamp, 0)
                         .unwrap_or_else(|| chrono::Utc::now()))
                 } else {
-                    Err(chrono::ParseError::Impossible)
+                    Err(chrono::ParseError::Invalid)
                 }
             })
     }
@@ -480,7 +476,7 @@ impl FileService {
         record: &serde_json::Value,
         project_id: Uuid,
         conn: &mut diesel::PgConnection,
-    ) -> AppResult<()> {
+    ) -> AppResult<NewReconciliationRecord> {
         let obj = record.as_object()
             .ok_or_else(|| AppError::Validation("JSON record must be an object".to_string()))?;
         
@@ -722,7 +718,7 @@ impl FileService {
                     let record = result
                         .map_err(|e| AppError::Validation(format!("CSV parsing error: {}", e)))?;
                     
-                    match self.create_reconciliation_record_from_csv(&record, &headers, project_id).await {
+                    match self.create_reconciliation_record_from_csv(&record, &headers, project_id, &mut conn).await {
                         Ok(reconciliation_record) => {
                             batch.push(reconciliation_record);
                             
@@ -773,7 +769,7 @@ impl FileService {
                 let mut batch = Vec::new();
                 
                 for record in records {
-                    match self.create_reconciliation_record_from_json(&record, project_id).await {
+                    match self.create_reconciliation_record_from_json(&record, project_id, &mut conn).await {
                         Ok(reconciliation_record) => {
                             batch.push(reconciliation_record);
                             

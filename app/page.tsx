@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
 import { store, persistor } from './store'
-import { ErrorBoundary } from './utils/errorHandler'
+import ErrorBoundary from './utils/ErrorBoundary'
 import Navigation from './components/Navigation'
 import DataProvider from './components/DataProvider'
 import { FrenlyProvider, useFrenly } from './components/FrenlyProvider'
@@ -69,7 +69,7 @@ function AppContent() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <AuthPage onLogin={handleLogin} />
+        <AuthPage />
         <FrenlyAI 
           currentPage="/auth"
           userProgress={{
@@ -92,47 +92,31 @@ function AppContent() {
         )
       case 'ingestion':
         return (
-          <IngestionPage 
-            project={currentProject}
-          />
+          <IngestionPage />
         )
       case 'reconciliation':
         return (
-          <ReconciliationPage 
-            project={currentProject}
-            onProgressUpdate={handleProgressUpdate}
-          />
+          <ReconciliationPage />
         )
       case 'cashflow-evaluation':
         return (
-          <CashflowEvaluationPage 
-            project={currentProject}
-            onProgressUpdate={handleProgressUpdate}
-          />
+          <CashflowEvaluationPage />
         )
       case 'adjudication':
         return (
-          <AdjudicationPage 
-            project={currentProject}
-          />
+          <AdjudicationPage />
         )
       case 'visualization':
         return (
-          <VisualizationPage 
-            project={currentProject}
-          />
+          <VisualizationPage />
         )
       case 'presummary':
         return (
-          <PresummaryPage 
-            project={currentProject}
-          />
+          <PresummaryPage />
         )
       case 'summary':
         return (
-          <SummaryExportPage 
-            project={currentProject}
-          />
+          <SummaryExportPage />
         )
       default:
         return (

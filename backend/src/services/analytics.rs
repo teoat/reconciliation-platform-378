@@ -63,7 +63,7 @@ pub struct PerformanceMetrics {
 }
 
 /// Project statistics
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ProjectStats {
     pub project_id: Uuid,
     pub project_name: String,
@@ -225,7 +225,7 @@ impl AnalyticsService {
         };
         
         // Cache the result for 5 minutes
-        self.cache.set(cache_key, &dashboard_data, Duration::from_secs(300)).await?;
+        self.cache.set(cache_key, &dashboard_data, Duration::seconds(300)).await?;
         
         Ok(dashboard_data)
     }
@@ -326,7 +326,7 @@ impl AnalyticsService {
         };
         
         // Cache the result for 10 minutes
-        self.cache.set(&cache_key, &project_stats, Duration::from_secs(600)).await?;
+        self.cache.set(&cache_key, &project_stats, Duration::seconds(600)).await?;
         
         Ok(project_stats)
     }
@@ -513,7 +513,7 @@ impl AnalyticsService {
                     resource_type,
                     user_email,
                     timestamp,
-                    details: details.map(|j| j.unwrap_or(serde_json::Value::Null)),
+                    details: details.map(|j| j.0).unwrap_or(serde_json::Value::Null),
                 }
             })
             .collect();

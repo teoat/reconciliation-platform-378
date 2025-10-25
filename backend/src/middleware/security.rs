@@ -20,6 +20,143 @@ use uuid::Uuid;
 use crate::errors::{AppError, AppResult};
 use crate::services::monitoring::MonitoringService;
 
+/// Rate limiting configuration
+#[derive(Debug, Clone)]
+pub struct RateLimitConfig {
+    pub requests_per_minute: u32,
+    pub burst_size: u32,
+    pub window_size: Duration,
+    pub cleanup_interval: Duration,
+}
+
+impl Default for RateLimitConfig {
+    fn default() -> Self {
+        Self {
+            requests_per_minute: 60,
+            burst_size: 10,
+            window_size: Duration::from_secs(60),
+            cleanup_interval: Duration::from_secs(300), // 5 minutes
+        }
+    }
+}
+
+/// Rate limiter entry
+#[derive(Debug, Clone)]
+struct RateLimitEntry {
+    requests: u32,
+    window_start: SystemTime,
+    last_request: SystemTime,
+}
+
+/// Rate limiter
+#[derive(Debug, Clone)]
+pub struct RateLimiter {
+    config: RateLimitConfig,
+    entries: Arc<RwLock<HashMap<String, RateLimitEntry>>>,
+    monitoring: Option<Arc<MonitoringService>>,
+}
+
+impl RateLimiter {
+    pub fn new(config: RateLimitConfig, monitoring: Option<Arc<MonitoringService>>) -> Self {
+        Self {
+            config,
+            entries: Arc::new(RwLock::new(HashMap::new())),
+            monitoring,
+        }
+    }
+
+    /// Check if request is allowed
+    pub async fn is_allowed(&self, key: &str) -> AppResult<bool> {
+        let now = SystemTime::now();
+        let mut entries = self.entries.write().await;
+        
+        // Clean up old entries
+        self.cleanup_old_entries(&mut entries, now).await;
+        
+        let entry = entries.entry(key.to_string()).or_insert_with(|| {
+            RateLimitEntry {
+                requests: 0,
+                window_start: now,
+                last_request: now,
+            }
+        });
+        
+        // Check if window has expired
+        if now.duration_since(entry.window_start).unwrap_or(Duration::ZERO) >= self.config.window_size {
+            entry.requests = 0;
+            entry.window_start = now;
+        }
+        
+        // Check burst limit
+        if entry.requests >= self.config.burst_size {
+            // Record rate limit hit
+            if let Some(monitoring) = &self.monitoring {
+                monitoring.record_user_action("rate_limit_hit", key).await;
+            }
+            return Ok(false);
+        }
+        
+        // Check requests per minute limit
+        if entry.requests >= self.config.requests_per_minute {
+            // Record rate limit hit
+            if let Some(monitoring) = &self.monitoring {
+                monitoring.record_user_action("rate_limit_hit", key).await;
+            }
+            return Ok(false);
+        }
+        
+        // Allow request
+        entry.requests += 1;
+        entry.last_request = now;
+        
+        Ok(true)
+    }
+    
+    /// Clean up old entries
+    async fn cleanup_old_entries(&self, entries: &mut HashMap<String, RateLimitEntry>, now: SystemTime) {
+        entries.retain(|_, entry| {
+            now.duration_since(entry.last_request).unwrap_or(Duration::ZERO) < self.config.cleanup_interval
+        });
+    }
+    
+    /// Get current rate limit status
+    pub async fn get_status(&self, key: &str) -> AppResult<RateLimitStatus> {
+        let entries = self.entries.read().await;
+        if let Some(entry) = entries.get(key) {
+            let now = SystemTime::now();
+            let window_remaining = self.config.window_size
+                .checked_sub(now.duration_since(entry.window_start).unwrap_or(Duration::ZERO))
+                .unwrap_or(Duration::ZERO);
+            
+            Ok(RateLimitStatus {
+                requests_used: entry.requests,
+                requests_limit: self.config.requests_per_minute,
+                burst_limit: self.config.burst_size,
+                window_remaining: window_remaining.as_secs(),
+                reset_time: entry.window_start + self.config.window_size,
+            })
+        } else {
+            Ok(RateLimitStatus {
+                requests_used: 0,
+                requests_limit: self.config.requests_per_minute,
+                burst_limit: self.config.burst_size,
+                window_remaining: self.config.window_size.as_secs(),
+                reset_time: SystemTime::now() + self.config.window_size,
+            })
+        }
+    }
+}
+
+/// Rate limit status
+#[derive(Debug, Clone)]
+pub struct RateLimitStatus {
+    pub requests_used: u32,
+    pub requests_limit: u32,
+    pub burst_limit: u32,
+    pub window_remaining: u64,
+    pub reset_time: SystemTime,
+}
+
 /// Security service configuration
 #[derive(Debug, Clone)]
 pub struct SecurityConfig {
@@ -381,7 +518,8 @@ async fn validate_request_input(
     req: &ServiceRequest,
 ) -> AppResult<()> {
     // Check query parameters
-    for (key, value) in req.query_string().split('&') {
+    for param in req.query_string().split('&') {
+        if let Some((key, value)) = param.split_once('=') {
         if let Some((k, v)) = value.split_once('=') {
             if let Err(_) = validate_input_string(k) {
                 return Err(AppError::Validation("Invalid query parameter".to_string()));

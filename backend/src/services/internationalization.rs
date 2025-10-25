@@ -32,7 +32,7 @@ pub struct Locale {
 }
 
 /// Number format configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct NumberFormat {
     pub decimal_separator: String,
     pub thousands_separator: String,
@@ -41,7 +41,7 @@ pub struct NumberFormat {
 }
 
 /// Currency format configuration
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct CurrencyFormat {
     pub symbol: String,
     pub position: CurrencyPosition,
@@ -50,7 +50,7 @@ pub struct CurrencyFormat {
 }
 
 /// Currency symbol position
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum CurrencyPosition {
     Before,
     After,
@@ -192,7 +192,7 @@ impl InternationalizationService {
         ];
 
         for language in languages {
-            self.languages.write().unwrap().insert(language.code.clone(), language);
+            self.languages.write().await.insert(language.code.clone(), language);
         }
     }
 

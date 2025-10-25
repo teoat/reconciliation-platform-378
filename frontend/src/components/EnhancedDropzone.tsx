@@ -84,31 +84,32 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
     // Upload files
     for (const file of files) {
       try {
-        const session = fileService.startUpload(file)
+        const session = await fileService.startUpload(file)
         setUploadSessions(prev => new Map(prev).set(session.id, session))
         
+        // TODO: Implement event listeners for upload completion/failure
         // Listen for upload completion
-        fileService.addListener('uploadCompleted', (event) => {
-          if (event.data.session.id === session.id) {
-            setUploadSessions(prev => {
-              const newMap = new Map(prev)
-              newMap.delete(session.id)
-              return newMap
-            })
-            onUploadComplete?.(event.data.fileData)
-          }
-        })
+        // fileService.addListener('uploadCompleted', (event) => {
+        //   if (event.data.session.id === session.id) {
+        //     setUploadSessions(prev => {
+        //       const newMap = new Map(prev)
+        //       newMap.delete(session.id)
+        //       return newMap
+        //     })
+        //     onUploadComplete?.(event.data.fileData)
+        //   }
+        // })
 
-        fileService.addListener('uploadFailed', (event) => {
-          if (event.data.session.id === session.id) {
-            setUploadSessions(prev => {
-              const newMap = new Map(prev)
-              newMap.delete(session.id)
-              return newMap
-            })
-            onUploadError?.(new Error(event.data.error))
-          }
-        })
+        // fileService.addListener('uploadFailed', (event) => {
+        //   if (event.data.session.id === session.id) {
+        //     setUploadSessions(prev => {
+        //       const newMap = new Map(prev)
+        //       newMap.delete(session.id)
+        //       return newMap
+        //     })
+        //     onUploadError?.(new Error(event.data.error))
+        //   }
+        // })
 
       } catch (error) {
         onUploadError?.(error instanceof Error ? error : new Error('Upload failed'))
@@ -129,7 +130,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
     if (uploadSessions.size === 0) return 0
     
     let totalProgress = 0
-    for (const session of uploadSessions.values()) {
+    for (const session of Array.from(uploadSessions.values())) {
       totalProgress += session.progress
     }
     

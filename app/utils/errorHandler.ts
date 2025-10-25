@@ -1,0 +1,1 @@
+export { ErrorBoundary } from '../../frontend/src/utils/errorHandler'

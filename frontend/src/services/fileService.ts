@@ -118,7 +118,7 @@ export class FileService extends PersistenceService<FileData> {
   }
 
   // File Upload Management
-  public startUpload(file: File, metadata: Partial<FileData['metadata']> = {}): UploadSession {
+  public async startUpload(file: File, metadata: Partial<FileData['metadata']> = {}): Promise<UploadSession> {
     const fileId = this.generateId()
     const sessionId = this.generateId()
     
@@ -218,14 +218,14 @@ export class FileService extends PersistenceService<FileData> {
   }
 
   // File Versioning
-  public createFileVersion(fileId: string, file: File, metadata: Partial<FileData['metadata']> = {}): string {
+  public async createFileVersion(fileId: string, file: File, metadata: Partial<FileData['metadata']> = {}): Promise<string> {
     const version = this.getNextVersion(fileId)
     const fileData: FileData = {
       id: fileId,
       fileName: file.name,
       fileSize: file.size,
       mimeType: file.type,
-      checksum: this.calculateChecksum(file),
+      checksum: await this.calculateChecksum(file),
       uploadedBy: 'current_user', // This should come from auth context
       uploadedAt: new Date(),
       version,

@@ -77,7 +77,7 @@ pub struct AccessibilityIssue {
 }
 
 /// Issue types
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum IssueType {
     ColorContrast,
     MissingAltText,

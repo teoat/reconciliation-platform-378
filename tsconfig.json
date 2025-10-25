@@ -41,6 +41,7 @@
     "frontend",
     "reconciliation-rust",
     "backend",
+    "backup_*",
     "playwright.config.ts",
     "sentry.client.config.ts",
     "sentry.server.config.ts",

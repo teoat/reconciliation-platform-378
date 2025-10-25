@@ -11,6 +11,8 @@ use prometheus::{
     Counter, Histogram, Gauge, Registry, TextEncoder, Encoder,
     CounterVec, HistogramVec, GaugeVec, Opts, HistogramOpts
 };
+use prometheus::core::Collector;
+use diesel::RunQueryDsl;
 use crate::errors::{AppError, AppResult};
 use uuid::Uuid;
 
@@ -33,13 +35,13 @@ lazy_static::lazy_static! {
     
     static ref HTTP_REQUEST_SIZE: HistogramVec = HistogramVec::new(
         HistogramOpts::new("http_request_size_bytes", "HTTP request size in bytes")
-            .buckets(vec![100, 1000, 10000, 100000, 1000000]),
+            .buckets(vec![100.0, 1000.0, 10000.0, 100000.0, 1000000.0]),
         &["method", "endpoint"]
     ).unwrap();
     
     static ref HTTP_RESPONSE_SIZE: HistogramVec = HistogramVec::new(
         HistogramOpts::new("http_response_size_bytes", "HTTP response size in bytes")
-            .buckets(vec![100, 1000, 10000, 100000, 1000000]),
+            .buckets(vec![100.0, 1000.0, 10000.0, 100000.0, 1000000.0]),
         &["method", "endpoint"]
     ).unwrap();
     
@@ -121,7 +123,7 @@ lazy_static::lazy_static! {
     
     static ref FILE_UPLOAD_SIZE: HistogramVec = HistogramVec::new(
         HistogramOpts::new("file_upload_size_bytes", "File upload size in bytes")
-            .buckets(vec![1024, 10240, 102400, 1048576, 10485760, 104857600]),
+            .buckets(vec![1024.0, 10240.0, 102400.0, 1048576.0, 10485760.0, 104857600.0]),
         &["file_type", "project_id"]
     ).unwrap();
     
@@ -144,7 +146,7 @@ lazy_static::lazy_static! {
     
     static ref WEBSOCKET_MESSAGE_SIZE: HistogramVec = HistogramVec::new(
         HistogramOpts::new("websocket_message_size_bytes", "WebSocket message size in bytes")
-            .buckets(vec![10, 100, 1000, 10000, 100000]),
+            .buckets(vec![10.0, 100.0, 1000.0, 10000.0, 100000.0]),
         &["message_type"]
     ).unwrap();
     
