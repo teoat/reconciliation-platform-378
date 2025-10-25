@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconciliation App Launcher</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+        
+        .icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 20px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            color: white;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .status {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .status-text {
+            color: #28a745;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+        
+        .status-details {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .launch-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+            text-decoration: none;
+            display: inline-block;
+            margin: 10px;
+        }
+        
+        .launch-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .instructions {
+            margin-top: 30px;
+            text-align: left;
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        
+        .instructions h3 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        .instructions ol {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .instructions li {
+            margin-bottom: 8px;
+        }
+        
+        .code {
+            background: #e9ecef;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        
+        .footer {
+            margin-top: 30px;
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📊</div>
+        <h1>Reconciliation App</h1>
+        <p class="subtitle">Enterprise-Grade Financial Data Reconciliation Platform</p>
+        
+        <div class="status">
+            <div class="status-text">✅ Ready to Launch</div>
+            <div class="status-details">
+                All dependencies are installed and configured.<br>
+                The application is ready to run on any operating system.
+            </div>
+        </div>
+        
+        <a href="http://localhost:1000" class="launch-button" target="_blank">
+            🚀 Launch Application
+        </a>
+        
+        <div class="instructions">
+            <h3>How to Start the Application:</h3>
+            <ol>
+                <li><strong>Windows:</strong> Double-click <span class="code">start-app.bat</span> or run <span class="code">start-app.ps1</span> in PowerShell</li>
+                <li><strong>macOS/Linux:</strong> Run <span class="code">./start-app.sh</span> in terminal</li>
+                <li><strong>Universal:</strong> Run <span class="code">node launcher.js</span> in terminal</li>
+                <li><strong>Manual:</strong> Run <span class="code">npm run dev</span> in terminal</li>
+            </ol>
+        </div>
+        
+        <div class="footer">
+            <p>Built with Next.js, React, TypeScript, and Tailwind CSS</p>
+            <p>Supports Windows, macOS, and Linux</p>
+        </div>
+    </div>
+    
+    <script>
+        // Check if the app is running
+        function checkAppStatus() {
+            fetch('http://localhost:1000')
+                .then(response => {
+                    if (response.ok) {
+                        document.querySelector('.status-text').textContent = '✅ Application Running';
+                        document.querySelector('.status-details').innerHTML = 
+                            'The application is currently running on <strong>http://localhost:1000</strong><br>' +
+                            'Click the launch button to open it in a new tab.';
+                    }
+                })
+                .catch(error => {
+                    document.querySelector('.status-text').textContent = '⚠️ Application Not Running';
+                    document.querySelector('.status-details').innerHTML = 
+                        'The application is not currently running.<br>' +
+                        'Please start it using one of the methods below.';
+                });
+        }
+        
+        // Check status on page load
+        checkAppStatus();
+        
+        // Check status every 5 seconds
+        setInterval(checkAppStatus, 5000);
+    </script>
+</body>
+</html>

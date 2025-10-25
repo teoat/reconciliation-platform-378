@@ -1,0 +1,347 @@
+# Alert Rules for Reconciliation Platform
+# This file defines all the alerting rules for monitoring the application
+
+groups:
+  # Backend API Alerts
+  - name: backend.rules
+    rules:
+      - alert: BackendDown
+        expr: up{job="reconciliation-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "Backend API is down"
+          description: "The reconciliation backend API has been down for more than 1 minute."
+
+      - alert: BackendHighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "Backend high error rate"
+          description: "Backend error rate is {{ $value | humanizePercentage }} for more than 2 minutes."
+
+      - alert: BackendHighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "Backend high latency"
+          description: "Backend 95th percentile latency is {{ $value }}s for more than 5 minutes."
+
+      - alert: BackendHighMemoryUsage
+        expr: process_resident_memory_bytes / 1024 / 1024 / 1024 > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "Backend high memory usage"
+          description: "Backend memory usage is {{ $value }}GB for more than 5 minutes."
+
+      - alert: BackendHighCPUUsage
+        expr: rate(process_cpu_seconds_total[5m]) > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "Backend high CPU usage"
+          description: "Backend CPU usage is {{ $value | humanizePercentage }} for more than 5 minutes."
+
+  # Frontend Alerts
+  - name: frontend.rules
+    rules:
+      - alert: FrontendDown
+        expr: up{job="reconciliation-frontend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: frontend
+        annotations:
+          summary: "Frontend is down"
+          description: "The reconciliation frontend has been down for more than 1 minute."
+
+      - alert: FrontendHighErrorRate
+        expr: rate(nginx_http_requests_total{status=~"5.."}[5m]) / rate(nginx_http_requests_total[5m]) > 0.01
+        for: 2m
+        labels:
+          severity: warning
+          service: frontend
+        annotations:
+          summary: "Frontend high error rate"
+          description: "Frontend error rate is {{ $value | humanizePercentage }} for more than 2 minutes."
+
+      - alert: FrontendHighLatency
+        expr: histogram_quantile(0.95, rate(nginx_http_request_duration_seconds_bucket[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: frontend
+        annotations:
+          summary: "Frontend high latency"
+          description: "Frontend 95th percentile latency is {{ $value }}s for more than 5 minutes."
+
+  # Database Alerts
+  - name: database.rules
+    rules:
+      - alert: DatabaseDown
+        expr: up{job="postgresql"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Database is down"
+          description: "PostgreSQL database has been down for more than 1 minute."
+
+      - alert: DatabaseHighConnections
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Database high connection count"
+          description: "Database connection usage is {{ $value | humanizePercentage }} for more than 5 minutes."
+
+      - alert: DatabaseSlowQueries
+        expr: rate(pg_stat_database_tup_returned[5m]) / rate(pg_stat_database_tup_fetched[5m]) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Database slow queries detected"
+          description: "Database query efficiency is low for more than 5 minutes."
+
+      - alert: DatabaseHighDiskUsage
+        expr: (pg_database_size_bytes - pg_database_size_bytes{datname="template0"}) / 1024 / 1024 / 1024 > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Database high disk usage"
+          description: "Database size is {{ $value }}GB for more than 5 minutes."
+
+      - alert: DatabaseReplicationLag
+        expr: pg_stat_replication_lag > 1000
+        for: 2m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Database replication lag"
+          description: "Database replication lag is {{ $value }}ms for more than 2 minutes."
+
+  # Redis Alerts
+  - name: redis.rules
+    rules:
+      - alert: RedisDown
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: redis
+        annotations:
+          summary: "Redis is down"
+          description: "Redis cache has been down for more than 1 minute."
+
+      - alert: RedisHighMemoryUsage
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis high memory usage"
+          description: "Redis memory usage is {{ $value | humanizePercentage }} for more than 5 minutes."
+
+      - alert: RedisHighKeyEviction
+        expr: rate(redis_evicted_keys_total[5m]) > 100
+        for: 2m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis high key eviction rate"
+          description: "Redis key eviction rate is {{ $value }} keys/sec for more than 2 minutes."
+
+      - alert: RedisSlowCommands
+        expr: rate(redis_slowlog_length[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis slow commands detected"
+          description: "Redis slow command rate is {{ $value }} commands/sec for more than 2 minutes."
+
+  # Infrastructure Alerts
+  - name: infrastructure.rules
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by (instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "High CPU usage"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }} for more than 5 minutes."
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }}% on {{ $labels.instance }} for more than 5 minutes."
+
+      - alert: HighDiskUsage
+        expr: (node_filesystem_size_bytes - node_filesystem_free_bytes) / node_filesystem_size_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: infrastructure
+        annotations:
+          summary: "High disk usage"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }} for more than 5 minutes."
+
+      - alert: DiskSpaceLow
+        expr: node_filesystem_free_bytes < 1073741824
+        for: 1m
+        labels:
+          severity: critical
+          service: infrastructure
+        annotations:
+          summary: "Disk space low"
+          description: "Disk space is less than 1GB on {{ $labels.instance }}."
+
+      - alert: NetworkInterfaceDown
+        expr: up{job="node-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: infrastructure
+        annotations:
+          summary: "Network interface down"
+          description: "Network interface is down on {{ $labels.instance }}."
+
+  # Application Specific Alerts
+  - name: application.rules
+    rules:
+      - alert: ReconciliationJobFailed
+        expr: reconciliation_job_status{status="failed"} == 1
+        for: 0m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "Reconciliation job failed"
+          description: "Reconciliation job {{ $labels.job_id }} has failed."
+
+      - alert: FileUploadFailed
+        expr: rate(file_upload_errors_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High file upload failure rate"
+          description: "File upload failure rate is {{ $value }} failures/sec for more than 2 minutes."
+
+      - alert: AuthenticationFailures
+        expr: rate(auth_failures_total[5m]) > 10
+        for: 2m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failure rate is {{ $value }} failures/sec for more than 2 minutes."
+
+      - alert: APIKeyExpired
+        expr: time() - api_key_last_used_timestamp > 86400
+        for: 0m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "API key expired"
+          description: "API key {{ $labels.key_id }} has not been used for more than 24 hours."
+
+  # Security Alerts
+  - name: security.rules
+    rules:
+      - alert: SuspiciousActivity
+        expr: rate(http_requests_total{status="403"}[5m]) > 50
+        for: 1m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "High rate of 403 responses: {{ $value }} requests/sec for more than 1 minute."
+
+      - alert: BruteForceAttack
+        expr: rate(auth_failures_total[5m]) > 100
+        for: 1m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Potential brute force attack"
+          description: "Very high authentication failure rate: {{ $value }} failures/sec for more than 1 minute."
+
+      - alert: UnusualTrafficPattern
+        expr: rate(http_requests_total[5m]) > 1000
+        for: 2m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Unusual traffic pattern"
+          description: "Unusually high request rate: {{ $value }} requests/sec for more than 2 minutes."
+
+  # Business Logic Alerts
+  - name: business.rules
+    rules:
+      - alert: LowReconciliationAccuracy
+        expr: reconciliation_accuracy < 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "Low reconciliation accuracy"
+          description: "Reconciliation accuracy is {{ $value | humanizePercentage }} for more than 10 minutes."
+
+      - alert: HighUnmatchedRecords
+        expr: reconciliation_unmatched_records > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High number of unmatched records"
+          description: "Number of unmatched records is {{ $value }} for more than 5 minutes."
+
+      - alert: DataProcessingDelay
+        expr: time() - last_data_processing_timestamp > 3600
+        for: 0m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "Data processing delay"
+          description: "No data processing activity for more than 1 hour."

@@ -1,0 +1,22 @@
+{
+  "success": true,
+  "data": {
+    "total_projects": 15,
+    "active_reconciliations": 8,
+    "total_records": 12500,
+    "matched_records": 11800,
+    "unmatched_records": 700,
+    "match_rate": 94.4,
+    "processing_time_avg": 2.3,
+    "daily_stats": [
+      {"date": "2024-01-01", "records": 450, "matches": 425},
+      {"date": "2024-01-02", "records": 380, "matches": 360},
+      {"date": "2024-01-03", "records": 520, "matches": 495}
+    ],
+    "top_sources": [
+      {"name": "Bank A", "records": 3500, "match_rate": 96.2},
+      {"name": "Bank B", "records": 2800, "match_rate": 92.8},
+      {"name": "Credit Union", "records": 1900, "match_rate": 94.1}
+    ]
+  }
+}

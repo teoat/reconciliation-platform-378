@@ -1,0 +1,85 @@
+# Docker Compose for Full Stack Deployment
+
+version: '3.8'
+
+services:
+  # Backend Service
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgresql://reconciliation:password@db:5432/reconciliation
+      - JWT_SECRET=your-jwt-secret-key
+      - RUST_LOG=info
+    depends_on:
+      - db
+      - redis
+    volumes:
+      - ../backend/uploads:/app/uploads
+    networks:
+      - reconciliation-network
+
+  # Frontend Service
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      - VITE_API_URL=http://localhost:8080/api
+      - VITE_WS_URL=ws://localhost:8080/ws
+    depends_on:
+      - backend
+    networks:
+      - reconciliation-network
+
+  # Database Service
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=reconciliation
+      - POSTGRES_USER=reconciliation
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ../backend/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - reconciliation-network
+
+  # Redis Service
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - reconciliation-network
+
+  # Nginx Load Balancer (Optional)
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "443:443"
+    volumes:
+      - ./nginx-lb.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - reconciliation-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  reconciliation-network:
+    driver: bridge

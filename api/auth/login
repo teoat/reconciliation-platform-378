@@ -1,0 +1,14 @@
+{
+  "success": true,
+  "data": {
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoidXNlci0xMjMiLCJlbWFpbCI6InRlc3RAdGVzdC5jb20iLCJyb2xlIjoiYWRtaW4iLCJleHAiOjE3MDQwNjcyMDB9.test_signature",
+    "user": {
+      "id": "user-123",
+      "email": "test@test.com",
+      "role": "admin",
+      "first_name": "Test",
+      "last_name": "User"
+    },
+    "expires_in": 3600
+  }
+}

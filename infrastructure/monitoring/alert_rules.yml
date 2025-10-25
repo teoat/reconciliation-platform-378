@@ -1,0 +1,347 @@
+# Alert Rules for Reconciliation Platform
+groups:
+  # System Health Alerts
+  - name: system_health
+    rules:
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is above 80% for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.reconciliation.com/runbooks/high-cpu-usage"
+
+      - alert: HighMemoryUsage
+        expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is above 85% for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.reconciliation.com/runbooks/high-memory-usage"
+
+      - alert: DiskSpaceLow
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 10
+        for: 5m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Disk space is low"
+          description: "Disk space is below 10% on {{ $labels.instance }}"
+          runbook_url: "https://docs.reconciliation.com/runbooks/disk-space-low"
+
+      - alert: NodeDown
+        expr: up{job="node-exporter"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: system
+        annotations:
+          summary: "Node is down"
+          description: "Node {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://docs.reconciliation.com/runbooks/node-down"
+
+  # Application Health Alerts
+  - name: application_health
+    rules:
+      - alert: BackendDown
+        expr: up{job="reconciliation-backend-primary"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: backend
+        annotations:
+          summary: "Backend service is down"
+          description: "Backend service {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://docs.reconciliation.com/runbooks/backend-down"
+
+      - alert: FrontendDown
+        expr: up{job="reconciliation-frontend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: frontend
+        annotations:
+          summary: "Frontend service is down"
+          description: "Frontend service {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://docs.reconciliation.com/runbooks/frontend-down"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is above 5% for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.reconciliation.com/runbooks/high-error-rate"
+
+      - alert: HighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "High response time detected"
+          description: "95th percentile response time is above 2 seconds for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.reconciliation.com/runbooks/high-response-time"
+
+      - alert: LowThroughput
+        expr: rate(http_requests_total[5m]) < 10
+        for: 10m
+        labels:
+          severity: warning
+          service: backend
+        annotations:
+          summary: "Low throughput detected"
+          description: "Request rate is below 10 requests per second for more than 10 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.reconciliation.com/runbooks/low-throughput"
+
+  # Database Health Alerts
+  - name: database_health
+    rules:
+      - alert: DatabaseDown
+        expr: up{job="postgres-primary"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: database
+        annotations:
+          summary: "Database is down"
+          description: "PostgreSQL database {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://docs.reconciliation.com/runbooks/database-down"
+
+      - alert: DatabaseConnectionsHigh
+        expr: postgres_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "High database connections"
+          description: "Database connections are above 80 for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.reconciliation.com/runbooks/high-db-connections"
+
+      - alert: DatabaseSlowQueries
+        expr: postgres_stat_activity_max_tx_duration > 300
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Database queries are taking longer than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.reconciliation.com/runbooks/slow-db-queries"
+
+      - alert: DatabaseReplicationLag
+        expr: postgres_stat_replication_lag > 60
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+        annotations:
+          summary: "Database replication lag detected"
+          description: "Database replication lag is above 60 seconds for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.reconciliation.com/runbooks/db-replication-lag"
+
+  # Cache Health Alerts
+  - name: cache_health
+    rules:
+      - alert: RedisDown
+        expr: up{job="redis-primary"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: cache
+        annotations:
+          summary: "Redis cache is down"
+          description: "Redis cache {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://docs.reconciliation.com/runbooks/redis-down"
+
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes * 100 > 90
+        for: 5m
+        labels:
+          severity: warning
+          service: cache
+        annotations:
+          summary: "High Redis memory usage"
+          description: "Redis memory usage is above 90% for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.reconciliation.com/runbooks/high-redis-memory"
+
+      - alert: RedisEvictionsHigh
+        expr: rate(redis_evicted_keys_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: cache
+        annotations:
+          summary: "High Redis eviction rate"
+          description: "Redis eviction rate is above 100 keys per second for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.reconciliation.com/runbooks/high-redis-evictions"
+
+  # Load Balancer Health Alerts
+  - name: load_balancer_health
+    rules:
+      - alert: NginxDown
+        expr: up{job="nginx"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: load_balancer
+        annotations:
+          summary: "Nginx load balancer is down"
+          description: "Nginx load balancer {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://docs.reconciliation.com/runbooks/nginx-down"
+
+      - alert: NginxHighErrorRate
+        expr: rate(nginx_http_requests_total{status=~"5.."}[5m]) / rate(nginx_http_requests_total[5m]) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: load_balancer
+        annotations:
+          summary: "High Nginx error rate"
+          description: "Nginx error rate is above 5% for more than 5 minutes on {{ $labels.instance }}"
+          runbook_url: "https://docs.reconciliation.com/runbooks/high-nginx-error-rate"
+
+  # Security Alerts
+  - name: security_alerts
+    rules:
+      - alert: HighFailedLogins
+        expr: rate(auth_failed_logins_total[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "High failed login attempts"
+          description: "Failed login attempts are above 10 per second for more than 5 minutes"
+          runbook_url: "https://docs.reconciliation.com/runbooks/high-failed-logins"
+
+      - alert: SuspiciousActivity
+        expr: rate(http_requests_total{status="403"}[5m]) > 50
+        for: 5m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "403 Forbidden responses are above 50 per second for more than 5 minutes"
+          runbook_url: "https://docs.reconciliation.com/runbooks/suspicious-activity"
+
+      - alert: DDoSAttack
+        expr: rate(http_requests_total[1m]) > 1000
+        for: 2m
+        labels:
+          severity: critical
+          service: security
+        annotations:
+          summary: "Potential DDoS attack detected"
+          description: "Request rate is above 1000 per second for more than 2 minutes"
+          runbook_url: "https://docs.reconciliation.com/runbooks/ddos-attack"
+
+  # Business Logic Alerts
+  - name: business_logic
+    rules:
+      - alert: ReconciliationFailures
+        expr: rate(reconciliation_failures_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: reconciliation
+        annotations:
+          summary: "High reconciliation failure rate"
+          description: "Reconciliation failures are above 5 per second for more than 5 minutes"
+          runbook_url: "https://docs.reconciliation.com/runbooks/reconciliation-failures"
+
+      - alert: FileProcessingFailures
+        expr: rate(file_processing_failures_total[5m]) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: file_processing
+        annotations:
+          summary: "High file processing failure rate"
+          description: "File processing failures are above 2 per second for more than 5 minutes"
+          runbook_url: "https://docs.reconciliation.com/runbooks/file-processing-failures"
+
+      - alert: DataSyncLag
+        expr: data_sync_lag_seconds > 300
+        for: 5m
+        labels:
+          severity: warning
+          service: data_sync
+        annotations:
+          summary: "Data synchronization lag detected"
+          description: "Data sync lag is above 5 minutes for more than 5 minutes"
+          runbook_url: "https://docs.reconciliation.com/runbooks/data-sync-lag"
+
+  # Monitoring System Alerts
+  - name: monitoring_system
+    rules:
+      - alert: PrometheusDown
+        expr: up{job="prometheus"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: monitoring
+        annotations:
+          summary: "Prometheus is down"
+          description: "Prometheus monitoring system {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://docs.reconciliation.com/runbooks/prometheus-down"
+
+      - alert: GrafanaDown
+        expr: up{job="grafana"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          service: monitoring
+        annotations:
+          summary: "Grafana is down"
+          description: "Grafana dashboard {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://docs.reconciliation.com/runbooks/grafana-down"
+
+      - alert: AlertManagerDown
+        expr: up{job="alertmanager"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: monitoring
+        annotations:
+          summary: "AlertManager is down"
+          description: "AlertManager {{ $labels.instance }} has been down for more than 1 minute"
+          runbook_url: "https://docs.reconciliation.com/runbooks/alertmanager-down"
+
+  # External Dependencies Alerts
+  - name: external_dependencies
+    rules:
+      - alert: ExternalAPIDown
+        expr: up{job="blackbox-http"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: external_api
+        annotations:
+          summary: "External API is down"
+          description: "External API {{ $labels.instance }} has been down for more than 2 minutes"
+          runbook_url: "https://docs.reconciliation.com/runbooks/external-api-down"
+
+      - alert: WebSocketDown
+        expr: up{job="blackbox-websocket"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          service: websocket
+        annotations:
+          summary: "WebSocket connection is down"
+          description: "WebSocket connection {{ $labels.instance }} has been down for more than 2 minutes"
+          runbook_url: "https://docs.reconciliation.com/runbooks/websocket-down"

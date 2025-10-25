@@ -1,0 +1,335 @@
+# Artillery Load Testing Configuration
+# Comprehensive performance testing for the reconciliation application
+
+config:
+  target: 'http://localhost:3000'
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 1
+      name: "Warm up"
+    
+    # Ramp-up phase
+    - duration: 120
+      arrivalRate: 5
+      rampTo: 20
+      name: "Ramp up load"
+    
+    # Sustained load phase
+    - duration: 300
+      arrivalRate: 20
+      name: "Sustained load"
+    
+    # Peak load phase
+    - duration: 180
+      arrivalRate: 50
+      name: "Peak load"
+    
+    # Cool-down phase
+    - duration: 60
+      arrivalRate: 5
+      name: "Cool down"
+
+  # Global configuration
+  defaults:
+    headers:
+      User-Agent: "Artillery Load Test"
+      Accept: "application/json"
+      Content-Type: "application/json"
+
+  # Environment variables
+  variables:
+    baseUrl: "http://localhost:3000"
+    apiUrl: "http://localhost:3000/api"
+
+  # Plugins
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+  # Payload configuration
+  payload:
+    path: "./test-data/users.csv"
+    fields:
+      - "email"
+      - "password"
+      - "firstName"
+      - "lastName"
+
+  # Ensure configuration
+  ensure:
+    p95: 2000
+    p99: 5000
+    maxErrorRate: 1
+
+scenarios:
+  # ============================================================================
+  # AUTHENTICATION SCENARIOS
+  # ============================================================================
+  
+  - name: "User Authentication Flow"
+    weight: 30
+    flow:
+      - post:
+          url: "{{ apiUrl }}/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+          expect:
+            - statusCode: 200
+            - hasProperty: "token"
+      
+      - get:
+          url: "{{ apiUrl }}/auth/profile"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - hasProperty: "user"
+
+  - name: "User Registration Flow"
+    weight: 10
+    flow:
+      - post:
+          url: "{{ apiUrl }}/auth/register"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+            firstName: "{{ firstName }}"
+            lastName: "{{ lastName }}"
+          expect:
+            - statusCode: 201
+            - hasProperty: "user"
+
+  # ============================================================================
+  # RECONCILIATION SCENARIOS
+  # ============================================================================
+  
+  - name: "File Upload and Processing"
+    weight: 25
+    flow:
+      - post:
+          url: "{{ apiUrl }}/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      - post:
+          url: "{{ apiUrl }}/reconciliation/upload"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          form:
+            file: "@./test-data/sample-data.csv"
+            type: "csv"
+          expect:
+            - statusCode: 200
+            - hasProperty: "uploadId"
+          capture:
+            - json: "$.uploadId"
+              as: "uploadId"
+      
+      - get:
+          url: "{{ apiUrl }}/reconciliation/status/{{ uploadId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - hasProperty: "status"
+
+  - name: "Reconciliation Processing"
+    weight: 20
+    flow:
+      - post:
+          url: "{{ apiUrl }}/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      - post:
+          url: "{{ apiUrl }}/reconciliation/process"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            uploadId: "{{ uploadId }}"
+            rules:
+              - field: "amount"
+                tolerance: 0.01
+              - field: "date"
+                tolerance: 1
+          expect:
+            - statusCode: 200
+            - hasProperty: "processId"
+          capture:
+            - json: "$.processId"
+              as: "processId"
+      
+      - get:
+          url: "{{ apiUrl }}/reconciliation/results/{{ processId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - hasProperty: "results"
+
+  # ============================================================================
+  # DASHBOARD AND REPORTING SCENARIOS
+  # ============================================================================
+  
+  - name: "Dashboard Data Loading"
+    weight: 15
+    flow:
+      - post:
+          url: "{{ apiUrl }}/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      - get:
+          url: "{{ apiUrl }}/dashboard/summary"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - hasProperty: "summary"
+      
+      - get:
+          url: "{{ apiUrl }}/dashboard/recent-activity"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - hasProperty: "activities"
+
+  # ============================================================================
+  # API HEALTH AND MONITORING SCENARIOS
+  # ============================================================================
+  
+  - name: "Health Check"
+    weight: 5
+    flow:
+      - get:
+          url: "{{ baseUrl }}/health"
+          expect:
+            - statusCode: 200
+            - hasProperty: "status"
+      
+      - get:
+          url: "{{ apiUrl }}/health"
+          expect:
+            - statusCode: 200
+            - hasProperty: "status"
+
+  # ============================================================================
+  # STRESS TESTING SCENARIOS
+  # ============================================================================
+  
+  - name: "Concurrent File Processing"
+    weight: 10
+    flow:
+      - post:
+          url: "{{ apiUrl }}/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      - loop:
+          - post:
+              url: "{{ apiUrl }}/reconciliation/upload"
+              headers:
+                Authorization: "Bearer {{ authToken }}"
+              form:
+                file: "@./test-data/sample-data.csv"
+                type: "csv"
+              expect:
+                - statusCode: 200
+        count: 5
+        over: 10
+
+  # ============================================================================
+  # ERROR HANDLING SCENARIOS
+  # ============================================================================
+  
+  - name: "Error Handling"
+    weight: 5
+    flow:
+      - post:
+          url: "{{ apiUrl }}/auth/login"
+          json:
+            email: "invalid@email.com"
+            password: "wrongpassword"
+          expect:
+            - statusCode: 401
+      
+      - post:
+          url: "{{ apiUrl }}/reconciliation/upload"
+          form:
+            file: "@./test-data/invalid-file.txt"
+            type: "csv"
+          expect:
+            - statusCode: 400
+      
+      - get:
+          url: "{{ apiUrl }}/reconciliation/results/invalid-id"
+          expect:
+            - statusCode: 404
+
+# ============================================================================
+# CUSTOM METRICS AND ASSERTIONS
+# ============================================================================
+
+# Custom metrics collection
+before:
+  - set:
+      startTime: "{{ $timestamp }}"
+
+after:
+  - set:
+      endTime: "{{ $timestamp }}"
+      duration: "{{ endTime - startTime }}"
+  
+  # Log slow requests
+  - log: "Request {{ $requestName }} took {{ duration }}ms"
+    ifTrue: "{{ duration > 1000 }}"
+
+# ============================================================================
+# ENVIRONMENT-SPECIFIC CONFIGURATIONS
+# ============================================================================
+
+# Development environment
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "Development load test"
+
+# Staging environment
+config:
+  target: 'https://staging.reconciliation-app.com'
+  phases:
+    - duration: 120
+      arrivalRate: 10
+      name: "Staging load test"
+
+# Production environment
+config:
+  target: 'https://reconciliation-app.com'
+  phases:
+    - duration: 300
+      arrivalRate: 20
+      name: "Production load test"

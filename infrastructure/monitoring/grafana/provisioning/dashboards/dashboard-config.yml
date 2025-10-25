@@ -1,0 +1,38 @@
+# Grafana Dashboard Configuration
+# Reconciliation Platform - System Overview Dashboard
+
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+
+dashboards:
+  - name: Reconciliation Platform Overview
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards/reconciliation-overview.json
+
+  - name: Backend Performance
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards/backend-performance.json
+
+  - name: Database Performance
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards/database-performance.json
+
+  - name: Infrastructure Monitoring
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards/infrastructure-monitoring.json
+
+  - name: Business Metrics
+    type: file
+    options:
+      path: /etc/grafana/provisioning/dashboards/business-metrics.json

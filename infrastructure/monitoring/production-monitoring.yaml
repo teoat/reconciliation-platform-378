@@ -1,0 +1,175 @@
+# Production Monitoring Configuration
+# This file contains production-specific monitoring settings
+
+# Prometheus Configuration
+prometheus:
+  enabled: true
+  namespace: monitoring
+  retention: 30d
+  storage: 50Gi
+  replicas: 2
+  
+# Grafana Configuration
+grafana:
+  enabled: true
+  namespace: monitoring
+  adminPassword: ${GRAFANA_ADMIN_PASSWORD}
+  persistence:
+    enabled: true
+    size: 10Gi
+  dashboards:
+    - name: reconciliation-overview
+      url: https://grafana.com/dashboards/12345
+    - name: reconciliation-backend
+      url: https://grafana.com/dashboards/12346
+    - name: reconciliation-frontend
+      url: https://grafana.com/dashboards/12347
+
+# AlertManager Configuration
+alertmanager:
+  enabled: true
+  namespace: monitoring
+  config:
+    global:
+      smtp_smarthost: '${SMTP_HOST}:587'
+      smtp_from: 'alerts@reconciliation.example.com'
+    route:
+      group_by: ['alertname']
+      group_wait: 10s
+      group_interval: 10s
+      repeat_interval: 1h
+      receiver: 'web.hook'
+    receivers:
+    - name: 'web.hook'
+      webhook_configs:
+      - url: '${WEBHOOK_URL}'
+    - name: 'email'
+      email_configs:
+      - to: '${ALERT_EMAIL}'
+        subject: 'Reconciliation Alert: {{ .GroupLabels.alertname }}'
+        body: |
+          {{ range .Alerts }}
+          Alert: {{ .Annotations.summary }}
+          Description: {{ .Annotations.description }}
+          {{ end }}
+
+# ServiceMonitor Configuration
+serviceMonitor:
+  enabled: true
+  namespace: reconciliation
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+    - port: http
+      path: /health
+      interval: 10s
+
+# PodMonitor Configuration
+podMonitor:
+  enabled: true
+  namespace: reconciliation
+  selector:
+    matchLabels:
+      app: backend
+  podMetricsEndpoints:
+    - port: metrics
+      path: /metrics
+      interval: 30s
+
+# Rules Configuration
+rules:
+  enabled: true
+  namespace: monitoring
+  groups:
+    - name: reconciliation.rules
+      rules:
+        - alert: HighErrorRate
+          expr: rate(http_requests_total{status=~"5.."}[5m]) > 0.1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "High error rate detected"
+            description: "Error rate is {{ $value }} errors per second"
+            
+        - alert: HighResponseTime
+          expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High response time detected"
+            description: "95th percentile response time is {{ $value }} seconds"
+            
+        - alert: HighMemoryUsage
+          expr: (memory_usage_bytes / memory_limit_bytes) > 0.8
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High memory usage detected"
+            description: "Memory usage is {{ $value }}% of limit"
+            
+        - alert: HighCPUUsage
+          expr: (cpu_usage_percent) > 80
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU usage detected"
+            description: "CPU usage is {{ $value }}%"
+            
+        - alert: DatabaseConnectionFailure
+          expr: up{job="postgres"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Database connection failure"
+            description: "Cannot connect to PostgreSQL database"
+            
+        - alert: RedisConnectionFailure
+          expr: up{job="redis"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Redis connection failure"
+            description: "Cannot connect to Redis cache"
+            
+        - alert: PodCrashLooping
+          expr: rate(kube_pod_container_status_restarts_total[15m]) > 0
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod is crash looping"
+            description: "Pod {{ $labels.pod }} is restarting frequently"
+            
+        - alert: PodNotReady
+          expr: kube_pod_status_phase{phase!="Running"} == 1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Pod is not ready"
+            description: "Pod {{ $labels.pod }} is not in Running state"
+            
+        - alert: PersistentVolumeClaimFull
+          expr: kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes < 0.1
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Persistent volume claim is almost full"
+            description: "PVC {{ $labels.persistentvolumeclaim }} is {{ $value }}% full"
+            
+        - alert: IngressDown
+          expr: up{job="ingress-nginx"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Ingress is down"
+            description: "Ingress controller is not responding"

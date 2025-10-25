@@ -1,0 +1,239 @@
+name: Brand Consistency Check
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  brand-consistency:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        
+    - name: Install dependencies
+      run: npm install
+      
+    - name: Brand Consistency Check
+      run: |
+        echo "🔍 Running Brand Consistency Checks..."
+        
+        # Check for old app name references
+        echo "Checking for old app name references..."
+        if grep -r "Reconciliation App" --exclude-dir=node_modules --exclude-dir=.git .; then
+          echo "❌ Found references to old app name 'Reconciliation App'"
+          exit 1
+        fi
+        
+        # Check for old package names
+        echo "Checking for old package names..."
+        if grep -r "reconciliation-app" --exclude-dir=node_modules --exclude-dir=.git .; then
+          echo "❌ Found references to old package name 'reconciliation-app'"
+          exit 1
+        fi
+        
+        # Check for old email domains
+        echo "Checking for old email domains..."
+        if grep -r "support@reconciliation.com" --exclude-dir=node_modules --exclude-dir=.git .; then
+          echo "❌ Found references to old email domain 'reconciliation.com'"
+          exit 1
+        fi
+        
+        # Check logo file existence
+        echo "Checking logo files..."
+        required_logos=(
+          "public/logos/logo-main.svg"
+          "public/logos/logo-compact.svg"
+          "public/logos/logo-dark-main.svg"
+          "public/logos/logo-dark-compact.svg"
+          "public/logos/logo-monochrome-main.svg"
+          "public/logos/logo-monochrome-compact.svg"
+          "public/logos/logo-animated-main.svg"
+          "public/logos/logo-animated-compact.svg"
+          "public/favicon-32x32.svg"
+          "public/favicon-16x16.svg"
+        )
+        
+        for logo in "${required_logos[@]}"; do
+          if [ ! -f "$logo" ]; then
+            echo "❌ Missing required logo file: $logo"
+            exit 1
+          fi
+        done
+        
+        # Check brand guidelines exist
+        echo "Checking brand documentation..."
+        if [ ! -f "BRAND_GUIDELINES.md" ]; then
+          echo "❌ Missing BRAND_GUIDELINES.md"
+          exit 1
+        fi
+        
+        if [ ! -f "BRAND_ASSET_PACKAGE.md" ]; then
+          echo "❌ Missing BRAND_ASSET_PACKAGE.md"
+          exit 1
+        fi
+        
+        # Check package.json names
+        echo "Checking package.json names..."
+        if ! grep -q '"name": "378-data-evidence-reconciliation-app"' package.json; then
+          echo "❌ Frontend package.json name is incorrect"
+          exit 1
+        fi
+        
+        if ! grep -q '"name": "378-data-evidence-backend"' backend/package.json; then
+          echo "❌ Backend package.json name is incorrect"
+          exit 1
+        fi
+        
+        # Check app metadata
+        echo "Checking app metadata..."
+        if ! grep -q "378 Data and Evidence Reconciliation App" app/layout.tsx; then
+          echo "❌ App title in layout.tsx is incorrect"
+          exit 1
+        fi
+        
+        # Check manifest.json
+        echo "Checking manifest.json..."
+        if ! grep -q '"name": "378 Data and Evidence Reconciliation App"' public/manifest.json; then
+          echo "❌ App name in manifest.json is incorrect"
+          exit 1
+        fi
+        
+        echo "✅ All brand consistency checks passed!"
+        
+    - name: Logo Validation
+      run: |
+        echo "🎨 Validating logo files..."
+        
+        # Check SVG syntax
+        for svg in public/logos/*.svg; do
+          if [ -f "$svg" ]; then
+            echo "Validating $svg..."
+            if ! xmllint --noout "$svg" 2>/dev/null; then
+              echo "❌ Invalid SVG syntax in $svg"
+              exit 1
+            fi
+          fi
+        done
+        
+        # Check favicon files
+        for favicon in public/favicon-*.svg; do
+          if [ -f "$favicon" ]; then
+            echo "Validating $favicon..."
+            if ! xmllint --noout "$favicon" 2>/dev/null; then
+              echo "❌ Invalid SVG syntax in $favicon"
+              exit 1
+            fi
+          fi
+        done
+        
+        echo "✅ All logo files are valid!"
+        
+    - name: Documentation Check
+      run: |
+        echo "📚 Checking documentation consistency..."
+        
+        # Check README files
+        if ! grep -q "378 Data and Evidence Reconciliation App" README.md; then
+          echo "❌ README.md title is incorrect"
+          exit 1
+        fi
+        
+        if ! grep -q "378 Data and Evidence Reconciliation App" backend/README.md; then
+          echo "❌ Backend README.md title is incorrect"
+          exit 1
+        fi
+        
+        # Check user guide
+        if ! grep -q "378 Data and Evidence Reconciliation App" docs/user-guide.md; then
+          echo "❌ User guide title is incorrect"
+          exit 1
+        fi
+        
+        echo "✅ Documentation consistency check passed!"
+        
+    - name: Email Template Check
+      run: |
+        echo "📧 Checking email templates..."
+        
+        if [ ! -d "email-templates" ]; then
+          echo "❌ Email templates directory missing"
+          exit 1
+        fi
+        
+        required_templates=(
+          "email-templates/welcome-email.html"
+          "email-templates/password-reset.html"
+        )
+        
+        for template in "${required_templates[@]}"; do
+          if [ ! -f "$template" ]; then
+            echo "❌ Missing email template: $template"
+            exit 1
+          fi
+          
+          if ! grep -q "378 Data and Evidence Reconciliation App" "$template"; then
+            echo "❌ Email template $template missing correct branding"
+            exit 1
+          fi
+        done
+        
+        echo "✅ Email template check passed!"
+        
+    - name: Error Page Check
+      run: |
+        echo "🚨 Checking error pages..."
+        
+        required_error_pages=(
+          "public/404.html"
+          "public/500.html"
+          "public/offline.html"
+        )
+        
+        for page in "${required_error_pages[@]}"; do
+          if [ ! -f "$page" ]; then
+            echo "❌ Missing error page: $page"
+            exit 1
+          fi
+          
+          if ! grep -q "378 Data and Evidence Reconciliation App" "$page"; then
+            echo "❌ Error page $page missing correct branding"
+            exit 1
+          fi
+        done
+        
+        echo "✅ Error page check passed!"
+        
+    - name: Brand Compliance Report
+      run: |
+        echo "📊 Generating Brand Compliance Report..."
+        
+        echo "# Brand Compliance Report" > brand-compliance-report.md
+        echo "" >> brand-compliance-report.md
+        echo "## ✅ Passed Checks" >> brand-compliance-report.md
+        echo "- App name consistency" >> brand-compliance-report.md
+        echo "- Package name consistency" >> brand-compliance-report.md
+        echo "- Logo file existence" >> brand-compliance-report.md
+        echo "- Documentation consistency" >> brand-compliance-report.md
+        echo "- Email template branding" >> brand-compliance-report.md
+        echo "- Error page branding" >> brand-compliance-report.md
+        echo "" >> brand-compliance-report.md
+        echo "## 📈 Brand Score: 100%" >> brand-compliance-report.md
+        echo "" >> brand-compliance-report.md
+        echo "All brand consistency checks have passed successfully!" >> brand-compliance-report.md
+        
+        echo "✅ Brand compliance report generated!"
+        
+    - name: Upload Brand Report
+      uses: actions/upload-artifact@v4
+      with:
+        name: brand-compliance-report
+        path: brand-compliance-report.md

@@ -1,0 +1,23 @@
+# Dockerfile for Redis Cache
+# This Dockerfile creates a Redis instance for caching
+
+FROM redis:7-alpine
+
+# Copy custom Redis configuration
+COPY infrastructure/redis/redis.conf /usr/local/etc/redis/redis.conf
+
+# Create data directory
+RUN mkdir -p /data
+
+# Set permissions
+RUN chown redis:redis /data
+
+# Expose port
+EXPOSE 6379
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD redis-cli ping || exit 1
+
+# Use custom configuration
+CMD ["redis-server", "/usr/local/etc/redis/redis.conf"]

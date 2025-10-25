@@ -1,0 +1,263 @@
+# Artillery Performance Testing Configuration
+# This configuration tests the Reconciliation Platform under various load conditions
+
+config:
+  target: 'http://localhost:1000'
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 1
+      name: "Warm-up"
+    
+    # Ramp-up phase
+    - duration: 300
+      arrivalRate: 5
+      rampTo: 20
+      name: "Ramp-up"
+    
+    # Sustained load phase
+    - duration: 600
+      arrivalRate: 20
+      name: "Sustained Load"
+    
+    # Peak load phase
+    - duration: 300
+      arrivalRate: 50
+      name: "Peak Load"
+    
+    # Cool-down phase
+    - duration: 120
+      arrivalRate: 5
+      name: "Cool-down"
+
+  # Global configuration
+  defaults:
+    headers:
+      User-Agent: "Artillery Load Test"
+      Accept: "application/json"
+      Content-Type: "application/json"
+
+  # Plugin configuration
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+  # Environment variables
+  environments:
+    development:
+      target: 'http://localhost:1000'
+    staging:
+      target: 'https://staging.reconciliation-platform.com'
+    production:
+      target: 'https://reconciliation-platform.com'
+
+  # Payload configuration
+  payload:
+    path: "./test-data/users.csv"
+    fields:
+      - "email"
+      - "password"
+      - "firstName"
+      - "lastName"
+
+# Test scenarios
+scenarios:
+  # Health check scenario
+  - name: "Health Check"
+    weight: 10
+    flow:
+      - get:
+          url: "/health"
+          expect:
+            - statusCode: 200
+            - hasHeader: "content-type"
+            - contentType: "application/json"
+
+  # User authentication scenario
+  - name: "User Authentication"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          expect:
+            - statusCode: 200
+            - hasHeader: "set-cookie"
+            - contentType: "application/json"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      - get:
+          url: "/api/users/profile"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+
+  # Project management scenario
+  - name: "Project Management"
+    weight: 25
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      - get:
+          url: "/api/projects"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+      
+      - post:
+          url: "/api/projects"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            name: "Load Test Project {{ $randomString() }}"
+            description: "Project created during load testing"
+          expect:
+            - statusCode: 201
+            - contentType: "application/json"
+          capture:
+            - json: "$.id"
+              as: "projectId"
+      
+      - get:
+          url: "/api/projects/{{ projectId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+
+  # Data ingestion scenario
+  - name: "Data Ingestion"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      - post:
+          url: "/api/upload/csv"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          formData:
+            file: "@./test-data/sample-data.csv"
+            projectId: "{{ $randomString() }}"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+          capture:
+            - json: "$.jobId"
+              as: "uploadJobId"
+      
+      - get:
+          url: "/api/upload/status/{{ uploadJobId }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+
+  # Reconciliation scenario
+  - name: "Reconciliation Process"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/auth/login"
+          json:
+            email: "{{ email }}"
+            password: "{{ password }}"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      - get:
+          url: "/api/reconciliation/records"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          qs:
+            projectId: "{{ $randomString() }}"
+            limit: 50
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+      
+      - post:
+          url: "/api/reconciliation/match"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          json:
+            recordAId: "{{ $randomString() }}"
+            recordBId: "{{ $randomString() }}"
+            matchType: "exact"
+          expect:
+            - statusCode: 200
+            - contentType: "application/json"
+
+# Custom functions
+functions:
+  # Generate random string
+  randomString: |
+    function() {
+      return Math.random().toString(36).substring(2, 15);
+    }
+
+  # Generate random number
+  randomNumber: |
+    function(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+# Test data
+test-data:
+  users:
+    - email: "test1@example.com"
+      password: "password123"
+      firstName: "Test"
+      lastName: "User1"
+    - email: "test2@example.com"
+      password: "password123"
+      firstName: "Test"
+      lastName: "User2"
+    - email: "test3@example.com"
+      password: "password123"
+      firstName: "Test"
+      lastName: "User3"
+
+# Performance thresholds
+thresholds:
+  # Response time thresholds
+  - http.response_time.p95: 1000  # 95th percentile response time < 1s
+  - http.response_time.p99: 2000  # 99th percentile response time < 2s
+  - http.response_time.median: 500  # Median response time < 500ms
+  
+  # Error rate thresholds
+  - http.codes.200: 95  # 95% of requests should return 200
+  - http.codes.4xx: 5   # Less than 5% 4xx errors
+  - http.codes.5xx: 1   # Less than 1% 5xx errors
+  
+  # Throughput thresholds
+  - http.request_rate: 50  # Minimum 50 requests per second
+  
+  # Custom metrics
+  - custom.login_success_rate: 90  # 90% login success rate
+  - custom.upload_success_rate: 85  # 85% upload success rate
+  - custom.reconciliation_success_rate: 95  # 95% reconciliation success rate

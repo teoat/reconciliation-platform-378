@@ -1,0 +1,416 @@
+# Production Docker Compose Configuration
+# This file defines the production-ready application stack with scaling and security
+
+version: '3.8'
+
+services:
+  # PostgreSQL Database (Primary)
+  database-primary:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.database
+    container_name: reconciliation-db-primary
+    environment:
+      POSTGRES_DB: reconciliation_app
+      POSTGRES_USER: reconciliation_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+      POSTGRES_REPLICATION_MODE: master
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
+    volumes:
+      - postgres_primary_data:/var/lib/postgresql/data
+      - ./infrastructure/database/backups:/backups
+      - ./infrastructure/ssl:/ssl
+    ports:
+      - "5432:5432"
+    networks:
+      - reconciliation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+          cpus: '1.0'
+        reservations:
+          memory: 1G
+          cpus: '0.5'
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reconciliation_user -d reconciliation_app"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # PostgreSQL Database (Replica)
+  database-replica:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.database
+    container_name: reconciliation-db-replica
+    environment:
+      POSTGRES_DB: reconciliation_app
+      POSTGRES_USER: reconciliation_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_MASTER_HOST: database-primary
+      POSTGRES_REPLICATION_MODE: slave
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+    networks:
+      - reconciliation-network
+    depends_on:
+      - database-primary
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '0.5'
+        reservations:
+          memory: 512M
+          cpus: '0.25'
+
+  # Redis Cluster (Primary)
+  redis-primary:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.redis
+    container_name: reconciliation-redis-primary
+    volumes:
+      - redis_primary_data:/data
+      - ./infrastructure/redis/redis-primary.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+    networks:
+      - reconciliation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Redis Cluster (Replica)
+  redis-replica:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.redis
+    container_name: reconciliation-redis-replica
+    volumes:
+      - redis_replica_data:/data
+      - ./infrastructure/redis/redis-replica.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - reconciliation-network
+    depends_on:
+      - redis-primary
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+  # Backend API (Scaled)
+  backend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.backend
+    container_name: reconciliation-backend
+    environment:
+      # Database Configuration
+      DATABASE_URL: postgresql://reconciliation_user:${DB_PASSWORD}@database-primary:5432/reconciliation_app
+      DATABASE_REPLICA_URL: postgresql://reconciliation_user:${DB_PASSWORD}@database-replica:5432/reconciliation_app
+      
+      # Redis Configuration
+      REDIS_URL: redis://redis-primary:6379
+      REDIS_REPLICA_URL: redis://redis-replica:6379
+      
+      # Server Configuration
+      HOST: 0.0.0.0
+      PORT: 2000
+      
+      # JWT Configuration
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION: 86400
+      
+      # CORS Configuration
+      CORS_ORIGINS: ${CORS_ORIGINS}
+      
+      # Logging Configuration
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      RUST_LOG: ${RUST_LOG:-info}
+      
+      # File Upload Configuration
+      MAX_FILE_SIZE: 10485760
+      UPLOAD_PATH: /app/uploads
+      
+      # Security Configuration
+      ENABLE_CSRF_PROTECTION: true
+      SESSION_TIMEOUT: 3600000
+      ENABLE_RATE_LIMITING: true
+      RATE_LIMIT_REQUESTS: 1000
+      RATE_LIMIT_WINDOW: 3600
+      
+      # Production Configuration
+      ENVIRONMENT: production
+      ENABLE_METRICS: true
+      METRICS_PORT: 9090
+    volumes:
+      - uploads_data:/app/uploads
+      - ./logs:/app/logs
+    networks:
+      - reconciliation-network
+    depends_on:
+      database-primary:
+        condition: service_healthy
+      redis-primary:
+        condition: service_healthy
+    restart: unless-stopped
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:2000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Frontend Application (Scaled)
+  frontend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.frontend
+    container_name: reconciliation-frontend
+    environment:
+      # API Configuration
+      VITE_API_URL: ${API_URL}
+      VITE_WS_URL: ${WS_URL}
+      
+      # Application Configuration
+      VITE_APP_NAME: Reconciliation Platform
+      VITE_APP_VERSION: ${APP_VERSION}
+      VITE_APP_ENVIRONMENT: production
+      
+      # Feature Flags
+      VITE_ENABLE_ANALYTICS: true
+      VITE_ENABLE_REALTIME: true
+      VITE_ENABLE_COLLABORATION: true
+      VITE_ENABLE_AI_FEATURES: true
+      
+      # Performance Configuration
+      VITE_MAX_FILE_SIZE: 10485760
+      VITE_UPLOAD_TIMEOUT: 300000
+      VITE_API_TIMEOUT: 30000
+      
+      # Security Configuration
+      VITE_ENABLE_CSRF_PROTECTION: true
+      VITE_SESSION_TIMEOUT: 3600000
+      
+      # Production Configuration
+      VITE_DEBUG_MODE: false
+      VITE_LOG_LEVEL: error
+      VITE_ENABLE_MOCK_DATA: false
+    networks:
+      - reconciliation-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+      update_config:
+        parallelism: 1
+        delay: 10s
+        failure_action: rollback
+      restart_policy:
+        condition: on-failure
+        delay: 5s
+        max_attempts: 3
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Nginx Load Balancer
+  nginx:
+    image: nginx:alpine
+    container_name: reconciliation-nginx
+    volumes:
+      - ./infrastructure/nginx/nginx-prod.conf:/etc/nginx/nginx.conf
+      - ./infrastructure/nginx/conf.d:/etc/nginx/conf.d
+      - ./infrastructure/ssl:/etc/nginx/ssl
+      - ./logs/nginx:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    networks:
+      - reconciliation-network
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.5'
+        reservations:
+          memory: 128M
+          cpus: '0.25'
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Monitoring with Prometheus
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: reconciliation-prometheus
+    volumes:
+      - ./infrastructure/monitoring/prometheus-prod.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+      - ./infrastructure/ssl:/etc/prometheus/ssl
+    ports:
+      - "9090:9090"
+    networks:
+      - reconciliation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+        reservations:
+          memory: 512M
+          cpus: '0.5'
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+
+  # Monitoring with Grafana
+  grafana:
+    image: grafana/grafana:latest
+    container_name: reconciliation-grafana
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
+      GF_USERS_ALLOW_SIGN_UP: false
+      GF_SECURITY_SECRET_KEY: ${GRAFANA_SECRET_KEY}
+      GF_DATABASE_TYPE: postgres
+      GF_DATABASE_HOST: database-primary:5432
+      GF_DATABASE_NAME: grafana
+      GF_DATABASE_USER: grafana_user
+      GF_DATABASE_PASSWORD: ${GRAFANA_DB_PASSWORD}
+      GF_SESSION_PROVIDER: postgres
+      GF_SESSION_PROVIDER_CONFIG: user=grafana_user password=${GRAFANA_DB_PASSWORD} host=database-primary port=5432 dbname=grafana sslmode=require
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./infrastructure/monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./infrastructure/monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    ports:
+      - "3000:3000"
+    networks:
+      - reconciliation-network
+    depends_on:
+      - prometheus
+      - database-primary
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+        reservations:
+          memory: 256M
+          cpus: '0.25'
+
+  # Alert Manager
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: reconciliation-alertmanager
+    volumes:
+      - ./infrastructure/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager_data:/alertmanager
+    ports:
+      - "9093:9093"
+    networks:
+      - reconciliation-network
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+        reservations:
+          memory: 128M
+          cpus: '0.1'
+
+# Networks
+networks:
+  reconciliation-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Volumes
+volumes:
+  postgres_primary_data:
+    driver: local
+  postgres_replica_data:
+    driver: local
+  redis_primary_data:
+    driver: local
+  redis_replica_data:
+    driver: local
+  uploads_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  alertmanager_data:
+    driver: local
