@@ -1,116 +1,71 @@
-# Environment Setup - Production Ready Configuration
+# Environment Setup Guide
 
-**Date**: January 2025  
-**Purpose**: Secure production configuration guide
+## Production Deployment
 
----
+### 1. Environment Variables
 
-## Required Environment Variables
-
-Create a `.env` file in the `backend/` directory with the following variables:
-
-### Critical Security Variables
+Copy and configure production environment:
 
 ```bash
-# JWT Secret (CRITICAL - Generate a strong random secret)
-JWT_SECRET=<generate-with-openssl-rand-base64-32>
-JWT_EXPIRATION=86400  # 24 hours
+cp .env.production .env.production.local
+nano .env.production.local
 ```
 
-**Generate Secure JWT Secret**:
-```bash
-openssl rand -base64 32
-```
+**CRITICAL**: Change all secrets in `.env.production.local`
 
-### Database Configuration
+### 2. Build and Deploy
 
 ```bash
-DATABASE_URL=postgresql://user:password@host:port/database
-REDIS_URL=redis://host:port
+# Build for production
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml build
+
+# Deploy
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+# Check status
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps
+
+# View logs
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
 ```
 
-### Server Configuration
+### 3. Health Checks
+
+Verify services are healthy:
 
 ```bash
-HOST=0.0.0.0
-PORT=8080
+# Backend health
+curl http://localhost:2000/health
+
+# Backend readiness
+curl http://localhost:2000/ready
+
+# Metrics
+curl http://localhost:2000/metrics
 ```
 
-### Security Configuration
+### 4. Monitoring
+
+Access monitoring dashboards:
+
+- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3000 (admin/admin)
+
+### 5. Scaling
+
+Scale backend services:
 
 ```bash
-# CORS Origins (comma-separated)
-CORS_ORIGINS=http://localhost:3000,http://localhost:1000
-
-# Rate Limiting
-RATE_LIMIT_PER_MINUTE=100
-
-# Circuit Breaker
-CIRCUIT_BREAKER_FAILURE_THRESHOLD=5
-CIRCUIT_BREAKER_SUCCESS_THRESHOLD=2
-CIRCUIT_BREAKER_TIMEOUT=60
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d --scale backend=3
 ```
 
-### File Upload Configuration
+## Performance Optimization
 
-```bash
-MAX_FILE_SIZE=10485760  # 10MB
-UPLOAD_PATH=./uploads
-```
+The production configuration includes:
 
-### Logging Configuration
-
-```bash
-LOG_LEVEL=info  # Options: debug, info, warn, error
-```
-
----
-
-## Production Checklist
-
-### Security
-- [ ] Strong JWT secret generated
-- [ ] Secure database credentials
-- [ ] CORS properly configured
-- [ ] Rate limiting enabled
-- [ ] Security headers enabled
-- [ ] HTTPS enabled (in production)
-
-### Performance
-- [ ] Database connection pooling configured
-- [ ] Redis caching enabled
-- [ ] Circuit breaker configured
-- [ ] Monitoring enabled
-
-### Monitoring
-- [ ] Prometheus metrics exported
-- [ ] Logging configured
-- [ ] Error tracking set up
-
----
-
-## Quick Start
-
-1. Copy environment template:
-```bash
-cp .env.example .env
-```
-
-2. Edit `.env` with your values
-
-3. Generate JWT secret:
-```bash
-openssl rand -base64 32
-```
-
-4. Update `JWT_SECRET` in `.env`
-
-5. Start the server:
-```bash
-cargo run
-```
-
----
-
-**Important**: Never commit `.env` file to version control!
-
+- Database connection pooling (20 connections)
+- Redis connection pooling (50 connections)
+- Multi-level caching (2000 entry L1 cache)
+- Health check endpoints
+- Metrics export
+- Resource limits and reservations
