@@ -2,7 +2,7 @@
 //! 
 //! This module contains all HTTP request handlers for the REST API endpoints.
 
-use actix_web::{web, HttpRequest, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 

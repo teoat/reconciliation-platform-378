@@ -11,7 +11,7 @@ use reconciliation_backend::{
     database::Database,
     config::Config,
     services::{AuthService, UserService, ProjectService, ReconciliationService, FileService, AnalyticsService, MonitoringService},
-    middleware::{AuthMiddleware, SecurityMiddleware, SecurityMiddlewareConfig},
+    middleware::{AuthMiddleware, SecurityMiddleware, SecurityMiddlewareConfig, AdvancedRateLimiter, RateLimitConfig},
     handlers,
 };
 
