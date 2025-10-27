@@ -13,14 +13,13 @@ use actix_web::{test, web, App, HttpRequest, HttpResponse};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 
-use crate::services::{
+use reconciliation_backend::services::{
     AuthService, UserService, ProjectService, ReconciliationService,
-    FileService, AnalyticsService, SecurityService
+    FileService, AnalyticsService
 };
-use crate::services::auth::{LoginRequest, RegisterRequest, Claims};
-use crate::services::security::{SecurityService, SecurityConfig};
-use crate::errors::{AppError, AppResult};
-use crate::models::{User, Project, ReconciliationJob, DataSource};
+use reconciliation_backend::services::auth::{LoginRequest, RegisterRequest};
+use reconciliation_backend::errors::{AppError, AppResult};
+use reconciliation_backend::models::{User, Project, ReconciliationJob, DataSource};
 
 mod test_utils;
 use test_utils::*;

@@ -2,18 +2,25 @@
 //! 
 //! This module provides the core reconciliation engine including matching algorithms,
 //! reconciliation logic, confidence scoring, and batch processing.
+//!
+//! Includes:
+//! - Core reconciliation engine
+//! - Advanced fuzzy matching algorithms
+//! - Machine learning models
+//! - Reconciliation configuration
 
 use bigdecimal::ToPrimitive as BigDecimalToPrimitive;
 use std::str::FromStr;
 use diesel::{RunQueryDsl, QueryDsl, ExpressionMethods, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{RwLock, mpsc};
 use tokio::task::JoinHandle;
 use std::time::Duration;
+use std::f64;
 
 use crate::database::{Database, utils::with_transaction};
 use crate::errors::{AppError, AppResult};
@@ -72,6 +79,191 @@ pub struct JobStatus {
     pub current_phase: String,
     pub started_at: Option<chrono::DateTime<chrono::Utc>>,
     pub last_updated: chrono::DateTime<chrono::Utc>,
+}
+
+// ============================================================================
+// ADVANCED RECONCILIATION (Merged from advanced_reconciliation.rs)
+// ============================================================================
+
+/// Reconciliation record
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReconciliationRecord {
+    pub id: Uuid,
+    pub source_id: String,
+    pub fields: HashMap<String, serde_json::Value>,
+    pub metadata: HashMap<String, serde_json::Value>,
+}
+
+/// Matching result
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MatchingResult {
+    pub source_record: ReconciliationRecord,
+    pub target_record: ReconciliationRecord,
+    pub confidence_score: f64,
+    pub match_type: MatchType,
+    pub matching_fields: Vec<String>,
+    pub differences: Vec<FieldDifference>,
+}
+
+/// Field difference
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FieldDifference {
+    pub field_name: String,
+    pub source_value: serde_json::Value,
+    pub target_value: serde_json::Value,
+    pub difference_type: DifferenceType,
+    pub similarity_score: f64,
+}
+
+/// Difference types
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum DifferenceType {
+    Exact,
+    Similar,
+    Different,
+    Missing,
+}
+
+/// Fuzzy matching algorithm
+#[derive(Debug, Clone)]
+pub struct FuzzyMatchingAlgorithm {
+    pub threshold: f64,
+    pub algorithm_type: FuzzyAlgorithmType,
+}
+
+/// Fuzzy algorithm types
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum FuzzyAlgorithmType {
+    Levenshtein,
+    JaroWinkler,
+    Jaccard,
+    Cosine,
+    Soundex,
+    Metaphone,
+}
+
+impl FuzzyMatchingAlgorithm {
+    pub fn new(threshold: f64, algorithm_type: FuzzyAlgorithmType) -> Self {
+        Self {
+            threshold,
+            algorithm_type,
+        }
+    }
+}
+
+impl MatchingAlgorithm for FuzzyMatchingAlgorithm {
+    fn calculate_similarity(&self, value_a: &str, value_b: &str) -> f64 {
+        // Simple implementation - can be enhanced
+        let distance = levenshtein_distance(value_a, value_b);
+        let max_len = value_a.len().max(value_b.len()) as f64;
+        
+        if max_len == 0.0 {
+            1.0
+        } else {
+            let similarity = 1.0 - (distance as f64 / max_len);
+            if similarity >= self.threshold {
+                similarity
+            } else {
+                0.0
+            }
+        }
+    }
+    
+    fn get_algorithm_name(&self) -> &str {
+        "fuzzy"
+    }
+}
+
+// Levenshtein distance helper function
+pub fn levenshtein_distance(a: &str, b: &str) -> usize {
+    let a_len = a.len();
+    let b_len = b.len();
+    
+    if a_len == 0 { return b_len; }
+    if b_len == 0 { return a_len; }
+    
+    let mut matrix = vec![vec![0; b_len + 1]; a_len + 1];
+    
+    for i in 0..=a_len {
+        matrix[i][0] = i;
+    }
+    for j in 0..=b_len {
+        matrix[0][j] = j;
+    }
+    
+    for i in 1..=a_len {
+        for j in 1..=b_len {
+            let cost = if a.chars().nth(i - 1) == b.chars().nth(j - 1) { 0 } else { 1 };
+            matrix[i][j] = std::cmp::min(
+                std::cmp::min(matrix[i - 1][j] + 1, matrix[i][j - 1] + 1),
+                matrix[i - 1][j - 1] + cost
+            );
+        }
+    }
+    
+    matrix[a_len][b_len]
+}
+
+/// Machine learning reconciliation model
+#[derive(Debug, Clone)]
+pub struct MLReconciliationModel {
+    pub model_type: MLModelType,
+    pub trained_on: Option<DateTime<Utc>>,
+    pub accuracy: Option<f64>,
+}
+
+/// ML model types
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum MLModelType {
+    RandomForest,
+    NeuralNetwork,
+    GradientBoosting,
+    LogisticRegression,
+}
+
+/// Reconciliation configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReconciliationConfig {
+    pub matching_threshold: f64,
+    pub fuzzy_algorithm: FuzzyAlgorithmType,
+    pub use_ml: bool,
+    pub ml_model_type: Option<MLModelType>,
+    pub batch_size: usize,
+}
+
+/// Advanced reconciliation service
+pub struct AdvancedReconciliationService {
+    config: ReconciliationConfig,
+    fuzzy_matcher: FuzzyMatchingAlgorithm,
+    ml_model: Option<MLReconciliationModel>,
+}
+
+impl AdvancedReconciliationService {
+    pub fn new(config: ReconciliationConfig) -> Self {
+        let fuzzy_matcher = FuzzyMatchingAlgorithm::new(
+            config.matching_threshold,
+            config.fuzzy_algorithm.clone()
+        );
+        
+        let ml_model = if config.use_ml {
+            config.ml_model_type.clone().map(|model_type| {
+                MLReconciliationModel {
+                    model_type,
+                    trained_on: None,
+                    accuracy: None,
+                }
+            })
+        } else {
+            None
+        };
+        
+        let config_clone = config.clone();
+        Self {
+            config,
+            fuzzy_matcher,
+            ml_model,
+        }
+    }
 }
 
 impl JobProcessor {
@@ -420,38 +612,7 @@ impl MatchingAlgorithm for ExactMatchingAlgorithm {
     }
 }
 
-/// Fuzzy matching algorithm using Levenshtein distance
-pub struct FuzzyMatchingAlgorithm {
-    threshold: f64,
-}
-
-impl FuzzyMatchingAlgorithm {
-    pub fn new(threshold: f64) -> Self {
-        Self { threshold }
-    }
-}
-
-impl MatchingAlgorithm for FuzzyMatchingAlgorithm {
-    fn calculate_similarity(&self, value_a: &str, value_b: &str) -> f64 {
-        let distance = levenshtein_distance(value_a, value_b);
-        let max_len = value_a.len().max(value_b.len()) as f64;
-        
-        if max_len == 0.0 {
-            1.0
-        } else {
-            let similarity = 1.0 - (distance as f64 / max_len);
-            if similarity >= self.threshold {
-                similarity
-            } else {
-                0.0
-            }
-        }
-    }
-    
-    fn get_algorithm_name(&self) -> &str {
-        "fuzzy"
-    }
-}
+// Duplicate FuzzyMatchingAlgorithm removed - already defined above at line 128
 
 /// Contains matching algorithm
 pub struct ContainsMatchingAlgorithm;
@@ -483,7 +644,7 @@ impl ReconciliationEngine {
         let mut algorithms: HashMap<String, Box<dyn MatchingAlgorithm + Send + Sync>> = HashMap::new();
         
         algorithms.insert("exact".to_string(), Box::new(ExactMatchingAlgorithm));
-        algorithms.insert("fuzzy".to_string(), Box::new(FuzzyMatchingAlgorithm::new(0.7)));
+        algorithms.insert("fuzzy".to_string(), Box::new(FuzzyMatchingAlgorithm::new(0.7, FuzzyAlgorithmType::Levenshtein)));
         algorithms.insert("contains".to_string(), Box::new(ContainsMatchingAlgorithm));
         
         Self { algorithms }
@@ -1107,34 +1268,7 @@ impl ReconciliationService {
     }
 }
 
-/// Calculate Levenshtein distance between two strings
-fn levenshtein_distance(s1: &str, s2: &str) -> usize {
-    let s1_chars: Vec<char> = s1.chars().collect();
-    let s2_chars: Vec<char> = s2.chars().collect();
-    let s1_len = s1_chars.len();
-    let s2_len = s2_chars.len();
-    
-    let mut matrix = vec![vec![0; s2_len + 1]; s1_len + 1];
-    
-    for i in 0..=s1_len {
-        matrix[i][0] = i;
-    }
-    
-    for j in 0..=s2_len {
-        matrix[0][j] = j;
-    }
-    
-    for i in 1..=s1_len {
-        for j in 1..=s2_len {
-            let cost = if s1_chars[i - 1] == s2_chars[j - 1] { 0 } else { 1 };
-            matrix[i][j] = (matrix[i - 1][j] + 1)
-                .min(matrix[i][j - 1] + 1)
-                .min(matrix[i - 1][j - 1] + cost);
-        }
-    }
-    
-    matrix[s1_len][s2_len]
-}
+// Duplicate levenshtein_distance function removed - already defined at line 178
 
 /// Reconciliation job statistics
 #[derive(Debug, Serialize)]

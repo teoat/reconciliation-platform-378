@@ -242,3 +242,85 @@ pub struct ErrorResponse {
 
 /// Result type alias for convenience
 pub type AppResult<T> = Result<T, AppError>;
+
+/// Enhanced error context for better debugging
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ErrorContext {
+    pub field: Option<String>,
+    pub value: Option<String>,
+    pub constraint: Option<String>,
+    pub details: Option<String>,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
+}
+
+impl ErrorContext {
+    pub fn new() -> Self {
+        Self {
+            field: None,
+            value: None,
+            constraint: None,
+            details: None,
+            timestamp: chrono::Utc::now(),
+        }
+    }
+
+    pub fn with_field(mut self, field: impl Into<String>) -> Self {
+        self.field = Some(field.into());
+        self
+    }
+
+    pub fn with_value(mut self, value: impl Into<String>) -> Self {
+        self.value = Some(value.into());
+        self
+    }
+
+    pub fn with_constraint(mut self, constraint: impl Into<String>) -> Self {
+        self.constraint = Some(constraint.into());
+        self
+    }
+
+    pub fn with_details(mut self, details: impl Into<String>) -> Self {
+        self.details = Some(details.into());
+        self
+    }
+}
+
+impl Default for ErrorContext {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+/// Enhanced error response with context
+#[derive(Debug, Serialize, Deserialize)]
+pub struct EnhancedErrorResponse {
+    pub error: String,
+    pub message: String,
+    pub code: String,
+    pub context: Option<ErrorContext>,
+    pub request_id: Option<String>,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
+}
+
+impl EnhancedErrorResponse {
+    pub fn new(error: String, message: String, code: String) -> Self {
+        Self {
+            error,
+            message,
+            code,
+            context: None,
+            request_id: None,
+            timestamp: chrono::Utc::now(),
+        }
+    }
+
+    pub fn with_context(mut self, context: ErrorContext) -> Self {
+        self.context = Some(context);
+        self
+    }
+
+    pub fn with_request_id(mut self, request_id: impl Into<String>) -> Self {
+        self.request_id = Some(request_id.into());
+        self
+    }
+}

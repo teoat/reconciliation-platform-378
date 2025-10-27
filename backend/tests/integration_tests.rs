@@ -14,18 +14,17 @@ use actix_web::middleware::Logger;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 
-use crate::handlers::*;
-use crate::services::{
+use reconciliation_backend::handlers::*;
+use reconciliation_backend::services::{
     AuthService, UserService, ProjectService, ReconciliationService,
-    FileService, AnalyticsService, SecurityService
+    FileService, AnalyticsService
 };
-use crate::middleware::{
-    SecurityMiddleware, SecurityMiddlewareConfig,
+use reconciliation_backend::middleware::{
     AuthMiddleware, AuthMiddlewareConfig,
     PerformanceMiddleware, PerformanceMonitoringConfig,
     LoggingMiddleware, LoggingConfig
 };
-use crate::errors::{AppError, AppResult};
+use reconciliation_backend::errors::{AppError, AppResult};
 
 mod test_utils;
 use test_utils::*;

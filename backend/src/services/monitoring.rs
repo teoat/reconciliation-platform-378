@@ -532,3 +532,32 @@ impl HealthChecker for SystemHealthChecker {
         }
     }
 }
+// ============================================================================
+// MONITORING ALERTING (Merged from monitoring_alerting.rs)  
+// ============================================================================
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AlertDefinition {
+    pub id: String,
+    pub name: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AlertInstance {
+    pub id: Uuid,
+    pub alert_id: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum AlertSeverity {
+    Critical,
+    Warning,
+    Info,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NotificationChannel {
+    pub type_: String,
+    pub endpoint: String,
+}
+

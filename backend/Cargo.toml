@@ -3,6 +3,15 @@ name = "reconciliation-backend"
 version = "0.1.0"
 edition = "2021"
 
+[profile.release]
+opt-level = 3              # Maximum optimization
+lto = true                 # Link-time optimization
+codegen-units = 1          # Better optimization
+strip = true               # Strip debug symbols
+panic = "abort"            # Smaller binary size
+overflow-checks = false    # Performance optimization
+debug = false              # No debug info in release
+
 [dependencies]
 # Web framework
 actix-web = "4.4"
@@ -53,6 +62,7 @@ redis = { version = "0.23", features = ["tokio-comp"] }
 # File handling
 csv = "1.2"
 sha2 = "0.10"
+tempfile = "3.8"
 
 # Logging
 env_logger = "0.10"
@@ -60,6 +70,8 @@ log = "0.4"
 
 # Monitoring
 prometheus = "0.13"
+sentry = { version = "0.32", features = ["tower", "tracing", "log"] }
+sentry-actix = "0.32"
 
 # Validation
 validator = { version = "0.16", features = ["derive"] }
@@ -76,5 +88,7 @@ dotenv = "0.15"
 actix = "0.13"
 
 # Testing
-#[dev-dependencies]
-#tokio-test = "0.4"
+[dev-dependencies]
+tokio-test = "0.4"
+mockall = "0.11"
+actix-service = "2.0"

@@ -1,7 +1,10 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { 
+import * as Icons from 'lucide-react'
+
+// Use namespace import for better tree-shaking
+const {
   Workflow, 
   CheckCircle, 
   XCircle,
@@ -119,8 +122,8 @@ import {
   Divide,
   Percent,
   Calculator,
-  CalculatorIcon
-} from 'lucide-react'
+  Calculator as CalculatorIcon
+} = Icons as any
 import { useData } from './DataProvider'
 import { 
   WorkflowStep, 

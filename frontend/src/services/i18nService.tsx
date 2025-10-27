@@ -2,7 +2,7 @@
 // Implements comprehensive i18n support with multiple languages, RTL support, and localization
 
 import React from 'react'
-import { APP_CONFIG } from '../constants'
+import { APP_CONFIG } from '../config/AppConfig'
 
 // Internationalization configuration
 interface I18nConfig {

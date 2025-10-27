@@ -602,3 +602,26 @@ mod tests {
         assert!(service.validate_uuid(invalid_uuid).is_err());
     }
 }
+
+// ============================================================================
+// SCHEMA VALIDATION (Merged from schema_validation.rs)  
+// ============================================================================
+
+#[derive(Debug, Clone)]
+pub struct SchemaValidator {
+    pub schema: HashMap<String, serde_json::Value>,
+}
+
+#[derive(Debug, Clone)]
+pub struct ValidationRule {
+    pub field: String,
+    pub rule_type: String,
+}
+
+#[derive(Debug, Clone)]
+pub enum ValidationErrorType {
+    Missing,
+    Invalid,
+    Mismatch,
+}
+

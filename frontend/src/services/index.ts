@@ -56,14 +56,15 @@ export { default as CacheService } from './cacheService'
 export { default as FileService } from './fileService'
 export { default as FormService } from './formService'
 export { default as LoggerService } from './logger'
-export { default as PerformanceMonitor } from './performanceMonitor'
-export { default as PWAService } from './pwaService'
+// PerformanceMonitor removed - use performanceService or monitoringService instead
+// PWAService removed - functionality integrated elsewhere
 export { default as RealtimeSyncService } from './realtimeSync'
 export { default as RetryService } from './retryService'
 export { default as WebSocketService } from './webSocketService'
 
 // Constants
-export * from './constants'
+// Constants moved to config/AppConfig.ts
+// export * from './constants'
 
 // Default export for convenience
 export { apiClient as default }

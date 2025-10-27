@@ -8,6 +8,12 @@ export * from './async'
 export * from './forms'
 export * from './performance'
 
+// Export window hooks
+export * from './window'
+
+// Export ref hooks  
+export * from './refs'
+
 // Export existing specialized hooks
 export * from './useApi'
 export * from './useAuth'
@@ -17,7 +23,8 @@ export * from './usePerformance'
 export * from './useRealtimeSync'
 export * from './useSecurity'
 export * from './useTheme'
-export * from './useWebSocket'
+// useWebSocket removed - use useWebSocketIntegration instead
+// export * from './useWebSocket'
 export * from './useDebounce'
 
 // Export utilities

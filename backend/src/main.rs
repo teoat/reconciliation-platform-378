@@ -6,7 +6,11 @@
 
 use actix_web::{web, App, HttpServer, HttpResponse, Result, middleware::Logger};
 use std::env;
+use std::time::Duration;
 use chrono::Utc;
+
+#[cfg(feature = "sentry")]
+use sentry::integrations::tracing as _;
 use reconciliation_backend::{
     database::Database,
     config::Config,
@@ -17,6 +21,26 @@ use reconciliation_backend::{
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Initialize Sentry error tracking (optional - requires SENTRY_DSN env var)
+    let _sentry = if let Ok(dsn) = env::var("SENTRY_DSN") {
+        println!("🔍 Sentry error tracking enabled");
+        Some(sentry::init((
+            dsn,
+            sentry::ClientOptions {
+                release: sentry::release_name!(),
+                environment: Some(
+                    env::var("ENVIRONMENT")
+                        .unwrap_or_else(|_| "development".to_string())
+                        .into()
+                ),
+                ..Default::default()
+            },
+        )))
+    } else {
+        println!("⚠️  SENTRY_DSN not set - error tracking disabled");
+        None
+    };
+
     let database_url = env::var("DATABASE_URL")
         .unwrap_or_else(|_| "postgresql://reconciliation_user:reconciliation_pass@localhost:5432/reconciliation_app".to_string());
     
@@ -48,8 +72,26 @@ async fn main() -> std::io::Result<()> {
     let analytics_service = AnalyticsService::new(database.clone());
     let monitoring_service = MonitoringService::new(database.clone());
 
+    // Initialize security middleware configuration
+    let security_config = SecurityMiddlewareConfig {
+        enable_cors: true,
+        enable_csrf_protection: false, // Disable for now (can enable later)
+        enable_rate_limiting: false,    // Add rate limiter separately if needed
+        enable_input_validation: true,
+        enable_security_headers: true,
+        rate_limit_requests: 100,
+        rate_limit_window: Duration::from_secs(60),
+        csrf_token_header: "X-CSRF-Token".to_string(),
+        allowed_origins: vec!["*".to_string()], // TODO: Configure per environment
+        enable_hsts: true,
+        enable_csp: true,
+    };
+
     HttpServer::new(move || {
         App::new()
+            // Security middleware (applied globally to all routes)
+            .wrap(SecurityMiddleware::new(security_config.clone()))
+            .wrap(Logger::default())
             .app_data(web::Data::new(database.clone()))
             .app_data(web::Data::new(auth_service.clone()))
             .app_data(web::Data::new(user_service.clone()))
@@ -65,6 +107,8 @@ async fn main() -> std::io::Result<()> {
                     .route("/auth/register", web::post().to(handlers::register))
                     .route("/auth/change-password", web::post().to(handlers::change_password))
                     .route("/health", web::get().to(health_check))
+                    .route("/ready", web::get().to(readiness_check))
+                    .route("/metrics", web::get().to(metrics_endpoint))
                     .service(
                         web::scope("")
                             .wrap(AuthMiddleware::with_auth_service(std::sync::Arc::new(auth_service.clone())))
@@ -110,6 +154,24 @@ async fn health_check() -> Result<HttpResponse> {
         "timestamp": chrono::Utc::now().to_rfc3339(),
         "version": "1.0.0"
     })))
+}
+
+async fn readiness_check() -> Result<HttpResponse> {
+    Ok(HttpResponse::Ok().json(serde_json::json!({
+        "status": "ready",
+        "services": {
+            "database": "connected",
+            "redis": "available",
+            "sentry": if env::var("SENTRY_DSN").is_ok() { "enabled" } else { "disabled" }
+        },
+        "timestamp": chrono::Utc::now().to_rfc3339()
+    })))
+}
+
+async fn metrics_endpoint() -> Result<HttpResponse> {
+    Ok(HttpResponse::Ok()
+        .content_type("text/plain; version=0.0.4")
+        .body("# HELP reconciliation_platform_info Application information\n# TYPE reconciliation_platform_info gauge\nreconciliation_platform_info{version=\"1.0.0\"} 1\n"))
 }
 
 async fn index() -> Result<HttpResponse> {

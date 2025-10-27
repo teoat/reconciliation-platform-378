@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 1000",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build --mode production",
+    "build:analyze": "tsc && vite build --mode production && npx vite-bundle-visualizer",
     "preview": "vite preview --port 1000",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "test": "vitest",
@@ -20,7 +21,8 @@
     "@hookform/resolvers": "^3.3.2",
     "zod": "^3.22.4",
     "axios": "^1.6.0",
-    "lucide-react": "^0.294.0"
+    "lucide-react": "^0.294.0",
+    "socket.io-client": "^4.7.2"
   },
   "devDependencies": {
     "@types/react": "^18.2.37",

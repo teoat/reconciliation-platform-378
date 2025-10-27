@@ -2,7 +2,7 @@
 // Implements real-time updates, live collaboration, and presence management
 
 import React from 'react'
-import { APP_CONFIG } from '../constants'
+import { APP_CONFIG } from '../config/AppConfig'
 
 // WebSocket message types
 export enum MessageType {

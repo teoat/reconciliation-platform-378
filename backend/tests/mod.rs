@@ -4,6 +4,7 @@
 //! including unit tests, integration tests, and end-to-end tests.
 
 mod test_utils;
+mod simple_tests;
 mod unit_tests;
 mod integration_tests;
 mod e2e_tests;

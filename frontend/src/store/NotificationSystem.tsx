@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { X, CheckCircle, AlertCircle, AlertTriangle, Info, Bell } from 'lucide-react'
-import { useNotifications, useNotificationHelpers } from '../store/hooks'
-import Button from './ui/Button'
+import { useNotifications, useNotificationHelpers } from './hooks'
+import Button from '../components/ui/Button'
 
 interface NotificationItemProps {
   notification: {

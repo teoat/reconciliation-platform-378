@@ -1,72 +1,106 @@
-# Multi-stage Dockerfile for Reconciliation Platform Backend
-# This Dockerfile creates an optimized production image for the Rust backend
+# ============================================================================
+# OPTIMIZED MULTI-STAGE DOCKERFILE FOR RUST BACKEND
+# ============================================================================
+# Features:
+# - Multi-stage build for smaller image size
+# - Layer caching optimization
+# - Security hardening (non-root user)
+# - Health checks
+# - Production optimizations
+# ============================================================================
 
-# Stage 1: Build stage
-FROM rust:1.75-slim as builder
+# Stage 1: Builder Stage
+ARG RUST_VERSION=1.75
+FROM rust:${RUST_VERSION}-alpine AS builder
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    pkg-config \
-    libssl-dev \
-    libpq-dev \
-    && rm -rf /var/lib/apt/lists/*
+# Install build dependencies in a single layer
+RUN apk add --no-cache \
+    musl-dev \
+    pkgconfig \
+    openssl-dev \
+    openssl-libs-static \
+    postgresql-dev \
+    postgresql-libs \
+    curl \
+    ca-certificates \
+    && rm -rf /var/cache/apk/*
 
 # Set working directory
 WORKDIR /app
 
-# Copy Cargo files
+# Copy dependency manifests first (for better caching)
 COPY backend/Cargo.toml backend/Cargo.lock ./
 
 # Create a dummy main.rs to cache dependencies
-RUN mkdir src && echo "fn main() {}" > src/main.rs
+RUN mkdir -p src && \
+    echo "fn main() {}" > src/main.rs
 
-# Build dependencies (this layer will be cached)
-RUN cargo build --release
+# Copy workspace config if it exists
+COPY Cargo.toml ./
 
-# Remove dummy main.rs
-RUN rm src/main.rs
+# Build dependencies (this layer will be cached if Cargo files don't change)
+RUN cargo build --release --target x86_64-unknown-linux-musl || \
+    cargo build --release && \
+    rm -rf src
 
-# Copy source code
+# Copy actual source code
 COPY backend/src ./src
 COPY backend/migrations ./migrations
 
-# Build the application
-RUN cargo build --release
+# Build the actual application
+RUN touch src/main.rs && \
+    cargo build --release --target x86_64-unknown-linux-musl 2>/dev/null || \
+    cargo build --release
 
-# Stage 2: Runtime stage
-FROM debian:bookworm-slim
+# Stage 2: Runtime Stage
+FROM alpine:latest AS runtime
 
 # Install runtime dependencies
-RUN apt-get update && apt-get install -y \
+RUN apk add --no-cache \
     ca-certificates \
     libssl3 \
-    libpq5 \
-    && rm -rf /var/lib/apt/lists/*
+    libcrypto3 \
+    libpq \
+    curl \
+    wget \
+    tzdata \
+    && rm -rf /var/cache/apk/*
 
-# Create app user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+# Create non-root user for security
+RUN addgroup --system --gid 1001 appgroup && \
+    adduser --system --uid 1001 --gid 1001 --no-create-home appuser
 
 # Set working directory
 WORKDIR /app
 
 # Copy binary from builder stage
-COPY --from=builder /app/target/release/reconciliation_backend /app/reconciliation_backend
+COPY --from=builder --chown=appuser:appgroup /app/target/x86_64-unknown-linux-musl/release/reconciliation-backend ./reconciliation-backend 2>/dev/null || \
+COPY --from=builder --chown=appuser:appgroup /app/target/release/reconciliation-backend ./reconciliation-backend
 
 # Copy migrations
-COPY --from=builder /app/migrations ./migrations
+COPY --from=builder --chown=appuser:appgroup /app/migrations ./migrations
 
-# Create uploads directory
-RUN mkdir -p /app/uploads && chown -R appuser:appuser /app
+# Create necessary directories
+RUN mkdir -p /app/uploads /app/logs && \
+    chown -R appuser:appgroup /app
 
 # Switch to non-root user
 USER appuser
 
-# Expose port
+# Expose ports
 EXPOSE 2000
+EXPOSE 9091
+
+# Set environment variables
+ENV RUST_LOG=info \
+    RUST_BACKTRACE=1 \
+    PORT=2000 \
+    HOST=0.0.0.0
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:2000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:2000/health || exit 1
 
 # Run the application
-CMD ["./reconciliation_backend"]
+CMD ["./reconciliation-backend"]
+

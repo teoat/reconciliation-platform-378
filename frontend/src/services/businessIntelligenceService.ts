@@ -2,7 +2,7 @@
 // Implements comprehensive BI features with advanced analytics, reporting, and data visualization
 
 import React from 'react'
-import { APP_CONFIG } from '../constants'
+import { APP_CONFIG } from '../config/AppConfig'
 
 // Report configuration
 interface ReportConfig {

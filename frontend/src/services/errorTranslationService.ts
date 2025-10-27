@@ -1,7 +1,7 @@
 // Error Translation Service - Maps backend error codes to user-friendly messages
 // Implements comprehensive error code translation with context preservation
 
-import { ERROR_CODES } from '../constants'
+import { ERROR_CODES } from '../config/AppConfig'
 
 export interface ErrorTranslation {
   userMessage: string

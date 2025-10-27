@@ -374,7 +374,7 @@ impl WsSession {
     /// Handle incoming WebSocket message
     fn handle_message(&mut self, msg: WsMessage, ctx: &mut ws::WebsocketContext<Self>) {
         match msg {
-            WsMessage::Auth { token } => {
+            WsMessage::Auth { token: _ } => {
                 // Validate token and authenticate user
                 // This would typically validate the JWT token
                 // For now, we'll just acknowledge
@@ -697,7 +697,7 @@ impl Handler<BroadcastJobProgress> for WsServer {
 
     fn handle(&mut self, msg: BroadcastJobProgress, _ctx: &mut Self::Context) {
         let sessions = self.sessions.clone();
-        let project_id = msg.project_id;
+        let _project_id = msg.project_id;
         let job_id = msg.job_id;
         let progress = msg.progress;
         let status = msg.status;

@@ -11,8 +11,10 @@ use reconciliation_backend::{
     handlers::configure_routes,
     config::Config,
     database::Database,
-    test_utils::*,
 };
+
+mod test_utils;
+use test_utils::*;
 
 /// Test API endpoint setup
 async fn setup_api_test_app() -> impl actix_web::dev::Service<

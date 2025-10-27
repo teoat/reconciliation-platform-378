@@ -1,16 +1,159 @@
 //! Cache service for the Reconciliation Backend
 //! 
 //! This module provides caching functionality using Redis for improved performance.
+//! 
+//! Includes:
+//! - Basic Redis caching (CacheService)
+//! - Multi-level caching (MultiLevelCache)
+//! - Advanced cache strategies (CacheStrategy)
+//! - Query result caching (QueryResultCache)
+//! - CDN integration (CDNService)
 
 use redis::{Client, Connection, Commands};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
+use std::path::PathBuf;
 use uuid::Uuid;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use std::hash::{Hash, Hasher};
+use std::collections::hash_map::DefaultHasher;
+use chrono::{DateTime, Utc};
 
 use crate::errors::{AppError, AppResult};
+
+// ============================================================================
+// ADVANCED CACHING (Merged from advanced_cache.rs)
+// ============================================================================
+
+/// Advanced caching strategies
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum CacheStrategy {
+    /// Cache with TTL (Time To Live)
+    TTL(Duration),
+    /// Cache until explicitly invalidated
+    Persistent,
+    /// Cache with write-through strategy
+    WriteThrough,
+    /// Cache with write-behind strategy
+    WriteBehind,
+    /// Cache with read-through strategy
+    ReadThrough,
+    /// Cache with refresh-ahead strategy
+    RefreshAhead(Duration),
+}
+
+/// Cache entry with metadata
+#[derive(Debug, Clone)]
+pub struct CacheEntry<T> {
+    pub data: T,
+    pub created_at: Instant,
+    pub last_accessed: Instant,
+    pub access_count: u64,
+    pub strategy: CacheStrategy,
+    pub tags: Vec<String>,
+}
+
+impl<T> CacheEntry<T> {
+    pub fn new(data: T, strategy: CacheStrategy) -> Self {
+        let now = Instant::now();
+        Self {
+            data,
+            created_at: now,
+            last_accessed: now,
+            access_count: 1,
+            strategy,
+            tags: Vec::new(),
+        }
+    }
+
+    pub fn is_expired(&self) -> bool {
+        match &self.strategy {
+            CacheStrategy::TTL(ttl) => Instant::now() > self.created_at + *ttl,
+            CacheStrategy::Persistent => false,
+            CacheStrategy::WriteThrough => false,
+            CacheStrategy::WriteBehind => false,
+            CacheStrategy::ReadThrough => false,
+            CacheStrategy::RefreshAhead(refresh_interval) => {
+                Instant::now() > self.last_accessed + *refresh_interval
+            }
+        }
+    }
+
+    pub fn should_refresh(&self) -> bool {
+        match &self.strategy {
+            CacheStrategy::RefreshAhead(refresh_interval) => {
+                Instant::now() > self.last_accessed + *refresh_interval
+            }
+            _ => false,
+        }
+    }
+}
+
+/// Advanced cache service (merged from advanced_cache.rs)
+#[derive(Clone)]
+pub struct AdvancedCacheService {
+    redis_client: Client,
+    local_cache: Arc<RwLock<HashMap<String, CacheEntry<serde_json::Value>>>>,
+    cache_stats: Arc<RwLock<AdvancedCacheStats>>,
+    max_local_size: usize,
+}
+
+/// Advanced cache statistics
+#[derive(Debug, Clone, Default)]
+pub struct AdvancedCacheStats {
+    pub hits: u64,
+    pub misses: u64,
+    pub sets: u64,
+    pub deletes: u64,
+    pub evictions: u64,
+    pub refreshes: u64,
+    pub errors: u64,
+    pub local_hits: u64,
+    pub redis_hits: u64,
+    pub write_through_operations: u64,
+    pub write_behind_operations: u64,
+}
+
+/// Query result cache
+pub struct QueryResultCache {
+    cache: AdvancedCacheService,
+}
+
+/// Query cache statistics
+#[derive(Debug, Clone)]
+pub struct QueryCacheStats {
+    pub total_queries: u64,
+    pub cached_queries: u64,
+    pub cache_hit_rate: f64,
+    pub total_time_saved_ms: u64,
+}
+
+/// CDN service
+pub struct CDNService {
+    cache_url: String,
+}
+
+impl CDNService {
+    pub fn new(cache_url: String) -> Self {
+        Self { cache_url }
+    }
+}
+
+impl AdvancedCacheService {
+    pub fn new(redis_url: &str) -> AppResult<Self> {
+        let redis_client = Client::open(redis_url)
+            .map_err(|e| AppError::InternalServerError(format!("Failed to connect to Redis: {}", e)))?;
+        
+        Ok(Self {
+            redis_client,
+            local_cache: Arc::new(RwLock::new(HashMap::new())),
+            cache_stats: Arc::new(RwLock::new(AdvancedCacheStats::default())),
+            max_local_size: 1000,
+        })
+    }
+}
 
 /// Cached value with expiration
 #[derive(Debug, Clone)]
@@ -42,6 +185,7 @@ pub struct MultiLevelCache {
 }
 
 impl MultiLevelCache {
+    /// Create a new multi-level cache with optimized settings
     pub fn new(redis_url: &str) -> AppResult<Self> {
         let l2_cache = CacheService::new(redis_url)?;
         
@@ -49,8 +193,25 @@ impl MultiLevelCache {
             l1_cache: Arc::new(RwLock::new(HashMap::new())),
             l2_cache,
             cache_stats: Arc::new(RwLock::new(CacheStats::default())),
-            l1_max_size: 1000,
+            l1_max_size: 2000, // Increased from 1000 for better cache hit rate
             l1_default_ttl: Duration::from_secs(300), // 5 minutes
+        })
+    }
+    
+    /// Create a cache with custom configuration
+    pub fn new_with_config(
+        redis_url: &str,
+        l1_size: usize,
+        l1_ttl_secs: u64,
+    ) -> AppResult<Self> {
+        let l2_cache = CacheService::new(redis_url)?;
+        
+        Ok(Self {
+            l1_cache: Arc::new(RwLock::new(HashMap::new())),
+            l2_cache,
+            cache_stats: Arc::new(RwLock::new(CacheStats::default())),
+            l1_max_size: l1_size,
+            l1_default_ttl: Duration::from_secs(l1_ttl_secs),
         })
     }
     
@@ -203,9 +364,13 @@ impl MultiLevelCache {
     }
 }
 
-/// Cache service
+/// Cache service with connection pooling
 pub struct CacheService {
     client: Client,
+    /// Connection timeout for Redis operations
+    pub connection_timeout: Duration,
+    /// Maximum connection pool size
+    pub max_connections: usize,
 }
 
 /// Cache statistics
@@ -220,15 +385,35 @@ pub struct CacheStats {
 }
 
 impl CacheService {
-    /// Create a new cache service
+    /// Create a new cache service with optimized connection pooling
     pub fn new(redis_url: &str) -> AppResult<Self> {
         let client = Client::open(redis_url)
             .map_err(|e| AppError::InternalServerError(format!("Failed to connect to Redis: {}", e)))?;
         
-        Ok(CacheService { client })
+        Ok(CacheService { 
+            client,
+            connection_timeout: Duration::from_secs(5), // 5s timeout
+            max_connections: 50, // Increased pool size for better concurrency
+        })
+    }
+    
+    /// Create cache service with custom configuration
+    pub fn new_with_config(
+        redis_url: &str,
+        max_connections: usize,
+        timeout_secs: u64,
+    ) -> AppResult<Self> {
+        let client = Client::open(redis_url)
+            .map_err(|e| AppError::InternalServerError(format!("Failed to connect to Redis: {}", e)))?;
+        
+        Ok(CacheService { 
+            client,
+            connection_timeout: Duration::from_secs(timeout_secs),
+            max_connections,
+        })
     }
 
-    /// Get a connection to Redis
+    /// Get a connection to Redis with timeout
     fn get_connection(&self) -> AppResult<Connection> {
         self.client.get_connection()
             .map_err(|e| AppError::InternalServerError(format!("Failed to get Redis connection: {}", e)))

@@ -10,7 +10,7 @@ import {
   notificationsActions,
   uiActions
 } from '../store/store'
-import ApiService from './ApiService'
+import ApiService from '../services/ApiService'
 import { useNotificationHelpers } from '../store/hooks'
 
 // ============================================================================

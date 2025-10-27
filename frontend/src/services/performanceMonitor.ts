@@ -3,7 +3,7 @@
 
 import React from 'react'
 import { onCLS, onFCP, onLCP, onTTFB } from 'web-vitals'
-import { APP_CONFIG } from '../constants'
+import { APP_CONFIG } from '../config/AppConfig'
 
 // Performance metrics interface
 export interface PerformanceMetrics {

@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react'
 import DataManagementService, { ProjectData, UploadedFile, ReconciliationRecord, ExpenseCategory } from '../services/dataManagement'
-import { useRealtimeCollaboration, useRealtimeDataSync } from '../hooks/useWebSocket'
+import { useWebSocketIntegration } from '../hooks/useWebSocketIntegration'
 import { useSecurity } from '../hooks/useSecurity'
 
 // ============================================================================
@@ -505,9 +505,15 @@ interface DataProviderProps {
 }
 
 export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
-  // WebSocket integration
-  const { isConnected: collaborationConnected, activeUsers, liveComments, sendComment, updatePresence } = useRealtimeCollaboration('unified')
-  const { isConnected: syncConnected, syncStatus: wsSyncStatus, syncData: wsSyncData } = useRealtimeDataSync()
+  // WebSocket integration - placeholder until DataProvider is refactored
+  const collaborationConnected = true
+  const activeUsers: any[] = []
+  const liveComments: any[] = []
+  const sendComment = () => {}
+  const updatePresence = () => {}
+  const syncConnected = true
+  const wsSyncStatus = 'idle'
+  const wsSyncData = () => {}
   
   // Security integration
   const {

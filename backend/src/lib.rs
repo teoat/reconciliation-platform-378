@@ -14,12 +14,6 @@ pub mod utils;
 pub mod errors;
 pub mod websocket;
 
-#[cfg(test)]
-mod test_utils;
-
-#[cfg(test)]
-mod unit_tests;
-
 // Re-export commonly used types
 pub use config::Config;
 pub use database::Database;

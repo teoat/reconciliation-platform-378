@@ -3,16 +3,10 @@
 //! This module contains Diesel model definitions and database operations.
 
 use diesel::prelude::*;
-use diesel::expression::AsExpression;
 use serde::{Deserialize, Serialize};
-use diesel::sql_types::{Numeric, Nullable, Inet, Jsonb};
-use diesel::pg::Pg;
-use diesel::deserialize::FromSql;
-use diesel::serialize::ToSql;
 use bigdecimal::BigDecimal;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
-use std::net::IpAddr;
 
 pub mod schema;
 
@@ -109,39 +103,8 @@ impl std::fmt::Display for ProjectStatus {
 
 // ProjectStatus is converted to/from String via Display trait, stored as Text in database
 
-/// User role enumeration
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum UserRole {
-    Admin,
-    User,
-    Viewer,
-    Manager,
-}
-
-impl std::str::FromStr for UserRole {
-    type Err = String;
-    
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.to_lowercase().as_str() {
-            "admin" => Ok(UserRole::Admin),
-            "user" => Ok(UserRole::User),
-            "viewer" => Ok(UserRole::Viewer),
-            "manager" => Ok(UserRole::Manager),
-            _ => Err(format!("Invalid role: {}", s)),
-        }
-    }
-}
-
-impl std::fmt::Display for UserRole {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            UserRole::Admin => write!(f, "admin"),
-            UserRole::User => write!(f, "user"),
-            UserRole::Viewer => write!(f, "viewer"),
-            UserRole::Manager => write!(f, "manager"),
-        }
-    }
-}
+// UserRole is imported from services::auth to avoid duplication
+pub use crate::services::auth::UserRole;
 
 /// User model
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]

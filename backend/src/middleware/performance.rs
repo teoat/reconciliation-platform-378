@@ -119,7 +119,7 @@ impl PerformanceMiddleware {
         Self { config }
     }
     
-    pub fn with_performance_service(performance_service: Arc<PerformanceService>) -> Self {
+    pub fn with_performance_service(_performance_service: Arc<PerformanceService>) -> Self {
         Self {
             config: PerformanceMonitoringConfig::default(),
         }

@@ -4,16 +4,17 @@ use actix_web::{
 };
 use futures::future::{LocalBoxFuture, ok, Ready};
 use std::rc::Rc;
-use crate::services::advanced_cache::{AdvancedCacheService, CacheStrategy};
+use crate::services::cache::MultiLevelCache;
+use std::sync::Arc;
 use std::time::Duration;
 
 pub struct CacheMiddleware<S> {
     service: Rc<S>,
-    cache_service: AdvancedCacheService,
+    cache_service: Arc<MultiLevelCache>,
 }
 
 impl<S> CacheMiddleware<S> {
-    pub fn new(service: Rc<S>, cache_service: AdvancedCacheService) -> Self {
+    pub fn new(service: Rc<S>, cache_service: Arc<MultiLevelCache>) -> Self {
         Self {
             service,
             cache_service,
@@ -37,8 +38,8 @@ where
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        let cache_service = AdvancedCacheService::new("redis://localhost:6379").expect("Failed to create cache service");
-        ok(CacheMiddleware::new(Rc::new(service), cache_service))
+        let cache_service = MultiLevelCache::new("redis://localhost:6379").expect("Failed to create cache service");
+        ok(CacheMiddleware::new(Rc::new(service), Arc::new(cache_service)))
     }
 }
 
@@ -57,7 +58,7 @@ where
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let service = self.service.clone();
-        let cache_service = self.cache_service.clone();
+        let cache_service = Arc::clone(&self.cache_service);
 
         Box::pin(async move {
             let path = req.path().to_string();
@@ -82,7 +83,7 @@ where
                 let (req, res) = response.into_parts();
                 let bytes = actix_web::body::to_bytes(res.into_body()).await.unwrap();
                 if let Ok(body) = serde_json::from_slice::<serde_json::Value>(&bytes) {
-                    let _ = cache_service.set(&cache_key, &body, CacheStrategy::TTL(Duration::from_secs(60))).await;
+                    let _ = cache_service.set(&cache_key, &body, Some(Duration::from_secs(60))).await;
                 }
                 let res = HttpResponse::Ok().body(bytes);
                 return Ok(ServiceResponse::new(req, res.map_into_boxed_body()));

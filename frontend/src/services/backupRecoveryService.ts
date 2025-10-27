@@ -1,7 +1,7 @@
 // Data Backup & Recovery Service
 // Implements comprehensive backup and disaster recovery with automated scheduling, encryption, and restoration
 
-import { APP_CONFIG } from '../constants'
+import { APP_CONFIG } from '../config/AppConfig'
 
 // Backup configuration
 interface BackupConfig {

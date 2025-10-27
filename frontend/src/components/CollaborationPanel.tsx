@@ -18,7 +18,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
-import { useRealtimeCollaboration } from '../hooks/useApi';
+import { useRealtimeCollaboration } from '../hooks/useWebSocketIntegration';
 
 interface LiveComment {
   id: string;

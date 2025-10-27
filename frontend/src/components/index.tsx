@@ -2,36 +2,9 @@
 // CENTRALIZED COMPONENTS - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
-import React, { useState, useEffect, useCallback, useRef, useMemo, FC } from 'react'
-import { 
-  useLocalStorage, 
-  useSessionStorage, 
-  useToggle, 
-  useCounter, 
-  useArray, 
-  useObject,
-  useDebounce,
-  useThrottle,
-  useInterval,
-  useTimeout,
-  usePrevious,
-  useIsFirstRender,
-  useIsMounted,
-  useClickOutside,
-  useFocus,
-  useHover,
-  useAsync,
-  useFetch,
-  useMutation,
-  useForm,
-  useWindowSize,
-  useScrollPosition,
-  useOnlineStatus,
-  useMediaQuery,
-  useIsMobile,
-  useIsTablet,
-  useIsDesktop
-} from '../hooks'
+import React, { FC } from 'react'
+// Hook imports removed - not used in this export file
+// Individual components can import hooks as needed
 
 // ============================================================================
 // UI COMPONENTS
@@ -1068,7 +1041,7 @@ export const Pagination: React.FC<PaginationProps> = ({
 // ============================================================================
 
 // Export existing components
-export { default as Navigation } from './Navigation'
+export { default as UnifiedNavigation } from './layout/UnifiedNavigation'
 export { default as FrenlyAI } from './FrenlyAI'
 export { DataProvider } from './DataProvider'
 export { FrenlyProvider } from './FrenlyProvider'
@@ -1077,22 +1050,16 @@ export { default as AdvancedFilters } from './AdvancedFilters'
 export { default as ReconciliationAnalytics } from './ReconciliationAnalytics'
 export { default as DataAnalysis } from './DataAnalysis'
 export { default as EnhancedIngestionPage } from './EnhancedIngestionPage'
-export { default as SynchronizedReconciliationPage } from './SynchronizedReconciliationPage'
+// SynchronizedReconciliationPage removed - use ReconciliationInterface instead
 export { default as IntegrationSettings } from './IntegrationSettings'
-export { default as MobileNavigation } from './MobileNavigation'
+// MobileNavigation removed - using UnifiedNavigation instead
 
+// Context providers moved - use hooks directly or import from individual files
 // Export context providers
-export { 
-  AuthProvider, 
-  ProjectProvider, 
-  DataIngestionProvider, 
-  ReconciliationProvider, 
-  AdjudicationProvider, 
-  VisualizationProvider, 
-  IntegrationProvider 
-} from '../contexts'
+// export { ... } from '../contexts' // Removed - contexts directory may not exist
 
-// Export hooks, utils, and constants
-export * from '../hooks'
-export * from '../utils'
-export * from '../constants'
+// Hook and utility exports - individual files should import directly
+// export * from '../hooks' // Removed - causes circular dependencies
+// export * from '../utils' // Removed - causes circular dependencies
+// Constants moved to config/AppConfig.ts
+// export * from '../constants'

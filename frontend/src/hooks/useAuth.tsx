@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { Navigate } from 'react-router-dom'
 import { apiClient } from '../services/apiClient'
 import { UserResponse, LoginRequest, RegisterRequest } from '../types/backend-aligned'
 
@@ -162,20 +163,21 @@ interface ProtectedRouteProps {
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { isAuthenticated, isLoading } = useAuth()
 
+  // Show loading state while checking auth
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Authenticating...</p>
         </div>
       </div>
     )
   }
 
+  // Redirect to login if not authenticated
   if (!isAuthenticated) {
-    window.location.href = '/login'
-    return null
+    return <Navigate to="/login" replace />
   }
 
   return <>{children}</>

@@ -2,7 +2,7 @@
 // Implements multi-level caching with Redis, browser cache, and memory cache
 
 import React from 'react'
-import { APP_CONFIG } from '../constants'
+import { APP_CONFIG } from '../config/AppConfig'
 
 // Cache configuration
 interface CacheConfig {

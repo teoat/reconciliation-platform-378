@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Activity, 
+  AlertCircle,
   AlertTriangle, 
   BarChart3, 
   Cpu, 
@@ -11,7 +12,6 @@ import {
   Network, 
   Server, 
   TrendingUp, 
-  Users, 
   Zap 
 } from 'lucide-react';
 
@@ -63,6 +63,7 @@ export const MonitoringDashboard: React.FC = () => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [refreshInterval, setRefreshInterval] = useState(5000);
 
   const fetchMetrics = useCallback(async () => {
@@ -71,9 +72,13 @@ export const MonitoringDashboard: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setMetrics(data);
+      } else {
+        throw new Error(`Failed to fetch metrics: ${response.status}`);
       }
     } catch (error) {
-      console.error('Failed to fetch metrics:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch metrics';
+      console.error(errorMessage);
+      setError(errorMessage);
     }
   }, []);
 
@@ -83,9 +88,13 @@ export const MonitoringDashboard: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setAlerts(data);
+      } else {
+        throw new Error(`Failed to fetch alerts: ${response.status}`);
       }
     } catch (error) {
-      console.error('Failed to fetch alerts:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch alerts';
+      console.error(errorMessage);
+      setError(errorMessage);
     }
   }, []);
 
@@ -95,14 +104,19 @@ export const MonitoringDashboard: React.FC = () => {
       if (response.ok) {
         const data = await response.json();
         setLogs(data);
+      } else {
+        throw new Error(`Failed to fetch logs: ${response.status}`);
       }
     } catch (error) {
-      console.error('Failed to fetch logs:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to fetch logs';
+      console.error(errorMessage);
+      setError(errorMessage);
     }
   }, []);
 
   const fetchAllData = useCallback(async () => {
     setIsLoading(true);
+    setError(null);
     await Promise.all([fetchMetrics(), fetchAlerts(), fetchLogs()]);
     setIsLoading(false);
   }, [fetchMetrics, fetchAlerts, fetchLogs]);
@@ -155,6 +169,26 @@ export const MonitoringDashboard: React.FC = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center">
+            <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+            <span className="text-red-700 font-medium">Error Loading Monitoring Data</span>
+          </div>
+          <p className="text-red-600 mt-2">{error}</p>
+          <button
+            onClick={fetchAllData}
+            className="mt-4 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -165,6 +199,7 @@ export const MonitoringDashboard: React.FC = () => {
             value={refreshInterval}
             onChange={(e) => setRefreshInterval(Number(e.target.value))}
             className="px-3 py-1 border border-gray-300 rounded-md text-sm"
+            aria-label="Refresh interval"
           >
             <option value={1000}>1 second</option>
             <option value={5000}>5 seconds</option>
@@ -591,6 +626,7 @@ export const LogViewer: React.FC = () => {
           value={filter}
           onChange={(e) => setFilter(e.target.value)}
           className="px-3 py-2 border border-gray-300 rounded-md"
+          aria-label="Log level filter"
         >
           <option value="all">All Levels</option>
           <option value="trace">Trace</option>

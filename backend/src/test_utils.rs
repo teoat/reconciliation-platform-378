@@ -351,38 +351,29 @@ pub mod http {
     use crate::config::Config;
     use crate::database::Database;
     
-    /// Create test app
-    pub async fn create_test_app() -> impl actix_web::dev::Service<
-        actix_http::Request,
-        Response = actix_web::dev::ServiceResponse<actix_web::body::BoxBody>,
-        Error = actix_web::Error,
-    > {
+    /// Create test app  
+    pub async fn create_test_app() -> App {
         let config = Config::from_env().expect("Failed to load test config");
         let db = Database::new(&config.database_url)
             .await
             .expect("Failed to create test database");
         
-        test::init_service(
-            App::new()
-                .app_data(web::Data::new(db))
-                .app_data(web::Data::new(config))
-                .configure(configure_routes)
-        ).await
+        App::new()
+            .app_data(web::Data::new(db))
+            .app_data(web::Data::new(config))
+            .configure(configure_routes)
     }
     
-    /// Create test request
-    pub fn create_test_request(method: &str, uri: &str) -> actix_http::Request {
-        test::TestRequest::with_uri(uri)
-            .method(method)
-            .to_request()
+    /// Create test request (simplified for unit tests)
+    pub fn create_test_request(method: &str, uri: &str) -> test::TestRequest {
+        test::TestRequest::with_uri(uri).method(method)
     }
     
-    /// Create authenticated test request
-    pub fn create_authenticated_request(method: &str, uri: &str, token: &str) -> actix_http::Request {
+    /// Create authenticated test request (simplified for unit tests)
+    pub fn create_authenticated_request(method: &str, uri: &str, token: &str) -> test::TestRequest {
         test::TestRequest::with_uri(uri)
             .method(method)
             .insert_header(("Authorization", format!("Bearer {}", token)))
-            .to_request()
     }
     
     /// Assert response status

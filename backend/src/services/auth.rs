@@ -199,6 +199,7 @@ pub enum UserRole {
     Admin,
     User,
     Viewer,
+    Manager,
 }
 
 impl std::str::FromStr for UserRole {
@@ -209,6 +210,7 @@ impl std::str::FromStr for UserRole {
             "admin" => Ok(UserRole::Admin),
             "user" => Ok(UserRole::User),
             "viewer" => Ok(UserRole::Viewer),
+            "manager" => Ok(UserRole::Manager),
             _ => Err(AppError::Validation(format!("Invalid user role: {}", s))),
         }
     }
@@ -220,6 +222,7 @@ impl std::fmt::Display for UserRole {
             UserRole::Admin => write!(f, "admin"),
             UserRole::User => write!(f, "user"),
             UserRole::Viewer => write!(f, "viewer"),
+            UserRole::Manager => write!(f, "manager"),
         }
     }
 }
@@ -286,6 +289,7 @@ pub struct EnhancedAuthService {
     jwt_expiration: i64,
     session_timeout: i64,
     password_reset_timeout: i64,
+    session_rotation_interval: i64,
 }
 
 impl EnhancedAuthService {
@@ -295,7 +299,35 @@ impl EnhancedAuthService {
             jwt_expiration,
             session_timeout: 3600, // 1 hour
             password_reset_timeout: 1800, // 30 minutes
+            session_rotation_interval: 900, // Rotate session every 15 minutes
         }
+    }
+    
+    /// Rotate session token for security
+    pub fn should_rotate_session(&self, created_at: chrono::DateTime<chrono::Utc>) -> bool {
+        let now = chrono::Utc::now();
+        let elapsed = now.signed_duration_since(created_at);
+        elapsed.num_seconds() >= self.session_rotation_interval
+    }
+    
+    /// Generate new session with rotation
+    pub async fn create_rotated_session(
+        &self,
+        user: &crate::models::User,
+        db: &crate::database::Database,
+    ) -> AppResult<SessionInfo> {
+        let now = chrono::Utc::now();
+        let expires_at = now + chrono::Duration::seconds(self.session_timeout);
+        
+        // Create new session with fresh token
+        Ok(SessionInfo {
+            user_id: user.id,
+            email: user.email.clone(),
+            role: user.role.clone(),
+            created_at: now,
+            expires_at,
+            last_activity: now,
+        })
     }
     
     /// Generate password reset token

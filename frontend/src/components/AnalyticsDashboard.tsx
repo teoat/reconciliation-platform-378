@@ -490,7 +490,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 </div>
               </div>
             </div>
-            </div>
           </div>
         </div>
 

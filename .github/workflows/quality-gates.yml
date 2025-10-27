@@ -1,0 +1,27 @@
+name: Quality Gates
+
+on: [push, pull_request]
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Rust setup
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      
+      - name: Clippy
+        run: cargo clippy -- -D warnings
+      
+      - name: Coverage
+        run: cargo tarpaulin --out Html
+      
+      - name: Security audit
+        run: cargo audit
+      
+      - name: Benchmarks
+        run: cargo bench
+

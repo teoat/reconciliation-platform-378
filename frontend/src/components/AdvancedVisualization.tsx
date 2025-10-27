@@ -108,7 +108,7 @@ import {
   MapPin, 
   Settings as SettingsIcon
 } from 'lucide-react'
-import { CHART_CONFIG } from '../constants'
+import { CHART_CONFIG } from '../config/AppConfig'
 import { useData } from './DataProvider'
 
 // Advanced Visualization Interfaces

@@ -5,10 +5,14 @@
 use actix_multipart::Multipart;
 use futures::{StreamExt, TryStreamExt};
 use uuid::Uuid;
-use std::path::Path;
-use std::fs;
+use std::path::{Path, PathBuf};
+use std::fs::{self, File};
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::{Duration, Instant};
+use tokio::sync::RwLock;
 use sha2::{Sha256, Digest};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde::{Serialize, Deserialize};
 use crate::models::JsonValue;
 
@@ -75,6 +79,90 @@ pub struct ProcessingResult {
     pub record_count: Option<i32>,
     pub processing_time: f64,
     pub errors: Vec<String>,
+}
+
+// ============================================================================
+// OPTIMIZED FILE PROCESSING (Merged from optimized_file_processing.rs)
+// ============================================================================
+
+/// File processing configuration
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileProcessingConfig {
+    pub max_file_size: u64,
+    pub chunk_size: usize,
+    pub temp_directory: PathBuf,
+    pub supported_formats: Vec<FileFormat>,
+    pub compression_enabled: bool,
+    pub encryption_enabled: bool,
+    pub parallel_processing: bool,
+    pub max_workers: usize,
+}
+
+/// Supported file formats
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum FileFormat {
+    Csv,
+    Excel,
+    Json,
+    Xml,
+    Parquet,
+    Avro,
+    Orc,
+}
+
+/// File processing status
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum ProcessingStatus {
+    Pending,
+    Processing,
+    Completed,
+    Failed,
+    Cancelled,
+}
+
+/// File processing job
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct FileProcessingJob {
+    pub id: Uuid,
+    pub file_id: Uuid,
+    pub file_name: String,
+    pub file_size: u64,
+    pub file_format: FileFormat,
+    pub status: ProcessingStatus,
+    pub progress: f64,
+    pub error_message: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub started_at: Option<DateTime<Utc>>,
+    pub completed_at: Option<DateTime<Utc>>,
+    pub metadata: HashMap<String, serde_json::Value>,
+    pub result_summary: Option<ProcessingResultSummary>,
+}
+
+/// Processing result summary
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ProcessingResultSummary {
+    pub total_rows: u64,
+    pub valid_rows: u64,
+    pub invalid_rows: u64,
+    pub processing_time_ms: u64,
+    pub memory_usage_mb: f64,
+    pub output_file_path: Option<String>,
+    pub validation_errors: Vec<ValidationError>,
+}
+
+/// Validation error
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ValidationError {
+    pub row: usize,
+    pub column: String,
+    pub error_type: String,
+    pub message: String,
+}
+
+/// Streaming file processor
+pub struct StreamingFileProcessor {
+    config: FileProcessingConfig,
+    active_jobs: Arc<RwLock<HashMap<Uuid, FileProcessingJob>>>,
 }
 
 impl FileService {

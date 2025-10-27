@@ -3,7 +3,7 @@
 
 import { LogLevel } from '../types'
 import { ErrorType, ErrorSeverity } from '../utils/errorHandler'
-import { APP_CONFIG } from '../constants'
+import { APP_CONFIG } from '../config/AppConfig'
 
 // Log entry interface
 export interface LogEntry {

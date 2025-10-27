@@ -6,6 +6,7 @@ use actix_web::{web, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use std::env;
 
 use crate::database::Database;
 use crate::errors::AppError;
@@ -1131,15 +1132,7 @@ pub async fn get_queued_reconciliation_jobs(
 
 // System handlers
 
-/// Health check endpoint
-pub async fn health_check() -> Result<HttpResponse, AppError> {
-    Ok(HttpResponse::Ok().json(serde_json::json!({
-        "status": "healthy",
-        "timestamp": chrono::Utc::now(),
-        "version": env!("CARGO_PKG_VERSION")
-    })))
-}
-
+/// System status endpoint (legacy - use /health instead)
 pub async fn system_status() -> Result<HttpResponse, AppError> {
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "status": "operational",
@@ -1198,4 +1191,120 @@ pub struct FileQueryParams {
     pub status: Option<String>,
     pub page: Option<i32>,
     pub per_page: Option<i32>,
+}
+
+// ============================================================================
+// HEALTH CHECK ENDPOINTS
+// ============================================================================
+
+/// Health check response
+#[derive(Debug, Serialize)]
+pub struct HealthResponse {
+    pub status: String,
+    pub timestamp: String,
+    pub version: String,
+}
+
+/// Readiness check response
+#[derive(Debug, Serialize)]
+pub struct ReadinessResponse {
+    pub status: String,
+    pub checks: SystemChecks,
+}
+
+/// System health checks
+#[derive(Debug, Serialize)]
+pub struct SystemChecks {
+    pub database: String,
+    pub cache: String,
+    pub memory: String,
+}
+
+/// Basic health check endpoint
+/// GET /health
+/// Returns: { "status": "healthy", "timestamp": "...", "version": "..." }
+pub async fn health_check() -> Result<HttpResponse, AppError> {
+    Ok(HttpResponse::Ok().json(HealthResponse {
+        status: "healthy".to_string(),
+        timestamp: Utc::now().to_rfc3339(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+    }))
+}
+
+/// Readiness check endpoint
+/// GET /ready
+/// Checks if the service is ready to accept traffic
+pub async fn readiness_check(data: web::Data<Database>) -> Result<HttpResponse, AppError> {
+    let mut checks = SystemChecks {
+        database: "unknown".to_string(),
+        cache: "unknown".to_string(),
+        memory: "ok".to_string(),
+    };
+    
+    // Check database connectivity
+    match data.get_connection() {
+        Ok(_) => checks.database = "ok".to_string(),
+        Err(_) => checks.database = "down".to_string(),
+    }
+    
+    // Check memory (simple check)
+    let mem_usage = get_memory_usage();
+    if mem_usage > 90.0 {
+        checks.memory = "critical".to_string();
+    } else if mem_usage > 80.0 {
+        checks.memory = "warning".to_string();
+    } else {
+        checks.memory = "ok".to_string();
+    }
+    
+    let status = if checks.database == "ok" && checks.memory != "critical" {
+        "ready"
+    } else {
+        "not_ready"
+    };
+    
+    let status_code = if status == "ready" {
+        actix_web::http::StatusCode::OK
+    } else {
+        actix_web::http::StatusCode::SERVICE_UNAVAILABLE
+    };
+    
+    Ok(HttpResponse::build(status_code).json(ReadinessResponse {
+        status: status.to_string(),
+        checks,
+    }))
+}
+
+/// Metrics endpoint for Prometheus
+/// GET /metrics
+/// Returns Prometheus-formatted metrics
+pub async fn metrics(data: web::Data<Database>) -> Result<HttpResponse, AppError> {
+    let stats = data.get_pool_stats();
+    
+    // Simple metrics response (can be enhanced with prometheus crate)
+    let metrics = format!(
+        "# HELP db_connections_active Active database connections
+# TYPE db_connections_active gauge
+db_connections_active {}\n
+# HELP db_connections_idle Idle database connections
+# TYPE db_connections_idle gauge
+db_connections_idle {}\n
+# HELP db_connections_total Total database connections
+# TYPE db_connections_total gauge
+db_connections_total {}\n",
+        stats.active,
+        stats.idle,
+        stats.size
+    );
+    
+    Ok(HttpResponse::Ok()
+        .content_type("text/plain; version=0.0.4")
+        .body(metrics))
+}
+
+/// Helper function to get memory usage percentage
+fn get_memory_usage() -> f64 {
+    // Placeholder for actual memory monitoring
+    // In production, use system-level APIs like sysinfo crate
+    45.0 // Mock value
 }

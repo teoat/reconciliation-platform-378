@@ -7,7 +7,7 @@ import { ReduxProvider } from './store/ReduxProvider'
 import { ErrorBoundary } from './components/ui/ErrorBoundary'
 import NotificationSystem from './store/NotificationSystem'
 import { WebSocketProvider } from './services/WebSocketProvider'
-import ResponsiveNavigation from './components/layout/ResponsiveNavigation'
+import UnifiedNavigation from './components/layout/UnifiedNavigation'
 import AuthPage from './pages/AuthPage'
 import ReconciliationPage from './pages/ReconciliationPage'
 import AnalyticsDashboard from './components/AnalyticsDashboard'
@@ -24,7 +24,7 @@ interface AppLayoutProps {
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
   return (
     <div className="min-h-screen bg-gray-50">
-      <ResponsiveNavigation />
+      <UnifiedNavigation />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {children}
       </div>
