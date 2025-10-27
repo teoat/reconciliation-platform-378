@@ -370,7 +370,7 @@ where
 
         Box::pin(async move {
             // Extract request information
-            let ip_address = req.connection_info().remote_addr().unwrap_or("unknown").to_string();
+            let ip_address = req.connection_info().peer_addr().unwrap_or("unknown").to_string();
             let user_agent = req.headers().get("User-Agent")
                 .and_then(|h| h.to_str().ok())
                 .unwrap_or("unknown")

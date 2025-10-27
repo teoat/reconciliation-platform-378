@@ -161,7 +161,7 @@ where
             // Extract request information
             let method = req.method().to_string();
             let path = req.path().to_string();
-            let ip_address = req.connection_info().remote_addr().unwrap_or("unknown").to_string();
+            let ip_address = req.connection_info().peer_addr().unwrap_or("unknown").to_string();
             let user_agent = req.headers().get("User-Agent")
                 .and_then(|h| h.to_str().ok())
                 .map(|s| s.to_string());

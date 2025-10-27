@@ -86,10 +86,10 @@ async fn get_analytics() -> Result<HttpResponse> {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     println!("🚀 Starting 378 Reconciliation Backend Server...");
-    println!("📊 Health check: http://localhost:8080/api/health");
-    println!("📁 Projects: http://localhost:8080/api/projects");
-    println!("⚙️  Jobs: http://localhost:8080/api/reconciliation-jobs");
-    println!("📈 Analytics: http://localhost:8080/api/analytics");
+    println!("📊 Health check: http://localhost:2000/api/health");
+    println!("📁 Projects: http://localhost:2000/api/projects");
+    println!("⚙️  Jobs: http://localhost:2000/api/reconciliation-jobs");
+    println!("📈 Analytics: http://localhost:2000/api/analytics");
     
     HttpServer::new(|| {
         App::new()

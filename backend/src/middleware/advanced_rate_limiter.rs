@@ -108,15 +108,15 @@ impl AdvancedRateLimiter {
                 .unwrap()
                 .as_secs();
             
-            let window_start = now - window;
+            let _window_start = now - window;
             let redis_key = format!("ratelimit:{}", key);
 
-            // reduce multi-key
-            let cmd = redis::cmd("MULTI");
-            let _ = cmd.query_async::<_, ()>(&mut conn).await;
+            // Use Redis MULTI/EXEC for atomic operations
+            let _cmd = redis::cmd("MULTI");
+            let _ = _cmd.query_async::<_, ()>(&mut conn).await;
 
             // Get current count
-            let count: i32 = redis::cmd("GET")
+            let _count: i32 = redis::cmd("GET")
                 .arg(&redis_key)
                 .query_async(&mut conn)
                 .await
@@ -125,7 +125,7 @@ impl AdvancedRateLimiter {
             // Increment count
             redis::cmd("INCR")
                 .arg(&redis_key)
-                .query_async(&mut conn)
+                .query_async::<_, ()>(&mut conn)
                 .await
                 .map_err(|e| AppError::Internal(format!("Redis INCR failed: {}", e)))?;
 
@@ -133,13 +133,13 @@ impl AdvancedRateLimiter {
             redis::cmd("EXPIRE")
                 .arg(&redis_key)
                 .arg(window as usize)
-                .query_async(&mut conn)
+                .query_async::<_, ()>(&mut conn)
                 .await
                 .map_err(|e| AppError::Internal(format!("Redis EXPIRE failed: {}", e)))?;
 
             // Execute
             redis::cmd("EXEC")
-                .query_async(&mut conn)
+                .query_async::<_, ()>(&mut conn)
                 .await
                 .map_err(|e| AppError::Internal(format!("Redis EXEC failed: {}", e)))?;
 

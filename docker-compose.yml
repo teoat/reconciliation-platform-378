@@ -85,6 +85,7 @@ services:
       REDIS_URL: redis://redis:6379
       HOST: 0.0.0.0
       PORT: 2000
+      BACKEND_PORT: 2000
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:1000}

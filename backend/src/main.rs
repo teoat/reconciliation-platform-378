@@ -43,9 +43,15 @@ async fn main() -> std::io::Result<()> {
     let redis_url = env::var("REDIS_URL")
         .unwrap_or_else(|_| "redis://localhost:6379".to_string());
 
-    println!("🚀 Starting 378 Reconciliation Platform Backend");
-    println!("📊 Database URL: {}", database_url);
-    println!("🔴 Redis URL: {}", redis_url);
+    // Structured logging initialization
+    if env::var("RUST_LOG").is_err() {
+        env::set_var("RUST_LOG", "info");
+    }
+    env_logger::init();
+    
+    log::info!("🚀 Starting 378 Reconciliation Platform Backend");
+    log::info!("📊 Database URL: {}", database_url);
+    log::info!("🔴 Redis URL: {}", redis_url);
 
     // Create config first
     let config = Config {
@@ -80,7 +86,7 @@ async fn main() -> std::io::Result<()> {
     let security_config = SecurityMiddlewareConfig {
         enable_cors: true,
         enable_csrf_protection: false, // Disable for now (can enable later)
-        enable_rate_limiting: false,    // Add rate limiter separately if needed
+        enable_rate_limiting: false,    // Using AdvancedRateLimiter separately
         enable_input_validation: true,
         enable_security_headers: true,
         rate_limit_requests: 100,
@@ -90,9 +96,19 @@ async fn main() -> std::io::Result<()> {
         enable_hsts: true,
         enable_csp: true,
     };
+    
+    // Configure advanced rate limiting
+    let rate_limit_config = RateLimitConfig {
+        requests_per_minute: 100,
+        burst_size: 20,
+        window_size: Duration::from_secs(60),
+        cleanup_interval: Duration::from_secs(300),
+    };
 
     HttpServer::new(move || {
         App::new()
+            // Rate limiting (applied globally first for protection)
+            .wrap(AdvancedRateLimiter::new(rate_limit_config.clone()))
             // Security middleware (applied globally to all routes)
             .wrap(SecurityMiddleware::new(security_config.clone()))
             .wrap(Logger::default())
@@ -141,7 +157,7 @@ async fn main() -> std::io::Result<()> {
             )
             .route("/", web::get().to(index))
     })
-    .bind("0.0.0.0:8080")?
+    .bind("0.0.0.0:2000")?
     .run()
     .await
 }
