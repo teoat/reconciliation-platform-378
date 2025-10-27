@@ -139,7 +139,7 @@ pub struct OptimizationStats {
 }
 
 impl MobileOptimizationService {
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         let mut service = Self {
             pwa_config: Arc::new(RwLock::new(PWAConfig {
                 name: "378 Reconciliation Platform".to_string(),
@@ -198,13 +198,13 @@ impl MobileOptimizationService {
             optimization_stats: Arc::new(RwLock::new(OptimizationStats::default())),
         };
         
-        service.initialize_runtime_cache();
+        service.initialize_runtime_cache().await;
         service
     }
 
     /// Initialize runtime cache configuration
-    fn initialize_runtime_cache(&mut self) {
-        let mut config = self.service_worker_config.write().unwrap();
+    async fn initialize_runtime_cache(&mut self) {
+        let mut config = self.service_worker_config.write().await;
         config.runtime_cache.insert(
             "api".to_string(),
             RuntimeCacheConfig {
@@ -557,7 +557,47 @@ impl MobileOptimizationService {
 
 impl Default for MobileOptimizationService {
     fn default() -> Self {
-        Self::new()
+        // Create a synchronous version for Default
+        Self {
+            pwa_config: Arc::new(RwLock::new(PWAConfig {
+                name: "378 Reconciliation Platform".to_string(),
+                short_name: "378 Recon".to_string(),
+                description: "Financial reconciliation platform".to_string(),
+                start_url: "/".to_string(),
+                display: DisplayMode::Standalone,
+                background_color: "#ffffff".to_string(),
+                theme_color: "#3b82f6".to_string(),
+                icons: vec![],
+                categories: vec!["finance".to_string(), "business".to_string()],
+                lang: "en".to_string(),
+                scope: "/".to_string(),
+                orientation: Orientation::Portrait,
+            })),
+            service_worker_config: Arc::new(RwLock::new(ServiceWorkerConfig {
+                cache_strategy: CacheStrategy::CacheFirst,
+                offline_fallback: "/offline.html".to_string(),
+                precache_resources: vec![],
+                runtime_cache: HashMap::new(),
+                update_check_interval: 300, // 5 minutes
+            })),
+            offline_config: Arc::new(RwLock::new(OfflineConfig {
+                enabled: true,
+                sync_strategy: SyncStrategy::Immediate,
+                conflict_resolution: ConflictResolution::ServerWins,
+                max_offline_storage_mb: 50,
+                sync_interval_seconds: 300,
+            })),
+            mobile_ui_config: Arc::new(RwLock::new(MobileUIConfig {
+                touch_targets_min_size: 44,
+                gesture_support: true,
+                haptic_feedback: true,
+                pull_to_refresh: true,
+                infinite_scroll: true,
+                bottom_navigation: true,
+                swipe_gestures: true,
+            })),
+            optimization_stats: Arc::new(RwLock::new(OptimizationStats::default())),
+        }
     }
 }
 

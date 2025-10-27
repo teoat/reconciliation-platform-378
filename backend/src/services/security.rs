@@ -97,6 +97,13 @@ pub struct RateLimitEntry {
     pub blocked_until: Option<SystemTime>,
 }
 
+/// CSRF token entry
+#[derive(Debug, Clone)]
+pub struct CsrfToken {
+    pub user_id: Uuid,
+    pub expires_at: u64,
+}
+
 // Security service
 pub struct SecurityService {
     pub config: SecurityConfig,
@@ -105,6 +112,7 @@ pub struct SecurityService {
     pub security_events: Arc<RwLock<Vec<SecurityEvent>>>,
     pub blocked_ips: Arc<RwLock<HashMap<String, SystemTime>>>,
     pub active_sessions: Arc<RwLock<HashMap<String, SessionInfo>>>,
+    pub csrf_tokens: Arc<RwLock<HashMap<String, CsrfToken>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -126,6 +134,7 @@ impl SecurityService {
             security_events: Arc::new(RwLock::new(Vec::new())),
             blocked_ips: Arc::new(RwLock::new(HashMap::new())),
             active_sessions: Arc::new(RwLock::new(HashMap::new())),
+            csrf_tokens: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -453,6 +462,122 @@ pub struct ComplianceReport {
     pub pci_compliant: bool,
     pub issues: Vec<String>,
     pub recommendations: Vec<String>,
+}
+
+    /// Generate CSRF token
+    pub async fn generate_csrf_token(&self, user_id: Uuid) -> Result<String, String> {
+        if !self.config.enable_csrf {
+            return Ok("csrf_disabled".to_string());
+        }
+        
+        let token = Uuid::new_v4().to_string();
+        let expires_at = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs() + self.config.session_timeout.as_secs();
+        
+        let mut csrf_tokens = self.csrf_tokens.write().await;
+        csrf_tokens.insert(token.clone(), CsrfToken {
+            user_id,
+            expires_at,
+        });
+        
+        Ok(token)
+    }
+    
+    /// Validate CSRF token
+    pub async fn validate_csrf_token(&self, token: &str, user_id: Uuid) -> Result<bool, String> {
+        if !self.config.enable_csrf {
+            return Ok(true);
+        }
+        
+        let csrf_tokens = self.csrf_tokens.read().await;
+        
+        if let Some(csrf_token) = csrf_tokens.get(token) {
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_secs();
+            
+            if csrf_token.user_id == user_id && csrf_token.expires_at > now {
+                return Ok(true);
+            }
+        }
+        
+        Err("Invalid or expired CSRF token".to_string())
+    }
+    
+    /// Sanitize input to prevent XSS and injection attacks
+    pub fn sanitize_input(&self, input: &str) -> String {
+        input
+            .replace('<', "&lt;")
+            .replace('>', "&gt;")
+            .replace('"', "&quot;")
+            .replace('\'', "&#x27;")
+            .replace('&', "&amp;")
+            .replace('\n', "\\n")
+            .replace('\r', "\\r")
+            .replace('\t', "\\t")
+    }
+    
+    /// Validate input for SQL injection patterns
+    pub fn validate_input_for_sql_injection(&self, input: &str) -> Result<(), String> {
+        let dangerous_patterns = [
+            "'", "\"", ";", "--", "/*", "*/", "xp_", "sp_", "exec", "execute",
+            "select", "insert", "update", "delete", "drop", "create", "alter",
+            "union", "script", "javascript:", "vbscript:", "onload", "onerror"
+        ];
+        
+        let input_lower = input.to_lowercase();
+        
+        for pattern in &dangerous_patterns {
+            if input_lower.contains(pattern) {
+                return Err(format!("Potentially dangerous input detected: {}", pattern));
+            }
+        }
+        
+        Ok(())
+    }
+    
+    /// Validate file upload for security
+    pub fn validate_file_upload(&self, filename: &str, content_type: &str, size: u64) -> Result<(), String> {
+        // Check file extension
+        let allowed_extensions = ["csv", "json", "xlsx", "txt", "pdf"];
+        let extension = filename.split('.').last().unwrap_or("").to_lowercase();
+        
+        if !allowed_extensions.contains(&extension.as_str()) {
+            return Err("File type not allowed".to_string());
+        }
+        
+        // Check content type
+        let allowed_types = [
+            "text/csv", "application/json", "application/vnd.ms-excel",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "text/plain", "application/pdf"
+        ];
+        
+        if !allowed_types.contains(&content_type) {
+            return Err("Content type not allowed".to_string());
+        }
+        
+        // Check file size (10MB limit)
+        if size > 10 * 1024 * 1024 {
+            return Err("File too large".to_string());
+        }
+        
+        Ok(())
+    }
+    
+    /// Clean up expired CSRF tokens
+    pub async fn cleanup_expired_csrf_tokens(&self) {
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs();
+        
+        let mut csrf_tokens = self.csrf_tokens.write().await;
+        csrf_tokens.retain(|_, token| token.expires_at > now);
+    }
 }
 
 impl Default for SecurityService {

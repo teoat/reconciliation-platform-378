@@ -3,7 +3,8 @@ import { useState, useEffect } from 'react'
 interface User {
   id: string
   email: string
-  name: string
+  first_name: string
+  last_name: string
   role: string
 }
 
@@ -45,10 +46,12 @@ export const useAuth = (): UseAuthReturn => {
     try {
       // This would normally make an API call
       // For now, simulate a login
+      const nameParts = email.split('@')[0].split('.')
       const mockUser: User = {
         id: '1',
         email,
-        name: email.split('@')[0],
+        first_name: nameParts[0] || 'John',
+        last_name: nameParts[1] || 'Doe',
         role: 'admin'
       }
 

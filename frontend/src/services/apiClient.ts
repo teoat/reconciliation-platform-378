@@ -2,19 +2,28 @@
 // UNIFIED API CLIENT - BACKEND INTEGRATION
 // ============================================================================
 
-import { 
-  User, UserResponse, CreateUserRequest, UpdateUserRequest,
-  Project, ProjectResponse, CreateProjectRequest, UpdateProjectRequest, ProjectListResponse,
-  ReconciliationJob, CreateReconciliationJobRequest, ReconciliationJobStatus, ReconciliationResultDetail,
-  FileInfo, FileUploadRequest, ProcessingResult,
-  DashboardData, ProjectStats, UserActivityStats, ReconciliationStats,
-  LoginRequest, RegisterRequest, ChangePasswordRequest, AuthResponse,
-  ApiResponse, SearchQueryParams, UserQueryParams, ProjectQueryParams, ReconciliationResultsQuery,
-  ErrorResponse, ApiError
-} from '../types/backend-aligned'
+import {
+   UserResponse, ProjectResponse, ProjectListResponse,
+   DashboardData, ProjectStats, UserActivityStats, ReconciliationStats,
+   AuthResponse,
+   ErrorResponse, ApiError,
+   FileInfo, ReconciliationResultDetail, ReconciliationJob
+ } from '../types/backend-aligned'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api'
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws'
+const API_BASE_URL = import.meta.env?.VITE_API_URL || 'http://localhost:8080/api'
+const WS_URL = import.meta.env?.VITE_WS_URL || 'ws://localhost:8080/ws'
+
+// ============================================================================
+// BACKEND RESPONSE TYPES
+// ============================================================================
+
+// Re-export types from backend-aligned for consistency
+export type BackendUser = UserResponse
+export type BackendProject = ProjectResponse
+export type BackendDataSource = FileInfo
+export type BackendReconciliationRecord = ReconciliationResultDetail
+export type BackendReconciliationMatch = ReconciliationResultDetail
+export type BackendReconciliationJob = ReconciliationJob
 
 export interface LoginRequest {
   email: string
@@ -84,18 +93,19 @@ export interface FileUploadResponse {
 }
 
 export interface ApiResponse<T = any> {
-  data?: T
-  message?: string
-  error?: {
-    message: string
-    statusCode: number
-    code?: string
-    details?: any
-    timestamp: string
-    path: string
-    method: string
-  }
-}
+   success?: boolean
+   data?: T
+   message?: string
+   error?: {
+     message: string
+     statusCode: number
+     code?: string
+     details?: any
+     timestamp: string
+     path: string
+     method: string
+   }
+ }
 
 export interface PaginatedResponse<T = any> extends ApiResponse<T[]> {
   pagination: {
@@ -202,12 +212,24 @@ class UnifiedApiClient {
   // ============================================================================
 
   async makeRequest<T>(
-    endpoint: string,
-    options: RequestInit & { timeout?: number; skipAuth?: boolean } = {}
-  ): Promise<ApiResponse<T>> {
-    const { timeout = 30000, skipAuth = false, ...requestOptions } = options
+     endpoint: string,
+     options: RequestInit & { timeout?: number; skipAuth?: boolean; params?: Record<string, any> } = {}
+   ): Promise<ApiResponse<T>> {
+     const { timeout = 30000, skipAuth = false, params, ...requestOptions } = options
 
-    const url = `${this.baseURL}${endpoint}`
+     let url = `${this.baseURL}${endpoint}`
+     if (params) {
+       const searchParams = new URLSearchParams()
+       Object.entries(params).forEach(([key, value]) => {
+         if (value !== undefined && value !== null) {
+           searchParams.append(key, String(value))
+         }
+       })
+       const paramString = searchParams.toString()
+       if (paramString) {
+         url += `?${paramString}`
+       }
+     }
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

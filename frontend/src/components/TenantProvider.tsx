@@ -407,7 +407,7 @@ export const TenantSettings: React.FC = () => {
             value={settings.limits.maxUsers}
             onChange={(e) => setSettings({
               ...settings,
-              limits: { ...settings.limits, maxUsers: parseInt(e.target.value) }
+               limits: { ...settings.limits, maxUsers: parseInt(e.target.value) || 0 }
             })}
           />
         </div>
@@ -420,7 +420,7 @@ export const TenantSettings: React.FC = () => {
             value={settings.limits.maxProjects}
             onChange={(e) => setSettings({
               ...settings,
-              limits: { ...settings.limits, maxProjects: parseInt(e.target.value) }
+               limits: { ...settings.limits, maxProjects: parseInt(e.target.value) || 0 }
             })}
           />
         </div>

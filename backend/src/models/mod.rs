@@ -1,21 +1,39 @@
 //! Database models for the Reconciliation Backend
-//! 
+//!
 //! This module contains Diesel model definitions and database operations.
 
-pub mod schema;
-
 use diesel::prelude::*;
+use diesel::expression::AsExpression;
 use serde::{Deserialize, Serialize};
-use diesel::sql_types::{Jsonb, Numeric};
+use diesel::sql_types::{Numeric, Nullable, Inet, Jsonb};
+use diesel::pg::Pg;
+use diesel::deserialize::FromSql;
+use diesel::serialize::ToSql;
 use bigdecimal::BigDecimal;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use std::net::IpAddr;
+
+pub mod schema;
+
+pub use schema::JsonValue;
 
 use crate::models::schema::*;
 
-// Diesel-compatible types
-pub type JsonValue = serde_json::Value;
+
+
+
+
+// JsonValue trait implementations are handled in schema.rs
+
+impl From<JsonValue> for serde_json::Value {
+    fn from(json_value: JsonValue) -> Self {
+        json_value.0
+    }
+}
+
 pub type NumericValue = BigDecimal;
+
 
 /// Match type enumeration
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -52,12 +70,14 @@ impl std::fmt::Display for MatchType {
 }
 
 /// Project status enumeration
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, diesel::query_builder::QueryId)]
+#[diesel(sql_type = diesel::sql_types::Text)]
 pub enum ProjectStatus {
     Active,
     Inactive,
     Archived,
     Draft,
+    Completed,
 }
 
 impl std::str::FromStr for ProjectStatus {
@@ -69,6 +89,7 @@ impl std::str::FromStr for ProjectStatus {
             "inactive" => Ok(ProjectStatus::Inactive),
             "archived" => Ok(ProjectStatus::Archived),
             "draft" => Ok(ProjectStatus::Draft),
+            "completed" => Ok(ProjectStatus::Completed),
             _ => Err(format!("Invalid project status: {}", s)),
         }
     }
@@ -81,9 +102,12 @@ impl std::fmt::Display for ProjectStatus {
             ProjectStatus::Inactive => write!(f, "inactive"),
             ProjectStatus::Archived => write!(f, "archived"),
             ProjectStatus::Draft => write!(f, "draft"),
+            ProjectStatus::Completed => write!(f, "completed"),
         }
     }
 }
+
+// ProjectStatus is converted to/from String via Display trait, stored as Text in database
 
 /// User role enumeration
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -166,7 +190,7 @@ pub struct Project {
     pub name: String,
     pub description: Option<String>,
     pub owner_id: Uuid,
-    pub settings: Option<serde_json::Value>,
+    pub settings: Option<JsonValue>,
     pub status: String,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
@@ -180,7 +204,7 @@ pub struct NewProject {
     pub name: String,
     pub description: Option<String>,
     pub owner_id: Uuid,
-    pub settings: Option<serde_json::Value>,
+    pub settings: Option<JsonValue>,
     pub status: String,
 }
 
@@ -196,7 +220,7 @@ pub struct ReconciliationRecord {
     pub currency: Option<String>,
     pub transaction_date: Option<DateTime<Utc>>,
     pub description: Option<String>,
-    pub metadata: Option<serde_json::Value>,
+    pub metadata: Option<JsonValue>,
     pub status: String,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -213,7 +237,7 @@ pub struct NewReconciliationRecord {
     pub currency: Option<String>,
     pub transaction_date: Option<DateTime<Utc>>,
     pub description: Option<String>,
-    pub metadata: Option<serde_json::Value>,
+    pub metadata: Option<JsonValue>,
 }
 
 /// Reconciliation match model
@@ -223,9 +247,9 @@ pub struct ReconciliationMatch {
     pub id: Uuid,
     pub project_id: Uuid,
     pub record_a_id: Uuid,
-    pub record_b_id: Uuid,
+    pub record_b_id: Option<Uuid>,
     pub match_type: String,
-    pub confidence_score: Option<f64>,
+    pub confidence_score: Option<BigDecimal>,
     pub status: String,
     pub notes: Option<String>,
     pub created_by: Option<Uuid>,
@@ -241,7 +265,7 @@ pub struct NewReconciliationMatch {
     pub record_a_id: Uuid,
     pub record_b_id: Uuid,
     pub match_type: String,
-    pub confidence_score: Option<f64>,
+    pub confidence_score: Option<BigDecimal>,
     pub notes: Option<String>,
     pub created_by: Option<Uuid>,
 }
@@ -262,13 +286,14 @@ pub struct ReconciliationJob {
     pub created_by: Uuid,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-    pub settings: Option<String>,
+    pub settings: Option<JsonValue>,
     pub confidence_threshold: Option<f64>,
     pub progress: Option<i32>,
     pub total_records: Option<i32>,
     pub processed_records: Option<i32>,
     pub matched_records: Option<i32>,
     pub unmatched_records: Option<i32>,
+    pub processing_time_ms: Option<f64>,
 }
 
 /// New reconciliation job model for inserts
@@ -282,7 +307,7 @@ pub struct NewReconciliationJob {
     pub source_a_id: Uuid,
     pub source_b_id: Uuid,
     pub created_by: Uuid,
-    pub settings: Option<String>,
+    pub settings: Option<JsonValue>,
     pub confidence_threshold: Option<f64>,
 }
 
@@ -313,12 +338,12 @@ pub struct DataSource {
     pub name: String,
     pub description: Option<String>,
     pub source_type: String,
-    pub connection_config: Option<serde_json::Value>,
+    pub connection_config: Option<JsonValue>,
     pub file_path: Option<String>,
     pub file_size: Option<i64>,
     pub file_hash: Option<String>,
     pub record_count: Option<i32>,
-    pub schema: Option<serde_json::Value>,
+    pub schema: Option<JsonValue>,
     pub status: String,
     pub uploaded_at: Option<DateTime<Utc>>,
     pub processed_at: Option<DateTime<Utc>>,
@@ -335,12 +360,12 @@ pub struct NewDataSource {
     pub name: String,
     pub description: Option<String>,
     pub source_type: String,
-    pub connection_config: Option<serde_json::Value>,
+    pub connection_config: Option<JsonValue>,
     pub file_path: Option<String>,
     pub file_size: Option<i64>,
     pub file_hash: Option<String>,
     pub record_count: Option<i32>,
-    pub schema: Option<serde_json::Value>,
+    pub schema: Option<JsonValue>,
     pub status: String,
     pub uploaded_at: Option<DateTime<Utc>>,
     pub processed_at: Option<DateTime<Utc>>,
@@ -354,12 +379,12 @@ pub struct UpdateDataSource {
     pub name: Option<String>,
     pub description: Option<String>,
     pub source_type: Option<String>,
-    pub connection_config: Option<serde_json::Value>,
+    pub connection_config: Option<JsonValue>,
     pub file_path: Option<String>,
     pub file_size: Option<i64>,
     pub file_hash: Option<String>,
     pub record_count: Option<i32>,
-    pub schema: Option<serde_json::Value>,
+    pub schema: Option<JsonValue>,
     pub status: Option<String>,
     pub uploaded_at: Option<DateTime<Utc>>,
     pub processed_at: Option<DateTime<Utc>>,
@@ -404,8 +429,8 @@ pub struct AuditLog {
     pub action: String,
     pub resource_type: String,
     pub resource_id: Option<Uuid>,
-    pub old_values: Option<serde_json::Value>,
-    pub new_values: Option<serde_json::Value>,
+    pub old_values: Option<JsonValue>,
+    pub new_values: Option<JsonValue>,
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
     pub created_at: DateTime<Utc>,
@@ -419,8 +444,8 @@ pub struct NewAuditLog {
     pub action: String,
     pub resource_type: String,
     pub resource_id: Option<Uuid>,
-    pub old_values: Option<serde_json::Value>,
-    pub new_values: Option<serde_json::Value>,
+    pub old_values: Option<JsonValue>,
+    pub new_values: Option<JsonValue>,
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
 }
@@ -491,7 +516,7 @@ impl From<User> for UserResponse {
 pub struct UpdateProject {
     pub name: Option<String>,
     pub description: Option<String>,
-    pub settings: Option<serde_json::Value>,
+    pub settings: Option<JsonValue>,
     pub status: Option<String>,
     pub is_active: Option<bool>,
 }
@@ -503,7 +528,7 @@ pub struct ProjectResponse {
     pub name: String,
     pub description: Option<String>,
     pub owner_id: Uuid,
-    pub settings: Option<serde_json::Value>,
+    pub settings: Option<JsonValue>,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
 }
@@ -521,3 +546,6 @@ impl From<Project> for ProjectResponse {
         }
     }
 }
+
+// Re-export commonly used types
+// JsonValue is already defined above, no need to re-export

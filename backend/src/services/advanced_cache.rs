@@ -289,7 +289,7 @@ impl AdvancedCacheService {
         
         match strategy {
             CacheStrategy::TTL(ttl) => {
-                conn.set_ex::<_, _, ()>(key, serialized, ttl.as_secs())
+                conn.set_ex::<_, _, ()>(key, serialized, ttl.as_secs() as usize)
                     .map_err(|e| AppError::InternalServerError(format!("Redis set_ex error: {}", e)))?;
             }
             _ => {

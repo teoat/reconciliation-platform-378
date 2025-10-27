@@ -2,25 +2,26 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { 
-  apiClient, 
-  wsClient, 
-  ApiResponse, 
+import {
+  apiClient,
+  wsClient,
+  ApiResponse,
   BackendUser,
-  BackendProject, 
+  BackendProject,
   BackendDataSource,
   BackendReconciliationRecord,
   BackendReconciliationMatch,
-  BackendReconciliationJob,
-  PaginatedResponse
+  BackendReconciliationJob
 } from '../services/apiClient';
+import { PaginatedResponse } from '../types/backend-aligned';
+import { ProjectInfo, FileInfo } from '../types/backend-aligned';
 
 // ============================================================================
 // PROJECTS HOOK
 // ============================================================================
 
 export const useProjects = () => {
-  const [projects, setProjects] = useState<BackendProject[]>([]);
+  const [projects, setProjects] = useState<ProjectInfo[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
@@ -42,8 +43,13 @@ export const useProjects = () => {
     try {
       const response = await apiClient.getProjects(params?.page || 1, params?.per_page || 10);
       if (response.data) {
-        setProjects(response.data.data);
-        setPagination(response.data.pagination);
+        setProjects(response.data.projects);
+        setPagination({
+          page: response.data.page,
+          per_page: response.data.per_page,
+          total: response.data.total,
+          total_pages: Math.ceil(response.data.total / response.data.per_page)
+        });
       } else {
         setError(response.error?.message || 'Failed to fetch projects');
       }
@@ -61,12 +67,22 @@ export const useProjects = () => {
   }) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await apiClient.createProject(projectData);
       if (response.data) {
-        setProjects(prev => [response.data!, ...prev]);
-        return { success: true, project: response.data };
+        // Convert ProjectResponse to ProjectInfo format for consistency
+        const projectInfo: ProjectInfo = {
+          ...response.data,
+          owner_email: '', // Will need to be fetched separately
+          status: 'draft',
+          updated_at: response.data.created_at,
+          job_count: 0,
+          data_source_count: 0,
+          last_activity: response.data.created_at
+        };
+        setProjects(prev => [projectInfo, ...prev]);
+        return { success: true, project: projectInfo };
       } else {
         setError(response.error?.message || 'Failed to create project');
         return { success: false, error: response.error?.message };
@@ -82,16 +98,26 @@ export const useProjects = () => {
   const updateProject = useCallback(async (id: string, updates: Partial<BackendProject>) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await apiClient.updateProject(id, updates);
       if (response.data) {
-        setProjects(prev => 
-          prev.map(project => 
-            project.id === id ? response.data! : project
+        // Convert ProjectResponse to ProjectInfo format
+        const projectInfo: ProjectInfo = {
+          ...response.data,
+          owner_email: '', // Will need to be fetched separately
+          status: 'active', // Assume active if being updated
+          updated_at: new Date().toISOString(),
+          job_count: 0,
+          data_source_count: 0,
+          last_activity: new Date().toISOString()
+        };
+        setProjects(prev =>
+          prev.map(project =>
+            project.id === id ? projectInfo : project
           )
         );
-        return { success: true, project: response.data };
+        return { success: true, project: projectInfo };
       } else {
         setError(response.error?.message || 'Failed to update project');
         return { success: false, error: response.error?.message };
@@ -215,7 +241,7 @@ export const useDataSources = (projectId: string | null) => {
   ) => {
     setIsLoading(true);
     setError(null);
-    
+
     try {
       const response = await apiClient.uploadFile(projectId, file, {
         project_id: projectId,
@@ -223,8 +249,22 @@ export const useDataSources = (projectId: string | null) => {
         source_type: sourceType
       });
       if (response.data) {
-        setDataSources(prev => [response.data!, ...prev]);
-        return { success: true, dataSource: response.data };
+        // Convert FileUploadResponse to FileInfo format
+        const fileInfo: FileInfo = {
+          id: response.data.id,
+          project_id: projectId,
+          filename: response.data.name,
+          original_filename: response.data.name,
+          file_size: response.data.file_size,
+          content_type: 'application/octet-stream', // Default content type
+          file_path: '', // Not provided in upload response
+          status: response.data.status,
+          uploaded_by: '', // Not provided in upload response
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        setDataSources(prev => [fileInfo, ...prev]);
+        return { success: true, dataSource: fileInfo };
       } else {
         setError(response.error?.message || 'Failed to upload file');
         return { success: false, error: response.error?.message };
@@ -299,13 +339,19 @@ export const useReconciliationRecords = (projectId: string | null) => {
     
     try {
       const response = await apiClient.getReconciliationRecords(
-        projectId, 
-        params?.page || 1, 
+        projectId,
+        params?.page || 1,
         params?.per_page || 10
       );
       if (response.data) {
-        setRecords(response.data.data);
-        setPagination(response.data.pagination);
+        const data = response.data as unknown as PaginatedResponse<BackendReconciliationRecord>;
+        setRecords(data.items || []);
+        setPagination({
+          page: data.page,
+          per_page: data.per_page,
+          total: data.total,
+          total_pages: data.total_pages
+        });
       } else {
         setError(response.error?.message || 'Failed to fetch reconciliation records');
       }
@@ -355,13 +401,18 @@ export const useReconciliationMatches = (projectId: string | null) => {
     
     try {
       const response = await apiClient.getReconciliationMatches(
-        projectId, 
-        params?.page || 1, 
+        projectId,
+        params?.page || 1,
         params?.per_page || 10
       );
-      if (response.data) {
-        setMatches(response.data.data);
-        setPagination(response.data.pagination);
+      if (response.data && 'items' in response.data) {
+        setMatches((response.data as any).items || []);
+        setPagination({
+          page: (response.data as any).page,
+          per_page: (response.data as any).per_page,
+          total: (response.data as any).total,
+          total_pages: (response.data as any).total_pages
+        });
       } else {
         setError(response.error?.message || 'Failed to fetch reconciliation matches');
       }

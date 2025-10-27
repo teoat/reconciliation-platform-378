@@ -37,7 +37,10 @@ export interface FrenlyMessage {
     action: () => void
     type: 'primary' | 'secondary'
   }>
-  action?: () => void
+  action?: {
+    onClick: () => void
+    text: string
+  }
 }
 
 export interface FrenlyAnimation {

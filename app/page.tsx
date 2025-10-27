@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { ProjectInfo, User } from '../frontend/src/types/backend-aligned'
 import { Provider } from 'react-redux'
 import { PersistGate } from 'redux-persist/integration/react'
 import { store, persistor } from './store'
@@ -23,7 +24,7 @@ import {
 
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [currentProject, setCurrentProject] = useState<any>(null)
+  const [currentProject, setCurrentProject] = useState<ProjectInfo | null>(null)
   const [currentPage, setCurrentPage] = useState<string>('projects')
   const { state: frenlyState, updateProgress } = useFrenly()
 
@@ -35,7 +36,7 @@ function AppContent() {
     }
   }, [])
 
-  const handleLogin = (user: any) => {
+  const handleLogin = (user: User) => {
     setIsAuthenticated(true)
     localStorage.setItem('auth', 'true')
     localStorage.setItem('user', JSON.stringify(user))
@@ -50,7 +51,7 @@ function AppContent() {
     updateProgress('logout_completed')
   }
 
-  const handleProjectSelect = (project: any) => {
+  const handleProjectSelect = (project: ProjectInfo) => {
     setCurrentProject(project)
     setCurrentPage('ingestion')
     updateProgress('project_selected')

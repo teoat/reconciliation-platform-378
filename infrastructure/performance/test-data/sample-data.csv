@@ -1,0 +1,6 @@
+id,amount,currency,date,description
+1,100.00,USD,2024-01-01,Test transaction 1
+2,200.00,USD,2024-01-02,Test transaction 2
+3,300.00,USD,2024-01-03,Test transaction 3
+4,400.00,USD,2024-01-04,Test transaction 4
+5,500.00,USD,2024-01-05,Test transaction 5

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { useWebSocket } from '../services/webSocketService'
 import { 
   GitCompare, 
   CheckCircle, 
@@ -176,6 +177,41 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
   const [jobs, setJobs] = useState<ReconciliationJob[]>([])
   const [selectedJob, setSelectedJob] = useState<ReconciliationJob | null>(null)
   const [jobProgress, setJobProgress] = useState<ReconciliationProgress | null>(null)
+  
+  // Real-time progress tracking
+  const { isConnected, progress: realtimeProgress, subscribeToJob, unsubscribeFromJob } = useWebSocketIntegration()
+  
+  // Update job progress when real-time updates arrive
+  useEffect(() => {
+    if (realtimeProgress && selectedJob && realtimeProgress.job_id === selectedJob.id) {
+      setJobProgress(realtimeProgress)
+      
+      // Update the job in the jobs list
+      setJobs(prevJobs => 
+        prevJobs.map(job => 
+          job.id === realtimeProgress.job_id 
+            ? {
+                ...job,
+                 status: realtimeProgress.status as 'pending' | 'running' | 'completed' | 'failed' | 'cancelled',
+                progress: realtimeProgress.progress,
+                processed_records: realtimeProgress.processed_records,
+                matched_records: realtimeProgress.matched_records,
+                unmatched_records: realtimeProgress.unmatched_records,
+                updated_at: new Date().toISOString()
+              }
+            : job
+        )
+      )
+    }
+  }, [realtimeProgress, selectedJob])
+  
+  // Subscribe to job progress when a job is selected
+  useEffect(() => {
+    if (selectedJob && isConnected) {
+      subscribeToJob(selectedJob.id)
+      return () => unsubscribeFromJob(selectedJob.id)
+    }
+  }, [selectedJob, isConnected, subscribeToJob, unsubscribeFromJob])
   const [results, setResults] = useState<ReconciliationResult[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -441,6 +477,13 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
           <p className="text-gray-600">Manage and monitor reconciliation processes</p>
         </div>
         <div className="flex items-center space-x-3">
+          {/* Real-time Connection Status */}
+          <div className="flex items-center space-x-2">
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className="text-sm text-gray-600">
+              {isConnected ? 'Real-time Connected' : 'Real-time Disconnected'}
+            </span>
+          </div>
           <button
             onClick={() => setShowCreateModal(true)}
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -747,7 +790,7 @@ const CreateJobModal: React.FC<CreateJobModalProps> = ({ projectId, onCreateJob,
               min="0"
               max="100"
               value={formData.confidence_threshold}
-              onChange={(e) => setFormData(prev => ({ ...prev, confidence_threshold: Number(e.target.value) }))}
+               onChange={(e) => setFormData(prev => ({ ...prev, confidence_threshold: Number(e.target.value) || 0 }))}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
           </div>

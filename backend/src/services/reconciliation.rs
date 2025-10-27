@@ -5,7 +5,7 @@
 
 use bigdecimal::ToPrimitive as BigDecimalToPrimitive;
 use std::str::FromStr;
-use diesel::{RunQueryDsl, QueryDsl, ExpressionMethods};
+use diesel::{RunQueryDsl, QueryDsl, ExpressionMethods, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::Utc;
@@ -106,6 +106,7 @@ impl JobProcessor {
         db: Database,
     ) -> AppResult<()> {
         let (progress_sender, mut progress_receiver) = mpsc::channel(100);
+        let progress_sender_clone = progress_sender.clone();
         let status = Arc::new(RwLock::new(JobStatus {
             status: "running".to_string(),
             progress: 0,
@@ -129,7 +130,7 @@ impl JobProcessor {
             let result = engine.process_reconciliation_job_async(
                 job_id,
                 db,
-                progress_sender,
+                progress_sender_clone,
                 status_clone,
                 chunk_size,
             ).await;
@@ -180,17 +181,19 @@ impl JobProcessor {
             None
         }
     }
-    
-    pub async fn get_active_jobs(&self) -> Vec<Uuid> {
-        self.active_jobs.read().await.keys().cloned().collect()
-    }
-    
-    pub async fn get_queued_jobs(&self) -> Vec<Uuid> {
-        self.job_queue.read().await.clone()
-    }
 }
 
 impl ReconciliationService {
+    /// Get active reconciliation jobs
+    pub async fn get_active_jobs(&self) -> AppResult<Vec<Uuid>> {
+        Ok(self.job_processor.active_jobs.read().await.keys().cloned().collect())
+    }
+    
+    /// Get queued reconciliation jobs
+    pub async fn get_queued_jobs(&self) -> AppResult<Vec<Uuid>> {
+        Ok(self.job_processor.job_queue.read().await.clone())
+    }
+    
     /// Get reconciliation job progress
     pub async fn get_reconciliation_progress(
         &self,
@@ -215,18 +218,28 @@ impl ReconciliationService {
             })
         } else {
             // Get from database
-            let job = self.get_reconciliation_job(job_id, user_id).await?;
-            Ok(JobProgress {
-                job_id,
-                status: job.status,
-                progress: 100,
-                total_records: Some(job.total_records.unwrap_or(0)),
-                processed_records: job.processed_records.unwrap_or(0),
-                matched_records: job.matched_records.unwrap_or(0),
-                unmatched_records: job.unmatched_records.unwrap_or(0),
-                current_phase: "completed".to_string(),
-                estimated_completion: None,
-            })
+            let mut conn = self.db.get_connection()?;
+            let job = reconciliation_jobs::table
+                .filter(reconciliation_jobs::id.eq(job_id))
+                .first::<ReconciliationJob>(&mut conn)
+                .optional()
+                .map_err(|e| AppError::Database(e))?;
+            
+            if let Some(j) = job {
+                Ok(JobProgress {
+                    job_id,
+                    status: j.status,
+                    progress: j.progress.unwrap_or(0),
+                    total_records: j.total_records,
+                    processed_records: j.processed_records.unwrap_or(0),
+                    matched_records: j.matched_records.unwrap_or(0),
+                    unmatched_records: j.unmatched_records.unwrap_or(0),
+                    current_phase: if j.completed_at.is_some() { "completed".to_string() } else { "unknown".to_string() },
+                    estimated_completion: None,
+                })
+            } else {
+                Err(AppError::NotFound(format!("Reconciliation job {} not found", job_id)))
+            }
         }
     }
     
@@ -278,8 +291,9 @@ impl ReconciliationService {
         let job = reconciliation_jobs::table
             .filter(reconciliation_jobs::id.eq(job_id))
             .first::<ReconciliationJob>(conn)
-            .optional()?
-            .ok_or(AppError::NotFound)?;
+            .optional()
+            .map_err(|e| AppError::Database(e))?
+            .ok_or_else(|| AppError::NotFound("Reconciliation job not found".to_string()))?;
         
         // Check if user is the creator or has admin role
         // This is a simplified permission check - in production you'd have more complex RBAC
@@ -493,7 +507,7 @@ impl ReconciliationEngine {
             .map_err(|e| AppError::Database(e))?;
         
         // Update status to initializing
-        self.update_job_status(&mut status, "initializing", 0, "Loading data sources").await;
+        self.update_job_status(&status, "initializing", 0, "Loading data sources").await;
         self.send_progress(&progress_sender, job_id, "initializing", 0, "Loading data sources").await;
         
         // Get data sources
@@ -543,7 +557,7 @@ impl ReconciliationEngine {
         ).await?;
         
         // Update status to saving results
-        self.update_job_status(&mut status, "saving", 90, "Saving results to database").await;
+        self.update_job_status(&status, "saving", 90, "Saving results to database").await;
         self.send_progress(&progress_sender, job_id, "saving", 90, "Saving results to database").await;
         
         // Save results to database
@@ -577,7 +591,7 @@ impl ReconciliationEngine {
             .map_err(|e| AppError::Database(e))?;
         
         // Final status update
-        self.update_job_status(&mut status, "completed", 100, "Reconciliation completed").await;
+        self.update_job_status(&status, "completed", 100, "Reconciliation completed").await;
         self.send_progress(&progress_sender, job_id, "completed", 100, "Reconciliation completed").await;
         
         Ok(())
@@ -612,7 +626,7 @@ impl ReconciliationEngine {
             
             // Update current phase
             let phase = format!("Processing chunk {}/{}", chunk_index + 1, total_chunks);
-            self.update_job_status(&mut status, "processing", 
+            self.update_job_status(&status, "processing", 
                 ((chunk_index as f64 / total_chunks as f64) * 80.0) as i32, &phase).await;
             
             // Process chunk
@@ -635,7 +649,7 @@ impl ReconciliationEngine {
             }).count() as i32;
             let unmatched_records = processed_records - matched_records;
             
-            self.update_job_progress(&mut status, progress, processed_records, matched_records, unmatched_records).await;
+            self.update_job_progress(&status, progress, processed_records, matched_records, unmatched_records).await;
             self.send_progress(&progress_sender, Uuid::new_v4(), "processing", progress, &phase).await;
             
             // Small delay to prevent overwhelming the system
@@ -681,7 +695,7 @@ impl ReconciliationEngine {
     /// Update job status
     async fn update_job_status(
         &self,
-        status: &mut RwLock<JobStatus>,
+        status: &Arc<RwLock<JobStatus>>,
         new_status: &str,
         progress: i32,
         phase: &str,
@@ -696,7 +710,7 @@ impl ReconciliationEngine {
     /// Update job progress
     async fn update_job_progress(
         &self,
-        status: &mut RwLock<JobStatus>,
+        status: &Arc<RwLock<JobStatus>>,
         progress: i32,
         processed_records: i32,
         matched_records: i32,
@@ -820,8 +834,8 @@ impl ReconciliationService {
         let job_id = Uuid::new_v4();
         let now = Utc::now();
         
-        // Create settings JSON as string
-        let settings = serde_json::to_string(&request.matching_rules)
+        // Create settings JSON value
+        let settings_json = serde_json::to_value(&request.matching_rules)
             .map_err(|e| AppError::Serialization(e))?;
         
         let new_job = NewReconciliationJob {
@@ -833,7 +847,7 @@ impl ReconciliationService {
             source_b_id: request.source_b_id,
             created_by: user_id,
             confidence_threshold: Some(request.confidence_threshold),
-            settings: Some(settings),
+            settings: Some(crate::models::JsonValue(settings_json)),
         };
         
         let mut conn = self.db.get_connection()?;

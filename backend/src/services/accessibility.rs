@@ -118,19 +118,19 @@ pub struct ComplianceStats {
 }
 
 impl AccessibilityService {
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         let mut service = Self {
             guidelines: Arc::new(RwLock::new(HashMap::new())),
             audits: Arc::new(RwLock::new(HashMap::new())),
             compliance_stats: Arc::new(RwLock::new(ComplianceStats::default())),
         };
         
-        service.initialize_wcag_guidelines();
+        service.initialize_wcag_guidelines().await;
         service
     }
 
     /// Initialize WCAG 2.1 guidelines
-    fn initialize_wcag_guidelines(&mut self) {
+    async fn initialize_wcag_guidelines(&mut self) {
         let guidelines = vec![
             AccessibilityGuideline {
                 id: "1.1".to_string(),
@@ -186,7 +186,7 @@ impl AccessibilityService {
         ];
 
         for guideline in guidelines {
-            self.guidelines.write().unwrap().insert(guideline.id.clone(), guideline);
+            self.guidelines.write().await.insert(guideline.id.clone(), guideline);
         }
     }
 
@@ -366,7 +366,12 @@ impl AccessibilityService {
 
 impl Default for AccessibilityService {
     fn default() -> Self {
-        Self::new()
+        // Create a synchronous version for Default
+        Self {
+            guidelines: Arc::new(RwLock::new(HashMap::new())),
+            audits: Arc::new(RwLock::new(HashMap::new())),
+            compliance_stats: Arc::new(RwLock::new(ComplianceStats::default())),
+        }
     }
 }
 

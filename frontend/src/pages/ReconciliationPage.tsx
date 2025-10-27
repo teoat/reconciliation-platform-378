@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { 
   Upload, 
@@ -33,15 +33,15 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   
   // Hooks
   const { project, isLoading: projectLoading } = useProject(projectId || null)
-  const { dataSources, uploadFile, processFile, isLoading: dataSourcesLoading } = useDataSources(projectId || null)
-  const { jobs, createJob, startJob, isLoading: jobsLoading } = useReconciliationJobs(projectId || null)
-  const { matches, isLoading: matchesLoading } = useReconciliationMatches(projectId || null)
+  const { dataSources, uploadFile, processFile } = useDataSources(projectId || null)
+  const { jobs, createJob, startJob } = useReconciliationJobs(projectId || null)
+  const { matches } = useReconciliationMatches(projectId || null)
   
   // State
   const [activeTab, setActiveTab] = useState<'upload' | 'configure' | 'run' | 'results'>('upload')
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [showSettingsModal, setShowSettingsModal] = useState(false)
-  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
+
   const [reconciliationSettings, setReconciliationSettings] = useState({
     matchingThreshold: 0.8,
     autoApprove: false,
@@ -60,7 +60,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
           'reconciliation_data'
         )
         
-        if (result.success) {
+        if (result.success && result.dataSource) {
           // Process the file after upload
           await processFile(result.dataSource.id)
         }
@@ -77,7 +77,8 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
     
     const result = await createJob({
       project_id: projectId,
-      settings: reconciliationSettings,
+      name: `Reconciliation Job ${new Date().toISOString()}`,
+      description: 'Automated reconciliation job',
       status: 'pending'
     })
     
@@ -104,9 +105,8 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       label: 'Type',
       sortable: true,
       render: (value) => (
-        <StatusBadge 
-          status={value === 'reconciliation_data' ? 'active' : 'inactive'}
-          variant="outline"
+        <StatusBadge
+          status={value === 'reconciliation_data' ? 'success' : 'info'}
         >
           {value}
         </StatusBadge>
@@ -117,8 +117,8 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       label: 'Status',
       sortable: true,
       render: (value) => (
-        <StatusBadge 
-          status={value === 'processed' ? 'active' : value === 'processing' ? 'warning' : 'inactive'}
+        <StatusBadge
+          status={value === 'processed' ? 'success' : value === 'processing' ? 'warning' : 'info'}
         >
           {value}
         </StatusBadge>
@@ -130,22 +130,22 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       sortable: true,
       render: (value) => new Date(value).toLocaleDateString()
     },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (_, row) => (
-        <div className="flex space-x-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => processFile(row.id)}
-            disabled={row.status === 'processing'}
-          >
-            Process
-          </Button>
-        </div>
-      )
-    }
+     {
+       key: 'actions',
+       label: 'Actions',
+       render: (value, row) => (
+         <div className="flex space-x-2">
+           <Button
+             size="sm"
+             variant="outline"
+             onClick={() => processFile(row.id)}
+             disabled={row.status === 'processing'}
+           >
+             Process
+           </Button>
+         </div>
+       )
+     }
   ]
 
   // Data table columns for reconciliation jobs
@@ -163,8 +163,8 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       label: 'Status',
       sortable: true,
       render: (value) => (
-        <StatusBadge 
-          status={value === 'completed' ? 'active' : value === 'running' ? 'warning' : 'inactive'}
+        <StatusBadge
+          status={value === 'completed' ? 'success' : value === 'running' ? 'warning' : 'info'}
         >
           {value}
         </StatusBadge>
@@ -269,8 +269,8 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       label: 'Status',
       sortable: true,
       render: (value) => (
-        <StatusBadge 
-          status={value === 'approved' ? 'active' : value === 'pending' ? 'warning' : 'inactive'}
+        <StatusBadge
+          status={value === 'approved' ? 'success' : value === 'pending' ? 'warning' : 'info'}
         >
           {value}
         </StatusBadge>
@@ -424,26 +424,22 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
               <MetricCard
                 title="Data Sources"
                 value={dataSources.length}
-                icon={FileText}
-                trend="+2 this week"
+                icon={<FileText className="w-6 h-6" />}
               />
               <MetricCard
                 title="Processed Files"
                 value={dataSources.filter(ds => ds.status === 'processed').length}
-                icon={CheckCircle}
-                trend="+1 today"
+                icon={<CheckCircle className="w-6 h-6" />}
               />
               <MetricCard
                 title="Active Jobs"
                 value={jobs.filter(job => job.status === 'running').length}
-                icon={Clock}
-                trend="2 running"
+                icon={<Clock className="w-6 h-6" />}
               />
               <MetricCard
                 title="Total Matches"
                 value={matches.length}
-                icon={Users}
-                trend="+15 this week"
+                icon={<Users className="w-6 h-6" />}
               />
             </div>
 
@@ -489,7 +485,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
                     value={reconciliationSettings.matchingThreshold}
                     onChange={(e) => setReconciliationSettings(prev => ({
                       ...prev,
-                      matchingThreshold: parseFloat(e.target.value)
+                       matchingThreshold: parseFloat(e.target.value) || 0
                     }))}
                     className="w-full"
                     aria-label="Matching threshold slider"

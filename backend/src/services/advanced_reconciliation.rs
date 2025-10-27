@@ -29,7 +29,7 @@ pub struct MatchingResult {
 }
 
 /// Match types
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum MatchType {
     Exact,
     Fuzzy,
@@ -607,7 +607,7 @@ pub struct ReconciliationStats {
 }
 
 impl AdvancedReconciliationService {
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         let mut service = Self {
             fuzzy_algorithms: Arc::new(RwLock::new(HashMap::new())),
             ml_models: Arc::new(RwLock::new(HashMap::new())),
@@ -615,12 +615,12 @@ impl AdvancedReconciliationService {
         };
         
         // Initialize default algorithms
-        service.initialize_default_algorithms();
+        service.initialize_default_algorithms().await;
         service
     }
 
     /// Initialize default fuzzy matching algorithms
-    fn initialize_default_algorithms(&mut self) {
+    async fn initialize_default_algorithms(&mut self) {
         let algorithms = vec![
             ("levenshtein", FuzzyMatchingAlgorithm::new(0.8, FuzzyAlgorithmType::Levenshtein)),
             ("jaro_winkler", FuzzyMatchingAlgorithm::new(0.9, FuzzyAlgorithmType::JaroWinkler)),
@@ -631,7 +631,7 @@ impl AdvancedReconciliationService {
         ];
 
         for (name, algorithm) in algorithms {
-            self.fuzzy_algorithms.write().unwrap().insert(name.to_string(), algorithm);
+            self.fuzzy_algorithms.write().await.insert(name.to_string(), algorithm);
         }
     }
 
@@ -690,7 +690,7 @@ impl AdvancedReconciliationService {
                 (Some(sv), Some(tv)) => {
                     let similarity = self.calculate_field_similarity(sv, tv, field_name, &config).await?;
                     
-                    if similarity >= config.field_thresholds.get(field_name).unwrap_or(&0.8) {
+                    if similarity >= *config.field_thresholds.get(field_name).unwrap_or(&0.8) {
                         matching_fields.push(field_name.clone());
                         confidence_scores.push(similarity);
                     }
@@ -765,7 +765,8 @@ impl AdvancedReconciliationService {
                     Ok(1.0)
                 } else {
                     // Use fuzzy matching for strings
-                    let algorithm_name = config.fuzzy_algorithm.get(field_name).unwrap_or(&"levenshtein".to_string());
+                    let default_algorithm = "levenshtein".to_string();
+                    let algorithm_name = config.fuzzy_algorithm.get(field_name).unwrap_or(&default_algorithm);
                     let algorithms = self.fuzzy_algorithms.read().await;
                     if let Some(algorithm) = algorithms.get(algorithm_name) {
                         Ok(algorithm.calculate_similarity(s1, s2))
@@ -862,7 +863,12 @@ pub struct ReconciliationConfig {
 
 impl Default for AdvancedReconciliationService {
     fn default() -> Self {
-        Self::new()
+        // Create a synchronous version for Default
+        Self {
+            fuzzy_algorithms: Arc::new(RwLock::new(HashMap::new())),
+            ml_models: Arc::new(RwLock::new(HashMap::new())),
+            reconciliation_stats: Arc::new(RwLock::new(ReconciliationStats::default())),
+        }
     }
 }
 

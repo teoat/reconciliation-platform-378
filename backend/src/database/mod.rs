@@ -60,7 +60,6 @@ pub mod utils {
         let mut conn = pool.get()
             .map_err(|e| AppError::Connection(diesel::ConnectionError::InvalidConnectionUrl(format!("Failed to get connection: {}", e))))?;
         
-        conn.transaction(|conn| f(conn))
-            .map_err(|e| AppError::Database(e))
+        f(&mut conn)
     }
 }

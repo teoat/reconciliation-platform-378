@@ -3,6 +3,33 @@
 //! This module contains Diesel table definitions and schema imports.
 
 use diesel::prelude::*;
+use diesel::sql_types::Jsonb;
+use serde::{Deserialize, Serialize};
+use diesel::deserialize::FromSql;
+use diesel::serialize::ToSql;
+use diesel::pg::Pg;
+use diesel::expression::AsExpression;
+use std::io::Write;
+
+/// Custom JsonValue type for Diesel compatibility
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, AsExpression)]
+#[diesel(sql_type = Jsonb)]
+pub struct JsonValue(pub serde_json::Value);
+
+impl FromSql<Jsonb, Pg> for JsonValue {
+    fn from_sql(bytes: diesel::pg::PgValue) -> diesel::deserialize::Result<Self> {
+        let value = serde_json::from_slice(bytes.as_bytes())?;
+        Ok(JsonValue(value))
+    }
+}
+
+impl ToSql<Jsonb, Pg> for JsonValue {
+    fn to_sql(&self, out: &mut diesel::serialize::Output<Pg>) -> diesel::serialize::Result {
+        let json_bytes = serde_json::to_vec(&self.0)?;
+        out.write_all(&json_bytes)?;
+        Ok(diesel::serialize::IsNull::No)
+    }
+}
 
 // Import all table definitions
 table! {
@@ -138,7 +165,7 @@ table! {
         resource_id -> Nullable<Uuid>,
         old_values -> Nullable<Jsonb>,
         new_values -> Nullable<Jsonb>,
-        ip_address -> Nullable<Inet>,
+        ip_address -> Nullable<Varchar>,
         user_agent -> Nullable<Text>,
         created_at -> Timestamptz,
     }
@@ -160,6 +187,20 @@ table! {
     }
 }
 
+table! {
+    user_activity_logs (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        action -> Varchar,
+        resource_type -> Varchar,
+        resource_id -> Nullable<Uuid>,
+        details -> Nullable<Jsonb>,
+        ip_address -> Nullable<Varchar>,
+        user_agent -> Nullable<Varchar>,
+        created_at -> Timestamptz,
+    }
+}
+
 // Join tables
 joinable!(projects -> users (owner_id));
 joinable!(reconciliation_records -> projects (project_id));
@@ -171,6 +212,7 @@ joinable!(reconciliation_results -> reconciliation_jobs (job_id));
 joinable!(audit_logs -> users (user_id));
 joinable!(uploaded_files -> projects (project_id));
 joinable!(uploaded_files -> users (uploaded_by));
+joinable!(user_activity_logs -> users (user_id));
 
 // Allow Diesel to infer the correct types
 allow_tables_to_appear_in_same_query!(
@@ -183,4 +225,5 @@ allow_tables_to_appear_in_same_query!(
     reconciliation_results,
     audit_logs,
     uploaded_files,
+    user_activity_logs,
 );

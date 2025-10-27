@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { WebSocketMessage, RealtimeUpdate } from '../types/backend-aligned'
-import { wsClient } from '../services/apiClient'
+import { WebSocketMessage } from '../types/backend-aligned'
 
 interface WebSocketHook {
   isConnected: boolean
   sendMessage: (message: WebSocketMessage) => void
   lastMessage: WebSocketMessage | null
   connectionStatus: 'connecting' | 'connected' | 'disconnected' | 'error'
-  on: (eventType: string, handler: Function) => void
-  off: (eventType: string, handler: Function) => void
 }
 
 export const useWebSocket = (url: string): WebSocketHook => {
@@ -116,14 +113,13 @@ export const useRealtimeCollaboration = (page: string) => {
   const updatePresence = useCallback((userId: string, userName: string) => {
     sendMessage({
       type: 'presence_update',
-      data: {
+      payload: {
         userId,
         userName,
         page,
         timestamp: new Date().toISOString()
       },
-      timestamp: new Date().toISOString(),
-      page
+      timestamp: new Date().toISOString()
     })
   }, [sendMessage, page])
 
@@ -140,9 +136,8 @@ export const useRealtimeCollaboration = (page: string) => {
     
     sendMessage({
       type: 'live_comment',
-      data: comment,
-      timestamp: new Date().toISOString(),
-      page
+      payload: comment,
+      timestamp: new Date().toISOString()
     })
     
     setLiveComments(prev => [...prev, comment])
@@ -154,38 +149,38 @@ export const useRealtimeCollaboration = (page: string) => {
       switch (lastMessage.type) {
         case 'presence_update':
           setActiveUsers(prev => {
-            const existing = prev.find(u => u.id === lastMessage.data.userId)
+            const existing = prev.find(u => u.id === lastMessage.payload.userId)
             if (existing) {
-              return prev.map(u => 
-                u.id === lastMessage.data.userId 
-                  ? { ...u, lastSeen: lastMessage.data.timestamp }
+              return prev.map(u =>
+                u.id === lastMessage.payload.userId
+                  ? { ...u, lastSeen: lastMessage.payload.timestamp }
                   : u
               )
             } else {
               return [...prev, {
-                id: lastMessage.data.userId,
-                name: lastMessage.data.userName,
-                page: lastMessage.data.page,
-                lastSeen: lastMessage.data.timestamp
+                id: lastMessage.payload.userId,
+                name: lastMessage.payload.userName,
+                page: lastMessage.payload.page,
+                lastSeen: lastMessage.payload.timestamp
               }]
             }
           })
           break
-          
+
         case 'live_comment':
-          if (lastMessage.data.page === page) {
+          if (lastMessage.payload.page === page) {
             setLiveComments(prev => {
-              const exists = prev.find(c => c.id === lastMessage.data.id)
+              const exists = prev.find(c => c.id === lastMessage.payload.id)
               if (!exists) {
-                return [...prev, lastMessage.data]
+                return [...prev, lastMessage.payload]
               }
               return prev
             })
           }
           break
-          
+
         case 'user_left':
-          setActiveUsers(prev => prev.filter(u => u.id !== lastMessage.data.userId))
+          setActiveUsers(prev => prev.filter(u => u.id !== lastMessage.payload.userId))
           break
       }
     }
@@ -221,7 +216,7 @@ export const useRealtimeDataSync = () => {
       setSyncStatus('syncing')
       sendMessage({
         type: 'data_sync',
-        data: {
+        payload: {
           fromPage,
           toPage,
           data,

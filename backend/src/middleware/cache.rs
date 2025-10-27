@@ -1,20 +1,12 @@
-// backend/src/middleware/cache.rs
 use actix_web::{
-    dev::{forward_ready, Service, ServiceFactory, ServiceRequest, ServiceResponse},
-    Error, HttpMessage, HttpResponse,
+    dev::{forward_ready, Service, ServiceFactory, ServiceRequest, ServiceResponse, Transform},
+    Error, HttpMessage, HttpResponse, body::{MessageBody, BoxBody},
 };
-use futures::future::{LocalBoxFuture, Ready};
-use std::{
-    rc::Rc,
-    task::{Context, Poll},
-};
+use futures::future::{LocalBoxFuture, ok, Ready};
+use std::rc::Rc;
 use crate::services::advanced_cache::{AdvancedCacheService, CacheStrategy};
-use crate::errors::AppError;
-use actix_web::web::Data;
-use serde_json::json;
 use std::time::Duration;
 
-/// Cache middleware for automatic response caching
 pub struct CacheMiddleware<S> {
     service: Rc<S>,
     cache_service: AdvancedCacheService,
@@ -29,13 +21,35 @@ impl<S> CacheMiddleware<S> {
     }
 }
 
+pub struct Cache;
+
+impl<S, B> Transform<S, ServiceRequest> for Cache
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S::Future: 'static,
+    B: MessageBody + 'static,
+    <B as MessageBody>::Error: std::fmt::Debug,
+{
+    type Response = ServiceResponse<BoxBody>;
+    type Error = Error;
+    type InitError = ();
+    type Transform = CacheMiddleware<S>;
+    type Future = Ready<Result<Self::Transform, Self::InitError>>;
+
+    fn new_transform(&self, service: S) -> Self::Future {
+        let cache_service = AdvancedCacheService::new("redis://localhost:6379").expect("Failed to create cache service");
+        ok(CacheMiddleware::new(Rc::new(service), cache_service))
+    }
+}
+
 impl<S, B> Service<ServiceRequest> for CacheMiddleware<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
-    B: 'static,
+    B: MessageBody + 'static,
+    <B as MessageBody>::Error: std::fmt::Debug,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<BoxBody>;
     type Error = Error;
     type Future = LocalBoxFuture<'static, Result<Self::Response, Self::Error>>;
 
@@ -56,26 +70,25 @@ where
                 // Try to get from cache
                 if let Ok(Some(cached_response)) = cache_service.get::<serde_json::Value>(&cache_key).await {
                     let response = HttpResponse::Ok().json(cached_response);
-                    return Ok(req.into_response(response));
+                    return Ok(ServiceResponse::new(req.into_parts().0, response.map_into_boxed_body()));
                 }
             }
 
-            // Continue with the request
             let response = service.call(req).await?;
-            
+
             // Cache successful GET responses
             if method == "GET" && response.status().is_success() {
                 let cache_key = format!("cache:{}:{}", method, path);
-                // Note: In a real implementation, you would extract the response body
-                // and cache it with appropriate TTL
+                let (req, res) = response.into_parts();
+                let bytes = actix_web::body::to_bytes(res.into_body()).await.unwrap();
+                if let Ok(body) = serde_json::from_slice::<serde_json::Value>(&bytes) {
+                    let _ = cache_service.set(&cache_key, &body, CacheStrategy::TTL(Duration::from_secs(60))).await;
+                }
+                let res = HttpResponse::Ok().body(bytes);
+                return Ok(ServiceResponse::new(req, res.map_into_boxed_body()));
             }
 
-            Ok(response)
+            Ok(response.map_into_boxed_body())
         })
     }
-}
-
-/// Cache middleware factory
-pub fn cache_middleware<S>(service: Rc<S>, cache_service: AdvancedCacheService) -> CacheMiddleware<S> {
-    CacheMiddleware::new(service, cache_service)
 }

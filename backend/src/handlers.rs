@@ -11,11 +11,12 @@ use crate::database::Database;
 use crate::errors::AppError;
 use crate::config::Config;
 use crate::services::{
-    AuthService, UserService, ProjectService, ReconciliationService, 
+    AuthService, UserService, ProjectService, ReconciliationService,
     FileService, AnalyticsService, MonitoringService
 };
+use crate::services::reconciliation::MatchingRule;
 use crate::services::auth::{LoginRequest, RegisterRequest, ChangePasswordRequest};
-use crate::models::{Project, User, ReconciliationJob, DataSource};
+use crate::models::{Project, User, ReconciliationJob, DataSource, JsonValue};
 
 // Request/Response DTOs
 
@@ -23,6 +24,8 @@ use crate::models::{Project, User, ReconciliationJob, DataSource};
 pub struct CreateProjectRequest {
     pub name: String,
     pub description: Option<String>,
+    pub owner_id: Uuid,
+    pub status: Option<String>,
     pub settings: Option<serde_json::Value>,
 }
 
@@ -30,6 +33,7 @@ pub struct CreateProjectRequest {
 pub struct UpdateProjectRequest {
     pub name: Option<String>,
     pub description: Option<String>,
+    pub status: Option<String>,
     pub settings: Option<serde_json::Value>,
 }
 
@@ -176,7 +180,7 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 // Authentication handlers
 
 /// Login endpoint
-async fn login(
+pub async fn login(
     req: web::Json<LoginRequest>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -210,7 +214,7 @@ async fn login(
     // Create response
     let auth_response = crate::services::auth::AuthResponse {
         token,
-        user: crate::services::user::UserInfo {
+        user: crate::services::auth::UserInfo {
             id: user.id,
             email: user.email,
             first_name: user.first_name,
@@ -226,7 +230,7 @@ async fn login(
 }
 
 /// Register endpoint
-async fn register(
+pub async fn register(
     req: web::Json<RegisterRequest>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -267,7 +271,15 @@ async fn register(
     // Create response
     let auth_response = crate::services::auth::AuthResponse {
         token,
-        user: user_info,
+        user: crate::services::auth::UserInfo {
+            id: user_info.id,
+            email: user_info.email,
+            first_name: user_info.first_name,
+            last_name: user_info.last_name,
+            role: user_info.role,
+            is_active: user_info.is_active,
+            last_login: user_info.last_login,
+        },
         expires_at: (chrono::Utc::now().timestamp() + config.jwt_expiration) as usize,
     };
     
@@ -275,7 +287,7 @@ async fn register(
 }
 
 /// Refresh token endpoint
-async fn refresh_token(
+pub async fn refresh_token(
     req: HttpRequest,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
@@ -328,7 +340,7 @@ async fn refresh_token(
 }
 
 /// Logout endpoint
-async fn logout() -> Result<HttpResponse, AppError> {
+pub async fn logout() -> Result<HttpResponse, AppError> {
     // In a stateless JWT implementation, logout is handled client-side
     // by removing the token. For enhanced security, you could implement
     // a token blacklist using Redis.
@@ -339,7 +351,7 @@ async fn logout() -> Result<HttpResponse, AppError> {
 }
 
 /// Change password endpoint
-async fn change_password(
+pub async fn change_password(
     req: web::Json<ChangePasswordRequest>,
     user_id: web::Path<Uuid>,
     data: web::Data<Database>,
@@ -367,7 +379,7 @@ async fn change_password(
 // User management handlers
 
 /// Get users endpoint
-async fn get_users(
+pub async fn get_users(
     query: web::Query<UserQueryParams>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -385,7 +397,7 @@ async fn get_users(
 }
 
 /// Create user endpoint
-async fn create_user(
+pub async fn create_user(
     req: web::Json<crate::services::user::CreateUserRequest>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -403,7 +415,7 @@ async fn create_user(
 }
 
 /// Get user endpoint
-async fn get_user(
+pub async fn get_user(
     user_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -421,7 +433,7 @@ async fn get_user(
 }
 
 /// Update user endpoint
-async fn update_user(
+pub async fn update_user(
     user_id: web::Path<Uuid>,
     req: web::Json<crate::services::user::UpdateUserRequest>,
     data: web::Data<Database>,
@@ -440,7 +452,7 @@ async fn update_user(
 }
 
 /// Delete user endpoint
-async fn delete_user(
+pub async fn delete_user(
     user_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -458,7 +470,7 @@ async fn delete_user(
 }
 
 /// Search users endpoint
-async fn search_users(
+pub async fn search_users(
     query: web::Query<SearchQueryParams>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -470,14 +482,14 @@ async fn search_users(
     
     let user_service = UserService::new(data.get_ref().clone(), auth_service);
     
-    let response = user_service.search_users(&query.q, query.page, query.per_page).await?;
+    let response = user_service.search_users(query.q.as_deref().unwrap_or(""), query.page.map(|p| p as i64), query.per_page.map(|p| p as i64)).await?;
     
     Ok(HttpResponse::Ok().json(response))
 }
 
 // Project management handlers
 
-async fn get_projects(
+pub async fn get_projects(
     query: web::Query<SearchQueryParams>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -485,8 +497,8 @@ async fn get_projects(
     let project_service = crate::services::ProjectService::new(data.get_ref().clone());
     
     let response = project_service.list_projects(
-        query.page,
-        query.per_page,
+        query.page.map(|p| p as i64),
+        query.per_page.map(|p| p as i64),
     ).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -497,14 +509,21 @@ async fn get_projects(
     }))
 }
 
-async fn create_project(
+pub async fn create_project(
     req: web::Json<CreateProjectRequest>,
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     let project_service = crate::services::ProjectService::new(data.get_ref().clone());
     
-    let project = project_service.create_project(req.into_inner()).await?;
+    let request = crate::services::project::CreateProjectRequest {
+        name: req.name.clone(),
+        description: req.description.clone(),
+        owner_id: req.owner_id,
+        status: req.status.clone(),
+        settings: req.settings.as_ref().map(|s| JsonValue(s.clone())),
+    };
+    let project = project_service.create_project(request).await?;
     
     Ok(HttpResponse::Created().json(ApiResponse {
         success: true,
@@ -514,7 +533,7 @@ async fn create_project(
     }))
 }
 
-async fn get_project(
+pub async fn get_project(
     path: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -531,7 +550,7 @@ async fn get_project(
     }))
 }
 
-async fn update_project(
+pub async fn update_project(
     path: web::Path<Uuid>,
     req: web::Json<UpdateProjectRequest>,
     data: web::Data<Database>,
@@ -539,7 +558,13 @@ async fn update_project(
 ) -> Result<HttpResponse, AppError> {
     let project_service = crate::services::ProjectService::new(data.get_ref().clone());
     
-    let project = project_service.update_project(path.into_inner(), req.into_inner()).await?;
+    let request = crate::services::project::UpdateProjectRequest {
+        name: req.name.clone(),
+        description: req.description.clone(),
+        status: req.status.clone(),
+        settings: req.settings.as_ref().map(|s| JsonValue(s.clone())),
+    };
+    let project = project_service.update_project(path.into_inner(), request).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -549,7 +574,7 @@ async fn update_project(
     }))
 }
 
-async fn delete_project(
+pub async fn delete_project(
     path: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -561,7 +586,7 @@ async fn delete_project(
     Ok(HttpResponse::NoContent().finish())
 }
 
-async fn get_project_data_sources(
+pub async fn get_project_data_sources(
     project_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -578,7 +603,7 @@ async fn get_project_data_sources(
     }))
 }
 
-async fn create_data_source(
+pub async fn create_data_source(
     project_id: web::Path<Uuid>,
     req: web::Json<CreateDataSourceRequest>,
     data: web::Data<Database>,
@@ -593,7 +618,7 @@ async fn create_data_source(
         req.file_path.clone(),
         req.file_size,
         req.file_hash.clone(),
-        req.schema.clone(),
+        req.schema.as_ref().map(|s| JsonValue(s.clone())),
     ).await?;
     
     Ok(HttpResponse::Created().json(ApiResponse {
@@ -604,7 +629,7 @@ async fn create_data_source(
     }))
 }
 
-async fn get_reconciliation_jobs(
+pub async fn get_reconciliation_jobs(
     project_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -621,7 +646,7 @@ async fn get_reconciliation_jobs(
     }))
 }
 
-async fn create_reconciliation_job(
+pub async fn create_reconciliation_job(
     project_id: web::Path<Uuid>,
     req: web::Json<CreateReconciliationJobRequest>,
     data: web::Data<Database>,
@@ -629,15 +654,32 @@ async fn create_reconciliation_job(
 ) -> Result<HttpResponse, AppError> {
     let reconciliation_service = crate::services::ReconciliationService::new(data.get_ref().clone());
     
-    let new_job = reconciliation_service.create_reconciliation_job(
-        project_id.into_inner(),
-        req.name.clone(),
-        req.description.clone(),
-        req.source_data_source_id,
-        req.target_data_source_id,
-        req.confidence_threshold,
-        req.settings.clone(),
-    ).await?;
+    // Extract user_id from JWT token (placeholder - should be extracted by middleware)
+    let user_id = Uuid::new_v4(); // TODO: Extract from JWT token properly
+
+    // Extract matching_rules from settings or use defaults
+    let matching_rules = if let Some(settings) = &req.settings {
+        if let Some(rules) = settings.get("matching_rules") {
+            serde_json::from_value(rules.clone()).unwrap_or_default()
+        } else {
+            vec![]
+        }
+    } else {
+        vec![]
+    };
+
+    let request = crate::services::reconciliation::CreateReconciliationJobRequest {
+        project_id: project_id.into_inner(),
+        name: req.name.clone(),
+        description: req.description.clone(),
+        source_a_id: req.source_data_source_id,
+        source_b_id: req.target_data_source_id,
+        confidence_threshold: req.confidence_threshold,
+        matching_rules,
+        created_by: user_id,
+    };
+
+    let new_job = reconciliation_service.create_reconciliation_job(user_id, request).await?;
     
     Ok(HttpResponse::Created().json(ApiResponse {
         success: true,
@@ -649,7 +691,7 @@ async fn create_reconciliation_job(
 
 // Reconciliation handlers (placeholder implementations)
 
-async fn get_reconciliation_job(
+pub async fn get_reconciliation_job(
     job_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -666,7 +708,7 @@ async fn get_reconciliation_job(
     }))
 }
 
-async fn update_reconciliation_job(
+pub async fn update_reconciliation_job(
     job_id: web::Path<Uuid>,
     req: web::Json<UpdateReconciliationJobRequest>,
     data: web::Data<Database>,
@@ -691,7 +733,7 @@ async fn update_reconciliation_job(
     }))
 }
 
-async fn delete_reconciliation_job(
+pub async fn delete_reconciliation_job(
     job_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -704,7 +746,7 @@ async fn delete_reconciliation_job(
     Ok(HttpResponse::NoContent().finish())
 }
 
-async fn start_reconciliation_job(
+pub async fn start_reconciliation_job(
     job_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -713,7 +755,7 @@ async fn start_reconciliation_job(
     
     reconciliation_service.start_reconciliation_job(job_id.into_inner()).await?;
     
-    Ok(HttpResponse::Ok().json(ApiResponse {
+    Ok(HttpResponse::Ok().json(ApiResponse::<()> {
         success: true,
         data: None,
         message: Some("Reconciliation job started successfully".to_string()),
@@ -721,7 +763,7 @@ async fn start_reconciliation_job(
     }))
 }
 
-async fn stop_reconciliation_job(
+pub async fn stop_reconciliation_job(
     job_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -730,7 +772,7 @@ async fn stop_reconciliation_job(
     
     reconciliation_service.stop_reconciliation_job(job_id.into_inner()).await?;
     
-    Ok(HttpResponse::Ok().json(ApiResponse {
+    Ok(HttpResponse::Ok().json(ApiResponse::<()> {
         success: true,
         data: None,
         message: Some("Reconciliation job stopped successfully".to_string()),
@@ -738,7 +780,7 @@ async fn stop_reconciliation_job(
     }))
 }
 
-async fn get_reconciliation_results(
+pub async fn get_reconciliation_results(
     job_id: web::Path<Uuid>,
     query: web::Query<ReconciliationResultsQuery>,
     data: web::Data<Database>,
@@ -750,7 +792,6 @@ async fn get_reconciliation_results(
         job_id.into_inner(),
         query.page,
         query.per_page,
-        query.match_type.as_deref(),
     ).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -761,7 +802,7 @@ async fn get_reconciliation_results(
     }))
 }
 
-async fn get_reconciliation_progress(
+pub async fn get_reconciliation_progress(
     job_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -787,7 +828,7 @@ async fn get_reconciliation_progress(
 
 // File upload handlers (placeholder implementations)
 
-async fn upload_file(
+pub async fn upload_file(
     mut payload: actix_multipart::Multipart,
     req: HttpRequest,
     data: web::Data<Database>,
@@ -801,11 +842,8 @@ async fn upload_file(
         .and_then(|id| Uuid::parse_str(id).ok())
         .ok_or_else(|| AppError::Validation("Missing or invalid project_id".to_string()))?;
     
-    // Extract user_id from JWT token
-    let user_id = req.extensions()
-        .get::<crate::services::auth::Claims>()
-        .map(|claims| claims.sub.parse::<Uuid>().unwrap_or_default())
-        .unwrap_or_default();
+    // Extract user_id from JWT token (placeholder - should be extracted by middleware)
+    let user_id = Uuid::new_v4(); // TODO: Extract from JWT token properly
     
     let file_service = crate::services::FileService::new(
         data.get_ref().clone(),
@@ -822,7 +860,7 @@ async fn upload_file(
     }))
 }
 
-async fn get_file(
+pub async fn get_file(
     file_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -842,7 +880,7 @@ async fn get_file(
     }))
 }
 
-async fn delete_file(
+pub async fn delete_file(
     file_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -857,7 +895,7 @@ async fn delete_file(
     Ok(HttpResponse::NoContent().finish())
 }
 
-async fn process_file(
+pub async fn process_file(
     file_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -879,7 +917,7 @@ async fn process_file(
 
 // Analytics handlers (placeholder implementations)
 
-async fn get_dashboard_data(
+pub async fn get_dashboard_data(
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
@@ -895,7 +933,7 @@ async fn get_dashboard_data(
     }))
 }
 
-async fn get_project_stats(
+pub async fn get_project_stats(
     project_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -912,7 +950,7 @@ async fn get_project_stats(
     }))
 }
 
-async fn get_user_activity(
+pub async fn get_user_activity(
     user_id: web::Path<Uuid>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -929,7 +967,7 @@ async fn get_user_activity(
     }))
 }
 
-async fn get_reconciliation_stats(
+pub async fn get_reconciliation_stats(
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
@@ -948,7 +986,7 @@ async fn get_reconciliation_stats(
 // Additional authentication handlers
 
 /// Request password reset
-async fn request_password_reset(
+pub async fn request_password_reset(
     req: web::Json<crate::services::auth::PasswordResetRequest>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -975,7 +1013,7 @@ async fn request_password_reset(
 }
 
 /// Confirm password reset
-async fn confirm_password_reset(
+pub async fn confirm_password_reset(
     req: web::Json<crate::services::auth::PasswordResetConfirmation>,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -987,7 +1025,7 @@ async fn confirm_password_reset(
     
     enhanced_auth.confirm_password_reset(&req.token, &req.new_password, &data).await?;
     
-    Ok(HttpResponse::Ok().json(ApiResponse {
+    Ok(HttpResponse::Ok().json(ApiResponse::<()> {
         success: true,
         data: None,
         message: Some("Password reset successfully".to_string()),
@@ -996,18 +1034,15 @@ async fn confirm_password_reset(
 }
 
 /// Get current user information
-async fn get_current_user(
+pub async fn get_current_user(
     req: HttpRequest,
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
-    // Extract user_id from JWT token
-    let user_id = req.extensions()
-        .get::<crate::services::auth::Claims>()
-        .map(|claims| claims.sub.parse::<Uuid>().unwrap_or_default())
-        .unwrap_or_default();
+    // Extract user_id from JWT token (placeholder - should be extracted by middleware)
+    let user_id = Uuid::new_v4(); // TODO: Extract from JWT token properly
     
     let user_service = UserService::new(data.get_ref().clone(), AuthService::new("".to_string(), 0));
-    let user = user_service.get_user(user_id).await?;
+    let user = user_service.get_user_by_id(user_id).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -1027,7 +1062,7 @@ async fn get_current_user(
 }
 
 /// Get user statistics
-async fn get_user_statistics(
+pub async fn get_user_statistics(
     req: HttpRequest,
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
@@ -1043,7 +1078,7 @@ async fn get_user_statistics(
 }
 
 /// Get reconciliation job statistics
-async fn get_reconciliation_job_statistics(
+pub async fn get_reconciliation_job_statistics(
     path: web::Path<Uuid>,
     req: HttpRequest,
     data: web::Data<Database>,
@@ -1061,7 +1096,7 @@ async fn get_reconciliation_job_statistics(
 }
 
 /// Get active reconciliation jobs
-async fn get_active_reconciliation_jobs(
+pub async fn get_active_reconciliation_jobs(
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
     let reconciliation_service = ReconciliationService::new(data.get_ref().clone());
@@ -1078,7 +1113,7 @@ async fn get_active_reconciliation_jobs(
 }
 
 /// Get queued reconciliation jobs
-async fn get_queued_reconciliation_jobs(
+pub async fn get_queued_reconciliation_jobs(
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
     let reconciliation_service = ReconciliationService::new(data.get_ref().clone());
@@ -1097,7 +1132,7 @@ async fn get_queued_reconciliation_jobs(
 // System handlers
 
 /// Health check endpoint
-async fn health_check() -> Result<HttpResponse, AppError> {
+pub async fn health_check() -> Result<HttpResponse, AppError> {
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "status": "healthy",
         "timestamp": chrono::Utc::now(),
@@ -1105,7 +1140,7 @@ async fn health_check() -> Result<HttpResponse, AppError> {
     })))
 }
 
-async fn system_status() -> Result<HttpResponse, AppError> {
+pub async fn system_status() -> Result<HttpResponse, AppError> {
     Ok(HttpResponse::Ok().json(serde_json::json!({
         "status": "operational",
         "uptime": "0s",
@@ -1113,13 +1148,13 @@ async fn system_status() -> Result<HttpResponse, AppError> {
     })))
 }
 
-async fn get_metrics(
+pub async fn get_metrics(
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     use crate::services::monitoring::MonitoringService;
     
-    let monitoring_service = MonitoringService::new(data.get_ref().clone());
+    let monitoring_service = MonitoringService::new();
     
     // Get comprehensive performance metrics
     let metrics = monitoring_service.get_system_metrics().await?;

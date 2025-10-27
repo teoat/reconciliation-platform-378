@@ -90,7 +90,7 @@ services:
       - uploads_data:/app/uploads
       - ./logs:/app/logs
     ports:
-      - "8080:8080"
+      - "2000:2000"
     networks:
       - reconciliation-network
     depends_on:
@@ -114,8 +114,8 @@ services:
     container_name: reconciliation-frontend
     environment:
       # API Configuration
-      VITE_API_URL: http://backend:8080/api
-      VITE_WS_URL: ws://backend:8080
+      VITE_API_URL: http://backend:2000/api
+      VITE_WS_URL: ws://backend:2000
       
       # Application Configuration
       VITE_APP_NAME: Reconciliation Platform
@@ -142,8 +142,8 @@ services:
       VITE_LOG_LEVEL: error
       VITE_ENABLE_MOCK_DATA: false
     ports:
-      - "80:80"
-      - "443:443"
+      - "1000:80"
+      - "1043:443"
     networks:
       - reconciliation-network
     depends_on:
@@ -166,8 +166,8 @@ services:
       - ./infrastructure/nginx/conf.d:/etc/nginx/conf.d
       - ./infrastructure/ssl:/etc/nginx/ssl
     ports:
-      - "8080:80"
-      - "8443:443"
+      - "2000:80"
+      - "2043:443"
     networks:
       - reconciliation-network
     depends_on:

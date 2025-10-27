@@ -3,7 +3,7 @@
 //! This module provides comprehensive logging middleware for structured logging,
 //! request/response logging, and error tracking.
 
-use actix_web::{dev::ServiceRequest, Error, HttpMessage, HttpRequest, HttpResponse, Result};
+use actix_web::{dev::ServiceRequest, Error, HttpMessage, HttpRequest, HttpResponse, Result, body::BoxBody};
 use actix_web::dev::{Service, ServiceResponse, Transform};
 use futures::future::{ok, Ready};
 use futures::Future;
@@ -105,9 +105,9 @@ impl LoggingMiddleware {
     }
 }
 
-impl<S, B> Transform<S> for LoggingMiddleware
+impl<S, B> Transform<S, ServiceRequest> for LoggingMiddleware
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
     B: 'static,
 {
@@ -138,7 +138,7 @@ pub struct LoggingMiddlewareService<S> {
 
 impl<S, B> Service<ServiceRequest> for LoggingMiddlewareService<S>
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
     B: 'static,
 {
@@ -146,11 +146,11 @@ where
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&mut self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
-    fn call(&mut self, req: ServiceRequest) -> Self::Future {
+    fn call(&self, req: ServiceRequest) -> Self::Future {
         let service = self.service.clone();
         let state = self.state.clone();
 

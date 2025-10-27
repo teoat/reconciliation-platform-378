@@ -3,7 +3,7 @@
 //! This module provides authentication middleware for protecting routes
 //! and managing user sessions.
 
-use actix_web::{dev::ServiceRequest, Error, HttpMessage, HttpRequest, HttpResponse, Result};
+use actix_web::{dev::ServiceRequest, Error, HttpMessage, HttpRequest, HttpResponse, Result, body::BoxBody};
 use actix_web::dev::{Service, ServiceResponse, Transform};
 use futures::future::{ok, Ready};
 use futures::Future;
@@ -45,28 +45,29 @@ pub struct AuthMiddlewareState {
 
 /// Authentication middleware
 pub struct AuthMiddleware {
+    auth_service: Arc<AuthService>,
     config: AuthMiddlewareConfig,
 }
 
 impl AuthMiddleware {
-    pub fn new(config: AuthMiddlewareConfig) -> Self {
-        Self { config }
+    pub fn new(auth_service: Arc<AuthService>, config: AuthMiddlewareConfig) -> Self {
+        Self { auth_service, config }
     }
-    
+
     pub fn with_auth_service(auth_service: Arc<AuthService>) -> Self {
         Self {
+            auth_service,
             config: AuthMiddlewareConfig::default(),
         }
     }
 }
 
-impl<S, B> Transform<S> for AuthMiddleware
+impl<S> Transform<S, ServiceRequest> for AuthMiddleware
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<BoxBody>, Error = Error> + 'static,
     S::Future: 'static,
-    B: 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<BoxBody>;
     type Error = Error;
     type InitError = ();
     type Transform = AuthMiddlewareService<S>;
@@ -74,10 +75,7 @@ where
 
     fn new_transform(&self, service: S) -> Self::Future {
         let state = AuthMiddlewareState {
-            auth_service: Arc::new(AuthService::new(
-                "your-jwt-secret".to_string(),
-                86400
-            )),
+            auth_service: self.auth_service.clone(),
             config: self.config.clone(),
         };
 
@@ -94,21 +92,20 @@ pub struct AuthMiddlewareService<S> {
     state: AuthMiddlewareState,
 }
 
-impl<S, B> Service<ServiceRequest> for AuthMiddlewareService<S>
+impl<S> Service<ServiceRequest> for AuthMiddlewareService<S>
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<BoxBody>, Error = Error> + 'static,
     S::Future: 'static,
-    B: 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<BoxBody>;
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&mut self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
-    fn call(&mut self, req: ServiceRequest) -> Self::Future {
+    fn call(&self, req: ServiceRequest) -> Self::Future {
         let service = self.service.clone();
         let state = self.state.clone();
 
@@ -122,13 +119,15 @@ where
             let token = match extract_token(&req, &state.config) {
                 Ok(token) => token,
                 Err(_) => {
+                    let (req, _payload) = req.into_parts();
                     return Ok(ServiceResponse::new(
-                        req.into_parts().0,
+                        req,
                         HttpResponse::Unauthorized()
                             .json(serde_json::json!({
                                 "error": "Authentication required",
                                 "message": "Valid authentication token is required"
                             }))
+                            .map_into_boxed_body()
                     ));
                 }
             };
@@ -137,13 +136,15 @@ where
             let claims = match state.auth_service.validate_token(&token) {
                 Ok(claims) => claims,
                 Err(_) => {
+                    let (req, _payload) = req.into_parts();
                     return Ok(ServiceResponse::new(
-                        req.into_parts().0,
+                        req,
                         HttpResponse::Unauthorized()
                             .json(serde_json::json!({
                                 "error": "Invalid token",
                                 "message": "Authentication token is invalid or expired"
                             }))
+                            .map_into_boxed_body()
                     ));
                 }
             };
@@ -151,13 +152,15 @@ where
             // Check role permissions
             if !state.config.allowed_roles.is_empty() {
                 if !state.config.allowed_roles.contains(&claims.role) {
+                    let (req, _payload) = req.into_parts();
                     return Ok(ServiceResponse::new(
-                        req.into_parts().0,
+                        req,
                         HttpResponse::Forbidden()
                             .json(serde_json::json!({
                                 "error": "Insufficient permissions",
                                 "message": "You don't have permission to access this resource"
                             }))
+                            .map_into_boxed_body()
                     ));
                 }
             }
@@ -211,13 +214,12 @@ impl RoleBasedAccessControl {
     }
 }
 
-impl<S, B> Transform<S> for RoleBasedAccessControl
+impl<S> Transform<S, ServiceRequest> for RoleBasedAccessControl
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<BoxBody>, Error = Error> + 'static,
     S::Future: 'static,
-    B: 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<BoxBody>;
     type Error = Error;
     type InitError = ();
     type Transform = RoleBasedAccessControlService<S>;
@@ -237,29 +239,48 @@ pub struct RoleBasedAccessControlService<S> {
     required_roles: Vec<String>,
 }
 
-impl<S, B> Service<ServiceRequest> for RoleBasedAccessControlService<S>
+impl<S> Service<ServiceRequest> for RoleBasedAccessControlService<S>
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<BoxBody>, Error = Error> + 'static,
     S::Future: 'static,
-    B: 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<BoxBody>;
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&mut self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
-    fn call(&mut self, req: ServiceRequest) -> Self::Future {
+    fn call(&self, req: ServiceRequest) -> Self::Future {
         let service = self.service.clone();
         let required_roles = self.required_roles.clone();
 
         Box::pin(async move {
             // Get claims from request extensions
-            let claims = req.extensions()
-                .get::<Claims>()
-                .ok_or(AppError::Unauthorized("Missing Authorization header".to_string()))?;
+            let claims_opt = req.extensions().get::<Claims>().map(|c| Claims { 
+                sub: c.sub.clone(), 
+                email: c.email.clone(), 
+                role: c.role.clone(), 
+                exp: c.exp, 
+                iat: c.iat 
+            });
+            
+            let claims: Claims = match claims_opt {
+                Some(c) => c,
+                None => {
+                    let (req_parts, _payload) = req.into_parts();
+                    return Ok(ServiceResponse::new(
+                        req_parts,
+                        HttpResponse::Unauthorized()
+                            .json(serde_json::json!({
+                                "error": "Unauthorized",
+                                "message": "Missing Authorization header"
+                            }))
+                            .map_into_boxed_body()
+                    ))
+                }
+            };
 
             // Check if user has required role
             if !required_roles.contains(&claims.role) {
@@ -272,6 +293,7 @@ where
                             "required_roles": required_roles,
                             "user_role": claims.role
                         }))
+                        .map_into_boxed_body()
                 ));
             }
 
@@ -308,13 +330,12 @@ impl PermissionBasedAccessControl {
     }
 }
 
-impl<S, B> Transform<S> for PermissionBasedAccessControl
+impl<S> Transform<S, ServiceRequest> for PermissionBasedAccessControl
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<BoxBody>, Error = Error> + 'static,
     S::Future: 'static,
-    B: 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<BoxBody>;
     type Error = Error;
     type InitError = ();
     type Transform = PermissionBasedAccessControlService<S>;
@@ -334,29 +355,41 @@ pub struct PermissionBasedAccessControlService<S> {
     required_permissions: Vec<String>,
 }
 
-impl<S, B> Service<ServiceRequest> for PermissionBasedAccessControlService<S>
+impl<S> Service<ServiceRequest> for PermissionBasedAccessControlService<S>
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<BoxBody>, Error = Error> + 'static,
     S::Future: 'static,
-    B: 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<BoxBody>;
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&mut self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
-    fn call(&mut self, req: ServiceRequest) -> Self::Future {
+    fn call(&self, req: ServiceRequest) -> Self::Future {
         let service = self.service.clone();
         let required_permissions = self.required_permissions.clone();
 
         Box::pin(async move {
             // Get claims from request extensions
-            let claims = req.extensions()
-                .get::<Claims>()
-                .ok_or(AppError::Unauthorized("Missing Authorization header".to_string()))?;
+            let claims_binding = req.extensions().get::<Claims>().cloned();
+            let claims = match claims_binding {
+                Some(c) => c,
+                None => {
+                    let (req, _payload) = req.into_parts();
+                    return Ok(ServiceResponse::new(
+                        req,
+                        HttpResponse::Unauthorized()
+                            .json(serde_json::json!({
+                                "error": "Unauthorized",
+                                "message": "Missing Authorization header"
+                            }))
+                            .map_into_boxed_body()
+                    ));
+                }
+            };
 
             // For now, we'll implement a simple permission check
             // In a real implementation, you'd check against user permissions from the database
@@ -377,8 +410,9 @@ where
 
             for required_permission in &required_permissions {
                 if !user_permissions.contains(&required_permission.as_str()) {
+                    let (req, _payload) = req.into_parts();
                     return Ok(ServiceResponse::new(
-                        req.into_parts().0,
+                        req,
                         HttpResponse::Forbidden()
                             .json(serde_json::json!({
                                 "error": "Insufficient permissions",
@@ -386,6 +420,7 @@ where
                                 "required_permissions": required_permissions,
                                 "user_permissions": user_permissions
                             }))
+                            .map_into_boxed_body()
                     ));
                 }
             }

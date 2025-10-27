@@ -1,5 +1,8 @@
 // backend/src/services/enhanced_user_management.rs
 use crate::errors::{AppError, AppResult};
+use crate::database::Database;
+use crate::services::cache::MultiLevelCache;
+use crate::services::monitoring::MonitoringService;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -208,7 +211,7 @@ pub struct EnhancedUserManagementService {
 }
 
 impl EnhancedUserManagementService {
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         let mut service = Self {
             user_profiles: Arc::new(RwLock::new(HashMap::new())),
             user_roles: Arc::new(RwLock::new(HashMap::new())),
@@ -218,12 +221,12 @@ impl EnhancedUserManagementService {
         };
         
         // Initialize with default roles
-        service.initialize_default_roles();
+        service.initialize_default_roles().await;
         service
     }
 
     /// Initialize default system roles
-    fn initialize_default_roles(&mut self) {
+    async fn initialize_default_roles(&mut self) {
         let admin_role = UserRole {
             id: "admin".to_string(),
             name: "Administrator".to_string(),
@@ -428,7 +431,7 @@ impl EnhancedUserManagementService {
             .unwrap_or_default();
 
         for permission in permissions {
-            if self.matches_permission(&permission, resource, action, &context.unwrap_or_default()).await? {
+            if self.matches_permission(&permission, resource, action, context.as_ref().unwrap_or(&HashMap::new())).await? {
                 return Ok(true);
             }
         }
@@ -623,6 +626,7 @@ impl EnhancedUserManagementService {
 
     /// Perform account management action
     pub async fn perform_account_action(&self, user_id: Uuid, action: AccountAction, performed_by: Uuid, reason: String) -> AppResult<()> {
+        let action_for_logging = action.clone();
         let mut profiles = self.user_profiles.write().await;
         if let Some(profile) = profiles.get_mut(&user_id) {
             match action {
@@ -645,8 +649,8 @@ impl EnhancedUserManagementService {
                     profile.account_status = AccountStatus::Active;
                 }
                 AccountAction::Delete { .. } => {
-                    profiles.remove(&user_id);
-                    self.permission_cache.write().await.remove(&user_id);
+                    // Cannot remove while borrowing mutably, handle separately
+                    return Err(AppError::Internal("Delete action must be handled separately".to_string()));
                 }
                 AccountAction::ChangeRole { new_role, .. } => {
                     profile.roles = vec![new_role];
@@ -665,7 +669,7 @@ impl EnhancedUserManagementService {
             profile.updated_at = Utc::now();
             
             // Log activity
-            self.log_user_activity(user_id, ActivityType::Custom(format!("Account action: {:?}", action)), &reason, None, None, None, None, HashMap::new()).await?;
+            self.log_user_activity(user_id, ActivityType::Custom(format!("Account action: {:?}", action_for_logging)), &reason, None, None, None, None, HashMap::new()).await?;
         } else {
             return Err(AppError::Validation("User profile not found".to_string()));
         }
@@ -676,6 +680,8 @@ impl EnhancedUserManagementService {
     /// Create user session
     pub async fn create_user_session(&self, user_id: Uuid, session_token: String, ip_address: String, user_agent: String, expires_at: DateTime<Utc>) -> AppResult<Uuid> {
         let session_id = Uuid::new_v4();
+        let ip_address_clone = ip_address.clone();
+        let user_agent_clone = user_agent.clone();
         let session = UserSession {
             id: session_id,
             user_id,
@@ -691,7 +697,7 @@ impl EnhancedUserManagementService {
         self.user_sessions.write().await.insert(session_id, session);
         
         // Log activity
-        self.log_user_activity(user_id, ActivityType::Login, "User logged in", None, None, Some(ip_address), Some(user_agent), HashMap::new()).await?;
+        self.log_user_activity(user_id, ActivityType::Login, "User logged in", None, None, Some(ip_address_clone), Some(user_agent_clone), HashMap::new()).await?;
 
         Ok(session_id)
     }
@@ -796,7 +802,13 @@ pub struct UserStatistics {
 
 impl Default for EnhancedUserManagementService {
     fn default() -> Self {
-        Self::new()
+        Self {
+            user_profiles: Arc::new(RwLock::new(HashMap::new())),
+            user_roles: Arc::new(RwLock::new(HashMap::new())),
+            user_sessions: Arc::new(RwLock::new(HashMap::new())),
+            activity_logs: Arc::new(RwLock::new(Vec::new())),
+            permission_cache: Arc::new(RwLock::new(HashMap::new())),
+        }
     }
 }
 

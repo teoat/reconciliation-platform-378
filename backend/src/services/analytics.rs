@@ -4,11 +4,12 @@
 //! data collection, metrics calculation, and dashboard data generation.
 
 use diesel::prelude::*;
-use diesel::sql_types::Jsonb;
 use diesel::sql_types::Json;
-use serde::{Deserialize, Serialize};
+use diesel::pg::sql_types::Jsonb;
+use crate::models::{JsonValue, User};
 use uuid::Uuid;
 use chrono::{DateTime, Utc, Duration};
+use serde::{Serialize, Deserialize};
 
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
@@ -42,18 +43,28 @@ pub struct DashboardData {
 }
 
 /// Activity item
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize, Clone, Queryable)]
+pub struct ActivityItemQueryResult {
+    pub id: Uuid,
+    pub action: String,
+    pub resource_type: String,
+    pub user_email: Option<String>,
+    pub created_at: DateTime<Utc>,
+    pub old_values: Option<JsonValue>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ActivityItem {
     pub id: Uuid,
     pub action: String,
     pub resource_type: String,
     pub user_email: Option<String>,
     pub timestamp: DateTime<Utc>,
-    pub details: Option<serde_json::Value>,
+    pub details: Option<JsonValue>,
 }
 
 /// Performance metrics
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PerformanceMetrics {
     pub average_processing_time_ms: f64,
     pub total_processing_time_ms: i64,
@@ -225,7 +236,7 @@ impl AnalyticsService {
         };
         
         // Cache the result for 5 minutes
-        self.cache.set(cache_key, &dashboard_data, Duration::seconds(300)).await?;
+        self.cache.set(cache_key, &dashboard_data, Some(std::time::Duration::from_secs(300))).await?;
         
         Ok(dashboard_data)
     }
@@ -241,12 +252,13 @@ impl AnalyticsService {
         let mut conn = self.db.get_connection()?;
         
         // Get project info
+        use crate::models::Project;
         let project = projects::table
             .filter(projects::id.eq(project_id))
-            .first::<(Uuid, String, Option<String>, Uuid, String, Option<serde_json::Value>, DateTime<Utc>, DateTime<Utc>)>(&mut conn)
+            .first::<Project>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
-        let project_name = project.1;
+        let project_name = project.name;
         
         // Get job counts
         let total_jobs = reconciliation_jobs::table
@@ -326,7 +338,7 @@ impl AnalyticsService {
         };
         
         // Cache the result for 10 minutes
-        self.cache.set(&cache_key, &project_stats, Duration::seconds(600)).await?;
+        self.cache.set(&cache_key, &project_stats, Some(std::time::Duration::from_secs(600))).await?;
         
         Ok(project_stats)
     }
@@ -338,10 +350,10 @@ impl AnalyticsService {
         // Get user info
         let user = users::table
             .filter(users::id.eq(user_id))
-            .first::<(Uuid, String, String, String, String, String, bool, DateTime<Utc>, DateTime<Utc>, Option<DateTime<Utc>>)>(&mut conn)
+            .first::<User>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
-        let user_email = user.1;
+        let user_email = user.email;
         
         // Get total actions
         let total_actions = audit_logs::table
@@ -501,19 +513,19 @@ impl AnalyticsService {
                 audit_logs::created_at,
                 audit_logs::old_values,
             ))
-            .load::<(Uuid, String, String, Option<String>, DateTime<Utc>, Option<Jsonb>)>(conn)
+            .load::<ActivityItemQueryResult>(conn)
             .map_err(|e| AppError::Database(e))?;
         
-        let activity_items = activities
+        let activity_items: Vec<ActivityItem> = activities
             .into_iter()
-            .map(|(id, action, resource_type, user_email, timestamp, details)| {
+            .map(|result| {
                 ActivityItem {
-                    id,
-                    action,
-                    resource_type,
-                    user_email,
-                    timestamp,
-                    details: details.map(|j| j.0).unwrap_or(serde_json::Value::Null),
+                    id: result.id,
+                    action: result.action,
+                    resource_type: result.resource_type,
+                    user_email: result.user_email,
+                    timestamp: result.created_at,
+                    details: result.old_values,
                 }
             })
             .collect();

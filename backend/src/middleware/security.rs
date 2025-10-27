@@ -5,6 +5,7 @@
 
 use actix_web::{dev::ServiceRequest, Error, HttpMessage, HttpRequest, HttpResponse, Result};
 use actix_web::dev::{Service, ServiceResponse, Transform};
+use actix_web::body::BoxBody;
 use actix_web::http::header::{HeaderName, HeaderValue};
 use actix_web::middleware::DefaultHeaders;
 use futures::future::{ok, Ready};
@@ -46,6 +47,7 @@ struct RateLimitEntry {
     requests: u32,
     window_start: SystemTime,
     last_request: SystemTime,
+    blocked_until: Option<SystemTime>,
 }
 
 /// Rate limiter
@@ -78,6 +80,7 @@ impl RateLimiter {
                 requests: 0,
                 window_start: now,
                 last_request: now,
+                blocked_until: None,
             }
         });
         
@@ -91,7 +94,7 @@ impl RateLimiter {
         if entry.requests >= self.config.burst_size {
             // Record rate limit hit
             if let Some(monitoring) = &self.monitoring {
-                monitoring.record_user_action("rate_limit_hit", key).await;
+                monitoring.record_user_action();
             }
             return Ok(false);
         }
@@ -100,7 +103,7 @@ impl RateLimiter {
         if entry.requests >= self.config.requests_per_minute {
             // Record rate limit hit
             if let Some(monitoring) = &self.monitoring {
-                monitoring.record_user_action("rate_limit_hit", key).await;
+                monitoring.record_user_action();
             }
             return Ok(false);
         }
@@ -194,21 +197,23 @@ impl SecurityService {
     
     /// Generate CSRF token
     pub fn generate_csrf_token(&self) -> String {
+        use base64::Engine as _;
         use rand::Rng;
         let mut rng = rand::thread_rng();
         let bytes: [u8; 32] = rng.gen();
-        base64::encode(bytes)
+        base64::engine::general_purpose::STANDARD.encode(bytes)
     }
     
     /// Validate CSRF token
     pub fn validate_csrf_token(&self, token: &str) -> AppResult<()> {
+        use base64::Engine as _;
         if token.len() < 32 {
             return Err(AppError::CsrfTokenInvalid);
         }
         
         // In a real implementation, you would validate against stored tokens
         // For now, we'll just check the format
-        if let Err(_) = base64::decode(token) {
+        if let Err(_) = base64::engine::general_purpose::STANDARD.decode(token) {
             return Err(AppError::CsrfTokenInvalid);
         }
         
@@ -297,14 +302,6 @@ pub struct SecurityMiddlewareState {
     pub csrf_tokens: Arc<RwLock<HashMap<String, String>>>,
 }
 
-/// Rate limit entry
-#[derive(Debug, Clone)]
-pub struct RateLimitEntry {
-    pub count: u32,
-    pub window_start: SystemTime,
-    pub blocked_until: Option<SystemTime>,
-}
-
 /// Security middleware
 pub struct SecurityMiddleware {
     config: SecurityMiddlewareConfig,
@@ -322,13 +319,12 @@ impl SecurityMiddleware {
     }
 }
 
-impl<S, B> Transform<S> for SecurityMiddleware
+impl<S> Transform<S, ServiceRequest> for SecurityMiddleware
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<BoxBody>, Error = Error> + 'static,
     S::Future: 'static,
-    B: 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<BoxBody>;
     type Error = Error;
     type InitError = ();
     type Transform = SecurityMiddlewareService<S>;
@@ -355,21 +351,20 @@ pub struct SecurityMiddlewareService<S> {
     state: SecurityMiddlewareState,
 }
 
-impl<S, B> Service<ServiceRequest> for SecurityMiddlewareService<S>
+impl<S> Service<ServiceRequest> for SecurityMiddlewareService<S>
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<BoxBody>, Error = Error> + 'static,
     S::Future: 'static,
-    B: 'static,
 {
-    type Response = ServiceResponse<B>;
+    type Response = ServiceResponse<BoxBody>;
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&mut self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
-    fn call(&mut self, req: ServiceRequest) -> Self::Future {
+    fn call(&self, req: ServiceRequest) -> Self::Future {
         let service = self.service.clone();
         let state = self.state.clone();
 
@@ -393,6 +388,7 @@ where
                                 "error": "Rate limit exceeded",
                                 "message": "Too many requests. Please try again later."
                             }))
+                            .map_into_boxed_body()
                     ));
                 }
             }
@@ -407,6 +403,7 @@ where
                                 "error": "CSRF token missing or invalid",
                                 "message": "CSRF protection is enabled for this endpoint."
                             }))
+                            .map_into_boxed_body()
                     ));
                 }
             }
@@ -421,6 +418,7 @@ where
                                 "error": "Invalid input detected",
                                 "message": "Request contains potentially malicious content."
                             }))
+                            .map_into_boxed_body()
                     ));
                 }
             }
@@ -437,7 +435,7 @@ where
             // Log security event if needed
             log_security_event(&state, &ip_address, &user_agent, &method, &path, res.status().as_u16()).await;
 
-            Ok(res)
+            Ok(res.map_into_boxed_body())
         })
     }
 }
@@ -466,26 +464,28 @@ async fn check_rate_limit(
             }
             
             // Increment count
-            entry.count += 1;
+            entry.requests += 1;
             
             // Check if limit exceeded
-            if entry.count > state.config.rate_limit_requests {
+            if entry.requests > state.config.rate_limit_requests {
                 entry.blocked_until = Some(now + Duration::from_secs(300)); // Block for 5 minutes
                 return Err(AppError::RateLimitExceeded);
             }
         } else {
             // New window
             *entry = RateLimitEntry {
-                count: 1,
+                requests: 1,
                 window_start: now,
+                last_request: now,
                 blocked_until: None,
             };
         }
     } else {
         // First request
         rate_limits.insert(key, RateLimitEntry {
-            count: 1,
+            requests: 1,
             window_start: now,
+            last_request: now,
             blocked_until: None,
         });
     }
@@ -520,11 +520,10 @@ async fn validate_request_input(
     // Check query parameters
     for param in req.query_string().split('&') {
         if let Some((key, value)) = param.split_once('=') {
-        if let Some((k, v)) = value.split_once('=') {
-            if let Err(_) = validate_input_string(k) {
+            if let Err(_) = validate_input_string(key) {
                 return Err(AppError::Validation("Invalid query parameter".to_string()));
             }
-            if let Err(_) = validate_input_string(v) {
+            if let Err(_) = validate_input_string(value) {
                 return Err(AppError::Validation("Invalid query parameter value".to_string()));
             }
         }
@@ -587,9 +586,25 @@ fn validate_input_string(input: &str) -> AppResult<()> {
 
 /// Add security headers to the request
 fn add_security_headers(req: &mut ServiceRequest, config: &SecurityMiddlewareConfig) {
-    // This would be implemented to add security headers
-    // For now, we'll just log that we would add them
-    println!("Adding security headers for request: {}", req.path());
+    let headers = req.headers_mut();
+    headers.insert(
+        HeaderName::from_static("x-xss-protection"),
+        HeaderValue::from_static("1; mode=block"),
+    );
+    headers.insert(
+        HeaderName::from_static("x-content-type-options"),
+        HeaderValue::from_static("nosniff"),
+    );
+    headers.insert(
+        HeaderName::from_static("strict-transport-security"),
+        HeaderValue::from_static("max-age=31536000; includeSubDomains"),
+    );
+    if config.enable_csp {
+        headers.insert(
+            HeaderName::from_static("content-security-policy"),
+            HeaderValue::from_static("default-src 'self'; script-src 'self'; object-src 'none'; frame-ancestors 'none';"),
+        );
+    }
 }
 
 /// Log security event
@@ -637,11 +652,11 @@ impl SecurityHeadersMiddleware {
     }
 }
 
-impl<S, B> Transform<S> for SecurityHeadersMiddleware
+impl<S, B> Transform<S, ServiceRequest> for SecurityHeadersMiddleware
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
-    B: 'static,
+    B: 'static + actix_web::body::MessageBody,
 {
     type Response = ServiceResponse<B>;
     type Error = Error;
@@ -663,21 +678,21 @@ pub struct SecurityHeadersService<S> {
     config: SecurityMiddlewareConfig,
 }
 
-impl<S, B> Service for SecurityHeadersService<S>
+impl<S, B> Service<ServiceRequest> for SecurityHeadersService<S>
 where
-    S: Service<Request = ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
     S::Future: 'static,
-    B: 'static,
+    B: 'static + actix_web::body::MessageBody,
 {
     type Response = ServiceResponse<B>;
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&mut self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
-    fn call(&mut self, req: ServiceRequest) -> Self::Future {
+    fn call(&self, req: ServiceRequest) -> Self::Future {
         let service = self.service.clone();
         let config = self.config.clone();
 

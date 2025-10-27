@@ -70,7 +70,9 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
       const grouped = data.reduce((acc, row) => {
         const category = row[selectedColumn]
         const value = Number(row[numericCol])
-        acc[category] = (acc[category] || 0) + value
+        if (!isNaN(value)) {
+          acc[category] = (acc[category] || 0) + value
+        }
         return acc
       }, {} as Record<string, number>)
 

@@ -5,6 +5,8 @@
 
 use actix_web::{web, HttpRequest, HttpResponse, Result};
 use actix_web_actors::ws;
+use diesel::prelude::*;
+use diesel::{QueryDsl, ExpressionMethods, RunQueryDsl};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -15,7 +17,7 @@ use crate::errors::{AppError, AppResult};
 use crate::models::User;
 
 /// JWT claims structure
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String, // User ID
     pub email: String,
@@ -244,6 +246,13 @@ impl ValidationUtils {
     /// Sanitize string
     pub fn sanitize_string(s: &str) -> String {
         crate::utils::string::sanitize_string(s)
+    }
+    
+    /// Validate pagination parameters
+    pub fn validate_pagination(page: Option<i64>, per_page: Option<i64>) -> AppResult<(i64, i64)> {
+        let page = page.unwrap_or(1).max(1);
+        let per_page = per_page.unwrap_or(20).max(1).min(100);
+        Ok((page, per_page))
     }
 }
 

@@ -6,8 +6,8 @@
 set -e
 
 # Configuration
-TEST_DIR="/app/infrastructure/performance"
-REPORT_DIR="/reports/performance"
+TEST_DIR="$(pwd)/infrastructure/performance"
+REPORT_DIR="$(pwd)/reports/performance"
 ARTILLERY_CONFIG="$TEST_DIR/load-test.yml"
 TEST_DATA_DIR="$TEST_DIR/test-data"
 TARGET_URL="${TARGET_URL:-http://localhost:1000}"

@@ -283,7 +283,7 @@ export function useSearchAndFilter<T>(
       result = result.filter(item =>
         searchFields.some(field => {
           const value = item[field]
-          return value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+          return value != null && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
         })
       )
     }

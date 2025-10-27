@@ -4,11 +4,173 @@
 //! project validation, and project-related business logic.
 
 use diesel::prelude::*;
-use diesel::sql_types::Jsonb;
-use diesel::{QueryDsl, ExpressionMethods, RunQueryDsl};
+use diesel::{QueryDsl, ExpressionMethods, RunQueryDsl, OptionalExtension, QueryableByName};
+use diesel::pg::sql_types::Jsonb;
 use uuid::Uuid;
 use chrono::Utc;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
+use crate::models::JsonValue;
+// Query result structs for Diesel queries
+#[derive(Queryable)]
+pub struct ProjectQueryResult {
+    pub project_id: Uuid,
+    pub project_name: String,
+    pub project_description: Option<String>,
+    pub owner_id: Uuid,
+    pub project_status: String,
+    pub settings: Option<JsonValue>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+    pub owner_email: String,
+}
+
+#[derive(Queryable)]
+pub struct ProjectWithStatsResult {
+    pub id: Uuid,
+    pub name: String,
+    pub description: Option<String>,
+    pub owner_id: Uuid,
+    pub status: String,
+    pub settings: Option<JsonValue>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+    pub owner_email: String,
+    pub total_jobs: i64,
+    pub total_data_sources: i64,
+}
+
+#[derive(QueryableByName, Debug)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct JobStats {
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub total_jobs: i64,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub completed_jobs: i64,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub failed_jobs: i64,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub running_jobs: i64,
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Double>)]
+    pub avg_duration_seconds: Option<f64>,
+}
+
+#[derive(QueryableByName, Debug)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct FileStats {
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub total_files: i64,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub completed_files: i64,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub failed_files: i64,
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::BigInt>)]
+    pub total_size_bytes: Option<i64>,
+}
+
+#[derive(QueryableByName, Debug)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct RecordStats {
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub total_records: i64,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub matched_records: i64,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub unmatched_records: i64,
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Double>)]
+    pub avg_confidence_score: Option<f64>,
+}
+
+#[derive(QueryableByName, Debug, Serialize)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct RecentActivity {
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub activity_type: String,
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub activity_name: String,
+    #[diesel(sql_type = diesel::sql_types::Timestamptz)]
+    pub activity_time: chrono::DateTime<chrono::Utc>,
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub activity_status: String,
+}
+
+#[derive(QueryableByName, Debug, Serialize)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct MonthlyTrend {
+    #[diesel(sql_type = diesel::sql_types::Timestamptz)]
+    pub month: chrono::DateTime<chrono::Utc>,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub job_count: i64,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub completed_count: i64,
+}
+
+#[derive(QueryableByName, Debug)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct PerformanceData {
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Double>)]
+    pub avg_job_duration: Option<f64>,
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Double>)]
+    pub min_job_duration: Option<f64>,
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Double>)]
+    pub max_job_duration: Option<f64>,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub total_jobs: i64,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub successful_jobs: i64,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub failed_jobs: i64,
+}
+
+#[derive(QueryableByName, Debug)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct FilePerformanceData {
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Double>)]
+    pub avg_processing_time: Option<f64>,
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::BigInt>)]
+    pub total_size_processed: Option<i64>,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub total_files_processed: i64,
+}
+
+#[derive(QueryableByName, Debug)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct CollaboratorData {
+    #[diesel(sql_type = diesel::sql_types::Uuid)]
+    pub id: Uuid,
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub email: String,
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Text>)]
+    pub first_name: Option<String>,
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Text>)]
+    pub last_name: Option<String>,
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub role: String,
+    #[diesel(sql_type = diesel::sql_types::Bool)]
+    pub is_active: bool,
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>)]
+    pub last_login_at: Option<chrono::DateTime<chrono::Utc>>,
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
+    pub job_count: i64,
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>)]
+    pub last_activity: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+#[derive(QueryableByName, Debug)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
+pub struct ActivityData {
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub activity_type: String,
+    #[diesel(sql_type = diesel::sql_types::Text)]
+    pub activity_description: String,
+    #[diesel(sql_type = diesel::sql_types::Timestamptz)]
+    pub activity_time: chrono::DateTime<chrono::Utc>,
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Uuid>)]
+    pub user_id: Option<Uuid>,
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Uuid>)]
+    pub job_id: Option<Uuid>,
+    #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Uuid>)]
+    pub file_id: Option<Uuid>,
+}
 use diesel::sql_types::Json;
 use crate::services::auth::ValidationUtils;
 
@@ -32,7 +194,7 @@ pub struct CreateProjectRequest {
     pub description: Option<String>,
     pub owner_id: Uuid,
     pub status: Option<String>,
-    pub settings: Option<serde_json::Value>,
+    pub settings: Option<JsonValue>,
 }
 
 /// Project update request
@@ -41,7 +203,7 @@ pub struct UpdateProjectRequest {
     pub name: Option<String>,
     pub description: Option<String>,
     pub status: Option<String>,
-    pub settings: Option<serde_json::Value>,
+    pub settings: Option<JsonValue>,
 }
 
 /// Project list response
@@ -62,7 +224,7 @@ pub struct ProjectInfo {
     pub owner_id: Uuid,
     pub owner_email: String,
     pub status: String,
-    pub settings: Option<serde_json::Value>,
+    pub settings: Option<JsonValue>,
     pub created_at: chrono::DateTime<chrono::Utc>,
     pub updated_at: chrono::DateTime<chrono::Utc>,
     pub job_count: i64,
@@ -120,7 +282,6 @@ impl ProjectService {
         let now = Utc::now();
         
         let new_project = NewProject {
-            id: project_id,
             name: request.name.trim().to_string(),
             description: request.description.map(|d| d.trim().to_string()),
             owner_id: request.owner_id,
@@ -128,14 +289,14 @@ impl ProjectService {
             settings: request.settings,
         };
         
-        with_transaction(&self.db, |tx| {
+        crate::database::utils::with_transaction(self.db.get_pool(), |tx| {
             diesel::insert_into(projects::table)
                 .values(&new_project)
-                .execute(tx.connection())
+                .execute(tx)
                 .map_err(|e| AppError::Database(e))?;
             
             Ok(())
-        })?;
+        }).await?;
         
         // Get created project with additional info
         self.get_project_by_id(project_id).await
@@ -146,7 +307,7 @@ impl ProjectService {
         let mut conn = self.db.get_connection()?;
         
         // Get project with owner info
-        let (project, owner_email) = projects::table
+        let result = projects::table
             .inner_join(users::table)
             .filter(projects::id.eq(project_id))
             .select((
@@ -160,7 +321,7 @@ impl ProjectService {
                 projects::updated_at,
                 users::email,
             ))
-            .first::<(Uuid, String, Option<String>, Uuid, String, Option<serde_json::Value>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, String)>(&mut conn)
+            .first::<ProjectQueryResult>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
         // Get job count
@@ -182,20 +343,20 @@ impl ProjectService {
             .filter(reconciliation_jobs::project_id.eq(project_id))
             .order(reconciliation_jobs::updated_at.desc())
             .select(reconciliation_jobs::updated_at)
-            .first::<Option<chrono::DateTime<chrono::Utc>>>(&mut conn)
-            .map_err(|e| AppError::Database(e))?
-            .flatten();
+            .first::<chrono::DateTime<chrono::Utc>>(&mut conn)
+            .optional()
+            .map_err(|e| AppError::Database(e))?;
         
         Ok(ProjectInfo {
-            id: project.0,
-            name: project.1,
-            description: project.2,
-            owner_id: project.3,
-            owner_email,
-            status: project.4,
-            settings: project.5,
-            created_at: project.6,
-            updated_at: project.7,
+            id: result.project_id,
+            name: result.project_name,
+            description: result.project_description,
+            owner_id: result.owner_id,
+            owner_email: result.owner_email,
+            status: result.project_status,
+            settings: result.settings,
+            created_at: result.created_at,
+            updated_at: result.updated_at,
             job_count,
             data_source_count,
             last_activity,
@@ -235,6 +396,7 @@ impl ProjectService {
             description: request.description.map(|d| d.trim().to_string()),
             status: request.status,
             settings: request.settings,
+            is_active: None, // Not updating is_active in this function
         };
         
         // Update project
@@ -283,12 +445,9 @@ impl ProjectService {
             .get_result::<i64>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
-        // Get projects with additional info
-        let projects_with_info = projects::table
+        // Get projects with owner info
+        let projects_with_owner = projects::table
             .inner_join(users::table)
-            .left_join(reconciliation_jobs::table)
-            .left_join(data_sources::table)
-            .group_by(projects::id)
             .select((
                 projects::id,
                 projects::name,
@@ -299,31 +458,42 @@ impl ProjectService {
                 projects::created_at,
                 projects::updated_at,
                 users::email,
-                diesel::dsl::count(reconciliation_jobs::id),
-                diesel::dsl::count(data_sources::id),
             ))
             .order(projects::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, Option<String>, Uuid, String, Option<serde_json::Value>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, String, i64, i64)>(&mut conn)
+            .load::<ProjectQueryResult>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
-        let project_infos = projects_with_info
+        // Get counts separately for each project
+        let project_infos: Vec<ProjectInfo> = projects_with_owner
             .into_iter()
-            .map(|(id, name, description, owner_id, status, settings, created_at, updated_at, owner_email, job_count, data_source_count)| {
+            .map(|result| {
+                let job_count = reconciliation_jobs::table
+                    .filter(reconciliation_jobs::project_id.eq(result.project_id))
+                    .count()
+                    .get_result::<i64>(&mut conn)
+                    .unwrap_or(0);
+                
+                let data_source_count = data_sources::table
+                    .filter(data_sources::project_id.eq(result.project_id))
+                    .count()
+                    .get_result::<i64>(&mut conn)
+                    .unwrap_or(0);
+                
                 ProjectInfo {
-                    id,
-                    name,
-                    description,
-                    owner_id,
-                    owner_email,
-                    status,
-                    settings,
-                    created_at,
-                    updated_at,
-                    job_count,
-                    data_source_count,
-                    last_activity: None, // Would need additional query for this
+                    id: result.project_id,
+                    name: result.project_name,
+                    description: result.project_description,
+                    owner_id: result.owner_id,
+                    owner_email: result.owner_email,
+                    status: result.project_status,
+                    settings: result.settings,
+                    created_at: result.created_at,
+                    updated_at: result.updated_at,
+                    job_count: job_count,
+                    data_source_count: data_source_count,
+                    last_activity: None,
                 }
             })
             .collect();
@@ -368,36 +538,36 @@ impl ProjectService {
             .order(projects::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, Option<String>, Uuid, String, Option<Json<serde_json::Value>>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, String)>(&mut conn)
+            .load::<ProjectQueryResult>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
         let project_infos = projects_with_owner
             .into_iter()
-            .map(|(id, name, description, owner_id, status, settings, created_at, updated_at, owner_email)| {
+            .map(|result| {
                 // Get job count for this project
                 let job_count = reconciliation_jobs::table
-                    .filter(reconciliation_jobs::project_id.eq(id))
+                    .filter(reconciliation_jobs::project_id.eq(result.project_id))
                     .count()
                     .get_result::<i64>(&mut conn)
                     .unwrap_or(0);
                 
                 // Get data source count for this project
                 let data_source_count = data_sources::table
-                    .filter(data_sources::project_id.eq(id))
+                    .filter(data_sources::project_id.eq(result.project_id))
                     .count()
                     .get_result::<i64>(&mut conn)
                     .unwrap_or(0);
                 
                 ProjectInfo {
-                    id,
-                    name,
-                    description,
-                    owner_id,
-                    owner_email,
-                    status,
-                    settings,
-                    created_at,
-                    updated_at,
+                    id: result.project_id,
+                    name: result.project_name,
+                    description: result.project_description,
+                    owner_id: result.owner_id,
+                    owner_email: result.owner_email,
+                    status: result.project_status,
+                    settings: result.settings,
+                    created_at: result.created_at,
+                    updated_at: result.updated_at,
                     job_count,
                     data_source_count,
                     last_activity: None,
@@ -453,12 +623,13 @@ impl ProjectService {
             .order(projects::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, Option<String>, Uuid, String, Option<Jsonb>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, String)>(&mut conn)
+            .load::<ProjectQueryResult>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
         let project_infos = projects_with_info
             .into_iter()
-            .map(|(id, name, description, owner_id, status, settings, created_at, updated_at, owner_email)| {
+            .map(|result| {
+                let id = result.project_id;
                 // Get counts separately for each project
                 let job_count = reconciliation_jobs::table
                     .filter(reconciliation_jobs::project_id.eq(id))
@@ -475,15 +646,15 @@ impl ProjectService {
                     .unwrap_or(0);
 
                 ProjectInfo {
-                    id,
-                    name,
-                    description,
-                    owner_id,
-                    owner_email,
-                    status,
-                    settings: settings.map(|j| serde_json::Value::Null), // TODO: Fix Jsonb conversion
-                    created_at,
-                    updated_at,
+                    id: result.project_id,
+                    name: result.project_name,
+                    description: result.project_description,
+                    owner_id: result.owner_id,
+                    owner_email: result.owner_email,
+                    status: result.project_status,
+                    settings: result.settings,
+                    created_at: result.created_at,
+                    updated_at: result.updated_at,
                     job_count,
                     data_source_count,
                     last_activity: None,
@@ -556,34 +727,34 @@ impl ProjectService {
             ))
             .order(projects::created_at.desc())
             .limit(5)
-            .load::<(Uuid, String, Option<String>, Uuid, String, Option<Json<serde_json::Value>>, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, String)>(&mut conn)
+            .load::<ProjectQueryResult>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
         // Get counts separately for each project
         let mut recent_project_infos = Vec::new();
-        for (id, name, description, owner_id, status, settings, created_at, updated_at, owner_email) in recent_projects {
+        for result in recent_projects {
             let job_count = reconciliation_jobs::table
-                .filter(reconciliation_jobs::project_id.eq(id))
+                .filter(reconciliation_jobs::project_id.eq(result.project_id))
                 .count()
                 .get_result::<i64>(&mut conn)
                 .map_err(|e| AppError::Database(e))?;
                 
             let data_source_count = data_sources::table
-                .filter(data_sources::project_id.eq(id))
+                .filter(data_sources::project_id.eq(result.project_id))
                 .count()
                 .get_result::<i64>(&mut conn)
                 .map_err(|e| AppError::Database(e))?;
             
             recent_project_infos.push(ProjectInfo {
-                id,
-                name,
-                description,
-                owner_id,
-                owner_email,
-                status,
-                settings,
-                created_at,
-                updated_at,
+                id: result.project_id,
+                name: result.project_name,
+                description: result.project_description,
+                owner_id: result.owner_id,
+                owner_email: result.owner_email,
+                status: result.project_status,
+                settings: result.settings,
+                created_at: result.created_at,
+                updated_at: result.updated_at,
                 job_count: job_count,
                 data_source_count: data_source_count,
                 last_activity: None,
@@ -634,138 +805,125 @@ impl ProjectService {
         
         // Get reconciliation job statistics
         let job_stats = diesel::sql_query(
-            "SELECT 
+            "SELECT
                 COUNT(*) as total_jobs,
                 COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_jobs,
                 COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_jobs,
                 COUNT(CASE WHEN status = 'running' THEN 1 END) as running_jobs,
                 AVG(CASE WHEN status = 'completed' THEN EXTRACT(EPOCH FROM (updated_at - created_at)) END) as avg_duration_seconds
-             FROM reconciliation_jobs 
+             FROM reconciliation_jobs
              WHERE project_id = $1"
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
-        .get_result::<(i64, i64, i64, i64, Option<f64>)>(&mut conn)
+        .get_result::<JobStats>(&mut conn)
         .map_err(|e| AppError::Database(e))?;
         
         // Get file statistics
         let file_stats = diesel::sql_query(
-            "SELECT 
+            "SELECT
                 COUNT(*) as total_files,
                 COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_files,
                 COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_files,
                 SUM(CASE WHEN status = 'completed' THEN size ELSE 0 END) as total_size_bytes
-             FROM files 
+             FROM files
              WHERE project_id = $1"
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
-        .get_result::<(i64, i64, i64, Option<i64>)>(&mut conn)
+        .get_result::<FileStats>(&mut conn)
         .map_err(|e| AppError::Database(e))?;
         
         // Get reconciliation record statistics
         let record_stats = diesel::sql_query(
-            "SELECT 
+            "SELECT
                 COUNT(*) as total_records,
                 COUNT(CASE WHEN status = 'matched' THEN 1 END) as matched_records,
                 COUNT(CASE WHEN status = 'unmatched' THEN 1 END) as unmatched_records,
                 AVG(confidence_score) as avg_confidence_score
-             FROM reconciliation_records 
+             FROM reconciliation_records
              WHERE project_id = $1"
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
-        .get_result::<(i64, i64, i64, Option<f64>)>(&mut conn)
+        .get_result::<RecordStats>(&mut conn)
         .map_err(|e| AppError::Database(e))?;
         
         // Get recent activity
         let recent_activity = diesel::sql_query(
-            "SELECT 
+            "SELECT
                 'job' as activity_type,
                 name as activity_name,
                 created_at as activity_time,
                 status as activity_status
-             FROM reconciliation_jobs 
-             WHERE project_id = $1
-             UNION ALL
-             SELECT 
+              FROM reconciliation_jobs
+              WHERE project_id = $1
+              UNION ALL
+              SELECT
                 'file' as activity_type,
                 filename as activity_name,
                 created_at as activity_time,
                 status as activity_status
-             FROM files 
-             WHERE project_id = $1
-             ORDER BY activity_time DESC 
-             LIMIT 10"
+              FROM files
+              WHERE project_id = $1
+              ORDER BY activity_time DESC
+              LIMIT 10"
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
-        .load::<(String, String, chrono::DateTime<chrono::Utc>, String)>(&mut conn)
+        .load::<RecentActivity>(&mut conn)
         .map_err(|e| AppError::Database(e))?;
         
         // Get monthly job trends
         let monthly_trends = diesel::sql_query(
-            "SELECT 
+            "SELECT
                 DATE_TRUNC('month', created_at) as month,
                 COUNT(*) as job_count,
                 COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_count
-             FROM reconciliation_jobs 
-             WHERE project_id = $1 
-             AND created_at >= NOW() - INTERVAL '12 months'
-             GROUP BY DATE_TRUNC('month', created_at)
-             ORDER BY month"
+              FROM reconciliation_jobs
+              WHERE project_id = $1
+              AND created_at >= NOW() - INTERVAL '12 months'
+              GROUP BY DATE_TRUNC('month', created_at)
+              ORDER BY month"
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
-        .load::<(chrono::DateTime<chrono::Utc>, i64, i64)>(&mut conn)
+        .load::<MonthlyTrend>(&mut conn)
         .map_err(|e| AppError::Database(e))?;
         
         Ok(ProjectAnalytics {
             project,
             job_statistics: JobStatistics {
-                total_jobs: job_stats.0,
-                completed_jobs: job_stats.1,
-                failed_jobs: job_stats.2,
-                running_jobs: job_stats.3,
-                average_duration_seconds: job_stats.4,
-                success_rate: if job_stats.0 > 0 {
-                    Some(job_stats.1 as f64 / job_stats.0 as f64)
+                total_jobs: job_stats.total_jobs,
+                completed_jobs: job_stats.completed_jobs,
+                failed_jobs: job_stats.failed_jobs,
+                running_jobs: job_stats.running_jobs,
+                average_duration_seconds: job_stats.avg_duration_seconds,
+                success_rate: if job_stats.total_jobs > 0 {
+                    Some(job_stats.completed_jobs as f64 / job_stats.total_jobs as f64)
                 } else {
                     None
                 },
             },
             file_statistics: FileStatistics {
-                total_files: file_stats.0,
-                completed_files: file_stats.1,
-                failed_files: file_stats.2,
-                total_size_bytes: file_stats.3.unwrap_or(0),
-                success_rate: if file_stats.0 > 0 {
-                    Some(file_stats.1 as f64 / file_stats.0 as f64)
+                total_files: file_stats.total_files,
+                completed_files: file_stats.completed_files,
+                failed_files: file_stats.failed_files,
+                total_size_bytes: file_stats.total_size_bytes.unwrap_or(0),
+                success_rate: if file_stats.total_files > 0 {
+                    Some(file_stats.completed_files as f64 / file_stats.total_files as f64)
                 } else {
                     None
                 },
             },
             record_statistics: RecordStatistics {
-                total_records: record_stats.0,
-                matched_records: record_stats.1,
-                unmatched_records: record_stats.2,
-                average_confidence_score: record_stats.3,
-                match_rate: if record_stats.0 > 0 {
-                    Some(record_stats.1 as f64 / record_stats.0 as f64)
+                total_records: record_stats.total_records,
+                matched_records: record_stats.matched_records,
+                unmatched_records: record_stats.unmatched_records,
+                average_confidence_score: record_stats.avg_confidence_score,
+                match_rate: if record_stats.total_records > 0 {
+                    Some(record_stats.matched_records as f64 / record_stats.total_records as f64)
                 } else {
                     None
                 },
             },
-            recent_activity: recent_activity.into_iter().map(|(activity_type, activity_name, activity_time, activity_status)| {
-                RecentActivity {
-                    activity_type,
-                    activity_name,
-                    activity_time,
-                    activity_status,
-                }
-            }).collect(),
-            monthly_trends: monthly_trends.into_iter().map(|(month, job_count, completed_count)| {
-                MonthlyTrend {
-                    month,
-                    job_count,
-                    completed_count,
-                }
-            }).collect(),
+            recent_activity,
+            monthly_trends,
             generated_at: chrono::Utc::now(),
         })
     }
@@ -776,56 +934,56 @@ impl ProjectService {
         
         // Get performance metrics for the last 30 days
         let performance_data = diesel::sql_query(
-            "SELECT 
+            "SELECT
                 AVG(EXTRACT(EPOCH FROM (updated_at - created_at))) as avg_job_duration,
                 MIN(EXTRACT(EPOCH FROM (updated_at - created_at))) as min_job_duration,
                 MAX(EXTRACT(EPOCH FROM (updated_at - created_at))) as max_job_duration,
                 COUNT(*) as total_jobs,
                 COUNT(CASE WHEN status = 'completed' THEN 1 END) as successful_jobs,
                 COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_jobs
-             FROM reconciliation_jobs 
-             WHERE project_id = $1 
+             FROM reconciliation_jobs
+             WHERE project_id = $1
              AND created_at >= NOW() - INTERVAL '30 days'"
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
-        .get_result::<(Option<f64>, Option<f64>, Option<f64>, i64, i64, i64)>(&mut conn)
+        .get_result::<PerformanceData>(&mut conn)
         .map_err(|e| AppError::Database(e))?;
         
         // Get file processing performance
         let file_performance = diesel::sql_query(
-            "SELECT 
+            "SELECT
                 AVG(EXTRACT(EPOCH FROM (updated_at - created_at))) as avg_processing_time,
                 SUM(size) as total_size_processed,
                 COUNT(*) as total_files_processed
-             FROM files 
-             WHERE project_id = $1 
+             FROM files
+             WHERE project_id = $1
              AND created_at >= NOW() - INTERVAL '30 days'
              AND status = 'completed'"
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
-        .get_result::<(Option<f64>, Option<i64>, i64)>(&mut conn)
+        .get_result::<FilePerformanceData>(&mut conn)
         .map_err(|e| AppError::Database(e))?;
         
         Ok(ProjectPerformance {
             job_performance: JobPerformance {
-                average_duration_seconds: performance_data.0,
-                min_duration_seconds: performance_data.1,
-                max_duration_seconds: performance_data.2,
-                total_jobs: performance_data.3,
-                successful_jobs: performance_data.4,
-                failed_jobs: performance_data.5,
-                success_rate: if performance_data.3 > 0 {
-                    Some(performance_data.4 as f64 / performance_data.3 as f64)
+                average_duration_seconds: performance_data.avg_job_duration,
+                min_duration_seconds: performance_data.min_job_duration,
+                max_duration_seconds: performance_data.max_job_duration,
+                total_jobs: performance_data.total_jobs,
+                successful_jobs: performance_data.successful_jobs,
+                failed_jobs: performance_data.failed_jobs,
+                success_rate: if performance_data.total_jobs > 0 {
+                    Some(performance_data.successful_jobs as f64 / performance_data.total_jobs as f64)
                 } else {
                     None
                 },
             },
             file_performance: FilePerformance {
-                average_processing_time_seconds: file_performance.0,
-                total_size_processed_bytes: file_performance.1.unwrap_or(0),
-                total_files_processed: file_performance.2,
-                average_file_size_bytes: if file_performance.2 > 0 {
-                    Some(file_performance.1.unwrap_or(0) as f64 / file_performance.2 as f64)
+                average_processing_time_seconds: file_performance.avg_processing_time,
+                total_size_processed_bytes: file_performance.total_size_processed.unwrap_or(0),
+                total_files_processed: file_performance.total_files_processed,
+                average_file_size_bytes: if file_performance.total_files_processed > 0 {
+                    Some(file_performance.total_size_processed.unwrap_or(0) as f64 / file_performance.total_files_processed as f64)
                 } else {
                     None
                 },
@@ -861,20 +1019,20 @@ impl ProjectService {
              ORDER BY last_activity DESC NULLS LAST"
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
-        .load::<(Uuid, String, Option<String>, Option<String>, String, bool, Option<chrono::DateTime<chrono::Utc>>, i64, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
+        .load::<CollaboratorData>(&mut conn)
         .map_err(|e| AppError::Database(e))?;
-        
-        Ok(collaborators.into_iter().map(|(id, email, first_name, last_name, role, is_active, last_login_at, job_count, last_activity)| {
+
+        Ok(collaborators.into_iter().map(|collaborator| {
             ProjectCollaborator {
-                id,
-                email,
-                first_name,
-                last_name,
-                role,
-                is_active,
-                last_login_at,
-                job_count,
-                last_activity,
+                id: collaborator.id,
+                email: collaborator.email,
+                first_name: collaborator.first_name,
+                last_name: collaborator.last_name,
+                role: collaborator.role,
+                is_active: collaborator.is_active,
+                last_login_at: collaborator.last_login_at,
+                job_count: collaborator.job_count,
+                last_activity: collaborator.last_activity,
             }
         }).collect())
     }
@@ -929,19 +1087,48 @@ impl ProjectService {
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .bind::<diesel::sql_types::BigInt, _>(limit)
-        .load::<(String, String, chrono::DateTime<chrono::Utc>, Option<Uuid>, Option<Uuid>, Option<Uuid>)>(&mut conn)
+        .load::<ActivityData>(&mut conn)
         .map_err(|e| AppError::Database(e))?;
-        
-        Ok(activities.into_iter().map(|(activity_type, activity_description, activity_time, user_id, job_id, file_id)| {
+
+        Ok(activities.into_iter().map(|activity| {
             ProjectActivity {
-                activity_type,
-                activity_description,
-                activity_time,
-                user_id,
-                job_id,
-                file_id,
+                activity_type: activity.activity_type,
+                activity_description: activity.activity_description,
+                activity_time: activity.activity_time,
+                user_id: activity.user_id,
+                job_id: activity.job_id,
+                file_id: activity.file_id,
             }
         }).collect())
+    }
+    
+    /// Get project statistics summary
+    pub async fn get_project_statistics(&self) -> AppResult<ProjectStatistics> {
+        let mut conn = self.db.get_connection()?;
+        
+        // Get total projects count
+        let total_projects = projects::table
+            .count()
+            .get_result::<i64>(&mut conn)?;
+        
+        // Get active projects count
+        let active_projects = projects::table
+            .filter(projects::status.eq("Active"))
+            .count()
+            .get_result::<i64>(&mut conn)?;
+        
+        // Get completed projects count
+        let completed_projects = projects::table
+            .filter(projects::status.eq("Completed"))
+            .count()
+            .get_result::<i64>(&mut conn)?;
+        
+        Ok(ProjectStatistics {
+            total_projects: total_projects as u32,
+            active_projects: active_projects as u32,
+            completed_projects: completed_projects as u32,
+            archived_projects: (total_projects - active_projects - completed_projects) as u32,
+        })
     }
 }
 
@@ -988,20 +1175,7 @@ pub struct RecordStatistics {
     pub match_rate: Option<f64>,
 }
 
-#[derive(Debug, Serialize)]
-pub struct RecentActivity {
-    pub activity_type: String,
-    pub activity_name: String,
-    pub activity_time: chrono::DateTime<chrono::Utc>,
-    pub activity_status: String,
-}
 
-#[derive(Debug, Serialize)]
-pub struct MonthlyTrend {
-    pub month: chrono::DateTime<chrono::Utc>,
-    pub job_count: i64,
-    pub completed_count: i64,
-}
 
 #[derive(Debug, Serialize)]
 pub struct ProjectPerformance {
@@ -1029,6 +1203,8 @@ pub struct FilePerformance {
     pub average_file_size_bytes: Option<f64>,
 }
 
+// Removed duplicate get_project_analytics implementation
+
 #[derive(Debug, Serialize)]
 pub struct ProjectCollaborator {
     pub id: Uuid,
@@ -1042,6 +1218,28 @@ pub struct ProjectCollaborator {
     pub last_activity: Option<chrono::DateTime<chrono::Utc>>,
 }
 
+/// Project statistics summary
+#[derive(Debug, Serialize)]
+pub struct ProjectStatistics {
+    pub total_projects: u32,
+    pub active_projects: u32,
+    pub completed_projects: u32,
+    pub archived_projects: u32,
+}
+
+/// Activity event for project analytics
+#[derive(Debug, Serialize)]
+pub struct ActivityEvent {
+    pub id: Uuid,
+    pub timestamp: chrono::DateTime<chrono::Utc>,
+    pub event_type: String,
+    pub description: String,
+    pub user_id: Option<Uuid>,
+    pub job_id: Option<Uuid>,
+    pub file_id: Option<Uuid>,
+}
+
+/// Project activity data
 #[derive(Debug, Serialize)]
 pub struct ProjectActivity {
     pub activity_type: String,

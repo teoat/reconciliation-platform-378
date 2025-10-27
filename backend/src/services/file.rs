@@ -9,7 +9,8 @@ use std::path::Path;
 use std::fs;
 use sha2::{Sha256, Digest};
 use chrono::Utc;
-use serde::{Deserialize, Serialize};
+use serde::{Serialize, Deserialize};
+use crate::models::JsonValue;
 
 use crate::database::{Database, utils::with_transaction};
 use crate::errors::{AppError, AppResult};
@@ -149,7 +150,7 @@ impl FileService {
         let now = Utc::now();
         let new_file = NewUploadedFile {
             project_id,
-            filename: unique_filename,
+            filename: unique_filename.clone(),
             original_filename: filename.clone(),
             file_size: file_data.len() as i64,
             content_type: content_type.clone(),
@@ -391,7 +392,7 @@ impl FileService {
         "#;
         
         let record_id = uuid::Uuid::new_v4();
-        let metadata_json = serde_json::to_string(&serde_json::Value::Object(metadata)).unwrap_or_default();
+        let metadata_json = serde_json::to_string(&serde_json::Value::Object(metadata.clone())).unwrap_or_default();
         
         // Create reconciliation record
         let reconciliation_record = NewReconciliationRecord {
@@ -402,14 +403,14 @@ impl FileService {
             currency,
             transaction_date,
             description,
-            metadata: Some(serde_json::Value::Object(metadata)),
+            metadata: Some(JsonValue(serde_json::Value::Object(metadata))),
         };
         
         Ok(reconciliation_record)
     }
     
     /// Parse date field from various formats
-    fn parse_date_field(&self, date_str: &str) -> Result<chrono::DateTime<chrono::Utc>, chrono::ParseError> {
+    fn parse_date_field(&self, date_str: &str) -> Result<chrono::DateTime<chrono::Utc>, AppError> {
         // Try different date formats
         let formats = [
             "%Y-%m-%d",
@@ -436,7 +437,7 @@ impl FileService {
                     Ok(chrono::DateTime::from_timestamp(timestamp, 0)
                         .unwrap_or_else(|| chrono::Utc::now()))
                 } else {
-                    Err(chrono::ParseError::Invalid)
+                    Err(AppError::Validation("Invalid date format".to_string()))
                 }
             })
     }
@@ -527,25 +528,21 @@ impl FileService {
         "#;
         
         let record_id = uuid::Uuid::new_v4();
-        let metadata_json = serde_json::to_string(&serde_json::Value::Object(metadata)).unwrap_or_default();
+        let metadata_json = serde_json::to_string(&serde_json::Value::Object(metadata.clone())).unwrap_or_default();
         
-        diesel::sql_query(sql)
-            .bind::<diesel::sql_types::Uuid, _>(record_id)
-            .bind::<diesel::sql_types::Uuid, _>(project_id)
-            .bind::<diesel::sql_types::Text, _>("json_upload")
-            .bind::<diesel::sql_types::Text, _>(external_id)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Numeric>, _>(amount)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(currency)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>, _>(transaction_date)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(description)
-            .bind::<diesel::sql_types::Nullable<diesel::sql_types::Jsonb>, _>(metadata_json)
-            .bind::<diesel::sql_types::Text, _>("pending")
-            .bind::<diesel::sql_types::Timestamptz, _>(chrono::Utc::now())
-            .bind::<diesel::sql_types::Timestamptz, _>(chrono::Utc::now())
-            .execute(conn)
-            .map_err(|e| AppError::Database(e))?;
+        // Create reconciliation record
+        let reconciliation_record = NewReconciliationRecord {
+            project_id,
+            source_system: "json_upload".to_string(),
+            external_id,
+            amount,
+            currency,
+            transaction_date,
+            description,
+            metadata: Some(JsonValue(serde_json::Value::Object(metadata))),
+        };
         
-        Ok(())
+        Ok(reconciliation_record)
     }
         
     /// Validate file before processing
@@ -834,9 +831,7 @@ impl FileService {
         
         for record in batch {
             let record_id = uuid::Uuid::new_v4();
-            let metadata_json = record.metadata.as_ref()
-                .map(|v| serde_json::to_string(v).unwrap_or_default())
-                .unwrap_or_default();
+            let metadata_json = record.metadata.as_ref();
             
             diesel::sql_query(sql)
                 .bind::<diesel::sql_types::Uuid, _>(record_id)

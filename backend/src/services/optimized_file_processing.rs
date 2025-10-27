@@ -9,7 +9,7 @@ use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use tokio::fs::{File, OpenOptions};
-use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter};
+use tokio::io::{AsyncReadExt, AsyncWriteExt, BufReader, BufWriter, AsyncBufReadExt};
 use std::io::{SeekFrom, Seek};
 use futures::stream::{Stream, StreamExt};
 
@@ -192,13 +192,13 @@ impl StreamingFileProcessor {
             let mut jobs = self.active_jobs.write().await;
             if let Some(job) = jobs.get_mut(&job_id) {
                 match result {
-                    Ok(summary) => {
+                    Ok(ref summary) => {
                         job.status = ProcessingStatus::Completed;
                         job.progress = 100.0;
                         job.completed_at = Some(Utc::now());
-                        job.result_summary = Some(summary);
+                        job.result_summary = Some(summary.clone());
                     }
-                    Err(e) => {
+                    Err(ref e) => {
                         job.status = ProcessingStatus::Failed;
                         job.error_message = Some(e.to_string());
                         job.completed_at = Some(Utc::now());
@@ -408,7 +408,7 @@ impl StreamingFileProcessor {
                     column_name: "json".to_string(),
                     error_type: "INVALID_JSON".to_string(),
                     error_message: "Invalid JSON format".to_string(),
-                    value: Some(line),
+                    value: Some(line.to_string()),
                 });
             }
 
@@ -560,8 +560,8 @@ impl StreamingFileProcessor {
         let metadata = tokio::fs::metadata(file_path).await?;
         Ok(FileMetadata {
             size: metadata.len(),
-            created: metadata.created().unwrap_or_default().into(),
-            modified: metadata.modified().unwrap_or_default().into(),
+            created: metadata.created().unwrap_or_else(|_| std::time::SystemTime::UNIX_EPOCH).into(),
+            modified: metadata.modified().unwrap_or_else(|_| std::time::SystemTime::UNIX_EPOCH).into(),
         })
     }
 
@@ -681,7 +681,7 @@ impl StreamingFileProcessor {
             }
         }
 
-        for job_id in to_remove {
+        for job_id in &to_remove {
             jobs.remove(&job_id);
         }
 

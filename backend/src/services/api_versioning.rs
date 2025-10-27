@@ -160,7 +160,7 @@ pub struct VersionStats {
 }
 
 impl ApiVersioningService {
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         let mut service = Self {
             versions: Arc::new(RwLock::new(HashMap::new())),
             endpoint_versions: Arc::new(RwLock::new(HashMap::new())),
@@ -169,12 +169,12 @@ impl ApiVersioningService {
         };
         
         // Initialize with default versions
-        service.initialize_default_versions();
+        service.initialize_default_versions().await;
         service
     }
 
     /// Initialize default API versions
-    fn initialize_default_versions(&mut self) {
+    async fn initialize_default_versions(&mut self) {
         // Version 1.0.0
         let v1_0_0 = ApiVersion {
             version: "1.0.0".to_string(),
@@ -250,16 +250,16 @@ impl ApiVersioningService {
         };
 
         // Store versions
-        self.versions.write().unwrap().insert("1.0.0".to_string(), v1_0_0);
-        self.versions.write().unwrap().insert("1.1.0".to_string(), v1_1_0);
-        self.versions.write().unwrap().insert("2.0.0".to_string(), v2_0_0);
+        self.versions.write().await.insert("1.0.0".to_string(), v1_0_0);
+        self.versions.write().await.insert("1.1.0".to_string(), v1_1_0);
+        self.versions.write().await.insert("2.0.0".to_string(), v2_0_0);
 
         // Initialize endpoint versions
-        self.initialize_endpoint_versions();
+        self.initialize_endpoint_versions().await;
     }
 
     /// Initialize endpoint version mappings
-    fn initialize_endpoint_versions(&mut self) {
+    async fn initialize_endpoint_versions(&mut self) {
         let endpoints = vec![
             EndpointVersion {
                 endpoint: "/api/users".to_string(),
@@ -286,7 +286,7 @@ impl ApiVersioningService {
 
         for endpoint in endpoints {
             let key = format!("{}:{}", endpoint.method, endpoint.endpoint);
-            self.endpoint_versions.write().unwrap().insert(key, endpoint);
+            self.endpoint_versions.write().await.insert(key, endpoint);
         }
     }
 
@@ -332,8 +332,8 @@ impl ApiVersioningService {
         // Sort by version number and return the latest
         let mut sorted_versions = stable_versions;
         sorted_versions.sort_by(|a, b| {
-            let version_a = Version::parse(&a.version).unwrap_or_default();
-            let version_b = Version::parse(&b.version).unwrap_or_default();
+            let version_a = Version::parse(&a.version).unwrap_or_else(|_| Version::new(0, 0, 0));
+            let version_b = Version::parse(&b.version).unwrap_or_else(|_| Version::new(0, 0, 0));
             version_b.cmp(&version_a)
         });
 
@@ -593,7 +593,13 @@ impl ApiVersioningService {
 
 impl Default for ApiVersioningService {
     fn default() -> Self {
-        Self::new()
+        // Create a synchronous version for Default
+        Self {
+            versions: Arc::new(RwLock::new(HashMap::new())),
+            endpoint_versions: Arc::new(RwLock::new(HashMap::new())),
+            migration_strategies: Arc::new(RwLock::new(HashMap::new())),
+            version_stats: Arc::new(RwLock::new(VersionStats::default())),
+        }
     }
 }
 

@@ -268,10 +268,8 @@ impl UserService {
             .get_result::<i64>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
-        // Get users with project counts
-        let users_with_counts = users::table
-            .left_join(projects::table)
-            .group_by(users::id)
+        // Get users
+        let users = users::table
             .select((
                 users::id,
                 users::email,
@@ -282,31 +280,35 @@ impl UserService {
                 users::created_at,
                 users::updated_at,
                 users::last_login,
-                diesel::dsl::count(projects::id),
             ))
             .order(users::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>, i64)>(&mut conn)
+            .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
-        let user_infos = users_with_counts
-            .into_iter()
-            .map(|(id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login, project_count)| {
-                UserInfo {
-                    id,
-                    email,
-                    first_name,
-                    last_name,
-                    role,
-                    is_active,
-                    created_at,
-                    updated_at,
-                    last_login,
-                    project_count,
-                }
-            })
-            .collect();
+        // Get project counts for each user
+        let mut user_infos = Vec::new();
+        for (id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login) in users {
+            let project_count = projects::table
+                .filter(projects::owner_id.eq(id))
+                .count()
+                .get_result::<i64>(&mut conn)
+                .map_err(|e| AppError::Database(e))?;
+            
+            user_infos.push(UserInfo {
+                id,
+                email,
+                first_name,
+                last_name,
+                role,
+                is_active,
+                created_at,
+                updated_at,
+                last_login,
+                project_count,
+            });
+        }
         
         Ok(UserListResponse {
             users: user_infos,
@@ -388,14 +390,12 @@ impl UserService {
             .map_err(|e| AppError::Database(e))?;
         
         // Get users
-        let users_with_counts = users::table
-            .left_join(projects::table)
+        let users = users::table
             .filter(
                 users::email.ilike(&search_pattern)
                     .or(users::first_name.ilike(&search_pattern))
                     .or(users::last_name.ilike(&search_pattern))
             )
-            .group_by(users::id)
             .select((
                 users::id,
                 users::email,
@@ -406,31 +406,35 @@ impl UserService {
                 users::created_at,
                 users::updated_at,
                 users::last_login,
-                diesel::dsl::count(projects::id),
             ))
             .order(users::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>, i64)>(&mut conn)
+            .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
-        let user_infos = users_with_counts
-            .into_iter()
-            .map(|(id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login, project_count)| {
-                UserInfo {
-                    id,
-                    email,
-                    first_name,
-                    last_name,
-                    role,
-                    is_active,
-                    created_at,
-                    updated_at,
-                    last_login,
-                    project_count,
-                }
-            })
-            .collect();
+        // Get project counts for each user
+        let mut user_infos = Vec::new();
+        for (id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login) in users {
+            let project_count = projects::table
+                .filter(projects::owner_id.eq(id))
+                .count()
+                .get_result::<i64>(&mut conn)
+                .map_err(|e| AppError::Database(e))?;
+            
+            user_infos.push(UserInfo {
+                id,
+                email,
+                first_name,
+                last_name,
+                role,
+                is_active,
+                created_at,
+                updated_at,
+                last_login,
+                project_count,
+            });
+        }
         
         Ok(UserListResponse {
             users: user_infos,
@@ -458,11 +462,9 @@ impl UserService {
             .get_result::<i64>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
-        // Get users with project counts
-        let users_with_counts = users::table
-            .left_join(projects::table)
+        // Get users
+        let users = users::table
             .filter(users::role.eq(role))
-            .group_by(users::id)
             .select((
                 users::id,
                 users::email,
@@ -473,31 +475,35 @@ impl UserService {
                 users::created_at,
                 users::updated_at,
                 users::last_login,
-                diesel::dsl::count(projects::id),
             ))
             .order(users::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>, i64)>(&mut conn)
+            .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
-        let user_infos = users_with_counts
-            .into_iter()
-            .map(|(id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login, project_count)| {
-                UserInfo {
-                    id,
-                    email,
-                    first_name,
-                    last_name,
-                    role,
-                    is_active,
-                    created_at,
-                    updated_at,
-                    last_login,
-                    project_count,
-                }
-            })
-            .collect();
+        // Get project counts for each user
+        let mut user_infos = Vec::new();
+        for (id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login) in users {
+            let project_count = projects::table
+                .filter(projects::owner_id.eq(id))
+                .count()
+                .get_result::<i64>(&mut conn)
+                .map_err(|e| AppError::Database(e))?;
+            
+            user_infos.push(UserInfo {
+                id,
+                email,
+                first_name,
+                last_name,
+                role,
+                is_active,
+                created_at,
+                updated_at,
+                last_login,
+                project_count,
+            });
+        }
         
         Ok(UserListResponse {
             users: user_infos,
@@ -541,12 +547,10 @@ impl UserService {
             .get_result::<i64>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
-        // Get users with project counts
-        let users_with_counts = users::table
-            .left_join(projects::table)
+        // Get users
+        let users = users::table
             .filter(users::created_at.ge(start_date))
             .filter(users::created_at.le(end_date))
-            .group_by(users::id)
             .select((
                 users::id,
                 users::email,
@@ -557,38 +561,41 @@ impl UserService {
                 users::created_at,
                 users::updated_at,
                 users::last_login,
-                diesel::dsl::count(projects::id),
             ))
             .order(users::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>, i64)>(&mut conn)
+            .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
-        let user_infos = users_with_counts
-            .into_iter()
-            .map(|(id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login, project_count)| {
-                UserInfo {
-                    id,
-                    email,
-                    first_name,
-                    last_name,
-                    role,
-                    is_active,
-                    created_at,
-                    updated_at,
-                    last_login,
-                    project_count,
-                }
-            })
-            .collect();
+        // Get project counts for each user
+        let mut user_infos = Vec::new();
+        for (id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login) in users {
+            let project_count = projects::table
+                .filter(projects::owner_id.eq(id))
+                .count()
+                .get_result::<i64>(&mut conn)
+                .map_err(|e| AppError::Database(e))?;
+            
+            user_infos.push(UserInfo {
+                id,
+                email,
+                first_name,
+                last_name,
+                role,
+                is_active,
+                created_at,
+                updated_at,
+                last_login,
+                project_count,
+            });
+        }
         
         Ok(UserListResponse {
             users: user_infos,
             total,
             page,
             per_page,
-            total_pages: (total + per_page - 1) / per_page,
         })
     }
     

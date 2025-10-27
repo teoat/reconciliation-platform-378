@@ -1,100 +1,24 @@
 'use client'
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { 
-  BarChart3, 
-  PieChart, 
-  TrendingUp, 
-  TrendingDown, 
-  Activity, 
-  Target, 
-  Clock, 
-  Shield, 
-  AlertCircle, 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle,
-  Users,
-  Database,
-  Zap,
-  Star,
-  Award,
-  Trophy,
-  Medal,
-  Flag,
-  Tag,
-  Calendar,
-  DollarSign,
-  Hash,
-  Type,
-  Eye,
-  EyeOff,
-  Download,
+import {
+  TrendingUp,
+  TrendingDown,
+  Activity,
+  Target,
+  Shield,
+  AlertCircle,
+  CheckCircle,
   RefreshCw,
-  Settings,
-  Filter,
-  Search,
-  Plus,
-  Minus,
-  ArrowUpDown,
-  ChevronDown,
-  ChevronUp,
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
-  Info,
-  CheckSquare,
-  Square,
-  Lock,
-  Unlock,
-  Key,
-  Globe,
-  Mail,
-  Phone,
-  User,
-  UserCheck,
-  UserX,
-  UserPlus,
-  UserMinus,
-  Crown,
-  Bell,
-  BellOff,
-  Bookmark,
-  Share2,
-  ExternalLink,
-  File,
-  FileText,
-  FileCheck,
-  FileX,
-  FilePlus,
-  FileMinus,
-  FileEdit,
-  FileSearch,
-  Upload,
-  FileArchive,
-  FileImage,
-  FileVideo,
-  FileAudio,
-  FileSpreadsheet,
-  FileCode,
-  FileJson,
-  X,
-  GitBranch,
-  GitCommit,
-  GitMerge,
-  GitPullRequest,
-  Network,
-  Cloud,
-  Server,
-  Wifi,
-  MapPin,
-  Layers,
-  Workflow,
-  MessageSquare,
-  Folder
+  BarChart3,
+  Users,
+  Zap,
+  Folder,
+  GitCompare
 } from 'lucide-react'
 import { apiClient } from '../services/apiClient'
 import { useWebSocketIntegration } from '../hooks/useWebSocketIntegration'
+import { LineChart, BarChart, PieChart } from './charts'
 
 // Types
 interface DashboardMetrics {
@@ -357,7 +281,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         <div className="flex items-center space-x-3">
           <select
             value={selectedTimeRange}
-            onChange={(e) => setSelectedTimeRange(e.target.value as any)}
+             onChange={(e) => setSelectedTimeRange(e.target.value as '7d' | '30d' | '90d' | '1y')}
             className="px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="7d">Last 7 days</option>
@@ -482,10 +406,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                     <dt className="text-sm font-medium text-gray-500 truncate">Total Jobs</dt>
                     <dd className="text-lg font-medium text-gray-900">{dashboardMetrics.total_reconciliation_jobs}</dd>
                   </dl>
-                </div>
-              </div>
+               </div>
+             </div>
             </div>
-          </div>
+         </div>
         </div>
       )}
 
@@ -566,6 +490,69 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 </div>
               </div>
             </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Interactive Charts Section */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+          {/* Job Status Distribution Chart */}
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Job Status Distribution</h3>
+            </div>
+            <div className="p-6">
+              <PieChart
+                data={[
+                  { label: 'Active', value: reconciliationStats.active_jobs, color: '#3B82F6' },
+                  { label: 'Completed', value: reconciliationStats.completed_jobs, color: '#10B981' },
+                  { label: 'Failed', value: reconciliationStats.failed_jobs, color: '#EF4444' },
+                  { label: 'Queued', value: reconciliationStats.queued_jobs, color: '#F59E0B' }
+                ]}
+                width={300}
+                height={200}
+                title="Job Status Distribution"
+              />
+            </div>
+          </div>
+
+          {/* Performance Trends Chart */}
+          <div className="bg-white shadow rounded-lg">
+            <div className="px-6 py-4 border-b border-gray-200">
+              <h3 className="text-lg font-medium text-gray-900">Performance Trends</h3>
+            </div>
+            <div className="p-6">
+              <LineChart
+                data={[
+                  { label: 'Success Rate', value: derivedMetrics.success_rate },
+                  { label: 'Match Rate', value: derivedMetrics.match_rate },
+                  { label: 'Avg Confidence', value: reconciliationStats.average_confidence_score },
+                  { label: 'Throughput/hr', value: derivedMetrics.throughput_per_hour }
+                ]}
+                width={300}
+                height={200}
+                title="Key Performance Indicators"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Data Processing Volume Chart */}
+        <div className="bg-white shadow rounded-lg mt-6">
+          <div className="px-6 py-4 border-b border-gray-200">
+            <h3 className="text-lg font-medium text-gray-900">Data Processing Volume</h3>
+          </div>
+          <div className="p-6">
+            <BarChart
+              data={[
+                { label: 'Total Records', value: reconciliationStats.total_records_processed },
+                { label: 'Matched Records', value: reconciliationStats.total_matches_found },
+                { label: 'Unmatched Records', value: reconciliationStats.total_unmatched_records }
+              ]}
+              width={600}
+              height={250}
+              title="Records Processed"
+            />
           </div>
         </div>
       )}

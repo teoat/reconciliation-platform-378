@@ -4,9 +4,10 @@
 //! CRUD operations, file processing, and data source validation.
 
 use diesel::prelude::*;
-use serde::{Deserialize, Serialize};
+use crate::models::JsonValue;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Serialize, Deserialize};
 
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
@@ -34,7 +35,7 @@ impl DataSourceService {
         file_path: Option<String>,
         file_size: Option<i64>,
         file_hash: Option<String>,
-        schema: Option<serde_json::Value>,
+        schema: Option<JsonValue>,
     ) -> AppResult<DataSource> {
         let mut conn = self.db.get_connection()?;
         
@@ -57,7 +58,6 @@ impl DataSourceService {
         
         let data_source = diesel::insert_into(data_sources::table)
             .values(new_data_source)
-            .returning(DataSource::as_returning())
             .get_result(&mut conn)
             .map_err(|e| AppError::Database(e))?;
         
@@ -102,7 +102,7 @@ impl DataSourceService {
         file_path: Option<String>,
         file_size: Option<i64>,
         file_hash: Option<String>,
-        schema: Option<serde_json::Value>,
+        schema: Option<JsonValue>,
         status: Option<String>,
     ) -> AppResult<DataSource> {
         let mut conn = self.db.get_connection()?;
@@ -229,7 +229,7 @@ impl DataSourceService {
         
         // Check schema
         if let Some(schema) = &data_source.schema {
-            if schema.is_null() {
+            if schema.0.is_null() {
                 validation.warnings.push("Schema is null".to_string());
             }
         }

@@ -119,7 +119,7 @@ pub struct InternationalizationService {
 }
 
 impl InternationalizationService {
-    pub fn new() -> Self {
+    pub async fn new() -> Self {
         let mut service = Self {
             languages: Arc::new(RwLock::new(HashMap::new())),
             locales: Arc::new(RwLock::new(HashMap::new())),
@@ -138,7 +138,7 @@ impl InternationalizationService {
     }
 
     /// Initialize default languages
-    fn initialize_default_languages(&mut self) {
+    async fn initialize_default_languages(&mut self) {
         let languages = vec![
             Language {
                 code: "en".to_string(),
@@ -197,7 +197,7 @@ impl InternationalizationService {
     }
 
     /// Initialize default locales
-    fn initialize_default_locales(&mut self) {
+    async fn initialize_default_locales(&mut self) {
         let locales = vec![
             Locale {
                 code: "en-US".to_string(),
@@ -282,12 +282,12 @@ impl InternationalizationService {
         ];
 
         for locale in locales {
-            self.locales.write().unwrap().insert(locale.code.clone(), locale);
+            self.locales.write().await.insert(locale.code.clone(), locale);
         }
     }
 
     /// Initialize default timezones
-    fn initialize_default_timezones(&mut self) {
+    async fn initialize_default_timezones(&mut self) {
         let timezones = vec![
             TimezoneInfo {
                 code: "UTC".to_string(),
@@ -355,12 +355,12 @@ impl InternationalizationService {
         ];
 
         for timezone in timezones {
-            self.timezones.write().unwrap().insert(timezone.code.clone(), timezone);
+            self.timezones.write().await.insert(timezone.code.clone(), timezone);
         }
     }
 
     /// Initialize default translations
-    fn initialize_default_translations(&mut self) {
+    async fn initialize_default_translations(&mut self) {
         let translations = vec![
             // English translations
             Translation {
@@ -548,7 +548,7 @@ impl InternationalizationService {
 
         for translation in translations {
             let key = format!("{}:{}", translation.language_code, translation.key);
-            self.translations.write().unwrap().insert(key, translation);
+            self.translations.write().await.insert(key, translation);
         }
     }
 
@@ -699,7 +699,7 @@ impl InternationalizationService {
         let locales = self.locales.read().await;
         if let Some(locale) = locales.get(locale_code) {
             // Convert UTC to local timezone
-            let local_date = date.with_timezone(&chrono_tz::UTC);
+            let local_date = date.with_timezone(&chrono::Utc);
             Ok(local_date.format(&locale.date_format).to_string())
         } else {
             // Fallback to default format
@@ -711,7 +711,7 @@ impl InternationalizationService {
     pub async fn format_time(&self, time: DateTime<Utc>, locale_code: &str) -> AppResult<String> {
         let locales = self.locales.read().await;
         if let Some(locale) = locales.get(locale_code) {
-            let local_time = time.with_timezone(&chrono_tz::UTC);
+            let local_time = time.with_timezone(&chrono::Utc);
             Ok(local_time.format(&locale.time_format).to_string())
         } else {
             // Fallback to default format
@@ -895,7 +895,14 @@ pub struct TranslationStats {
 
 impl Default for InternationalizationService {
     fn default() -> Self {
-        Self::new()
+        // Create a synchronous version for Default
+        Self {
+            languages: Arc::new(RwLock::new(HashMap::new())),
+            locales: Arc::new(RwLock::new(HashMap::new())),
+            timezones: Arc::new(RwLock::new(HashMap::new())),
+            translations: Arc::new(RwLock::new(HashMap::new())),
+            translation_cache: Arc::new(RwLock::new(HashMap::new())),
+        }
     }
 }
 

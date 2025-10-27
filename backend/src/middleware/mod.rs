@@ -13,7 +13,7 @@ pub mod cache;
 // Re-export commonly used middleware
 pub use security::{SecurityMiddleware, SecurityMiddlewareConfig, SecurityHeadersMiddleware};
 pub use auth::AuthMiddleware;
-pub use logging::LoggingMiddleware;
-pub use performance::PerformanceMiddleware;
-pub use validation::ValidationMiddleware;
-pub use cache::CacheMiddleware;
+pub use logging::{LoggingMiddleware, LoggingConfig};
+pub use performance::{PerformanceMiddleware, PerformanceMonitoringConfig};
+pub use validation::Validation;
+pub use cache::Cache;

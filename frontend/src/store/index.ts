@@ -5,7 +5,7 @@
 import { createSlice, createAsyncThunk, PayloadAction, combineReducers } from '@reduxjs/toolkit'
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
-import { apiClient, User, Project, IngestionJob, ReconciliationRecord } from '../services/apiClient'
+import { apiClient, BackendUser, BackendProject, BackendReconciliationJob, BackendReconciliationRecord } from '../services/apiClient'
 
 // ============================================================================
 // UNIFIED STATE INTERFACES
@@ -22,7 +22,7 @@ export interface AppState {
 }
 
 export interface AuthState {
-  user: User | null
+  user: BackendUser | null
   isAuthenticated: boolean
   isLoading: boolean
   error: string | null
@@ -31,8 +31,8 @@ export interface AuthState {
 }
 
 export interface ProjectsState {
-  projects: Project[]
-  selectedProject: Project | null
+  projects: BackendProject[]
+  selectedProject: BackendProject | null
   isLoading: boolean
   error: string | null
   lastFetched: string | null
@@ -41,7 +41,7 @@ export interface ProjectsState {
 }
 
 export interface ReconciliationState {
-  records: ReconciliationRecord[]
+  records: BackendReconciliationRecord[]
   config: ReconciliationConfig
   stats: ReconciliationStats
   isLoading: boolean
@@ -51,8 +51,8 @@ export interface ReconciliationState {
 }
 
 export interface IngestionState {
-  jobs: IngestionJob[]
-  currentJob: IngestionJob | null
+  jobs: BackendReconciliationJob[]
+  currentJob: BackendReconciliationJob | null
   uploadedFiles: UploadedFile[]
   isLoading: boolean
   error: string | null
