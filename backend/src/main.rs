@@ -5,6 +5,7 @@
 //! Status: ✅ Active and Mandatory
 
 use actix_web::{web, App, HttpServer, HttpResponse, Result, middleware::Logger};
+use actix_web_compression::Compress;
 use std::env;
 use std::time::Duration;
 use chrono::Utc;
@@ -89,6 +90,8 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
+            // Compression middleware (Brotli > Gzip > Deflate)
+            .wrap(Compress::default())
             // Security middleware (applied globally to all routes)
             .wrap(SecurityMiddleware::new(security_config.clone()))
             .wrap(Logger::default())
