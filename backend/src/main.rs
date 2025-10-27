@@ -5,18 +5,13 @@
 //! Status: ✅ Active and Mandatory
 
 use actix_web::{web, App, HttpServer, HttpResponse, Result, middleware::Logger};
-use actix_web_compression::Compress;
 use std::env;
 use std::time::Duration;
-use chrono::Utc;
-
-#[cfg(feature = "sentry")]
-use sentry::integrations::tracing as _;
 use reconciliation_backend::{
     database::Database,
     config::Config,
     services::{AuthService, UserService, ProjectService, ReconciliationService, FileService, AnalyticsService, MonitoringService},
-    middleware::{AuthMiddleware, SecurityMiddleware, LoggingMiddleware, PerformanceMiddleware, SecurityMiddlewareConfig, LoggingConfig, PerformanceMonitoringConfig},
+    middleware::{AuthMiddleware, SecurityMiddleware, SecurityMiddlewareConfig},
     handlers,
 };
 
@@ -54,10 +49,16 @@ async fn main() -> std::io::Result<()> {
 
     // Create config first
     let config = Config {
+        host: "0.0.0.0".to_string(),
+        port: 8080,
         database_url: database_url.clone(),
         redis_url: redis_url.clone(),
         jwt_secret: "your-jwt-secret".to_string(),
         jwt_expiration: 86400,
+        cors_origins: vec!["*".to_string()],
+        log_level: "info".to_string(),
+        max_file_size: 10485760,
+        upload_path: "./uploads".to_string(),
     };
 
     // Initialize database
@@ -65,13 +66,14 @@ async fn main() -> std::io::Result<()> {
         .expect("Failed to connect to database");
 
     // Initialize services
-    let auth_service = AuthService::new(config.jwt_secret.clone(), config.jwt_expiration);
-    let user_service = UserService::new(database.clone(), auth_service.clone());
-    let project_service = ProjectService::new(database.clone());
-    let reconciliation_service = ReconciliationService::new(database.clone());
-    let file_service = FileService::new(database.clone(), "uploads".to_string());
-    let analytics_service = AnalyticsService::new(database.clone());
-    let monitoring_service = MonitoringService::new(database.clone());
+    use std::sync::Arc;
+    let auth_service = Arc::new(AuthService::new(config.jwt_secret.clone(), config.jwt_expiration));
+    let user_service = Arc::new(UserService::new(database.clone(), auth_service.clone()));
+    let project_service = Arc::new(ProjectService::new(database.clone()));
+    let reconciliation_service = Arc::new(ReconciliationService::new(database.clone()));
+    let file_service = Arc::new(FileService::new(database.clone(), "uploads".to_string()));
+    let analytics_service = Arc::new(AnalyticsService::new(database.clone()));
+    let monitoring_service = Arc::new(MonitoringService::new());
 
     // Initialize security middleware configuration
     let security_config = SecurityMiddlewareConfig {
@@ -132,12 +134,7 @@ async fn main() -> std::io::Result<()> {
                             .route("/reconciliation/jobs/{id}", web::delete().to(handlers::delete_reconciliation_job))
                             .route("/reconciliation/active", web::get().to(handlers::get_active_reconciliation_jobs))
                             .route("/reconciliation/queued", web::get().to(handlers::get_queued_reconciliation_jobs))
-                            .route("/data-sources", web::get().to(handlers::get_data_sources))
-                            .route("/data-sources", web::post().to(handlers::create_data_source))
-                            .route("/data-sources/{id}", web::get().to(handlers::get_data_source))
-                            .route("/data-sources/{id}", web::put().to(handlers::update_data_source))
-                            .route("/data-sources/{id}", web::delete().to(handlers::delete_data_source))
-                            .route("/analytics/dashboard", web::get().to(handlers::get_analytics_dashboard))
+                            .route("/analytics/dashboard", web::get().to(handlers::get_dashboard_data))
                             .route("/files/upload", web::post().to(handlers::upload_file))
                             .route("/files/{id}", web::get().to(handlers::get_file))
                             .route("/files/{id}", web::delete().to(handlers::delete_file))
