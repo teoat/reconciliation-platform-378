@@ -67,8 +67,9 @@ async fn main() -> std::io::Result<()> {
 
     // Initialize services
     use std::sync::Arc;
-    let auth_service = Arc::new(AuthService::new(config.jwt_secret.clone(), config.jwt_expiration));
-    let user_service = Arc::new(UserService::new(database.clone(), auth_service.clone()));
+    let auth_service_clone = AuthService::new(config.jwt_secret.clone(), config.jwt_expiration);
+    let auth_service = Arc::new(auth_service_clone.clone());
+    let user_service = Arc::new(UserService::new(database.clone(), auth_service_clone.clone()));
     let project_service = Arc::new(ProjectService::new(database.clone()));
     let reconciliation_service = Arc::new(ReconciliationService::new(database.clone()));
     let file_service = Arc::new(FileService::new(database.clone(), "uploads".to_string()));
@@ -92,8 +93,6 @@ async fn main() -> std::io::Result<()> {
 
     HttpServer::new(move || {
         App::new()
-            // Compression middleware (Brotli > Gzip > Deflate)
-            .wrap(Compress::default())
             // Security middleware (applied globally to all routes)
             .wrap(SecurityMiddleware::new(security_config.clone()))
             .wrap(Logger::default())
@@ -116,7 +115,7 @@ async fn main() -> std::io::Result<()> {
                     .route("/metrics", web::get().to(metrics_endpoint))
                     .service(
                         web::scope("")
-                            .wrap(AuthMiddleware::with_auth_service(std::sync::Arc::new(auth_service.clone())))
+                            .wrap(AuthMiddleware::with_auth_service(auth_service.clone()))
                             .route("/users", web::get().to(handlers::get_users))
                             .route("/users", web::post().to(handlers::create_user))
                             .route("/users/{id}", web::get().to(handlers::get_user))
