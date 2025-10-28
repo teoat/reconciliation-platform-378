@@ -7,13 +7,13 @@
 use actix_web::{web, App, HttpServer, HttpResponse, Result, middleware::Logger};
 use std::env;
 use std::time::Duration;
+use redis;
 use reconciliation_backend::{
     database::Database,
     config::Config,
-    services::{AuthService, UserService, ProjectService, ReconciliationService, FileService, AnalyticsService, MonitoringService},
-    middleware::{AuthMiddleware, SecurityMiddleware, SecurityMiddlewareConfig, AdvancedRateLimiter, RateLimitConfig},
     handlers,
 };
+use std::sync::Arc;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -53,15 +53,34 @@ async fn main() -> std::io::Result<()> {
     log::info!("📊 Database URL: {}", database_url);
     log::info!("🔴 Redis URL: {}", redis_url);
 
+    // JWT secret from environment
+    let jwt_secret = env::var("JWT_SECRET")
+        .unwrap_or_else(|_| {
+            eprintln!("⚠️  JWT_SECRET not set, using default (NOT SECURE FOR PRODUCTION)");
+            "change-this-secret-key-in-production".to_string()
+        });
+    
+    let jwt_expiration = env::var("JWT_EXPIRATION")
+        .unwrap_or_else(|_| "86400".to_string())
+        .parse::<i64>()
+        .unwrap_or(86400);
+    
+    // CORS origins from environment
+    let cors_origins = env::var("CORS_ORIGINS")
+        .unwrap_or_else(|_| "http://localhost:1000,http://localhost:3000,http://localhost:5173".to_string())
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .collect::<Vec<String>>();
+    
     // Create config first
     let config = Config {
         host: "0.0.0.0".to_string(),
-        port: 8080,
+        port: 2000,
         database_url: database_url.clone(),
         redis_url: redis_url.clone(),
-        jwt_secret: "your-jwt-secret".to_string(),
-        jwt_expiration: 86400,
-        cors_origins: vec!["*".to_string()],
+        jwt_secret: jwt_secret.clone(),
+        jwt_expiration,
+        cors_origins: cors_origins.clone(),
         log_level: "info".to_string(),
         max_file_size: 10485760,
         upload_path: "./uploads".to_string(),
@@ -82,33 +101,96 @@ async fn main() -> std::io::Result<()> {
     let analytics_service = Arc::new(AnalyticsService::new(database.clone()));
     let monitoring_service = Arc::new(MonitoringService::new());
 
+    // Initialize multi-level cache for performance optimization
+    let cache_service = Arc::new(
+        MultiLevelCache::new(&redis_url)
+            .unwrap_or_else(|e| {
+                log::warn!("Failed to initialize cache service: {}. Continuing without cache.", e);
+                // Fallback to minimal cache if Redis unavailable
+                MultiLevelCache::new("redis://localhost:6379")
+                    .expect("Failed to create fallback cache")
+            })
+    );
+    log::info!("✅ Multi-level cache initialized");
+
+    // OPTIONAL: Initialize automated backup service if enabled
+    if env::var("ENABLE_AUTOMATED_BACKUPS").unwrap_or_else(|_| "false".to_string()) == "true" {
+        log::info!("📦 Automated backups enabled");
+        
+        // Initialize backup service with S3 storage
+        let backup_bucket = env::var("BACKUP_S3_BUCKET").expect("BACKUP_S3_BUCKET must be set when ENABLE_AUTOMATED_BACKUPS=true");
+        let aws_region = env::var("AWS_REGION").unwrap_or_else(|_| "us-east-1".to_string());
+        
+        let backup_config = BackupConfig {
+            enabled: true,
+            schedule: BackupSchedule::Interval(Duration::from_secs(3600)), // Hourly
+            retention_policy: RetentionPolicy {
+                daily_retention_days: 7,
+                weekly_retention_weeks: 4,
+                monthly_retention_months: 12,
+                yearly_retention_years: 5,
+            },
+            storage_config: StorageConfig::S3 {
+                bucket: backup_bucket,
+                region: aws_region,
+                prefix: "backups/".to_string(),
+            },
+            compression: true,
+            encryption: true,
+            encryption_key: env::var("BACKUP_ENCRYPTION_KEY").ok(),
+        };
+        
+        let backup_service = Arc::new(BackupService::new(backup_config.clone()));
+        
+        // Spawn background backup task
+        let backup_service_clone = backup_service.clone();
+        tokio::spawn(async move {
+            log::info!("🔄 Starting automated backup scheduler");
+            let mut interval = tokio::time::interval(Duration::from_secs(3600));
+            
+            loop {
+                interval.tick().await;
+                log::info!("📦 Running scheduled backup...");
+                
+                match backup_service_clone.create_full_backup().await {
+                    Ok(backup_id) => {
+                        log::info!("✅ Backup completed successfully: {}", backup_id);
+                    }
+                    Err(e) => {
+                        log::error!("❌ Backup failed: {}", e);
+                    }
+                }
+            }
+        });
+    }
+
     // Initialize security middleware configuration
     let security_config = SecurityMiddlewareConfig {
         enable_cors: true,
-        enable_csrf_protection: false, // Disable for now (can enable later)
-        enable_rate_limiting: false,    // Using AdvancedRateLimiter separately
+        enable_csrf_protection: env::var("ENABLE_CSRF").unwrap_or_else(|_| "true".to_string()) == "true",
+        enable_rate_limiting: true, // Enable rate limiting
         enable_input_validation: true,
         enable_security_headers: true,
-        rate_limit_requests: 100,
-        rate_limit_window: Duration::from_secs(60),
+        rate_limit_requests: env::var("RATE_LIMIT_REQUESTS")
+            .unwrap_or_else(|_| "1000".to_string())
+            .parse::<u32>()
+            .unwrap_or(1000),
+        rate_limit_window: Duration::from_secs(
+            env::var("RATE_LIMIT_WINDOW")
+                .unwrap_or_else(|_| "3600".to_string())
+                .parse::<u64>()
+                .unwrap_or(3600)
+        ),
         csrf_token_header: "X-CSRF-Token".to_string(),
-        allowed_origins: vec!["*".to_string()], // TODO: Configure per environment
+        allowed_origins: cors_origins.clone(),
         enable_hsts: true,
         enable_csp: true,
     };
     
-    // Configure advanced rate limiting
-    let rate_limit_config = RateLimitConfig {
-        requests_per_minute: 100,
-        burst_size: 20,
-        window_size: Duration::from_secs(60),
-        cleanup_interval: Duration::from_secs(300),
-    };
-
     HttpServer::new(move || {
         App::new()
-            // Rate limiting (applied globally first for protection)
-            .wrap(AdvancedRateLimiter::new(rate_limit_config.clone()))
+            // Request ID tracking (applied first for tracing)
+            .wrap(RequestIdMiddleware)
             // Security middleware (applied globally to all routes)
             .wrap(SecurityMiddleware::new(security_config.clone()))
             .wrap(Logger::default())
@@ -120,6 +202,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(file_service.clone()))
             .app_data(web::Data::new(analytics_service.clone()))
             .app_data(web::Data::new(monitoring_service.clone()))
+            .app_data(web::Data::new(cache_service.clone()))
             .app_data(web::Data::new(config.clone()))
             .service(
                 web::scope("/api")
@@ -129,6 +212,11 @@ async fn main() -> std::io::Result<()> {
                     .route("/health", web::get().to(health_check))
                     .route("/ready", web::get().to(readiness_check))
                     .route("/metrics", web::get().to(metrics_endpoint))
+                    // GDPR endpoints
+                    .route("/v1/users/{id}/export", web::get().to(handlers::export_user_data_handler))
+                    .route("/v1/users/{id}", web::delete().to(handlers::delete_user_data_handler))
+                    .route("/v1/consent", web::post().to(handlers::set_consent_handler))
+                    .route("/v1/privacy", web::get().to(handlers::get_privacy_policy))
                     .service(
                         web::scope("")
                             .wrap(AuthMiddleware::with_auth_service(auth_service.clone()))
@@ -162,25 +250,151 @@ async fn main() -> std::io::Result<()> {
     .await
 }
 
-async fn health_check() -> Result<HttpResponse> {
-    Ok(HttpResponse::Ok().json(serde_json::json!({
-        "status": "ok",
+async fn health_check(db: web::Data<Database>) -> Result<HttpResponse> {
+    let mut status = "ok";
+    let mut services_status = serde_json::json!({});
+    
+    // Check database connectivity
+    match db.get_connection() {
+        Ok(_conn) => {
+            services_status["database"] = serde_json::json!({
+                "status": "connected",
+                "type": "postgresql"
+            });
+        }
+        Err(e) => {
+            status = "degraded";
+            services_status["database"] = serde_json::json!({
+                "status": "disconnected",
+                "error": format!("{}", e)
+            });
+        }
+    }
+    
+    // Check Redis connectivity
+    let redis_url = env::var("REDIS_URL")
+        .unwrap_or_else(|_| "redis://localhost:6379".to_string());
+    
+    match redis::Client::open(redis_url) {
+        Ok(client) => {
+            match client.get_connection() {
+                Ok(mut conn) => {
+                    let _: () = redis::cmd("PING").query(&mut conn).unwrap_or(());
+                    services_status["redis"] = serde_json::json!({
+                        "status": "connected",
+                        "type": "redis"
+                    });
+                }
+                Err(e) => {
+                    status = "degraded";
+                    services_status["redis"] = serde_json::json!({
+                        "status": "disconnected",
+                        "error": format!("{}", e)
+                    });
+                }
+            }
+        }
+        Err(e) => {
+            status = "degraded";
+            services_status["redis"] = serde_json::json!({
+                "status": "unavailable",
+                "error": format!("{}", e)
+            });
+        }
+    }
+    
+    // Get database pool statistics
+    let pool_stats = db.get_pool_stats();
+    
+    let response = serde_json::json!({
+        "status": status,
         "message": "378 Reconciliation Platform Backend is running",
         "timestamp": chrono::Utc::now().to_rfc3339(),
-        "version": "1.0.0"
-    })))
+        "version": "1.0.0",
+        "services": services_status,
+        "database_pool": {
+            "size": pool_stats.size,
+            "idle": pool_stats.idle,
+            "active": pool_stats.active
+        }
+    });
+    
+    if status == "degraded" {
+        Ok(HttpResponse::Accepted().json(response))
+    } else {
+        Ok(HttpResponse::Ok().json(response))
+    }
 }
 
-async fn readiness_check() -> Result<HttpResponse> {
-    Ok(HttpResponse::Ok().json(serde_json::json!({
-        "status": "ready",
-        "services": {
-            "database": "connected",
-            "redis": "available",
-            "sentry": if env::var("SENTRY_DSN").is_ok() { "enabled" } else { "disabled" }
-        },
-        "timestamp": chrono::Utc::now().to_rfc3339()
-    })))
+async fn readiness_check(db: web::Data<Database>) -> Result<HttpResponse> {
+    let mut services_status = serde_json::json!({});
+    let mut all_ready = true;
+    
+    // Check database readiness
+    match db.get_connection() {
+        Ok(_) => {
+            services_status["database"] = serde_json::json!({
+                "status": "ready",
+                "type": "postgresql"
+            });
+        }
+        Err(e) => {
+            all_ready = false;
+            services_status["database"] = serde_json::json!({
+                "status": "not_ready",
+                "error": format!("{}", e)
+            });
+        }
+    }
+    
+    // Check Redis readiness
+    let redis_url = env::var("REDIS_URL")
+        .unwrap_or_else(|_| "redis://localhost:6379".to_string());
+    
+    match redis::Client::open(redis_url) {
+        Ok(client) => {
+            match client.get_connection() {
+                Ok(_) => {
+                    services_status["redis"] = serde_json::json!({
+                        "status": "ready",
+                        "type": "redis"
+                    });
+                }
+                Err(e) => {
+                    all_ready = false;
+                    services_status["redis"] = serde_json::json!({
+                        "status": "not_ready",
+                        "error": format!("{}", e)
+                    });
+                }
+            }
+        }
+        Err(e) => {
+            all_ready = false;
+            services_status["redis"] = serde_json::json!({
+                "status": "unavailable",
+                "error": format!("{}", e)
+            });
+        }
+    }
+    
+    // Check Sentry status
+    services_status["sentry"] = serde_json::json!({
+        "status": if env::var("SENTRY_DSN").is_ok() { "enabled" } else { "disabled" }
+    });
+    
+    let response = serde_json::json!({
+        "status": if all_ready { "ready" } else { "not_ready" },
+        "services": services_status,
+        "timestamp": chrono::Utc::now().to_rfc3339(),
+        "uptime": "running" // In a real implementation, track actual uptime
+    });
+    
+    if all_ready {
+        Ok(HttpResponse::Ok().json(response))
+    } else {
+        Ok(HttpResponse::ServiceUnavailable().json(response))
+    }
 }
 
 async fn metrics_endpoint() -> Result<HttpResponse> {

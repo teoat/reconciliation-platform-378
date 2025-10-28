@@ -7,7 +7,7 @@ use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
-use crate::errors::{AppError, AppResult};
+use crate::errors::AppResult;
 
 /// Trace context
 #[derive(Debug, Clone, Serialize, Deserialize)]

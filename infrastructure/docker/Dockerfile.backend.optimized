@@ -1,0 +1,110 @@
+# ============================================================================
+# ULTIMATE OPTIMIZED MULTI-STAGE DOCKERFILE FOR RUST BACKEND
+# ============================================================================
+# Service Name: reconciliation-backend
+# Runtime: Rust 1.90 with Actix-Web
+# Optimization Goal: Minimal image size (~50-70MB final image)
+# Resource Target: 70% of current usage (350MB RAM, 350m CPU limit)
+# ============================================================================
+
+# ============================================================================
+# STAGE 1: Builder Stage - Full Compilation Environment
+# ============================================================================
+FROM rust:1.90-alpine AS builder
+
+# Install build dependencies in a single layer for optimal caching
+RUN apk add --no-cache --virtual .build-deps \
+    musl-dev \
+    pkgconfig \
+    openssl-dev \
+    openssl-libs-static \
+    postgresql-dev \
+    postgresql-libs \
+    curl \
+    ca-certificates \
+    && rm -rf /var/cache/apk/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy dependency manifests ONLY (for Docker layer caching optimization)
+COPY backend/Cargo.toml backend/Cargo.lock ./
+
+# Create a dummy main.rs to cache dependencies compilation
+RUN mkdir -p src && \
+    echo "fn main() {}" > src/main.rs
+
+# Pre-compile dependencies (this layer will be cached if Cargo files don't change)
+RUN cargo build --release --target x86_64-unknown-linux-musl 2>/dev/null || \
+    cargo build --release && \
+    rm -rf src
+
+# Copy actual source code
+COPY backend/src ./src
+COPY backend/migrations ./migrations
+
+# Build the actual application with maximum optimizations
+RUN touch src/main.rs && \
+    cargo build --release --target x86_64-unknown-linux-musl 2>/dev/null || \
+    cargo build --release
+
+# Strip the binary to reduce size (~30-40% reduction)
+RUN strip target/x86_64-unknown-linux-musl/release/reconciliation-backend 2>/dev/null || \
+    strip target/release/reconciliation-backend
+
+# ============================================================================
+# STAGE 2: Runtime Stage - Minimal Production Image
+# ============================================================================
+FROM alpine:latest AS runtime
+
+LABEL maintainer="Reconciliation Platform Team"
+LABEL version="1.0.0"
+LABEL description="Optimized Rust Backend for Reconciliation Platform"
+
+# Install ONLY runtime dependencies (minimal footprint)
+RUN apk add --no-cache \
+    ca-certificates \
+    libssl3 \
+    libcrypto3 \
+    libpq \
+    curl \
+    tzdata \
+    && rm -rf /var/cache/apk/*
+
+# Create non-root user for security hardening
+RUN addgroup -g 1001 -S appgroup && \
+    adduser -S -u 1001 -G appgroup -s /bin/sh appuser
+
+# Set working directory
+WORKDIR /app
+
+# Copy binary from builder stage (only the compiled artifact)
+COPY --from=builder --chown=appuser:appgroup /app/target/x86_64-unknown-linux-musl/release/reconciliation-backend ./reconciliation-backend 2>/dev/null || \
+COPY --from=builder --chown=appuser:appgroup /app/target/release/reconciliation-backend ./reconciliation-backend
+
+# Copy migrations only (no source code in final image)
+COPY --from=builder --chown=appuser:appgroup /app/migrations ./migrations
+
+# Create necessary directories with proper permissions
+RUN mkdir -p /app/uploads /app/logs && \
+    chown -R appuser:appgroup /app
+
+# Switch to non-root user (security best practice)
+USER appuser
+
+# Expose application port
+EXPOSE 2000
+
+# Set environment variables for optimal performance
+ENV RUST_LOG=info \
+    RUST_BACKTRACE=0 \
+    PORT=2000 \
+    HOST=0.0.0.0
+
+# Health check configuration
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:2000/health || exit 1
+
+# Run the application
+CMD ["./reconciliation-backend"]
+

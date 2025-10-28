@@ -7,7 +7,10 @@ import { useAuth } from '../hooks/useAuth'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, 
+      'Password must contain lowercase, uppercase, digit, and special character'),
 })
 
 type LoginForm = z.infer<typeof loginSchema>

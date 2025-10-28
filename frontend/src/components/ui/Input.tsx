@@ -93,4 +93,5 @@ const Input: React.FC<InputProps> = memo(({
   )
 })
 
+export { Input };
 export default Input

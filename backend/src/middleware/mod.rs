@@ -15,6 +15,7 @@ pub mod circuit_breaker;
 pub mod advanced_rate_limiter;
 pub mod request_validation;
 pub mod distributed_tracing;
+pub mod request_tracing;
 
 // Re-export commonly used middleware
 pub use security::{SecurityMiddleware, SecurityMiddlewareConfig, SecurityHeadersMiddleware};
@@ -29,3 +30,4 @@ pub use distributed_tracing::{DistributedTracing, TracingConfig};
 pub use performance::{PerformanceMiddleware, PerformanceMonitoringConfig};
 pub use validation::Validation;
 pub use cache::Cache;
+pub use request_tracing::{RequestIdMiddleware, RequestIdExt};

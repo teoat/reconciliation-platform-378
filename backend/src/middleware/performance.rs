@@ -3,21 +3,19 @@
 //! This module provides performance monitoring middleware for tracking
 //! request metrics, database performance, and system resources.
 
-use actix_web::{dev::ServiceRequest, Error, HttpMessage, HttpRequest, HttpResponse, Result, body::BoxBody};
+use actix_web::{dev::ServiceRequest, Error, HttpMessage, Result};
 use actix_web::dev::{Service, ServiceResponse, Transform};
 use futures::future::{ok, Ready};
 use futures::Future;
 use std::rc::Rc;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use crate::errors::{AppError, AppResult};
 use crate::services::performance::{PerformanceService, RequestMetrics};
-use crate::services::monitoring::MonitoringService;
 
 /// Performance monitoring configuration
 #[derive(Debug, Clone)]

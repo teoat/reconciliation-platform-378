@@ -6,8 +6,8 @@
 use diesel::prelude::*;
 use crate::models::JsonValue;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use serde::{Serialize, Deserialize};
+use chrono::Utc;
+use serde::Serialize;
 
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};

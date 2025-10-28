@@ -4,16 +4,13 @@
 
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
-use lazy_static::lazy_static;
 use prometheus::{
-    Counter, Histogram, Gauge, Registry, TextEncoder, Encoder,
-    CounterVec, HistogramVec, GaugeVec, Opts, HistogramOpts
+    Counter, Histogram, Gauge, Registry, TextEncoder,
+    CounterVec, HistogramVec, Opts, HistogramOpts
 };
-use prometheus::core::Collector;
-use diesel::RunQueryDsl;
 use crate::errors::{AppError, AppResult};
 use uuid::Uuid;
 

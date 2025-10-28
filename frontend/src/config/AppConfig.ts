@@ -21,24 +21,29 @@ const getEnvVar = (key: string, fallback: string) => {
 // ============================================================================
 
 export const APP_CONFIG = {
-  API_BASE_URL: getEnvVar('VITE_API_URL', 'http://localhost:2000'),
-  WS_BASE_URL: getEnvVar('VITE_WS_URL', 'ws://localhost:2000'),
+  // Unified API Configuration (SSOT)
+  API_URL: getEnvVar('VITE_API_URL', 'http://localhost:2000/api'),
+  WS_URL: getEnvVar('VITE_WS_URL', 'ws://localhost:2000'),
+  API_BASE_URL: getEnvVar('VITE_API_URL', 'http://localhost:2000'), // Legacy alias
+  WS_BASE_URL: getEnvVar('VITE_WS_URL', 'ws://localhost:2000'), // Legacy alias
+  
+  // Application Configuration
+  APP_NAME: getEnvVar('VITE_APP_NAME', 'Reconciliation Platform'),
+  APP_VERSION: getEnvVar('VITE_APP_VERSION', '1.0.0'),
+  VERSION: '1.0.0', // Legacy alias
+  
+  // Environment
+  ENVIRONMENT: getEnvVar('NODE_ENV', 'development'),
+  DEBUG: getEnvVar('VITE_DEBUG', 'false') === 'true',
+  LOG_LEVEL: getEnvVar('VITE_LOG_LEVEL', 'info'),
+  
+  // File & Performance Configuration
   MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
   SESSION_TIMEOUT: 30 * 60 * 1000, // 30 minutes
   AUTO_SAVE_INTERVAL: 5 * 1000, // 5 seconds
   DEBOUNCE_DELAY: 300, // 300ms
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000, // 1 second
-  VERSION: '1.0.0',
-  ENVIRONMENT: getEnvVar('NODE_ENV', 'development'),
-  
-  // Additional from config/index.ts
-  API_URL: getEnvVar('VITE_API_URL', 'http://localhost:8080/api'),
-  WS_URL: getEnvVar('VITE_WS_URL', 'ws://localhost:8080/ws'),
-  APP_NAME: getEnvVar('VITE_APP_NAME', 'Reconciliation Platform'),
-  APP_VERSION: getEnvVar('VITE_APP_VERSION', '1.0.0'),
-  DEBUG: getEnvVar('VITE_DEBUG', 'false') === 'true',
-  LOG_LEVEL: getEnvVar('VITE_LOG_LEVEL', 'info'),
 }
 
 // ============================================================================
@@ -118,7 +123,7 @@ export const VALIDATION_RULES = {
   PROJECT_NAME_MAX_LENGTH: 100,
   DESCRIPTION_MAX_LENGTH: 500,
   FILE_MAX_SIZE: 10 * 1024 * 1024, // 10MB
-  ALLOWED_FILE_TYPES: ['.csv', '.xlsx', '.xls', '.json', '.xml']
+  ALLOWED_FILE_TYPES: ['.csv', '.xlsx', '.xls', '.json', '.xml', '.txt']
 }
 
 // ============================================================================

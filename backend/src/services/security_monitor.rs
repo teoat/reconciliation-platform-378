@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
 use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
-use crate::errors::{AppError, AppResult};
+use crate::errors::AppResult;
 
 /// Security event types
 #[derive(Debug, Clone, Serialize, Deserialize)]

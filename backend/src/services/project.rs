@@ -5,7 +5,6 @@
 
 use diesel::prelude::*;
 use diesel::{QueryDsl, ExpressionMethods, RunQueryDsl, OptionalExtension, QueryableByName};
-use diesel::pg::sql_types::Jsonb;
 use uuid::Uuid;
 use chrono::Utc;
 use serde::{Serialize, Deserialize};
@@ -171,16 +170,14 @@ pub struct ActivityData {
     #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Uuid>)]
     pub file_id: Option<Uuid>,
 }
-use diesel::sql_types::Json;
 use crate::services::auth::ValidationUtils;
 
-use crate::database::{Database, utils::with_transaction};
+use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::models::{
     Project, NewProject, UpdateProject, ProjectStatus,
     schema::{projects, users, reconciliation_jobs, data_sources},
 };
-use crate::utils::validation;
 
 /// Project service
 pub struct ProjectService {
@@ -491,8 +488,8 @@ impl ProjectService {
                     settings: result.settings,
                     created_at: result.created_at,
                     updated_at: result.updated_at,
-                    job_count: job_count,
-                    data_source_count: data_source_count,
+                    job_count,
+                    data_source_count,
                     last_activity: None,
                 }
             })
@@ -755,8 +752,8 @@ impl ProjectService {
                 settings: result.settings,
                 created_at: result.created_at,
                 updated_at: result.updated_at,
-                job_count: job_count,
-                data_source_count: data_source_count,
+                job_count,
+                data_source_count,
                 last_activity: None,
             });
         }

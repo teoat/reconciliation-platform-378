@@ -3,8 +3,9 @@
 // ============================================================================
 
 import { createSlice, createAsyncThunk, PayloadAction, combineReducers } from '@reduxjs/toolkit'
-import { persistStore, persistReducer } from 'redux-persist'
-import storage from 'redux-persist/lib/storage'
+// Removed redux-persist for now - not in dependencies
+// import { persistStore, persistReducer } from 'redux-persist'
+// import storage from 'redux-persist/lib/storage'
 import { apiClient, BackendUser, BackendProject, BackendReconciliationJob, BackendReconciliationRecord } from '../services/apiClient'
 
 // ============================================================================
@@ -987,3 +988,22 @@ export const ingestionReducer = ingestionSlice.reducer
 export const analyticsReducer = analyticsSlice.reducer
 export const uiReducer = uiSlice.reducer
 export const settingsReducer = settingsSlice.reducer
+
+// ============================================================================
+// STORE CONFIGURATION
+// ============================================================================
+
+export const store = configureStore({
+  reducer: combineReducers({
+    auth: authSlice.reducer,
+    projects: projectsSlice.reducer,
+    reconciliation: reconciliationSlice.reducer,
+    ingestion: ingestionSlice.reducer,
+    analytics: analyticsSlice.reducer,
+    ui: uiSlice.reducer,
+    settings: settingsSlice.reducer
+  })
+})
+
+export type RootState = ReturnType<typeof store.getState>
+export type AppDispatch = typeof store.dispatch

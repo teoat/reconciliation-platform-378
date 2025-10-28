@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react'
 import { BarChart3, PieChart, TrendingUp, Download, Filter } from 'lucide-react'
 import { DataTable } from '../ui/DataTable'
-import { Button } from '../ui/Button'
-import { Select } from '../ui/Select'
+import Button from '../ui/Button'
+import Select from '../ui/Select'
 import { BarChart, LineChart, PieChart as PieChartComponent } from './Charts'
 
 export interface VisualizableData {

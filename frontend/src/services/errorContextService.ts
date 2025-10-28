@@ -40,6 +40,7 @@ class ErrorContextService {
   private config: ErrorContextConfig
   private currentContext: ErrorContext | null = null
   private listeners: Map<string, Function[]> = new Map()
+  private cleanupTimer?: NodeJS.Timeout
 
   public static getInstance(): ErrorContextService {
     if (!ErrorContextService.instance) {
@@ -116,9 +117,22 @@ class ErrorContextService {
   }
 
   private startCleanupTimer(): void {
-    setInterval(() => {
+    // Clear existing timer if any
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer)
+    }
+    
+    // Start new cleanup timer
+    this.cleanupTimer = setInterval(() => {
       this.cleanupOldContexts()
     }, 60 * 60 * 1000) // Clean up every hour
+  }
+
+  private stopCleanupTimer(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer)
+      this.cleanupTimer = undefined
+    }
   }
 
   private cleanupOldContexts(): void {
@@ -444,6 +458,7 @@ class ErrorContextService {
   }
 
   public destroy(): void {
+    this.stopCleanupTimer()
     this.contexts.clear()
     this.events = []
     this.listeners.clear()

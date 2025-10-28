@@ -381,7 +381,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_accessibility_service() {
-        let service = AccessibilityService::new();
+        let service = AccessibilityService::new().await;
         
         // Test performing audit
         let content = r#"

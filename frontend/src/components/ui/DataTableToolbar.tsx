@@ -108,4 +108,5 @@ const DataTableToolbar: React.FC<DataTableToolbarProps> = memo(({
   )
 })
 
+export { DataTableToolbar };
 export default DataTableToolbar

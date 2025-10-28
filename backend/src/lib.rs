@@ -10,9 +10,11 @@ pub mod models;
 pub mod handlers;
 pub mod services;
 pub mod middleware;
-pub mod utils;
+pub釆mod utils;
 pub mod errors;
 pub mod websocket;
+pub mod integrations;
+pub mod api;
 
 // Re-export commonly used types
 pub use config::Config;

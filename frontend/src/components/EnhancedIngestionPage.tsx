@@ -674,7 +674,7 @@ const EnhancedIngestionPage = () => {
                           </div>
                         </td>
                         <td className="py-3 px-4">
-                          <button className="text-primary-600 hover:text-primary-700 text-sm">
+                          <button className="text-primary-600 hover:text-primary-700 text-sm" title="View details" aria-label="View details">
                             <Eye className="w-4 h-4" />
                           </button>
                         </td>

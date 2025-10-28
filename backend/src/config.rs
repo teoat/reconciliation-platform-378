@@ -36,7 +36,7 @@ impl Config {
                 .parse()
                 .unwrap_or(86400),
             cors_origins: env::var("CORS_ORIGINS")
-                .unwrap_or_else(|_| "http://localhost:3000,http://localhost:5173".to_string())
+                .unwrap_or_else(|_| "http://localhost:1000,http://localhost:3000,http://localhost:5173".to_string())
                 .split(',')
                 .map(|s| s.trim().to_string())
                 .collect(),

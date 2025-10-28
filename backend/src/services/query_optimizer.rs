@@ -3,10 +3,9 @@
 //! Detects slow queries, recommends indexes, and optimizes database access patterns.
 
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
-use crate::errors::{AppError, AppResult};
 
 /// Query analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]

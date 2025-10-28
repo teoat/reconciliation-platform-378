@@ -107,9 +107,13 @@ export interface QuickFilterProps {
 }
 
 // ============================================================================
-// FORM HOOK
+// FORM HOOK - DEPRECATED: Use ../hooks/useForm.ts instead
 // ============================================================================
 
+/**
+ * @deprecated This hook is duplicated. Please use useForm from '../hooks/useForm.ts' instead.
+ * This export will be removed in the next version.
+ */
 export function useForm(options: UseFormOptions = {}): UseFormReturn {
   const { initialValues = {}, validationRules = {}, onSubmit } = options
 

@@ -61,10 +61,43 @@ impl Database {
         }
     }
 
-    /// Get a connection from the pool
+    /// Get a connection from the pool with retry logic
     pub fn get_connection(&self) -> AppResult<r2d2::PooledConnection<ConnectionManager<PgConnection>>> {
-        self.pool.get()
-            .map_err(|e| AppError::Connection(diesel::ConnectionError::InvalidConnectionUrl(format!("Failed to get connection: {}", e))))
+        // Try to get connection with exponential backoff
+        let mut retry_count = 0;
+        let max_retries = 3;
+        
+        loop {
+            match self.pool.get() {
+                Ok(conn) => {
+                    // Log pool stats if getting tight
+                    let stats = self.get_pool_stats();
+                    if stats.active as f32 / stats.size as f32 > 0.8 {
+                        log::warn!("Connection pool usage high: {}/{} ({:.0}%)", 
+                            stats.active, stats.size, 
+                            (stats.active as f32 / stats.size as f32) * 100.0);
+                    }
+                    return Ok(conn);
+                }
+                Err(e) if retry_count < max_retries => {
+                    retry_count += 1;
+                    // Exponential backoff: 10ms, 20ms, 40ms
+                    let delay_ms = 10 * 2_u64.pow(retry_count - 1);
+                    log::warn!("Connection pool busy, retry {}/{} after {}ms", 
+                        retry_count, max_retries, delay_ms);
+                    std::thread::sleep(std::time::Duration::from_millis(delay_ms));
+                    continue;
+                }
+                Err(e) => {
+                    log::error!("Continued to get connection after {} retries", max_retries);
+                    return Err(AppError::Connection(
+                        diesel::ConnectionError::InvalidConnectionUrl(
+                            format!("Connection pool exhausted: {}", e)
+                        )
+                    ));
+                }
+            }
+        }
     }
 
     /// Get the connection pool

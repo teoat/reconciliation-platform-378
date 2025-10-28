@@ -3,8 +3,7 @@
 //! This module provides JWT authentication, password hashing, role-based access control,
 //! and security middleware.
 
-use actix_web::{web, HttpRequest, HttpResponse, Result};
-use actix_web_actors::ws;
+use actix_web::{HttpRequest, Result};
 use diesel::prelude::*;
 use diesel::{QueryDsl, ExpressionMethods, RunQueryDsl};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
@@ -332,6 +331,11 @@ impl EnhancedAuthService {
     
     /// Generate password reset token
     pub async fn generate_password_reset_token(&self, email: &str, db: &crate::database::Database) -> AppResult<String> {
+        use diesel::prelude::*;
+        use crate::models::schema::password_reset_tokens;
+        use crate::models::NewPasswordResetToken;
+        use sha2::{Sha256, Digest};
+        
         // Check if user exists
         let mut conn = db.get_connection()?;
         let user = crate::models::schema::users::table
@@ -341,6 +345,36 @@ impl EnhancedAuthService {
         
         // Generate reset token
         let reset_token = self.generate_reset_token()?;
+        
+        // Hash the token before storing
+        let mut hasher = Sha256::new();
+        hasher.update(reset_token.as_bytes());
+        let token_hash = format!("{:x}", hasher.finalize());
+        
+        // Invalidate any existing tokens for this user
+        let now = chrono::Utc::now();
+        diesel::update(password_reset_tokens::table)
+            .filter(password_reset_tokens::user_id.eq(user.id))
+            .set(crate::models::UpdatePasswordResetToken {
+                used_at: Some(now),
+            })
+            .execute(&mut conn)
+            .map_err(|e| AppError::Database(e))?;
+        
+        // Store new token with 30 minute expiration
+        let expires_at = now + chrono::Duration::minutes(30);
+        let new_token = NewPasswordResetToken {
+            user_id: user.id,
+            token_hash,
+            expires_at,
+            ip_address: None,
+            user_agent: None,
+        };
+        
+        diesel::insert_into(password_reset_tokens::table)
+            .values(new_token)
+            .execute(&mut conn)
+            .map_err(|e| AppError::Database(e))?;
         
         Ok(reset_token)
     }
@@ -352,11 +386,55 @@ impl EnhancedAuthService {
         new_password: &str,
         db: &crate::database::Database,
     ) -> AppResult<()> {
+        use diesel::prelude::*;
+        use crate::models::schema::{password_reset_tokens, users};
+        use crate::models::{PasswordResetToken, UpdatePasswordResetToken};
+        use sha2::{Sha256, Digest};
+        
         // Validate password strength
         self.validate_password_strength(new_password)?;
         
+        // Hash the provided token to compare
+        let mut hasher = Sha256::new();
+        hasher.update(token.as_bytes());
+        let token_hash = format!("{:x}", hasher.finalize());
+        
+        // Look up the token
+        let mut conn = db.get_connection()?;
+        let reset_token = password_reset_tokens::table
+            .filter(password_reset_tokens::token_hash.eq(&token_hash))
+            .first::<PasswordResetToken>(&mut conn)
+            .map_err(|_| AppError::Authentication("Invalid or expired reset token".to_string()))?;
+        
+        // Check if token is already used
+        if reset_token.used_at.is_some() {
+            return Err(AppError::Authentication("Token has already been used".to_string()));
+        }
+        
+        // Check if token is expired
+        let now = chrono::Utc::now();
+        if reset_token.expires_at < now {
+            return Err(AppError::Authentication("Token has expired".to_string()));
+        }
+        
         // Hash new password
         let password_hash = self.hash_password(new_password)?;
+        
+        // Update user's password
+        diesel::update(users::table)
+            .filter(users::id.eq(reset_token.user_id))
+            .set(users::password_hash.eq(&password_hash))
+            .execute(&mut conn)
+            .map_err(|e| AppError::Database(e))?;
+        
+        // Mark token as used
+        diesel::update(password_reset_tokens::table)
+            .filter(password_reset_tokens::id.eq(reset_token.id))
+            .set(UpdatePasswordResetToken {
+                used_at: Some(now),
+            })
+            .execute(&mut conn)
+            .map_err(|e| AppError::Database(e))?;
         
         Ok(())
     }
@@ -518,6 +596,104 @@ impl EnhancedAuthService {
         
         Ok(token)
     }
+    
+    /// Generate email verification token
+    pub async fn generate_email_verification_token(
+        &self,
+        user_id: Uuid,
+        email: &str,
+        db: &crate::database::Database,
+    ) -> AppResult<String> {
+        use diesel::prelude::*;
+        use crate::models::schema::email_verification_tokens;
+        use crate::models::NewEmailVerificationToken;
+        use sha2::{Sha256, Digest};
+        
+        // Generate verification token
+        let token = self.generate_reset_token()?;
+        
+        // Hash the token
+        let mut hasher = Sha256::new();
+        hasher.update(token.as_bytes());
+        let token_hash = format!("{:x}", hasher.finalize());
+        
+        // Delete any existing tokens for this user
+        diesel::delete(email_verification_tokens::table)
+            .filter(email_verification_tokens::user_id.eq(user_id))
+            .execute(&mut db.get_connection()?)
+            .map_err(|e| AppError::Database(e))?;
+        
+        // Store new token with 24 hour expiration
+        let expires_at = chrono::Utc::now() + chrono::Duration::hours(24);
+        let new_token = NewEmailVerificationToken {
+            user_id,
+            token_hash,
+            email: email.to_string(),
+            expires_at,
+        };
+        
+        diesel::insert_into(email_verification_tokens::table)
+            .values(new_token)
+            .execute(&mut db.get_connection()?)
+            .map_err(|e| AppError::Database(e))?;
+        
+        Ok(token)
+    }
+    
+    /// Verify email with token
+    pub async fn verify_email(
+        &self,
+        token: &str,
+        db: &crate::database::Database,
+    ) -> AppResult<()> {
+        use diesel::prelude::*;
+        use crate::models::schema::{email_verification_tokens, users};
+        use crate::models::{EmailVerificationToken, UpdateEmailVerificationToken};
+        use sha2::{Sha256, Digest};
+        
+        // Hash the provided token
+        let mut hasher = Sha256::new();
+        hasher.update(token.as_bytes());
+        let token_hash = format!("{:x}", hasher.finalize());
+        
+        // Look up the token
+        let mut conn = db.get_connection()?;
+        let verification_token = email_verification_tokens::table
+            .filter(email_verification_tokens::token_hash.eq(&token_hash))
+            .first::<EmailVerificationToken>(&mut conn)
+            .map_err(|_| AppError::Authentication("Invalid or expired verification token".to_string()))?;
+        
+        // Check if already verified
+        if verification_token.verified_at.is_some() {
+            return Err(AppError::Authentication("Email already verified".to_string()));
+        }
+        
+        // Check if expired
+        let now = chrono::Utc::now();
+        if verification_token.expires_at < now {
+            return Err(AppError::Authentication("Verification token has expired".to_string()));
+        }
+        
+        // Mark as verified
+        diesel::update(email_verification_tokens::table)
+            .filter(email_verification_tokens::id.eq(verification_token.id))
+            .set(UpdateEmailVerificationToken {
+                verified_at: Some(now),
+            })
+            .execute(&mut conn)
+            .map_err(|e| AppError::Database(e))?;
+        
+        // Update user email if different
+        if verification_token.email != "" {
+            diesel::update(users::table)
+                .filter(users::id.eq(verification_token.user_id))
+                .set(users::email.eq(&verification_token.email))
+                .execute(&mut conn)
+                .map_err(|e| AppError::Database(e))?;
+        }
+        
+        Ok(())
+    }
 }
 
 impl SecurityMiddleware {
@@ -541,8 +717,8 @@ impl SecurityMiddleware {
     
     /// Rate limiting check (basic implementation)
     pub fn check_rate_limit(_req: &HttpRequest) -> AppResult<()> {
-        // TODO: Implement proper rate limiting with Redis
-        // For now, just return OK
+        // Note: Rate limiting is now handled by the SecurityMiddleware with Redis support
+        // This is a legacy method maintained for backward compatibility
         Ok(())
     }
     

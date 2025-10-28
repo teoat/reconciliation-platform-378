@@ -2,7 +2,6 @@
 use crate::errors::{AppError, AppResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -609,7 +608,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_api_versioning() {
-        let service = ApiVersioningService::new();
+        let service = ApiVersioningService::new().await;
         
         // Test getting version
         let version = service.get_version("1.0.0").await.unwrap();
@@ -650,7 +649,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_migration_strategies() {
-        let service = ApiVersioningService::new();
+        let service = ApiVersioningService::new().await;
         
         let strategy = MigrationStrategy {
             from_version: "1.0.0".to_string(),
@@ -679,7 +678,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_version_management() {
-        let service = ApiVersioningService::new();
+        let service = ApiVersioningService::new().await;
         
         // Test deprecating version
         service.deprecate_version("1.0.0", Utc::now(), Some(Utc::now() + chrono::Duration::days(90))).await.unwrap();

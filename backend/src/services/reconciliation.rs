@@ -9,8 +9,6 @@
 //! - Machine learning models
 //! - Reconciliation configuration
 
-use bigdecimal::ToPrimitive as BigDecimalToPrimitive;
-use std::str::FromStr;
 use diesel::{RunQueryDsl, QueryDsl, ExpressionMethods, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
@@ -22,7 +20,7 @@ use tokio::task::JoinHandle;
 use std::time::Duration;
 use std::f64;
 
-use crate::database::{Database, utils::with_transaction};
+use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::models::{
     ReconciliationJob, NewReconciliationJob, UpdateReconciliationJob,
@@ -268,12 +266,52 @@ impl AdvancedReconciliationService {
 
 impl JobProcessor {
     pub fn new(max_concurrent_jobs: usize, chunk_size: usize) -> Self {
-        Self {
+        let processor = Self {
             active_jobs: Arc::new(RwLock::new(HashMap::new())),
             job_queue: Arc::new(RwLock::new(Vec::new())),
             max_concurrent_jobs,
             chunk_size,
-        }
+        };
+        
+        // Start background cleanup task to prevent memory leaks
+        processor.start_cleanup_task();
+        
+        processor
+    }
+    
+    /// Clean up completed jobs periodically to prevent memory leaks
+    fn start_cleanup_task(&self) {
+        let active_jobs = self.active_jobs.clone();
+        
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(Duration::from_secs(60)); // Every minute
+            
+            loop {
+                interval.tick().await;
+                
+                let mut jobs = active_jobs.write().await;
+                let before = jobs.len();
+                
+                // Remove completed jobs
+                jobs.retain(|job_id, handle| {
+                    if handle.task.is_finished() {
+                        log::debug!("Cleaning up completed job: {}", job_id);
+                        false
+                    } else {
+                        true
+                    }
+                });
+                
+                let after = jobs.len();
+                let cleaned = before - after;
+                
+                if cleaned > 0 {
+                    log::info!("Memory cleanup: Removed {} completed job(s) from active tracking", cleaned);
+                }
+            }
+        });
+        
+        log::info!("Job cleanup task started - will run every 60 seconds");
     }
     
     pub async fn start_job(
@@ -297,7 +335,7 @@ impl JobProcessor {
         job_id: Uuid,
         db: Database,
     ) -> AppResult<()> {
-        let (progress_sender, mut progress_receiver) = mpsc::channel(100);
+        let (progress_sender, progress_receiver) = mpsc::channel(100);
         let progress_sender_clone = progress_sender.clone();
         let status = Arc::new(RwLock::new(JobStatus {
             status: "running".to_string(),

@@ -87,7 +87,7 @@ pub fn validate_not_empty(value: &str, field_name: &str) -> Result<(), String> {
 
 /// Validate role string
 pub fn validate_role(role: &str) -> Result<(), String> {
-    let valid_roles = ["admin", "user", "viewer", "manager"];
+    let valid_roles = ["admin", "user", "analyst", "viewer"];
     if valid_roles.contains(&role.to_lowercase().as_str()) {
         Ok(())
     } else {

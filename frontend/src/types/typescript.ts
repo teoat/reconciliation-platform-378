@@ -48,7 +48,6 @@ export const typescriptConfig = {
     
     // Completeness
     skipDefaultLibCheck: true,
-    skipLibCheck: true,
     
     // Advanced
     exactOptionalPropertyTypes: true,
@@ -75,7 +74,7 @@ export const typescriptConfig = {
     '**/*.spec.tsx',
   ],
   
-  ts-node: {
+  'ts-node': {
     esm: true,
     experimentalSpecifierResolution: 'node',
   },
@@ -252,7 +251,7 @@ export type ReduxState = {
   [key: string]: any
 }
 
-export type ReduxSelector<T = any> = (state: ReduxState) => T
+export type ReduxSelector<T = unknown> = (state: ReduxState) => T
 
 // ============================================================================
 // TYPE GUARDS
@@ -260,25 +259,25 @@ export type ReduxSelector<T = any> = (state: ReduxState) => T
 
 export const typeGuards = {
   // Check if value is a string
-  isString: (value: any): value is string => typeof value === 'string',
+  isString: <T>(value: T | string): value is string => typeof value === 'string',
   
   // Check if value is a number
-  isNumber: (value: any): value is number => typeof value === 'number' && !isNaN(value),
+  isNumber: <T>(value: T | number): value is number => typeof value === 'number' && !isNaN(value),
   
   // Check if value is a boolean
-  isBoolean: (value: any): value is boolean => typeof value === 'boolean',
+  isBoolean: <T>(value: T | boolean): value is boolean => typeof value === 'boolean',
   
   // Check if value is an object
-  isObject: (value: any): value is object => typeof value === 'object' && value !== null,
+  isObject: <T>(value: T | object): value is object => typeof value === 'object' && value !== null,
   
   // Check if value is an array
-  isArray: (value: any): value is any[] => Array.isArray(value),
+  isArray: <T>(value: T | any[]): value is any[] => Array.isArray(value),
   
   // Check if value is a function
-  isFunction: (value: any): value is Function => typeof value === 'function',
+  isFunction: <T>(value: T | Function): value is Function => typeof value === 'function',
   
   // Check if value is null or undefined
-  isNullish: (value: any): value is null | undefined => value == null,
+  isNullish: <T>(value: T | null | undefined): value is null | undefined => value == null,
   
   // Check if value is not null or undefined
   isNotNullish: <T>(value: T | null | undefined): value is T => value != null,

@@ -11,11 +11,8 @@
 use diesel::prelude::*;
 use diesel::{QueryDsl, ExpressionMethods, RunQueryDsl};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::Arc;
-use tokio::sync::RwLock;
 
 use crate::database::{Database, utils::with_transaction};
 use crate::errors::{AppError, AppResult};
@@ -23,7 +20,7 @@ use crate::models::{
     User, NewUser, UpdateUser,
     schema::{users, projects},
 };
-use crate::services::auth::{AuthService, ValidationUtils, UserRole as AuthUserRole};
+use crate::services::auth::{AuthService, ValidationUtils};
 
 /// User service
 pub struct UserService {

@@ -4,8 +4,6 @@
 //! data collection, metrics calculation, and dashboard data generation.
 
 use diesel::prelude::*;
-use diesel::sql_types::Json;
-use diesel::pg::sql_types::Jsonb;
 use crate::models::{JsonValue, User};
 use uuid::Uuid;
 use chrono::{DateTime, Utc, Duration};
@@ -18,7 +16,6 @@ use crate::models::schema::{
     users, projects, reconciliation_jobs, data_sources, reconciliation_results, audit_logs,
 };
 use std::sync::Arc;
-use std::time::Duration as StdDuration;
 
 /// Analytics service
 pub struct AnalyticsService {

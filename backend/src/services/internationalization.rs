@@ -3,10 +3,9 @@ use crate::errors::{AppError, AppResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
-use chrono::{DateTime, Utc, TimeZone, FixedOffset, Local};
+use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use chrono_tz::Tz;
 
 /// Supported language
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -129,10 +128,10 @@ impl InternationalizationService {
         };
         
         // Initialize with default languages and locales
-        service.initialize_default_languages();
-        service.initialize_default_locales();
-        service.initialize_default_timezones();
-        service.initialize_default_translations();
+        service.initialize_default_languages().await;
+        service.initialize_default_locales().await;
+        service.initialize_default_timezones().await;
+        service.initialize_default_translations().await;
         
         service
     }
@@ -912,7 +911,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_internationalization_service() {
-        let service = InternationalizationService::new();
+        let service = InternationalizationService::new().await;
         
         // Test getting language
         let language = service.get_language("en").await.unwrap();
@@ -973,7 +972,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_translation_management() {
-        let service = InternationalizationService::new();
+        let service = InternationalizationService::new().await;
         
         // Test adding translation
         let translation = Translation {
@@ -1002,7 +1001,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_locale_formatting() {
-        let service = InternationalizationService::new();
+        let service = InternationalizationService::new().await;
         
         // Test different locale formatting
         let number = 1234.56;

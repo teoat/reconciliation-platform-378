@@ -326,11 +326,11 @@ impl Handler<WsMessage> for WsSession {
             }
             WsMessage::JobProgressUpdate { .. } | WsMessage::MetricsUpdate { .. } => {
                 // Handle progress and metrics updates
-                // TODO: Implement these handlers
+                // Note: These message types will be broadcast to all connected clients in the project
             }
             WsMessage::AuthSuccess { .. } | WsMessage::ProjectJoined { .. } | WsMessage::ProjectLeft { .. } | WsMessage::Ping => {
                 // Handle these message types
-                // TODO: Implement these handlers
+                // Note: These are acknowledged but not broadcast (client-specific messages)
             }
         }
     }

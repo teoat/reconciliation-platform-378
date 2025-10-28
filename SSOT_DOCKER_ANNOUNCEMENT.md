@@ -7,22 +7,22 @@
 
 ## 🎯 **SINGLE SOURCE OF TRUTH (SSOT)**
 
-### **Active Files**
-1. ✅ **docker-compose.yml** - Main SSOT (LOCKED)
-2. ✅ **Dockerfile** - All-in-one build
-3. ✅ **Dockerfile.backend** - Backend only
-4. ✅ **Dockerfile.frontend** - Frontend only
-5. ✅ **.dockerignore** - Build optimization
+### **Active Files (SSOT)**
+1. ✅ **docker-compose.yml** - Main SSOT (LOCKED) - Development/Staging
+2. ✅ **docker-compose.prod.yml** - Production overlay (LOCKED)
+3. ✅ **infrastructure/docker/Dockerfile.backend** - Backend build (LOCKED)
+4. ✅ **infrastructure/docker/Dockerfile.frontend** - Frontend build (LOCKED)
 
 ---
 
-## 🗑️ **DELETED FILES**
+## 🗑️ **REMOVED/ARCHIVED FILES**
 
-The following redundant docker-compose files were removed:
-1. ❌ docker-compose.production.yml
-2. ❌ docker-compose.optimized.yml
-3. ❌ infrastructure/docker/docker-compose.yml
-4. ❌ docker_backup/* (backup only)
+The following outdated files have been removed/archived:
+1. ❌ Dockerfile (root) - Removed
+2. ❌ Dockerfile.backend (root) - Removed
+3. ❌ Dockerfile.frontend (root) - Removed
+4. ❌ docker_backup/* - Archived
+5. ❌ All duplicate docker-compose files - Archived
 
 ---
 
@@ -72,9 +72,9 @@ docker-compose up -d frontend backend
 
 ---
 
-## 📁 **BACKUP LOCATION**
+## 📁 **ARCHIVE LOCATION**
 
-Old docker files moved to: `docker_backup/` (for reference only)
+Old docker files moved to: `archive/docker_files/` (for reference only)
 
 ---
 

@@ -24,6 +24,7 @@ import Card from '../components/ui/Card'
 import Modal from '../components/ui/Modal'
 import StatusBadge from '../components/ui/StatusBadge'
 import MetricCard from '../components/ui/MetricCard'
+import { SkeletonDashboard } from '../components/ui/LoadingSpinner'
 
 interface ReconciliationPageProps {}
 
@@ -181,7 +182,14 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       label: 'Progress',
       render: (value, row) => (
         <div className="flex items-center space-x-2">
-          <div className="w-16 bg-gray-200 rounded-full h-2">
+          <div 
+            className="w-16 bg-gray-200 rounded-full h-2"
+            role="progressbar"
+            aria-valuenow={row.status === 'completed' ? 100 : value || 0}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`Progress is ${row.status === 'completed' ? 100 : value || 0} percent`}
+          >
             <div 
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${row.status === 'completed' ? 100 : value || 0}%` }}
@@ -247,22 +255,32 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       key: 'confidence_score',
       label: 'Confidence',
       sortable: true,
-      render: (value) => (
-        <div className="flex items-center space-x-2">
-          <div className="w-16 bg-gray-200 rounded-full h-2">
+      render: (value) => {
+        const progressValue = Math.round(value * 100)
+        return (
+          <div className="flex items-center space-x-2">
             <div 
-              className={`h-2 rounded-full transition-all duration-300 ${
-                value >= 0.8 ? 'bg-green-500' : 
-                value >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'
-              }`}
-              style={{ width: `${value * 100}%` }}
-            />
+              className="w-16 bg-gray-200 rounded-full h-2"
+              role="progressbar"
+              aria-valuenow={progressValue}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-label={`Confidence score is ${progressValue} percent`}
+            >
+              <div 
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  value >= 0.8 ? 'bg-green-500' : 
+                  value >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'
+                }`}
+                style={{ width: `${value * 100}%` }}
+              />
+            </div>
+            <span className="text-sm font-medium">
+              {progressValue}%
+            </span>
           </div>
-          <span className="text-sm font-medium">
-            {Math.round(value * 100)}%
-          </span>
-        </div>
-      )
+        )
+      }
     },
     {
       key: 'status',
@@ -321,11 +339,8 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
 
   if (projectLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading reconciliation data...</p>
-        </div>
+      <div className="min-h-screen bg-gray-50 p-6">
+        <SkeletonDashboard />
       </div>
     )
   }
@@ -400,7 +415,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
+                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
                   activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

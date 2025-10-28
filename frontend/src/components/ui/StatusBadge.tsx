@@ -88,4 +88,5 @@ const StatusBadge: React.FC<StatusBadgeProps> = memo(({
   )
 })
 
+export { StatusBadge };
 export default StatusBadge

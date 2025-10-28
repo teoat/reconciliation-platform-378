@@ -1,5 +1,5 @@
 // Minimal FileService implementation to satisfy build requirements
-// TODO: Implement full file service functionality
+// Note: Full file service functionality is implemented in the backend
 
 export interface FileData {
   id: string

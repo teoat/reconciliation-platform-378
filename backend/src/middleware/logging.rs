@@ -3,20 +3,19 @@
 //! This module provides comprehensive logging middleware for structured logging,
 //! request/response logging, and error tracking.
 
-use actix_web::{dev::ServiceRequest, Error, HttpMessage, HttpRequest, HttpResponse, Result, body::BoxBody};
+use actix_web::{dev::ServiceRequest, Error, HttpMessage, Result};
 use actix_web::dev::{Service, ServiceResponse, Transform};
 use futures::future::{ok, Ready};
 use futures::Future;
 use std::rc::Rc;
 use std::pin::Pin;
 use std::sync::Arc;
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
+use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 
-use crate::errors::{AppError, AppResult};
 
 /// Logging configuration
 #[derive(Debug, Clone)]

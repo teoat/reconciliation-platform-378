@@ -1,9 +1,8 @@
 // backend/src/services/mobile_optimization.rs
-use crate::errors::{AppError, AppResult};
+use crate::errors::AppResult;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -607,7 +606,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_mobile_optimization_service() {
-        let service = MobileOptimizationService::new();
+        let service = MobileOptimizationService::new().await;
         
         // Test PWA manifest generation
         let manifest = service.generate_pwa_manifest().await.unwrap();

@@ -201,6 +201,62 @@ table! {
     }
 }
 
+table! {
+    password_reset_tokens (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        token_hash -> Varchar,
+        expires_at -> Timestamptz,
+        used_at -> Nullable<Timestamptz>,
+        ip_address -> Nullable<Varchar>,
+        user_agent -> Nullable<Text>,
+        created_at -> Timestamptz,
+    }
+}
+
+table! {
+    email_verification_tokens (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        token_hash -> Varchar,
+        email -> Varchar,
+        expires_at -> Timestamptz,
+        verified_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+    }
+}
+
+table! {
+    two_factor_auth (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        method -> Varchar,
+        secret -> Nullable<Varchar>,
+        backup_codes -> Nullable<Jsonb>,
+        is_enabled -> Bool,
+        last_used_at -> Nullable<Timestamptz>,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
+table! {
+    user_sessions (id) {
+        id -> Uuid,
+        user_id -> Uuid,
+        session_token -> Varchar,
+        refresh_token -> Nullable<Varchar>,
+        ip_address -> Nullable<Varchar>,
+        user_agent -> Nullable<Text>,
+        device_info -> Nullable<Jsonb>,
+        is_active -> Bool,
+        expires_at -> Timestamptz,
+        last_activity -> Timestamptz,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}
+
 // Join tables
 joinable!(projects -> users (owner_id));
 joinable!(reconciliation_records -> projects (project_id));
@@ -213,6 +269,10 @@ joinable!(audit_logs -> users (user_id));
 joinable!(uploaded_files -> projects (project_id));
 joinable!(uploaded_files -> users (uploaded_by));
 joinable!(user_activity_logs -> users (user_id));
+joinable!(password_reset_tokens -> users (user_id));
+joinable!(email_verification_tokens -> users (user_id));
+joinable!(two_factor_auth -> users (user_id));
+joinable!(user_sessions -> users (user_id));
 
 // Allow Diesel to infer the correct types
 allow_tables_to_appear_in_same_query!(
@@ -226,4 +286,8 @@ allow_tables_to_appear_in_same_query!(
     audit_logs,
     uploaded_files,
     user_activity_logs,
+    password_reset_tokens,
+    email_verification_tokens,
+    two_factor_auth,
+    user_sessions,
 );

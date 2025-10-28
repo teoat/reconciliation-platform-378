@@ -6,8 +6,8 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
-use prometheus::{Counter, Histogram, Gauge, Registry, TextEncoder, Encoder, HistogramOpts};
-use crate::errors::{AppError, AppResult};
+use prometheus::{Counter, Histogram, Gauge, Registry, TextEncoder, HistogramOpts};
+use crate::errors::AppResult;
 
 // Performance metrics
 lazy_static::lazy_static! {

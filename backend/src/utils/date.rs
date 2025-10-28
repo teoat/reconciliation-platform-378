@@ -1,6 +1,6 @@
 //! Date and time utility functions
 
-use chrono::{DateTime, Utc, NaiveDateTime, TimeZone};
+use chrono::{DateTime, Utc, TimeZone};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Get current timestamp as Unix timestamp

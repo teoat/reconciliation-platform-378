@@ -13,13 +13,10 @@ use redis::{Client, Connection, Commands};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
-use std::path::PathBuf;
 use uuid::Uuid;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use std::hash::{Hash, Hasher};
-use std::collections::hash_map::DefaultHasher;
-use chrono::{DateTime, Utc};
+use std::hash::Hasher;
 
 use crate::errors::{AppError, AppResult};
 

@@ -1,6 +1,6 @@
 use actix_web::{
-    dev::{forward_ready, Service, ServiceFactory, ServiceRequest, ServiceResponse, Transform},
-    Error, HttpMessage, HttpResponse, body::{MessageBody, BoxBody},
+    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
+    Error, HttpResponse, body::{MessageBody, BoxBody},
 };
 use futures::future::{LocalBoxFuture, ok, Ready};
 use std::rc::Rc;

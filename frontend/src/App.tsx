@@ -1,46 +1,60 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, lazy, Suspense } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider, ProtectedRoute } from './hooks/useAuth'
 import { useHealthCheck } from './hooks/useFileReconciliation'
 import { useProjects } from './hooks/useApi'
 import { ReduxProvider } from './store/ReduxProvider'
 import { ErrorBoundary } from './components/ui/ErrorBoundary'
-import NotificationSystem from './store/NotificationSystem'
 import { WebSocketProvider } from './services/WebSocketProvider'
-import UnifiedNavigation from './components/layout/UnifiedNavigation'
+import UnifiedFetchInterceptor from './services/unifiedFetchInterceptor'
+import AppShell from './components/layout/AppShell'
 import AuthPage from './pages/AuthPage'
-import ReconciliationPage from './pages/ReconciliationPage'
-import AnalyticsDashboard from './components/AnalyticsDashboard'
-import UserManagement from './components/UserManagement'
-import ApiIntegrationStatus from './components/ApiIntegrationStatus'
-import ApiTester from './components/ApiTester'
-import ApiDocumentation from './components/ApiDocumentation'
+import Button from './components/ui/Button'
 
-// App Layout Component
+// Lazy load heavy components for better performance
+const ReconciliationPage = lazy(() => import('./pages/ReconciliationPage'))
+const QuickReconciliationWizard = lazy(() => import('./pages/QuickReconciliationWizard'))
+const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'))
+const UserManagement = lazy(() => import('./components/UserManagement'))
+const ApiIntegrationStatus = lazy(() => import('./components/ApiIntegrationStatus'))
+const ApiTester = lazy(() => import('./components/ApiTester'))
+const ApiDocumentation = lazy(() => import('./components/ApiDocumentation'))
+
+// Loading component
+const LoadingSpinner = () => (
+  <div className="flex items-center justify-center h-64">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+  </div>
+)
+
+// App Layout Component - Uses Tier 0 AppShell
 interface AppLayoutProps {
   children: React.ReactNode
 }
 
 const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <UnifiedNavigation />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {children}
-      </div>
-      <NotificationSystem />
-    </div>
-  )
+  return <AppShell>{children}</AppShell>
 }
 
 function App() {
   const wsConfig = {
-    url: (import.meta as any).env?.VITE_WS_URL || 'ws://localhost:8080/ws',
+    url: (import.meta as any).env?.VITE_WS_URL || 'ws://localhost:2000',
     reconnectInterval: 5000,
     maxReconnectAttempts: 5,
     heartbeatInterval: 30000,
     debug: (import.meta as any).env?.DEV
   }
+
+  // Initialize unified fetch interceptor on mount
+  useEffect(() => {
+    const interceptor = UnifiedFetchInterceptor.getInstance()
+    interceptor.initialize()
+    
+    // Cleanup on unmount
+    return () => {
+      interceptor.restore()
+    }
+  }, [])
 
   return (
     <ErrorBoundary>
@@ -61,42 +75,63 @@ function App() {
                 <Route path="/projects/:projectId/reconciliation" element={
                   <ProtectedRoute>
                     <AppLayout>
-                      <ReconciliationPage />
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <ReconciliationPage />
+                      </Suspense>
                     </AppLayout>
                   </ProtectedRoute>
+                } />
+                <Route path="/quick-reconciliation" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <QuickReconciliationWizard />
+                      </Suspense>
+                    </AppLayout>
+毫不犹豫 </ProtectedRoute>
                 } />
                 <Route path="/analytics" element={
                   <ProtectedRoute>
                     <AppLayout>
-                      <AnalyticsDashboard />
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <AnalyticsDashboard />
+                      </Suspense>
                     </AppLayout>
                   </ProtectedRoute>
                 } />
             <Route path="/users" element={
               <ProtectedRoute>
-                <AppLayout>
-                  <UserManagement />
+                  <AppLayout>
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <UserManagement />
+                    </Suspense>
                 </AppLayout>
               </ProtectedRoute>
             } />
             <Route path="/api-status" element={
               <ProtectedRoute>
                 <AppLayout>
-                  <ApiIntegrationStatus />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <ApiIntegrationStatus />
+                  </Suspense>
                 </AppLayout>
               </ProtectedRoute>
             } />
             <Route path="/api-tester" element={
               <ProtectedRoute>
                 <AppLayout>
-                  <ApiTester />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <ApiTester />
+                  </Suspense>
                 </AppLayout>
               </ProtectedRoute>
             } />
             <Route path="/api-docs" element={
               <ProtectedRoute>
                 <AppLayout>
-                  <ApiDocumentation />
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <ApiDocumentation />
+                  </Suspense>
                 </AppLayout>
               </ProtectedRoute>
             } />
@@ -139,6 +174,24 @@ function Dashboard() {
                isHealthy === true ? '✅ Backend Connected' : 
                isHealthy === false ? '❌ Backend Disconnected' : '⏳ Checking Status'}
             </span>
+            {isHealthy === false && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/health')
+                    if (response.ok) {
+                      window.location.reload()
+                    }
+                  } catch (error) {
+                    console.error('Health check failed:', error)
+                  }
+                }}
+              >
+                Retry Connection
+              </Button>
+            )}
             {lastChecked && (
               <span className="text-sm text-gray-500">
                 Last checked: {lastChecked.toLocaleTimeString()}

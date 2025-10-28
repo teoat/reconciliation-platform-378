@@ -10,7 +10,7 @@
 # ============================================================================
 
 # Stage 1: Builder Stage
-ARG RUST_VERSION=1.75
+ARG RUST_VERSION=1.90
 FROM rust:${RUST_VERSION}-alpine AS builder
 
 # Install build dependencies in a single layer
@@ -35,8 +35,8 @@ COPY backend/Cargo.toml backend/Cargo.lock ./
 RUN mkdir -p src && \
     echo "fn main() {}" > src/main.rs
 
-# Copy workspace config if it exists
-COPY Cargo.toml ./
+# Copy workspace config if it exists (optional)
+# COPY Cargo.toml ./
 
 # Build dependencies (this layer will be cached if Cargo files don't change)
 RUN cargo build --release --target x86_64-unknown-linux-musl || \
@@ -67,8 +67,8 @@ RUN apk add --no-cache \
     && rm -rf /var/cache/apk/*
 
 # Create non-root user for security
-RUN addgroup --system --gid 1001 appgroup && \
-    adduser --system --uid 1001 --gid 1001 --no-create-home appuser
+RUN addgroup -g 1001 appgroup && \
+    adduser -D -u 1001 -G appgroup -s /bin/sh appuser
 
 # Set working directory
 WORKDIR /app

@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useCallback, useRef, useEffect } from 'react'
+import { useLoading } from '../hooks/useLoading'
+import { RetryUtility } from '../utils/retryUtility'
 import { 
   Upload,
   File,
@@ -149,7 +151,7 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
   const [files, setFiles] = useState<FileInfo[]>([])
   const [uploadingFiles, setUploadingFiles] = useState<Map<string, number>>(new Map())
   const [dragActive, setDragActive] = useState(false)
-  const [loading, setLoading] = useState(false)
+  const { loading, withLoading } = useLoading(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set())
   const [filters, setFilters] = useState({
@@ -165,27 +167,26 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
   // WebSocket integration for real-time updates
   const { isConnected, sendMessage, subscribe } = useWebSocketIntegration()
 
-  // Load files
+  // Load files - using unified utilities
   const loadFiles = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      
-      // This would need to be implemented in the API client
-      // const response = await apiClient.getProjectFiles(projectId)
-      // if (response.error) {
-      //   throw new Error(response.error.message)
-      // }
-      // setFiles(response.data || [])
-      
-      // For now, using mock data
-      setFiles([])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load files')
-    } finally {
-      setLoading(false)
-    }
-  }, [projectId])
+    await withLoading(async () => {
+      try {
+        setError(null)
+        
+        // This would need to be implemented in the API client
+        // const response = await apiClient.getProjectFiles(projectId)
+        // if (response.error) {
+        //   throw new Error(response.error.message)
+        // }
+        // setFiles(response.data || [])
+        
+        // For now, using mock data
+        setFiles([])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load files')
+      }
+    })
+  }, [projectId, withLoading])
 
   // Upload file
   const uploadFile = useCallback(async (file: File, request: FileUploadRequest) => {

@@ -2,9 +2,7 @@
 //! JSON logging with ELK/Loki integration
 
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::collections::HashMap;
-use crate::errors::{AppError, AppResult};
 
 /// Log levels
 #[derive(Debug, Clone, Serialize, Deserialize)]

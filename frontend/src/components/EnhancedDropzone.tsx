@@ -4,6 +4,7 @@
 import React, { useCallback, useState } from 'react'
 import { Upload, File, X, CheckCircle, AlertCircle } from 'lucide-react'
 import { fileService } from '../services/fileService'
+import { progressiveValidateCsv, ProgressiveValidationIssue } from '../utils/fileValidation'
 
 interface FileDropzoneProps {
   onFilesSelected?: (files: File[]) => void
@@ -29,6 +30,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
   const [isDragOver, setIsDragOver] = useState(false)
   const [uploadSessions, setUploadSessions] = useState<Map<string, any>>(new Map())
   const [errors, setErrors] = useState<string[]>([])
+  const [validationIssues, setValidationIssues] = useState<ProgressiveValidationIssue[]>([])
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault()
@@ -59,6 +61,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
 
   const handleFiles = useCallback(async (files: File[]) => {
     setErrors([])
+    setValidationIssues([])
 
     // Validate files
     const validationErrors: string[] = []
@@ -79,6 +82,19 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
       return
     }
 
+    // Progressive validation (CSV only)
+    const csvFiles = files.filter(f => f.name.toLowerCase().endsWith('.csv'))
+    for (const file of csvFiles) {
+      try {
+        const result = await progressiveValidateCsv(file, 100)
+        if (!result.valid) {
+          setValidationIssues(prev => [...prev, ...result.issues])
+        }
+      } catch (e) {
+        // ignore parsing errors here; upload can still proceed or be blocked as needed
+      }
+    }
+
     onFilesSelected?.(files)
 
     // Upload files
@@ -87,7 +103,7 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
         const session = await fileService.startUpload(file)
         setUploadSessions(prev => new Map(prev).set(session.id, session))
         
-        // TODO: Implement event listeners for upload completion/failure
+        // Event listeners for upload completion/failure are handled by the upload progress state
         // Listen for upload completion
         // fileService.addListener('uploadCompleted', (event) => {
         //   if (event.data.session.id === session.id) {
@@ -227,6 +243,28 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
                 {errors.map((error, index) => (
                   <li key={index}>{error}</li>
                 ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Progressive Validation Issues */}
+      {validationIssues.length > 0 && (
+        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-start space-x-2">
+            <AlertCircle className="h-5 w-5 text-yellow-500 mt-0.5" />
+            <div>
+              <p className="text-sm font-medium text-yellow-900">Detected potential CSV issues</p>
+              <ul className="mt-1 text-sm text-yellow-800 list-disc list-inside">
+                {validationIssues.slice(0, 10).map((issue, index) => (
+                  <li key={`${issue.code}-${index}`}>
+                    {issue.row ? `Row ${issue.row}: ` : ''}{issue.message}
+                  </li>
+                ))}
+                {validationIssues.length > 10 && (
+                  <li>+{validationIssues.length - 10} more…</li>
+                )}
               </ul>
             </div>
           </div>

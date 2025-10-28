@@ -1,7 +1,6 @@
 // Real-time Notification Service
 // This service handles real-time notifications and updates
 
-use actix::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;

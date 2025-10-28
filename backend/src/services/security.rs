@@ -42,7 +42,7 @@ impl Default for SecurityConfig {
             rate_limit_window: Duration::from_secs(3600), // 1 hour
             enable_csrf: true,
             enable_cors: true,
-            allowed_origins: vec!["http://localhost:3000".to_string()],
+            allowed_origins: vec!["http://localhost:1000".to_string(), "http://localhost:3000".to_string()],
             enable_helmet: true,
             enable_hsts: true,
             enable_csp: true,

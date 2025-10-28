@@ -3,9 +3,8 @@ use crate::errors::{AppError, AppResult};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use regex::Regex;
-use validator::{Validate, ValidationError as ValidatorError};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
+use chrono::DateTime;
 
 /// Validation result for data validation operations
 #[derive(Debug, Clone, Serialize, Deserialize)]

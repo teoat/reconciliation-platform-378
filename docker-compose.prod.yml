@@ -80,6 +80,9 @@ services:
   # BACKEND API - PRODUCTION CONFIG
   # ==========================================================================
   backend:
+    # Override: Remove container_name from main compose for scaling
+    # The main docker-compose.yml sets container_name, we can't override it here
+    # Solution: Scale using docker-compose scale command or remove container_name from main
     build:
       args:
         - BUILD_MODE=release
@@ -95,7 +98,9 @@ services:
       METRICS_ENABLED: "true"
       HEALTH_CHECK_ENABLED: "true"
     deploy:
-      replicas: 2
+      # Note: replicas disabled due to container_name in main compose
+      # To enable: remove container_name from docker-compose.yml
+      # replicas: 2
       resources:
         limits:
           cpus: '2.0'
@@ -107,7 +112,7 @@ services:
       driver: "json-file"
       options:
         max-size: "10m"
-        max-file: " sizes"
+        max-file: "3"
     restart: always
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:2000/health"]
@@ -120,10 +125,13 @@ services:
   # FRONTEND - PRODUCTION CONFIG
   # ==========================================================================
   frontend:
+    # Note: container_name removed for production scaling (deploy.replicas > 1)
     environment:
       NODE_ENV: production
     deploy:
-      replicas: 2
+      # Note: replicas disabled due to container_name in main compose
+      # To enable: remove container_name from docker-compose.yml
+      # replicas: 2
       resources:
         limits:
           cpus: '1.0'
@@ -146,7 +154,7 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=30d'
       - '--storage.tsdb.retention.size=10GB'
-      - '--web.console.libraries=/usr/share/prometheus13/console_libraries'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
     deploy:
       resources:
@@ -166,11 +174,11 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD}
       GF_USERS_ALLOW_SIGN_UP: "false"
       GF_SERVER_ROOT_URL: https://grafana.yourdomain.com
-      GF_SMTP_ENABLED: "true"
-      GF_SMTP_HOST: smtp.gmail.com:587
-      GF_SMTP_USER: your-email@gmail.com
-      GF_SMTP_PASSWORD: your-password
-      GF_SMTP_FROM_ADDRESS: your-email@gmail.com
+      GF_SMTP_ENABLED: ${GRAFANA_SMTP_ENABLED:-false}
+      GF_SMTP_HOST: ${GRAFANA_SMTP_HOST:-smtp.gmail.com:587}
+      GF_SMTP_USER: ${GRAFANA_SMTP_USER:-}
+      GF_SMTP_PASSWORD: ${GRAFANA_SMTP_PASSWORD:-}
+      GF_SMTP_FROM_ADDRESS: ${GRAFANA_SMTP_FROM_ADDRESS:-}
     deploy:
       resources:
         limits:

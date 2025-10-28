@@ -4,6 +4,7 @@
 //! project management, reconciliation engine, and analytics services.
 
 pub mod auth;
+pub mod email;
 pub mod user;
 // pub mod enhanced_user_management; // Deprecated - merged into user.rs
 pub mod project;
@@ -28,16 +29,18 @@ pub mod validation;
 pub mod api_versioning;
 pub mod internationalization;
 pub mod accessibility;
-pub mod mobile_optimization;
+// pub mod mobile_optimization; // Deprecated - Low value, not utilized
 
 // Add new S-Tier services
 pub mod advanced_metrics;
 pub mod structured_logging;
 pub mod security_monitor;
 pub mod query_optimizer;
+pub mod secrets;
 
 // Re-export commonly used services
 pub use auth::AuthService;
+pub use email::EmailService;
 pub use user::UserService;
 // Note: enhanced_user_management types - removed to avoid conflicts
 pub use project::ProjectService;
@@ -59,7 +62,7 @@ pub use validation::{ValidationService, SchemaValidator, ValidationRule, Validat
 pub use api_versioning::{ApiVersioningService, ApiVersion, VersionStatus, ClientCompatibility, MigrationStrategy};
 pub use internationalization::{InternationalizationService, Language, Locale, Translation, TimezoneInfo, LocalizationContext};
 pub use accessibility::{AccessibilityService, AccessibilityGuideline, AccessibilityAudit, ComplianceLevel};
-pub use mobile_optimization::{MobileOptimizationService, PWAConfig, ServiceWorkerConfig, OfflineConfig, MobileUIConfig};
+// pub use mobile_optimization::{MobileOptimizationService, PWAConfig, ServiceWorkerConfig, OfflineConfig, MobileUIConfig}; // Commented out - module deprecated
 
 // Export S-Tier services
 pub use advanced_metrics::AdvancedMetrics;

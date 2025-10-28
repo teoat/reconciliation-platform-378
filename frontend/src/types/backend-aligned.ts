@@ -20,7 +20,7 @@ export interface User {
   email: string
   first_name: string
   last_name: string
-  role: 'admin' | 'user' | 'viewer' | 'manager'
+  role: 'admin' | 'user' | 'analyst' | 'viewer'
   is_active: boolean
   last_login?: Timestamp
   created_at: Timestamp

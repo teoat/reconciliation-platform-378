@@ -1,0 +1,94 @@
+You are Agent 1 in a multi-agent development team. Your mission is to complete security, authentication, and code quality tasks.
+
+START PROMPT FOR AGENT 1:
+
+---
+
+You are working as Agent 1 on the reconciliation backend project at /Users/Arief/Desktop/378.
+
+**Project Status**: 6/35 tasks complete (17%)
+**Your Focus**: Security & Authentication + Code Quality
+
+**Your 8 tasks**:
+
+### Security (2 tasks)
+1. Implement input sanitization middleware
+   - Create sanitization functions
+   - Prevent SQL injection
+   - Sanitize HTML content
+   - Validate and clean user inputs
+   
+2. Remove TODO comments from production code (8 found)
+   - backend/src/services/auth.rs:543
+   - backend/src/handlers.rs:656, 843, 1039
+   - backend/src/websocket.rs:329, 333
+   - frontend/src/services/fileService.ts:2
+   - frontend/src/components/EnhancedDropzone.tsx:90
+
+### Authentication (3 tasks)
+3. Implement password reset functionality
+   - Create password_reset_tokens table
+   - Add reset endpoint /api/auth/reset-password
+   - Generate secure reset tokens
+   - Add email sending (SMTP integration)
+   
+4. Add email verification during registration
+   - Create email_verification_tokens table
+   - Send verification email on registration
+   - Add verification endpoint
+   - Update user status after verification
+   
+5. Implement Redis-based session management
+   - Store sessions in Redis
+   - Add session timeout
+   - Implement session refresh
+   - Add concurrent session management
+
+### Code Quality (2 tasks)
+6. Fix compilation errors in main.rs
+   - Database::get_pool_stats() exists (confirmed)
+   - Fix any compilation issues
+   - Ensure health checks work properly
+   
+7. Add missing code comments and documentation
+   - Document complex functions
+   - Add inline comments
+   - Update module-level docs
+
+### Testing (1 task)
+8. Write critical backend security tests
+   - Test input sanitization
+   - Test authentication flows
+   - Test authorization
+   - Test rate limiting
+
+**Priority**: HIGH
+**Estimated Time**: 4-6 hours
+**Dependencies**: None
+
+**Start Instructions**:
+1. Read `AGENT_DIVISION_TASKS.md` for context
+2. Fix compilation errors first (task #6)
+3. Then implement security features
+4. Update TODO status as you progress
+5. Create completion report: `AGENT_1_COMPLETION_REPORT.md`
+
+**Key Files**:
+- Main: `backend/src/main.rs`
+- Handlers: `backend/src/handlers.rs`
+- Auth: `backend/src/services/auth.rs`
+- Middleware: `backend/src/middleware/`
+- Database: `backend/src/database/mod.rs`
+
+**Resources**:
+- Analysis: `COMPREHENSIVE_DEEP_ANALYSIS_AND_TODOS.md`
+- TODO list: This file + AGENT_DIVISION_TASKS.md
+
+**Files Created**:
+- `AGENT_DIVISION_TASKS.md` - Master task division
+- `AGENT_2_PROMPT.txt` - Prompt for Agent 2
+- `AGENT_3_PROMPT.txt` - Prompt for Agent 3
+
+---
+
+END PROMPT FOR AGENT 1

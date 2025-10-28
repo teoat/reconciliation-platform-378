@@ -90,4 +90,5 @@ const Alert: React.FC<AlertProps> = ({
   )
 }
 
+export { Alert };
 export default Alert

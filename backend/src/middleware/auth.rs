@@ -3,7 +3,7 @@
 //! This module provides authentication middleware for protecting routes
 //! and managing user sessions.
 
-use actix_web::{dev::ServiceRequest, Error, HttpMessage, HttpRequest, HttpResponse, Result, body::BoxBody};
+use actix_web::{dev::ServiceRequest, Error, HttpMessage, HttpResponse, Result, body::BoxBody};
 use actix_web::dev::{Service, ServiceResponse, Transform};
 use futures::future::{ok, Ready};
 use futures::Future;

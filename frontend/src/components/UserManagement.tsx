@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useLoading } from '../hooks/useLoading'
 import { 
   Users, 
   UserPlus, 
@@ -26,7 +27,7 @@ interface User {
   email: string
   first_name: string
   last_name: string
-  role: 'admin' | 'user' | 'viewer'
+  role: 'admin' | 'user' | 'analyst' | 'viewer'
   status: 'active' | 'inactive' | 'pending'
   last_login: string
   created_at: string
@@ -41,7 +42,7 @@ const userSchema = z.object({
   email: z.string().email('Invalid email address'),
   first_name: z.string().min(2, 'First name must be at least 2 characters'),
   last_name: z.string().min(2, 'Last name must be at least 2 characters'),
-  role: z.enum(['admin', 'user', 'viewer']),
+  role: z.enum(['admin', 'user', 'analyst', 'viewer']),
   permissions: z.array(z.string()).optional()
 })
 
@@ -49,7 +50,7 @@ type UserFormData = z.infer<typeof userSchema>
 
 const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
   const [users, setUsers] = useState<User[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { loading: isLoading, withLoading } = useLoading(true)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
@@ -71,52 +72,50 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
   // Mock data - replace with actual API calls
   useEffect(() => {
     const fetchUsers = async () => {
-      setIsLoading(true)
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      setUsers([
-        {
-          id: '1',
-          email: 'admin@example.com',
-          first_name: 'John',
-          last_name: 'Doe',
-          role: 'admin',
-          status: 'active',
-          last_login: '2024-01-15T10:30:00Z',
-          created_at: '2024-01-01T00:00:00Z',
-          permissions: ['read', 'write', 'delete', 'admin']
-        },
-        {
-          id: '2',
-          email: 'user@example.com',
-          first_name: 'Jane',
-          last_name: 'Smith',
-          role: 'user',
-          status: 'active',
-          last_login: '2024-01-14T15:45:00Z',
-          created_at: '2024-01-02T00:00:00Z',
-          permissions: ['read', 'write']
-        },
-        {
-          id: '3',
-          email: 'viewer@example.com',
-          first_name: 'Bob',
-          last_name: 'Johnson',
-          role: 'viewer',
-          status: 'pending',
-          last_login: '2024-01-13T09:15:00Z',
-          created_at: '2024-01-03T00:00:00Z',
-          permissions: ['read']
-        }
-      ])
-      
-      setIsLoading(false)
+      await withLoading(async () => {
+        // Simulate API call
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        
+        setUsers([
+          {
+            id: '1',
+            email: 'admin@example.com',
+            first_name: 'John',
+            last_name: 'Doe',
+            role: 'admin',
+            status: 'active',
+            last_login: '2024-01-15T10:30:00Z',
+            created_at: '2024-01-01T00:00:00Z',
+            permissions: ['read', 'write', 'delete', 'admin']
+          },
+          {
+            id: '2',
+            email: 'user@example.com',
+            first_name: 'Jane',
+            last_name: 'Smith',
+            role: 'user',
+            status: 'active',
+            last_login: '2024-01-14T15:45:00Z',
+            created_at: '2024-01-02T00:00:00Z',
+            permissions: ['read', 'write']
+          },
+          {
+            id: '3',
+            email: 'viewer@example.com',
+            first_name: 'Bob',
+            last_name: 'Johnson',
+            role: 'viewer',
+            status: 'pending',
+            last_login: '2024-01-13T09:15:00Z',
+            created_at: '2024-01-03T00:00:00Z',
+            permissions: ['read']
+          }
+        ])
+      })
     }
 
     fetchUsers()
-  }, [projectId])
+  }, [projectId, withLoading])
 
   // Filter users based on search and filters
   const filteredUsers = users.filter(user => {

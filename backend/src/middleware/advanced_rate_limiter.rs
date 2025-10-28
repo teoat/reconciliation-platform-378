@@ -7,7 +7,6 @@ use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
 use tokio::sync::RwLock;
 use redis::Client as RedisClient;
-use serde::{Deserialize, Serialize};
 use crate::errors::{AppError, AppResult};
 
 /// Rate limit configuration
@@ -207,7 +206,7 @@ impl AdvancedRateLimiter {
             let redis_key = format!("ratelimit:{}", key_str);
             redis::cmd("DEL")
                 .arg(&redis_key)
-                .query_async(&mut conn)
+                .query_async::<_, ()>(&mut conn)
                 .await
                 .map_err(|e| AppError::Internal(format!("Redis DEL failed: {}", e)))?;
         }

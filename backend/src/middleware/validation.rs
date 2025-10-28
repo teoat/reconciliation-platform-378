@@ -1,17 +1,13 @@
 // backend/src/middleware/validation.rs
 use actix_web::{
-    dev::{forward_ready, Service, ServiceFactory, ServiceRequest, ServiceResponse, Transform},
+    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
     Error, HttpMessage, HttpResponse, body::{MessageBody, BoxBody},
 };
 use futures::future::{LocalBoxFuture, Ready, ok};
 use futures::TryStreamExt;
-use std::{
-    rc::Rc,
-    task::{Context, Poll},
-};
+use std::rc::Rc;
 use crate::services::ValidationService;
 use crate::errors::AppError;
-use actix_web::web::Data;
 use serde_json::json;
 use std::collections::HashMap;
 

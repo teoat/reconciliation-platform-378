@@ -229,8 +229,8 @@ export interface Discrepancy {
   id: ID
   type: 'amount' | 'date' | 'description' | 'currency' | 'custom'
   field: string
-  sourceValue: any
-  targetValue: any
+  sourceValue: string | number | boolean | Date
+  targetValue: string | number | boolean | Date
   severity: 'low' | 'medium' | 'high' | 'critical'
   description: string
   resolution?: DiscrepancyResolution
@@ -240,7 +240,7 @@ export interface Discrepancy {
 
 export interface DiscrepancyResolution {
   type: 'accept' | 'reject' | 'adjust' | 'investigate'
-  value?: any
+  value?: string | number | boolean | Date
   reason: string
   resolvedBy: User
   resolvedAt: Timestamp

@@ -484,6 +484,145 @@ pub struct UpdateProject {
     pub is_active: Option<bool>,
 }
 
+/// Passwora reset token model
+
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
+#[diesel(table_name = password_reset_tokens)]
+pub struct PasswordResetToken {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub token_hash: String,
+    pub expires_at: DateTime<Utc>,
+    pub used_at: Option<DateTime<Utc>>,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+/// New password reset token for inserts
+#[derive(Insertable)]
+#[diesel(table_name = password_reset_tokens)]
+pub struct NewPasswordResetToken {
+    pub user_id: Uuid,
+    pub token_hash: String,
+    pub expires_at: DateTime<Utc>,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+}
+
+/// Update password reset token for updates
+#[derive(AsChangeset, Deserialize)]
+#[diesel(table_name = password_reset_tokens)]
+pub struct UpdatePasswordResetToken {
+    pub used_at: Option<DateTime<Utc>>,
+}
+
+/// Email verification token model
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
+#[diesel(table_name = email_verification_tokens)]
+pub struct EmailVerificationToken {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub token_hash: String,
+    pub email: String,
+    pub expires_at: DateTime<Utc>,
+    pub verified_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+}
+
+/// New email verification token for inserts
+#[derive(Insertable)]
+#[diesel(table_name = email_verification_tokens)]
+pub struct NewEmailVerificationToken {
+    pub user_id: Uuid,
+    pub token_hash: String,
+    pub email: String,
+    pub expires_at: DateTime<Utc>,
+}
+
+/// Update email verification token for updates
+#[derive(AsChangeset, Deserialize)]
+#[diesel(table_name = email_verification_tokens)]
+pub struct UpdateEmailVerificationToken {
+    pub verified_at: Option<DateTime<Utc>>,
+}
+
+/// Two factor authentication model
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
+#[diesel(table_name = two_factor_auth)]
+pub struct TwoFactorAuth {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub method: String,
+    pub secret: Option<String>,
+    pub backup_codes: Option<JsonValue>,
+    pub is_enabled: bool,
+    pub last_used_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// New two factor auth for inserts
+#[derive(Insertable)]
+#[diesel(table_name = two_factor_auth)]
+pub struct NewTwoFactorAuth {
+    pub user_id: Uuid,
+    pub method: String,
+    pub secret: Option<String>,
+    pub backup_codes: Option<JsonValue>,
+    pub is_enabled: bool,
+}
+
+/// Update two factor auth for updates
+#[derive(AsChangeset, Deserialize)]
+#[diesel(table_name = two_factor_auth)]
+pub struct UpdateTwoFactorAuth {
+    pub secret: Option<String>,
+    pub backup_codes: Option<JsonValue>,
+    pub is_enabled: Option<bool>,
+    pub last_used_at: Option<DateTime<Utc>>,
+}
+
+/// User session model
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
+#[diesel(table_name = user_sessions)]
+pub struct UserSession {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub session_token: String,
+    pub refresh_token: Option<String>,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+    pub device_info: Option<JsonValue>,
+    pub is_active: bool,
+    pub expires_at: DateTime<Utc>,
+    pub last_activity: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// New user session for inserts
+#[derive(Insertable)]
+#[diesel(table_name = user_sessions)]
+pub struct NewUserSession {
+    pub user_id: Uuid,
+    pub session_token: String,
+    pub refresh_token: Option<String>,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+    pub device_info: Option<JsonValue>,
+    pub is_active: bool,
+    pub expires_at: DateTime<Utc>,
+}
+
+/// Update user session for updates
+#[derive(AsChangeset, Deserialize)]
+#[diesel(table_name = user_sessions)]
+pub struct UpdateUserSession {
+    pub is_active: Option<bool>,
+    pub last_activity: Option<DateTime<Utc>>,
+}
+
 /// Project response DTO
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ProjectResponse {

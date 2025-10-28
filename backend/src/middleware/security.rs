@@ -3,20 +3,18 @@
 //! This module provides comprehensive security middleware including rate limiting,
 //! CSRF protection, input validation, and security headers.
 
-use actix_web::{dev::ServiceRequest, Error, HttpMessage, HttpRequest, HttpResponse, Result};
+use actix_web::{dev::ServiceRequest, Error, HttpMessage, HttpResponse, Result};
 use actix_web::dev::{Service, ServiceResponse, Transform};
 use actix_web::body::BoxBody;
 use actix_web::http::header::{HeaderName, HeaderValue};
-use actix_web::middleware::DefaultHeaders;
 use futures::future::{ok, Ready};
 use futures::Future;
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::{Duration, SystemTime};
 use tokio::sync::RwLock;
-use uuid::Uuid;
 
 use crate::errors::{AppError, AppResult};
 use crate::services::monitoring::MonitoringService;
@@ -285,7 +283,7 @@ impl Default for SecurityMiddlewareConfig {
             rate_limit_requests: 100,
             rate_limit_window: Duration::from_secs(3600),
             csrf_token_header: "X-CSRF-Token".to_string(),
-            allowed_origins: vec!["http://localhost:3000".to_string()],
+            allowed_origins: vec!["http://localhost:1000".to_string(), "http://localhost:3000".to_string()],
             enable_cors: true,
             enable_hsts: true,
             enable_csp: true,
@@ -632,7 +630,7 @@ pub struct CorsConfig {
 impl Default for CorsConfig {
     fn default() -> Self {
         Self {
-            allowed_origins: vec!["http://localhost:3000".to_string()],
+            allowed_origins: vec!["http://localhost:1000".to_string(), "http://localhost:3000".to_string()],
             allowed_methods: vec!["GET".to_string(), "POST".to_string(), "PUT".to_string(), "DELETE".to_string()],
             allowed_headers: vec!["Content-Type".to_string(), "Authorization".to_string(), "X-CSRF-Token".to_string()],
             allow_credentials: true,

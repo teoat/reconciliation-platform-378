@@ -7,17 +7,35 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 1000,
-    host: true,
+    host: '0.0.0.0',
     strictPort: true,
     open: true,
-    // Enable HTTP/2 for better performance
-    https: false,
     // Optimize dev server performance
     hmr: {
       overlay: false, // Disable error overlay for better performance
     },
+    // CORS configuration
+    cors: {
+      origin: '*',
+      methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization'],
+    },
+    // Proxy API requests to backend
+    proxy: {
+      '/api': {
+        target: 'http://localhost:2000',
+        changeOrigin: true,
+        secure: false,
+      },
+      '/ws': {
+        target: 'ws://localhost:2000',
+        ws: true,
+        changeOrigin: true,
+      },
+    },
   },
   build: {
+    typecheck: false,
     outDir: 'dist',
     sourcemap: false, // Disable sourcemaps in production for better performance
     minify: 'terser',

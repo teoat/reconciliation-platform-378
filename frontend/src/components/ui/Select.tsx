@@ -81,4 +81,5 @@ const Select: React.FC<SelectProps> = ({
   )
 }
 
+export { Select };
 export default Select

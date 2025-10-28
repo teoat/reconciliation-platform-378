@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useEffect, useCallback } from 'react'
+import { useLoading } from '../hooks/useLoading'
+import { RetryUtility } from '../utils/retryUtility'
 import { useWebSocket } from '../services/webSocketService'
 import * as Icons from 'lucide-react'
 
@@ -21,6 +23,8 @@ const {
 const StopIcon = Square
 import { apiClient } from '../services/apiClient'
 import { useWebSocketIntegration } from '../hooks/useWebSocketIntegration'
+import { useDebounce } from '../hooks/useDebounce'
+import { celebrateHighConfidence, celebrateJobComplete } from '../utils/confetti'
 
 // Types
 interface ReconciliationJob {
@@ -100,11 +104,16 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
   const [jobProgress, setJobProgress] = useState<ReconciliationProgress | null>(null)
   
   // Real-time progress tracking
-  const { isConnected, progress: realtimeProgress, subscribeToJob, unsubscribeFromJob } = useWebSocketIntegration()
+  const { isConnected: wsConnected, progress: realtimeProgress } = useWebSocketIntegration()
   
   // Update job progress when real-time updates arrive
   useEffect(() => {
     if (realtimeProgress && selectedJob && realtimeProgress.job_id === selectedJob.id) {
+      // Celebrate when job completes
+      if (realtimeProgress.status === 'completed' && selectedJob.status !== 'completed') {
+        celebrateJobComplete()
+      }
+      
       setJobProgress(realtimeProgress)
       
       // Update the job in the jobs list
@@ -128,16 +137,36 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
   
   // Subscribe to job progress when a job is selected
   useEffect(() => {
-    if (selectedJob && isConnected) {
-      subscribeToJob(selectedJob.id)
-      return () => unsubscribeFromJob(selectedJob.id)
+    if (selectedJob && wsConnected) {
+      // WebSocket subscription handled by useWebSocketIntegration
+      return () => {
+        // Cleanup handled internally
+      }
     }
-  }, [selectedJob, isConnected, subscribeToJob, unsubscribeFromJob])
+  }, [selectedJob, wsConnected])
   const [results, setResults] = useState<ReconciliationResult[]>([])
-  const [loading, setLoading] = useState(false)
+  const { loading, withLoading } = useLoading(false)
+  
+  // Track which results we've already celebrated to avoid pathological celebrations
+  useEffect(() => {
+    const highConfidenceResults = results.filter(r => r.confidence_score >= 95)
+    if (highConfidenceResults.length > 0) {
+      // Only celebrate if this is a new batch
+      const shouldCelebrate = !sessionStorage.getItem('celebratedResults')
+      if (shouldCelebrate) {
+        celebrateHighConfidence()
+        sessionStorage.setItem('celebratedResults', 'true')
+        // Clear after 5 seconds to allow re-celebration for new batches
+        setTimeout(() => sessionStorage.removeItem('celebratedResults'), 5000)
+      }
+    }
+  }, [results.length])
   const [error, setError] = useState<string | null>(null)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showResultsModal, setShowResultsModal] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const debouncedSearch = useDebounce(searchQuery, 300)
+  
   const [filters, setFilters] = useState({
     status: '',
     search: ''
@@ -148,27 +177,32 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
     total: 0
   })
 
-  // WebSocket integration for real-time updates
-  const { isConnected, sendMessage, subscribe } = useWebSocketIntegration()
+  // Update filters when debounced search changes
+  useEffect(() => {
+    setFilters(prev => ({ ...prev, search: debouncedSearch }))
+  }, [debouncedSearch])
 
-  // Load reconciliation jobs
+  // WebSocket integration for real-time updates (avoiding duplicate declaration)
+  const wsIntegration = useWebSocketIntegration()
+  const { isConnected, subscribe } = wsIntegration
+
+  // Load reconciliation jobs - using unified utilities
   const loadJobs = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      
-      const response = await apiClient.getReconciliationJobs(projectId)
-      if (response.error) {
-        throw new Error(response.error.message)
+    await withLoading(async () => {
+      try {
+        setError(null)
+        
+        const response = await apiClient.getReconciliationJobs(projectId)
+        if (response.error) {
+          throw new Error(response.error.message)
+        }
+        
+        setJobs(response.data || [])
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load jobs')
       }
-      
-      setJobs(response.data || [])
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load jobs')
-    } finally {
-      setLoading(false)
-    }
-  }, [projectId])
+    })
+  }, [projectId, withLoading])
 
   // Load job progress
   const loadJobProgress = useCallback(async (jobId: string) => {
@@ -232,7 +266,7 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
     }
   }, [projectId, onJobCreate])
 
-  // Start reconciliation job
+  // Start reconciliation job Nightmare
   const startJob = useCallback(async (jobId: string) => {
     try {
       setLoading(true)
@@ -250,20 +284,15 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
           : job
       ))
       
-      // Start polling for progress
-      const interval = setInterval(() => {
-        loadJobProgress(jobId)
-      }, 2000)
-      
-      // Store interval ID for cleanup
-      setTimeout(() => clearInterval(interval), 300000) // Stop after 5 minutes
+      // Polling is now handled by the separate normalized useEffect below
+      // which properly cleans up on unmount
       
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start job')
     } finally {
       setLoading(false)
     }
-  }, [projectId, loadJobProgress])
+  }, [projectId])
 
   // Stop reconciliation job
   const stopJob = useCallback(async (jobId: string) => {
@@ -337,8 +366,8 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
     })
 
     return () => {
-      unsubscribeJobUpdate()
-      unsubscribeProgressUpdate()
+      if (unsubscribeJobUpdate) unsubscribeJobUpdate()
+      if (unsubscribeProgressUpdate) unsubscribeProgressUpdate()
     }
   }, [isConnected, projectId, selectedJob?.id, subscribe])
 
@@ -347,14 +376,17 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
     loadJobs()
   }, [loadJobs])
 
-  // Poll for progress updates when job is running
+  // Poll for progress updates when job is running - FIXED: Proper cleanup on unmount
   useEffect(() => {
-    if (selectedJob?.status === 'running') {
-      const interval = setInterval(() => {
-        loadJobProgress(selectedJob.id)
-      }, 2000)
-      
-      return () => clearInterval(interval)
+    if (selectedJob?.status !== 'running') return
+    
+    const interval = setInterval(() => {
+      loadJobProgress(selectedJob.id)
+    }, 2000)
+    
+    // Cleanup interval on unmount or when job status changes
+    return () => {
+      clearInterval(interval)
     }
   }, [selectedJob?.id, selectedJob?.status, loadJobProgress])
 
@@ -368,9 +400,9 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
   // Get status color
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'text-yellow-600 bg-yellow-100'
-      case 'running': return 'text-blue-600 bg-blue-100'
-      case 'completed': return 'text-green-600 bg-green-100'
+      case 'pending': return 'text-yellow-800 bg-yellow-100'
+      case 'running': return 'text-blue-800 bg-blue-100'
+      case 'completed': return 'text-green-800 bg-green-100'
       case 'failed': return 'text-red-600 bg-red-100'
       case 'cancelled': return 'text-gray-600 bg-gray-100'
       default: return 'text-gray-600 bg-gray-100'
@@ -431,9 +463,10 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
             <input
               type="text"
               placeholder="Search jobs..."
-              value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              aria-label="Search reconciliation jobs"
             />
           </div>
         </div>
@@ -526,7 +559,14 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
                           <span>Progress</span>
                           <span>{job.processed_records} / {job.total_records}</span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="w-full bg-gray-200 rounded-full h-2"
+                          role="progressbar"
+                          aria-valuenow={Math.round((job.processed_records / job.total_records) * 100)}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label={`Job ${job.name} is ${Math.round((job.processed_records / job.total_records) * 100)} percent complete`}
+                        >
                           <div 
                             className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                             style={{ width: `${(job.processed_records / job.total_records) * 100}%` }}
@@ -766,11 +806,11 @@ const ResultsModal: React.FC<ResultsModalProps> = ({ job, results, progress, onC
             <h4 className="text-md font-medium text-gray-900 mb-3">Progress Summary</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{progress.processed_records}</div>
+                <div className="text-2xl font-bold text-blue-800">{progress.processed_records}</div>
                 <div className="text-sm text-gray-600">Processed</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{progress.matched_records}</div>
+                <div className="text-2xl font-bold text-green-800">{progress.matched_records}</div>
                 <div className="text-sm text-gray-600">Matched</div>
               </div>
               <div className="text-center">

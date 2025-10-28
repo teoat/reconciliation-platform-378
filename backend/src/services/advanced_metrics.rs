@@ -3,10 +3,9 @@
 
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::time::Duration;
 use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
-use crate::errors::{AppError, AppResult};
 
 /// Metric types
 #[derive(Debug, Clone, Serialize, Deserialize)]

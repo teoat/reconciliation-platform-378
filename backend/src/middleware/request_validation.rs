@@ -2,8 +2,6 @@
 //!
 //! Schema validation, sanitization, and injection prevention
 
-use actix_web::{HttpRequest, HttpResponse, Result, web};
-use serde::{Deserialize, Serialize};
 use crate::errors::{AppError, AppResult};
 
 /// Validation configuration

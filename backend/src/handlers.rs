@@ -2,8 +2,9 @@
 //! 
 //! This module contains all HTTP request handlers for the REST API endpoints.
 
-use actix_web::{web, HttpRequest, HttpResponse, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Result, HttpMessage};
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 use uuid::Uuid;
 use chrono::Utc;
 
@@ -11,22 +12,32 @@ use crate::database::Database;
 use crate::errors::AppError;
 use crate::config::Config;
 use crate::services::{
-    AuthService, UserService, ProjectService, ReconciliationService,
-    FileService, AnalyticsService
+    AuthService, UserService, ReconciliationService, FileService,
+    ProjectService, DataSourceService, AnalyticsService
 };
 use crate::services::auth::{LoginRequest, RegisterRequest, ChangePasswordRequest};
+use crate::services::cache::MultiLevelCache;
 use crate::models::JsonValue;
+use crate::errors::AppResult;
+use crate::utils::extract_user_id;
+use std::time::Duration;
+
+// Include GDPR handlers
+include!(concat!(env!("CARGO_MANIFEST_DIR"), "/src/handlers/gdpr_handlers.rs"));
 
 // Request/Response DTOs
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate)]
 pub struct CreateProjectRequest {
+    #[validate(length(min = 1, max = 255, message = "Project name must be between 1 and 255 characters"))]
     pub name: String,
+    #[validate(length(max = 1000, message = "Description cannot exceed 1000 characters"))]
     pub description: Option<String>,
     pub owner_id: Uuid,
     pub status: Option<String>,
     pub settings: Option<serde_json::Value>,
 }
+
 
 #[derive(Deserialize)]
 pub struct UpdateProjectRequest {
@@ -47,12 +58,15 @@ pub struct CreateDataSourceRequest {
     pub schema: Option<serde_json::Value>,
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Validate)]
 pub struct CreateReconciliationJobRequest {
+    #[validate(length(min = 1, max = 255, message = "Job name must be between 1 and 255 characters"))]
     pub name: String,
+    #[validate(length(max = 1000, message = "Description cannot exceed 1000 characters"))]
     pub description: Option<String>,
     pub source_data_source_id: Uuid,
     pub target_data_source_id: Uuid,
+    #[validate(range(min = 0.0, max = 1.0, message = "Confidence threshold must be between 0 and 1"))]
     pub confidence_threshold: f64,
     pub settings: Option<serde_json::Value>,
 }
@@ -110,6 +124,8 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
                 .route("/change-password", web::post().to(change_password))
                 .route("/password-reset", web::post().to(request_password_reset))
                 .route("/password-reset/confirm", web::post().to(confirm_password_reset))
+                .route("/verify-email", web::post().to(verify_email))
+                .route("/resend-verification", web::post().to(resend_verification))
                 .route("/me", web::get().to(get_current_user))
         )
         // User management routes
@@ -381,6 +397,7 @@ pub async fn change_password(
 pub async fn get_users(
     query: web::Query<UserQueryParams>,
     data: web::Data<Database>,
+    cache: web::Data<MultiLevelCache>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     let auth_service = AuthService::new(
@@ -388,9 +405,22 @@ pub async fn get_users(
         config.jwt_expiration,
     );
     
+    // Try cache first (10 minute TTL)
+    let cache_key = format!("users:page:{}:per_page:{}", 
+        query.page.unwrap_or(1), 
+        query.per_page.unwrap_or(10)
+    );
+    if let Ok(Some(cached)) = cache.get::<serde_json::Value>(&cache_key).await {
+        return Ok(HttpResponse::Ok().json(cached));
+    }
+    
     let user_service = UserService::new(data.get_ref().clone(), auth_service);
     
     let response = user_service.list_users(query.page, query.per_page).await?;
+    
+    // Cache for 10 minutes
+    let response_json = serde_json::to_value(&response)?;
+    let _ = cache.set(&cache_key, &response_json, Some(Duration::from_secs(600))).await;
     
     Ok(HttpResponse::Ok().json(response))
 }
@@ -491,14 +521,34 @@ pub async fn search_users(
 pub async fn get_projects(
     query: web::Query<SearchQueryParams>,
     data: web::Data<Database>,
+    cache: web::Data<MultiLevelCache>,
     config: web::Data<Config>,
-) -> Result<HttpResponse, AppError> {
+) -> Result<HttpResponse,AppError> {
+    // Try cache first
+    let cache_key = format!("projects:page:{}:per_page:{}", 
+        query.page.unwrap_or(1), 
+        query.per_page.unwrap_or(10)
+    );
+    
+    if let Ok(Some(cached)) = cache.get::<serde_json::Value>(&cache_key).await {
+        return Ok(HttpResponse::Ok().json(ApiResponse {
+            success: true,
+            data: Some(cached),
+            message: None,
+            error: None,
+        }));
+    }
+    
     let project_service = crate::services::ProjectService::new(data.get_ref().clone());
     
     let response = project_service.list_projects(
         query.page.map(|p| p as i64),
         query.per_page.map(|p| p as i64),
     ).await?;
+    
+    // Cache the response for 5 minutes
+    let response_json = serde_json::to_value(&response)?;
+    let _ = cache.set(&cache_key, &response_json, Some(Duration::from_secs(300))).await;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -534,12 +584,35 @@ pub async fn create_project(
 
 pub async fn get_project(
     path: web::Path<Uuid>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
+    cache: web::Data<MultiLevelCache>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req);
+    let project_id = path.into_inner();
+    
+    // Check authorization before accessing project
+    crate::utils::check_project_permission(data.get_ref(), user_id, project_id)?;
+    
+    // Try cache first
+    let cache_key = format!("project:{}", project_id);
+    if let Ok(Some(cached)) = cache.get::<serde_json::Value>(&cache_key).await {
+        return Ok(HttpResponse::Ok().json(ApiResponse {
+            success: true,
+            data: Some(cached),
+            message: None,
+            error: None,
+        }));
+    }
+    
     let project_service = crate::services::ProjectService::new(data.get_ref().clone());
     
-    let project = project_service.get_project_by_id(path.into_inner()).await?;
+    let project = project_service.get_project_by_id(project_id).await?;
+    
+    // Cache the response for 10 minutes
+    let project_json = serde_json::to_value(&project)?;
+    let _ = cache.set(&cache_key, &project_json, Some(Duration::from_secs(600))).await;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -552,18 +625,25 @@ pub async fn get_project(
 pub async fn update_project(
     path: web::Path<Uuid>,
     req: web::Json<UpdateProjectRequest>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req);
+    let project_id = path.into_inner();;
+    
+    // Check authorization before updating project
+    crate::utils::check_project_permission(data.get_ref(), user_id, project_id)?;
+    
     let project_service = crate::services::ProjectService::new(data.get_ref().clone());
     
     let request = crate::services::project::UpdateProjectRequest {
         name: req.name.clone(),
         description: req.description.clone(),
         status: req.status.clone(),
-        settings: req.settings.as_ref().map(|s| JsonValue(s.clone())),
+ settings: req.settings.as_ref().map(|s| JsonValue(s.clone())),
     };
-    let project = project_service.update_project(path.into_inner(), request).await?;
+    let project = project_service.update_project(project_id, request).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -575,24 +655,54 @@ pub async fn update_project(
 
 pub async fn delete_project(
     path: web::Path<Uuid>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req);
+    let project_id = path.into_inner();
+    
+    // Check authorization before deleting project
+    crate::utils::check_project_permission(data.get_ref(), user_id, project_id)?;
+    
     let project_service = crate::services::ProjectService::new(data.get_ref().clone());
     
-    project_service.delete_project(path.into_inner()).await?;
+    project_service.delete_project(project_id).await?;
     
     Ok(HttpResponse::NoContent().finish())
 }
 
 pub async fn get_project_data_sources(
     project_id: web::Path<Uuid>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
+    cache: web::Data<MultiLevelCache>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req);
+    let project_id_val = project_id.into_inner();
+    
+    // Check authorization before accessing project data sources
+    crate::utils::check_project_permission(data.get_ref(), user_id, project_id_val)?;
+    
+    // Try cache first (5 minute TTL)
+    let cache_key = format!("data_sources:project:{}", project_id_val);
+    if let Ok(Some(cached)) = cache.get::<serde_json::Value>(&cache_key).await {
+        return Ok(HttpResponse::Ok().json(ApiResponse {
+            success: true,
+            data: Some(cached),
+            message: None,
+            error: None,
+        }));
+    }
+    
     let data_source_service = crate::services::DataSourceService::new(data.get_ref().clone());
     
-    let data_sources = data_source_service.get_project_data_sources(project_id.into_inner()).await?;
+    let data_sources = data_source_service.get_project_data_sources(project_id_val).await?;
+    
+    // Cache for 5 minutes
+    let data_sources_json = serde_json::to_value(&data_sources)?;
+    let _ = cache.set(&cache_key, &data_sources_json, Some(Duration::from_secs(300))).await;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -630,12 +740,35 @@ pub async fn create_data_source(
 
 pub async fn get_reconciliation_jobs(
     project_id: web::Path<Uuid>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
+    cache: web::Data<MultiLevelCache>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req);
+    let project_id_val = project_id.into_inner();
+    
+    // Check authorization before accessing project jobs
+    crate::utils::check_project_permission(data.get_ref(), user_id, project_id_val)?;
+    
+    // Try cache first (2 minute TTL for frequently updated data)
+    let cache_key = format!("jobs:project:{}", project_id_val);
+    if let Ok(Some(cached)) = cache.get::<serde_json::Value>(&cache_key).await {
+        return Ok(HttpResponse::Ok().json(ApiResponse {
+            success: true,
+            data: Some(cached),
+            message: None,
+            error: None,
+        }));
+    }
+    
     let reconciliation_service = crate::services::ReconciliationService::new(data.get_ref().clone());
     
-    let jobs = reconciliation_service.get_project_reconciliation_jobs(project_id.into_inner()).await?;
+    let jobs = reconciliation_service.get_project_reconciliation_jobs(project_id_val).await?;
+    
+    // Cache for 2 minutes
+    let jobs_json = serde_json::to_value(&jobs)?;
+    let _ = cache.set(&cache_key, &jobs_json, Some(Duration::from_secs(120))).await;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -648,13 +781,15 @@ pub async fn get_reconciliation_jobs(
 pub async fn create_reconciliation_job(
     project_id: web::Path<Uuid>,
     req: web::Json<CreateReconciliationJobRequest>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     let reconciliation_service = crate::services::ReconciliationService::new(data.get_ref().clone());
     
-    // Extract user_id from JWT token (placeholder - should be extracted by middleware)
-    let user_id = Uuid::new_v4(); // TODO: Extract from JWT token properly
+    // Extract user_id from request
+    let user_id = extract_user_id(&http_req);
+    let project_id_val = project_id.into_inner();
 
     // Extract matching_rules from settings or use defaults
     let matching_rules = if let Some(settings) = &req.settings {
@@ -668,7 +803,7 @@ pub async fn create_reconciliation_job(
     };
 
     let request = crate::services::reconciliation::CreateReconciliationJobRequest {
-        project_id: project_id.into_inner(),
+        project_id: project_id_val,
         name: req.name.clone(),
         description: req.description.clone(),
         source_a_id: req.source_data_source_id,
@@ -692,12 +827,19 @@ pub async fn create_reconciliation_job(
 
 pub async fn get_reconciliation_job(
     job_id: web::Path<Uuid>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req);
+    let job_id_val = job_id.into_inner();
+    
+    // Check authorization before accessing job
+    crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
+    
     let reconciliation_service = crate::services::ReconciliationService::new(data.get_ref().clone());
     
-    let job_status = reconciliation_service.get_reconciliation_job_status(job_id.into_inner()).await?;
+    let job_status = reconciliation_service.get_reconciliation_job_status(job_id_val).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -710,14 +852,21 @@ pub async fn get_reconciliation_job(
 pub async fn update_reconciliation_job(
     job_id: web::Path<Uuid>,
     req: web::Json<UpdateReconciliationJobRequest>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req);
+    let job_id_val = job_id.into_inner();
+    
+    // Check authorization before updating job
+    crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
+    
     let reconciliation_service = crate::services::ReconciliationService::new(data.get_ref().clone());
     
     // Update the reconciliation job
     let updated_job = reconciliation_service.update_reconciliation_job(
-        job_id.into_inner(),
+        job_id_val,
         req.name.clone(),
         req.description.clone(),
         req.confidence_threshold,
@@ -734,25 +883,39 @@ pub async fn update_reconciliation_job(
 
 pub async fn delete_reconciliation_job(
     job_id: web::Path<Uuid>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req);
+    let job_id_val = job_id.into_inner();
+    
+    // Check authorization before deleting job
+    crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
+    
     let reconciliation_service = crate::services::ReconciliationService::new(data.get_ref().clone());
     
     // Delete the reconciliation job
-    reconciliation_service.delete_reconciliation_job(job_id.into_inner()).await?;
+    reconciliation_service.delete_reconciliation_job(job_id_val).await?;
     
     Ok(HttpResponse::NoContent().finish())
 }
 
 pub async fn start_reconciliation_job(
     job_id: web::Path<Uuid>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req);
+    let job_id_val = job_id.into_inner();
+    
+    // Check authorization before starting job
+    crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
+    
     let reconciliation_service = crate::services::ReconciliationService::new(data.get_ref().clone());
     
-    reconciliation_service.start_reconciliation_job(job_id.into_inner()).await?;
+    reconciliation_service.start_reconciliation_job(job_id_val).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse::<()> {
         success: true,
@@ -764,12 +927,19 @@ pub async fn start_reconciliation_job(
 
 pub async fn stop_reconciliation_job(
     job_id: web::Path<Uuid>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req);
+    let job_id_val = job_id.into_inner();
+    
+    // Check authorization before stopping job
+    crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
+    
     let reconciliation_service = crate::services::ReconciliationService::new(data.get_ref().clone());
     
-    reconciliation_service.stop_reconciliation_job(job_id.into_inner()).await?;
+    reconciliation_service.stop_reconciliation_job(job_id_val).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse::<()> {
         success: true,
@@ -782,13 +952,20 @@ pub async fn stop_reconciliation_job(
 pub async fn get_reconciliation_results(
     job_id: web::Path<Uuid>,
     query: web::Query<ReconciliationResultsQuery>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req);
+    let job_id_val = job_id.into_inner();
+    
+    // Check authorization before accessing job results
+    crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
+    
     let reconciliation_service = crate::services::ReconciliationService::new(data.get_ref().clone());
     
     let results = reconciliation_service.get_reconciliation_results(
-        job_id.into_inner(),
+        job_id_val,
         query.page,
         query.per_page,
     ).await?;
@@ -803,12 +980,19 @@ pub async fn get_reconciliation_results(
 
 pub async fn get_reconciliation_progress(
     job_id: web::Path<Uuid>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req);
+    let job_id_val = job_id.into_inner();
+    
+    // Check authorization before accessing job progress
+    crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
+    
     let reconciliation_service = crate::services::ReconciliationService::new(data.get_ref().clone());
     
-    let job_status = reconciliation_service.get_reconciliation_job_status(job_id.into_inner()).await?;
+    let job_status = reconciliation_service.get_reconciliation_job_status(job_id_val).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -828,7 +1012,7 @@ pub async fn get_reconciliation_progress(
 // File upload handlers (placeholder implementations)
 
 pub async fn upload_file(
-    mut payload: actix_multipart::Multipart,
+    payload: actix_multipart::Multipart,
     req: HttpRequest,
     data: web::Data<Database>,
     config: web::Data<Config>,
@@ -841,8 +1025,8 @@ pub async fn upload_file(
         .and_then(|id| Uuid::parse_str(id).ok())
         .ok_or_else(|| AppError::Validation("Missing or invalid project_id".to_string()))?;
     
-    // Extract user_id from JWT token (placeholder - should be extracted by middleware)
-    let user_id = Uuid::new_v4(); // TODO: Extract from JWT token properly
+    // Extract user_id from request
+    let user_id = extract_user_id(&req);
     
     let file_service = crate::services::FileService::new(
         data.get_ref().clone(),
@@ -934,12 +1118,35 @@ pub async fn get_dashboard_data(
 
 pub async fn get_project_stats(
     project_id: web::Path<Uuid>,
+    http_req: HttpRequest,
     data: web::Data<Database>,
+    cache: web::Data<MultiLevelCache>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req);
+    let project_id_val = project_id.into_inner();
+    
+    // Check authorization before accessing project stats
+    crate::utils::check_project_permission(data.get_ref(), user_id, project_id_val)?;
+    
+    // Try cache first (30 minute TTL - expensive aggregation)
+    let cache_key = format!("stats:project:{}", project_id_val);
+    if let Ok(Some(cached)) = cache.get::<serde_json::Value>(&cache_key).await {
+        return Ok(HttpResponse::Ok().json(ApiResponse {
+            success: true,
+            data: Some(cached),
+            message: None,
+            error: None,
+        }));
+    }
+    
     let analytics_service = crate::services::AnalyticsService::new(data.get_ref().clone());
     
-    let project_stats = analytics_service.get_project_stats(project_id.into_inner()).await?;
+    let project_stats = analytics_service.get_project_stats(project_id_val).await?;
+    
+    // Cache stats for 30 minutes (expensive aggregation)
+    let stats_json = serde_json::to_value(&project_stats)?;
+    let _ = cache.set(&cache_key, &stats_json, Some(Duration::from_secs(1800))).await;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -1032,13 +1239,67 @@ pub async fn confirm_password_reset(
     }))
 }
 
+/// Verify email with token
+pub async fn verify_email(
+    req: web::Json<serde_json::Value>,
+    data: web::Data<Database>,
+    config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let enhanced_auth = crate::services::auth::EnhancedAuthService::new(
+        config.jwt_secret.clone(),
+        config.jwt_expiration,
+    );
+    
+    let token = req.get("token")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| AppError::BadRequest("Token is required".to_string()))?;
+    
+    enhanced_auth.verify_email(token, &data).await?;
+    
+    Ok(HttpResponse::Ok().json(ApiResponse::<()> {
+        success: true,
+        data: None,
+        message: Some("Email verified successfully".to_string()),
+        error: None,
+    }))
+}
+
+/// Resend email verification
+pub async fn resend_verification(
+    req: web::Json<crate::services::auth::PasswordResetRequest>,
+    data: web::Data<Database>,
+    config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let enhanced_auth = crate::services::auth::EnhancedAuthService::new(
+        config.jwt_secret.clone(),
+        config.jwt_expiration,
+    );
+    
+    // Get user by email
+    let user_service = UserService::new(data.get_ref().clone(), AuthService::new("".to_string(), 0));
+    let user = user_service.get_user_by_email(&req.email).await?;
+    
+    // Generate new verification token
+    let token = enhanced_auth.generate_email_verification_token(user.id, &user.email, &data).await?;
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(serde_json::json!({
+            "message": "Verification token generated",
+            "token": token // Remove this in production - send via email
+        })),
+        message: Some("Verification email sent".to_string()),
+        error: None,
+    }))
+}
+
 /// Get current user information
 pub async fn get_current_user(
     req: HttpRequest,
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
-    // Extract user_id from JWT token (placeholder - should be extracted by middleware)
-    let user_id = Uuid::new_v4(); // TODO: Extract from JWT token properly
+    // Extract user_id from request
+    let user_id = extract_user_id(&req);
     
     let user_service = UserService::new(data.get_ref().clone(), AuthService::new("".to_string(), 0));
     let user = user_service.get_user_by_id(user_id).await?;
@@ -1076,13 +1337,18 @@ pub async fn get_user_statistics(
     }))
 }
 
-/// Get reconciliation job statistics
+///// Get reconciliation job statistics
 pub async fn get_reconciliation_job_statistics(
     path: web::Path<Uuid>,
     req: HttpRequest,
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&req);
     let job_id = path.into_inner();
+    
+    // Check authorization before accessing job statistics
+    crate::utils::check_job_access(data.get_ref(), user_id, job_id)?;
+    
     let reconciliation_service = ReconciliationService::new(data.get_ref().clone());
     let stats = reconciliation_service.get_reconciliation_job_statistics(job_id).await?;
     
