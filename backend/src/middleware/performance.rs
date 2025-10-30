@@ -14,6 +14,7 @@ use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use log::{warn, error};
 
 use crate::services::performance::{PerformanceService, RequestMetrics};
 
@@ -209,7 +210,7 @@ where
                     user_id,
                     ip_address: Some(ip_address),
                     user_agent,
-                    timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+                    timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(),
                 }).await;
             }
 
@@ -254,16 +255,16 @@ async fn record_request_metric(state: &PerformanceMonitoringState, metric: Reque
 
 /// Log slow request
 async fn log_slow_request(state: &PerformanceMonitoringState, method: &str, path: &str, response_time_ms: u64) {
-    println!("SLOW REQUEST: {} {} - {}ms", method, path, response_time_ms);
-    
+    warn!("SLOW REQUEST: {} {} - {}ms", method, path, response_time_ms);
+
     // In a real implementation, you'd send this to a monitoring system
     // or trigger an alert if the threshold is exceeded
 }
 
 /// Log error response
 async fn log_error_response(state: &PerformanceMonitoringState, method: &str, path: &str, status_code: u16) {
-    println!("ERROR RESPONSE: {} {} - Status: {}", method, path, status_code);
-    
+    error!("ERROR RESPONSE: {} {} - Status: {}", method, path, status_code);
+
     // In a real implementation, you'd send this to a monitoring system
     // or trigger an alert if the error rate is too high
 }
@@ -292,14 +293,14 @@ impl DatabasePerformanceMonitor {
             rows_examined,
             rows_returned,
             is_slow,
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(),
         };
         
         let mut metrics = self.query_metrics.write().await;
         metrics.entry(query_hash).or_insert_with(Vec::new).push(metric.clone());
         
         if is_slow {
-            println!("SLOW QUERY: {} - {}ms", metric.query_text, execution_time_ms);
+            warn!("SLOW QUERY: {} - {}ms", metric.query_text, execution_time_ms);
         }
     }
     
@@ -394,7 +395,7 @@ impl SystemResourceMonitor {
             metric_name: metric_name.to_string(),
             metric_value,
             unit: unit.to_string(),
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(),
         };
         
         let mut metrics = self.metrics.write().await;
@@ -493,7 +494,7 @@ impl PerformanceAlerting {
             message,
             threshold_value,
             current_value,
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(),
             acknowledged: false,
             resolved: false,
         };
@@ -507,7 +508,7 @@ impl PerformanceAlerting {
             alerts.drain(0..len - 1000);
         }
         
-        println!("PERFORMANCE ALERT: {}", alert.message);
+        warn!("PERFORMANCE ALERT: {}", alert.message);
     }
     
     pub async fn get_active_alerts(&self) -> Vec<PerformanceAlert> {

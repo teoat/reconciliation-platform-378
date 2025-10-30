@@ -83,25 +83,21 @@ impl RequestValidator {
         }
 
         // SQL injection detection
-        if self.config.enable_sql_injection_detection {
-            if self.detect_sql_injection(&sanitized) {
-                violations.push(ValidationViolation {
-                    field: field_name.to_string(),
-                    rule: "sql_injection".to_string(),
-                    message: "Potential SQL injection detected".to_string(),
-                });
-            }
+        if self.config.enable_sql_injection_detection && self.detect_sql_injection(&sanitized) {
+            violations.push(ValidationViolation {
+                field: field_name.to_string(),
+                rule: "sql_injection".to_string(),
+                message: "Potential SQL injection detected".to_string(),
+            });
         }
 
         // XSS detection
-        if self.config.enable_xss_detection {
-            if self.detect_xss(&sanitized) {
-                violations.push(ValidationViolation {
-                    field: field_name.to_string(),
-                    rule: "xss".to_string(),
-                    message: "Potential XSS attack detected".to_string(),
-                });
-            }
+        if self.config.enable_xss_detection && self.detect_xss(&sanitized) {
+            violations.push(ValidationViolation {
+                field: field_name.to_string(),
+                rule: "xss".to_string(),
+                message: "Potential XSS attack detected".to_string(),
+            });
         }
 
         let is_valid = violations.is_empty();
@@ -153,10 +149,7 @@ impl RequestValidator {
         let sanitized = sanitized.replace("</script>", "&lt;/script&gt;");
         
         // Remove event handlers
-        let sanitized = sanitized.replace("onerror", "on-error");
-        let sanitized = sanitized.replace("onload", "on-load");
-        
-        sanitized
+        sanitized.replace("onerror", "on-error").replace("onload", "on-load")
     }
 
     /// Validate request body size

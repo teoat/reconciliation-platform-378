@@ -383,7 +383,6 @@ const FrenlyAI: React.FC = () => {
                   } 
                 }
                 // This would need to be handled by the parent component
-                console.log('Toggle tips:', newState.preferences.showTips)
               }}
               className={`p-2 rounded-lg transition-all duration-200 ${
                 state.preferences.showTips 

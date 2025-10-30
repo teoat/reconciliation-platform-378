@@ -6,12 +6,16 @@
   "scripts": {
     "dev": "vite --port 1000",
     "build": "vite build --mode production",
+    "build:cache": "vite build --mode production --cache-dir .vite-cache",
+    "build:clean": "rm -rf dist .vite-cache node_modules/.tmp && npm run build:cache",
+    "build:time": "time npm run build",
     "build:analyze": "tsc && vite build --mode production && npx vite-bundle-visualizer",
     "preview": "vite preview --port 1000",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint . --max-warnings 0",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "cache:clean": "rm -rf .vite-cache node_modules/.tmp"
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -27,12 +31,14 @@
     "@reduxjs/toolkit": "^2.0.0"
   },
   "devDependencies": {
+    "terser": "^5.36.0",
     "@types/react": "^18.2.37",
     "@types/react-dom": "^18.2.15",
     "@types/react-redux": "^7.1.33",
     "@typescript-eslint/eslint-plugin": "^6.10.0",
     "@typescript-eslint/parser": "^6.10.0",
     "@vitejs/plugin-react": "^4.1.1",
+    "@vitejs/plugin-react-swc": "^3.5.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.53.0",
     "eslint-plugin-react-hooks": "^4.6.0",

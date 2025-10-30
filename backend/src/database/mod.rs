@@ -4,6 +4,7 @@
 
 use diesel::prelude::*;
 use diesel::r2d2::{self, ConnectionManager};
+use std::time::Duration;
 
 use crate::errors::{AppError, AppResult};
 
@@ -70,8 +71,15 @@ impl Database {
         loop {
             match self.pool.get() {
                 Ok(conn) => {
-                    // Log pool stats if getting tight
+                    // Update Prometheus metrics
                     let stats = self.get_pool_stats();
+                    crate::monitoring::metrics::update_pool_metrics(
+                        stats.active as usize,
+                        stats.idle as usize,
+                        stats.size as usize
+                    );
+                    
+                    // Log pool stats if getting tight
                     if stats.active as f32 / stats.size as f32 > 0.8 {
                         log::warn!("Connection pool usage high: {}/{} ({:.0}%)", 
                             stats.active, stats.size, 
@@ -85,11 +93,21 @@ impl Database {
                     let delay_ms = 10 * 2_u64.pow(retry_count - 1);
                     log::warn!("Connection pool busy, retry {}/{} after {}ms", 
                         retry_count, max_retries, delay_ms);
-                    std::thread::sleep(std::time::Duration::from_millis(delay_ms));
+                    // Avoid starving Tokio's async runtime threads if present
+                    let delay = Duration::from_millis(delay_ms);
+                    if tokio::runtime::Handle::try_current().is_ok() {
+                        // If inside a Tokio runtime, move blocking sleep to blocking pool
+                        tokio::task::block_in_place(|| std::thread::sleep(delay));
+                    } else {
+                        // Fallback when not in a Tokio runtime
+                        std::thread::sleep(delay);
+                    }
                     continue;
                 }
                 Err(e) => {
-                    log::error!("Continued to get connection after {} retries", max_retries);
+                    log::error!("Connection pool exhausted after {} retries", max_retries);
+                    // Record pool exhaustion metric for alerting
+                    crate::monitoring::metrics::record_pool_exhaustion();
                     return Err(AppError::Connection(
                         diesel::ConnectionError::InvalidConnectionUrl(
                             format!("Connection pool exhausted: {}", e)
@@ -124,18 +142,13 @@ pub struct PoolStats {
     pub active: u32,
 }
 
+/// Database transaction utilities
+pub mod transaction;
+
 /// Database utilities
+/// NOTE: For transactions, use database::transaction::with_transaction() instead
+/// This utils module is reserved for future database utilities if needed
 pub mod utils {
-    use super::*;
-    
-    /// Execute a function within a database transaction
-    pub async fn with_transaction<F, R>(pool: &DbPool, f: F) -> AppResult<R>
-    where
-        F: FnOnce(&mut PgConnection) -> AppResult<R>,
-    {
-        let mut conn = pool.get()
-            .map_err(|e| AppError::Connection(diesel::ConnectionError::InvalidConnectionUrl(format!("Failed to get connection: {}", e))))?;
-        
-        f(&mut conn)
-    }
+    // Previously contained a fake transaction function - removed
+    // Use database::transaction::with_transaction() for real transactions
 }

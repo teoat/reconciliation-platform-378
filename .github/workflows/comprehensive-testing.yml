@@ -1,10 +1,7 @@
 name: 🧪 Comprehensive Testing Pipeline
 
 on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
+  workflow_dispatch:
   schedule:
     - cron: '0 2 * * *'  # Daily at 2 AM
 

@@ -7,8 +7,8 @@ use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 
 use crate::models::{
-    ReconciliationJob, DataSource,
-    schema::{reconciliation_jobs, data_sources},
+    DataSource,
+    schema::data_sources,
 };
 
 /// Extract records from data sources
@@ -26,7 +26,7 @@ impl RecordExtractor {
             .filter(data_sources::id.eq(data_source_id))
             .first::<DataSource>(&mut conn)
             .optional()
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         match data_source {
             Some(ds) => {
@@ -88,36 +88,8 @@ impl ConfidenceCalculator {
         }
         
         // Simple Levenshtein-based similarity
-        let distance = Self::levenshtein_distance(a, b);
+        let distance = crate::utils::levenshtein_distance(a, b);
         1.0 - (distance as f64 / longer as f64)
-    }
-    
-    fn levenshtein_distance(a: &str, b: &str) -> usize {
-        let a_chars: Vec<char> = a.chars().collect();
-        let b_chars: Vec<char> = b.chars().collect();
-        let a_len = a_chars.len();
-        let b_len = b_chars.len();
-        
-        let mut matrix = vec![vec![0; b_len + 1]; a_len + 1];
-        
-        for i in 0..=a_len {
-            matrix[i][0] = i;
-        }
-        
-        for j in 0..=b_len {
-            matrix[0][j] = j;
-        }
-        
-        for i in 1..=a_len {
-            for j in 1..=b_len {
-                let cost = if a_chars[i-1] == b_chars[j-1] { 0 } else { 1 };
-                matrix[i][j] = (matrix[i-1][j] + 1)
-                    .min(matrix[i][j-1] + 1)
-                    .min(matrix[i-1][j-1] + cost);
-            }
-        }
-        
-        matrix[a_len][b_len]
     }
 }
 
@@ -192,14 +164,15 @@ impl ResultStorage {
             diesel::insert_into(crate::models::schema::reconciliation_results::table)
                 .values(crate::models::NewReconciliationResult {
                     job_id,
-                    source_record_id: Uuid::new_v4(), // Would map to actual record ID
-                    target_record_id: Uuid::new_v4(),
+                    record_a_id: Uuid::new_v4(), // Would map to actual record ID
+                    record_b_id: Some(Uuid::new_v4()),
                     match_type: result.match_type.clone(),
-                    confidence_score: result.confidence,
+                    confidence_score: Some(result.confidence),
                     status: "matched".to_string(),
+                    notes: Some("".to_string()),
                 })
                 .execute(&mut conn)
-                .map_err(|e| AppError::Database(e))?;
+                .map_err(AppError::Database)?;
         }
         
         Ok(())

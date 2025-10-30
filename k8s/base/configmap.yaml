@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reconciliation-config
+  namespace: reconciliation-platform
+data:
+  DATABASE_URL: "postgresql://reconciliation_user:reconciliation_password@postgres-service:5432/reconciliation_db"
+  REDIS_URL: "redis://redis-service:6379"
+  JWT_SECRET: "your-super-secret-jwt-key-change-in-production"
+  LOG_LEVEL: "info"
+  PORT: "2000"

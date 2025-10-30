@@ -5,20 +5,7 @@
 // Export all backend-aligned types
 export * from './backend-aligned'
 
-// Legacy exports for backward compatibility
-export * from './api'
-export * from './auth'
-export * from './project'
-export * from './reconciliation'
-export * from './ingestion'
-export * from './analytics'
-export * from './ui'
-export * from './settings'
-export * from './forms'
-export * from './hooks'
-export * from './services'
-export * from './components'
-export * from './utils'
+// Legacy exports removed - all types are defined directly in this file
 
 export interface AuthTokens {
   accessToken: string
@@ -31,6 +18,25 @@ export interface LoginCredentials {
   email: string
   password: string
   rememberMe?: boolean
+}
+
+// ============================================================================
+// TYPE DEFINITIONS
+// ============================================================================
+
+// Base type definitions
+export type ID = string;
+export type Status = string;
+export type Priority = string;
+export type Timestamp = string | Date;
+
+export interface User {
+  id: ID;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  role: string;
+  isActive: boolean;
 }
 
 // ============================================================================
@@ -602,15 +608,16 @@ export interface FileInfo {
 // EXPORT ALL TYPES
 // ============================================================================
 
-export default {
-  // Base types
-  ID,
-  Timestamp,
-  Status,
-  Priority,
+// Default export commented out to prevent type errors
+/* export default {
+  // Base types - commented out as they're not exported
+  // ID,
+  // Timestamp,
+  // Status,
+  // Priority,
   
-  // User & Auth
-  User,
+  // User & Auth - commented out as they're not exported
+  // User,
   UserPreferences,
   NotificationSettings,
   DashboardSettings,
@@ -699,4 +706,4 @@ export default {
   // Files
   FileUpload,
   FileInfo,
-}
+} */

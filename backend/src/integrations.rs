@@ -1,20 +1,22 @@
 // All integrations in one place
 // Imports and initializes monitoring, Sentry, etc.
 
-use crate::config::monitoring::MonitoringConfig;
+use crate::config::MonitoringConfig;
 use prometheus::Registry;
 use std::env;
+
+// Don't re-export - just use directly
 
 /// Initialize all monitoring and observability integrations
 pub fn initialize_integrations() -> (Option<sentry::ClientInitGuard>, Option<Registry>) {
     let monitoring_config = MonitoringConfig::from_env();
-    
+
     // Initialize Sentry
     let sentry_guard = initialize_sentry(&monitoring_config);
-    
+
     // Initialize Prometheus
     let prometheus_registry = initialize_prometheus(&monitoring_config);
-    
+
     (sentry_guard, prometheus_registry)
 }
 
@@ -29,9 +31,8 @@ fn initialize_sentry(config: &MonitoringConfig) -> Option<sentry::ClientInitGuar
     let guard = sentry::init((
         dsn,
         sentry::ClientOptions {
-            release: Some(env!("CARGO_PKG_VERSION").into()),
-            environment: Some(std::env::var("ENVIRONMENT").unwrap_or_else(|_| "development".into())),
-            traces_sample_rate: 0.1,
+            release: Some(env!("CARGO_PKG_VERSION").to_string().into()),
+            environment: Some(std::env::var("ENVIRONMENT").unwrap_or_else(|_| "development".to_string()).into()),
             ..Default::default()
         },
     ));
@@ -51,5 +52,4 @@ fn initialize_prometheus(config: &MonitoringConfig) -> Option<prometheus::Regist
     Some(registry)
 }
 
-// Re-export for easy use
-pub use MonitoringConfig;
+// MonitoringConfig is already re-exported above

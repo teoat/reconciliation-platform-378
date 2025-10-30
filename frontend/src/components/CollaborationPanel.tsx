@@ -86,7 +86,6 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
   const handleSendReply = (commentId: string) => {
     if (replyText.trim()) {
       // In a real implementation, this would send a reply
-      console.log('Sending reply to comment:', commentId, replyText);
       setReplyText('');
       setReplyingTo(null);
     }

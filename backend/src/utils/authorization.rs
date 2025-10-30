@@ -25,7 +25,7 @@ pub fn check_project_permission(
         .filter(projects::id.eq(project_id))
         .first::<Project>(&mut conn)
         .optional()
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(AppError::Database)?;
     
     if let Some(p) = project {
         // Get the user to check their role
@@ -33,7 +33,7 @@ pub fn check_project_permission(
             .filter(users::id.eq(user_id))
             .first::<User>(&mut conn)
             .optional()
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         if let Some(u) = user {
             // Check if user owns the project or is an admin
@@ -43,6 +43,8 @@ pub fn check_project_permission(
         }
     }
     
+    // Record unauthorized access attempt
+    crate::middleware::security::UNAUTHORIZED_ACCESS_ATTEMPTS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
     Err(AppError::Forbidden("Access denied to this project".to_string()))
 }
 
@@ -66,11 +68,15 @@ pub fn check_admin_permission(
         .filter(users::id.eq(user_id))
         .first::<User>(&mut conn)
         .optional()
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(AppError::Database)?;
     
     match user {
         Some(u) if u.role == "admin" => Ok(()),
-        _ => Err(AppError::Forbidden("Admin access required".to_string())),
+        _ => {
+            // Record auth denied
+            crate::middleware::security::AUTH_DENIED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            Err(AppError::Forbidden("Admin access required".to_string()))
+        }
     }
 }
 
@@ -88,7 +94,7 @@ pub fn get_project_id_from_job(
         .filter(reconciliation_jobs::id.eq(job_id))
         .select(reconciliation_jobs::project_id)
         .first::<Uuid>(&mut conn)
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(AppError::Database)?;
     
     Ok(project_id)
 }

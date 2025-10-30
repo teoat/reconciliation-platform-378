@@ -18,7 +18,8 @@ pub mod distributed_tracing;
 pub mod request_tracing;
 
 // Re-export commonly used middleware
-pub use security::{SecurityMiddleware, SecurityMiddlewareConfig, SecurityHeadersMiddleware};
+pub use security::{SecurityHeadersMiddleware, SecurityHeadersConfig, CsrfProtectionMiddleware, RateLimitMiddleware, SecurityConfig, configure_security_middleware};
+pub use security::metrics::*;
 pub use auth::AuthMiddleware;
 pub use logging::{LoggingMiddleware, LoggingConfig};
 

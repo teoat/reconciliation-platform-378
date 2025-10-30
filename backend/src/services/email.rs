@@ -129,11 +129,11 @@ Reconciliation Platform Team
         use lettre::{Message, SmtpTransport, Transport};
         
         let email = Message::builder()
-            .from(self.from_email.parse().unwrap())
-            .to(to.parse().unwrap())
+            .from(self.from_email.parse().map_err(|e| AppError::Internal(format!("Invalid from email: {}", e)))?)
+            .to(to.parse().map_err(|e| AppError::Internal(format!("Invalid to email: {}", e)))?)
             .subject(subject)
             .body(body.to_string())
-            .unwrap();
+            .map_err(|e| AppError::Internal(format!("Failed to build email: {}", e)))?;
         
         let mailer = SmtpTransport::relay(&self.smtp_host)?
             .port(self.smtp_port)

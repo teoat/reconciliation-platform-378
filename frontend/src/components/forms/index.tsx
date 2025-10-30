@@ -1,12 +1,15 @@
 // UNIFIED FORM SYSTEM - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
-import React, { useState, useRef, useCallback, forwardRef, useEffect } from 'react'
-import { Upload, X, File, CheckCircle, AlertCircle, Search, Filter } from 'lucide-react'
+import React, { useState, useRef, useCallback, forwardRef } from 'react'
+import { Upload, X, File, CheckCircle, AlertCircle, Search } from 'lucide-react'
 
 // ============================================================================
 // FORM TYPES AND INTERFACES
 // ============================================================================
+
+// Form field value types
+export type FormFieldValue = string | number | boolean | Date | File | null | undefined
 
 export interface ValidationRule {
   required?: boolean
@@ -14,7 +17,7 @@ export interface ValidationRule {
   maxLength?: number
   pattern?: RegExp
   email?: boolean
-  custom?: (value: any) => string | null
+  custom?: (value: FormFieldValue) => string | null
 }
 
 export interface ValidationRules {
@@ -22,29 +25,29 @@ export interface ValidationRules {
 }
 
 export interface FormData {
-  [key: string]: any
+  [key: string]: FormFieldValue
 }
 
 export interface FormErrors {
   [key: string]: string
 }
 
-export interface UseFormOptions {
-  initialValues?: FormData
+export interface UseFormOptions<T extends FormData = FormData> {
+  initialValues?: T
   validationRules?: ValidationRules
-  onSubmit?: (values: FormData) => void | Promise<void>
+  onSubmit?: (values: T) => void | Promise<void>
 }
 
-export interface UseFormReturn {
-  values: FormData
+export interface UseFormReturn<T extends FormData = FormData> {
+  values: T
   errors: FormErrors
   touched: { [key: string]: boolean }
   isSubmitting: boolean
   isValid: boolean
-  setValue: (name: string, value: any) => void
+  setValue: (name: string, value: FormFieldValue) => void
   setError: (name: string, error: string) => void
   clearError: (name: string) => void
-  handleChange: (name: string, value: any) => void
+  handleChange: (name: string, value: FormFieldValue) => void
   handleBlur: (name: string) => void
   handleSubmit: (e: React.FormEvent) => void
   reset: () => void
@@ -69,8 +72,8 @@ export interface InputFieldProps {
   required?: boolean
   disabled?: boolean
   className?: string
-  value?: any
-  onChange?: (value: any) => void
+  value?: string | number
+  onChange?: (value: string | number) => void
   onBlur?: () => void
 }
 
@@ -122,7 +125,7 @@ export function useForm(options: UseFormOptions = {}): UseFormReturn {
   const [touched, setTouched] = useState<{ [key: string]: boolean }>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const validateField = useCallback((name: string, value: any): string | null => {
+  const validateField = useCallback((name: string, value: FormFieldValue): string | null => {
     const rule = validationRules[name]
     if (!rule) return null
 
@@ -130,19 +133,21 @@ export function useForm(options: UseFormOptions = {}): UseFormReturn {
       return `${name} is required`
     }
 
-    if (value && rule.minLength && value.length < rule.minLength) {
+    const stringValue = String(value || '')
+
+    if (value && rule.minLength && stringValue.length < rule.minLength) {
       return `${name} must be at least ${rule.minLength} characters`
     }
 
-    if (value && rule.maxLength && value.length > rule.maxLength) {
+    if (value && rule.maxLength && stringValue.length > rule.maxLength) {
       return `${name} must be no more than ${rule.maxLength} characters`
     }
 
-    if (value && rule.pattern && !rule.pattern.test(value)) {
+    if (value && rule.pattern && !rule.pattern.test(stringValue)) {
       return `${name} format is invalid`
     }
 
-    if (value && rule.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+    if (value && rule.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(stringValue)) {
       return `${name} must be a valid email`
     }
 
@@ -169,7 +174,7 @@ export function useForm(options: UseFormOptions = {}): UseFormReturn {
     return isValid
   }, [values, validationRules, validateField])
 
-  const setValue = useCallback((name: string, value: any) => {
+  const setValue = useCallback((name: string, value: FormFieldValue) => {
     setValues(prev => ({ ...prev, [name]: value }))
 
     // Clear error if field becomes valid
@@ -195,7 +200,7 @@ export function useForm(options: UseFormOptions = {}): UseFormReturn {
     })
   }, [])
 
-  const handleChange = useCallback((name: string, value: any) => {
+  const handleChange = useCallback((name: string, value: FormFieldValue) => {
     setValue(name, value)
   }, [setValue])
 

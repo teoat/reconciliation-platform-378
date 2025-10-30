@@ -40,11 +40,7 @@ impl ShardConfiguration {
         }
         
         // Fallback to default if no shards configured
-        if shards.is_empty() {
-            ShardConfig::create_default_shards()
-        } else {
-            shards
-        }
+        shards
     }
 }
 

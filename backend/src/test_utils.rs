@@ -351,12 +351,14 @@ pub mod http {
     use crate::config::Config;
     use crate::database::Database;
     
-    /// Create test app  
-    pub async fn create_test_app() -> App {
-        let config = Config::from_env().expect("Failed to load test config");
+    /// Create test app
+    pub async fn create_test_app() -> Result<App, Box<dyn std::error::Error>> {
+        let config = Config::from_env().map_err(|e| {
+            format!("Failed to load test config: {}", e)
+        })?;
         let db = Database::new(&config.database_url)
             .await
-            .expect("Failed to create test database");
+            .map_err(|e| format!("Failed to create test database: {}", e))?;
         
         App::new()
             .app_data(web::Data::new(db))

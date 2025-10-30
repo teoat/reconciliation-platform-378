@@ -59,7 +59,7 @@ impl DataSourceService {
         let data_source = diesel::insert_into(data_sources::table)
             .values(new_data_source)
             .get_result(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(data_source)
     }
@@ -73,7 +73,7 @@ impl DataSourceService {
             .filter(data_sources::is_active.eq(true))
             .order(data_sources::created_at.desc())
             .load::<DataSource>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(sources)
     }
@@ -87,7 +87,7 @@ impl DataSourceService {
             .filter(data_sources::is_active.eq(true))
             .first::<DataSource>(&mut conn)
             .optional()
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(data_source)
     }
@@ -128,7 +128,7 @@ impl DataSourceService {
             .set(update_data)
             .returning(DataSource::as_returning())
             .get_result(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(data_source)
     }
@@ -141,7 +141,7 @@ impl DataSourceService {
             .filter(data_sources::id.eq(id))
             .set(data_sources::is_active.eq(false))
             .execute(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(())
     }
@@ -155,7 +155,7 @@ impl DataSourceService {
             .filter(data_sources::is_active.eq(true))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let csv_count = data_sources::table
             .filter(data_sources::project_id.eq(project_id))
@@ -163,7 +163,7 @@ impl DataSourceService {
             .filter(data_sources::is_active.eq(true))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let json_count = data_sources::table
             .filter(data_sources::project_id.eq(project_id))
@@ -171,7 +171,7 @@ impl DataSourceService {
             .filter(data_sources::is_active.eq(true))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let processed_count = data_sources::table
             .filter(data_sources::project_id.eq(project_id))
@@ -179,7 +179,7 @@ impl DataSourceService {
             .filter(data_sources::is_active.eq(true))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(DataSourceStats {
             total_count,

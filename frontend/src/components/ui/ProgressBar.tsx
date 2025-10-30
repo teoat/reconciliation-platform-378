@@ -3,6 +3,7 @@ import React from 'react'
 
 export interface ProgressBarProps {
   value: number
+  max?: number
   showLabel?: boolean
   label?: string
   variant?: 'default' | 'success' | 'warning' | 'error'
@@ -46,13 +47,6 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
     error: 'bg-red-500'
   }
 
-  const bgVariantColors = {
-    default: 'bg-blue-100',
-    success: 'bg-green-100',
-    warning: 'bg-yellow-100',
-    error: 'bg-red-100'
-  }
-
   return (
     <div className={`space-y-1 ${className}`}>
       {showLabel && (
@@ -67,6 +61,7 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
         aria-valuemin={0}
         aria-valuemax={100}
         aria-label={ariaLabel || `${label} is ${roundedValue} percent complete`}
+        aria-live="polite"
         className={`relative overflow-hidden bg-gray-200 rounded-full ${sizes[size]}`}
       >
         <div 
@@ -78,6 +73,5 @@ export const ProgressBar: React.FC<ProgressBarProps> = ({
   )
 }
 
-export { ProgressBar };
 export default ProgressBar
 

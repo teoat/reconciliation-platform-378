@@ -222,6 +222,8 @@ const QuickReconciliationWizard: React.FC = () => {
                 matchingThreshold: parseInt(e.target.value) / 100
               }))}
               className="w-full"
+              aria-label="Matching Threshold"
+              title="Matching Threshold"
             />
             <div className="flex justify-between text-sm text-gray-500 mt-1">
               <span>0%</span>

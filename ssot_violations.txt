@@ -1,0 +1,4 @@
+VIOLATION: FORBIDDEN_DIRECTORY
+  Description: Directory 'frontend-simple' should not exist at root level
+  File: frontend-simple
+

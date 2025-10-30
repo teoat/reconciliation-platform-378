@@ -8,6 +8,9 @@ pub mod email;
 pub mod user;
 // pub mod enhanced_user_management; // Deprecated - merged into user.rs
 pub mod project;
+pub mod project_crud;
+pub mod project_permissions;
+pub mod project_aggregations;
 pub mod reconciliation;
 // pub mod advanced_reconciliation; // Deprecated - merged into reconciliation.rs
 pub mod analytics;
@@ -15,9 +18,10 @@ pub mod file;
 // pub mod optimized_file_processing; // Deprecated - merged into file.rs
 pub mod data_source;
 pub mod cache;
+pub mod database_sharding;
 
-// Re-export cache types
-pub use cache::{AdvancedCacheService, CacheStrategy};
+// Re-export cache types (limit public surface)
+pub use cache::CacheStrategy;
 // pub mod advanced_cache; // Deprecated - merged into cache.rs
 pub mod backup_recovery;
 pub mod realtime;
@@ -31,12 +35,15 @@ pub mod internationalization;
 pub mod accessibility;
 // pub mod mobile_optimization; // Deprecated - Low value, not utilized
 
-// Add new S-Tier services
+// Add missing service modules
+pub mod error_translation;
+pub mod offline_persistence;
+pub mod optimistic_ui;
+pub mod critical_alerts;
+pub mod database_migration;
+
+// Add missing S-Tier service modules  
 pub mod advanced_metrics;
-pub mod structured_logging;
-pub mod security_monitor;
-pub mod query_optimizer;
-pub mod secrets;
 
 // Re-export commonly used services
 pub use auth::AuthService;
@@ -52,9 +59,13 @@ pub use file::FileService;
 pub use data_source::DataSourceService;
 pub use cache::CacheService;
 // Note: advanced_cache types - removed to avoid conflicts
-pub use backup_recovery::{BackupService, DisasterRecoveryService, BackupConfig, BackupType};
+pub use database_migration::{DatabaseMigrationService, ProductionMigrationRunner, MigrationResult, MigrationStatus};
+pub use critical_alerts::{CriticalAlertManager, CriticalAlert, AlertThreshold, AlertSeverity};
+pub use error_translation::{ErrorTranslationService, UserFriendlyError, ErrorContext, ErrorContextBuilder};
+pub use offline_persistence::{OfflinePersistenceService, AutoSaveManager, AutoSaveConfig, RecoveryPrompt};
+pub use backup_recovery::{BackupService, DisasterRecoveryService, BackupConfig, BackupSchedule, RetentionPolicy, StorageConfig, BackupType};
 pub use realtime::{NotificationService, CollaborationService};
-pub use monitoring::{MonitoringService, AlertDefinition, AlertInstance, AlertSeverity, NotificationChannel};
+pub use monitoring::{MonitoringService, AlertDefinition, AlertInstance, AlertSeverity as MonitoringAlertSeverity, NotificationChannel};
 // Note: monitoring_alerting types now exported from monitoring module
 pub use performance::PerformanceService;
 pub use validation::{ValidationService, SchemaValidator, ValidationRule, ValidationErrorType};
@@ -66,6 +77,3 @@ pub use accessibility::{AccessibilityService, AccessibilityGuideline, Accessibil
 
 // Export S-Tier services
 pub use advanced_metrics::AdvancedMetrics;
-pub use structured_logging::StructuredLogging;
-pub use security_monitor::{SecurityMonitor, AnomalyDetectionConfig};
-pub use query_optimizer::{QueryOptimizer, QueryOptimizerConfig};

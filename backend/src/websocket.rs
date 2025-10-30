@@ -14,6 +14,7 @@ use std::sync::Arc;
 
 use crate::errors::{AppError, AppResult};
 use crate::database::Database;
+use crate::config::Config;
 
 /// WebSocket message types
 #[derive(Debug, Clone, Serialize, Deserialize, Message)]
@@ -226,6 +227,8 @@ pub struct WsSession {
     server: Addr<WsServer>,
     /// Database connection
     db: Arc<Database>,
+    /// JWT secret for token validation
+    jwt_secret: String,
     /// Authentication status
     authenticated: bool,
     /// Project rooms this session is in
@@ -237,11 +240,12 @@ pub struct WsSession {
 }
 
 impl WsSession {
-    pub fn new(server: Addr<WsServer>, db: Arc<Database>) -> Self {
+    pub fn new(server: Addr<WsServer>, db: Arc<Database>, jwt_secret: String) -> Self {
         Self {
             user_id: None,
             server,
             db,
+            jwt_secret,
             authenticated: false,
             project_rooms: std::collections::HashSet::new(),
             joined_projects: std::collections::HashSet::new(),
@@ -579,7 +583,7 @@ impl WsSession {
     /// Validate JWT token
     fn validate_token(&self, token: &str) -> AppResult<crate::services::auth::Claims> {
         use crate::services::auth::AuthService;
-        let auth_service = AuthService::new("default_jwt_secret".to_string(), 3600);
+        let auth_service = AuthService::new(self.jwt_secret.clone(), 3600);
         auth_service.validate_token(token)
     }
 }
@@ -589,6 +593,7 @@ pub async fn websocket_handler(
     req: HttpRequest,
     stream: web::Payload,
     server: web::Data<Addr<WsServer>>,
+    config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     // Get database from app data
     let db = req
@@ -598,7 +603,7 @@ pub async fn websocket_handler(
         .clone();
 
     // Create WebSocket session
-    let session = WsSession::new(server.get_ref().clone(), db);
+    let session = WsSession::new(server.get_ref().clone(), db, config.jwt_secret.clone());
 
     // Start WebSocket connection
     let resp = ws::start(session, &req, stream)?;
@@ -670,7 +675,7 @@ impl Handler<BroadcastToProject> for WsServer {
 
     fn handle(&mut self, msg: BroadcastToProject, _ctx: &mut Self::Context) {
         let sessions = self.sessions.clone();
-        let project_id = msg.project_id;
+        let _project_id = msg.project_id;
         let message = msg.message;
         let exclude_session = msg.exclude_session;
         

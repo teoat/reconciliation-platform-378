@@ -16,12 +16,13 @@ pub use string::*;
 pub use authorization::*;
 
 use actix_web::{HttpRequest, HttpMessage};
-use uuid::Uuid;
 
 /// Extract user ID from request extensions
-pub fn extract_user_id(req: &HttpRequest) -> Uuid {
+/// Returns error if authentication is missing or invalid
+pub fn extract_user_id(req: &HttpRequest) -> Result<uuid::Uuid, crate::errors::AppError> {
     req.extensions()
         .get::<crate::services::auth::Claims>()
-        .map(|claims| uuid::Uuid::parse_str(&claims.sub).unwrap_or_else(|_| uuid::Uuid::new_v4()))
-        .unwrap_or_else(|| uuid::Uuid::new_v4())
+        .map(|claims| uuid::Uuid::parse_str(&claims.sub))
+        .ok_or_else(|| crate::errors::AppError::Unauthorized("Missing authentication".to_string()))?
+        .map_err(|_| crate::errors::AppError::Unauthorized("Invalid user ID".to_string()))
 }

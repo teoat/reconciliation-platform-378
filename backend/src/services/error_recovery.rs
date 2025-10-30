@@ -279,8 +279,9 @@ impl ErrorRecoveryService {
         error_history.push(error_record);
         
         // Keep only last 10000 errors
-        if error_history.len() > 10000 {
-            error_history.drain(0..error_history.len() - 10000);
+        let history_len = error_history.len();
+        if history_len > 10000 {
+            error_history.drain(0..history_len - 10000);
         }
     }
     

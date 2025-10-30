@@ -263,7 +263,7 @@ impl ProjectService {
             .filter(users::id.eq(request.owner_id))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         if owner_exists == 0 {
             return Err(AppError::NotFound("Project owner not found".to_string()));
@@ -286,11 +286,11 @@ impl ProjectService {
             settings: request.settings,
         };
         
-        crate::database::utils::with_transaction(self.db.get_pool(), |tx| {
+        crate::database::transaction::with_transaction(self.db.get_pool(), |tx| {
             diesel::insert_into(projects::table)
                 .values(&new_project)
                 .execute(tx)
-                .map_err(|e| AppError::Database(e))?;
+                .map_err(AppError::Database)?;
             
             Ok(())
         }).await?;
@@ -319,21 +319,21 @@ impl ProjectService {
                 users::email,
             ))
             .first::<ProjectQueryResult>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get job count
         let job_count = reconciliation_jobs::table
             .filter(reconciliation_jobs::project_id.eq(project_id))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get data source count
         let data_source_count = data_sources::table
             .filter(data_sources::project_id.eq(project_id))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get last activity
         let last_activity = reconciliation_jobs::table
@@ -342,7 +342,7 @@ impl ProjectService {
             .select(reconciliation_jobs::updated_at)
             .first::<chrono::DateTime<chrono::Utc>>(&mut conn)
             .optional()
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(ProjectInfo {
             id: result.project_id,
@@ -368,7 +368,7 @@ impl ProjectService {
         let existing_project = projects::table
             .filter(projects::id.eq(project_id))
             .first::<Project>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Validate name if provided
         if let Some(ref name) = request.name {
@@ -400,7 +400,7 @@ impl ProjectService {
         diesel::update(projects::table.filter(projects::id.eq(project_id)))
             .set(&update_data)
             .execute(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Return updated project
         self.get_project_by_id(project_id).await
@@ -415,7 +415,7 @@ impl ProjectService {
             .filter(projects::id.eq(project_id))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         if count == 0 {
             return Err(AppError::NotFound("Project not found".to_string()));
@@ -424,7 +424,7 @@ impl ProjectService {
         // Delete project (cascade will handle related records)
         diesel::delete(projects::table.filter(projects::id.eq(project_id)))
             .execute(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(())
     }
@@ -440,7 +440,7 @@ impl ProjectService {
         let total = projects::table
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get projects with owner info
         let projects_with_owner = projects::table
@@ -460,24 +460,33 @@ impl ProjectService {
             .limit(per_page)
             .offset(offset)
             .load::<ProjectQueryResult>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
-        // Get counts separately for each project
+        // Get counts for all projects in bulk to avoid N+1 queries
+        use diesel::dsl::count_star;
+        let project_ids: Vec<uuid::Uuid> = projects_with_owner.iter().map(|p| p.project_id).collect();
+
+        let job_counts: Vec<(uuid::Uuid, i64)> = reconciliation_jobs::table
+            .filter(reconciliation_jobs::project_id.eq_any(&project_ids))
+            .group_by(reconciliation_jobs::project_id)
+            .select((reconciliation_jobs::project_id, count_star()))
+            .load::<(uuid::Uuid, i64)>(&mut conn)
+            .unwrap_or_default();
+
+        let job_count_map: std::collections::HashMap<uuid::Uuid, i64> = job_counts.into_iter().collect();
+
+        let data_source_counts: Vec<(uuid::Uuid, i64)> = data_sources::table
+            .filter(data_sources::project_id.eq_any(&project_ids))
+            .group_by(data_sources::project_id)
+            .select((data_sources::project_id, count_star()))
+            .load::<(uuid::Uuid, i64)>(&mut conn)
+            .unwrap_or_default();
+
+        let data_source_count_map: std::collections::HashMap<uuid::Uuid, i64> = data_source_counts.into_iter().collect();
+
         let project_infos: Vec<ProjectInfo> = projects_with_owner
             .into_iter()
             .map(|result| {
-                let job_count = reconciliation_jobs::table
-                    .filter(reconciliation_jobs::project_id.eq(result.project_id))
-                    .count()
-                    .get_result::<i64>(&mut conn)
-                    .unwrap_or(0);
-                
-                let data_source_count = data_sources::table
-                    .filter(data_sources::project_id.eq(result.project_id))
-                    .count()
-                    .get_result::<i64>(&mut conn)
-                    .unwrap_or(0);
-                
                 ProjectInfo {
                     id: result.project_id,
                     name: result.project_name,
@@ -488,8 +497,8 @@ impl ProjectService {
                     settings: result.settings,
                     created_at: result.created_at,
                     updated_at: result.updated_at,
-                    job_count,
-                    data_source_count,
+                    job_count: job_count_map.get(&result.project_id).copied().unwrap_or(0),
+                    data_source_count: data_source_count_map.get(&result.project_id).copied().unwrap_or(0),
                     last_activity: None,
                 }
             })
@@ -515,7 +524,7 @@ impl ProjectService {
             .filter(projects::owner_id.eq(owner_id))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get projects with owner info
         let projects_with_owner = projects::table
@@ -536,25 +545,37 @@ impl ProjectService {
             .limit(per_page)
             .offset(offset)
             .load::<ProjectQueryResult>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
+        // Bulk counts to avoid N+1
+        use diesel::dsl::count_star;
+        let project_ids: Vec<uuid::Uuid> = projects_with_owner.iter().map(|p| p.project_id).collect();
+
+        let job_counts: Vec<(uuid::Uuid, i64)> = reconciliation_jobs::table
+            .filter(reconciliation_jobs::project_id.eq_any(&project_ids))
+            .group_by(reconciliation_jobs::project_id)
+            .select((reconciliation_jobs::project_id, count_star()))
+            .load::<(uuid::Uuid, i64)>(&mut conn)
+            .map_err(|e| {
+                log::warn!("Failed to load job counts for projects: {}", e);
+                AppError::Database(e)
+            })?;
+        let job_count_map: std::collections::HashMap<uuid::Uuid, i64> = job_counts.into_iter().collect();
+
+        let data_source_counts: Vec<(uuid::Uuid, i64)> = data_sources::table
+            .filter(data_sources::project_id.eq_any(&project_ids))
+            .group_by(data_sources::project_id)
+            .select((data_sources::project_id, count_star()))
+            .load::<(uuid::Uuid, i64)>(&mut conn)
+            .map_err(|e| {
+                log::warn!("Failed to load data source counts for projects: {}", e);
+                AppError::Database(e)
+            })?;
+        let data_source_count_map: std::collections::HashMap<uuid::Uuid, i64> = data_source_counts.into_iter().collect();
+
         let project_infos = projects_with_owner
             .into_iter()
             .map(|result| {
-                // Get job count for this project
-                let job_count = reconciliation_jobs::table
-                    .filter(reconciliation_jobs::project_id.eq(result.project_id))
-                    .count()
-                    .get_result::<i64>(&mut conn)
-                    .unwrap_or(0);
-                
-                // Get data source count for this project
-                let data_source_count = data_sources::table
-                    .filter(data_sources::project_id.eq(result.project_id))
-                    .count()
-                    .get_result::<i64>(&mut conn)
-                    .unwrap_or(0);
-                
                 ProjectInfo {
                     id: result.project_id,
                     name: result.project_name,
@@ -565,8 +586,8 @@ impl ProjectService {
                     settings: result.settings,
                     created_at: result.created_at,
                     updated_at: result.updated_at,
-                    job_count,
-                    data_source_count,
+                    job_count: job_count_map.get(&result.project_id).copied().unwrap_or(0),
+                    data_source_count: data_source_count_map.get(&result.project_id).copied().unwrap_or(0),
                     last_activity: None,
                 }
             })
@@ -597,7 +618,7 @@ impl ProjectService {
             )
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get projects with additional info
         let projects_with_info = projects::table
@@ -621,27 +642,54 @@ impl ProjectService {
             .limit(per_page)
             .offset(offset)
             .load::<ProjectQueryResult>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
-        let project_infos = projects_with_info
+        // OPTIMIZED: Get counts for all projects in 2 queries instead of N+1 queries
+        use diesel::dsl::count_star;
+        use crate::monitoring::metrics::DbQueryTimer;
+        
+        let _timer = DbQueryTimer::start("/api/projects", "search", "projects");
+        
+        // Get all project IDs
+        let project_ids: Vec<uuid::Uuid> = projects_with_info.iter().map(|p| p.project_id).collect();
+        
+        // Get job counts for all projects in one query
+        let job_counts: Vec<(uuid::Uuid, i64)> = reconciliation_jobs::table
+            .filter(reconciliation_jobs::project_id.eq_any(&project_ids))
+            .group_by(reconciliation_jobs::project_id)
+            .select((reconciliation_jobs::project_id, count_star()))
+            .load::<(uuid::Uuid, i64)>(&mut conn)
+            .map_err(|e| {
+                log::warn!("Failed to load job counts for projects: {}", e);
+                AppError::Database(e)
+            })?;
+        
+        // Create lookup map
+        let job_count_map: std::collections::HashMap<uuid::Uuid, i64> = 
+            job_counts.into_iter().collect();
+        
+        // Get data source counts for all projects in one query
+        let data_source_counts: Vec<(uuid::Uuid, i64)> = data_sources::table
+            .filter(data_sources::project_id.eq_any(&project_ids))
+            .group_by(data_sources::project_id)
+            .select((data_sources::project_id, count_star()))
+            .load::<(uuid::Uuid, i64)>(&mut conn)
+            .map_err(|e| {
+                log::warn!("Failed to load data source counts for projects: {}", e);
+                AppError::Database(e)
+            })?;
+        
+        // Create lookup map
+        let data_source_count_map: std::collections::HashMap<uuid::Uuid, i64> = 
+            data_source_counts.into_iter().collect();
+        
+        // Build project infos with counts from maps
+        let project_infos: Vec<ProjectInfo> = projects_with_info
             .into_iter()
             .map(|result| {
-                let id = result.project_id;
-                // Get counts separately for each project
-                let job_count = reconciliation_jobs::table
-                    .filter(reconciliation_jobs::project_id.eq(id))
-                    .count()
-                    .get_result::<i64>(&mut conn)
-                    .map_err(|e| AppError::Database(e))
-                    .unwrap_or(0);
-                    
-                let data_source_count = data_sources::table
-                    .filter(data_sources::project_id.eq(id))
-                    .count()
-                    .get_result::<i64>(&mut conn)
-                    .map_err(|e| AppError::Database(e))
-                    .unwrap_or(0);
-
+                let job_count = *job_count_map.get(&result.project_id).unwrap_or(&0);
+                let data_source_count = *data_source_count_map.get(&result.project_id).unwrap_or(&0);
+                
                 ProjectInfo {
                     id: result.project_id,
                     name: result.project_name,
@@ -675,38 +723,38 @@ impl ProjectService {
         let total_projects = projects::table
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get projects by status
         let active_projects = projects::table
             .filter(projects::status.eq("active"))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let inactive_projects = projects::table
             .filter(projects::status.eq("inactive"))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let archived_projects = projects::table
             .filter(projects::status.eq("archived"))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get total jobs
         let total_jobs = reconciliation_jobs::table
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get total data sources
         let total_data_sources = data_sources::table
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get recent projects with simplified query
         let recent_projects = projects::table
@@ -725,7 +773,7 @@ impl ProjectService {
             .order(projects::created_at.desc())
             .limit(5)
             .load::<ProjectQueryResult>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get counts separately for each project
         let mut recent_project_infos = Vec::new();
@@ -734,13 +782,13 @@ impl ProjectService {
                 .filter(reconciliation_jobs::project_id.eq(result.project_id))
                 .count()
                 .get_result::<i64>(&mut conn)
-                .map_err(|e| AppError::Database(e))?;
+                .map_err(AppError::Database)?;
                 
             let data_source_count = data_sources::table
                 .filter(data_sources::project_id.eq(result.project_id))
                 .count()
                 .get_result::<i64>(&mut conn)
-                .map_err(|e| AppError::Database(e))?;
+                .map_err(AppError::Database)?;
             
             recent_project_infos.push(ProjectInfo {
                 id: result.project_id,
@@ -813,7 +861,7 @@ impl ProjectService {
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .get_result::<JobStats>(&mut conn)
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(AppError::Database)?;
         
         // Get file statistics
         let file_stats = diesel::sql_query(
@@ -827,7 +875,7 @@ impl ProjectService {
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .get_result::<FileStats>(&mut conn)
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(AppError::Database)?;
         
         // Get reconciliation record statistics
         let record_stats = diesel::sql_query(
@@ -841,7 +889,7 @@ impl ProjectService {
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .get_result::<RecordStats>(&mut conn)
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(AppError::Database)?;
         
         // Get recent activity
         let recent_activity = diesel::sql_query(
@@ -865,7 +913,7 @@ impl ProjectService {
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .load::<RecentActivity>(&mut conn)
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(AppError::Database)?;
         
         // Get monthly job trends
         let monthly_trends = diesel::sql_query(
@@ -881,7 +929,7 @@ impl ProjectService {
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .load::<MonthlyTrend>(&mut conn)
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(AppError::Database)?;
         
         Ok(ProjectAnalytics {
             project,
@@ -944,7 +992,7 @@ impl ProjectService {
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .get_result::<PerformanceData>(&mut conn)
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(AppError::Database)?;
         
         // Get file processing performance
         let file_performance = diesel::sql_query(
@@ -959,7 +1007,7 @@ impl ProjectService {
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .get_result::<FilePerformanceData>(&mut conn)
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(AppError::Database)?;
         
         Ok(ProjectPerformance {
             job_performance: JobPerformance {
@@ -1017,7 +1065,7 @@ impl ProjectService {
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .load::<CollaboratorData>(&mut conn)
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(AppError::Database)?;
 
         Ok(collaborators.into_iter().map(|collaborator| {
             ProjectCollaborator {
@@ -1085,7 +1133,7 @@ impl ProjectService {
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .bind::<diesel::sql_types::BigInt, _>(limit)
         .load::<ActivityData>(&mut conn)
-        .map_err(|e| AppError::Database(e))?;
+        .map_err(AppError::Database)?;
 
         Ok(activities.into_iter().map(|activity| {
             ProjectActivity {

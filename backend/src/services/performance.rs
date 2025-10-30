@@ -219,18 +219,72 @@ impl PerformanceService {
     pub async fn get_prometheus_metrics(&self) -> String {
         let encoder = TextEncoder::new();
         let metric_families = self.registry.gather();
-        encoder.encode_to_string(&metric_families).unwrap()
+        encoder.encode_to_string(&metric_families)
+            .unwrap_or_else(|e| {
+                log::error!("Failed to encode Prometheus metrics: {}", e);
+                "# Error encoding metrics\n".to_string()
+            })
     }
     
     fn get_memory_usage(&self) -> f64 {
-        // This would integrate with system memory monitoring
-        // For now, return a placeholder value
+        // Linux implementation using /proc/meminfo; returns fraction used (0.0 - 1.0)
+        #[cfg(target_os = "linux")]
+        {
+            if let Ok(content) = std::fs::read_to_string("/proc/meminfo") {
+                let mut mem_total_kb: u64 = 0;
+                let mut mem_available_kb: u64 = 0;
+                for line in content.lines() {
+                    if line.starts_with("MemTotal:") {
+                        if let Some(v) = line.split_whitespace().nth(1) { mem_total_kb = v.parse().unwrap_or(0); }
+                    } else if line.starts_with("MemAvailable:") {
+                        if let Some(v) = line.split_whitespace().nth(1) { mem_available_kb = v.parse().unwrap_or(0); }
+                    }
+                }
+                if mem_total_kb > 0 {
+                    let used = mem_total_kb.saturating_sub(mem_available_kb) as f64;
+                    return (used / mem_total_kb as f64).clamp(0.0, 1.0);
+                }
+            }
+        }
         0.0
     }
     
     fn get_cpu_usage(&self) -> f64 {
-        // This would integrate with system CPU monitoring
-        // For now, return a placeholder value
+        // Approximate CPU utilization using deltas from /proc/stat first line.
+        // Stores last sample in a static mutex to compute deltas across calls.
+        lazy_static::lazy_static! {
+            static ref CPU_LAST_SAMPLE: std::sync::Mutex<Option<(u64, u64)>> = std::sync::Mutex::new(None);
+        }
+        #[cfg(target_os = "linux")]
+        {
+            if let Ok(content) = std::fs::read_to_string("/proc/stat") {
+                if let Some(first_line) = content.lines().next() {
+                    if first_line.starts_with("cpu ") {
+                        let mut parts = first_line.split_whitespace();
+                        let _cpu = parts.next(); // "cpu"
+                        // user nice system idle iowait irq softirq steal guest guest_nice
+                        let vals: Vec<u64> = parts.take(10).filter_map(|s| s.parse::<u64>().ok()).collect();
+                        if vals.len() >= 4 {
+                            let idle = vals[3] + vals.get(4).copied().unwrap_or(0); // idle + iowait
+                            let total: u64 = vals.iter().sum();
+                            let mut last = CPU_LAST_SAMPLE.lock().unwrap_or_else(|e| {
+                                log::error!("CPU_LAST_SAMPLE mutex poisoned: {}", e);
+                                e.into_inner()
+                            });
+                            let usage = if let Some((last_total, last_idle)) = *last {
+                                let dt = total.saturating_sub(last_total);
+                                let di = idle.saturating_sub(last_idle);
+                                if dt > 0 { (1.0 - (di as f64 / dt as f64)).clamp(0.0, 1.0) } else { 0.0 }
+                            } else {
+                                0.0
+                            };
+                            *last = Some((total, idle));
+                            return usage;
+                        }
+                    }
+                }
+            }
+        }
         0.0
     }
     

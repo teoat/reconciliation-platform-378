@@ -55,7 +55,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
     // Subscribe to common events
     const messageSubscriptionId = wsClient.subscribe('message', (data: any) => {
       // Handle incoming messages
-      console.log('WebSocket message received:', data)
     })
 
     // Subscribe to errors

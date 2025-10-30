@@ -13,6 +13,7 @@ use std::sync::Arc;
 
 use crate::errors::{AppError, AppResult};
 use crate::services::auth::{AuthService, Claims};
+use crate::monitoring::SecurityMetrics;
 
 /// Authentication middleware configuration
 #[derive(Debug, Clone)]
@@ -41,23 +42,26 @@ impl Default for AuthMiddlewareConfig {
 pub struct AuthMiddlewareState {
     pub auth_service: Arc<AuthService>,
     pub config: AuthMiddlewareConfig,
+    pub security_metrics: Arc<SecurityMetrics>,
 }
 
 /// Authentication middleware
 pub struct AuthMiddleware {
     auth_service: Arc<AuthService>,
     config: AuthMiddlewareConfig,
+    security_metrics: Arc<SecurityMetrics>,
 }
 
 impl AuthMiddleware {
-    pub fn new(auth_service: Arc<AuthService>, config: AuthMiddlewareConfig) -> Self {
-        Self { auth_service, config }
+    pub fn new(auth_service: Arc<AuthService>, config: AuthMiddlewareConfig, security_metrics: Arc<SecurityMetrics>) -> Self {
+        Self { auth_service, config, security_metrics }
     }
 
-    pub fn with_auth_service(auth_service: Arc<AuthService>) -> Self {
+    pub fn with_auth_service(auth_service: Arc<AuthService>, security_metrics: Arc<SecurityMetrics>) -> Self {
         Self {
             auth_service,
             config: AuthMiddlewareConfig::default(),
+            security_metrics,
         }
     }
 }
@@ -77,6 +81,7 @@ where
         let state = AuthMiddlewareState {
             auth_service: self.auth_service.clone(),
             config: self.config.clone(),
+            security_metrics: self.security_metrics.clone(),
         };
 
         ok(AuthMiddlewareService {
@@ -119,6 +124,21 @@ where
             let token = match extract_token(&req, &state.config) {
                 Ok(token) => token,
                 Err(_) => {
+                    // Record security metric
+                    state.security_metrics.record_auth_denied();
+
+                    // Audit log for missing authentication
+                    let logger = crate::services::structured_logging::StructuredLogging::new("auth".to_string());
+                    let mut fields = std::collections::HashMap::new();
+                    fields.insert("event_type".to_string(), serde_json::json!("auth_denied"));
+                    fields.insert("reason".to_string(), serde_json::json!("missing_token"));
+                    fields.insert("path".to_string(), serde_json::json!(req.path()));
+                    fields.insert("method".to_string(), serde_json::json!(req.method().as_str()));
+                    fields.insert("ip_address".to_string(), serde_json::json!(get_client_ip_from_req(&req)));
+                    fields.insert("user_agent".to_string(), serde_json::json!(get_user_agent_from_req(&req)));
+                    fields.insert("timestamp".to_string(), serde_json::json!(chrono::Utc::now().to_rfc3339()));
+                    logger.log(crate::services::structured_logging::LogLevel::Warn, "Authentication denied: missing token", fields);
+
                     let (req, _payload) = req.into_parts();
                     return Ok(ServiceResponse::new(
                         req,
@@ -136,6 +156,21 @@ where
             let claims = match state.auth_service.validate_token(&token) {
                 Ok(claims) => claims,
                 Err(_) => {
+                    // Record security metric
+                    state.security_metrics.record_auth_denied();
+
+                    // Audit log for invalid token
+                    let logger = crate::services::structured_logging::StructuredLogging::new("auth".to_string());
+                    let mut fields = std::collections::HashMap::new();
+                    fields.insert("event_type".to_string(), serde_json::json!("auth_denied"));
+                    fields.insert("reason".to_string(), serde_json::json!("invalid_token"));
+                    fields.insert("path".to_string(), serde_json::json!(req.path()));
+                    fields.insert("method".to_string(), serde_json::json!(req.method().as_str()));
+                    fields.insert("ip_address".to_string(), serde_json::json!(get_client_ip_from_req(&req)));
+                    fields.insert("user_agent".to_string(), serde_json::json!(get_user_agent_from_req(&req)));
+                    fields.insert("timestamp".to_string(), serde_json::json!(chrono::Utc::now().to_rfc3339()));
+                    logger.log(crate::services::structured_logging::LogLevel::Warn, "Authentication denied: invalid token", fields);
+
                     let (req, _payload) = req.into_parts();
                     return Ok(ServiceResponse::new(
                         req,
@@ -150,19 +185,17 @@ where
             };
 
             // Check role permissions
-            if !state.config.allowed_roles.is_empty() {
-                if !state.config.allowed_roles.contains(&claims.role) {
-                    let (req, _payload) = req.into_parts();
-                    return Ok(ServiceResponse::new(
-                        req,
-                        HttpResponse::Forbidden()
-                            .json(serde_json::json!({
-                                "error": "Insufficient permissions",
-                                "message": "You don't have permission to access this resource"
-                            }))
-                            .map_into_boxed_body()
-                    ));
-                }
+            if !state.config.allowed_roles.is_empty() && !state.config.allowed_roles.contains(&claims.role) {
+                let (req, _payload) = req.into_parts();
+                return Ok(ServiceResponse::new(
+                    req,
+                    HttpResponse::Forbidden()
+                        .json(serde_json::json!({
+                            "error": "Insufficient permissions",
+                            "message": "You don't have permission to access this resource"
+                        }))
+                        .map_into_boxed_body()
+                ));
             }
 
             // Add claims to request extensions
@@ -429,4 +462,39 @@ where
             service.call(req).await
         })
     }
+}
+
+/// Helper function to get client IP address from ServiceRequest
+fn get_client_ip_from_req(req: &ServiceRequest) -> String {
+    // Try X-Forwarded-For header first (for proxies/load balancers)
+    if let Some(forwarded_for) = req.headers().get("X-Forwarded-For") {
+        if let Ok(forwarded_str) = forwarded_for.to_str() {
+            // Take the first IP if there are multiple
+            if let Some(first_ip) = forwarded_str.split(',').next() {
+                return first_ip.trim().to_string();
+            }
+        }
+    }
+
+    // Try X-Real-IP header
+    if let Some(real_ip) = req.headers().get("X-Real-IP") {
+        if let Ok(real_ip_str) = real_ip.to_str() {
+            return real_ip_str.to_string();
+        }
+    }
+
+    // Fall back to connection info
+    req.connection_info()
+        .remote_addr()
+        .unwrap_or("unknown")
+        .to_string()
+}
+
+/// Helper function to get user agent from ServiceRequest
+fn get_user_agent_from_req(req: &ServiceRequest) -> String {
+    req.headers()
+        .get("User-Agent")
+        .and_then(|ua| ua.to_str().ok())
+        .unwrap_or("unknown")
+        .to_string()
 }

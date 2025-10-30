@@ -1,12 +1,12 @@
 // Subscription and Monetization Models
 // Handles subscription tiers and billing
 
-use diesel::{Queryable, Insertable, Identifiable, AsChangeset};
+// use diesel::{Queryable, Insertable, Identifiable, AsChangeset};
 use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use crate::schema::subscriptions;
+// use crate::models::schema::subscriptions; // Table not yet created
 
 /// Subscription Tier
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -91,9 +91,10 @@ pub enum SubscriptionFeature {
     DedicatedSupport,
 }
 
-/// Subscription Model
-#[derive(Debug, Queryable, Identifiable, Serialize, AsChangeset)]
-#[diesel(table_name = subscriptions)]
+/// Subscription Model - Currently using mock data, database table not yet created
+// #[derive(Debug, Queryable, Identifiable, Serialize, AsChangeset)]
+// #[diesel(table_name = subscriptions)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Subscription {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -109,9 +110,9 @@ pub struct Subscription {
     pub updated_at: DateTime<Utc>,
 }
 
-/// New Subscription
-#[derive(Debug, Insertable, Deserialize)]
-#[diesel(table_name = subscriptions)]
+/// New Subscription - Currently using mock data, database table not yet created
+// #[derive(Debug, Insertable, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct NewSubscription {
     pub user_id: Uuid,
     pub tier: String,

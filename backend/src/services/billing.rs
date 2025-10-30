@@ -1,21 +1,56 @@
 // Billing Service - Handles subscription payments and invoicing
 // Integration with payment providers (Stripe)
 
-use std::sync::Arc;
-use tokio::sync::RwLock;
+
 use uuid::Uuid;
 use chrono::{DateTime, Utc, Duration};
 use crate::models::subscription::{Subscription, SubscriptionTier, UsageMetrics};
+// use stripe::{Client, CheckoutSession, CheckoutSessionCreateParams, Subscription as StripeSubscription};
+
+#[derive(Debug)]
+pub enum BillingError {
+    StripeError(String),
+    NotFound,
+    ValidationError(String),
+    NotImplemented,
+}
+
+impl std::fmt::Display for BillingError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            BillingError::StripeError(msg) => write!(f, "Stripe error: {}", msg),
+            BillingError::NotFound => write!(f, "Resource not found"),
+            BillingError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
+            BillingError::NotImplemented => write!(f, "Feature not implemented"),
+        }
+    }
+}
+
+impl std::error::Error for BillingError {}
+
+#[derive(Debug, Clone)]
+pub struct CheckoutSessionResponse {
+    pub session_id: String,
+    pub url: String,
+    pub expires_at: Option<DateTime<Utc>>,
+}
+use log::info;
 
 pub struct BillingService {
-    // In production, this would hold Stripe client
-    #[allow(dead_code)]
+    // stripe_client: Option<Client>,
     stripe_secret_key: String,
 }
 
 impl BillingService {
     pub fn new(stripe_secret_key: String) -> Self {
+        // let stripe_client = if !stripe_secret_key.is_empty() {
+        //     Some(Client::new(stripe_secret_key.clone()))
+        // } else {
+        //     None
+        // };
+
         Self {
+            // stripe_client,
             stripe_secret_key,
         }
     }
@@ -26,20 +61,25 @@ impl BillingService {
         user_id: Uuid,
         tier: SubscriptionTier,
         billing_cycle: &str, // "monthly" or "yearly"
-    ) -> Result<CheckoutSession, BillingError> {
+    ) -> Result<CheckoutSessionResponse, BillingError> {
         let amount = if billing_cycle == "yearly" {
             tier.price_per_year()
         } else {
             tier.price_per_month()
         };
 
-        // In production, this would create a Stripe checkout session
-        // For now, return a mock session
-        Ok(CheckoutSession {
-            session_id: format!("checkout_{}_{}", user_id, Uuid::new_v4()),
-            url: format!("https://checkout.example.com/session/{}", Uuid::new_v4()),
-            expires_at: Utc::now() + Duration::hours(24),
-        })
+        // Stub implementation - Stripe integration disabled
+        if !self.stripe_secret_key.is_empty() {
+            // Would integrate with Stripe here
+            Err(BillingError::NotImplemented)
+        } else {
+            // Mock session for development
+            Ok(CheckoutSessionResponse {
+                session_id: format!("checkout_{}_{}", user_id, Uuid::new_v4()),
+                url: format!("https://checkout.example.com/session/{}", Uuid::new_v4()),
+                expires_at: Some(Utc::now() + Duration::hours(24)),
+            })
+        }
     }
 
     /// Create or update subscription
@@ -50,28 +90,32 @@ impl BillingService {
         billing_cycle: &str,
         payment_method_id: Option<String>,
     ) -> Result<Subscription, BillingError> {
-        // In production, this would create a Stripe subscription
-        
-        let ends_at = if billing_cycle == "yearly" {
-            Some(Utc::now() + Duration::days(365))
+        if !self.stripe_secret_key.is_empty() {
+            // Would integrate with Stripe here
+            Err(BillingError::NotImplemented)
         } else {
-            Some(Utc::now() + Duration::days(30))
-        };
+            // Mock subscription for development
+            let ends_at = if billing_cycle == "yearly" {
+                Some(Utc::now() + Duration::days(365))
+            } else {
+                Some(Utc::now() + Duration::days(30))
+            };
 
-        Ok(Subscription {
-            id: Uuid::new_v4(),
-            user_id,
-            tier: format!("{:?}", tier),
-            status: "active".to_string(),
-            billing_cycle: billing_cycle.to_string(),
-            starts_at: Utc::now(),
-            ends_at,
-            cancel_at_period_end: false,
-            stripe_subscription_id: Some(format!("sub_{}", Uuid::new_v4())),
-            stripe_customer_id: Some(format!("cus_{}", Uuid::new_v4())),
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        })
+            Ok(Subscription {
+                id: Uuid::new_v4(),
+                user_id,
+                tier: format!("{:?}", tier),
+                status: "active".to_string(),
+                billing_cycle: billing_cycle.to_string(),
+                starts_at: Utc::now(),
+                ends_at,
+                cancel_at_period_end: false,
+                stripe_subscription_id: Some(format!("sub_{}", Uuid::new_v4())),
+                stripe_customer_id: Some(format!("cus_{}", Uuid::new_v4())),
+                created_at: Utc::now(),
+                updated_at: Utc::now(),
+            })
+        }
     }
 
     /// Cancel subscription
@@ -81,7 +125,7 @@ impl BillingService {
         immediately: bool,
     ) -> Result<(), BillingError> {
         // In production, this would cancel the Stripe subscription
-        println!("Cancelling subscription {} immediately: {}", subscription_id, immediately);
+        info!("Cancelling subscription {} immediately: {}", subscription_id, immediately);
         Ok(())
     }
 
@@ -99,7 +143,7 @@ impl BillingService {
         &self,
         user_id: Uuid,
     ) -> Result<UsageMetrics, BillingError> {
-        // Mock usage data
+        // Mock usage metrics - in production, this would query actual usage
         Ok(UsageMetrics {
             reconciliation_count: 45,
             reconciliation_limit: Some(100),
@@ -132,33 +176,7 @@ impl BillingService {
     }
 }
 
-#[derive(Debug)]
-pub enum BillingError {
-    NotFound,
-    PaymentFailed,
-    InvalidRequest,
-    NotImplemented,
-}
 
-impl std::fmt::Display for BillingError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            BillingError::NotFound => write!(f, "Resource not found"),
-            BillingError::PaymentFailed => write!(f, "Payment processing failed"),
-            BillingError::InvalidRequest => write!(f, "Invalid request"),
-            BillingError::NotImplemented => write!(f, "Not implemented"),
-        }
-    }
-}
-
-impl std::error::Error for BillingError {}
-
-#[derive(Debug)]
-pub struct CheckoutSession {
-    pub session_id: String,
-    pub url: String,
-    pub expires_at: DateTime<Utc>,
-}
 
 #[derive(Debug)]
 pub enum WebhookEvent {

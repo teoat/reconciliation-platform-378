@@ -7,6 +7,7 @@ use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
 use chrono::Utc;
+use log::info;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Notification {
@@ -124,7 +125,7 @@ impl NotificationService {
             for &websocket_id in user_subscribers {
                 // Send update to WebSocket
                 // This would integrate with the WebSocket service
-                println!("Broadcasting update to WebSocket: {}", websocket_id);
+                info!("Broadcasting update to WebSocket: {}", websocket_id);
             }
         }
     }
@@ -191,7 +192,7 @@ impl NotificationService {
             id: Uuid::new_v4().to_string(),
             user_id: user_id.to_string(),
             update_type: UpdateType::SystemAlert,
-            data: serde_json::to_value(notification).unwrap(),
+            data: serde_json::to_value(notification).unwrap_or(serde_json::Value::Null),
             timestamp: Utc::now().to_rfc3339(),
         };
         

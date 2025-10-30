@@ -3,10 +3,10 @@ use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
     Error, HttpMessage, HttpResponse, body::{MessageBody, BoxBody},
 };
-use futures::future::{LocalBoxFuture, Ready, ok};
+use futures::future::{LocalBoxFuture, Ready, ok, err};
 use futures::TryStreamExt;
 use std::rc::Rc;
-use crate::services::ValidationService;
+use crate::services::validation::ValidationService;
 use crate::errors::AppError;
 use serde_json::json;
 use std::collections::HashMap;
@@ -17,11 +17,11 @@ pub struct ValidationMiddleware<S> {
 }
 
 impl<S> ValidationMiddleware<S> {
-    pub fn new(service: Rc<S>) -> Self {
-        Self {
+    pub fn new(service: Rc<S>) -> Result<Self, regex::Error> {
+        Ok(Self {
             service,
-            validation_service: ValidationService::new(),
-        }
+            validation_service: ValidationService::new()?,
+        })
     }
 }
 
@@ -35,12 +35,15 @@ where
 {
     type Response = ServiceResponse<BoxBody>;
     type Error = Error;
-    type InitError = ();
+    type InitError = regex::Error;
     type Transform = ValidationMiddleware<S>;
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        ok(ValidationMiddleware::new(Rc::new(service)))
+        match ValidationMiddleware::new(Rc::new(service)) {
+            Ok(middleware) => ok(middleware),
+            Err(e) => err(e),
+        }
     }
 }
 
@@ -89,8 +92,10 @@ async fn validate_endpoint(
     method: &str,
     req: &mut ServiceRequest,
 ) -> Result<(), AppError> {
-    let project_update_regex = regex::Regex::new(r"^/api/projects/[^/]+$").unwrap();
-    let user_update_regex = regex::Regex::new(r"^/api/users/[^/]+$").unwrap();
+    let project_update_regex = regex::Regex::new(r"^/api/projects/[^/]+$")
+        .map_err(|e| AppError::Internal(format!("Invalid regex pattern: {}", e)))?;
+    let user_update_regex = regex::Regex::new(r"^/api/users/[^/]+$")
+        .map_err(|e| AppError::Internal(format!("Invalid regex pattern: {}", e)))?;
 
     match (method, path) {
         ("POST", "/api/auth/register") => {
@@ -306,7 +311,7 @@ async fn validate_create_job_request(
 
     // Validate confidence threshold
     if let Some(threshold) = body.get("confidence_threshold").and_then(|v| v.as_f64()) {
-        if threshold < 0.0 || threshold > 1.0 {
+        if !(0.0..=1.0).contains(&threshold) {
             return Err(AppError::Validation(
                 "Confidence threshold must be between 0.0 and 1.0".to_string()
             ));

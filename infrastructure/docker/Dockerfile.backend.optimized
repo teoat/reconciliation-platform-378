@@ -1,4 +1,8 @@
 # ============================================================================
+# SSOT: BACKEND DOCKERFILE (LOCKED)
+# This is the single source of truth for backend container builds.
+# Modify here only. Do not create alternate Dockerfiles.
+# ============================================================================
 # ULTIMATE OPTIMIZED MULTI-STAGE DOCKERFILE FOR RUST BACKEND
 # ============================================================================
 # Service Name: reconciliation-backend
@@ -10,19 +14,24 @@
 # ============================================================================
 # STAGE 1: Builder Stage - Full Compilation Environment
 # ============================================================================
-FROM rust:1.90-alpine AS builder
+FROM rust:1.90-bullseye AS builder
 
 # Install build dependencies in a single layer for optimal caching
-RUN apk add --no-cache --virtual .build-deps \
-    musl-dev \
-    pkgconfig \
-    openssl-dev \
-    openssl-libs-static \
-    postgresql-dev \
-    postgresql-libs \
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+    pkg-config \
+    build-essential \
+    libssl-dev \
+    libpq-dev \
     curl \
     ca-certificates \
-    && rm -rf /var/cache/apk/*
+    && rm -rf /var/lib/apt/lists/*
+
+# Build acceleration (sccache - optional, gracefully handle if install fails)
+# Install sccache first, then conditionally set RUSTC_WRAPPER
+RUN cargo install sccache --locked 2>&1 || echo "sccache install failed, building without cache" && \
+    mkdir -p /sccache
+# Only set RUSTC_WRAPPER if sccache is available (set in build steps conditionally)
+ENV SCCACHE_DIR=/sccache
 
 # Set working directory
 WORKDIR /app
@@ -35,52 +44,74 @@ RUN mkdir -p src && \
     echo "fn main() {}" > src/main.rs
 
 # Pre-compile dependencies (this layer will be cached if Cargo files don't change)
-RUN cargo build --release --target x86_64-unknown-linux-musl 2>/dev/null || \
-    cargo build --release && \
+# Use sccache only if it's installed, otherwise build normally
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/app/target \
+    --mount=type=cache,target=/sccache \
+    (if command -v sccache >/dev/null 2>&1; then \
+        export RUSTC_WRAPPER=sccache && cargo build --release --locked || cargo build --release; \
+    else \
+        cargo build --release --locked || cargo build --release; \
+    fi) && \
     rm -rf src
 
-# Copy actual source code
-COPY backend/src ./src
-COPY backend/migrations ./migrations
+ # Copy actual source code
+ COPY backend/src ./src
+ COPY backend/migrations ./migrations
 
 # Build the actual application with maximum optimizations
-RUN touch src/main.rs && \
-    cargo build --release --target x86_64-unknown-linux-musl 2>/dev/null || \
-    cargo build --release
+# Use sccache only if it's installed, otherwise build normally
+# IMPORTANT: copy the resulting binary out of the cache-mounted target dir
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/local/cargo/git \
+    --mount=type=cache,target=/app/target \
+    --mount=type=cache,target=/sccache \
+    (if command -v sccache >/dev/null 2>&1; then \
+        export RUSTC_WRAPPER=sccache && cargo build --release --locked -p reconciliation-backend; \
+    else \
+        cargo build --release --locked -p reconciliation-backend; \
+    fi) && \
+    (if [ -f target/release/reconciliation-backend ]; then \
+        cp target/release/reconciliation-backend /app/reconciliation-backend; \
+     elif [ -f target/release/bin/reconciliation-backend ]; then \
+        cp target/release/bin/reconciliation-backend /app/reconciliation-backend; \
+     else \
+        echo "FATAL: built binary not found in target/release" && exit 1; \
+     fi) && \
+    strip /app/reconciliation-backend || true && \
+    chmod +x /app/reconciliation-backend
 
-# Strip the binary to reduce size (~30-40% reduction)
-RUN strip target/x86_64-unknown-linux-musl/release/reconciliation-backend 2>/dev/null || \
-    strip target/release/reconciliation-backend
+# Verify binary exists at the known location and show size
+RUN ls -lh /app/reconciliation-backend
 
 # ============================================================================
 # STAGE 2: Runtime Stage - Minimal Production Image
 # ============================================================================
-FROM alpine:latest AS runtime
+FROM debian:bullseye-slim AS runtime
 
 LABEL maintainer="Reconciliation Platform Team"
 LABEL version="1.0.0"
 LABEL description="Optimized Rust Backend for Reconciliation Platform"
 
-# Install ONLY runtime dependencies (minimal footprint)
-RUN apk add --no-cache \
+ # Install ONLY runtime dependencies (minimal footprint)
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ca-certificates \
-    libssl3 \
-    libcrypto3 \
-    libpq \
     curl \
     tzdata \
-    && rm -rf /var/cache/apk/*
+    libssl1.1 \
+    libpq5 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for security hardening
-RUN addgroup -g 1001 -S appgroup && \
-    adduser -S -u 1001 -G appgroup -s /bin/sh appuser
+RUN groupadd -g 1001 appgroup && \
+    useradd -m -u 1001 -g appgroup -s /bin/sh appuser
 
 # Set working directory
 WORKDIR /app
 
-# Copy binary from builder stage (only the compiled artifact)
-COPY --from=builder --chown=appuser:appgroup /app/target/x86_64-unknown-linux-musl/release/reconciliation-backend ./reconciliation-backend 2>/dev/null || \
-COPY --from=builder --chown=appuser:appgroup /app/target/release/reconciliation-backend ./reconciliation-backend
+ # Copy binary from builder stage (from known location)
+COPY --from=builder --chown=appuser:appgroup /app/reconciliation-backend ./reconciliation-backend
 
 # Copy migrations only (no source code in final image)
 COPY --from=builder --chown=appuser:appgroup /app/migrations ./migrations

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
+import react from '@vitejs/plugin-react-swc'
 import { resolve } from 'path'
 
 // https://vitejs.dev/config/
@@ -35,21 +35,12 @@ export default defineConfig({
     },
   },
   build: {
-    typecheck: false,
+    // typecheck: false, // TypeScript checking is handled separately
     outDir: 'dist',
     sourcemap: false, // Disable sourcemaps in production for better performance
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-        drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug'],
-        passes: 2, // Multiple passes for better compression
-      },
-      mangle: {
-        safari10: true, // Fix Safari 10 issues
-      },
-    },
+    minify: 'esbuild', // Use esbuild for faster builds (switch to terser for better compression if needed)
+    target: 'es2020', // Optimize for modern browsers
+
     rollupOptions: {
       output: {
         // Optimize chunk splitting for better caching

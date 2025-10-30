@@ -10,6 +10,7 @@ use tokio::fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use log::{info, error};
 
 /// Backup configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -313,7 +314,7 @@ impl BackupService {
             if let Some(metadata) = metadata_store.remove(&backup_id) {
                 // Delete from storage
                 if let Err(e) = self.delete_backup_from_storage(&metadata).await {
-                    eprintln!("Failed to delete backup {} from storage: {}", backup_id, e);
+                    error!("Failed to delete backup {} from storage: {}", backup_id, e);
                 }
                 deleted_count += 1;
             }
@@ -324,8 +325,8 @@ impl BackupService {
 
     /// Get backup statistics
     pub async fn get_backup_stats(&self) -> AppResult<BackupStats> {
-        let stats = self.backup_stats.read().await.clone();
-        Ok(stats)
+        let stats = self.backup_stats.read().await;
+        Ok(stats.clone())
     }
 
     /// Perform the actual backup
@@ -448,35 +449,35 @@ impl BackupService {
     /// Restore full backup
     async fn restore_full_backup(&self, data: &[u8]) -> AppResult<()> {
         // In a real implementation, this would restore the full database
-        println!("Restoring full backup with {} bytes", data.len());
+        info!("Restoring full backup with {} bytes", data.len());
         Ok(())
     }
 
     /// Restore incremental backup
     async fn restore_incremental_backup(&self, data: &[u8]) -> AppResult<()> {
         // In a real implementation, this would apply incremental changes
-        println!("Restoring incremental backup with {} bytes", data.len());
+        info!("Restoring incremental backup with {} bytes", data.len());
         Ok(())
     }
 
     /// Restore differential backup
     async fn restore_differential_backup(&self, data: &[u8]) -> AppResult<()> {
         // In a real implementation, this would apply differential changes
-        println!("Restoring differential backup with {} bytes", data.len());
+        info!("Restoring differential backup with {} bytes", data.len());
         Ok(())
     }
 
     /// Restore filesystem backup
     async fn restore_filesystem_backup(&self, data: &[u8]) -> AppResult<()> {
         // In a real implementation, this would restore filesystem
-        println!("Restoring filesystem backup with {} bytes", data.len());
+        info!("Restoring filesystem backup with {} bytes", data.len());
         Ok(())
     }
 
     /// Restore configuration backup
     async fn restore_config_backup(&self, data: &[u8]) -> AppResult<()> {
         // In a real implementation, this would restore configuration
-        println!("Restoring configuration backup with {} bytes", data.len());
+        info!("Restoring configuration backup with {} bytes", data.len());
         Ok(())
     }
 
@@ -490,15 +491,15 @@ impl BackupService {
             }
             StorageConfig::S3 { .. } => {
                 // In a real implementation, this would upload to S3
-                println!("Uploading backup {} to S3", backup_id);
+                info!("Uploading backup {} to S3", backup_id);
             }
             StorageConfig::GCS { .. } => {
                 // In a real implementation, this would upload to GCS
-                println!("Uploading backup {} to GCS", backup_id);
+                info!("Uploading backup {} to GCS", backup_id);
             }
             StorageConfig::Azure { .. } => {
                 // In a real implementation, this would upload to Azure
-                println!("Uploading backup {} to Azure", backup_id);
+                info!("Uploading backup {} to Azure", backup_id);
             }
         }
         
@@ -538,15 +539,15 @@ impl BackupService {
             }
             StorageConfig::S3 { .. } => {
                 // In a real implementation, this would delete from S3
-                println!("Deleting backup {} from S3", metadata.id);
+                info!("Deleting backup {} from S3", metadata.id);
             }
             StorageConfig::GCS { .. } => {
                 // In a real implementation, this would delete from GCS
-                println!("Deleting backup {} from GCS", metadata.id);
+                info!("Deleting backup {} from GCS", metadata.id);
             }
             StorageConfig::Azure { .. } => {
                 // In a real implementation, this would delete from Azure
-                println!("Deleting backup {} from Azure", metadata.id);
+                info!("Deleting backup {} from Azure", metadata.id);
             }
         }
         
@@ -684,19 +685,19 @@ impl DisasterRecoveryService {
             }
             RecoveryStepType::RestartService => {
                 // In a real implementation, this would restart the service
-                println!("Restarting service: {}", step.name);
+                info!("Restarting service: {}", step.name);
             }
             RecoveryStepType::RunCommand => {
                 // In a real implementation, this would run the command
-                println!("Running command: {}", step.name);
+                info!("Running command: {}", step.name);
             }
             RecoveryStepType::WaitForCondition => {
                 // In a real implementation, this would wait for the condition
-                println!("Waiting for condition: {}", step.name);
+                info!("Waiting for condition: {}", step.name);
             }
             RecoveryStepType::SendNotification => {
                 // In a real implementation, this would send notification
-                println!("Sending notification: {}", step.name);
+                info!("Sending notification: {}", step.name);
             }
         }
 

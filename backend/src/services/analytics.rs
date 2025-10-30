@@ -139,10 +139,15 @@ pub struct MonthlyJobCount {
 impl AnalyticsService {
     pub fn new(db: Database) -> Self {
         // Initialize cache with Redis URL from environment
-        let redis_url = std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
-        let cache = Arc::new(MultiLevelCache::new(&redis_url).unwrap_or_else(|_| {
-            // Fallback to in-memory only cache if Redis fails
-            MultiLevelCache::new("redis://localhost:6379").unwrap()
+        let redis_url = std::env::var("REDIS_URL").unwrap_or_else(|_| {
+            log::warn!("REDIS_URL not set, using default localhost for development");
+            "redis://localhost:6379".to_string()
+        });
+        let cache = Arc::new(MultiLevelCache::new(&redis_url).unwrap_or_else(|e| {
+            log::error!("Failed to initialize cache with Redis URL {}, falling back to localhost: {}", redis_url, e);
+            // Fallback to localhost only in development scenarios
+            MultiLevelCache::new("redis://localhost:6379")
+                .expect("Failed to create fallback cache - Redis connection required")
         }));
         
         Self { db, cache }
@@ -162,54 +167,54 @@ impl AnalyticsService {
         let total_users = users::table
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let total_projects = projects::table
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let total_reconciliation_jobs = reconciliation_jobs::table
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let total_data_sources = data_sources::table
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get job status counts
         let active_jobs = reconciliation_jobs::table
             .filter(reconciliation_jobs::status.eq("running"))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let completed_jobs = reconciliation_jobs::table
             .filter(reconciliation_jobs::status.eq("completed"))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let failed_jobs = reconciliation_jobs::table
             .filter(reconciliation_jobs::status.eq("failed"))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get match counts
         let total_matches = reconciliation_results::table
             .filter(reconciliation_results::confidence_score.ge(diesel::dsl::sql("0.8")))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let total_unmatched = reconciliation_results::table
             .filter(reconciliation_results::confidence_score.lt(diesel::dsl::sql("0.8")))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get recent activity
         let recent_activity = self.get_recent_activity(&mut conn).await?;
@@ -253,7 +258,7 @@ impl AnalyticsService {
         let project = projects::table
             .filter(projects::id.eq(project_id))
             .first::<Project>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let project_name = project.name;
         
@@ -262,28 +267,28 @@ impl AnalyticsService {
             .filter(reconciliation_jobs::project_id.eq(project_id))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let completed_jobs = reconciliation_jobs::table
             .filter(reconciliation_jobs::project_id.eq(project_id))
             .filter(reconciliation_jobs::status.eq("completed"))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let failed_jobs = reconciliation_jobs::table
             .filter(reconciliation_jobs::project_id.eq(project_id))
             .filter(reconciliation_jobs::status.eq("failed"))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get data source count
         let total_data_sources = data_sources::table
             .filter(data_sources::project_id.eq(project_id))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get match counts
         let total_matches = reconciliation_results::table
@@ -292,7 +297,7 @@ impl AnalyticsService {
             .filter(reconciliation_results::confidence_score.ge(diesel::dsl::sql("0.8")))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let total_unmatched = reconciliation_results::table
             .inner_join(reconciliation_jobs::table)
@@ -300,7 +305,7 @@ impl AnalyticsService {
             .filter(reconciliation_results::confidence_score.lt(diesel::dsl::sql("0.8")))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get average confidence score
         let avg_confidence = reconciliation_results::table
@@ -308,7 +313,7 @@ impl AnalyticsService {
             .filter(reconciliation_jobs::project_id.eq(project_id))
             .select(diesel::dsl::sql::<diesel::sql_types::Nullable<diesel::sql_types::Double>>("AVG(confidence_score::float8)"))
             .first::<Option<f64>>(&mut conn)
-            .map_err(|e| AppError::Database(e))?
+            .map_err(AppError::Database)?
             .unwrap_or(0.0);
         
         // Get last activity
@@ -317,7 +322,7 @@ impl AnalyticsService {
             .order(reconciliation_jobs::updated_at.desc())
             .select(reconciliation_jobs::updated_at)
             .first::<DateTime<Utc>>(&mut conn)
-            .map_err(|e| AppError::Database(e))
+            .map_err(AppError::Database)
             .ok();
         
         // Create project stats
@@ -348,7 +353,7 @@ impl AnalyticsService {
         let user = users::table
             .filter(users::id.eq(user_id))
             .first::<User>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let user_email = user.email;
         
@@ -357,14 +362,14 @@ impl AnalyticsService {
             .filter(audit_logs::user_id.eq(user_id))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get projects created
         let projects_created = projects::table
             .filter(projects::owner_id.eq(user_id))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get jobs created
         let jobs_created = reconciliation_jobs::table
@@ -372,7 +377,7 @@ impl AnalyticsService {
             .filter(projects::owner_id.eq(user_id))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get files uploaded
         let files_uploaded = data_sources::table
@@ -380,7 +385,7 @@ impl AnalyticsService {
             .filter(projects::owner_id.eq(user_id))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get last activity
         let last_activity = audit_logs::table
@@ -388,7 +393,7 @@ impl AnalyticsService {
             .order(audit_logs::created_at.desc())
             .select(audit_logs::created_at)
             .first::<DateTime<Utc>>(&mut conn)
-            .map_err(|e| AppError::Database(e))
+            .map_err(AppError::Database)
             .ok();
         
         // Get activity by day (last 30 days)
@@ -414,55 +419,55 @@ impl AnalyticsService {
         let total_jobs = reconciliation_jobs::table
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let completed_jobs = reconciliation_jobs::table
             .filter(reconciliation_jobs::status.eq("completed"))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let failed_jobs = reconciliation_jobs::table
             .filter(reconciliation_jobs::status.eq("failed"))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let pending_jobs = reconciliation_jobs::table
             .filter(reconciliation_jobs::status.eq("pending"))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let running_jobs = reconciliation_jobs::table
             .filter(reconciliation_jobs::status.eq("running"))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get record counts from reconciliation results
         let total_records_processed = reconciliation_results::table
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let total_matches = reconciliation_results::table
             .filter(reconciliation_results::confidence_score.ge(diesel::dsl::sql("0.8")))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let total_unmatched = reconciliation_results::table
             .filter(reconciliation_results::confidence_score.lt(diesel::dsl::sql("0.8")))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get average confidence score
         let avg_confidence = reconciliation_results::table
             .select(diesel::dsl::sql::<diesel::sql_types::Nullable<diesel::sql_types::Double>>("AVG(confidence_score::float8)"))
             .first::<Option<f64>>(&mut conn)
-            .map_err(|e| AppError::Database(e))?
+            .map_err(AppError::Database)?
             .unwrap_or(0.0);
         
         // Get average processing time from completed jobs
@@ -471,7 +476,7 @@ impl AnalyticsService {
             .filter(reconciliation_jobs::processing_time_ms.is_not_null())
             .select(diesel::dsl::sql::<diesel::sql_types::Nullable<diesel::sql_types::Double>>("AVG(processing_time_ms)"))
             .first::<Option<f64>>(&mut conn)
-            .map_err(|e| AppError::Database(e))?
+            .map_err(AppError::Database)?
             .unwrap_or(0.0);
         
         // Get jobs by status
@@ -511,7 +516,7 @@ impl AnalyticsService {
                 audit_logs::old_values,
             ))
             .load::<ActivityItemQueryResult>(conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let activity_items: Vec<ActivityItem> = activities
             .into_iter()
@@ -538,7 +543,7 @@ impl AnalyticsService {
             .filter(reconciliation_jobs::processing_time_ms.is_not_null())
             .select(diesel::dsl::sql::<diesel::sql_types::Nullable<diesel::sql_types::Double>>("AVG(processing_time_ms)"))
             .first::<Option<f64>>(conn)
-            .map_err(|e| AppError::Database(e))?
+            .map_err(AppError::Database)?
             .unwrap_or(0.0);
         
         // Get total processing time
@@ -547,27 +552,27 @@ impl AnalyticsService {
             .filter(reconciliation_jobs::processing_time_ms.is_not_null())
             .select(diesel::dsl::sql::<diesel::sql_types::Nullable<diesel::sql_types::BigInt>>("SUM(processing_time_ms)"))
             .first::<Option<i64>>(conn)
-            .map_err(|e| AppError::Database(e))?
+            .map_err(AppError::Database)?
             .unwrap_or(0);
         
         // Get average confidence score
         let avg_confidence = reconciliation_results::table
             .select(diesel::dsl::sql::<diesel::sql_types::Nullable<diesel::sql_types::Double>>("AVG(confidence_score::float8)"))
             .first::<Option<f64>>(conn)
-            .map_err(|e| AppError::Database(e))?
+            .map_err(AppError::Database)?
             .unwrap_or(0.0);
         
         // Get match rate
         let total_results = reconciliation_results::table
             .count()
             .get_result::<i64>(conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let matches = reconciliation_results::table
             .filter(reconciliation_results::confidence_score.ge(diesel::dsl::sql("0.8")))
             .count()
             .get_result::<i64>(conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let match_rate = if total_results > 0 {
             matches as f64 / total_results as f64
@@ -580,7 +585,7 @@ impl AnalyticsService {
             .filter(reconciliation_jobs::status.eq("completed"))
             .count()
             .get_result::<i64>(conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let throughput_per_hour = if completed_jobs > 0 {
             completed_jobs as f64 / 24.0 // Assuming 24 hours
@@ -607,7 +612,7 @@ impl AnalyticsService {
             .filter(audit_logs::created_at.ge(thirty_days_ago))
             .select(diesel::dsl::sql::<diesel::sql_types::Date>("DATE(created_at)"))
             .load::<chrono::NaiveDate>(conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Group by date and count
         let mut activity_map: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
@@ -634,7 +639,7 @@ impl AnalyticsService {
             .group_by(reconciliation_jobs::status)
             .select((reconciliation_jobs::status, diesel::dsl::count(reconciliation_jobs::id)))
             .load::<(String, i64)>(conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         let status_counts = status_counts
             .into_iter()
@@ -653,7 +658,7 @@ impl AnalyticsService {
             .filter(reconciliation_jobs::created_at.ge(twelve_months_ago))
             .select(diesel::dsl::sql::<diesel::sql_types::Text>("TO_CHAR(created_at, 'YYYY-MM')"))
             .load::<String>(conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Group by month and count
         let mut month_map: std::collections::HashMap<String, i64> = std::collections::HashMap::new();

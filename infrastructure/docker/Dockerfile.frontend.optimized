@@ -1,4 +1,8 @@
 # ============================================================================
+# SSOT: FRONTEND DOCKERFILE (LOCKED)
+# This is the single source of truth for frontend container builds.
+# Modify here only. Do not create alternate Dockerfiles.
+# ============================================================================
 # ULTIMATE OPTIMIZED MULTI-STAGE DOCKERFILE FOR REACT FRONTEND
 # ============================================================================
 # Service Name: reconciliation-frontend

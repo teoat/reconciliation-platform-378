@@ -24,6 +24,8 @@ use reconciliation_backend::models::{User, Project, ReconciliationJob, DataSourc
 mod test_utils;
 use test_utils::*;
 
+mod api_tests;
+
 /// Test suite for AuthService
 #[cfg(test)]
 mod auth_service_tests {

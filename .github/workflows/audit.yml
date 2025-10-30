@@ -1,0 +1,65 @@
+name: Audit & Verify
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-
+
+      - name: Install cargo-audit
+        run: cargo install cargo-audit || true
+
+      - name: Frontend install
+        run: npm ci
+
+      - name: Security audit
+        run: |
+          bash scripts/security_audit.sh
+
+      - name: Backend build
+        run: |
+          cd backend
+          cargo build --locked
+
+      - name: Frontend build
+        run: |
+          npm run build
+
+      - name: Unit tests (frontend)
+        run: npm test -- --coverage --ci
+
+      - name: Upload coverage (frontend)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-frontend
+          path: coverage
+
+

@@ -12,6 +12,7 @@ pub struct FileUploadResult {
     pub filename: String,
     pub size: i64,
     pub status: String,
+    pub project_id: Uuid,
 }
 
 /// Processing result

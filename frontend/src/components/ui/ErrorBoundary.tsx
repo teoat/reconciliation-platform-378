@@ -1,6 +1,8 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { AlertCircle, RefreshCw, Home } from 'lucide-react'
 import Button from './Button'
+import { errorContextService } from '../../services/errorContextService'
+import { errorTranslationService } from '../../services/errorTranslationService'
 
 interface Props {
   children: ReactNode
@@ -12,6 +14,7 @@ interface State {
   hasError: boolean
   error: Error | null
   errorInfo: ErrorInfo | null
+  translatedError?: any
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -37,6 +40,41 @@ export class ErrorBoundary extends Component<Props, State> {
       error,
       errorInfo
     })
+
+    // Track error with context service
+    try {
+      errorContextService.trackError(error, {
+        component: 'ErrorBoundary',
+        severity: 'high',
+        stack: error.stack,
+        metadata: {
+          componentStack: errorInfo.componentStack,
+          errorName: error.name,
+          errorMessage: error.message
+        }
+      })
+
+      // Try to translate error for better user experience
+      const translation = errorTranslationService.translateError(
+        error.name || 'UNKNOWN_ERROR',
+        {
+          component: 'ErrorBoundary',
+          action: 'error_boundary_catch'
+        },
+        error.message
+      )
+      
+      // Store translation for display
+      if (translation) {
+        this.setState(prevState => ({
+          ...prevState,
+          translatedError: translation
+        }))
+      }
+    } catch (contextError) {
+      // Fail silently if context service fails
+      console.warn('Failed to track error context:', contextError)
+    }
 
     // Log error to console in development
     if (process.env.NODE_ENV === 'development') {
@@ -254,6 +292,8 @@ export const ErrorDisplay: React.FC<ErrorDisplayProps> = ({
           <button
             onClick={onDismiss}
             className="ml-3 text-red-400 hover:text-red-600"
+            aria-label="Dismiss error"
+            title="Dismiss error"
           >
             <X className="h-4 w-4" />
           </button>

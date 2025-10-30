@@ -14,7 +14,7 @@ use uuid::Uuid;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 
-use crate::database::{Database, utils::with_transaction};
+use crate::database::{Database, transaction::with_transaction};
 use crate::errors::{AppError, AppResult};
 use crate::models::{
     User, NewUser, UpdateUser,
@@ -124,7 +124,7 @@ impl UserService {
                 .values(&new_user)
                 .returning(users::id)
                 .get_result::<Uuid>(tx)
-                .map_err(|e| AppError::Database(e))?;
+                .map_err(AppError::Database)?;
             
             Ok(result)
         }).await?;
@@ -140,14 +140,14 @@ impl UserService {
         let user = users::table
             .filter(users::id.eq(user_id))
             .first::<User>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get project count
         let project_count = projects::table
             .filter(projects::owner_id.eq(user_id))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(UserInfo {
             id: user.id,
@@ -170,7 +170,7 @@ impl UserService {
         users::table
             .filter(users::email.eq(email))
             .first::<User>(&mut conn)
-            .map_err(|e| AppError::Database(e))
+            .map_err(AppError::Database)
     }
     
     /// Check if user exists by email
@@ -181,7 +181,7 @@ impl UserService {
             .filter(users::email.eq(email))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(count > 0)
     }
@@ -194,7 +194,7 @@ impl UserService {
         let existing_user = users::table
             .filter(users::id.eq(user_id))
             .first::<User>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Validate email if provided
         if let Some(ref email) = request.email {
@@ -206,7 +206,7 @@ impl UserService {
                 .filter(users::id.ne(user_id))
                 .count()
                 .get_result::<i64>(&mut conn)
-                .map_err(|e| AppError::Database(e))?;
+                .map_err(AppError::Database)?;
             
             if count > 0 {
                 return Err(AppError::Conflict("Email already taken by another user".to_string()));
@@ -234,7 +234,7 @@ impl UserService {
         diesel::update(users::table.filter(users::id.eq(user_id)))
             .set(&update_data)
             .execute(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Return updated user
         self.get_user_by_id(user_id).await
@@ -249,7 +249,7 @@ impl UserService {
             .filter(users::id.eq(user_id))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         if count == 0 {
             return Err(AppError::NotFound("User not found".to_string()));
@@ -258,7 +258,7 @@ impl UserService {
         // Delete user (cascade will handle related records)
         diesel::delete(users::table.filter(users::id.eq(user_id)))
             .execute(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(())
     }
@@ -274,7 +274,7 @@ impl UserService {
         let total = users::table
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get users
         let users = users::table
@@ -293,16 +293,33 @@ impl UserService {
             .limit(per_page)
             .offset(offset)
             .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
-        // Get project counts for each user
+        // OPTIMIZED: Get project counts for all users in 1 query instead of N queries
+        use diesel::dsl::count_star;
+        
+        // Get all user IDs
+        let user_ids: Vec<uuid::Uuid> = users.iter().map(|u| u.0).collect();
+        
+        // Get project counts for all users in one query
+        let project_counts: Vec<(uuid::Uuid, i64)> = projects::table
+            .filter(projects::owner_id.eq_any(&user_ids))
+            .group_by(projects::owner_id)
+            .select((projects::owner_id, count_star()))
+            .load::<(uuid::Uuid, i64)>(&mut conn)
+            .map_err(|e| {
+                log::warn!("Failed to load project counts for users: {}", e);
+                AppError::Database(e)
+            })?;
+        
+        // Create lookup map
+        let project_count_map: std::collections::HashMap<uuid::Uuid, i64> = 
+            project_counts.into_iter().collect();
+        
+        // Build user infos with counts from map
         let mut user_infos = Vec::new();
         for (id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login) in users {
-            let project_count = projects::table
-                .filter(projects::owner_id.eq(id))
-                .count()
-                .get_result::<i64>(&mut conn)
-                .map_err(|e| AppError::Database(e))?;
+            let project_count = project_count_map.get(&id).copied().unwrap_or(0);
             
             user_infos.push(UserInfo {
                 id,
@@ -342,7 +359,7 @@ impl UserService {
         diesel::update(users::table.filter(users::id.eq(user_id)))
             .set(&update_data)
             .execute(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(())
     }
@@ -355,7 +372,7 @@ impl UserService {
         let user = users::table
             .filter(users::id.eq(user_id))
             .first::<User>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Verify current password
         if !self.auth_service.verify_password(current_password, &user.password_hash)? {
@@ -372,7 +389,7 @@ impl UserService {
         diesel::update(users::table.filter(users::id.eq(user_id)))
             .set(users::password_hash.eq(new_password_hash))
             .execute(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(())
     }
@@ -395,7 +412,7 @@ impl UserService {
             )
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get users
         let users = users::table
@@ -419,16 +436,33 @@ impl UserService {
             .limit(per_page)
             .offset(offset)
             .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
-        // Get project counts for each user
+        // OPTIMIZED: Get project counts for all users in 1 query instead of N queries
+        use diesel::dsl::count_star;
+        
+        // Get all user IDs
+        let user_ids: Vec<uuid::Uuid> = users.iter().map(|u| u.0).collect();
+        
+        // Get project counts for all users in one query
+        let project_counts: Vec<(uuid::Uuid, i64)> = projects::table
+            .filter(projects::owner_id.eq_any(&user_ids))
+            .group_by(projects::owner_id)
+            .select((projects::owner_id, count_star()))
+            .load::<(uuid::Uuid, i64)>(&mut conn)
+            .map_err(|e| {
+                log::warn!("Failed to load project counts for users: {}", e);
+                AppError::Database(e)
+            })?;
+        
+        // Create lookup map
+        let project_count_map: std::collections::HashMap<uuid::Uuid, i64> = 
+            project_counts.into_iter().collect();
+        
+        // Build user infos with counts from map
         let mut user_infos = Vec::new();
         for (id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login) in users {
-            let project_count = projects::table
-                .filter(projects::owner_id.eq(id))
-                .count()
-                .get_result::<i64>(&mut conn)
-                .map_err(|e| AppError::Database(e))?;
+            let project_count = project_count_map.get(&id).copied().unwrap_or(0);
             
             user_infos.push(UserInfo {
                 id,
@@ -469,7 +503,7 @@ impl UserService {
             .filter(users::role.eq(role))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get users
         let users = users::table
@@ -489,16 +523,33 @@ impl UserService {
             .limit(per_page)
             .offset(offset)
             .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
-        // Get project counts for each user
+        // OPTIMIZED: Get project counts for all users in 1 query instead of N queries
+        use diesel::dsl::count_star;
+        
+        // Get all user IDs
+        let user_ids: Vec<uuid::Uuid> = users.iter().map(|u| u.0).collect();
+        
+        // Get project counts for all users in one query
+        let project_counts: Vec<(uuid::Uuid, i64)> = projects::table
+            .filter(projects::owner_id.eq_any(&user_ids))
+            .group_by(projects::owner_id)
+            .select((projects::owner_id, count_star()))
+            .load::<(uuid::Uuid, i64)>(&mut conn)
+            .map_err(|e| {
+                log::warn!("Failed to load project counts for users: {}", e);
+                AppError::Database(e)
+            })?;
+        
+        // Create lookup map
+        let project_count_map: std::collections::HashMap<uuid::Uuid, i64> = 
+            project_counts.into_iter().collect();
+        
+        // Build user infos with counts from map
         let mut user_infos = Vec::new();
         for (id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login) in users {
-            let project_count = projects::table
-                .filter(projects::owner_id.eq(id))
-                .count()
-                .get_result::<i64>(&mut conn)
-                .map_err(|e| AppError::Database(e))?;
+            let project_count = project_count_map.get(&id).copied().unwrap_or(0);
             
             user_infos.push(UserInfo {
                 id,
@@ -530,7 +581,7 @@ impl UserService {
             .filter(users::is_active.eq(true))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(count)
     }
@@ -554,7 +605,7 @@ impl UserService {
             .filter(users::created_at.le(end_date))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get users
         let users = users::table
@@ -575,16 +626,33 @@ impl UserService {
             .limit(per_page)
             .offset(offset)
             .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
-        // Get project counts for each user
+        // OPTIMIZED: Get project counts for all users in 1 query instead of N queries
+        use diesel::dsl::count_star;
+        
+        // Get all user IDs
+        let user_ids: Vec<uuid::Uuid> = users.iter().map(|u| u.0).collect();
+        
+        // Get project counts for all users in one query
+        let project_counts: Vec<(uuid::Uuid, i64)> = projects::table
+            .filter(projects::owner_id.eq_any(&user_ids))
+            .group_by(projects::owner_id)
+            .select((projects::owner_id, count_star()))
+            .load::<(uuid::Uuid, i64)>(&mut conn)
+            .map_err(|e| {
+                log::warn!("Failed to load project counts for users: {}", e);
+                AppError::Database(e)
+            })?;
+        
+        // Create lookup map
+        let project_count_map: std::collections::HashMap<uuid::Uuid, i64> = 
+            project_counts.into_iter().collect();
+        
+        // Build user infos with counts from map
         let mut user_infos = Vec::new();
         for (id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login) in users {
-            let project_count = projects::table
-                .filter(projects::owner_id.eq(id))
-                .count()
-                .get_result::<i64>(&mut conn)
-                .map_err(|e| AppError::Database(e))?;
+            let project_count = project_count_map.get(&id).copied().unwrap_or(0);
             
             user_infos.push(UserInfo {
                 id,
@@ -615,7 +683,7 @@ impl UserService {
         let count = diesel::update(users::table.filter(users::id.eq_any(user_ids)))
             .set(users::is_active.eq(is_active))
             .execute(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(count as i64)
     }
@@ -628,21 +696,21 @@ impl UserService {
         let total_users = users::table
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get active users
         let active_users = users::table
             .filter(users::is_active.eq(true))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get users by role
         let users_by_role = users::table
             .group_by(users::role)
             .select((users::role, diesel::dsl::count(users::id)))
             .load::<(String, i64)>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Get users created in last 30 days
         let thirty_days_ago = Utc::now() - chrono::Duration::days(30);
@@ -650,7 +718,7 @@ impl UserService {
             .filter(users::created_at.ge(thirty_days_ago))
             .count()
             .get_result::<i64>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(UserStatistics {
             total_users,

@@ -38,11 +38,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
 function App() {
   const wsConfig = {
-    url: (import.meta as any).env?.VITE_WS_URL || 'ws://localhost:2000',
+    url: import.meta.env.VITE_WS_URL || 'ws://localhost:2000',
     reconnectInterval: 5000,
     maxReconnectAttempts: 5,
     heartbeatInterval: 30000,
-    debug: (import.meta as any).env?.DEV
+    debug: import.meta.env.DEV
   }
 
   // Initialize unified fetch interceptor on mount
@@ -80,16 +80,16 @@ function App() {
                       </Suspense>
                     </AppLayout>
                   </ProtectedRoute>
-                } />
-                <Route path="/quick-reconciliation" element={
-                  <ProtectedRoute>
-                    <AppLayout>
-                      <Suspense fallback={<LoadingSpinner />}>
-                        <QuickReconciliationWizard />
-                      </Suspense>
-                    </AppLayout>
-毫不犹豫 </ProtectedRoute>
-                } />
+                 } />
+                 <Route path="/quick-reconciliation" element={
+                   <ProtectedRoute>
+                     <AppLayout>
+                       <Suspense fallback={<LoadingSpinner />}>
+                         <QuickReconciliationWizard />
+                       </Suspense>
+                     </AppLayout>
+                   </ProtectedRoute>
+                 } />
                 <Route path="/analytics" element={
                   <ProtectedRoute>
                     <AppLayout>

@@ -3,16 +3,17 @@
 // ============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react'
-import { 
+import {
   FolderOpen, Upload, GitCompare, CheckCircle, BarChart3, FileText,
   TrendingUp, TrendingDown, Clock, Users, Target, AlertCircle,
   Play, Filter, Download, Eye, Trash2, RefreshCw, Plus, Search,
-  MoreVertical, Calendar, PieChart, Printer
+  Calendar, PieChart, Printer
 } from 'lucide-react'
 import { useFrenly } from '../components/frenly/FrenlyProvider'
-import { LoadingButton, SkeletonCard } from '../components/ui/LoadingSpinner'
-import { Button, Input, Card, StatusBadge, DataTableToolbar } from '../components/ui'
-import { apiClient, Project } from '../services/apiClient'
+import { LoadingButton } from '../components/ui/LoadingSpinner'
+import { Button, Input, Card, StatusBadge } from '../components/ui'
+import { apiClient } from '../services/apiClient'
+import { ProjectInfo } from '../types/backend-aligned'
 
 // ============================================================================
 // COMMON INTERFACES
@@ -102,13 +103,13 @@ export const BasePage: React.FC<BasePageProps> = ({
           {stats.length > 0 && (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
               {stats.map((_, i) => (
-                <SkeletonCard key={i} />
+                <div key={i} className="animate-pulse bg-gray-200 h-32 rounded-lg"></div>
               ))}
             </div>
           )}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <SkeletonCard />
-            <SkeletonCard />
+            <div className="animate-pulse bg-gray-200 h-32 rounded-lg"></div>
+            <div className="animate-pulse bg-gray-200 h-32 rounded-lg"></div>
           </div>
         </div>
       </div>
@@ -462,10 +463,11 @@ export const DashboardPage: React.FC = () => {
 
 // Projects Page
 export const ProjectPage: React.FC = () => {
-  const [projects, setProjects] = useState<Project[]>([])
+  const [projects, setProjects] = useState<ProjectInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
+
   
   useEffect(() => {
     loadProjects()
@@ -489,7 +491,7 @@ export const ProjectPage: React.FC = () => {
     try {
       const response = await apiClient.createProject(projectData)
       if (response.data) {
-        setProjects(prev => [...prev, response.data.project])
+        setProjects(prev => [...prev, response.data as unknown as ProjectInfo])
         setShowCreateModal(false)
       }
     } catch (error) {
@@ -628,17 +630,17 @@ export const ProjectPage: React.FC = () => {
                           <p className="text-sm text-gray-600 mt-1">{project.description}</p>
                         )}
                       </div>
-                      <StatusBadge status={project.status} />
+                      <StatusBadge status={project.status}>{project.status}</StatusBadge>
                     </div>
                     
                     <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
                       <div className="flex items-center">
                         <Calendar className="w-4 h-4 mr-1" />
-                        {new Date(project.createdAt).toLocaleDateString()}
+                        {new Date(project.created_at).toLocaleDateString()}
                       </div>
                       <div className="flex items-center">
                         <Users className="w-4 h-4 mr-1" />
-                        {project.members?.length || 0} members
+                        {project.job_count || 0} jobs
                       </div>
                     </div>
                     
@@ -956,7 +958,7 @@ export const ReconciliationPage: React.FC = () => {
                     {new Date(record.date).toLocaleDateString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={record.status} />
+                    <StatusBadge status={record.status}>{record.status}</StatusBadge>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
@@ -1122,10 +1124,10 @@ export const AdjudicationPage: React.FC = () => {
                     ${record.discrepancyAmount?.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={record.status} />
+                    <StatusBadge status={record.status}>{record.status}</StatusBadge>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={record.priority} />
+                    <StatusBadge status={record.priority}>{record.priority}</StatusBadge>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
@@ -1504,7 +1506,7 @@ export const VisualizationPage: React.FC = () => {
                 </div>
                 <div className="flex items-start space-x-2">
                   <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <span className="text-sm text-gray-700">Consider automated matching for records with >90% confidence</span>
+                  <span className="text-sm text-gray-700">Consider automated matching for records with &gt;90% confidence</span>
                 </div>
               </div>
             </div>

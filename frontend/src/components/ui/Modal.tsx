@@ -104,7 +104,8 @@ const Modal: React.FC<ModalProps> = ({
       {/* Overlay */}
       <div
         className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-بحث نتيجة={closeOnOverlayClick ? onClose : undefined}
+        onClick={closeOnOverlayClick ? onClose : undefined}
+        role="presentation"
       />
 
       {/* Modal */}

@@ -1,102 +1,16 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  Server, 
-  Cloud, 
-  Zap, 
-  Shield, 
-  Key, 
-  Globe, 
-  Download, 
-  Upload, 
-  RefreshCw, 
-  Settings, 
-  Eye, 
-  Edit, 
-  Trash2, 
-  Plus, 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle, 
-  Info, 
-  Activity, 
-  BarChart3, 
-  PieChart, 
-  LineChart, 
-  Target, 
-  TrendingUp, 
-  TrendingDown, 
-  Minus, 
-  Plus as PlusIcon, 
-  Equal, 
-  Divide, 
-  Percent, 
-  Calculator, 
-  File, 
-  FileCheck, 
-  FileX, 
-  FilePlus, 
-  FileMinus, 
-  FileEdit, 
-  FileSearch, 
-  Folder, 
-  FolderOpen, 
-  FolderPlus, 
-  FolderMinus, 
-  FolderCheck, 
-  FolderX, 
-  Database, 
-  Wifi, 
-  Lock, 
-  Unlock, 
-  Hash, 
-  Type, 
-  Layers, 
-  ArrowRight, 
-  ArrowLeft, 
-  ArrowUp, 
-  ArrowDown, 
-  ChevronRight, 
-  ChevronLeft, 
-  ChevronUp, 
-  ChevronDown, 
-  MoreHorizontal, 
-  MoreVertical, 
-  Star, 
-  Award, 
-  Trophy, 
-  Medal, 
-  Flag, 
-  Tag, 
-  Bookmark, 
-  Share2, 
-  Copy, 
-  ExternalLink, 
-  Mail, 
-  Phone, 
-  User, 
-  UserCheck, 
-  UserX, 
-  UserPlus, 
-  UserMinus, 
-  Crown, 
-  Building, 
-  Home, 
-  Building2, 
-  Factory, 
-  Store, 
-  CreditCard, 
-  DollarSign, 
-  Euro, 
-  PoundSterling, 
-  Bitcoin, 
-  Bell, 
-  MessageSquare, 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Settings as SettingsIcon, 
+import {
+  Server,
+  Zap,
+  RefreshCw,
+  Eye,
+  Plus,
+  Activity,
+  File,
+  Copy,
+  ExternalLink,
   X
 } from 'lucide-react'
 import { useData } from '../components/DataProvider'
@@ -130,15 +44,15 @@ interface APIParameter {
   type: 'string' | 'number' | 'boolean' | 'array' | 'object'
   required: boolean
   description: string
-  example?: any
+  example?: unknown
   validation?: string
 }
 
 interface APIResponse {
   statusCode: number
   description: string
-  schema: any
-  example?: any
+  schema: Record<string, unknown>
+  example?: unknown
 }
 
 interface Webhook {
@@ -168,13 +82,19 @@ interface APILog {
   timestamp: string
   ipAddress: string
   userAgent: string
-  requestBody?: any
-  responseBody?: any
+  requestBody?: Record<string, unknown>
+  responseBody?: Record<string, unknown>
   error?: string
 }
 
+interface Project {
+  id: string
+  name: string
+  [key: string]: unknown
+}
+
 interface APIDevelopmentProps {
-  project: any
+  project: Project
   onProgressUpdate?: (step: string) => void
 }
 
@@ -184,9 +104,7 @@ const APIDevelopment = ({ project, onProgressUpdate }: APIDevelopmentProps) => {
   const [webhooks, setWebhooks] = useState<Webhook[]>([])
   const [logs, setLogs] = useState<APILog[]>([])
   const [selectedEndpoint, setSelectedEndpoint] = useState<APIEndpoint | null>(null)
-  const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null)
   const [showEndpointModal, setShowEndpointModal] = useState(false)
-  const [showWebhookModal, setShowWebhookModal] = useState(false)
   const [activeTab, setActiveTab] = useState<'endpoints' | 'webhooks' | 'logs' | 'documentation'>('endpoints')
   const [isCreating, setIsCreating] = useState(false)
 

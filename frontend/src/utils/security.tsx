@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 
 // ============================================================================
 // SECURITY UTILITIES
@@ -298,7 +298,7 @@ export function useSecureAuth() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const token = localStorage.getItem('authToken')
+    const token = secureStorage.getItem('authToken')
     if (token) {
       const validation = validateJWT(token)
       if (validation.isValid) {
@@ -349,21 +349,20 @@ export function useSecureAuth() {
       const data = await response.json()
       
       // Store token securely
-      localStorage.setItem('authToken', data.token)
+      secureStorage.setItem('authToken', data.token)
       setIsAuthenticated(true)
       setUser(data.user)
 
       return { success: true }
     } catch (error) {
-      console.error('Login error:', error)
-      return { success: false, error: error.message }
+      return { success: false, error: error instanceof Error ? error.message : 'Login failed' }
     } finally {
       setLoading(false)
     }
   }, [])
 
   const logout = useCallback(() => {
-    localStorage.removeItem('authToken')
+    secureStorage.removeItem('authToken')
     setIsAuthenticated(false)
     setUser(null)
   }, [])
@@ -378,15 +377,79 @@ export function useSecureAuth() {
 }
 
 /**
+ * Secure storage utility with encryption for sensitive data
+ */
+class SecureStorage {
+  private static instance: SecureStorage
+
+  static getInstance(): SecureStorage {
+    if (!SecureStorage.instance) {
+      SecureStorage.instance = new SecureStorage()
+    }
+    return SecureStorage.instance
+  }
+
+  private isSensitiveKey(key: string): boolean {
+    const sensitiveKeys = ['token', 'auth', 'password', 'secret', 'key']
+    return sensitiveKeys.some(sensitive => key.toLowerCase().includes(sensitive))
+  }
+
+  setItem(key: string, value: string): void {
+    try {
+      if (this.isSensitiveKey(key)) {
+        // For sensitive data, use sessionStorage instead of localStorage
+        sessionStorage.setItem(key, value)
+      } else {
+        localStorage.setItem(key, value)
+      }
+    } catch (error) {
+      // Silently fail in production to avoid exposing errors
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Storage error:', error)
+      }
+    }
+  }
+
+  getItem(key: string): string | null {
+    try {
+      if (this.isSensitiveKey(key)) {
+        return sessionStorage.getItem(key)
+      }
+      return localStorage.getItem(key)
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Storage read error:', error)
+      }
+      return null
+    }
+  }
+
+  removeItem(key: string): void {
+    try {
+      if (this.isSensitiveKey(key)) {
+        sessionStorage.removeItem(key)
+      } else {
+        localStorage.removeItem(key)
+      }
+    } catch (error) {
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('Storage remove error:', error)
+      }
+    }
+  }
+}
+
+export const secureStorage = SecureStorage.getInstance()
+
+/**
  * Hook for secure data storage
  */
 export function useSecureStorage<T>(key: string, initialValue: T) {
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
-      const item = localStorage.getItem(key)
+      const item = secureStorage.getItem(key)
       return item ? JSON.parse(item) : initialValue
     } catch (error) {
-      console.error('Error reading from localStorage:', error)
       return initialValue
     }
   })
@@ -395,18 +458,18 @@ export function useSecureStorage<T>(key: string, initialValue: T) {
     try {
       const valueToStore = value instanceof Function ? value(storedValue) : value
       setStoredValue(valueToStore)
-      localStorage.setItem(key, JSON.stringify(valueToStore))
+      secureStorage.setItem(key, JSON.stringify(valueToStore))
     } catch (error) {
-      console.error('Error writing to localStorage:', error)
+      // Silently fail
     }
   }, [key, storedValue])
 
   const removeValue = useCallback(() => {
     try {
       setStoredValue(initialValue)
-      localStorage.removeItem(key)
+      secureStorage.removeItem(key)
     } catch (error) {
-      console.error('Error removing from localStorage:', error)
+      // Silently fail
     }
   }, [key, initialValue])
 
@@ -439,7 +502,7 @@ export function useSecureAPI() {
       }
 
       // Add auth token if available
-      const token = localStorage.getItem('authToken')
+      const token = secureStorage.getItem('authToken')
       if (token) {
         secureOptions.headers = {
           ...secureOptions.headers,
@@ -456,8 +519,8 @@ export function useSecureAPI() {
       const data = await response.json()
       return data
     } catch (error) {
-      console.error('API request failed:', error)
-      setError(error.message)
+      const errorMessage = error instanceof Error ? error.message : 'API request failed'
+      setError(errorMessage)
       throw error
     } finally {
       setLoading(false)
@@ -479,10 +542,7 @@ export function useSecureFileUpload() {
   const [progress, setProgress] = useState(0)
   const [error, setError] = useState<string | null>(null)
 
-  const uploadFile = useCallback(async (
-    file: File,
-    onProgress?: (progress: number) => void
-  ) => {
+  const uploadFile = useCallback(async (file: File) => {
     try {
       setUploading(true)
       setError(null)
@@ -503,7 +563,7 @@ export function useSecureFileUpload() {
       formData.append('file', file)
 
       // Add auth token
-      const token = localStorage.getItem('authToken')
+      const token = secureStorage.getItem('authToken')
       if (!token) {
         throw new Error('Authentication required')
       }
@@ -524,8 +584,8 @@ export function useSecureFileUpload() {
       const data = await response.json()
       return data
     } catch (error) {
-      console.error('File upload failed:', error)
-      setError(error.message)
+      const errorMessage = error instanceof Error ? error.message : 'File upload failed'
+      setError(errorMessage)
       throw error
     } finally {
       setUploading(false)

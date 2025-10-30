@@ -2,6 +2,16 @@
 mod unit_tests {
     use super::*;
     use crate::test_utils::*;
+    use crate::handlers::types::ReconciliationResultsQuery;
+
+    #[test]
+    fn reconciliation_results_query_defaults() {
+        let q = ReconciliationResultsQuery { page: None, per_page: None, match_type: None, lean: None };
+        assert!(q.page.is_none());
+        assert!(q.per_page.is_none());
+        assert!(q.match_type.is_none());
+        assert!(q.lean.is_none());
+    }
     use crate::services::auth::AuthService;
     use crate::services::user::UserService;
     use crate::services::project::ProjectService;
@@ -664,7 +674,9 @@ mod unit_tests {
         std::env::set_var("PORT", "3000");
         std::env::set_var("DATABASE_URL", "postgresql://test:test@localhost:5432/test");
         
-        let config = Config::from_env().expect("Failed to load config");
+        let config = Config::from_env().map_err(|e| {
+            panic!("Failed to load config: {}", e);
+        })?;
         
         assert_eq!(config.host, "127.0.0.1");
         assert_eq!(config.port, 3000);

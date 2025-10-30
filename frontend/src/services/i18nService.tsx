@@ -98,7 +98,6 @@ class I18nService {
       // Setup language change detection
       this.setupLanguageDetection()
       
-      console.log('I18n Service initialized with language:', this.currentLanguage)
     } catch (error) {
       console.error('Failed to initialize I18n Service:', error)
     }
@@ -215,7 +214,6 @@ class I18nService {
       // Notify listeners
       this.emit('languageChanged', language)
       
-      console.log('Language changed to:', language)
     } catch (error) {
       console.error('Failed to change language:', error)
     }

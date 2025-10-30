@@ -1,5 +1,5 @@
 import React from 'react'
-import { Loader2, FileText, BarChart3, Users } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 
 // Base loading spinner
 export const LoadingSpinner: React.FC<{
@@ -51,10 +51,15 @@ export const LoadingButton: React.FC<{
   loading?: boolean
   children: React.ReactNode
   className?: string
-}> = ({ loading = false, children, className = '' }) => (
+  onClick?: () => void
+  disabled?: boolean
+  type?: 'button' | 'submit' | 'reset'
+}> = ({ loading = false, children, className = '', onClick, disabled = false, type = 'button' }) => (
   <button
+    type={type}
+    onClick={onClick}
     className={`inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
-    disabled={loading}
+    disabled={loading || disabled}
   >
     {loading && <LoadingSpinner size="sm" className="mr-2" />}
     {children}

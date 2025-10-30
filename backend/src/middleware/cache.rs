@@ -38,7 +38,10 @@ where
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        let cache_service = MultiLevelCache::new("redis://localhost:6379").expect("Failed to create cache service");
+        let redis_url = std::env::var("REDIS_URL")
+            .unwrap_or_else(|_| "redis://localhost:6379".to_string());
+        let cache_service = MultiLevelCache::new(&redis_url)
+            .expect("Failed to create cache service - ensure REDIS_URL is set correctly");
         ok(CacheMiddleware::new(Rc::new(service), Arc::new(cache_service)))
     }
 }

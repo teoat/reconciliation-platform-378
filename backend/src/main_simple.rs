@@ -1,3 +1,4 @@
+#![cfg(feature = "simple_demo")]
 use actix_web::{web, App, HttpServer, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

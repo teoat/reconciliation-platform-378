@@ -43,6 +43,15 @@ jobs:
           - 6379:6379
 
     steps:
+    - name: Enforce REDIS_PASSWORD for protected branches
+      if: github.ref == 'refs/heads/main' || github.event_name == 'release'
+      run: |
+        if [ -z "${{ secrets.REDIS_PASSWORD }}" ]; then
+          echo "REDIS_PASSWORD secret is not set. Failing as required." >&2
+          exit 1
+        fi
+        echo "REDIS_PASSWORD is configured."
+
     - name: Checkout code
       uses: actions/checkout@v4
 
@@ -79,6 +88,15 @@ jobs:
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
       run: diesel migration run
 
+    - name: Apply performance indexes (post-migration)
+      env:
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        POSTGRES_DB: test_db
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+      run: bash backend/apply-indexes.sh
+
     - name: Run backend tests
       working-directory: ./backend
       env:
@@ -88,9 +106,56 @@ jobs:
         RUST_LOG: debug
       run: cargo test --verbose
 
-    - name: Run backend clippy
+    - name: Install cargo-tarpaulin
       working-directory: ./backend
-      run: cargo clippy -- -D warnings
+      run: |
+        cargo install cargo-tarpaulin --locked || true
+
+    - name: Generate coverage report
+      working-directory: ./backend
+      env:
+        DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
+        REDIS_URL: redis://localhost:6379
+        JWT_SECRET: test_secret
+      run: |
+        mkdir -p coverage
+        cargo tarpaulin --out Xml --output-dir coverage || echo "Coverage generation failed, continuing..."
+        cargo tarpaulin --out Html --output-dir coverage || echo "HTML report generation failed, continuing..."
+
+    - name: Check coverage thresholds
+      working-directory: ./backend
+      continue-on-error: true
+      run: |
+        if [ -f coverage/cobertura.xml ]; then
+          COVERAGE=$(grep -oP 'line-rate="\K[0-9.]+' coverage/cobertura.xml | head -1 || echo "0")
+          if [ -n "$COVERAGE" ]; then
+            COVERAGE_PCT=$(echo "$COVERAGE * 100" | bc || echo "0")
+            THRESHOLD=70
+            if (( $(echo "$COVERAGE_PCT < $THRESHOLD" | bc -l) )); then
+              echo "❌ Coverage ${COVERAGE_PCT}% is below ${THRESHOLD}% threshold"
+              echo "::error::Test coverage ${COVERAGE_PCT}% is below ${THRESHOLD}% threshold"
+              exit 1
+            else
+              echo "✅ Coverage: ${COVERAGE_PCT}% (threshold: ${THRESHOLD}%)"
+            fi
+          else
+            echo "⚠️ Could not extract coverage percentage, skipping threshold check"
+          fi
+        else
+          echo "⚠️ Coverage report not found, skipping threshold check"
+        fi
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: backend-coverage-report
+        path: backend/coverage/
+        retention-days: 30
+
+    - name: Run backend clippy (deny warnings)
+      working-directory: ./backend
+      run: cargo clippy --all-targets --all-features -- -D warnings
 
     - name: Run backend fmt check
       working-directory: ./backend
@@ -122,7 +187,7 @@ jobs:
 
     - name: Run type checking
       working-directory: ./frontend
-      run: npm run type-check
+      run: npx tsc --noEmit
 
     - name: Run tests
       working-directory: ./frontend
@@ -141,19 +206,61 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Run Trivy vulnerability scanner
-      uses: aquasecurity/trivy-action@master
+    - name: Run Trivy vulnerability scanner (FS)
+      uses: aquasecurity/trivy-action@0.20.0
       with:
         scan-type: 'fs'
         scan-ref: '.'
         format: 'sarif'
-        output: 'trivy-results.sarif'
+        output: 'trivy-fs.sarif'
+        ignore-unfixed: true
+        severity: 'HIGH,CRITICAL'
+        exit-code: '1'
+        exit-on-eol: '0'
 
-    - name: Upload Trivy scan results to GitHub Security tab
-      uses: github/codeql-action/upload-sarif@v2
+    - name: Upload Trivy FS results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
       if: always()
       with:
-        sarif_file: 'trivy-results.sarif'
+        sarif_file: 'trivy-fs.sarif'
+
+    - name: Build backend image (for image scan)
+      uses: docker/build-push-action@v5
+      with:
+        context: ./backend
+        push: false
+        tags: local/backend:scan-${{ github.sha }}
+
+    - name: Trivy Image scan (backend)
+      uses: aquasecurity/trivy-action@0.20.0
+      with:
+        image-ref: local/backend:scan-${{ github.sha }}
+        format: 'sarif'
+        output: 'trivy-image.sarif'
+        ignore-unfixed: true
+        severity: 'HIGH,CRITICAL'
+        exit-code: '1'
+        exit-on-eol: '0'
+
+    - name: Upload Trivy Image results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: 'trivy-image.sarif'
+
+    - name: Generate SBOM (SPDX JSON)
+      uses: aquasecurity/trivy-action@0.20.0
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'spdx-json'
+        output: 'sbom.spdx.json'
+
+    - name: Upload SBOM artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: sbom-backend
+        path: sbom.spdx.json
 
     - name: Run cargo audit
       working-directory: ./backend
@@ -209,6 +316,15 @@ jobs:
       env:
         DATABASE_URL: postgres://postgres:postgres@localhost:5432/test_db
       run: diesel migration run
+
+    - name: Apply performance indexes (post-migration)
+      env:
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        POSTGRES_DB: test_db
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+      run: bash backend/apply-indexes.sh
 
     - name: Build backend
       working-directory: ./backend
@@ -276,6 +392,8 @@ jobs:
       with:
         context: ./backend
         push: true
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         tags: ${{ secrets.DOCKER_USERNAME }}/reconciliation-platform-backend:${{ github.sha }}
         labels: ${{ steps.meta.outputs.labels }}
 
@@ -284,6 +402,8 @@ jobs:
       with:
         context: ./frontend
         push: true
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
         tags: ${{ secrets.DOCKER_USERNAME }}/reconciliation-platform-frontend:${{ github.sha }}
         labels: ${{ steps.meta.outputs.labels }}
 

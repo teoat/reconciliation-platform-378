@@ -226,7 +226,6 @@ export function measureComponentLoadTime<T extends ComponentType<any>>(
     try {
       const result = await importFn()
       const endTime = performance.now()
-      console.log(`${componentName} loaded in ${endTime - startTime}ms`)
       return result
     } catch (error) {
       const endTime = performance.now()

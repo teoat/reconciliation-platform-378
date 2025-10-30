@@ -55,7 +55,6 @@ export const TeamChallengeShare: React.FC<TeamChallengeShareProps> = ({ userId, 
           url: shareUrl
         })
       } catch (error) {
-        console.log('Share cancelled or failed:', error)
       }
     } else {
       // Fallback to copy

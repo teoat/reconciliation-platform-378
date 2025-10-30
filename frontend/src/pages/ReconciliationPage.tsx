@@ -185,9 +185,9 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
           <div 
             className="w-16 bg-gray-200 rounded-full h-2"
             role="progressbar"
-            aria-valuenow={row.status === 'completed' ? 100 : value || 0}
-            aria-valuemin={0}
-            aria-valuemax={100}
+            aria-valuenow={`${row.status === 'completed' ? 100 : value || 0}`}
+            aria-valuemin="0"
+            aria-valuemax="100"
             aria-label={`Progress is ${row.status === 'completed' ? 100 : value || 0} percent`}
           >
             <div 
@@ -262,9 +262,9 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
             <div 
               className="w-16 bg-gray-200 rounded-full h-2"
               role="progressbar"
-              aria-valuenow={progressValue}
-              aria-valuemin={0}
-              aria-valuemax={100}
+              aria-valuenow={`${progressValue}`}
+              aria-valuemin="0"
+              aria-valuemax="100"
               aria-label={`Confidence score is ${progressValue} percent`}
             >
               <div 

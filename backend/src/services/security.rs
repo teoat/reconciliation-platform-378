@@ -150,7 +150,10 @@ impl SecurityService {
     }
 
     pub async fn generate_jwt_token(&self, user_id: &str, claims: HashMap<String, String>) -> Result<String, String> {
-        let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+        let now = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map_err(|_| "System time is before Unix epoch")?
+            .as_secs();
         let exp = now + self.config.jwt_expiration.as_secs();
 
         let mut jwt_claims = claims;
@@ -211,7 +214,7 @@ impl SecurityService {
             user_id: user_id.map(|s| s.to_string()),
             ip_address: ip_address.to_string(),
             user_agent: None,
-            description: if success { "Successful login" } else { "Failed login attempt" },
+            description: if success { "Successful login".to_string() } else { "Failed login attempt".to_string() },
             metadata: HashMap::new(),
             timestamp: chrono::Utc::now().to_rfc3339(),
         }).await;
@@ -239,7 +242,9 @@ impl SecurityService {
 
         if let Some(entry) = rate_limits.get_mut(identifier) {
             // Check if still in current window
-            if now.duration_since(entry.window_start).unwrap() < self.config.rate_limit_window {
+            if now.duration_since(entry.window_start)
+                .map_err(|_| "Time went backwards")?
+                < self.config.rate_limit_window {
                 if entry.count >= self.config.rate_limit_requests {
                     // Rate limit exceeded
                     self.log_security_event(SecurityEvent {
@@ -249,7 +254,7 @@ impl SecurityService {
                         user_id: None,
                         ip_address: identifier.to_string(),
                         user_agent: None,
-                        description: "Rate limit exceeded",
+                        description: "Rate limit exceeded".to_string(),
                         metadata: HashMap::new(),
                         timestamp: chrono::Utc::now().to_rfc3339(),
                     }).await;
@@ -310,7 +315,9 @@ impl SecurityService {
             session.last_activity = now;
             
             // Extend session if needed
-            if now.duration_since(session.created_at).unwrap() > self.config.session_timeout / 2 {
+            if now.duration_since(session.created_at)
+                .map_err(|_| "Session created in future")?
+                > self.config.session_timeout / 2 {
                 session.expires_at = now + self.config.session_timeout;
             }
 
@@ -363,14 +370,7 @@ impl SecurityService {
         false
     }
 
-    // Input validation and sanitization
-    pub fn sanitize_input(&self, input: &str) -> String {
-        // Remove potentially dangerous characters
-        input
-            .chars()
-            .filter(|&c| !matches!(c, '<' | '>' | '"' | '\'' | '&' | ';' | '(' | ')' | '|' | '`'))
-            .collect()
-    }
+
 
     pub fn validate_email(&self, email: &str) -> bool {
         // Basic email validation
@@ -407,8 +407,9 @@ impl SecurityService {
         events.push(event);
 
         // Keep only last 10000 events
-        if events.len() > 10000 {
-            events.drain(0..events.len() - 10000);
+        let events_len = events.len();
+        if events_len > 10000 {
+            events.drain(0..events_len - 10000);
         }
     }
 
@@ -420,15 +421,13 @@ impl SecurityService {
 
     // Vulnerability scanning
     pub async fn scan_for_vulnerabilities(&self) -> Vec<VulnerabilityReport> {
-        let mut vulnerabilities = Vec::new();
-
         // Check for weak passwords
         // Check for SQL injection patterns
         // Check for XSS vulnerabilities
         // Check for CSRF vulnerabilities
         // Check for insecure configurations
 
-        vulnerabilities
+        Vec::new()
     }
 
     // Compliance validation
@@ -464,6 +463,7 @@ pub struct ComplianceReport {
     pub recommendations: Vec<String>,
 }
 
+impl SecurityService {
     /// Generate CSRF token
     pub async fn generate_csrf_token(&self, user_id: Uuid) -> Result<String, String> {
         if !self.config.enable_csrf {
@@ -543,7 +543,7 @@ pub struct ComplianceReport {
     pub fn validate_file_upload(&self, filename: &str, content_type: &str, size: u64) -> Result<(), String> {
         // Check file extension
         let allowed_extensions = ["csv", "json", "xlsx", "txt", "pdf"];
-        let extension = filename.split('.').last().unwrap_or("").to_lowercase();
+        let extension = filename.split('.').next_back().unwrap_or("").to_lowercase();
         
         if !allowed_extensions.contains(&extension.as_str()) {
             return Err("File type not allowed".to_string());

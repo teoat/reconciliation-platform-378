@@ -97,13 +97,34 @@ impl DefaultSecretsManager {
     }
     
     /// Get JWT secret
+    /// In production, JWT_SECRET must be set or the application will fail to start
     pub fn get_jwt_secret(&self) -> String {
-        self.get_secret("JWT_SECRET", "change-this-secret-key-in-production")
+        // In production, fail if JWT_SECRET is not set
+        #[cfg(not(debug_assertions))]
+        {
+            std::env::var("JWT_SECRET")
+                .expect("JWT_SECRET environment variable must be set in production")
+        }
+        
+        // In development, allow fallback
+        #[cfg(debug_assertions)]
+        {
+            self.get_secret("JWT_SECRET", "development-secret-key-only")
+        }
     }
     
     /// Get database URL
     pub fn get_database_url(&self) -> String {
-        self.get_secret("DATABASE_URL", "postgresql://reconciliation_user:reconciliation_pass@localhost:5432/reconciliation_app")
+        #[cfg(not(debug_assertions))]
+        {
+            std::env::var("DATABASE_URL")
+                .expect("DATABASE_URL environment variable must be set in production")
+        }
+        
+        #[cfg(debug_assertions)]
+        {
+            self.get_secret("DATABASE_URL", "postgresql://reconciliation_user:reconciliation_pass@localhost:5432/reconciliation_app")
+        }
     }
 }
 

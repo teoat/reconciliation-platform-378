@@ -145,7 +145,7 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
     }
   }, [selectedJob, wsConnected])
   const [results, setResults] = useState<ReconciliationResult[]>([])
-  const { loading, withLoading } = useLoading(false)
+  const [loading, setLoading] = useState(false)
   
   // Track which results we've already celebrated to avoid pathological celebrations
   useEffect(() => {
@@ -226,12 +226,12 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
         throw new Error(response.error.message)
       }
       
-      setResults(response.data?.data || [])
+      setResults((response.data as any)?.data || [])
       setPagination(prev => ({
         ...prev,
-        page: response.data?.page || page,
-        perPage: response.data?.per_page || perPage,
-        total: response.data?.total || 0
+        page: (response.data as any)?.page || page,
+        perPage: (response.data as any)?.per_page || perPage,
+        total: (response.data as any)?.total || 0
       }))
     } catch (err) {
       console.error('Failed to load job results:', err)

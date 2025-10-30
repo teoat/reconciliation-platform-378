@@ -61,11 +61,24 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build application
-        run: npm run build
-        env:
-          VITE_API_URL: ${{ secrets.API_URL }}
-          VITE_WS_URL: ${{ secrets.WS_URL }}
+       - name: Build application
+         run: |
+           echo "Build started at $(date)"
+           start_time=$(date +%s)
+           npm run build
+           end_time=$(date +%s)
+           build_time=$((end_time - start_time))
+           echo "Build completed in ${build_time} seconds"
+           echo "BUILD_TIME=${build_time}" >> $GITHUB_ENV
+         env:
+           VITE_API_URL: ${{ secrets.API_URL }}
+           VITE_WS_URL: ${{ secrets.WS_URL }}
+
+       - name: Check bundle size
+         run: |
+           bundle_size=$(du -sh dist/ | cut -f1)
+           echo "Bundle size: ${bundle_size}"
+           echo "BUNDLE_SIZE=${bundle_size}" >> $GITHUB_ENV
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3

@@ -6,6 +6,29 @@
 use actix_web::{HttpResponse, ResponseError};
 use serde::{Deserialize, Serialize};
 use std::fmt;
+use std::sync::OnceLock;
+
+// Shared error translation service instance
+static ERROR_TRANSLATOR: OnceLock<crate::services::error_translation::ErrorTranslationService> = OnceLock::new();
+
+fn get_error_translator() -> &'static crate::services::error_translation::ErrorTranslationService {
+    ERROR_TRANSLATOR.get_or_init(crate::services::error_translation::ErrorTranslationService::new)
+}
+
+/// Helper function to translate error code to user-friendly message
+fn translate_error_code(code: &str, default_message: &str) -> (String, String) {
+    let translator = get_error_translator();
+    let empty_context = crate::services::error_translation::ErrorContext {
+        user_id: None,
+        project_id: None,
+        workflow_stage: None,
+        action: None,
+        resource_type: None,
+        resource_id: None,
+    };
+    let friendly = translator.translate_error(code, empty_context, Some(default_message.to_string()));
+    (friendly.title, friendly.message)
+}
 
 /// Main application error type
 #[derive(Debug)]
@@ -33,6 +56,10 @@ pub enum AppError {
     CsrfTokenMissing,
     CsrfTokenInvalid,
     ValidationError(String),
+    Timeout,
+    Alert(String),
+    Offline(String),
+    OptimisticUpdate(String),
 }
 
 impl fmt::Display for AppError {
@@ -61,6 +88,10 @@ impl fmt::Display for AppError {
             AppError::CsrfTokenMissing => write!(f, "CSRF token missing"),
             AppError::CsrfTokenInvalid => write!(f, "CSRF token invalid"),
             AppError::ValidationError(msg) => write!(f, "Validation error: {}", msg),
+            AppError::Timeout => write!(f, "Request timeout"),
+            AppError::Alert(msg) => write!(f, "Alert: {}", msg),
+            AppError::Offline(msg) => write!(f, "Offline error: {}", msg),
+            AppError::OptimisticUpdate(msg) => write!(f, "Optimistic update error: {}", msg),
         }
     }
 }
@@ -112,122 +143,217 @@ impl From<actix_web::Error> for AppError {
 
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
+        // ✅ ERROR TRANSLATION: Use translation service for user-friendly messages
         match self {
-            AppError::Database(_) => HttpResponse::InternalServerError().json(ErrorResponse {
-                error: "Database error".to_string(),
-                message: "An internal database error occurred".to_string(),
-                code: "DATABASE_ERROR".to_string(),
-            }),
-            AppError::Connection(_) => HttpResponse::ServiceUnavailable().json(ErrorResponse {
-                error: "Connection error".to_string(),
-                message: "Unable to connect to database".to_string(),
-                code: "CONNECTION_ERROR".to_string(),
-            }),
-            AppError::Authentication(msg) => HttpResponse::Unauthorized().json(ErrorResponse {
-                error: "Authentication error".to_string(),
-                message: msg.clone(),
-                code: "AUTHENTICATION_ERROR".to_string(),
-            }),
-            AppError::Authorization(msg) => HttpResponse::Forbidden().json(ErrorResponse {
-                error: "Authorization error".to_string(),
-                message: msg.clone(),
-                code: "AUTHORIZATION_ERROR".to_string(),
-            }),
-            AppError::Validation(msg) => HttpResponse::BadRequest().json(ErrorResponse {
-                error: "Validation error".to_string(),
-                message: msg.clone(),
-                code: "VALIDATION_ERROR".to_string(),
-            }),
-            AppError::File(msg) => HttpResponse::BadRequest().json(ErrorResponse {
-                error: "File error".to_string(),
-                message: msg.clone(),
-                code: "FILE_ERROR".to_string(),
-            }),
-            AppError::Config(msg) => HttpResponse::InternalServerError().json(ErrorResponse {
-                error: "Configuration error".to_string(),
-                message: msg.clone(),
-                code: "CONFIG_ERROR".to_string(),
-            }),
-            AppError::Redis(_) => HttpResponse::ServiceUnavailable().json(ErrorResponse {
-                error: "Redis error".to_string(),
-                message: "Cache service unavailable".to_string(),
-                code: "REDIS_ERROR".to_string(),
-            }),
-            AppError::Jwt(_) => HttpResponse::Unauthorized().json(ErrorResponse {
-                error: "JWT error".to_string(),
-                message: "Invalid or expired token".to_string(),
-                code: "JWT_ERROR".to_string(),
-            }),
-            AppError::Io(_) => HttpResponse::InternalServerError().json(ErrorResponse {
-                error: "IO error".to_string(),
-                message: "File system error occurred".to_string(),
-                code: "IO_ERROR".to_string(),
-            }),
-            AppError::Serialization(_) => HttpResponse::BadRequest().json(ErrorResponse {
-                error: "Serialization error".to_string(),
-                message: "Invalid data format".to_string(),
-                code: "SERIALIZATION_ERROR".to_string(),
-            }),
-            AppError::Internal(msg) => HttpResponse::InternalServerError().json(ErrorResponse {
-                error: "Internal server error".to_string(),
-                message: msg.clone(),
-                code: "INTERNAL_ERROR".to_string(),
-            }),
-            AppError::InternalServerError(msg) => HttpResponse::InternalServerError().json(ErrorResponse {
-                error: "Internal server error".to_string(),
-                message: msg.clone(),
-                code: "INTERNAL_SERVER_ERROR".to_string(),
-            }),
-            AppError::NotFound(msg) => HttpResponse::NotFound().json(ErrorResponse {
-                error: "Not found".to_string(),
-                message: msg.clone(),
-                code: "NOT_FOUND".to_string(),
-            }),
-            AppError::Conflict(msg) => HttpResponse::Conflict().json(ErrorResponse {
-                error: "Conflict".to_string(),
-                message: msg.clone(),
-                code: "CONFLICT".to_string(),
-            }),
-            AppError::BadRequest(msg) => HttpResponse::BadRequest().json(ErrorResponse {
-                error: "Bad request".to_string(),
-                message: msg.clone(),
-                code: "BAD_REQUEST".to_string(),
-            }),
-            AppError::Unauthorized(msg) => HttpResponse::Unauthorized().json(ErrorResponse {
-                error: "Unauthorized".to_string(),
-                message: msg.clone(),
-                code: "UNAUTHORIZED".to_string(),
-            }),
-            AppError::Forbidden(msg) => HttpResponse::Forbidden().json(ErrorResponse {
-                error: "Forbidden".to_string(),
-                message: msg.clone(),
-                code: "FORBIDDEN".to_string(),
-            }),
-            AppError::ServiceUnavailable(msg) => HttpResponse::ServiceUnavailable().json(ErrorResponse {
-                error: "Service unavailable".to_string(),
-                message: msg.clone(),
-                code: "SERVICE_UNAVAILABLE".to_string(),
-            }),
-            AppError::RateLimitExceeded => HttpResponse::TooManyRequests().json(ErrorResponse {
-                error: "Rate limit exceeded".to_string(),
-                message: "Too many requests, please try again later".to_string(),
-                code: "RATE_LIMIT_EXCEEDED".to_string(),
-            }),
-            AppError::CsrfTokenMissing => HttpResponse::BadRequest().json(ErrorResponse {
-                error: "CSRF token missing".to_string(),
-                message: "CSRF token is required for this request".to_string(),
-                code: "CSRF_TOKEN_MISSING".to_string(),
-            }),
-            AppError::CsrfTokenInvalid => HttpResponse::BadRequest().json(ErrorResponse {
-                error: "CSRF token invalid".to_string(),
-                message: "Invalid CSRF token provided".to_string(),
-                code: "CSRF_TOKEN_INVALID".to_string(),
-            }),
-            AppError::ValidationError(msg) => HttpResponse::BadRequest().json(ErrorResponse {
-                error: "Validation error".to_string(),
-                message: msg.clone(),
-                code: "VALIDATION_ERROR".to_string(),
-            }),
+            AppError::Database(err) => {
+                let translator = get_error_translator();
+                let empty_context = crate::services::error_translation::ErrorContext {
+                    user_id: None,
+                    project_id: None,
+                    workflow_stage: None,
+                    action: None,
+                    resource_type: None,
+                    resource_id: None,
+                };
+                let friendly = translator.translate_database_error(err, empty_context);
+                HttpResponse::InternalServerError().json(ErrorResponse {
+                    error: friendly.title,
+                    message: friendly.message,
+                    code: friendly.code,
+                })
+            },
+            AppError::Connection(_) => {
+                let (title, message) = translate_error_code("CONNECTION_ERROR", "Unable to connect to database");
+                HttpResponse::ServiceUnavailable().json(ErrorResponse {
+                    error: title,
+                    message,
+                    code: "CONNECTION_ERROR".to_string(),
+                })
+            },
+            AppError::Authentication(msg) => {
+                let (title, _) = translate_error_code("UNAUTHORIZED", msg);
+                HttpResponse::Unauthorized().json(ErrorResponse {
+                    error: title,
+                    message: msg.clone(),
+                    code: "AUTHENTICATION_ERROR".to_string(),
+                })
+            },
+            AppError::Authorization(msg) => {
+                let (title, _) = translate_error_code("FORBIDDEN", msg);
+                HttpResponse::Forbidden().json(ErrorResponse {
+                    error: title,
+                    message: msg.clone(),
+                    code: "AUTHORIZATION_ERROR".to_string(),
+                })
+            },
+            AppError::Validation(msg) | AppError::ValidationError(msg) => {
+                let (title, _) = translate_error_code("VALIDATION_ERROR", msg);
+                HttpResponse::BadRequest().json(ErrorResponse {
+                    error: title,
+                    message: msg.clone(),
+                    code: "VALIDATION_ERROR".to_string(),
+                })
+            },
+            AppError::File(msg) => {
+                let (title, _) = translate_error_code("FILE_ERROR", msg);
+                HttpResponse::BadRequest().json(ErrorResponse {
+                    error: title,
+                    message: msg.clone(),
+                    code: "FILE_ERROR".to_string(),
+                })
+            },
+            AppError::Config(msg) => {
+                let (title, message) = translate_error_code("CONFIG_ERROR", msg);
+                HttpResponse::InternalServerError().json(ErrorResponse {
+                    error: title,
+                    message,
+                    code: "CONFIG_ERROR".to_string(),
+                })
+            },
+            AppError::Redis(_) => {
+                let (title, message) = translate_error_code("REDIS_ERROR", "Cache service unavailable");
+                HttpResponse::ServiceUnavailable().json(ErrorResponse {
+                    error: title,
+                    message,
+                    code: "REDIS_ERROR".to_string(),
+                })
+            },
+            AppError::Jwt(_) => {
+                let (title, message) = translate_error_code("INVALID_TOKEN", "Invalid or expired token");
+                HttpResponse::Unauthorized().json(ErrorResponse {
+                    error: title,
+                    message,
+                    code: "JWT_ERROR".to_string(),
+                })
+            },
+            AppError::Io(_) => {
+                let (title, message) = translate_error_code("IO_ERROR", "File system error occurred");
+                HttpResponse::InternalServerError().json(ErrorResponse {
+                    error: title,
+                    message,
+                    code: "IO_ERROR".to_string(),
+                })
+            },
+            AppError::Serialization(_) => {
+                let (title, message) = translate_error_code("SERIALIZATION_ERROR", "Invalid data format");
+                HttpResponse::BadRequest().json(ErrorResponse {
+                    error: title,
+                    message,
+                    code: "SERIALIZATION_ERROR".to_string(),
+                })
+            },
+            AppError::Internal(msg) | AppError::InternalServerError(msg) => {
+                let (title, _) = translate_error_code("INTERNAL_ERROR", msg);
+                HttpResponse::InternalServerError().json(ErrorResponse {
+                    error: title,
+                    message: msg.clone(),
+                    code: "INTERNAL_ERROR".to_string(),
+                })
+            },
+            AppError::NotFound(msg) => {
+                let (title, _) = translate_error_code("NOT_FOUND", msg);
+                HttpResponse::NotFound().json(ErrorResponse {
+                    error: title,
+                    message: msg.clone(),
+                    code: "NOT_FOUND".to_string(),
+                })
+            },
+            AppError::Conflict(msg) => {
+                let (title, _) = translate_error_code("CONFLICT", msg);
+                HttpResponse::Conflict().json(ErrorResponse {
+                    error: title,
+                    message: msg.clone(),
+                    code: "CONFLICT".to_string(),
+                })
+            },
+            AppError::BadRequest(msg) => {
+                let (title, _) = translate_error_code("BAD_REQUEST", msg);
+                HttpResponse::BadRequest().json(ErrorResponse {
+                    error: title,
+                    message: msg.clone(),
+                    code: "BAD_REQUEST".to_string(),
+                })
+            },
+            AppError::Unauthorized(msg) => {
+                let (title, _) = translate_error_code("UNAUTHORIZED", msg);
+                HttpResponse::Unauthorized().json(ErrorResponse {
+                    error: title,
+                    message: msg.clone(),
+                    code: "UNAUTHORIZED".to_string(),
+                })
+            },
+            AppError::Forbidden(msg) => {
+                let (title, _) = translate_error_code("FORBIDDEN", msg);
+                HttpResponse::Forbidden().json(ErrorResponse {
+                    error: title,
+                    message: msg.clone(),
+                    code: "FORBIDDEN".to_string(),
+                })
+            },
+            AppError::ServiceUnavailable(msg) => {
+                let (title, _) = translate_error_code("SERVICE_UNAVAILABLE", msg);
+                HttpResponse::ServiceUnavailable().json(ErrorResponse {
+                    error: title,
+                    message: msg.clone(),
+                    code: "SERVICE_UNAVAILABLE".to_string(),
+                })
+            },
+            AppError::RateLimitExceeded => {
+                let (title, message) = translate_error_code("RATE_LIMIT_EXCEEDED", "Too many requests, please try again later");
+                HttpResponse::TooManyRequests().json(ErrorResponse {
+                    error: title,
+                    message,
+                    code: "RATE_LIMIT_EXCEEDED".to_string(),
+                })
+            },
+            AppError::CsrfTokenMissing => {
+                let (title, message) = translate_error_code("CSRF_TOKEN_MISSING", "CSRF token is required for this request");
+                HttpResponse::BadRequest().json(ErrorResponse {
+                    error: title,
+                    message,
+                    code: "CSRF_TOKEN_MISSING".to_string(),
+                })
+            },
+            AppError::CsrfTokenInvalid => {
+                let (title, message) = translate_error_code("CSRF_TOKEN_INVALID", "Invalid CSRF token provided");
+                HttpResponse::BadRequest().json(ErrorResponse {
+                    error: title,
+                    message,
+                    code: "CSRF_TOKEN_INVALID".to_string(),
+                })
+            },
+            AppError::Timeout => {
+                let (title, message) = translate_error_code("TIMEOUT", "The request timed out");
+                HttpResponse::RequestTimeout().json(ErrorResponse {
+                    error: title,
+                    message,
+                    code: "TIMEOUT".to_string(),
+                })
+            },
+            AppError::Alert(msg) => {
+                let (title, message) = translate_error_code("ALERT", msg);
+                HttpResponse::InternalServerError().json(ErrorResponse {
+                    error: title,
+                    message,
+                    code: "ALERT".to_string(),
+                })
+            },
+            AppError::Offline(msg) => {
+                let (title, message) = translate_error_code("OFFLINE", msg);
+                HttpResponse::ServiceUnavailable().json(ErrorResponse {
+                    error: title,
+                    message,
+                    code: "OFFLINE".to_string(),
+                })
+            },
+            AppError::OptimisticUpdate(msg) => {
+                let (title, message) = translate_error_code("OPTIMISTIC_UPDATE", msg);
+                HttpResponse::Conflict().json(ErrorResponse {
+                    error: title,
+                    message,
+                    code: "OPTIMISTIC_UPDATE".to_string(),
+                })
+            },
         }
     }
 }
@@ -322,5 +448,24 @@ impl EnhancedErrorResponse {
     pub fn with_request_id(mut self, request_id: impl Into<String>) -> Self {
         self.request_id = Some(request_id.into());
         self
+    }
+}
+
+// From implementations for service errors
+impl From<crate::services::critical_alerts::AlertError> for AppError {
+    fn from(err: crate::services::critical_alerts::AlertError) -> Self {
+        AppError::Alert(err.to_string())
+    }
+}
+
+impl From<crate::services::offline_persistence::OfflineError> for AppError {
+    fn from(err: crate::services::offline_persistence::OfflineError) -> Self {
+        AppError::Offline(err.to_string())
+    }
+}
+
+impl From<crate::services::optimistic_ui::OptimisticUpdateError> for AppError {
+    fn from(err: crate::services::optimistic_ui::OptimisticUpdateError) -> Self {
+        AppError::OptimisticUpdate(err.to_string())
     }
 }

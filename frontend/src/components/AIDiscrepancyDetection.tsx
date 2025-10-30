@@ -1,81 +1,27 @@
 'use client'
 
-import { useState, useEffect, useMemo, useCallback } from 'react'
-import { 
-  Brain, 
-  Zap, 
-  AlertTriangle, 
-  CheckCircle, 
+import { useState, useMemo, useCallback } from 'react'
+import {
+  Brain,
+  AlertTriangle,
+  CheckCircle,
   XCircle,
-  TrendingUp,
-  TrendingDown,
-  Target,
-  Shield,
   Activity,
   Eye,
-  Settings,
   RefreshCw,
   Download,
-  Filter,
-  Search,
   Calendar,
-  DollarSign,
-  BarChart3,
-  PieChart,
-  LineChart,
-  Info,
-  AlertCircle,
-  CheckSquare,
-  Square,
-  Star,
-  Award,
-  Trophy,
-  Medal,
-  Flag,
   Tag,
-  Bookmark,
-  Share2,
-  Copy,
-  ExternalLink,
-  Globe,
-  Mail,
-  Phone,
-  User,
-  UserCheck,
-  UserX,
-  UserPlus,
-  UserMinus,
-  Crown,
-  Building,
-  Home,
-  Bell,
-  MessageSquare,
-  Workflow,
-  Layers,
-  Hash,
-  Type,
-  MapPin,
-  Wifi,
-  Lock,
-  Unlock,
-  Key,
-  Cloud,
-  Server,
-  Folder,
-  File,
-  FileCheck,
-  FileX,
-  FilePlus,
-  FileMinus,
-  FileEdit,
-  FileSearch,
+  AlertCircle,
+  DollarSign,
+
   FileText,
   X
 } from 'lucide-react'
 import { useData } from '../components/DataProvider'
 
 // AI Discrepancy Detection Interfaces
-interface AIDiscrepancyDetection {
+interface AIDiscrepancyDetectionData {
   id: string
   type: 'amount' | 'date' | 'description' | 'category' | 'pattern' | 'anomaly'
   severity: 'low' | 'medium' | 'high' | 'critical'
@@ -130,15 +76,7 @@ interface AIPrediction {
   accuracy?: number
 }
 
-interface AITrainingData {
-  id: string
-  features: Record<string, any>
-  label: string
-  category: string
-  quality: number
-  source: string
-  timestamp: string
-}
+
 
 interface AIDiscrepancyDetectionProps {
   project: any
@@ -146,25 +84,24 @@ interface AIDiscrepancyDetectionProps {
 }
 
 const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDetectionProps) => {
-  const { currentProject, getReconciliationData, getCashflowData } = useData()
-  const [detections, setDetections] = useState<AIDiscrepancyDetection[]>([])
-  const [models, setModels] = useState<AIModel[]>([])
+  const { getReconciliationData, getCashflowData } = useData()
+  const [detections, setDetections] = useState<AIDiscrepancyDetectionData[]>([])
+  const [models] = useState<AIModel[]>([])
   const [predictions, setPredictions] = useState<AIPrediction[]>([])
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [analysisProgress, setAnalysisProgress] = useState(0)
-  const [selectedDetection, setSelectedDetection] = useState<AIDiscrepancyDetection | null>(null)
+  const [selectedDetection, setSelectedDetection] = useState<AIDiscrepancyDetectionData | null>(null)
   const [showDetectionModal, setShowDetectionModal] = useState(false)
   const [filterSeverity, setFilterSeverity] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
-   const [showModelDetails, setShowModelDetails] = useState(false)
 
-  const generateAIDetections = useCallback((reconciliationData: any, cashflowData: any): AIDiscrepancyDetection[] => {
-    const detections: AIDiscrepancyDetection[] = []
+  const generateAIDetections = useCallback((reconciliationData: any, cashflowData: any): AIDiscrepancyDetectionData[] => {
+    const detections: AIDiscrepancyDetectionData[] = []
 
     // Analyze reconciliation records for discrepancies
     reconciliationData.records.forEach((record: any, index: number) => {
       if (record.status === 'discrepancy' && record.difference) {
-        const detection: AIDiscrepancyDetection = {
+        const detection: AIDiscrepancyDetectionData = {
           id: `ai-detection-${index}`,
           type: 'amount',
           severity: Math.abs(record.difference) > 1000000 ? 'high' : 'medium',
@@ -198,7 +135,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
     // Analyze cashflow data for anomalies
     cashflowData.records.forEach((record: any, index: number) => {
       if (record.amount > 5000000) { // High value transaction
-        const detection: AIDiscrepancyDetection = {
+        const detection: AIDiscrepancyDetectionData = {
           id: `ai-detection-cashflow-${index}`,
           type: 'amount',
           severity: 'medium',
@@ -232,8 +169,6 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
   }, [])
 
   const generateAIPredictions = useCallback((reconciliationData: any): AIPrediction[] => {
-    const predictions: AIPrediction[] = []
-
     // Generate predictions for next week
     const nextWeekPredictions = [
       {
@@ -365,7 +300,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
     return `${(value * 100).toFixed(1)}%`
   }
 
-  const handleDetectionClick = (detection: AIDiscrepancyDetection) => {
+  const handleDetectionClick = (detection: AIDiscrepancyDetectionData) => {
     setSelectedDetection(detection)
     setShowDetectionModal(true)
   }

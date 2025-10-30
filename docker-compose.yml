@@ -63,11 +63,14 @@ services:
     networks:
       - reconciliation-network
     restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass}
     command:
-      - redis-server
-      - /usr/local/etc/redis/redis.conf
+      - sh
+      - -c
+      - "redis-server /usr/local/etc/redis/redis.conf --requirepass \"$${REDIS_PASSWORD}\""
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping"]
       interval: 10s
       timeout: 3s
       retries: 5
@@ -78,11 +81,11 @@ services:
   backend:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile.backend
+      dockerfile: infrastructure/docker/Dockerfile.backend.optimized
     container_name: reconciliation-backend
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
-      REDIS_URL: redis://redis:6379
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
       HOST: 0.0.0.0
       PORT: 2000
       BACKEND_PORT: 2000
@@ -117,12 +120,15 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile.frontend
+      dockerfile: infrastructure/docker/Dockerfile.frontend.optimized
+      args:
+        BUILDKIT_INLINE_CACHE: 1
     container_name: reconciliation-frontend
     environment:
-      - VITE_API_URL=http://backend:2000/api
-      - VITE_WS_URL=ws://backend:2000
+      - VITE_API_URL=${VITE_API_URL:-http://localhost:2000}/api
+      - VITE_WS_URL=${VITE_WS_URL:-ws://localhost:2000}
       - NODE_ENV=${NODE_ENV:-production}
+      - DOCKER_BUILDKIT=1
     ports:
       - "${FRONTEND_PORT:-1000}:80"
     networks:
@@ -131,6 +137,14 @@ services:
       backend:
         condition: service_healthy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
 
   # ==========================================================================
   # MONITORING: PROMETHEUS

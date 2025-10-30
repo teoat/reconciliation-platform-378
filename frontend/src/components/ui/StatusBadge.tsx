@@ -2,7 +2,7 @@ import React, { memo, useMemo } from 'react'
 import { CheckCircle, AlertCircle, Clock, XCircle } from 'lucide-react'
 
 export interface StatusBadgeProps {
-  status: 'success' | 'error' | 'warning' | 'pending' | 'info'
+  status: string
   children: React.ReactNode
   size?: 'sm' | 'md' | 'lg'
   showIcon?: boolean
@@ -64,7 +64,7 @@ const StatusBadge: React.FC<StatusBadgeProps> = memo(({
   }), [])
   
   // Memoize computed values
-  const config = useMemo(() => statusConfig[status], [statusConfig, status])
+  const config = useMemo(() => statusConfig[status as keyof typeof statusConfig] || statusConfig.info, [statusConfig, status])
   const Icon = useMemo(() => config.icon, [config.icon])
   
   // Memoize badge classes

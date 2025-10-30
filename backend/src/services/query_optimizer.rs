@@ -341,7 +341,7 @@ mod tests {
         let optimizer = QueryOptimizer::new(QueryOptimizerConfig::default());
         let columns = optimizer.extract_column_names("id = 1 AND name = 'test'");
         
-        assert!(columns.len() > 0);
+        assert!(!columns.is_empty());
     }
 }
 

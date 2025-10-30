@@ -2,6 +2,7 @@
 // Captures exceptions, performance data, and user feedback
 
 use sentry::{ClientInitGuard, Options, types::Dsn};
+use log::{warn, info};
 
 pub struct SentryConfig {
     pub dsn: String,
@@ -28,7 +29,7 @@ impl SentryConfig {
 
     pub fn init(&self) -> Option<ClientInitGuard> {
         if self.dsn.is_empty() {
-            println!("⚠️  Sentry DSN not configured - error tracking disabled");
+            warn!("Sentry DSN not configured - error tracking disabled");
             return None;
         }
 
@@ -45,7 +46,7 @@ impl SentryConfig {
             },
         ));
 
-        println!("✅ Sentry initialized for environment: {}", self.environment);
+        info!("Sentry initialized for environment: {}", self.environment);
         Some(guard)
     }
 }

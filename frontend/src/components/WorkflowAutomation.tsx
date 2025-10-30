@@ -1,137 +1,105 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
-import * as Icons from 'lucide-react'
-
-// Use namespace import for better tree-shaking
-const {
-  Workflow, 
-  CheckCircle, 
+import { useState, useEffect } from 'react'
+import {
+  Workflow,
+  CheckCircle,
   XCircle,
-  Clock,
   User,
-  Users,
   Settings,
-  Play,
-  Pause,
-  RotateCcw,
-  Save,
-  Plus,
   Edit,
-  Trash2,
   Eye,
-  Filter,
-  Search,
-  Calendar,
-  AlertTriangle,
-  Info,
+  Bell,
   Zap,
   Shield,
-  Target,
   Activity,
-  BarChart3,
-  PieChart,
-  LineChart,
-  Download,
-  Upload,
-  Copy,
-  Share2,
-  ExternalLink,
-  Globe,
-  Mail,
-  Phone,
-  Bell,
-  MessageSquare,
-  Layers,
-  Hash,
-  Type,
-  MapPin,
-  Wifi,
-  Lock,
-  Unlock,
-  Key,
-  Cloud,
-  Server,
-  Folder,
-  File,
-  FileCheck,
-  FileX,
-  FilePlus,
-  FileMinus,
-  FileEdit,
-  FileSearch,
   X,
-  ArrowRight,
-  ArrowLeft,
-  ArrowUp,
-  ArrowDown,
-  ChevronRight,
-  ChevronLeft,
-  ChevronUp,
-  ChevronDown,
-  MoreHorizontal,
-  MoreVertical,
-  Star,
-  Award,
-  Trophy,
-  Medal,
-  Flag,
-  Tag,
-  Bookmark,
-  RefreshCw,
-  RotateCw,
-  RotateCcw as RotateCcwIcon,
-  Move,
-  Maximize,
-  Minimize,
-  Maximize2,
-  Minimize2,
-  Square,
-  Circle,
-  Triangle,
-  Hexagon,
-  Octagon,
-  Diamond,
-  Heart,
-  Smile,
-  Frown,
-  Meh,
-  ThumbsUp,
-  ThumbsDown,
-  Hand,
-  UserCheck,
-  UserX,
-  UserPlus,
-  UserMinus,
-  Crown,
-  Building,
-  Home,
-  Building2,
-  Factory,
-  Store,
-  CreditCard,
-  DollarSign,
-  Euro,
-  PoundSterling,
-  Bitcoin,
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  Plus as PlusIcon,
-  Equal,
-  Divide,
-  Percent,
-  Calculator,
-  Calculator as CalculatorIcon
-} = Icons as any
+  Plus,
+} from 'lucide-react'
 import { useData } from './DataProvider'
-import { 
-  WorkflowStep, 
-  WorkflowInstance, 
-  BusinessRule, 
-  ApprovalRequest,
-  Project 
-} from '../types'
+import { Project } from '../types'
+
+// Workflow-related type definitions
+interface WorkflowCondition {
+  id: string
+  field: string
+  operator: 'greater_than' | 'less_than' | 'equals' | 'contains'
+  value: string | number | boolean | Date
+  logicalOperator?: 'AND' | 'OR'
+}
+
+interface WorkflowAction {
+  id: string
+  type: 'notify' | 'assign' | 'escalate' | 'create_task' | 'update_field'
+  parameters: Record<string, any>
+  order: number
+}
+
+interface WorkflowData {
+  id: string
+  name: string
+  type: 'approve' | 'escalation' | 'validation' | 'automation'
+  description: string
+  assigneeGroup?: string
+  conditions: WorkflowCondition[]
+  actions: WorkflowAction[]
+  timeout?: number
+  priority: 'low' | 'medium' | 'high' | 'critical'
+  status: 'pending' | 'active' | 'inactive'
+  order: number
+}
+
+interface BusinessRuleData {
+  id: string
+  name: string
+  description: string
+  category: 'validation' | 'routing' | 'calculation'
+  conditions: WorkflowCondition[]
+  actions: WorkflowAction[]
+  priority: number
+  status: 'pending' | 'active' | 'inactive'
+  createdAt: string | Date
+  updatedAt: string | Date
+  createdBy: string
+  executionCount: number
+  successRate: number
+  lastExecuted?: string | Date
+}
+
+interface WorkflowInstanceData {
+  id: string
+  workflowId: string
+  recordId: string
+  status: 'pending' | 'running' | 'completed' | 'failed'
+  currentStep?: string
+  steps: Array<{
+    id: string
+    stepId: string
+    status: 'pending' | 'in_progress' | 'completed' | 'failed'
+    startedAt?: string | Date
+    assignedTo?: string
+  }>
+  startedAt?: string | Date
+  assignedTo?: string
+  priority: 'low' | 'medium' | 'high' | 'critical'
+  metadata: Record<string, any>
+}
+
+interface ApprovalRequestData {
+  id: string
+  workflowInstanceId: string
+  stepId: string
+  recordId: string
+  requestedBy: string
+  requestedAt: string | Date
+  assignedTo: string
+  status: 'pending' | 'approved' | 'rejected' | 'cancelled'
+  priority: 'low' | 'medium' | 'high' | 'critical'
+  dueDate?: Date
+  metadata: Record<string, any>
+}
+
+type TabId = 'workflows' | 'instances' | 'rules' | 'approvals'
 
 interface WorkflowAutomationProps {
   project: Project | null
@@ -139,17 +107,14 @@ interface WorkflowAutomationProps {
 }
 
 const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationProps) => {
-  const { currentProject, getReconciliationData } = useData()
-  const [workflows, setWorkflows] = useState<any[]>([])
-  const [workflowInstances, setWorkflowInstances] = useState<any[]>([])
-  const [businessRules, setBusinessRules] = useState<any[]>([])
-  const [approvalRequests, setApprovalRequests] = useState<any[]>([])
-  const [selectedWorkflow, setSelectedWorkflow] = useState<any>(null)
-  const [selectedRule, setSelectedRule] = useState<any>(null)
+  const { currentProject } = useData()
+  const [workflows, setWorkflows] = useState<WorkflowData[]>([])
+  const [workflowInstances, setWorkflowInstances] = useState<WorkflowInstanceData[]>([])
+  const [businessRules, setBusinessRules] = useState<BusinessRuleData[]>([])
+  const [approvalRequests, setApprovalRequests] = useState<ApprovalRequestData[]>([])
+  const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowData | null>(null)
   const [showWorkflowModal, setShowWorkflowModal] = useState(false)
-  const [showRuleModal, setShowRuleModal] = useState(false)
-  const [showApprovalModal, setShowApprovalModal] = useState(false)
-  const [activeTab, setActiveTab] = useState<'workflows' | 'instances' | 'rules' | 'approvals'>('workflows')
+  const [activeTab, setActiveTab] = useState<TabId>('workflows')
   const [isCreating, setIsCreating] = useState(false)
 
   // Initialize workflow automation
@@ -160,7 +125,7 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
 
   const initializeWorkflowAutomation = () => {
     // Initialize sample workflows
-    const sampleWorkflows: any[] = [
+    const sampleWorkflows: WorkflowData[] = [
       {
         id: 'workflow-001',
         name: 'High Value Transaction Approval',
@@ -263,7 +228,7 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
     ]
 
     // Initialize sample business rules
-    const sampleRules: any[] = [
+    const sampleRules: BusinessRuleData[] = [
       {
         id: 'rule-001',
         name: 'Amount Range Validation',
@@ -332,7 +297,7 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
     ]
 
     // Initialize sample workflow instances
-    const sampleInstances: any[] = [
+    const sampleInstances: WorkflowInstanceData[] = [
       {
         id: 'instance-001',
         workflowId: 'workflow-001',
@@ -356,7 +321,7 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
     ]
 
     // Initialize sample approval requests
-    const sampleApprovals: any[] = [
+    const sampleApprovals: ApprovalRequestData[] = [
       {
         id: 'approval-001',
         workflowInstanceId: 'instance-001',
@@ -447,7 +412,7 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
     setIsCreating(true)
     // Simulate workflow creation
     setTimeout(() => {
-      const newWorkflow: any = {
+      const newWorkflow: WorkflowData = {
         id: `workflow-${Date.now()}`,
         name: 'New Workflow',
         type: 'approve',
@@ -467,7 +432,7 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
     setIsCreating(true)
     // Simulate rule creation
     setTimeout(() => {
-      const newRule: any = {
+      const newRule: BusinessRuleData = {
         id: `rule-${Date.now()}`,
         name: 'New Business Rule',
         description: 'New business rule description',
@@ -557,7 +522,7 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as TabId)}
                   className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === tab.id
                       ? 'border-primary-500 text-primary-600'
@@ -587,10 +552,10 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
                       {workflow.status}
                     </span>
                   </div>
-                  <p className="text-sm text-secondary-600 mb-3">{(workflow as any).description || 'No description'}</p>
+                  <p className="text-sm text-secondary-600 mb-3">{workflow.description || 'No description'}</p>
                   <div className="flex items-center justify-between">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor((workflow as any).priority)}`}>
-                      {(workflow as any).priority}
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(workflow.priority)}`}>
+                      {workflow.priority}
                     </span>
                     <div className="flex items-center space-x-2">
                       <button
@@ -628,28 +593,27 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
                         <h3 className="font-semibold text-secondary-900">
                           {workflows.find(w => w.id === instance.workflowId)?.name || 'Unknown Workflow'}
                         </h3>
-                        <p className="text-sm text-secondary-600">Record: {(instance as any).recordId}</p>
+                        <p className="text-sm text-secondary-600">Record: {instance.recordId}</p>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(instance.status)}`}>
-                        {instance.status}
-                      </span>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor((instance as any).priority)}`}>
-                        {(instance as any).priority}
-                      </span>
-                    </div>
+                     <div className="flex items-center space-x-2">
+                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(instance.status)}`}>
+                         {instance.status}
+                       </span>
+                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(instance.priority)}`}>
+                         {instance.priority}
+                       </span>
+                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                     <div>
-                      <span className="text-secondary-600">Started:</span>
-                      <span className="ml-2 text-secondary-900">
-                        {new Date((instance as any).startedAt).toLocaleString()}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-secondary-600">Assigned to:</span>
-                      <span className="ml-2 text-secondary-900">{(instance as any).assignedTo}</span>
+                       <span className="text-secondary-600">Started:</span>
+                       <span className="ml-2 text-secondary-900">
+                         {instance.startedAt ? new Date(instance.startedAt).toLocaleString() : 'Not started'}
+                       </span>
+                     </div>
+                     <div>
+                       <span className="text-secondary-600">Assigned to:</span>
+                       <span className="ml-2 text-secondary-900">{instance.assignedTo || 'Unassigned'}</span>
                     </div>
                     <div>
                       <span className="text-secondary-600">Current Step:</span>
@@ -679,9 +643,9 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor((rule as any).status)}`}>
-                        {(rule as any).status}
-                      </span>
+                       <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(rule.status)}`}>
+                         {rule.status}
+                       </span>
                       <span className="text-xs text-secondary-500">
                         Priority: {rule.priority}
                       </span>
@@ -841,12 +805,12 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
             <div className="mt-6">
               <h4 className="text-lg font-semibold text-secondary-900 mb-4">Conditions</h4>
               <div className="space-y-2">
-                {selectedWorkflow.conditions.map((condition: any) => (
+                {selectedWorkflow.conditions.map((condition: WorkflowCondition) => (
                   <div key={condition.id} className="p-3 bg-secondary-50 rounded-lg">
                     <div className="flex items-center space-x-2">
                       <span className="text-sm font-medium text-secondary-900">{condition.field}</span>
                       <span className="text-sm text-secondary-600">{condition.operator}</span>
-                      <span className="text-sm text-secondary-900">{condition.value}</span>
+                       <span className="text-sm text-secondary-900">{String(condition.value)}</span>
                     </div>
                   </div>
                 ))}
@@ -856,7 +820,7 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
             <div className="mt-6">
               <h4 className="text-lg font-semibold text-secondary-900 mb-4">Actions</h4>
               <div className="space-y-2">
-                {selectedWorkflow.actions.map((action: any) => (
+                {selectedWorkflow.actions.map((action: WorkflowAction) => (
                   <div key={action.id} className="p-3 bg-blue-50 rounded-lg">
                     <div className="flex items-center space-x-2">
                       <span className="text-sm font-medium text-blue-900">{action.type}</span>

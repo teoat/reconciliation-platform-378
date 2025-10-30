@@ -100,15 +100,20 @@ interface SynchronizedDataState {
   syncQueue: SynchronizationTask[]
 }
 
+// CSV record type for parsed data
+export interface CSVRecord {
+  [key: string]: string | number | boolean | null
+}
+
 interface ProcessedData {
   id: string
   source: 'ingestion' | 'reconciliation' | 'indonesian'
   type: 'expense' | 'bank' | 'mixed'
-  data: any
+  data: CSVRecord
   quality: DataQualityMetrics
   isIndonesian: boolean
   processedAt: string
-  metadata: Record<string, any>
+  metadata: Record<string, string | number | boolean>
 }
 
 interface ReconciliationRecord {
@@ -195,9 +200,9 @@ interface AuditEntry {
   userName: string
   action: string
   timestamp: string
-  details: Record<string, any>
-  previousValue?: any
-  newValue?: any
+  details: Record<string, unknown>
+  previousValue?: unknown
+  newValue?: unknown
   ipAddress?: string
   userAgent?: string
 }
@@ -225,12 +230,12 @@ const readFileContent = async (file: File): Promise<string> => {
   })
 }
 
-  const parseCSVContent = (content: string): any[] => {
+  const parseCSVContent = (content: string): CSVRecord[] => {
     const lines = content.split('\n')
     const headers = lines[0].split(',').map(h => h.trim())
     return lines.slice(1).map(line => {
       const values = line.split(',').map(v => v.trim())
-      const record: any = {}
+      const record: CSVRecord = {}
       headers.forEach((header, index) => {
         record[header] = values[index] || ''
       })
@@ -238,32 +243,38 @@ const readFileContent = async (file: File): Promise<string> => {
     }).filter(record => Object.values(record).some(value => value !== ''))
   }
 
-  const calculateIndonesianQualityMetrics = (data: any): any => {
+  const calculateIndonesianQualityMetrics = (data: CSVRecord): DataQualityMetrics => {
     const metrics = {
       completeness: 0,
       accuracy: 0,
       consistency: 0,
+      validity: 0,
+      duplicates: 0,
+      errors: 0,
       overall: 0
     }
 
     // Calculate completeness based on required fields
     const requiredFields = ['tanggal', 'deskripsi', 'jumlah', 'kategori']
-    const filledFields = requiredFields.filter(field => data[field] && data[field].toString().trim() !== '')
+    const filledFields = requiredFields.filter(field => data[field] && String(data[field]).trim() !== '')
     metrics.completeness = (filledFields.length / requiredFields.length) * 100
 
     // Calculate accuracy based on data format validation
     let accuracyScore = 0
-    if (data.tanggal && /^\d{4}-\d{2}-\d{2}$/.test(data.tanggal)) accuracyScore += 25
-    if (data.jumlah && !isNaN(parseFloat(data.jumlah))) accuracyScore += 25
-    if (data.deskripsi && data.deskripsi.length > 5) accuracyScore += 25
-    if (data.kategori && data.kategori.length > 2) accuracyScore += 25
+    if (data.tanggal && /^\d{4}-\d{2}-\d{2}$/.test(String(data.tanggal))) accuracyScore += 25
+    if (data.jumlah && !isNaN(parseFloat(String(data.jumlah)))) accuracyScore += 25
+    if (data.deskripsi && String(data.deskripsi).length > 5) accuracyScore += 25
+    if (data.kategori && String(data.kategori).length > 2) accuracyScore += 25
     metrics.accuracy = accuracyScore
 
     // Calculate consistency (simplified)
     metrics.consistency = metrics.completeness * 0.8 + metrics.accuracy * 0.2
 
+    // Calculate validity (simplified)
+    metrics.validity = metrics.accuracy
+
     // Calculate overall score
-    metrics.overall = (metrics.completeness + metrics.accuracy + metrics.consistency) / 3
+    metrics.overall = (metrics.completeness + metrics.accuracy + metrics.consistency + metrics.validity) / 4
 
     return metrics
   }
@@ -310,7 +321,7 @@ const EnhancedIngestionPage = () => {
     
     if (file.name.includes('expenses')) {
       const expenses = IndonesianDataProcessor.processExpensesData(rawData)
-      processedData = expenses.map(expense => ({
+      processedData = expenses.map((expense: ProcessedExpenseRecord) => ({
         id: expense.id,
         source: 'ingestion' as const,
         type: 'expense' as const,
@@ -326,7 +337,7 @@ const EnhancedIngestionPage = () => {
       }))
     } else if (file.name.includes('bank')) {
       const bankRecords = IndonesianDataProcessor.processBankData(rawData)
-      processedData = bankRecords.map(bank => ({
+      processedData = bankRecords.map((bank: ProcessedBankRecord) => ({
         id: bank.id,
         source: 'ingestion' as const,
         type: 'bank' as const,

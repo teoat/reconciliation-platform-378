@@ -6,6 +6,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use log::info;
 
 /// Supported language
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -856,7 +857,7 @@ impl InternationalizationService {
     pub async fn update_user_localization(&self, user_id: Uuid, context: LocalizationContext) -> AppResult<()> {
         // In a real implementation, this would update user preferences in database
         // For now, we'll just log the update
-        println!("Updated localization context for user {}: {:?}", user_id, context);
+        info!("Updated localization context for user {}: {:?}", user_id, context);
         Ok(())
     }
 

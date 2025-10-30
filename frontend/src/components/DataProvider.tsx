@@ -1,8 +1,7 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react'
-import DataManagementService, { ProjectData, UploadedFile, ReconciliationRecord, ExpenseCategory } from '../services/dataManagement'
-import { useWebSocketIntegration } from '../hooks/useWebSocketIntegration'
+import DataManagementService, { ProjectData, UploadedFile, ReconciliationRecord } from '../services/dataManagement'
 import { useSecurity } from '../hooks/useSecurity'
 
 // ============================================================================
@@ -12,22 +11,22 @@ import { useSecurity } from '../hooks/useSecurity'
 // Enhanced interfaces for unified data management
 interface WorkflowState {
   id: string
-  currentStage: WorkflowStage
+  currentStage: WorkflowStage<any>
   progress: number
   status: 'active' | 'paused' | 'completed' | 'error'
   lastUpdated: Date
-  nextStage?: WorkflowStage
-  previousStage?: WorkflowStage
+  nextStage?: WorkflowStage<any>
+  previousStage?: WorkflowStage<any>
 }
 
-interface WorkflowStage {
+interface WorkflowStage<T = Record<string, unknown>> {
   id: string
   name: string
   page: string
   order: number
   isCompleted: boolean
   isActive: boolean
-  data: any
+  data: T
   validation: ValidationResult
 }
 
@@ -53,8 +52,8 @@ interface ValidationWarning {
 
 interface CorrectionSuggestion {
   field: string
-  currentValue: any
-  suggestedValue: any
+  currentValue: unknown
+  suggestedValue: unknown
   reason: string
   confidence: number
 }
@@ -68,9 +67,9 @@ interface SyncStatus {
 
 interface PendingChange {
   id: string
-  page: string
+  page: keyof CrossPageData
   action: 'create' | 'update' | 'delete'
-  data: any
+  data: IngestionData | ReconciliationData | AdjudicationData | AnalyticsData | SecurityData | ApiData
   timestamp: Date
   retryCount: number
 }
@@ -131,7 +130,7 @@ interface CrossPageData {
 
 interface IngestionData {
   files: UploadedFile[]
-  processedData: any[]
+  processedData: ReconciliationRecord[]
   qualityMetrics: DataQualityMetrics
   validationResults: ValidationResult
   lastUpdated: Date
@@ -210,9 +209,18 @@ interface EnhancedDiscrepancyRecord {
   systems: SystemData[]
   discrepancyType: string
   severity: 'low' | 'medium' | 'high'
-  metadata: any
-  sla: any
-  resolution: any
+  metadata: Record<string, unknown>
+  sla: {
+    deadline: Date
+    priority: 'high' | 'medium' | 'low'
+    assignedTo?: string
+  }
+  resolution: {
+    type: 'automatic' | 'manual' | 'escalated'
+    resolvedAt?: Date
+    resolvedBy?: string
+    notes?: string
+  } | null
 }
 
 interface SystemData {
@@ -224,7 +232,11 @@ interface SystemData {
   amount: number
   date: string
   confidence: number
-  quality: any
+  quality: {
+    completeness: number
+    accuracy: number
+    timeliness: number
+  }
 }
 
 interface UserProfile {
@@ -242,7 +254,7 @@ interface DashboardData {
   id: string
   name: string
   type: string
-  data: any
+  data: Record<string, unknown>
   lastUpdated: Date
 }
 
@@ -251,7 +263,7 @@ interface ReportInstance {
   name: string
   templateId: string
   status: 'draft' | 'published' | 'scheduled' | 'archived'
-  data: any
+  data: Record<string, unknown>
   generatedAt?: Date
   generatedBy: string
 }
@@ -259,7 +271,7 @@ interface ReportInstance {
 interface PredictionResult {
   id: string
   type: string
-  prediction: any
+  prediction: Record<string, unknown>
   confidence: number
   timestamp: Date
 }
@@ -301,7 +313,7 @@ interface AuditLog {
   result: 'success' | 'failure' | 'denied'
   ipAddress: string
   userAgent: string
-  details: any
+  details: Record<string, unknown>
 }
 
 interface ComplianceStatus {
@@ -357,14 +369,14 @@ interface ApiParameter {
   type: string
   required: boolean
   description: string
-  example?: any
+  example?: unknown
 }
 
 interface ApiResponse {
   status: number
   description: string
-  schema: any
-  example?: any
+  schema: Record<string, unknown>
+  example?: unknown
 }
 
 interface WebhookEvent {
@@ -372,7 +384,7 @@ interface WebhookEvent {
   name: string
   description: string
   eventType: string
-  payload: any
+  payload: Record<string, unknown>
   isActive: boolean
   subscribers: number
 }
@@ -401,8 +413,8 @@ interface Integration {
 
 interface MatchingResult {
   id: string
-  recordA: any
-  recordB: any
+  recordA: Record<string, unknown>
+  recordB: Record<string, unknown>
   confidence: number
   matchType: string
   status: 'matched' | 'unmatched' | 'discrepancy'
@@ -412,8 +424,8 @@ interface DiscrepancyRecord {
   id: string
   priority: 'high' | 'medium' | 'low'
   status: 'pending' | 'in_review' | 'resolved' | 'escalated'
-  systemA: any
-  systemB: any
+  systemA: Record<string, unknown>
+  systemB: Record<string, unknown>
   difference: number
   differenceType: string
 }
@@ -430,7 +442,7 @@ interface DataContextType {
   
   // Cross-page data synchronization
   crossPageData: CrossPageData
-  updateCrossPageData: (page: keyof CrossPageData, data: any) => void
+  updateCrossPageData: (page: keyof CrossPageData, data: IngestionData | ReconciliationData | AdjudicationData | AnalyticsData | SecurityData | ApiData) => void
   
   // Real-time synchronization
   syncStatus: SyncStatus
@@ -438,7 +450,7 @@ interface DataContextType {
   
   // Workflow orchestration
   workflowProgress: WorkflowProgress
-  advanceWorkflow: (toStage: WorkflowStage) => Promise<void>
+  advanceWorkflow: (toStage: WorkflowStage<any>) => Promise<void>
   
   // Cross-page notifications
   notifications: Notification[]
@@ -484,7 +496,7 @@ interface DataContextType {
   transformIngestionToReconciliation: (projectId: string) => ProjectData | null
   transformReconciliationToCashflow: (projectId: string) => ProjectData | null
   subscribeToProject: (projectId: string, callback: (data: ProjectData) => void) => () => void
-  
+
   // Real-time updates
   subscribeToUpdates: (callback: (data: any) => void) => () => void
   
@@ -512,7 +524,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const sendComment = () => {}
   const updatePresence = () => {}
   const syncConnected = true
-  const wsSyncStatus = 'idle'
   const wsSyncData = () => {}
   
   // Security integration
@@ -652,7 +663,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   }, [workflowState])
   
   // Update cross-page data with WebSocket sync and security
-  const updateCrossPageData = useCallback((page: keyof CrossPageData, data: any) => {
+  const updateCrossPageData = useCallback((page: keyof CrossPageData, data: IngestionData | ReconciliationData | AdjudicationData | AnalyticsData | SecurityData | ApiData) => {
     // Check permission before updating data
     const hasPermission = checkPermission('current-user', page, 'update')
     if (!hasPermission) {
@@ -677,7 +688,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     
     // Sync data via WebSocket if connected
     if (syncConnected) {
-      wsSyncData('unified', page, processedData)
+      wsSyncData()
     }
 
     // Log successful update
@@ -792,7 +803,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   }, [])
   
   // Advance workflow
-  const advanceWorkflow = useCallback(async (toStage: WorkflowStage) => {
+  const advanceWorkflow = useCallback(async (toStage: WorkflowStage<any>) => {
     if (!workflowState) return
     
     setIsLoading(true)

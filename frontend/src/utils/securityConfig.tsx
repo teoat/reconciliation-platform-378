@@ -8,12 +8,11 @@ export const cspConfig = {
     'default-src': ["'self'"],
     'script-src': [
       "'self'",
-      "'unsafe-inline'", // Required for Vite in development
-      "'unsafe-eval'", // Required for Vite in development
+      "'nonce-{nonce}'", // Use nonces for inline scripts
     ],
     'style-src': [
       "'self'",
-      "'unsafe-inline'", // Required for Tailwind CSS
+      "'nonce-{nonce}'", // Use nonces for inline styles
       'https://fonts.googleapis.com',
     ],
     'font-src': [
@@ -254,7 +253,7 @@ export const securityHeaders = {
 /**
  * Security middleware for Express.js
  */
-export function securityMiddleware(req: any, res: any, next: any) {
+export function securityMiddleware(_req: any, res: any, next: any) {
   // Set security headers
   Object.entries(securityHeaders).forEach(([header, value]) => {
     res.setHeader(header, value)

@@ -14,28 +14,28 @@ pub struct MetricsMiddleware {
 }
 
 impl MetricsMiddleware {
-    pub fn new(registry: Registry) -> Self {
+    pub fn new(registry: Registry) -> Result<Self, prometheus::Error> {
         let request_counter = Counter::new(
             "http_requests_total",
             "Total number of HTTP requests"
-        ).unwrap();
-        
+        )?;
+
         let request_latency = Histogram::with_opts(
             HistogramOpts::new(
                 "http_request_duration_seconds",
                 "HTTP request latency in seconds"
             )
             .buckets(vec![0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0])
-        ).unwrap();
-        
+        )?;
+
         let error_counter = Counter::new(
             "http_errors_total",
             "Total number of HTTP errors"
-        ).unwrap();
-        
-        registry.register(Box::new(request_counter.clone())).unwrap();
-        registry.register(Box::new(request_latency.clone())).unwrap();
-        registry.register(Box::new(error_counter.clone())).unwrap();
+        )?;
+
+        registry.register(Box::new(request_counter.clone()))?;
+        registry.register(Box::new(request_latency.clone()))?;
+        registry.register(Box::new(error_counter.clone()))?;
         
         Self {
             registry,

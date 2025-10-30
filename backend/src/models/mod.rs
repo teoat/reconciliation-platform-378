@@ -9,6 +9,7 @@ use uuid::Uuid;
 use chrono::{DateTime, Utc};
 
 pub mod schema;
+pub mod subscription;
 
 pub use schema::JsonValue;
 

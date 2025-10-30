@@ -84,6 +84,11 @@ impl AuthService {
         }
     }
     
+    /// Get configured JWT expiration seconds
+    pub fn get_expiration(&self) -> i64 {
+        self.jwt_expiration
+    }
+    
     /// Hash a password using bcrypt
     pub fn hash_password(&self, password: &str) -> AppResult<String> {
         hash(password, DEFAULT_COST)
@@ -100,7 +105,7 @@ impl AuthService {
     pub fn generate_token(&self, user: &User) -> AppResult<String> {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or_default()
             .as_secs() as usize;
         
         let exp = now + (self.jwt_expiration as usize);
@@ -341,7 +346,7 @@ impl EnhancedAuthService {
         let user = crate::models::schema::users::table
             .filter(crate::models::schema::users::email.eq(email))
             .first::<crate::models::User>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Generate reset token
         let reset_token = self.generate_reset_token()?;
@@ -359,7 +364,7 @@ impl EnhancedAuthService {
                 used_at: Some(now),
             })
             .execute(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Store new token with 30 minute expiration
         let expires_at = now + chrono::Duration::minutes(30);
@@ -374,7 +379,7 @@ impl EnhancedAuthService {
         diesel::insert_into(password_reset_tokens::table)
             .values(new_token)
             .execute(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(reset_token)
     }
@@ -425,7 +430,7 @@ impl EnhancedAuthService {
             .filter(users::id.eq(reset_token.user_id))
             .set(users::password_hash.eq(&password_hash))
             .execute(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Mark token as used
         diesel::update(password_reset_tokens::table)
@@ -434,7 +439,7 @@ impl EnhancedAuthService {
                 used_at: Some(now),
             })
             .execute(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(())
     }
@@ -621,7 +626,7 @@ impl EnhancedAuthService {
         diesel::delete(email_verification_tokens::table)
             .filter(email_verification_tokens::user_id.eq(user_id))
             .execute(&mut db.get_connection()?)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Store new token with 24 hour expiration
         let expires_at = chrono::Utc::now() + chrono::Duration::hours(24);
@@ -635,7 +640,7 @@ impl EnhancedAuthService {
         diesel::insert_into(email_verification_tokens::table)
             .values(new_token)
             .execute(&mut db.get_connection()?)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(token)
     }
@@ -681,7 +686,7 @@ impl EnhancedAuthService {
                 verified_at: Some(now),
             })
             .execute(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         // Update user email if different
         if verification_token.email != "" {
@@ -689,7 +694,7 @@ impl EnhancedAuthService {
                 .filter(users::id.eq(verification_token.user_id))
                 .set(users::email.eq(&verification_token.email))
                 .execute(&mut conn)
-                .map_err(|e| AppError::Database(e))?;
+                .map_err(AppError::Database)?;
         }
         
         Ok(())
