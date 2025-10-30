@@ -629,10 +629,13 @@ Testing Directory Structure:
 
 **Current Code:**
 ```rust
-jwt_secret: "your-jwt-secret".to_string(),
+jwt_secret: "[REDACTED]".to_string(), // Hardcoded value found in main.rs:34
 ```
 
-**Recommendation:** Use environment variable immediately
+**Recommendation:** Replace with environment variable immediately:
+```rust
+jwt_secret: env::var("JWT_SECRET").expect("JWT_SECRET must be set"),
+```
 
 ### Priority 2: High (Impacts Functionality)
 
@@ -702,19 +705,27 @@ jwt_secret: "your-jwt-secret".to_string(),
 
 #### Day 1-2: Fix Compilation Errors
 
-1. **Add missing Config fields**
+1. **Add missing Config fields** (Partial example showing fields to add)
    ```rust
+   // Example: Add these fields to the existing Config struct
    pub struct Config {
+       // Existing fields
        pub database_url: String,
        pub redis_url: String,
        pub jwt_secret: String,
        pub jwt_expiration: i64,
-       pub cors_origins: Vec<String>,     // Add
-       pub host: String,                   // Add
-       pub log_level: String,              // Add
-       // ... other fields
+       
+       // New fields to add
+       pub cors_origins: Vec<String>,
+       pub host: String,
+       pub log_level: String,
+       pub port: u16,
+       pub max_connections: u32,
+       pub enable_metrics: bool,
    }
    ```
+   
+   Note: Review the actual Config struct definition in `src/config.rs` for the complete list of required fields.
 
 2. **Fix service cloning**
    - Add `Clone` implementation to all services
