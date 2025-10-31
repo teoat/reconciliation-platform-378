@@ -226,7 +226,7 @@ impl UserService {
                 }
             }?;
             
-            Ok(Some(result))
+            Ok(result)
         }).await?;
         
         // Get user (new or existing) with project count
