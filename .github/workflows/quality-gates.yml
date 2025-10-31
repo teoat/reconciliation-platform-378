@@ -14,14 +14,18 @@ jobs:
           toolchain: stable
       
       - name: Clippy
+        working-directory: ./backend
         run: cargo clippy -- -D warnings
       
       - name: Coverage
+        working-directory: ./backend
         run: cargo tarpaulin --out Html
       
       - name: Security audit
+        working-directory: ./backend
         run: cargo audit
       
       - name: Benchmarks
+        working-directory: ./backend
         run: cargo bench
 

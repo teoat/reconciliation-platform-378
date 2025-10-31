@@ -61,7 +61,7 @@ where
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let service = self.service.clone();
-        let cache_service = Arc::clone(&self.cache_service);
+        let cache_service: Arc<MultiLevelCache> = Arc::clone(&self.cache_service);
 
         Box::pin(async move {
             let path = req.path().to_string();

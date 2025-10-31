@@ -141,6 +141,12 @@ impl From<actix_web::Error> for AppError {
     }
 }
 
+impl From<anyhow::Error> for AppError {
+    fn from(err: anyhow::Error) -> Self {
+        AppError::Internal(err.to_string())
+    }
+}
+
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
         // ✅ ERROR TRANSLATION: Use translation service for user-friendly messages
