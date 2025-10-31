@@ -7,20 +7,14 @@ use serde::{Deserialize, Serialize};
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use anyhow::{Context, Result};
-use uuid;
-
-/// Cache strategy enum
-#[derive(Debug, Clone, Copy)]
-pub enum CacheStrategy {
-    /// Write-through: write to cache and database simultaneously
-    WriteThrough,
-    /// Write-behind: write to cache immediately, database asynchronously
-    WriteBehind,
-    /// Read-through: read from cache, fetch from database if miss
-    ReadThrough,
-}
+use uuid::Uuid;
 
 /// Multi-level cache service
+/// 
+/// Note: This implementation uses a synchronous Redis connection with mutex locking
+/// wrapped in async functions for API compatibility. For production use with high
+/// concurrency, consider migrating to redis-tokio or async-redis for truly
+/// asynchronous operations without blocking the async runtime.
 pub struct MultiLevelCache {
     redis_client: Client,
     connection: Arc<Mutex<Connection>>,
@@ -132,7 +126,7 @@ impl MultiLevelCache {
     }
 
     /// Invalidate job cache by pattern
-    pub async fn invalidate_job_cache(&self, job_id: uuid::Uuid, project_id: Option<uuid::Uuid>) -> Result<()> {
+    pub async fn invalidate_job_cache(&self, job_id: Uuid, project_id: Option<Uuid>) -> Result<()> {
         // Delete specific job cache entries
         let _ = self.delete(&format!("job:{}", job_id)).await;
         
@@ -145,10 +139,15 @@ impl MultiLevelCache {
     }
 
     /// Invalidate project cache
-    pub async fn invalidate_project_cache(&self, project_id: uuid::Uuid) -> Result<()> {
-        // Delete all cache entries related to this project
+    /// 
+    /// Note: This implementation only deletes specific known keys.
+    /// For production, consider implementing SCAN-based pattern deletion
+    /// to handle all project-related cache entries.
+    pub async fn invalidate_project_cache(&self, project_id: Uuid) -> Result<()> {
+        // Delete specific known cache entries for this project
         let _ = self.delete(&format!("project:{}", project_id)).await;
-        let _ = self.delete(&format!("project:{}:*", project_id)).await;
+        let _ = self.delete(&format!("project:{}:jobs", project_id)).await;
+        let _ = self.delete(&format!("project:{}:stats", project_id)).await;
         
         Ok(())
     }
