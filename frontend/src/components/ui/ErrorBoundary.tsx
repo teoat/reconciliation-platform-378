@@ -1,5 +1,5 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react'
-import { AlertCircle, RefreshCw, Home } from 'lucide-react'
+import { AlertCircle, RefreshCw, Home, X } from 'lucide-react'
 import Button from './Button'
 import { errorContextService } from '../../services/errorContextService'
 import { errorTranslationService } from '../../services/errorTranslationService'

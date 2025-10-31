@@ -2,7 +2,7 @@
 //! 
 //! Provides secure access to secrets stored in AWS Secrets Manager
 
-use aws_config::Region;
+use aws_config::{Region, BehaviorVersion};
 use aws_sdk_secretsmanager::Client as SecretsManagerClient;
 use std::sync::Arc;
 use std::time::Duration;
@@ -22,7 +22,7 @@ impl SecretsManager {
     /// Create a new secrets manager
     pub async fn new(region: impl Into<String>) -> AppResult<Self> {
         let region = Region::new(region.into());
-        let config = aws_config::from_env()
+        let config = aws_config::defaults(BehaviorVersion::latest())
             .region(region)
             .load()
             .await;

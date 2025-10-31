@@ -41,7 +41,7 @@ pub fn get_client_ip(req: &HttpRequest) -> String {
 
     // Fall back to connection info
     req.connection_info()
-        .remote_addr()
+        .peer_addr()
         .unwrap_or("unknown")
         .to_string()
 }

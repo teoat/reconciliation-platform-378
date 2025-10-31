@@ -15,6 +15,7 @@ interface AuthContextType {
     last_name: string
     role?: string
   }) => Promise<{ success: boolean; error?: string }>
+  googleOAuth: (idToken: string) => Promise<{ success: boolean; error?: string }>
   logout: () => Promise<void>
   refreshUser: () => Promise<void>
 }
@@ -114,6 +115,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  const googleOAuth = async (idToken: string) => {
+    try {
+      setIsLoading(true)
+      const response = await apiClient.googleOAuth(idToken)
+      
+      if (response.error) {
+        return { success: false, error: response.error.message }
+      }
+      
+      if (response.data) {
+        setUser(response.data.user)
+        return { success: true }
+      }
+      
+      return { success: false, error: 'Google authentication failed' }
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Google authentication failed' }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const logout = async () => {
     try {
       await apiClient.logout()
@@ -144,6 +167,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     login,
     register,
+    googleOAuth,
     logout,
     refreshUser
   }

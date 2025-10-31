@@ -7,8 +7,8 @@ use uuid::Uuid;
 use std::sync::Arc;
 
 use crate::errors::AppError;
-use crate::services::auth::{AuthService, LoginRequest, RegisterRequest, ChangePasswordRequest};
-use crate::services::user::UserService;
+use crate::services::auth::{AuthService, LoginRequest, RegisterRequest, ChangePasswordRequest, GoogleOAuthRequest};
+use crate::services::user::{UserService, CreateOAuthUserRequest};
 use crate::handlers::helpers::{mask_email, get_client_ip, get_user_agent};
 
 /// Configure authentication routes
@@ -23,6 +23,7 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .route("/password-reset/confirm", web::post().to(confirm_password_reset))
         .route("/verify-email", web::post().to(verify_email))
         .route("/resend-verification", web::post().to(resend_verification))
+        .route("/google", web::post().to(google_oauth))
         .route("/me", web::get().to(get_current_user));
 }
 
@@ -309,6 +310,90 @@ pub async fn resend_verification(
         message: Some("Verification email sent".to_string()),
         error: None,
     }))
+}
+
+/// Google OAuth endpoint
+pub async fn google_oauth(
+    req: web::Json<GoogleOAuthRequest>,
+    http_req: HttpRequest,
+    auth_service: web::Data<Arc<AuthService>>,
+    user_service: web::Data<Arc<UserService>>,
+) -> Result<HttpResponse, AppError> {
+    // Verify Google ID token
+    let client = reqwest::Client::new();
+    let verify_url = format!("https://oauth2.googleapis.com/tokeninfo?id_token={}", req.id_token);
+    
+    let response = client
+        .get(&verify_url)
+        .send()
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to verify Google token: {}", e)))?;
+    
+    if !response.status().is_success() {
+        return Err(AppError::Authentication("Invalid Google ID token".to_string()));
+    }
+    
+    let token_info: serde_json::Value = response
+        .json()
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to parse Google response: {}", e)))?;
+    
+    // Extract user information from Google token
+    let email = token_info["email"]
+        .as_str()
+        .ok_or_else(|| AppError::Authentication("Email not found in Google token".to_string()))?
+        .to_string();
+    
+    let first_name = token_info["given_name"]
+        .as_str()
+        .unwrap_or("")
+        .to_string();
+    
+    let last_name = token_info["family_name"]
+        .as_str()
+        .unwrap_or("")
+        .to_string();
+    
+    // Create or get user
+    let create_oauth_request = CreateOAuthUserRequest {
+        email: email.clone(),
+        first_name,
+        last_name,
+        role: None,
+    };
+    
+    let user_info = user_service.as_ref().create_oauth_user(create_oauth_request).await?;
+    
+    // Get full user for token generation
+    let user = user_service.as_ref().get_user_by_email(&email).await?;
+    
+    // Check if user is active
+    if !user.is_active {
+        return Err(AppError::Authentication("Account is deactivated".to_string()));
+    }
+    
+    // Generate token
+    let token = auth_service.as_ref().generate_token(&user)?;
+    
+    // Update last login
+    user_service.as_ref().update_last_login(user.id).await?;
+    
+    // Create response
+    let auth_response = crate::services::auth::AuthResponse {
+        token,
+        user: crate::services::auth::UserInfo {
+            id: user_info.id,
+            email: user_info.email,
+            first_name: user_info.first_name,
+            last_name: user_info.last_name,
+            role: user_info.role,
+            is_active: user_info.is_active,
+            last_login: Some(chrono::Utc::now()),
+        },
+        expires_at: (chrono::Utc::now().timestamp() + auth_service.as_ref().get_expiration()) as usize,
+    };
+    
+    Ok(HttpResponse::Ok().json(auth_response))
 }
 
 /// Get current user information

@@ -1,141 +1,16 @@
-# ============================================================================
-# SSOT: BACKEND DOCKERFILE (LOCKED)
-# This is the single source of truth for backend container builds.
-# Modify here only. Do not create alternate Dockerfiles.
-# ============================================================================
-# ULTIMATE OPTIMIZED MULTI-STAGE DOCKERFILE FOR RUST BACKEND
-# ============================================================================
-# Service Name: reconciliation-backend
-# Runtime: Rust 1.90 with Actix-Web
-# Optimization Goal: Minimal image size (~50-70MB final image)
-# Resource Target: 70% of current usage (350MB RAM, 350m CPU limit)
-# ============================================================================
-
-# ============================================================================
-# STAGE 1: Builder Stage - Full Compilation Environment
-# ============================================================================
-FROM rust:1.90-bullseye AS builder
-
-# Install build dependencies in a single layer for optimal caching
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    pkg-config \
-    build-essential \
-    libssl-dev \
-    libpq-dev \
-    curl \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
-
-# Build acceleration (sccache - optional, gracefully handle if install fails)
-# Install sccache first, then conditionally set RUSTC_WRAPPER
-RUN cargo install sccache --locked 2>&1 || echo "sccache install failed, building without cache" && \
-    mkdir -p /sccache
-# Only set RUSTC_WRAPPER if sccache is available (set in build steps conditionally)
-ENV SCCACHE_DIR=/sccache
-
-# Set working directory
-WORKDIR /app
-
-# Copy dependency manifests ONLY (for Docker layer caching optimization)
+FROM rust:1.90-bookworm AS builder
+WORKDIR /app/backend
 COPY backend/Cargo.toml backend/Cargo.lock ./
+COPY backend/src ./src
+RUN cargo build --release
 
-# Create a dummy main.rs to cache dependencies compilation
-RUN mkdir -p src && \
-    echo "fn main() {}" > src/main.rs
-
-# Pre-compile dependencies (this layer will be cached if Cargo files don't change)
-# Use sccache only if it's installed, otherwise build normally
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/app/target \
-    --mount=type=cache,target=/sccache \
-    (if command -v sccache >/dev/null 2>&1; then \
-        export RUSTC_WRAPPER=sccache && cargo build --release --locked || cargo build --release; \
-    else \
-        cargo build --release --locked || cargo build --release; \
-    fi) && \
-    rm -rf src
-
- # Copy actual source code
- COPY backend/src ./src
- COPY backend/migrations ./migrations
-
-# Build the actual application with maximum optimizations
-# Use sccache only if it's installed, otherwise build normally
-# IMPORTANT: copy the resulting binary out of the cache-mounted target dir
-RUN --mount=type=cache,target=/usr/local/cargo/registry \
-    --mount=type=cache,target=/usr/local/cargo/git \
-    --mount=type=cache,target=/app/target \
-    --mount=type=cache,target=/sccache \
-    (if command -v sccache >/dev/null 2>&1; then \
-        export RUSTC_WRAPPER=sccache && cargo build --release --locked -p reconciliation-backend; \
-    else \
-        cargo build --release --locked -p reconciliation-backend; \
-    fi) && \
-    (if [ -f target/release/reconciliation-backend ]; then \
-        cp target/release/reconciliation-backend /app/reconciliation-backend; \
-     elif [ -f target/release/bin/reconciliation-backend ]; then \
-        cp target/release/bin/reconciliation-backend /app/reconciliation-backend; \
-     else \
-        echo "FATAL: built binary not found in target/release" && exit 1; \
-     fi) && \
-    strip /app/reconciliation-backend || true && \
-    chmod +x /app/reconciliation-backend
-
-# Verify binary exists at the known location and show size
-RUN ls -lh /app/reconciliation-backend
-
-# ============================================================================
-# STAGE 2: Runtime Stage - Minimal Production Image
-# ============================================================================
-FROM debian:bullseye-slim AS runtime
-
-LABEL maintainer="Reconciliation Platform Team"
-LABEL version="1.0.0"
-LABEL description="Optimized Rust Backend for Reconciliation Platform"
-
- # Install ONLY runtime dependencies (minimal footprint)
-RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    tzdata \
-    libssl1.1 \
-    libpq5 \
+FROM debian:bookworm-slim
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates libpq5 wget \
     && rm -rf /var/lib/apt/lists/*
-
-# Create non-root user for security hardening
-RUN groupadd -g 1001 appgroup && \
-    useradd -m -u 1001 -g appgroup -s /bin/sh appuser
-
-# Set working directory
 WORKDIR /app
-
- # Copy binary from builder stage (from known location)
-COPY --from=builder --chown=appuser:appgroup /app/reconciliation-backend ./reconciliation-backend
-
-# Copy migrations only (no source code in final image)
-COPY --from=builder --chown=appuser:appgroup /app/migrations ./migrations
-
-# Create necessary directories with proper permissions
-RUN mkdir -p /app/uploads /app/logs && \
-    chown -R appuser:appgroup /app
-
-# Switch to non-root user (security best practice)
-USER appuser
-
-# Expose application port
+COPY --from=builder /app/backend/target/release/reconciliation-backend /app/reconciliation-backend
 EXPOSE 2000
-
-# Set environment variables for optimal performance
-ENV RUST_LOG=info \
-    RUST_BACKTRACE=0 \
-    PORT=2000 \
-    HOST=0.0.0.0
-
-# Health check configuration
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:2000/health || exit 1
-
-# Run the application
-CMD ["./reconciliation-backend"]
+ENV RUST_LOG=info
+CMD ["/app/reconciliation-backend"]
 

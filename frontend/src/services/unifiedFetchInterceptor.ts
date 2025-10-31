@@ -56,8 +56,8 @@ export class UnifiedFetchInterceptor {
       const method = options.method || 'GET'
 
       try {
-        // Call original fetch
-        const response = await this.originalFetch(...args)
+        // Call original fetch with proper context binding to prevent "Illegal invocation" error
+        const response = await this.originalFetch.call(window, ...args)
         const duration = performance.now() - startTime
 
         // Track metrics if sampling

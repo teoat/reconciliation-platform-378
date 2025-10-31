@@ -52,6 +52,8 @@ const Button: React.FC<ButtonProps> = memo(({
     <button
       className={classes}
       disabled={isDisabled}
+      aria-label={props['aria-label'] || (typeof children === 'string' ? children : undefined)}
+      aria-busy={loading}
       {...props}
     >
       {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}

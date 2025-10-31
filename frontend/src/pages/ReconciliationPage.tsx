@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, memo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { 
   Upload, 
@@ -25,6 +25,7 @@ import Modal from '../components/ui/Modal'
 import StatusBadge from '../components/ui/StatusBadge'
 import MetricCard from '../components/ui/MetricCard'
 import { SkeletonDashboard } from '../components/ui/LoadingSpinner'
+import { apiClient } from '../services/apiClient'
 
 interface ReconciliationPageProps {}
 
@@ -36,7 +37,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   const { project, isLoading: projectLoading } = useProject(projectId || null)
   const { dataSources, uploadFile, processFile } = useDataSources(projectId || null)
   const { jobs, createJob, startJob } = useReconciliationJobs(projectId || null)
-  const { matches } = useReconciliationMatches(projectId || null)
+  const { matches, updateMatch } = useReconciliationMatches(projectId || null)
   
   // State
   const [activeTab, setActiveTab] = useState<'upload' | 'configure' | 'run' | 'results'>('upload')
@@ -182,14 +183,9 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       label: 'Progress',
       render: (value, row) => (
         <div className="flex items-center space-x-2">
-          <div 
-            className="w-16 bg-gray-200 rounded-full h-2"
-            role="progressbar"
-            aria-valuenow={`${row.status === 'completed' ? 100 : value || 0}`}
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-label={`Progress is ${row.status === 'completed' ? 100 : value || 0} percent`}
-          >
+            <div 
+              className="w-16 bg-gray-200 rounded-full h-2"
+            >
             <div 
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
               style={{ width: `${row.status === 'completed' ? 100 : value || 0}%` }}
@@ -261,11 +257,6 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
           <div className="flex items-center space-x-2">
             <div 
               className="w-16 bg-gray-200 rounded-full h-2"
-              role="progressbar"
-              aria-valuenow={`${progressValue}`}
-              aria-valuemin="0"
-              aria-valuemax="100"
-              aria-label={`Confidence score is ${progressValue} percent`}
             >
               <div 
                 className={`h-2 rounded-full transition-all duration-300 ${
@@ -317,7 +308,17 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
               <Button
                 size="sm"
                 variant="primary"
-                onClick={() => {/* Approve match */}}
+                onClick={async () => {
+                  // Optimistic approve
+                  const original = { ...row }
+                  await updateMatch(row.id, { ...row, status: 'approved' })
+                  try {
+                    await apiClient.batchResolveMatches([{ match_id: row.id, action: 'approve' }])
+                  } catch (e) {
+                    // Rollback on failure
+                    await updateMatch(row.id, original)
+                  }
+                }}
               >
                 <CheckCircle className="h-4 w-4 mr-1" />
                 Approve
@@ -325,7 +326,15 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
               <Button
                 size="sm"
                 variant="danger"
-                onClick={() => {/* Reject match */}}
+                onClick={async () => {
+                  const original = { ...row }
+                  await updateMatch(row.id, { ...row, status: 'rejected' })
+                  try {
+                    await apiClient.batchResolveMatches([{ match_id: row.id, action: 'reject' }])
+                  } catch (e) {
+                    await updateMatch(row.id, original)
+                  }
+                }}
               >
                 <AlertCircle className="h-4 w-4 mr-1" />
                 Reject
@@ -578,6 +587,9 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
                 <DataTable
                   data={matches}
                   columns={matchColumns}
+                  virtualized
+                  virtualRowHeight={48}
+                  virtualContainerHeight={560}
                   emptyMessage="No matches found yet"
                 />
               </div>
@@ -646,4 +658,4 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   )
 }
 
-export default ReconciliationPage
+export default memo(ReconciliationPage)

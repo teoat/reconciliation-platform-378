@@ -710,19 +710,38 @@ class ProgressVisualizationService {
     const tooltip = document.createElement('div')
     tooltip.id = `help-tooltip-${help.id}`
     tooltip.className = 'contextual-help-tooltip'
-    tooltip.innerHTML = `
-      <div class="help-content">
-        <h3>${help.content.title}</h3>
-        <p>${help.content.description}</p>
-        ${help.content.actions ? `
-          <div class="help-actions">
-            ${help.content.actions.map(action => `
-              <button class="help-action ${action.type}">${action.label}</button>
-            `).join('')}
-          </div>
-        ` : ''}
-      </div>
-    `
+    
+    // Sanitize content to prevent XSS - use textContent instead of innerHTML
+    const helpContent = document.createElement('div')
+    helpContent.className = 'help-content'
+    
+    const title = document.createElement('h3')
+    title.textContent = help.content.title || ''
+    helpContent.appendChild(title)
+    
+    const description = document.createElement('p')
+    description.textContent = help.content.description || ''
+    helpContent.appendChild(description)
+    
+    if (help.content.actions && help.content.actions.length > 0) {
+      const actionsDiv = document.createElement('div')
+      actionsDiv.className = 'help-actions'
+      
+      help.content.actions.forEach(action => {
+        const button = document.createElement('button')
+        button.className = `help-action ${action.type}`
+        button.textContent = action.label || ''
+        button.type = 'button'
+        if (action.onClick) {
+          button.addEventListener('click', action.onClick)
+        }
+        actionsDiv.appendChild(button)
+      })
+      
+      helpContent.appendChild(actionsDiv)
+    }
+    
+    tooltip.appendChild(helpContent)
     
     // Position tooltip
     const rect = element.getBoundingClientRect()

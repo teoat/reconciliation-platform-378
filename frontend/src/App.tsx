@@ -1,5 +1,5 @@
 import React, { useEffect, lazy, Suspense } from 'react'
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
 import { AuthProvider, ProtectedRoute } from './hooks/useAuth'
 import { useHealthCheck } from './hooks/useFileReconciliation'
 import { useProjects } from './hooks/useApi'
@@ -7,9 +7,11 @@ import { ReduxProvider } from './store/ReduxProvider'
 import { ErrorBoundary } from './components/ui/ErrorBoundary'
 import { WebSocketProvider } from './services/WebSocketProvider'
 import UnifiedFetchInterceptor from './services/unifiedFetchInterceptor'
+import { apiClient } from './services/apiClient'
 import AppShell from './components/layout/AppShell'
 import AuthPage from './pages/AuthPage'
 import Button from './components/ui/Button'
+import ToastContainer from './components/ui/ToastContainer'
 
 // Lazy load heavy components for better performance
 const ReconciliationPage = lazy(() => import('./pages/ReconciliationPage'))
@@ -19,6 +21,13 @@ const UserManagement = lazy(() => import('./components/UserManagement'))
 const ApiIntegrationStatus = lazy(() => import('./components/ApiIntegrationStatus'))
 const ApiTester = lazy(() => import('./components/ApiTester'))
 const ApiDocumentation = lazy(() => import('./components/ApiDocumentation'))
+const ProjectCreate = lazy(() => import('./components/pages/ProjectCreate'))
+const ProjectDetail = lazy(() => import('./components/pages/ProjectDetail'))
+const ProjectEdit = lazy(() => import('./components/pages/ProjectEdit'))
+const FileUpload = lazy(() => import('./components/pages/FileUpload'))
+const Settings = lazy(() => import('./components/pages/Settings'))
+const Profile = lazy(() => import('./components/pages/Profile'))
+const NotFound = lazy(() => import('./components/pages/NotFound'))
 
 // Loading component
 const LoadingSpinner = () => (
@@ -61,8 +70,9 @@ function App() {
       <ReduxProvider>
         <WebSocketProvider config={wsConfig}>
           <AuthProvider>
-            <Router>
+            <Router basename={import.meta.env.VITE_BASE_PATH || '/'}>
               <div className="min-h-screen bg-gray-100">
+                <ToastContainer />
                 <Routes>
                 <Route path="/login" element={<AuthPage />} />
                 <Route path="/" element={
@@ -99,6 +109,42 @@ function App() {
                     </AppLayout>
                   </ProtectedRoute>
                 } />
+                <Route path="/projects/new" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <ProjectCreate />
+                      </Suspense>
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/projects/:id" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <ProjectDetail />
+                      </Suspense>
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/projects/:id/edit" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <ProjectEdit />
+                      </Suspense>
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/upload" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Suspense fallback={<LoadingSpinner />}>
+                        <FileUpload />
+                      </Suspense>
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
             <Route path="/users" element={
               <ProtectedRoute>
                   <AppLayout>
@@ -126,7 +172,7 @@ function App() {
                 </AppLayout>
               </ProtectedRoute>
             } />
-            <Route path="/api-docs" element={
+                <Route path="/api-docs" element={
               <ProtectedRoute>
                 <AppLayout>
                   <Suspense fallback={<LoadingSpinner />}>
@@ -135,7 +181,31 @@ function App() {
                 </AppLayout>
               </ProtectedRoute>
             } />
-            <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="/settings" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Settings />
+                  </Suspense>
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <Suspense fallback={<LoadingSpinner />}>
+                    <Profile />
+                  </Suspense>
+                </AppLayout>
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={
+              <AppLayout>
+                <Suspense fallback={<LoadingSpinner />}>
+                  <NotFound />
+                </Suspense>
+              </AppLayout>
+            } />
               </Routes>
             </div>
           </Router>
@@ -150,6 +220,7 @@ function App() {
 function Dashboard() {
   const { isHealthy, isChecking, lastChecked } = useHealthCheck()
   const { projects, isLoading, error, fetchProjects } = useProjects()
+  const navigate = useNavigate()
 
   useEffect(() => {
     fetchProjects()
@@ -180,10 +251,8 @@ function Dashboard() {
                 size="sm"
                 onClick={async () => {
                   try {
-                    const response = await fetch('/health')
-                    if (response.ok) {
-                      window.location.reload()
-                    }
+                    const response = await apiClient.healthCheck()
+                    if (response.data) window.location.reload()
                   } catch (error) {
                     console.error('Health check failed:', error)
                   }
@@ -215,7 +284,11 @@ function Dashboard() {
           ) : projects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {projects.map((project) => (
-                <div key={project.id} className="p-4 bg-gray-50 rounded-lg border">
+                <div
+                  key={project.id}
+                  onClick={() => navigate(`/projects/${project.id}`)}
+                  className="p-4 bg-gray-50 rounded-lg border hover:border-blue-300 hover:shadow-md cursor-pointer transition-all"
+                >
                   <h3 className="font-medium text-lg">{project.name}</h3>
                   <p className="text-sm text-gray-600 mt-1">
                     {project.description || 'No description'}
@@ -260,49 +333,49 @@ function Dashboard() {
             </button>
             <button 
               className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors"
-              onClick={() => window.location.href = '/projects/new'}
+              onClick={() => navigate('/projects/new')}
             >
               Create Project
             </button>
             <button 
               className="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600 transition-colors"
-              onClick={() => window.location.href = '/upload'}
+              onClick={() => navigate('/upload')}
             >
               Upload Files
             </button>
             <button 
               className="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600 transition-colors"
-              onClick={() => window.location.href = '/reconciliation'}
+              onClick={() => navigate('/quick-reconciliation')}
             >
               Start Reconciliation
             </button>
             <button 
               className="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600 transition-colors"
-              onClick={() => window.location.href = '/analytics'}
+              onClick={() => navigate('/analytics')}
             >
               View Analytics
             </button>
             <button 
               className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 transition-colors"
-              onClick={() => window.location.href = '/users'}
+              onClick={() => navigate('/users')}
             >
               Manage Users
             </button>
             <button 
               className="bg-cyan-500 text-white px-4 py-2 rounded hover:bg-cyan-600 transition-colors"
-              onClick={() => window.location.href = '/api-status'}
+              onClick={() => navigate('/api-status')}
             >
               API Status
             </button>
             <button 
               className="bg-pink-500 text-white px-4 py-2 rounded hover:bg-pink-600 transition-colors"
-              onClick={() => window.location.href = '/api-tester'}
+              onClick={() => navigate('/api-tester')}
             >
               API Tester
             </button>
             <button 
               className="bg-teal-500 text-white px-4 py-2 rounded hover:bg-teal-600 transition-colors"
-              onClick={() => window.location.href = '/api-docs'}
+              onClick={() => navigate('/api-docs')}
             >
               API Docs
             </button>

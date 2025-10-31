@@ -42,6 +42,12 @@ pub struct RegisterRequest {
     pub role: Option<String>,
 }
 
+/// Google OAuth request
+#[derive(Debug, Deserialize)]
+pub struct GoogleOAuthRequest {
+    pub id_token: String,
+}
+
 /// Authentication response
 #[derive(Debug, Serialize)]
 pub struct AuthResponse {

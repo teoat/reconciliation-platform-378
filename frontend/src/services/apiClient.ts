@@ -10,7 +10,7 @@ import {
    FileInfo, ReconciliationResultDetail, ReconciliationJob
  } from '../types/backend-aligned'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:2000/api'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:2000/api/v1'
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:2000'
 
 // ============================================================================
@@ -400,6 +400,20 @@ class UnifiedApiClient {
     return response
   }
 
+  async googleOAuth(idToken: string): Promise<ApiResponse<AuthResponse>> {
+    const response = await this.makeRequest<AuthResponse>('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify({ id_token: idToken }),
+      skipAuth: true
+    })
+
+    if (response.data) {
+      this.setAuthToken(response.data.token)
+    }
+
+    return response
+  }
+
   // ============================================================================
   // USER MANAGEMENT METHODS
   // ============================================================================
@@ -679,6 +693,17 @@ class UnifiedApiClient {
     return this.makeRequest(`/reconciliation/jobs/${jobId}/stop`, {
       method: 'POST',
     })
+  }
+
+  // Batch resolve reconciliation matches
+  async batchResolveMatches(resolves: Array<{ match_id: string; action: 'approve' | 'reject'; notes?: string }>): Promise<ApiResponse<{ approved: number; rejected: number }>> {
+    return this.makeRequest<{ approved: number; rejected: number }>(
+      `/reconciliation/batch-resolve`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ resolves }),
+      }
+    )
   }
 
   // ============================================================================

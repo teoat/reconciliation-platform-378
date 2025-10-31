@@ -285,14 +285,28 @@ class OfflineDataService {
       indicator = document.createElement('div')
       indicator.id = 'offline-indicator'
       indicator.className = 'fixed top-4 right-4 bg-yellow-500 text-white px-4 py-2 rounded-lg shadow-lg z-50'
-      indicator.innerHTML = `
-        <div class="flex items-center space-x-2">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"></path>
-          </svg>
-          <span>Working offline</span>
-        </div>
-      `
+      
+      // Sanitize content - use DOM API instead of innerHTML
+      const container = document.createElement('div')
+      container.className = 'flex items-center space-x-2'
+      
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      svg.setAttribute('class', 'w-5 h-5')
+      svg.setAttribute('fill', 'currentColor')
+      svg.setAttribute('viewBox', '0 0 20 20')
+      
+      const pathElement = document.createElementNS('http://www.w3.org/2000/svg', 'path')
+      pathElement.setAttribute('fill-rule', 'evenodd')
+      pathElement.setAttribute('d', 'M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z')
+      pathElement.setAttribute('clip-rule', 'evenodd')
+      svg.appendChild(pathElement)
+      
+      const span = document.createElement('span')
+      span.textContent = 'Working offline'
+      
+      container.appendChild(svg)
+      container.appendChild(span)
+      indicator.appendChild(container)
       document.body.appendChild(indicator)
     }
   }

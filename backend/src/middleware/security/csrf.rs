@@ -9,7 +9,7 @@ use futures_util::future::{ok, Ready};
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use sha2::{Sha256, Digest};
+use sha2::Sha256;
 use hmac::{Hmac, Mac};
 
 use super::metrics::CSRF_FAILURES;
@@ -100,6 +100,17 @@ impl<S> CsrfProtectionService<S> {
             return true;
         }
 
+        // Skip CSRF for Bearer token API requests (no cookies used)
+        // If an Authorization header is present, we assume token-based auth and skip CSRF.
+        // CSRF defenses are relevant when cookies are used for auth.
+        if let Some(_) = {
+            // Authorization presence check
+            use actix_web::http::header::AUTHORIZATION;
+            // NOTE: We cannot access the request here; header check is done in call() prior to validation.
+            // This guard remains as a structural placeholder. Real skip logic is performed earlier.
+            None::<()>
+        } { return true; }
+
         // Skip CSRF for health checks and public endpoints
         path.starts_with("/health") ||
         path.starts_with("/api/auth/login") ||
@@ -114,6 +125,10 @@ impl<S> CsrfProtectionService<S> {
     }
 
     fn validate_csrf_token(&self, req: &ServiceRequest) -> Result<(), String> {
+        // Skip when Authorization header exists (Bearer token flows)
+        if req.headers().get("Authorization").is_some() {
+            return Ok(());
+        }
         // Check for CSRF token in header
         let token_header = req.headers().get("X-CSRF-Token");
         let cookie_token = req.cookie("csrf-token");
@@ -144,7 +159,10 @@ impl<S> CsrfProtectionService<S> {
         }
         
         // Try to decode as base64 token with HMAC signature
-        if let Ok(decoded) = base64::decode(token) {
+        if let Ok(decoded) = {
+            use base64::Engine;
+            base64::engine::general_purpose::STANDARD.decode(token)
+        } {
             if let Ok(decoded_str) = std::str::from_utf8(&decoded) {
                 // Split into token and signature
                 let parts: Vec<&str> = decoded_str.split(':').collect();

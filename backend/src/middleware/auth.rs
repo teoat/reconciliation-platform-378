@@ -485,7 +485,7 @@ fn get_client_ip_from_req(req: &ServiceRequest) -> String {
 
     // Fall back to connection info
     req.connection_info()
-        .remote_addr()
+        .peer_addr()
         .unwrap_or("unknown")
         .to_string()
 }

@@ -38,6 +38,15 @@ pub struct CreateUserRequest {
     pub role: Option<String>,
 }
 
+/// OAuth user creation request (no password)
+#[derive(Debug, Deserialize)]
+pub struct CreateOAuthUserRequest {
+    pub email: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub role: Option<String>,
+}
+
 /// User update request
 #[derive(Debug, Deserialize)]
 pub struct UpdateUserRequest {
@@ -93,26 +102,20 @@ impl UserService {
         ValidationUtils::validate_email(&request.email)?;
         self.auth_service.validate_password_strength(&request.password)?;
         
-        // Check if user already exists
-        if self.user_exists_by_email(&request.email).await? {
-            return Err(AppError::Conflict("User with this email already exists".to_string()));
-        }
-        
         // Hash password
         let password_hash = self.auth_service.hash_password(&request.password)?;
         
         // Determine role
         let role = request.role.unwrap_or_else(|| "user".to_string());
-        // Validate role format (no parsing needed - just use string)
-        if role != "user" && role != "admin" {
-            return Err(AppError::Validation("Invalid role".to_string()));
+        // Validate role format - standardize to match OAuth user validation
+        if role != "user" && role != "admin" && role != "manager" && role != "viewer" {
+            return Err(AppError::Validation("Invalid role. Must be one of: user, admin, manager, viewer".to_string()));
         }
         
-        // Create user
-        let now = Utc::now();
-        
+        // Create user - move duplicate check inside transaction to prevent race condition
+        let sanitized_email = ValidationUtils::sanitize_string(&request.email);
         let new_user = NewUser {
-            email: ValidationUtils::sanitize_string(&request.email),
+            email: sanitized_email.clone(),
             password_hash,
             first_name: ValidationUtils::sanitize_string(&request.first_name),
             last_name: ValidationUtils::sanitize_string(&request.last_name),
@@ -120,17 +123,117 @@ impl UserService {
         };
         
         let created_user_id = with_transaction(self.db.get_pool(), |tx| {
+            // Check if user already exists inside transaction (atomic check)
+            let count = users::table
+                .filter(users::email.eq(&sanitized_email))
+                .count()
+                .get_result::<i64>(tx)
+                .map_err(AppError::Database)?;
+            
+            if count > 0 {
+                return Err(AppError::Conflict("User with this email already exists".to_string()));
+            }
+            
+            // Insert user
             let result = diesel::insert_into(users::table)
                 .values(&new_user)
                 .returning(users::id)
                 .get_result::<Uuid>(tx)
-                .map_err(AppError::Database)?;
+                .map_err(|e| {
+                    // Handle database constraint violations (e.g., unique constraint on email)
+                    if e.to_string().contains("duplicate key") || e.to_string().contains("unique") {
+                        AppError::Conflict("User with this email already exists".to_string())
+                    } else {
+                        AppError::Database(e)
+                    }
+                })?;
             
             Ok(result)
         }).await?;
         
         // Get created user with project count
         self.get_user_by_id(created_user_id).await
+    }
+    
+    /// Create a new OAuth user (no password validation)
+    pub async fn create_oauth_user(&self, request: CreateOAuthUserRequest) -> AppResult<UserInfo> {
+        // Validate input
+        ValidationUtils::validate_email(&request.email)?;
+        
+        // For OAuth users, use a placeholder password hash (they won't use password auth)
+        // Generate a random hash that won't match any password
+        let password_hash = format!("oauth_user_{}", Uuid::new_v4());
+        
+        // Determine role - standardize to match regular user validation
+        let role = request.role.unwrap_or_else(|| "user".to_string());
+        // Validate role format - match regular user validation
+        if role != "user" && role != "admin" && role != "manager" && role != "viewer" {
+            return Err(AppError::Validation("Invalid role. Must be one of: user, admin, manager, viewer".to_string()));
+        }
+        
+        // Create user - check if exists inside transaction to prevent race condition
+        let sanitized_email = ValidationUtils::sanitize_string(&request.email);
+        let new_user = NewUser {
+            email: sanitized_email.clone(),
+            password_hash,
+            first_name: ValidationUtils::sanitize_string(&request.first_name),
+            last_name: ValidationUtils::sanitize_string(&request.last_name),
+            role: role.clone(),
+        };
+        
+        let result = with_transaction(self.db.get_pool(), |tx| {
+            // Check if user already exists inside transaction (atomic check)
+            let count = users::table
+                .filter(users::email.eq(&sanitized_email))
+                .count()
+                .get_result::<i64>(tx)
+                .map_err(AppError::Database)?;
+            
+            if count > 0 {
+                // User exists, return existing user ID for retrieval
+                let existing_user_id = users::table
+                    .filter(users::email.eq(&sanitized_email))
+                    .select(users::id)
+                    .first::<Uuid>(tx)
+                    .map_err(AppError::Database)?;
+                return Ok(Some(existing_user_id));
+            }
+            
+            // Insert new user
+            let result = match diesel::insert_into(users::table)
+                .values(&new_user)
+                .returning(users::id)
+                .get_result::<Uuid>(tx)
+            {
+                Ok(user_id) => Ok(Some(user_id)),
+                Err(e) => {
+                    // Handle database constraint violations (e.g., unique constraint on email)
+                    let error_str = e.to_string();
+                    if error_str.contains("duplicate key") || error_str.contains("unique") {
+                        // If we get here, user was created between check and insert
+                        // Try to get existing user ID
+                        match users::table
+                            .filter(users::email.eq(&sanitized_email))
+                            .select(users::id)
+                            .first::<Uuid>(tx)
+                        {
+                            Ok(user_id) => Ok(Some(user_id)),
+                            Err(_) => Err(AppError::Conflict("User with this email already exists".to_string())),
+                        }
+                    } else {
+                        Err(AppError::Database(e))
+                    }
+                }
+            }?;
+            
+            Ok(Some(result))
+        }).await?;
+        
+        // Get user (new or existing) with project count
+        match result {
+            Some(user_id) => self.get_user_by_id(user_id).await,
+            None => Err(AppError::Internal("Failed to create or retrieve user".to_string())),
+        }
     }
     
     /// Get user by ID

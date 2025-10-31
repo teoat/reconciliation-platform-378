@@ -66,7 +66,7 @@ class FileReconciliationService {
       const response = await fetch(`${apiClient['baseURL']}/projects/${projectId}/files`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+          'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
         },
         body: formData,
       })

@@ -4,6 +4,7 @@ import { resolve } from 'path'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: process.env.VITE_BASE_PATH || '/',
   plugins: [react()],
   server: {
     port: 1000,
@@ -38,7 +39,14 @@ export default defineConfig({
     // typecheck: false, // TypeScript checking is handled separately
     outDir: 'dist',
     sourcemap: false, // Disable sourcemaps in production for better performance
-    minify: 'esbuild', // Use esbuild for faster builds (switch to terser for better compression if needed)
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info'],
+      },
+    },
     target: 'es2020', // Optimize for modern browsers
 
     rollupOptions: {
@@ -46,12 +54,23 @@ export default defineConfig({
         // Optimize chunk splitting for better caching
         manualChunks: (id) => {
           // Vendor chunks - split by library size and usage
+          // IMPORTANT: React-dependent libraries must be bundled with React or loaded after
           if (id.includes('node_modules')) {
+            // React and React DOM must be first
             if (id.includes('react') || id.includes('react-dom')) {
               return 'react-vendor';
             }
+            // Redux depends on React's useSyncExternalStore, so bundle with React
+            if (id.includes('@reduxjs/toolkit') || id.includes('react-redux') || id.includes('redux')) {
+              return 'react-vendor'; // Bundle with React to ensure React loads first
+            }
+            // use-sync-external-store is a shim for React.useSyncExternalStore - must bundle with React
+            if (id.includes('use-sync-external-store')) {
+              return 'react-vendor'; // Bundle with React to ensure React loads first
+            }
+            // React Router also depends on React, bundle it too to ensure proper load order
             if (id.includes('react-router')) {
-              return 'router-vendor';
+              return 'react-vendor'; // Bundle with React to avoid dependency issues
             }
             if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) {
               return 'forms-vendor';
@@ -130,7 +149,7 @@ export default defineConfig({
       },
     },
     // Optimize chunk size warnings
-    chunkSizeWarningLimit: 500, // Reduced from 1000 for stricter limits
+    chunkSizeWarningLimit: 300,
     // Enable CSS code splitting
     cssCodeSplit: true,
     // Optimize asset handling
@@ -156,12 +175,18 @@ export default defineConfig({
       '@utils': resolve(__dirname, './src/utils'),
       '@types': resolve(__dirname, './src/types'),
       '@store': resolve(__dirname, './src/store'),
+      // Ensure single React instance across workspace (equivalent to webpack resolve.alias)
+      'react': resolve(__dirname, './node_modules/react'),
+      'react-dom': resolve(__dirname, './node_modules/react-dom'),
     },
   },
   optimizeDeps: {
     include: [
       'react',
       'react-dom',
+      '@reduxjs/toolkit',
+      'react-redux',
+      'use-sync-external-store',
       'react-router-dom',
       'react-hook-form',
       '@hookform/resolvers',
@@ -171,6 +196,8 @@ export default defineConfig({
     ],
     // Exclude large dependencies from pre-bundling
     exclude: [],
+    // Ensure React is deduped during optimization (pre-bundling)
+    dedupe: ['react', 'react-dom', '@reduxjs/toolkit', 'react-redux', 'use-sync-external-store'],
     // Force pre-bundling of specific modules
     force: true,
   },

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import {
   TrendingUp,
   TrendingDown,
@@ -704,4 +704,4 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   )
 }
 
-export default AnalyticsDashboard
+export default memo(AnalyticsDashboard)

@@ -5,6 +5,7 @@
 //! Status: ✅ Active and Mandatory
 
 use actix_web::{web, App, HttpServer, HttpResponse, Result, middleware::Logger};
+use actix_cors::Cors;
 use std::env;
 use std::time::Duration;
 use redis;
@@ -451,6 +452,19 @@ use std::sync::Arc;
     };
     
     HttpServer::new(move || {
+        let cors_mw = {
+            let mut cors = Cors::default();
+            for origin in cors_origins.iter() {
+                cors = cors.allowed_origin(origin);
+            }
+            cors.allowed_methods(vec!["GET","POST","PUT","PATCH","DELETE","OPTIONS"])
+                .allowed_headers(vec![
+                    actix_web::http::header::AUTHORIZATION,
+                    actix_web::http::header::CONTENT_TYPE,
+                    actix_web::http::header::HeaderName::from_static("x-csrf-token"),
+                ])
+                .max_age(3600)
+        };
         App::new()
             // Configure JSON payload size limit
             .app_data(web::JsonConfig::default().limit(max_request_size))
@@ -460,6 +474,8 @@ use std::sync::Arc;
             .app_data(web::PayloadConfig::default().limit(max_request_size * 10)) // 100MB for multipart
             // Request ID tracking (applied first for tracing)
             .wrap(RequestIdMiddleware)
+            // CORS middleware
+            .wrap(cors_mw)
             // Security middleware (applied globally to all routes)
             .wrap(reconciliation_backend::middleware::security::SecurityHeadersMiddleware::new(security_headers_config.clone()))
             .wrap(reconciliation_backend::middleware::security::CsrfProtectionMiddleware::new(csrf_secret.clone()))
@@ -517,8 +533,9 @@ use std::sync::Arc;
                             )
                     )
             )
-            // Top-level health endpoint for Docker healthchecks
+            // Top-level health endpoints for Docker healthchecks
             .route("/health", web::get().to(health_check))
+            .route("/ready", web::get().to(readiness_check))
             .route("/", web::get().to(index))
     })
     .bind("0.0.0.0:2000")?

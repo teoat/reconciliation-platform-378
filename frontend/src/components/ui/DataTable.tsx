@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react'
+import { useVirtualScroll } from '../../utils/virtualScrolling'
 import { ChevronUp, ChevronDown, MoreHorizontal, Search } from 'lucide-react'
 import Button from './Button'
 import Input from './Input'
@@ -24,6 +25,9 @@ export interface DataTableProps<T> {
   className?: string
   onRowClick?: (row: T) => void
   emptyMessage?: string
+  virtualized?: boolean
+  virtualRowHeight?: number
+  virtualContainerHeight?: number
 }
 
 export function DataTable<T extends Record<string, any>>({
@@ -36,7 +40,10 @@ export function DataTable<T extends Record<string, any>>({
   pageSize = 10,
   className = '',
   onRowClick,
-  emptyMessage = 'No data available'
+  emptyMessage = 'No data available',
+  virtualized = false,
+  virtualRowHeight = 44,
+  virtualContainerHeight = 480
 }: DataTableProps<T>) {
   const [searchTerm, setSearchTerm] = useState('')
   const [sortConfig, setSortConfig] = useState<{
@@ -91,15 +98,22 @@ export function DataTable<T extends Record<string, any>>({
     })
   }, [filteredData, sortConfig])
 
-  // Paginate data
+  // Paginate data (disabled when virtualized)
   const paginatedData = useMemo(() => {
-    if (!pagination) return sortedData
-
+    if (!pagination || virtualized) return sortedData
     const startIndex = (currentPage - 1) * pageSize
     return sortedData.slice(startIndex, startIndex + pageSize)
-  }, [sortedData, currentPage, pageSize, pagination])
+  }, [sortedData, currentPage, pageSize, pagination, virtualized])
 
   const totalPages = Math.ceil(sortedData.length / pageSize)
+
+  const v = virtualized
+    ? useVirtualScroll(sortedData, {
+        itemHeight: virtualRowHeight,
+        containerHeight: virtualContainerHeight,
+        overscan: 8,
+      })
+    : null
 
   const handleSort = (key: keyof T) => {
     if (!sortable) return
@@ -217,49 +231,84 @@ export function DataTable<T extends Record<string, any>>({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {paginatedData.length === 0 ? (
+            {(!virtualized ? paginatedData : sortedData).length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-6 py-12 text-center text-gray-500">
                   {emptyMessage}
                 </td>
               </tr>
             ) : (
-              paginatedData.map((row, index) => (
-                <tr
-                  key={index}
-                  className={`hover:bg-gray-50 ${
-                    onRowClick ? 'cursor-pointer' : ''
-                  } transition-colors duration-150`}
-                  onClick={() => onRowClick?.(row)}
-                  tabIndex={onRowClick ? 0 : undefined}
-                  onKeyDown={(e) => {
-                    if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
-                      e.preventDefault()
-                      onRowClick(row)
-                    }
-                  }}
-                >
-                  {columns.map((column) => (
-                    <td
-                      key={String(column.key)}
-                      className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${
-                        column.className || ''
-                      }`}
+              virtualized ? (
+                <tr>
+                  <td colSpan={columns.length} className="p-0">
+                    <div
+                      ref={v!.containerRef}
+                      onScroll={v!.handleScroll}
+                      style={{ height: virtualContainerHeight, overflow: 'auto', position: 'relative' }}
                     >
-                      {column.render
-                        ? column.render(row[column.key], row)
-                        : String(row[column.key] || '-')}
-                    </td>
-                  ))}
+                      <div style={{ height: v!.totalHeight, position: 'relative' }}>
+                        {v!.visibleItems.map(({ index, top, height }) => {
+                          const row = sortedData[index]
+                          return (
+                            <div key={index} style={{ position: 'absolute', top, height, left: 0, right: 0 }}>
+                              <div
+                                className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer' : ''} transition-colors duration-150`}
+                                onClick={() => onRowClick?.(row)}
+                                tabIndex={onRowClick ? 0 : undefined}
+                                onKeyDown={(e) => {
+                                  if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                                    e.preventDefault()
+                                    onRowClick(row)
+                                  }
+                                }}
+                              >
+                                <div className="table-row">
+                                  {columns.map((column) => (
+                                    <div key={String(column.key)} className={`table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${column.className || ''}`}>
+                                      {column.render ? column.render(row[column.key], row) : String(row[column.key] || '-')}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  </td>
                 </tr>
-              ))
+              ) : (
+                paginatedData.map((row, index) => (
+                  <tr
+                    key={index}
+                    className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer' : ''} transition-colors duration-150`}
+                    onClick={() => onRowClick?.(row)}
+                    tabIndex={onRowClick ? 0 : undefined}
+                    onKeyDown={(e) => {
+                      if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault()
+                        onRowClick(row)
+                      }
+                    }}
+                  >
+                    {columns.map((column) => (
+                      <td
+                        key={String(column.key)}
+                        className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${column.className || ''}`}
+                      >
+                        {column.render ? column.render(row[column.key], row) : String(row[column.key] || '-')}
+                      </td>
+                    ))}
+                  </tr>
+                ))
+              )
             )}
           </tbody>
         </table>
       </div>
 
       {/* Pagination */}
-      {pagination && totalPages > 1 && (
+      {pagination && !virtualized && totalPages > 1 && (
         <div className="px-6 py-3 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-700">
