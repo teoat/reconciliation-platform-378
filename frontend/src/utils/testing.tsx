@@ -1,12 +1,12 @@
 // ============================================================================
 // COMPONENT TESTING UTILITIES - SINGLE SOURCE OF TRUTH
 // ============================================================================
+/// <reference types="vitest/globals" />
 
 import React from 'react'
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { Provider } from 'react-redux'
 import { BrowserRouter } from 'react-router-dom'
-import { configureStore } from '@reduxjs/toolkit'
 import userEvent from '@testing-library/user-event'
 
 // ============================================================================
@@ -14,16 +14,19 @@ import userEvent from '@testing-library/user-event'
 // ============================================================================
 
 // Mock store for testing
-export const createMockStore = (initialState = {}) => {
-  return configureStore({
-    reducer: {
-      auth: (state = { user: null, isAuthenticated: false }) => state,
-      projects: (state = { projects: [], selectedProject: null }) => state,
-      reconciliation: (state = { records: [], stats: {} }) => state,
-      ui: (state = { sidebarOpen: false, theme: 'light' }) => state,
-    },
-    preloadedState: initialState,
-  })
+export const createMockStore = (initialState: any = {}) => {
+  return {
+    getState: () => ({
+      auth: { user: null, isAuthenticated: false },
+      projects: { projects: [], selectedProject: null },
+      reconciliation: { records: [], stats: {} },
+      ui: { sidebarOpen: false, theme: 'light' },
+      ...initialState,
+    }),
+    dispatch: (action: any) => action,
+    subscribe: () => () => {},
+    replaceReducer: () => {},
+  } as any
 }
 
 // Test wrapper with providers
@@ -133,7 +136,7 @@ export const mockReconciliationRecord = {
 export const waitForAsync = () => waitFor(() => Promise.resolve())
 
 // Mock API responses
-export const mockApiResponse = <T>(data: T, success = true) => ({
+export const mockApiResponse = <T,>(data: T, success = true) => ({
   data,
   success,
   message: success ? 'Success' : 'Error',

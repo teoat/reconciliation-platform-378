@@ -18,6 +18,7 @@ use crate::models::{
 use crate::services::auth::{AuthService, ValidationUtils, UserRole};
 
 /// User service
+#[derive(Clone)]
 pub struct UserService {
     db: Database,
     auth_service: AuthService,

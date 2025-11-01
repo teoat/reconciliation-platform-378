@@ -1,212 +1,254 @@
-import { lazy, Suspense, ComponentType } from 'react'
+// ============================================================================
+// LAZY LOADING CONFIGURATION - SINGLE SOURCE OF TRUTH
+// ============================================================================
+
+import React, { Suspense, lazy } from 'react'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 
 // ============================================================================
-// LAZY LOADING UTILITIES
+// LAZY LOADED COMPONENTS
 // ============================================================================
 
-/**
- * Creates a lazy-loaded component with error boundary and loading fallback
- */
-export function createLazyComponent<T extends ComponentType<any>>(
-  importFn: () => Promise<{ default: T }>,
-  fallback?: React.ComponentType
-) {
-  const LazyComponent = lazy(importFn)
-  
-  return function LazyWrapper(props: React.ComponentProps<T>) {
-    return (
-      <Suspense fallback={fallback ? <fallback /> : <LoadingSpinner />}>
-        <LazyComponent {...props} />
-      </Suspense>
-    )
-  }
-}
+// Page Components - Lazy load entire pages
+export const LazyProjectPage = lazy(() => import('../pages').then(module => ({ default: module.ProjectPage })))
+export const LazyIngestionPage = lazy(() => import('../pages').then(module => ({ default: module.IngestionPage })))
+export const LazyReconciliationPage = lazy(() => import('../pages').then(module => ({ default: module.ReconciliationPage })))
+export const LazyDashboardPage = lazy(() => import('../pages').then(module => ({ default: module.DashboardPage })))
+export const LazyAdjudicationPage = lazy(() => import('../pages').then(module => ({ default: module.AdjudicationPage })))
+export const LazySummaryPage = lazy(() => import('../pages').then(module => ({ default: module.SummaryPage })))
+export const LazyVisualizationPage = lazy(() => import('../pages').then(module => ({ default: module.VisualizationPage })))
 
-/**
- * Creates a lazy-loaded component with custom loading component
- */
-export function createLazyComponentWithLoader<T extends ComponentType<any>>(
-  importFn: () => Promise<{ default: T }>,
-  LoadingComponent: React.ComponentType
-) {
-  const LazyComponent = lazy(importFn)
-  
-  return function LazyWrapper(props: React.ComponentProps<T>) {
-    return (
-      <Suspense fallback={<LoadingComponent />}>
-        <LazyComponent {...props} />
-      </Suspense>
-    )
-  }
-}
+// Chart Components - Lazy load heavy chart libraries
+export const LazyDataVisualization = lazy(() => import('../components/charts/DataVisualization'))
+export const LazyCharts = lazy(() => import('../components/charts/Charts'))
 
-/**
- * Creates a lazy-loaded component with error boundary
- */
-export function createLazyComponentWithErrorBoundary<T extends ComponentType<any>>(
-  importFn: () => Promise<{ default: T }>,
-  ErrorComponent: React.ComponentType<{ error: Error; retry: () => void }>
-) {
-  const LazyComponent = lazy(importFn)
-  
-  return function LazyWrapper(props: React.ComponentProps<T>) {
-    return (
-      <ErrorBoundary fallback={ErrorComponent}>
-        <Suspense fallback={<LoadingSpinner />}>
-          <LazyComponent {...props} />
-        </Suspense>
-      </ErrorBoundary>
-    )
-  }
+// Complex Components - Lazy load feature-rich components
+export const LazyReconciliationAnalytics = lazy(() => import('../components/ReconciliationAnalytics'))
+export const LazyDataAnalysis = lazy(() => import('../components/DataAnalysis'))
+export const LazyCollaborationPanel = lazy(() => import('../components/CollaborationPanel'))
+export const LazyAdvancedFilters = lazy(() => import('../components/AdvancedFilters'))
+
+// Frenly Components - Lazy load AI features
+export const LazyFrenlyAI = lazy(() => import('../components/FrenlyAI'))
+export const LazyFrenlyAIProvider = lazy(() => import('../components/frenly/FrenlyAIProvider'))
+export const LazyFrenlyGuidance = lazy(() => import('../components/frenly/FrenlyGuidance'))
+
+// ============================================================================
+// LOADING FALLBACKS
+// ============================================================================
+
+// Generic loading fallback
+const GenericLoadingFallback = () => (
+  <div className="flex items-center justify-center p-8">
+    <LoadingSpinner size="lg" />
+    <span className="ml-2 text-gray-600">Loading...</span>
+  </div>
+)
+
+// Page loading fallback
+const PageLoadingFallback = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="text-center">
+      <LoadingSpinner size="lg" />
+      <p className="mt-4 text-gray-600">Loading page...</p>
+    </div>
+  </div>
+)
+
+// Chart loading fallback
+const ChartLoadingFallback = () => (
+  <div className="flex items-center justify-center h-64">
+    <div className="text-center">
+      <LoadingSpinner />
+      <p className="mt-2 text-sm text-gray-600">Loading chart...</p>
+    </div>
+  </div>
+)
+
+// Component loading fallback
+const ComponentLoadingFallback = () => (
+  <div className="flex items-center justify-center p-4">
+    <LoadingSpinner size="sm" />
+    <span className="ml-2 text-sm text-gray-600">Loading component...</span>
+  </div>
+)
+
+// ============================================================================
+// LAZY COMPONENT WRAPPERS
+// ============================================================================
+
+// Page wrappers with page-specific loading
+export const LazyProjectPageWrapper = (props: any) => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <LazyProjectPage {...props} />
+  </Suspense>
+)
+
+export const LazyIngestionPageWrapper = (props: any) => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <LazyIngestionPage {...props} />
+  </Suspense>
+)
+
+export const LazyReconciliationPageWrapper = (props: any) => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <LazyReconciliationPage {...props} />
+  </Suspense>
+)
+
+export const LazyDashboardPageWrapper = (props: any) => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <LazyDashboardPage {...props} />
+  </Suspense>
+)
+
+export const LazyAdjudicationPageWrapper = (props: any) => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <LazyAdjudicationPage {...props} />
+  </Suspense>
+)
+
+export const LazySummaryPageWrapper = (props: any) => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <LazySummaryPage {...props} />
+  </Suspense>
+)
+
+export const LazyVisualizationPageWrapper = (props: any) => (
+  <Suspense fallback={<PageLoadingFallback />}>
+    <LazyVisualizationPage {...props} />
+  </Suspense>
+)
+
+// Chart wrappers with chart-specific loading
+export const LazyDataVisualizationWrapper = (props: any) => (
+  <Suspense fallback={<ChartLoadingFallback />}>
+    <LazyDataVisualization {...props} />
+  </Suspense>
+)
+
+export const LazyChartsWrapper = (props: any) => (
+  <Suspense fallback={<ChartLoadingFallback />}>
+    <LazyCharts {...props} />
+  </Suspense>
+)
+
+// Component wrappers with generic loading
+export const LazyReconciliationAnalyticsWrapper = (props: any) => (
+  <Suspense fallback={<ComponentLoadingFallback />}>
+    <LazyReconciliationAnalytics {...props} />
+  </Suspense>
+)
+
+export const LazyDataAnalysisWrapper = (props: any) => (
+  <Suspense fallback={<ComponentLoadingFallback />}>
+    <LazyDataAnalysis {...props} />
+  </Suspense>
+)
+
+export const LazyCollaborationPanelWrapper = (props: any) => (
+  <Suspense fallback={<ComponentLoadingFallback />}>
+    <LazyCollaborationPanel {...props} />
+  </Suspense>
+)
+
+export const LazyAdvancedFiltersWrapper = (props: any) => (
+  <Suspense fallback={<ComponentLoadingFallback />}>
+    <LazyAdvancedFilters {...props} />
+  </Suspense>
+)
+
+// Frenly component wrappers
+export const LazyFrenlyAIWrapper = (props: any) => (
+  <Suspense fallback={<ComponentLoadingFallback />}>
+    <LazyFrenlyAI {...props} />
+  </Suspense>
+)
+
+export const LazyFrenlyAIProviderWrapper = (props: any) => (
+  <Suspense fallback={<ComponentLoadingFallback />}>
+    <LazyFrenlyAIProvider {...props} />
+  </Suspense>
+)
+
+export const LazyFrenlyGuidanceWrapper = (props: any) => (
+  <Suspense fallback={<ComponentLoadingFallback />}>
+    <LazyFrenlyGuidance {...props} />
+  </Suspense>
+)
+
+// ============================================================================
+// ROUTE-BASED LAZY LOADING
+// ============================================================================
+
+// Route components for React Router
+export const routeComponents = {
+  '/projects': LazyProjectPageWrapper,
+  '/ingestion': LazyIngestionPageWrapper,
+  '/reconciliation': LazyReconciliationPageWrapper,
+  '/dashboard': LazyDashboardPageWrapper,
+  '/adjudication': LazyAdjudicationPageWrapper,
+  '/summary': LazySummaryPageWrapper,
+  '/visualization': LazyVisualizationPageWrapper,
 }
 
 // ============================================================================
-// ERROR BOUNDARY COMPONENT
+// CONDITIONAL LAZY LOADING
 // ============================================================================
 
-interface ErrorBoundaryState {
-  hasError: boolean
-  error?: Error
-}
-
-interface ErrorBoundaryProps {
-  children: React.ReactNode
-  fallback: React.ComponentType<{ error: Error; retry: () => void }>
-}
-
-class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  constructor(props: ErrorBoundaryProps) {
-    super(props)
-    this.state = { hasError: false }
-  }
-
-  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error }
-  }
-
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo)
-  }
-
-  retry = () => {
-    this.setState({ hasError: false, error: undefined })
-  }
-
-  render() {
-    if (this.state.hasError && this.state.error) {
-      const FallbackComponent = this.props.fallback
-      return <FallbackComponent error={this.state.error} retry={this.retry} />
+// Hook for conditional lazy loading based on user interaction
+export const useConditionalLazyLoad = (shouldLoad: boolean) => {
+  const [isLoaded, setIsLoaded] = React.useState(false)
+  
+  React.useEffect(() => {
+    if (shouldLoad && !isLoaded) {
+      setIsLoaded(true)
     }
+  }, [shouldLoad, isLoaded])
+  
+  return isLoaded
+}
 
-    return this.props.children
+// Component for conditional lazy loading
+export const ConditionalLazyComponent = ({ 
+  shouldLoad, 
+  children, 
+  fallback 
+}: { 
+  shouldLoad: boolean
+  children: React.ReactNode
+  fallback?: React.ReactNode 
+}) => {
+  const isLoaded = useConditionalLazyLoad(shouldLoad)
+  
+  if (!isLoaded) {
+    return fallback || <ComponentLoadingFallback />
   }
+  
+  return <>{children}</>
 }
 
 // ============================================================================
 // PRELOADING UTILITIES
 // ============================================================================
 
-/**
- * Preloads a component for faster future loading
- */
-export function preloadComponent<T extends ComponentType<any>>(
-  importFn: () => Promise<{ default: T }>
-) {
-  return importFn()
+// Preload components for better UX
+export const preloadComponents = () => {
+  // Preload critical components
+  import('../pages')
+  import('../components/charts/DataVisualization')
+  import('../components/charts/Charts')
 }
 
-/**
- * Preloads multiple components
- */
-export function preloadComponents(
-  importFns: Array<() => Promise<any>>
-) {
-  return Promise.all(importFns.map(fn => fn()))
-}
-
-/**
- * Creates a preloadable component that can be preloaded on hover/focus
- */
-export function createPreloadableComponent<T extends ComponentType<any>>(
-  importFn: () => Promise<{ default: T }>,
-  preloadTrigger: 'hover' | 'focus' | 'both' = 'hover'
-) {
-  const LazyComponent = lazy(importFn)
-  let preloaded = false
-
-  const preload = () => {
-    if (!preloaded) {
-      preloaded = true
-      importFn()
-    }
-  }
-
-  return function PreloadableWrapper(props: React.ComponentProps<T>) {
-    const handleMouseEnter = preloadTrigger === 'hover' || preloadTrigger === 'both' ? preload : undefined
-    const handleFocus = preloadTrigger === 'focus' || preloadTrigger === 'both' ? preload : undefined
-
-    return (
-      <div onMouseEnter={handleMouseEnter} onFocus={handleFocus}>
-        <Suspense fallback={<LoadingSpinner />}>
-          <LazyComponent {...props} />
-        </Suspense>
-      </div>
-    )
-  }
-}
-
-// ============================================================================
-// ROUTE-BASED CODE SPLITTING
-// ============================================================================
-
-/**
- * Creates lazy-loaded routes for React Router
- */
-export function createLazyRoute<T extends ComponentType<any>>(
-  importFn: () => Promise<{ default: T }>,
-  fallback?: React.ComponentType
-) {
-  const LazyComponent = lazy(importFn)
+// Preload on user interaction
+export const preloadOnHover = (componentImport: () => Promise<any>) => {
+  let hasPreloaded = false
   
-  return function LazyRoute(props: React.ComponentProps<T>) {
-    return (
-      <Suspense fallback={fallback ? <fallback /> : <LoadingSpinner />}>
-        <LazyComponent {...props} />
-      </Suspense>
-    )
-  }
-}
-
-// ============================================================================
-// DYNAMIC IMPORTS WITH RETRY
-// ============================================================================
-
-/**
- * Creates a dynamic import with retry logic
- */
-export function createRetryableImport<T>(
-  importFn: () => Promise<T>,
-  maxRetries: number = 3,
-  delay: number = 1000
-): () => Promise<T> {
-  return async () => {
-    let lastError: Error
-    
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
-      try {
-        return await importFn()
-      } catch (error) {
-        lastError = error as Error
-        console.warn(`Import attempt ${attempt} failed:`, error)
-        
-        if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, delay * attempt))
-        }
-      }
+  return () => {
+    if (!hasPreloaded) {
+      hasPreloaded = true
+      componentImport()
     }
-    
-    throw lastError!
   }
 }
 
@@ -214,58 +256,70 @@ export function createRetryableImport<T>(
 // BUNDLE ANALYSIS UTILITIES
 // ============================================================================
 
-/**
- * Measures component load time
- */
-export function measureComponentLoadTime<T extends ComponentType<any>>(
-  importFn: () => Promise<{ default: T }>,
-  componentName: string
-) {
-  return async () => {
-    const startTime = performance.now()
+// Get component bundle size (for development)
+export const getComponentBundleSize = async (componentPath: string) => {
+  if (process.env.NODE_ENV === 'development') {
     try {
-      const result = await importFn()
-      const endTime = performance.now()
-      console.log(`${componentName} loaded in ${endTime - startTime}ms`)
-      return result
+      const module = await import(componentPath)
+      console.log(`Bundle size for ${componentPath}:`, module)
     } catch (error) {
-      const endTime = performance.now()
-      console.error(`${componentName} failed to load after ${endTime - startTime}ms:`, error)
-      throw error
+      console.warn(`Could not analyze bundle size for ${componentPath}:`, error)
     }
   }
 }
 
-/**
- * Creates a component with load time measurement
- */
-export function createMeasuredLazyComponent<T extends ComponentType<any>>(
-  importFn: () => Promise<{ default: T }>,
-  componentName: string
-) {
-  const measuredImport = measureComponentLoadTime(importFn, componentName)
-  return createLazyComponent(measuredImport)
-}
-
 // ============================================================================
-// EXPORTS
+// EXPORT ALL LAZY LOADING UTILITIES
 // ============================================================================
-
-export {
-  lazy,
-  Suspense,
-  ErrorBoundary
-}
 
 export default {
-  createLazyComponent,
-  createLazyComponentWithLoader,
-  createLazyComponentWithErrorBoundary,
-  createPreloadableComponent,
-  createLazyRoute,
-  createRetryableImport,
-  measureComponentLoadTime,
-  createMeasuredLazyComponent,
-  preloadComponent,
-  preloadComponents
+  // Lazy components
+  LazyProjectPage,
+  LazyIngestionPage,
+  LazyReconciliationPage,
+  LazyDashboardPage,
+  LazyAdjudicationPage,
+  LazySummaryPage,
+  LazyVisualizationPage,
+  LazyDataVisualization,
+  LazyCharts,
+  LazyReconciliationAnalytics,
+  LazyDataAnalysis,
+  LazyCollaborationPanel,
+  LazyAdvancedFilters,
+  LazyFrenlyAI,
+  LazyFrenlyAIProvider,
+  LazyFrenlyGuidance,
+  
+  // Wrappers
+  LazyProjectPageWrapper,
+  LazyIngestionPageWrapper,
+  LazyReconciliationPageWrapper,
+  LazyDashboardPageWrapper,
+  LazyAdjudicationPageWrapper,
+  LazySummaryPageWrapper,
+  LazyVisualizationPageWrapper,
+  LazyDataVisualizationWrapper,
+  LazyChartsWrapper,
+  LazyReconciliationAnalyticsWrapper,
+  LazyDataAnalysisWrapper,
+  LazyCollaborationPanelWrapper,
+  LazyAdvancedFiltersWrapper,
+  LazyFrenlyAIWrapper,
+  LazyFrenlyAIProviderWrapper,
+  LazyFrenlyGuidanceWrapper,
+  
+  // Utilities
+  routeComponents,
+  useConditionalLazyLoad,
+  ConditionalLazyComponent,
+  preloadComponents,
+  preloadOnHover,
+  getComponentBundleSize,
+  
+  // Fallbacks
+  GenericLoadingFallback,
+  PageLoadingFallback,
+  ChartLoadingFallback,
+  ComponentLoadingFallback
 }
