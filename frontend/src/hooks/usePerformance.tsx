@@ -114,7 +114,7 @@ export const useLazyLoad = (threshold: number = 0.1) => {
 };
 
 // Debounced Hook
-export const useDebounce = <T>(value: T, delay: number): T => {
+export const useDebounce = <T,>(value: T, delay: number): T => {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
   useEffect(() => {
@@ -131,7 +131,7 @@ export const useDebounce = <T>(value: T, delay: number): T => {
 };
 
 // Throttled Hook
-export const useThrottle = <T>(value: T, delay: number): T => {
+export const useThrottle = <T,>(value: T, delay: number): T => {
   const [throttledValue, setThrottledValue] = useState<T>(value);
   const lastExecuted = useRef<number>(Date.now());
 
@@ -162,7 +162,7 @@ export const useMemoizedComponent = <P extends object>(
 };
 
 // Virtual Scrolling Hook
-export const useVirtualScroll = <T>(
+export const useVirtualScroll = <T,>(
   items: T[],
   itemHeight: number,
   containerHeight: number,

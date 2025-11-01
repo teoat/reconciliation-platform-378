@@ -415,6 +415,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       {/* Reconciliation Metrics */}
       {selectedMetric === 'reconciliation' && reconciliationStats && derivedMetrics && (
+        <>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Success Rate */}
           <div className="bg-white overflow-hidden shadow rounded-lg">
@@ -490,7 +491,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 </div>
               </div>
             </div>
-            </div>
           </div>
         </div>
 
@@ -555,6 +555,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             />
           </div>
         </div>
+        </>
       )}
 
       {/* Job Status Overview */}

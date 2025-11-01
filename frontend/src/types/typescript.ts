@@ -75,7 +75,7 @@ export const typescriptConfig = {
     '**/*.spec.tsx',
   ],
   
-  ts-node: {
+  'ts-node': {
     esm: true,
     experimentalSpecifierResolution: 'node',
   },
