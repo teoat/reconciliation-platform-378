@@ -629,6 +629,68 @@ pub async fn create_data_source(
     }))
 }
 
+pub async fn get_data_source(
+    id: web::Path<Uuid>,
+    data: web::Data<Database>,
+    _config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let data_source_service = crate::services::DataSourceService::new(data.get_ref().clone());
+    
+    let data_source = data_source_service.get_data_source(id.into_inner()).await?;
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(data_source),
+        message: None,
+        error: None,
+    }))
+}
+
+pub async fn update_data_source(
+    id: web::Path<Uuid>,
+    req: web::Json<CreateDataSourceRequest>,
+    data: web::Data<Database>,
+    _config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let data_source_service = crate::services::DataSourceService::new(data.get_ref().clone());
+    
+    let updated_data_source = data_source_service.update_data_source(
+        id.into_inner(),
+        Some(req.name.clone()),
+        req.description.clone(),
+        Some(req.source_type.clone()),
+        req.file_path.clone(),
+        req.file_size,
+        req.file_hash.clone(),
+        req.schema.as_ref().map(|s| JsonValue(s.clone())),
+        None, // status
+    ).await?;
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(updated_data_source),
+        message: Some("Data source updated successfully".to_string()),
+        error: None,
+    }))
+}
+
+pub async fn delete_data_source(
+    id: web::Path<Uuid>,
+    data: web::Data<Database>,
+    _config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let data_source_service = crate::services::DataSourceService::new(data.get_ref().clone());
+    
+    data_source_service.delete_data_source(id.into_inner()).await?;
+    
+    Ok(HttpResponse::Ok().json(ApiResponse::<()> {
+        success: true,
+        data: None,
+        message: Some("Data source deleted successfully".to_string()),
+        error: None,
+    }))
+}
+
 pub async fn get_reconciliation_jobs(
     project_id: web::Path<Uuid>,
     data: web::Data<Database>,
@@ -1167,6 +1229,22 @@ pub async fn get_metrics(
             message: None,
             error: None,
         }))
+}
+
+pub async fn get_analytics_dashboard(
+    data: web::Data<Database>,
+    _config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let analytics_service = AnalyticsService::new(data.get_ref().clone());
+    
+    let dashboard_data = analytics_service.get_dashboard_data().await?;
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(dashboard_data),
+        message: None,
+        error: None,
+    }))
 }
 
 // Query parameter structs

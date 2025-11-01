@@ -4,14 +4,13 @@
 //! Version: 2.0
 //! Status: ✅ Active and Mandatory
 
-use actix_web::{web, App, HttpServer, HttpResponse, Result, middleware::Logger};
+use actix_web::{web, App, HttpServer, HttpResponse, Result};
 use std::env;
-use chrono::Utc;
 use reconciliation_backend::{
     database::Database,
     config::Config,
     services::{AuthService, UserService, ProjectService, ReconciliationService, FileService, AnalyticsService, MonitoringService},
-    middleware::{AuthMiddleware, SecurityMiddleware, LoggingMiddleware, PerformanceMiddleware, SecurityMiddlewareConfig, LoggingConfig, PerformanceMonitoringConfig},
+    middleware::AuthMiddleware,
     handlers,
 };
 
@@ -29,10 +28,23 @@ async fn main() -> std::io::Result<()> {
 
     // Create config first
     let config = Config {
+        host: env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string()),
+        port: env::var("PORT").unwrap_or_else(|_| "2000".to_string()).parse().unwrap_or(2000),
         database_url: database_url.clone(),
         redis_url: redis_url.clone(),
-        jwt_secret: "your-jwt-secret".to_string(),
+        jwt_secret: env::var("JWT_SECRET").unwrap_or_else(|_| "your-jwt-secret".to_string()),
         jwt_expiration: 86400,
+        cors_origins: env::var("CORS_ORIGINS")
+            .unwrap_or_else(|_| "http://localhost:3000,http://localhost:1000".to_string())
+            .split(',')
+            .map(|s| s.to_string())
+            .collect(),
+        log_level: env::var("LOG_LEVEL").unwrap_or_else(|_| "info".to_string()),
+        max_file_size: env::var("MAX_FILE_SIZE")
+            .unwrap_or_else(|_| "10485760".to_string())
+            .parse()
+            .unwrap_or(10485760),
+        upload_path: env::var("UPLOAD_PATH").unwrap_or_else(|_| "uploads".to_string()),
     };
 
     // Initialize database
@@ -46,7 +58,7 @@ async fn main() -> std::io::Result<()> {
     let reconciliation_service = ReconciliationService::new(database.clone());
     let file_service = FileService::new(database.clone(), "uploads".to_string());
     let analytics_service = AnalyticsService::new(database.clone());
-    let monitoring_service = MonitoringService::new(database.clone());
+    let monitoring_service = MonitoringService::new();
 
     HttpServer::new(move || {
         App::new()
@@ -85,8 +97,8 @@ async fn main() -> std::io::Result<()> {
                             .route("/reconciliation/jobs/{id}", web::delete().to(handlers::delete_reconciliation_job))
                             .route("/reconciliation/active", web::get().to(handlers::get_active_reconciliation_jobs))
                             .route("/reconciliation/queued", web::get().to(handlers::get_queued_reconciliation_jobs))
-                            .route("/data-sources", web::get().to(handlers::get_data_sources))
-                            .route("/data-sources", web::post().to(handlers::create_data_source))
+                            .route("/projects/{project_id}/data-sources", web::get().to(handlers::get_project_data_sources))
+                            .route("/projects/{project_id}/data-sources", web::post().to(handlers::create_data_source))
                             .route("/data-sources/{id}", web::get().to(handlers::get_data_source))
                             .route("/data-sources/{id}", web::put().to(handlers::update_data_source))
                             .route("/data-sources/{id}", web::delete().to(handlers::delete_data_source))

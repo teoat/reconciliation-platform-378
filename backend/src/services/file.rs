@@ -21,6 +21,7 @@ use crate::models::{
 use diesel::prelude::*;
 
 /// File service for handling file uploads and processing
+#[derive(Clone)]
 pub struct FileService {
     db: Database,
     upload_path: String,

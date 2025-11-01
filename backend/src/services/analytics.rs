@@ -21,6 +21,7 @@ use std::sync::Arc;
 use std::time::Duration as StdDuration;
 
 /// Analytics service
+#[derive(Clone)]
 pub struct AnalyticsService {
     db: Database,
     cache: Arc<MultiLevelCache>,
