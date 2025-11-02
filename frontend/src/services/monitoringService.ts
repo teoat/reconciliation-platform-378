@@ -1,5 +1,5 @@
 // Comprehensive Monitoring Service
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 import { apiClient } from '../apiClient';
 
 export interface SystemMetrics {
@@ -49,6 +49,12 @@ export interface PerformanceMetrics {
   pageLoadTime: number;
   domContentLoaded: number;
   firstContentfulPaint: number;
+}
+
+export interface Metric {
+  timestamp: string;
+  [key: string]: string | number | boolean | undefined;
+}
   largestContentfulPaint: number;
   firstInputDelay: number;
   cumulativeLayoutShift: number;
@@ -197,7 +203,7 @@ export class MonitoringService {
       this.startFlushTimer();
 
       this.isInitialized = true;
-      logger.log('Monitoring service initialized successfully');
+      logger.info('Monitoring service initialized successfully');
     } catch (error) {
       logger.error('Failed to initialize monitoring service:', error);
       throw error;
@@ -208,14 +214,18 @@ export class MonitoringService {
     // Monitor page load performance
     if (typeof window !== 'undefined' && 'performance' in window) {
       window.addEventListener('load', () => {
-        const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming;
+        const navigation = performance.getEntriesByType(
+          'navigation'
+        )[0] as PerformanceNavigationTiming;
         const paintEntries = performance.getEntriesByType('paint');
-        
+
         const metrics: PerformanceMetrics = {
           timestamp: new Date().toISOString(),
           pageLoadTime: navigation.loadEventEnd - navigation.loadEventStart,
-          domContentLoaded: navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
-          firstContentfulPaint: paintEntries.find(entry => entry.name === 'first-contentful-paint')?.startTime || 0,
+          domContentLoaded:
+            navigation.domContentLoadedEventEnd - navigation.domContentLoadedEventStart,
+          firstContentfulPaint:
+            paintEntries.find((entry) => entry.name === 'first-contentful-paint')?.startTime || 0,
           largestContentfulPaint: 0, // Will be updated by LCP observer
           firstInputDelay: 0, // Will be updated by FID observer
           cumulativeLayoutShift: 0, // Will be updated by CLS observer
@@ -249,10 +259,11 @@ export class MonitoringService {
       // First Input Delay (FID)
       const fidObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        entries.forEach((entry: any) => {
+        entries.forEach((entry: PerformanceEntry) => {
+          const perfEntry = entry as any; // Type assertion for FID-specific properties
           this.collectMetric('performance', {
             timestamp: new Date().toISOString(),
-            firstInputDelay: entry.processingStart - entry.startTime,
+            firstInputDelay: perfEntry.processingStart - entry.startTime,
           });
         });
       });
@@ -262,8 +273,9 @@ export class MonitoringService {
       const clsObserver = new PerformanceObserver((list) => {
         let clsValue = 0;
         const entries = list.getEntries();
-        entries.forEach((entry: any) => {
-          if (!entry.hadRecentInput) {
+        entries.forEach((entry: PerformanceEntry) => {
+          const layoutShiftEntry = entry as any; // Type assertion for CLS-specific properties
+          if (!layoutShiftEntry.hadRecentInput) {
             clsValue += entry.value;
           }
         });
@@ -335,7 +347,7 @@ export class MonitoringService {
       const trackPageView = () => {
         pageViews++;
         const timeOnSite = Date.now() - startTime;
-        
+
         const userMetrics: UserMetrics = {
           timestamp: new Date().toISOString(),
           userId: this.getCurrentUserId() || 'anonymous',
@@ -390,12 +402,12 @@ export class MonitoringService {
       const startTime = Date.now();
       const url = args[0] as string;
       const method = args[1]?.method || 'GET';
-      
+
       try {
         const response = await originalFetch(...args);
         const endTime = Date.now();
         const responseTime = endTime - startTime;
-        
+
         const apiMetrics: ApiMetrics = {
           timestamp: new Date().toISOString(),
           endpoint: url,
@@ -408,12 +420,12 @@ export class MonitoringService {
           throughput: 1,
         };
         this.collectMetric('api', apiMetrics);
-        
+
         return response;
       } catch (error) {
         const endTime = Date.now();
         const responseTime = endTime - startTime;
-        
+
         const apiMetrics: ApiMetrics = {
           timestamp: new Date().toISOString(),
           endpoint: url,
@@ -426,13 +438,13 @@ export class MonitoringService {
           throughput: 1,
         };
         this.collectMetric('api', apiMetrics);
-        
+
         throw error;
       }
     };
   }
 
-  private collectMetric(type: string, metric: any): void {
+  private collectMetric(type: string, metric: Metric): void {
     if (Math.random() > this.config.samplingRate) return;
 
     if (!this.metricsBuffer.has(type)) {
@@ -460,7 +472,7 @@ export class MonitoringService {
     if (!buffer || buffer.length === 0) return;
 
     const metrics = buffer.splice(0, this.config.batchSize);
-    
+
     try {
       await this.sendMetrics(type, metrics);
     } catch (error) {
@@ -470,9 +482,9 @@ export class MonitoringService {
     }
   }
 
-  private async sendMetrics(type: string, metrics: any[]): Promise<void> {
+  private async sendMetrics(type: string, metrics: Metric[]): Promise<void> {
     const endpoint = `/api/monitoring/metrics/${type}`;
-    
+
     for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
       try {
         await apiClient.post(endpoint, { metrics });
@@ -481,7 +493,7 @@ export class MonitoringService {
         if (attempt === this.config.maxRetries) {
           throw error;
         }
-        await new Promise(resolve => setTimeout(resolve, this.config.retryDelay * attempt));
+        await new Promise((resolve) => setTimeout(resolve, this.config.retryDelay * attempt));
       }
     }
   }
@@ -501,13 +513,15 @@ export class MonitoringService {
     const params = new URLSearchParams();
     if (level) params.append('level', level);
     params.append('limit', limit.toString());
-    
+
     const response = await apiClient.get(`/api/monitoring/logs?${params}`);
     return response.data;
   }
 
   async getPerformanceMetrics(timeRange = '1h'): Promise<PerformanceMetrics[]> {
-    const response = await apiClient.get(`/api/monitoring/metrics/performance?timeRange=${timeRange}`);
+    const response = await apiClient.get(
+      `/api/monitoring/metrics/performance?timeRange=${timeRange}`
+    );
     return response.data;
   }
 
@@ -537,7 +551,9 @@ export class MonitoringService {
   }
 
   async getWebSocketMetrics(timeRange = '1h'): Promise<WebSocketMetrics[]> {
-    const response = await apiClient.get(`/api/monitoring/metrics/websocket?timeRange=${timeRange}`);
+    const response = await apiClient.get(
+      `/api/monitoring/metrics/websocket?timeRange=${timeRange}`
+    );
     return response.data;
   }
 

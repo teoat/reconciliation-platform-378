@@ -1,0 +1,93 @@
+
+> 378-data-evidence-reconciliation-app@0.1.0 quality:check
+> npm run audit:debt && npm run coverage:check && npm run files:large
+
+
+> 378-data-evidence-reconciliation-app@0.1.0 audit:debt
+> bash scripts/audit-technical-debt.sh
+
+🔍 Starting Technical Debt Audit...
+Timestamp: 2025-11-01T23:44:07Z
+
+Scanning codebase...
+Generating detailed breakdown...
+Identifying top files by marker count...
+✅ Technical Debt Audit Complete!
+📄 Report generated: TECHNICAL_DEBT_AUDIT.md
+
+Summary:
+  Total Markers: 15
+  Backend: 3
+  Frontend: 12
+  Files Affected: 7 / 627
+
+> 378-data-evidence-reconciliation-app@0.1.0 coverage:check
+> bash scripts/check-coverage.sh
+
+📊 Checking Test Coverage...
+Timestamp: 2025-11-01T23:44:25Z
+
+🔍 Checking Backend Coverage (Rust)...
+[1;33m⚠️  Backend coverage report not found. Run: cd backend && cargo tarpaulin[0m
+
+🔍 Checking Frontend Coverage (TypeScript)...
+[0;31m❌ Frontend Coverage: 0% (Below minimum: 50%)[0m
+
+  - Current: 0%
+  - Target: 70%
+  - Current: 0%
+  - Target: 70%
+✅ Coverage report generated: COVERAGE_REPORT.md
+
+> 378-data-evidence-reconciliation-app@0.1.0 files:large
+> bash scripts/find-large-files.sh
+
+🔍 Finding Large Files...
+Timestamp: 2025-11-01T23:44:27Z
+
+Backend Files > 500 lines:
+----------------------------------------
+40494 total
+1017 backend/src/models/schema.rs
+976 backend/src/integration_tests.rs
+932 backend/src/main.rs
+807 backend/src/services/backup_recovery.rs
+797 backend/src/services/auth.rs
+748 backend/src/websocket.rs
+748 backend/src/services/performance.rs
+699 backend/src/services/api_versioning.rs
+697 backend/src/models/mod.rs
+682 backend/src/security_tests.rs
+680 backend/src/services/analytics.rs
+647 backend/src/services/mobile_optimization.rs
+640 backend/src/performance_tests.rs
+629 backend/src/test_data_management.rs
+629 backend/src/middleware/logging.rs
+628 backend/src/services/validation_old.rs
+621 backend/src/handlers/auth.rs
+617 backend/src/handlers/reconciliation.rs
+616 backend/src/services/internationalization.rs
+
+Frontend Files > 400 lines:
+------------------------------------------
+122327 total
+1823 frontend/src/services/dataPersistenceTester.ts
+1460 frontend/src/services/staleDataTester.ts
+1344 frontend/src/services/networkInterruptionTester.ts
+1337 frontend/src/services/errorRecoveryTester.ts
+1321 frontend/src/services/errorMappingTester.ts
+1285 frontend/src/services/securityService.ts
+1251 frontend/src/services/businessIntelligenceService.ts
+1212 frontend/src/components/DataProvider.tsx
+1193 frontend/src/services/workflowSyncTester.ts
+1157 frontend/src/services/errorLoggingTester.ts
+1121 frontend/src/components/CollaborativeFeatures.tsx
+1065 frontend/src/components/index.tsx
+1044 frontend/src/services/smartFilterService.ts
+1019 frontend/src/services/backupRecoveryService.ts
+1018 frontend/src/store/index.ts
+947 frontend/src/services/progressVisualizationService.ts
+909 frontend/src/components/ReconciliationInterface.tsx
+889 frontend/src/services/keyboardNavigationService.ts
+885 frontend/src/components/EnterpriseSecurity.tsx
+✅ Large files report generated: LARGE_FILES_REPORT.md

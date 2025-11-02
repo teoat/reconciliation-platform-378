@@ -1,140 +1,180 @@
 // WebSocket Service for Real-time Collaboration
 // Implements real-time updates, live collaboration, and presence management
 
-import React from 'react'
-import { APP_CONFIG } from '../constants'
+import React from 'react';
+import { APP_CONFIG } from '../constants';
 
 // WebSocket message types
-export enum MessageType {
+export const MessageType = {
   // Connection
-  CONNECT = 'connect',
-  DISCONNECT = 'disconnect',
-  RECONNECT = 'reconnect',
-  
+  CONNECT: 'connect',
+  DISCONNECT: 'disconnect',
+  RECONNECT: 'reconnect',
+
   // Presence
-  USER_JOINED = 'user_joined',
-  USER_LEFT = 'user_left',
-  USER_PRESENCE = 'user_presence',
-  
+  USER_JOINED: 'user_joined',
+  USER_LEFT: 'user_left',
+  USER_PRESENCE: 'user_presence',
+
   // Collaboration
-  CURSOR_MOVE = 'cursor_move',
-  SELECTION_CHANGE = 'selection_change',
-  TEXT_EDIT = 'text_edit',
-  FIELD_UPDATE = 'field_update',
-  
+  CURSOR_MOVE: 'cursor_move',
+  SELECTION_CHANGE: 'selection_change',
+  TEXT_EDIT: 'text_edit',
+  FIELD_UPDATE: 'field_update',
+
   // Data synchronization
-  DATA_SYNC = 'data_sync',
-  CONFLICT_RESOLUTION = 'conflict_resolution',
-  
+  DATA_SYNC: 'data_sync',
+  CONFLICT_RESOLUTION: 'conflict_resolution',
+
   // Notifications
-  NOTIFICATION = 'notification',
-  ALERT = 'alert',
-  
+  NOTIFICATION: 'notification',
+  ALERT: 'alert',
+
   // System
-  PING = 'ping',
-  PONG = 'pong',
-  ERROR = 'error',
-}
+  PING: 'ping',
+  PONG: 'pong',
+  ERROR: 'error',
+};
 
-// WebSocket message interface
-export interface WebSocketMessage {
-  type: MessageType
-  id: string
-  timestamp: Date
-  userId: string
-  sessionId: string
-  data: any
-  metadata?: Record<string, any>
-}
+// WebSocket message structure
+export const createWebSocketMessage = (type, id, timestamp, userId, sessionId, data, metadata) => ({
+  type,
+  id,
+  timestamp,
+  userId,
+  sessionId,
+  data,
+  metadata,
+});
 
-// User presence interface
-export interface UserPresence {
-  userId: string
-  userName: string
-  userRole: string
-  isOnline: boolean
-  lastSeen: Date
-  currentPage?: string
-  currentProject?: string
-  cursor?: {
-    x: number
-    y: number
-  }
-  selection?: {
-    start: number
-    end: number
-  }
-}
+// User presence structure
+export const createUserPresence = (
+  userId,
+  userName,
+  userRole,
+  isOnline,
+  lastSeen,
+  currentPage,
+  currentProject,
+  cursor,
+  selection
+) => ({
+  userId,
+  userName,
+  userRole,
+  isOnline,
+  lastSeen,
+  currentPage,
+  currentProject,
+  cursor,
+  selection,
+});
 
-// Collaboration session interface
-export interface CollaborationSession {
-  id: string
-  projectId: string
-  participants: UserPresence[]
-  activeUsers: string[]
-  lockedFields: Map<string, string> // fieldId -> userId
-  changes: CollaborationChange[]
-  createdAt: Date
-  updatedAt: Date
-}
+// Collaboration session structure
+export const createCollaborationSession = (
+  id,
+  projectId,
+  participants,
+  activeUsers,
+  lockedFields,
+  changes,
+  createdAt,
+  updatedAt
+) => ({
+  id,
+  projectId,
+  participants,
+  activeUsers,
+  lockedFields,
+  changes,
+  createdAt,
+  updatedAt,
+});
 
-// Collaboration change interface
-export interface CollaborationChange {
-  id: string
-  userId: string
-  fieldId: string
-  oldValue: any
-  newValue: any
-  timestamp: Date
-  applied: boolean
-  conflicts: CollaborationConflict[]
-}
+// Collaboration change structure
+export const createCollaborationChange = (
+  id,
+  userId,
+  fieldId,
+  oldValue,
+  newValue,
+  timestamp,
+  applied,
+  conflicts
+) => ({
+  id,
+  userId,
+  fieldId,
+  oldValue,
+  newValue,
+  timestamp,
+  applied,
+  conflicts,
+});
 
-// Collaboration conflict interface
-export interface CollaborationConflict {
-  id: string
-  changeId: string
-  conflictingChangeId: string
-  fieldId: string
-  resolution: 'manual' | 'automatic' | 'pending'
-  resolvedBy?: string
-  resolvedAt?: Date
-}
+// Collaboration conflict structure
+export const createCollaborationConflict = (
+  id,
+  changeId,
+  conflictingChangeId,
+  fieldId,
+  resolution,
+  resolvedBy,
+  resolvedAt
+) => ({
+  id,
+  changeId,
+  conflictingChangeId,
+  fieldId,
+  resolution,
+  resolvedBy,
+  resolvedAt,
+});
 
 // WebSocket configuration
-interface WebSocketConfig {
-  url: string
-  reconnectInterval: number
-  maxReconnectAttempts: number
-  pingInterval: number
-  pongTimeout: number
-  messageQueueSize: number
-  enablePresence: boolean
-  enableCollaboration: boolean
-  enableNotifications: boolean
-}
+const createWebSocketConfig = (
+  url,
+  reconnectInterval,
+  maxReconnectAttempts,
+  pingInterval,
+  pongTimeout,
+  messageQueueSize,
+  enablePresence,
+  enableCollaboration,
+  enableNotifications
+) => ({
+  url,
+  reconnectInterval,
+  maxReconnectAttempts,
+  pingInterval,
+  pongTimeout,
+  messageQueueSize,
+  enablePresence,
+  enableCollaboration,
+  enableNotifications,
+});
 
 class WebSocketService {
-  private static instance: WebSocketService
-  private config: WebSocketConfig
-  private socket: WebSocket | null = null
-  private isConnected = false
-  private reconnectAttempts = 0
-  private reconnectTimer?: NodeJS.Timeout
-  private pingTimer?: NodeJS.Timeout
-  private pongTimer?: NodeJS.Timeout
-  private messageQueue: WebSocketMessage[] = []
-  private listeners: Map<string, Function[]> = new Map()
-  private presence: Map<string, UserPresence> = new Map()
-  private collaborationSessions: Map<string, CollaborationSession> = new Map()
-  private userId: string = ''
-  private sessionId: string = ''
+  static instance;
+  config;
+  socket = null;
+  isConnected = false;
+  reconnectAttempts = 0;
+  reconnectTimer;
+  pingTimer;
+  pongTimer;
+  messageQueue = [];
+  listeners = new Map();
+  presence = new Map();
+  collaborationSessions = new Map();
+  userId = '';
+  sessionId = '';
 
-  public static getInstance(): WebSocketService {
+  static getInstance() {
     if (!WebSocketService.instance) {
-      WebSocketService.instance = new WebSocketService()
+      WebSocketService.instance = new WebSocketService();
     }
-    return WebSocketService.instance
+    return WebSocketService.instance;
   }
 
   constructor() {
@@ -148,313 +188,314 @@ class WebSocketService {
       enablePresence: true,
       enableCollaboration: true,
       enableNotifications: true,
-    }
+    };
 
-    this.sessionId = this.generateSessionId()
-    this.init()
+    this.sessionId = this.generateSessionId();
+    this.init();
   }
 
-  private init(): void {
+  init() {
     // Get user ID from storage
     try {
-      const userData = localStorage.getItem('user')
+      const userData = localStorage.getItem('user');
       if (userData) {
-        const user = JSON.parse(userData)
-        this.userId = user.id
+        const user = JSON.parse(userData);
+        this.userId = user.id;
       }
     } catch (error) {
-      console.error('Failed to get user ID:', error)
+      console.error('Failed to get user ID:', error);
     }
 
     // Connect when page becomes visible
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && !this.isConnected) {
-        this.connect()
+        this.connect();
       }
-    })
+    });
 
     // Connect on page load
     if (document.visibilityState === 'visible') {
-      this.connect()
+      this.connect();
     }
   }
 
-  public async connect(): Promise<void> {
-    if (this.isConnected || !this.userId) return
+  async connect() {
+    if (this.isConnected || !this.userId) return;
 
     try {
-      const wsUrl = `${this.config.url}?userId=${this.userId}&sessionId=${this.sessionId}`
-      this.socket = new WebSocket(wsUrl)
+      const wsUrl = `${this.config.url}?userId=${this.userId}&sessionId=${this.sessionId}`;
+      this.socket = new WebSocket(wsUrl);
 
       this.socket.onopen = () => {
-        console.log('WebSocket connected')
-        this.isConnected = true
-        this.reconnectAttempts = 0
-        this.startPingTimer()
-        this.processMessageQueue()
-        this.emit('connected')
-      }
+        console.log('WebSocket connected');
+        this.isConnected = true;
+        this.reconnectAttempts = 0;
+        this.startPingTimer();
+        this.processMessageQueue();
+        this.emit('connected');
+      };
 
       this.socket.onmessage = (event) => {
-        this.handleMessage(event.data)
-      }
+        this.handleMessage(event.data);
+      };
 
       this.socket.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason)
-        this.isConnected = false
-        this.stopPingTimer()
-        this.emit('disconnected', { code: event.code, reason: event.reason })
-        
+        console.log('WebSocket disconnected:', event.code, event.reason);
+        this.isConnected = false;
+        this.stopPingTimer();
+        this.emit('disconnected', { code: event.code, reason: event.reason });
+
         if (!event.wasClean) {
-          this.scheduleReconnect()
+          this.scheduleReconnect();
         }
-      }
+      };
 
       this.socket.onerror = (error) => {
-        console.error('WebSocket error:', error)
-        this.emit('error', error)
-      }
-
+        console.error('WebSocket error:', error);
+        this.emit('error', error);
+      };
     } catch (error) {
-      console.error('Failed to connect WebSocket:', error)
-      this.scheduleReconnect()
+      console.error('Failed to connect WebSocket:', error);
+      this.scheduleReconnect();
     }
   }
 
-  public disconnect(): void {
+  disconnect() {
     if (this.socket) {
-      this.socket.close(1000, 'User disconnected')
-      this.socket = null
+      this.socket.close(1000, 'User disconnected');
+      this.socket = null;
     }
-    this.isConnected = false
-    this.stopPingTimer()
-    this.clearReconnectTimer()
+    this.isConnected = false;
+    this.stopPingTimer();
+    this.clearReconnectTimer();
   }
 
-  private scheduleReconnect(): void {
+  scheduleReconnect() {
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached')
-      this.emit('maxReconnectAttemptsReached')
-      return
+      console.error('Max reconnection attempts reached');
+      this.emit('maxReconnectAttemptsReached');
+      return;
     }
 
-    this.reconnectAttempts++
-    const delay = this.config.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1)
-    
+    this.reconnectAttempts++;
+    const delay = this.config.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1);
+
     this.reconnectTimer = setTimeout(() => {
-      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`)
-      this.connect()
-    }, delay)
+      console.log(
+        `Attempting to reconnect (${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`
+      );
+      this.connect();
+    }, delay);
   }
 
-  private clearReconnectTimer(): void {
+  clearReconnectTimer() {
     if (this.reconnectTimer) {
-      clearTimeout(this.reconnectTimer)
-      this.reconnectTimer = undefined
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = undefined;
     }
   }
 
-  private startPingTimer(): void {
+  startPingTimer() {
     this.pingTimer = setInterval(() => {
       this.sendMessage({
         type: MessageType.PING,
         data: { timestamp: Date.now() },
-      })
+      });
 
       // Set pong timeout
       this.pongTimer = setTimeout(() => {
-        console.warn('Pong timeout, reconnecting...')
-        this.disconnect()
-        this.scheduleReconnect()
-      }, this.config.pongTimeout)
-    }, this.config.pingInterval)
+        console.warn('Pong timeout, reconnecting...');
+        this.disconnect();
+        this.scheduleReconnect();
+      }, this.config.pongTimeout);
+    }, this.config.pingInterval);
   }
 
-  private stopPingTimer(): void {
+  stopPingTimer() {
     if (this.pingTimer) {
-      clearInterval(this.pingTimer)
-      this.pingTimer = undefined
+      clearInterval(this.pingTimer);
+      this.pingTimer = undefined;
     }
     if (this.pongTimer) {
-      clearTimeout(this.pongTimer)
-      this.pongTimer = undefined
+      clearTimeout(this.pongTimer);
+      this.pongTimer = undefined;
     }
   }
 
-  private handleMessage(data: string): void {
+  handleMessage(data) {
     try {
-      const message: WebSocketMessage = JSON.parse(data)
-      
+      const message: WebSocketMessage = JSON.parse(data);
+
       switch (message.type) {
         case MessageType.PONG:
           if (this.pongTimer) {
-            clearTimeout(this.pongTimer)
-            this.pongTimer = undefined
+            clearTimeout(this.pongTimer);
+            this.pongTimer = undefined;
           }
-          break
+          break;
 
         case MessageType.USER_JOINED:
-          this.handleUserJoined(message)
-          break
+          this.handleUserJoined(message);
+          break;
 
         case MessageType.USER_LEFT:
-          this.handleUserLeft(message)
-          break
+          this.handleUserLeft(message);
+          break;
 
         case MessageType.USER_PRESENCE:
-          this.handleUserPresence(message)
-          break
+          this.handleUserPresence(message);
+          break;
 
         case MessageType.CURSOR_MOVE:
-          this.handleCursorMove(message)
-          break
+          this.handleCursorMove(message);
+          break;
 
         case MessageType.SELECTION_CHANGE:
-          this.handleSelectionChange(message)
-          break
+          this.handleSelectionChange(message);
+          break;
 
         case MessageType.TEXT_EDIT:
-          this.handleTextEdit(message)
-          break
+          this.handleTextEdit(message);
+          break;
 
         case MessageType.FIELD_UPDATE:
-          this.handleFieldUpdate(message)
-          break
+          this.handleFieldUpdate(message);
+          break;
 
         case MessageType.DATA_SYNC:
-          this.handleDataSync(message)
-          break
+          this.handleDataSync(message);
+          break;
 
         case MessageType.CONFLICT_RESOLUTION:
-          this.handleConflictResolution(message)
-          break
+          this.handleConflictResolution(message);
+          break;
 
         case MessageType.NOTIFICATION:
-          this.handleNotification(message)
-          break
+          this.handleNotification(message);
+          break;
 
         case MessageType.ERROR:
-          this.handleError(message)
-          break
+          this.handleError(message);
+          break;
 
         default:
-          console.warn('Unknown message type:', message.type)
+          console.warn('Unknown message type:', message.type);
       }
 
-      this.emit('message', message)
+      this.emit('message', message);
     } catch (error) {
-      console.error('Failed to parse WebSocket message:', error)
+      console.error('Failed to parse WebSocket message:', error);
     }
   }
 
-  private handleUserJoined(message: WebSocketMessage): void {
-    const userPresence: UserPresence = message.data
-    this.presence.set(userPresence.userId, userPresence)
-    this.emit('userJoined', userPresence)
+  handleUserJoined(message) {
+    const userPresence: UserPresence = message.data;
+    this.presence.set(userPresence.userId, userPresence);
+    this.emit('userJoined', userPresence);
   }
 
-  private handleUserLeft(message: WebSocketMessage): void {
-    const userId = message.data.userId
-    this.presence.delete(userId)
-    this.emit('userLeft', userId)
+  handleUserLeft(message) {
+    const userId = message.data.userId;
+    this.presence.delete(userId);
+    this.emit('userLeft', userId);
   }
 
-  private handleUserPresence(message: WebSocketMessage): void {
-    const userPresence: UserPresence = message.data
-    this.presence.set(userPresence.userId, userPresence)
-    this.emit('userPresence', userPresence)
+  handleUserPresence(message) {
+    const userPresence: UserPresence = message.data;
+    this.presence.set(userPresence.userId, userPresence);
+    this.emit('userPresence', userPresence);
   }
 
-  private handleCursorMove(message: WebSocketMessage): void {
+  handleCursorMove(message) {
     this.emit('cursorMove', {
       userId: message.userId,
       cursor: message.data.cursor,
-    })
+    });
   }
 
-  private handleSelectionChange(message: WebSocketMessage): void {
+  handleSelectionChange(message) {
     this.emit('selectionChange', {
       userId: message.userId,
       selection: message.data.selection,
-    })
+    });
   }
 
-  private handleTextEdit(message: WebSocketMessage): void {
+  handleTextEdit(message) {
     this.emit('textEdit', {
       userId: message.userId,
       fieldId: message.data.fieldId,
       change: message.data.change,
-    })
+    });
   }
 
-  private handleFieldUpdate(message: WebSocketMessage): void {
+  handleFieldUpdate(message) {
     this.emit('fieldUpdate', {
       userId: message.userId,
       fieldId: message.data.fieldId,
       value: message.data.value,
-    })
+    });
   }
 
-  private handleDataSync(message: WebSocketMessage): void {
-    this.emit('dataSync', message.data)
+  handleDataSync(message) {
+    this.emit('dataSync', message.data);
   }
 
-  private handleConflictResolution(message: WebSocketMessage): void {
-    this.emit('conflictResolution', message.data)
+  handleConflictResolution(message) {
+    this.emit('conflictResolution', message.data);
   }
 
-  private handleNotification(message: WebSocketMessage): void {
-    this.emit('notification', message.data)
+  handleNotification(message) {
+    this.emit('notification', message.data);
   }
 
-  private handleError(message: WebSocketMessage): void {
-    console.error('WebSocket error:', message.data)
-    this.emit('error', message.data)
+  handleError(message) {
+    console.error('WebSocket error:', message.data);
+    this.emit('error', message.data);
   }
 
   // Public methods
-  public sendMessage(message: Omit<WebSocketMessage, 'id' | 'timestamp' | 'userId' | 'sessionId'>): void {
-    const fullMessage: WebSocketMessage = {
+  sendMessage(message) {
+    const fullMessage = {
       ...message,
       id: this.generateMessageId(),
       timestamp: new Date(),
       userId: this.userId,
       sessionId: this.sessionId,
-    }
+    };
 
     if (this.isConnected && this.socket) {
       try {
-        this.socket.send(JSON.stringify(fullMessage))
+        this.socket.send(JSON.stringify(fullMessage));
       } catch (error) {
-        console.error('Failed to send message:', error)
-        this.queueMessage(fullMessage)
+        console.error('Failed to send message:', error);
+        this.queueMessage(fullMessage);
       }
     } else {
-      this.queueMessage(fullMessage)
+      this.queueMessage(fullMessage);
     }
   }
 
-  private queueMessage(message: WebSocketMessage): void {
-    this.messageQueue.push(message)
-    
+  queueMessage(message) {
+    this.messageQueue.push(message);
+
     // Keep queue size manageable
     if (this.messageQueue.length > this.config.messageQueueSize) {
-      this.messageQueue.shift()
+      this.messageQueue.shift();
     }
   }
 
-  private processMessageQueue(): void {
+  processMessageQueue() {
     while (this.messageQueue.length > 0 && this.isConnected) {
-      const message = this.messageQueue.shift()
+      const message = this.messageQueue.shift();
       if (message) {
-        this.sendMessage(message)
+        this.sendMessage(message);
       }
     }
   }
 
   // Presence methods
-  public updatePresence(presence: Partial<UserPresence>): void {
-    if (!this.config.enablePresence) return
+  updatePresence(presence) {
+    if (!this.config.enablePresence) return;
 
     this.sendMessage({
       type: MessageType.USER_PRESENCE,
@@ -462,20 +503,20 @@ class WebSocketService {
         userId: this.userId,
         ...presence,
       },
-    })
+    });
   }
 
-  public getPresence(): Map<string, UserPresence> {
-    return new Map(this.presence)
+  getPresence() {
+    return new Map(this.presence);
   }
 
-  public getUserPresence(userId: string): UserPresence | undefined {
-    return this.presence.get(userId)
+  getUserPresence(userId) {
+    return this.presence.get(userId);
   }
 
   // Collaboration methods
-  public joinCollaborationSession(projectId: string): void {
-    if (!this.config.enableCollaboration) return
+  joinCollaborationSession(projectId) {
+    if (!this.config.enableCollaboration) return;
 
     this.sendMessage({
       type: MessageType.CONNECT,
@@ -483,11 +524,11 @@ class WebSocketService {
         projectId,
         action: 'join',
       },
-    })
+    });
   }
 
-  public leaveCollaborationSession(projectId: string): void {
-    if (!this.config.enableCollaboration) return
+  leaveCollaborationSession(projectId) {
+    if (!this.config.enableCollaboration) return;
 
     this.sendMessage({
       type: MessageType.DISCONNECT,
@@ -495,38 +536,38 @@ class WebSocketService {
         projectId,
         action: 'leave',
       },
-    })
+    });
   }
 
-  public sendCursorMove(cursor: { x: number; y: number }): void {
+  sendCursorMove(cursor) {
     this.sendMessage({
       type: MessageType.CURSOR_MOVE,
       data: { cursor },
-    })
+    });
   }
 
-  public sendSelectionChange(selection: { start: number; end: number }): void {
+  sendSelectionChange(selection) {
     this.sendMessage({
       type: MessageType.SELECTION_CHANGE,
       data: { selection },
-    })
+    });
   }
 
-  public sendTextEdit(fieldId: string, change: any): void {
+  sendTextEdit(fieldId, change) {
     this.sendMessage({
       type: MessageType.TEXT_EDIT,
       data: { fieldId, change },
-    })
+    });
   }
 
-  public sendFieldUpdate(fieldId: string, value: any): void {
+  sendFieldUpdate(fieldId, value) {
     this.sendMessage({
       type: MessageType.FIELD_UPDATE,
       data: { fieldId, value },
-    })
+    });
   }
 
-  public requestDataSync(projectId: string, dataType: string): void {
+  requestDataSync(projectId, dataType) {
     this.sendMessage({
       type: MessageType.DATA_SYNC,
       data: {
@@ -534,10 +575,10 @@ class WebSocketService {
         dataType,
         action: 'request',
       },
-    })
+    });
   }
 
-  public sendDataSync(projectId: string, dataType: string, data: any): void {
+  sendDataSync(projectId, dataType, data) {
     this.sendMessage({
       type: MessageType.DATA_SYNC,
       data: {
@@ -546,12 +587,12 @@ class WebSocketService {
         action: 'send',
         data,
       },
-    })
+    });
   }
 
   // Notification methods
-  public sendNotification(userId: string, notification: any): void {
-    if (!this.config.enableNotifications) return
+  sendNotification(userId, notification) {
+    if (!this.config.enableNotifications) return;
 
     this.sendMessage({
       type: MessageType.NOTIFICATION,
@@ -559,122 +600,118 @@ class WebSocketService {
         targetUserId: userId,
         notification,
       },
-    })
+    });
   }
 
   // Event system
-  public on(event: string, callback: Function): void {
+  on(event, callback) {
     if (!this.listeners.has(event)) {
-      this.listeners.set(event, [])
+      this.listeners.set(event, []);
     }
-    this.listeners.get(event)!.push(callback)
+    this.listeners.get(event)!.push(callback);
   }
 
-  public off(event: string, callback: Function): void {
-    const callbacks = this.listeners.get(event)
+  off(event, callback) {
+    const callbacks = this.listeners.get(event);
     if (callbacks) {
-      const index = callbacks.indexOf(callback)
+      const index = callbacks.indexOf(callback);
       if (index > -1) {
-        callbacks.splice(index, 1)
+        callbacks.splice(index, 1);
       }
     }
   }
 
-  private emit(event: string, ...args: any[]): void {
-    const callbacks = this.listeners.get(event)
+  emit(event, ...args) {
+    const callbacks = this.listeners.get(event);
     if (callbacks) {
-      callbacks.forEach(callback => callback(...args))
+      callbacks.forEach((callback) => callback(...args));
     }
   }
 
   // Utility methods
-  private generateMessageId(): string {
-    return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  generateMessageId() {
+    return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private generateSessionId(): string {
-    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  generateSessionId() {
+    return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  public isWebSocketConnected(): boolean {
-    return this.isConnected
+  isWebSocketConnected() {
+    return this.isConnected;
   }
 
-  public getConnectionStatus(): {
-    connected: boolean
-    reconnectAttempts: number
-    messageQueueSize: number
-  } {
+  getConnectionStatus() {
     return {
       connected: this.isConnected,
       reconnectAttempts: this.reconnectAttempts,
       messageQueueSize: this.messageQueue.length,
-    }
+    };
   }
 }
 
 // React hook for WebSocket functionality
 export const useWebSocket = () => {
-  const [isConnected, setIsConnected] = React.useState(false)
-  const [presence, setPresence] = React.useState<Map<string, UserPresence>>(new Map())
+  const [isConnected, setIsConnected] = React.useState(false);
+  const [presence, setPresence] = React.useState(new Map());
   const [connectionStatus, setConnectionStatus] = React.useState({
     connected: false,
     reconnectAttempts: 0,
     messageQueueSize: 0,
-  })
+  });
 
   React.useEffect(() => {
-    const ws = WebSocketService.getInstance()
-    
+    const ws = WebSocketService.getInstance();
+
     const handleConnected = () => {
-      setIsConnected(true)
-      setConnectionStatus(ws.getConnectionStatus())
-    }
+      setIsConnected(true);
+      setConnectionStatus(ws.getConnectionStatus());
+    };
 
     const handleDisconnected = () => {
-      setIsConnected(false)
-      setConnectionStatus(ws.getConnectionStatus())
-    }
+      setIsConnected(false);
+      setConnectionStatus(ws.getConnectionStatus());
+    };
 
-    const handleUserJoined = (userPresence: UserPresence) => {
-      setPresence(prev => new Map(prev.set(userPresence.userId, userPresence)))
-    }
+    const handleUserJoined = (userPresence) => {
+      setPresence((prev) => new Map(prev.set(userPresence.userId, userPresence)));
+    };
 
-    const handleUserLeft = (userId: string) => {
-      setPresence(prev => {
-        const newPresence = new Map(prev)
-        newPresence.delete(userId)
-        return newPresence
-      })
-    }
+    const handleUserLeft = (userId) => {
+      setPresence((prev) => {
+        const newPresence = new Map(prev);
+        newPresence.delete(userId);
+        return newPresence;
+      });
+    };
 
-    const handleUserPresence = (userPresence: UserPresence) => {
-      setPresence(prev => new Map(prev.set(userPresence.userId, userPresence)))
-    }
+    const handleUserPresence = (userPresence) => {
+      setPresence((prev) => new Map(prev.set(userPresence.userId, userPresence)));
+    };
 
     const handleConnectionStatusChange = () => {
-      setConnectionStatus(ws.getConnectionStatus())
-    }
+      setConnectionStatus(ws.getConnectionStatus());
+    };
 
     // Register event listeners
-    ws.on('connected', handleConnected)
-    ws.on('disconnected', handleDisconnected)
-    ws.on('userJoined', handleUserJoined)
-    ws.on('userLeft', handleUserLeft)
-    ws.on('userPresence', handleUserPresence)
-    ws.on('maxReconnectAttemptsReached', handleConnectionStatusChange)
+    ws.on('connected', handleConnected);
+    ws.on('disconnected', handleDisconnected);
+    ws.on('userJoined', handleUserJoined);
+    ws.on('userLeft', handleUserLeft);
+    ws.on('userPresence', handleUserPresence);
+    ws.on('maxReconnectAttemptsReached', handleConnectionStatusChange);
 
     return () => {
-      ws.off('connected', handleConnected)
-      ws.off('disconnected', handleDisconnected)
-      ws.off('userJoined', handleUserJoined)
-      ws.off('userLeft', handleUserLeft)
-      ws.off('userPresence', handleUserPresence)
-      ws.off('maxReconnectAttemptsReached', handleConnectionStatusChange)
-    }
-  }, [])
+      ws.off('connected', handleConnected);
+      ws.off('disconnected', handleDisconnected);
+      ws.off('userJoined', handleUserJoined);
+      ws.off('userLeft', handleUserLeft);
+      ws.off('userPresence', handleUserPresence);
+      ws.off('maxReconnectAttemptsReached', handleConnectionStatusChange);
+    };
+  }, []);
 
-  const ws = WebSocketService.getInstance()
+  const ws = WebSocketService.getInstance();
 
   return {
     isConnected,
@@ -695,11 +732,10 @@ export const useWebSocket = () => {
     sendNotification: ws.sendNotification.bind(ws),
     on: ws.on.bind(ws),
     off: ws.off.bind(ws),
-  }
-}
+  };
+};
 
 // Export singleton instance
-export const webSocketService = WebSocketService.getInstance()
+export const webSocketService = WebSocketService.getInstance();
 
-export default webSocketService
-
+export default webSocketService;

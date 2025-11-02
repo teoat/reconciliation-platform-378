@@ -2,7 +2,7 @@
 // Contains all test definitions for network interruption testing
 // Extracted from networkInterruptionTester.ts
 
-import { NetworkInterruptionTest } from './types';
+import { NetworkInterruptionTest, NetworkEvent, DataLossInfo, RecoveryAction } from './types';
 import { NetworkSimulation } from './networkSimulation';
 
 export class NetworkInterruptionTestDefinitions {
@@ -20,9 +20,9 @@ export class NetworkInterruptionTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const networkEvents: any[] = [];
-            const dataLoss: any[] = [];
-            const recoveryActions: any[] = [];
+            const networkEvents: NetworkEvent[] = [];
+            const dataLoss: DataLossInfo[] = [];
+            const recoveryActions: RecoveryAction[] = [];
 
             // Simulate normal operation
             await NetworkSimulation.simulateNormalOperation();
@@ -89,9 +89,9 @@ export class NetworkInterruptionTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const networkEvents: any[] = [];
-            const dataLoss: any[] = [];
-            const recoveryActions: any[] = [];
+            const networkEvents: NetworkEvent[] = [];
+            const dataLoss: DataLossInfo[] = [];
+            const recoveryActions: RecoveryAction[] = [];
 
             // Simulate normal operation
             await NetworkSimulation.simulateNormalOperation();
@@ -154,9 +154,9 @@ export class NetworkInterruptionTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const networkEvents: any[] = [];
-            const dataLoss: any[] = [];
-            const recoveryActions: any[] = [];
+            const networkEvents: NetworkEvent[] = [];
+            const dataLoss: DataLossInfo[] = [];
+            const recoveryActions: RecoveryAction[] = [];
 
             // Simulate intermittent connection (multiple connect/disconnect cycles)
             for (let i = 0; i < 3; i++) {
@@ -220,9 +220,9 @@ export class NetworkInterruptionTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const networkEvents: any[] = [];
-            const dataLoss: any[] = [];
-            const recoveryActions: any[] = [];
+            const networkEvents: NetworkEvent[] = [];
+            const dataLoss: DataLossInfo[] = [];
+            const recoveryActions: RecoveryAction[] = [];
 
             // Simulate disconnection
             const disconnectEvent = NetworkSimulation.createNetworkEvent('disconnect', 'high');
@@ -279,9 +279,9 @@ export class NetworkInterruptionTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const networkEvents: any[] = [];
-            const dataLoss: any[] = [];
-            const recoveryActions: any[] = [];
+            const networkEvents: NetworkEvent[] = [];
+            const dataLoss: DataLossInfo[] = [];
+            const recoveryActions: RecoveryAction[] = [];
 
             // Simulate disconnection and reconnection
             const disconnectEvent = NetworkSimulation.createNetworkEvent('disconnect', 'high');
@@ -342,9 +342,9 @@ export class NetworkInterruptionTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const networkEvents: any[] = [];
-            const dataLoss: any[] = [];
-            const recoveryActions: any[] = [];
+            const networkEvents: NetworkEvent[] = [];
+            const dataLoss: DataLossInfo[] = [];
+            const recoveryActions: RecoveryAction[] = [];
 
             // Simulate disconnection and reconnection
             const disconnectEvent = NetworkSimulation.createNetworkEvent('disconnect', 'high');
@@ -405,9 +405,9 @@ export class NetworkInterruptionTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const networkEvents: any[] = [];
-            const dataLoss: any[] = [];
-            const recoveryActions: any[] = [];
+            const networkEvents: NetworkEvent[] = [];
+            const dataLoss: DataLossInfo[] = [];
+            const recoveryActions: RecoveryAction[] = [];
 
             // Simulate form data entry
             const formData = NetworkSimulation.generateTestData(200);
@@ -483,9 +483,9 @@ export class NetworkInterruptionTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const networkEvents: any[] = [];
-            const dataLoss: any[] = [];
-            const recoveryActions: any[] = [];
+            const networkEvents: NetworkEvent[] = [];
+            const dataLoss: DataLossInfo[] = [];
+            const recoveryActions: RecoveryAction[] = [];
 
             // Simulate file upload
             const uploadData = NetworkSimulation.generateTestData(1000);
@@ -558,9 +558,9 @@ export class NetworkInterruptionTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const networkEvents: any[] = [];
-            const dataLoss: any[] = [];
-            const recoveryActions: any[] = [];
+            const networkEvents: NetworkEvent[] = [];
+            const dataLoss: DataLossInfo[] = [];
+            const recoveryActions: RecoveryAction[] = [];
 
             // Simulate workflow progress
             const workflowState = NetworkSimulation.generateTestData(300);
@@ -638,9 +638,9 @@ export class NetworkInterruptionTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const networkEvents: any[] = [];
-            const dataLoss: any[] = [];
-            const recoveryActions: any[] = [];
+            const networkEvents: NetworkEvent[] = [];
+            const dataLoss: DataLossInfo[] = [];
+            const recoveryActions: RecoveryAction[] = [];
 
             // Simulate user session
             const userSession = NetworkSimulation.generateTestData(150);
@@ -716,9 +716,9 @@ export class NetworkInterruptionTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const networkEvents: any[] = [];
-            const dataLoss: any[] = [];
-            const recoveryActions: any[] = [];
+            const networkEvents: NetworkEvent[] = [];
+            const dataLoss: DataLossInfo[] = [];
+            const recoveryActions: RecoveryAction[] = [];
 
             // Simulate application state
             const appState = NetworkSimulation.generateTestData(400);
@@ -796,9 +796,9 @@ export class NetworkInterruptionTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const networkEvents: any[] = [];
-            const dataLoss: any[] = [];
-            const recoveryActions: any[] = [];
+            const networkEvents: NetworkEvent[] = [];
+            const dataLoss: DataLossInfo[] = [];
+            const recoveryActions: RecoveryAction[] = [];
 
             // Simulate UI state
             const uiState = NetworkSimulation.generateTestData(250);

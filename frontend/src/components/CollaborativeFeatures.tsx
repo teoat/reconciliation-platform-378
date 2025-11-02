@@ -1,154 +1,156 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useMemo } from 'react'
-import Image from 'next/image'
-import { Users } from 'lucide-react'
-import { User } from 'lucide-react'
-import { UserCheck } from 'lucide-react'
-import { UserPlus } from 'lucide-react'
-import { MessageSquare } from 'lucide-react'
-import { Bell } from 'lucide-react'
-import { Plus } from 'lucide-react'
-import { Eye } from 'lucide-react'
-import { Search } from 'lucide-react'
-import { Building } from 'lucide-react'
-import { Activity } from 'lucide-react'
-import { Upload } from 'lucide-react'
-import { CheckCircle } from 'lucide-react'
-import { XCircle } from 'lucide-react'
-import { X } from 'lucide-react'
-import { useData } from '../components/DataProvider'
+import { useState, useEffect, useMemo } from 'react';
+import Image from 'next/image';
+import { Users } from 'lucide-react';
+import { User } from 'lucide-react';
+import { UserCheck } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
+import { MessageSquare } from 'lucide-react';
+import { Bell } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { Eye } from 'lucide-react';
+import { Search } from 'lucide-react';
+import { Building } from 'lucide-react';
+import { Activity } from 'lucide-react';
+import { Upload } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
+import { XCircle } from 'lucide-react';
+import { X } from 'lucide-react';
+import { useData } from '../components/DataProvider';
 
 // Collaborative Features Interfaces
 interface TeamMember {
-  id: string
-  name: string
-  email: string
-  role: 'admin' | 'manager' | 'analyst' | 'viewer'
-  avatar?: string
-  status: 'online' | 'away' | 'busy' | 'offline'
-  lastSeen: string
-  currentActivity?: string
-  permissions: string[]
-  joinedAt: string
-  skills: string[]
-  workload: number
+  id: string;
+  name: string;
+  email: string;
+  role: 'admin' | 'manager' | 'analyst' | 'viewer';
+  avatar?: string;
+  status: 'online' | 'away' | 'busy' | 'offline';
+  lastSeen: string;
+  currentActivity?: string;
+  permissions: string[];
+  joinedAt: string;
+  skills: string[];
+  workload: number;
   performance: {
-    tasksCompleted: number
-    accuracy: number
-    efficiency: number
-    collaboration: number
-  }
+    tasksCompleted: number;
+    accuracy: number;
+    efficiency: number;
+    collaboration: number;
+  };
 }
 
 interface Workspace {
-  id: string
-  name: string
-  description: string
-  type: 'project' | 'department' | 'team' | 'task'
-  members: string[]
-  owner: string
-  createdAt: string
-  updatedAt: string
+  id: string;
+  name: string;
+  description: string;
+  type: 'project' | 'department' | 'team' | 'task';
+  members: string[];
+  owner: string;
+  createdAt: string;
+  updatedAt: string;
   settings: {
-    visibility: 'public' | 'private' | 'restricted'
-    notifications: boolean
-    autoAssign: boolean
-    approvalRequired: boolean
-  }
+    visibility: 'public' | 'private' | 'restricted';
+    notifications: boolean;
+    autoAssign: boolean;
+    approvalRequired: boolean;
+  };
   statistics: {
-    totalMembers: number
-    activeMembers: number
-    tasksCompleted: number
-    averageEfficiency: number
-  }
+    totalMembers: number;
+    activeMembers: number;
+    tasksCompleted: number;
+    averageEfficiency: number;
+  };
 }
 
 interface Comment {
-  id: string
-  recordId: string
-  userId: string
-  userName: string
-  content: string
-  timestamp: string
-  replies?: Comment[]
-  attachments?: string[]
-  mentions?: string[]
+  id: string;
+  recordId: string;
+  userId: string;
+  userName: string;
+  content: string;
+  timestamp: string;
+  replies?: Comment[];
+  attachments?: string[];
+  mentions?: string[];
   reactions?: Array<{
-    emoji: string
-    users: string[]
-  }>
-  edited?: boolean
-  editedAt?: string
+    emoji: string;
+    users: string[];
+  }>;
+  edited?: boolean;
+  editedAt?: string;
 }
 
-interface Activity {
-  id: string
-  userId: string
-  userName: string
-  userAvatar?: string
-  type: 'comment' | 'assignment' | 'status_change' | 'file_upload' | 'approval' | 'rejection'
-  description: string
-  timestamp: string
-  recordId?: string
-  metadata?: Record<string, unknown>
-  readBy: string[]
+interface ActivityItem {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar?: string;
+  type: 'comment' | 'assignment' | 'status_change' | 'file_upload' | 'approval' | 'rejection';
+  description: string;
+  timestamp: string;
+  recordId?: string;
+  metadata?: Record<string, unknown>;
+  readBy: string[];
 }
 
 interface Assignment {
-  id: string
-  recordId: string
-  assignedTo: string
-  assignedBy: string
-  assignedAt: string
-  dueDate?: string
-  priority: 'low' | 'medium' | 'high' | 'critical'
-  status: 'pending' | 'in_progress' | 'completed' | 'overdue'
-  description: string
-  comments: Comment[]
-  attachments: string[]
+  id: string;
+  recordId: string;
+  assignedTo: string;
+  assignedBy: string;
+  assignedAt: string;
+  dueDate?: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  status: 'pending' | 'in_progress' | 'completed' | 'overdue';
+  description: string;
+  comments: Comment[];
+  attachments: string[];
 }
 
 interface Notification {
-  id: string
-  userId: string
-  type: 'assignment' | 'comment' | 'mention' | 'approval' | 'deadline' | 'system'
-  title: string
-  message: string
-  timestamp: string
-  read: boolean
-  actionUrl?: string
-  metadata?: Record<string, unknown>
+  id: string;
+  userId: string;
+  type: 'assignment' | 'comment' | 'mention' | 'approval' | 'deadline' | 'system';
+  title: string;
+  message: string;
+  timestamp: string;
+  read: boolean;
+  actionUrl?: string;
+  metadata?: Record<string, unknown>;
 }
 
 interface CollaborativeFeaturesProps {
-  project: any
-  onProgressUpdate?: (step: string) => void
+  project: any;
+  onProgressUpdate?: (step: string) => void;
 }
 
 const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeaturesProps) => {
-  const { currentProject, getReconciliationData } = useData()
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([])
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
-  const [comments, setComments] = useState<Comment[]>([])
-  const [activities, setActivities] = useState<Activity[]>([])
-  const [assignments, setAssignments] = useState<Assignment[]>([])
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null)
-  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null)
-  const [showMemberModal, setShowMemberModal] = useState(false)
-  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false)
-  const [activeTab, setActiveTab] = useState<'members' | 'workspaces' | 'activities' | 'assignments' | 'notifications'>('members')
-  const [isCreating, setIsCreating] = useState(false)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterRole, setFilterRole] = useState<string>('all')
-  const [filterStatus, setFilterStatus] = useState<string>('all')
+  const { currentProject, getReconciliationData } = useData();
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [assignments, setAssignments] = useState<Assignment[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const [showMemberModal, setShowMemberModal] = useState(false);
+  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<
+    'members' | 'workspaces' | 'activities' | 'assignments' | 'notifications'
+  >('members');
+  const [isCreating, setIsCreating] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
 
   // Initialize collaborative features
   useEffect(() => {
-    initializeCollaborativeFeatures()
-    onProgressUpdate?.('collaborative_features_started')
-   }, [currentProject, onProgressUpdate])
+    initializeCollaborativeFeatures();
+    onProgressUpdate?.('collaborative_features_started');
+  }, [currentProject, onProgressUpdate]);
 
   const initializeCollaborativeFeatures = () => {
     // Initialize sample team members
@@ -170,8 +172,8 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
           tasksCompleted: 45,
           accuracy: 96.5,
           efficiency: 92.3,
-          collaboration: 94.1
-        }
+          collaboration: 94.1,
+        },
       },
       {
         id: 'member-002',
@@ -190,8 +192,8 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
           tasksCompleted: 32,
           accuracy: 98.2,
           efficiency: 89.7,
-          collaboration: 96.8
-        }
+          collaboration: 96.8,
+        },
       },
       {
         id: 'member-003',
@@ -210,8 +212,8 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
           tasksCompleted: 28,
           accuracy: 94.8,
           efficiency: 95.2,
-          collaboration: 88.5
-        }
+          collaboration: 88.5,
+        },
       },
       {
         id: 'member-004',
@@ -230,10 +232,10 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
           tasksCompleted: 15,
           accuracy: 97.1,
           efficiency: 87.3,
-          collaboration: 91.2
-        }
-      }
-    ]
+          collaboration: 91.2,
+        },
+      },
+    ];
 
     // Initialize sample workspaces
     const sampleWorkspaces: Workspace[] = [
@@ -250,14 +252,14 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
           visibility: 'private',
           notifications: true,
           autoAssign: true,
-          approvalRequired: false
+          approvalRequired: false,
         },
         statistics: {
           totalMembers: 3,
           activeMembers: 2,
           tasksCompleted: 125,
-          averageEfficiency: 92.5
-        }
+          averageEfficiency: 92.5,
+        },
       },
       {
         id: 'workspace-002',
@@ -272,16 +274,16 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
           visibility: 'restricted',
           notifications: true,
           autoAssign: false,
-          approvalRequired: true
+          approvalRequired: true,
         },
         statistics: {
           totalMembers: 4,
           activeMembers: 3,
           tasksCompleted: 89,
-          averageEfficiency: 88.7
-        }
-      }
-    ]
+          averageEfficiency: 88.7,
+        },
+      },
+    ];
 
     // Initialize sample comments
     const sampleComments: Comment[] = [
@@ -290,7 +292,8 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
         recordId: 'REC-2023-001',
         userId: 'member-002',
         userName: 'Sarah Johnson',
-        content: 'This transaction looks correct, but I noticed a small discrepancy in the description field.',
+        content:
+          'This transaction looks correct, but I noticed a small discrepancy in the description field.',
         timestamp: new Date(Date.now() - 120000).toISOString(),
         replies: [
           {
@@ -298,14 +301,14 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
             recordId: 'REC-2023-001',
             userId: 'member-001',
             userName: 'John Smith',
-            content: 'Thanks for catching that! I\'ll update the description.',
-            timestamp: new Date(Date.now() - 60000).toISOString()
-          }
+            content: "Thanks for catching that! I'll update the description.",
+            timestamp: new Date(Date.now() - 60000).toISOString(),
+          },
         ],
         reactions: [
           { emoji: '👍', users: ['member-001', 'member-003'] },
-          { emoji: '👀', users: ['member-004'] }
-        ]
+          { emoji: '👀', users: ['member-004'] },
+        ],
       },
       {
         id: 'comment-002',
@@ -314,14 +317,12 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
         userName: 'Mike Wilson',
         content: 'The amount matches perfectly with the bank statement. Ready for approval.',
         timestamp: new Date(Date.now() - 180000).toISOString(),
-        reactions: [
-          { emoji: '✅', users: ['member-001', 'member-002'] }
-        ]
-      }
-    ]
+        reactions: [{ emoji: '✅', users: ['member-001', 'member-002'] }],
+      },
+    ];
 
     // Initialize sample activities
-    const sampleActivities: Activity[] = [
+    const sampleActivities: ActivityItem[] = [
       {
         id: 'activity-001',
         userId: 'member-001',
@@ -332,7 +333,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
         timestamp: new Date(Date.now() - 300000).toISOString(),
         recordId: 'REC-2023-001',
         metadata: { assignee: 'Sarah Johnson', priority: 'high' },
-        readBy: ['member-001', 'member-002']
+        readBy: ['member-001', 'member-002'],
       },
       {
         id: 'activity-002',
@@ -343,7 +344,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
         description: 'commented on REC-2023-001',
         timestamp: new Date(Date.now() - 120000).toISOString(),
         recordId: 'REC-2023-001',
-        readBy: ['member-001', 'member-002', 'member-003']
+        readBy: ['member-001', 'member-002', 'member-003'],
       },
       {
         id: 'activity-003',
@@ -355,9 +356,9 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
         timestamp: new Date(Date.now() - 60000).toISOString(),
         recordId: 'REC-2023-002',
         metadata: { oldStatus: 'in_progress', newStatus: 'completed' },
-        readBy: ['member-001', 'member-002', 'member-003']
-      }
-    ]
+        readBy: ['member-001', 'member-002', 'member-003'],
+      },
+    ];
 
     // Initialize sample assignments
     const sampleAssignments: Assignment[] = [
@@ -372,7 +373,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
         status: 'in_progress',
         description: 'Review and approve high-value transaction',
         comments: [],
-        attachments: []
+        attachments: [],
       },
       {
         id: 'assignment-002',
@@ -385,9 +386,9 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
         status: 'pending',
         description: 'Investigate discrepancy in operational expenses',
         comments: [],
-        attachments: []
-      }
-    ]
+        attachments: [],
+      },
+    ];
 
     // Initialize sample notifications
     const sampleNotifications: Notification[] = [
@@ -399,7 +400,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
         message: 'You have been assigned to review REC-2023-001',
         timestamp: new Date(Date.now() - 300000).toISOString(),
         read: false,
-        actionUrl: '/reconciliation/REC-2023-001'
+        actionUrl: '/reconciliation/REC-2023-001',
       },
       {
         id: 'notification-002',
@@ -409,7 +410,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
         message: 'Sarah Johnson commented on REC-2023-001',
         timestamp: new Date(Date.now() - 120000).toISOString(),
         read: true,
-        actionUrl: '/reconciliation/REC-2023-001'
+        actionUrl: '/reconciliation/REC-2023-001',
       },
       {
         id: 'notification-003',
@@ -419,107 +420,108 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
         message: 'Mike Wilson mentioned you in a comment',
         timestamp: new Date(Date.now() - 60000).toISOString(),
         read: false,
-        actionUrl: '/reconciliation/REC-2023-002'
-      }
-    ]
+        actionUrl: '/reconciliation/REC-2023-002',
+      },
+    ];
 
-    setTeamMembers(sampleMembers)
-    setWorkspaces(sampleWorkspaces)
-    setComments(sampleComments)
-    setActivities(sampleActivities)
-    setAssignments(sampleAssignments)
-    setNotifications(sampleNotifications)
-  }
+    setTeamMembers(sampleMembers);
+    setWorkspaces(sampleWorkspaces);
+    setComments(sampleComments);
+    setActivities(sampleActivities);
+    setAssignments(sampleAssignments);
+    setNotifications(sampleNotifications);
+  };
 
   // Filter team members based on search and filters
   const filteredMembers = useMemo(() => {
-    return teamMembers.filter(member => {
-      const matchesSearch = member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          member.email.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesRole = filterRole === 'all' || member.role === filterRole
-      const matchesStatus = filterStatus === 'all' || member.status === filterStatus
-      return matchesSearch && matchesRole && matchesStatus
-    })
-  }, [teamMembers, searchTerm, filterRole, filterStatus])
+    return teamMembers.filter((member) => {
+      const matchesSearch =
+        member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        member.email.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesRole = filterRole === 'all' || member.role === filterRole;
+      const matchesStatus = filterStatus === 'all' || member.status === filterStatus;
+      return matchesSearch && matchesRole && matchesStatus;
+    });
+  }, [teamMembers, searchTerm, filterRole, filterStatus]);
 
   // Helper functions
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'online':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-100 text-green-800';
       case 'away':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-yellow-100 text-yellow-800';
       case 'busy':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-100 text-red-800';
       case 'offline':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800';
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800';
     }
-  }
+  };
 
   const getRoleColor = (role: string) => {
     switch (role) {
       case 'admin':
-        return 'bg-purple-100 text-purple-800'
+        return 'bg-purple-100 text-purple-800';
       case 'manager':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-blue-100 text-blue-800';
       case 'analyst':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-100 text-green-800';
       case 'viewer':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800';
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800';
     }
-  }
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'critical':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-100 text-red-800';
       case 'high':
-        return 'bg-orange-100 text-orange-800'
+        return 'bg-orange-100 text-orange-800';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-yellow-100 text-yellow-800';
       case 'low':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-100 text-green-800';
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800';
     }
-  }
+  };
 
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'assignment':
-        return <UserPlus className="w-4 h-4" />
+        return <UserPlus className="w-4 h-4" />;
       case 'comment':
-        return <MessageSquare className="w-4 h-4" />
+        return <MessageSquare className="w-4 h-4" />;
       case 'status_change':
-        return <Activity className="w-4 h-4" />
+        return <Activity className="w-4 h-4" />;
       case 'file_upload':
-        return <Upload className="w-4 h-4" />
+        return <Upload className="w-4 h-4" />;
       case 'approval':
-        return <CheckCircle className="w-4 h-4" />
+        return <CheckCircle className="w-4 h-4" />;
       case 'rejection':
-        return <XCircle className="w-4 h-4" />
+        return <XCircle className="w-4 h-4" />;
       default:
-        return <Activity className="w-4 h-4" />
+        return <Activity className="w-4 h-4" />;
     }
-  }
+  };
 
   const formatTimeAgo = (timestamp: string) => {
-    const now = new Date()
-    const time = new Date(timestamp)
-    const diffInSeconds = Math.floor((now.getTime() - time.getTime()) / 1000)
-    
-    if (diffInSeconds < 60) return 'Just now'
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
-    return `${Math.floor(diffInSeconds / 86400)}d ago`
-  }
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffInSeconds = Math.floor((now.getTime() - time.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  };
 
   const handleAddMember = () => {
-    setIsCreating(true)
+    setIsCreating(true);
     // Simulate adding member
     setTimeout(() => {
       const newMember: TeamMember = {
@@ -537,16 +539,16 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
           tasksCompleted: 0,
           accuracy: 0,
           efficiency: 0,
-          collaboration: 0
-        }
-      }
-      setTeamMembers(prev => [...prev, newMember])
-      setIsCreating(false)
-    }, 1000)
-  }
+          collaboration: 0,
+        },
+      };
+      setTeamMembers((prev) => [...prev, newMember]);
+      setIsCreating(false);
+    }, 1000);
+  };
 
   const handleCreateWorkspace = () => {
-    setIsCreating(true)
+    setIsCreating(true);
     // Simulate creating workspace
     setTimeout(() => {
       const newWorkspace: Workspace = {
@@ -562,27 +564,27 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
           visibility: 'private',
           notifications: true,
           autoAssign: false,
-          approvalRequired: false
+          approvalRequired: false,
         },
         statistics: {
           totalMembers: 0,
           activeMembers: 0,
           tasksCompleted: 0,
-          averageEfficiency: 0
-        }
-      }
-      setWorkspaces(prev => [...prev, newWorkspace])
-      setIsCreating(false)
-    }, 1000)
-  }
+          averageEfficiency: 0,
+        },
+      };
+      setWorkspaces((prev) => [...prev, newWorkspace]);
+      setIsCreating(false);
+    }, 1000);
+  };
 
   const handleMarkNotificationRead = (notificationId: string) => {
-    setNotifications(prev => prev.map(notification => 
-      notification.id === notificationId 
-        ? { ...notification, read: true }
-        : notification
-    ))
-  }
+    setNotifications((prev) =>
+      prev.map((notification) =>
+        notification.id === notificationId ? { ...notification, read: true } : notification
+      )
+    );
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -590,9 +592,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-secondary-900 mb-2">
-              Collaborative Features
-            </h1>
+            <h1 className="text-3xl font-bold text-secondary-900 mb-2">Collaborative Features</h1>
             <p className="text-secondary-600">
               Team workspaces, real-time collaboration, and communication tools
             </p>
@@ -616,7 +616,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
             </button>
           </div>
         </div>
-        
+
         {project && (
           <div className="text-sm text-primary-600 bg-primary-50 px-3 py-2 rounded-lg inline-block">
             Project: {project.name}
@@ -633,9 +633,9 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
               { id: 'workspaces', label: 'Workspaces', icon: Building },
               { id: 'activities', label: 'Activities', icon: Activity },
               { id: 'assignments', label: 'Assignments', icon: UserCheck },
-              { id: 'notifications', label: 'Notifications', icon: Bell }
+              { id: 'notifications', label: 'Notifications', icon: Bell },
             ].map((tab) => {
-              const Icon = tab.icon
+              const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
@@ -649,7 +649,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                   <Icon className="w-4 h-4" />
                   <span>{tab.label}</span>
                 </button>
-              )
+              );
             })}
           </nav>
         </div>
@@ -698,7 +698,10 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
             {/* Members Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredMembers.map((member) => (
-                <div key={member.id} className="border border-secondary-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div
+                  key={member.id}
+                  className="border border-secondary-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
                   <div className="flex items-center space-x-3 mb-3">
                     <div className="relative">
                       <Image
@@ -708,25 +711,35 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                         height={40}
                         className="w-10 h-10 rounded-full"
                       />
-                      <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
-                        member.status === 'online' ? 'bg-green-500' :
-                        member.status === 'away' ? 'bg-yellow-500' :
-                        member.status === 'busy' ? 'bg-red-500' : 'bg-gray-500'
-                      }`} />
+                      <div
+                        className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2 border-white ${
+                          member.status === 'online'
+                            ? 'bg-green-500'
+                            : member.status === 'away'
+                              ? 'bg-yellow-500'
+                              : member.status === 'busy'
+                                ? 'bg-red-500'
+                                : 'bg-gray-500'
+                        }`}
+                      />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold text-secondary-900">{member.name}</h3>
                       <p className="text-sm text-secondary-600">{member.email}</p>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(member.role)}`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(member.role)}`}
+                    >
                       {member.role}
                     </span>
                   </div>
-                  
+
                   <div className="space-y-2 text-sm">
                     <div className="flex justify-between">
                       <span className="text-secondary-600">Status:</span>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(member.status)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(member.status)}`}
+                      >
                         {member.status}
                       </span>
                     </div>
@@ -736,11 +749,15 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                     </div>
                     <div className="flex justify-between">
                       <span className="text-secondary-600">Tasks Completed:</span>
-                      <span className="text-secondary-900">{member.performance.tasksCompleted}</span>
+                      <span className="text-secondary-900">
+                        {member.performance.tasksCompleted}
+                      </span>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-secondary-600">Accuracy:</span>
-                      <span className="text-secondary-900">{member.performance.accuracy.toFixed(1)}%</span>
+                      <span className="text-secondary-900">
+                        {member.performance.accuracy.toFixed(1)}%
+                      </span>
                     </div>
                   </div>
 
@@ -754,8 +771,8 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                   <div className="mt-3 flex space-x-2">
                     <button
                       onClick={() => {
-                        setSelectedMember(member)
-                        setShowMemberModal(true)
+                        setSelectedMember(member);
+                        setShowMemberModal(true);
                       }}
                       className="btn-secondary text-sm flex-1"
                     >
@@ -778,47 +795,62 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
           <div className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {workspaces.map((workspace) => (
-                <div key={workspace.id} className="border border-secondary-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div
+                  key={workspace.id}
+                  className="border border-secondary-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-2">
                       <Building className="w-5 h-5 text-primary-600" />
                       <h3 className="font-semibold text-secondary-900">{workspace.name}</h3>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      workspace.settings.visibility === 'public' ? 'bg-green-100 text-green-800' :
-                      workspace.settings.visibility === 'private' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        workspace.settings.visibility === 'public'
+                          ? 'bg-green-100 text-green-800'
+                          : workspace.settings.visibility === 'private'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                      }`}
+                    >
                       {workspace.settings.visibility}
                     </span>
                   </div>
-                  
+
                   <p className="text-sm text-secondary-600 mb-3">{workspace.description}</p>
-                  
+
                   <div className="grid grid-cols-2 gap-4 text-sm mb-3">
                     <div>
                       <span className="text-secondary-600">Members:</span>
-                      <span className="ml-2 text-secondary-900">{workspace.statistics.totalMembers}</span>
+                      <span className="ml-2 text-secondary-900">
+                        {workspace.statistics.totalMembers}
+                      </span>
                     </div>
                     <div>
                       <span className="text-secondary-600">Active:</span>
-                      <span className="ml-2 text-secondary-900">{workspace.statistics.activeMembers}</span>
+                      <span className="ml-2 text-secondary-900">
+                        {workspace.statistics.activeMembers}
+                      </span>
                     </div>
                     <div>
                       <span className="text-secondary-600">Tasks:</span>
-                      <span className="ml-2 text-secondary-900">{workspace.statistics.tasksCompleted}</span>
+                      <span className="ml-2 text-secondary-900">
+                        {workspace.statistics.tasksCompleted}
+                      </span>
                     </div>
                     <div>
                       <span className="text-secondary-600">Efficiency:</span>
-                      <span className="ml-2 text-secondary-900">{workspace.statistics.averageEfficiency.toFixed(1)}%</span>
+                      <span className="ml-2 text-secondary-900">
+                        {workspace.statistics.averageEfficiency.toFixed(1)}%
+                      </span>
                     </div>
                   </div>
 
                   <div className="flex space-x-2">
                     <button
                       onClick={() => {
-                        setSelectedWorkspace(workspace)
-                        setShowWorkspaceModal(true)
+                        setSelectedWorkspace(workspace);
+                        setShowWorkspaceModal(true);
                       }}
                       className="btn-secondary text-sm flex-1"
                     >
@@ -841,7 +873,10 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
           <div className="p-6">
             <div className="space-y-4">
               {activities.map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-3 p-4 border border-secondary-200 rounded-lg">
+                <div
+                  key={activity.id}
+                  className="flex items-start space-x-3 p-4 border border-secondary-200 rounded-lg"
+                >
                   <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
                     {getActivityIcon(activity.type)}
                   </div>
@@ -852,9 +887,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                     </div>
                     <div className="flex items-center space-x-4 text-sm text-secondary-500">
                       <span>{formatTimeAgo(activity.timestamp)}</span>
-                      {activity.recordId && (
-                        <span>Record: {activity.recordId}</span>
-                      )}
+                      {activity.recordId && <span>Record: {activity.recordId}</span>}
                       <span>{activity.readBy.length} read</span>
                     </div>
                   </div>
@@ -883,37 +916,46 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(assignment.priority)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(assignment.priority)}`}
+                      >
                         {assignment.priority}
                       </span>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        assignment.status === 'completed' ? 'bg-green-100 text-green-800' :
-                        assignment.status === 'in_progress' ? 'bg-yellow-100 text-yellow-800' :
-                        assignment.status === 'overdue' ? 'bg-red-100 text-red-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          assignment.status === 'completed'
+                            ? 'bg-green-100 text-green-800'
+                            : assignment.status === 'in_progress'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : assignment.status === 'overdue'
+                                ? 'bg-red-100 text-red-800'
+                                : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
                         {assignment.status}
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-3">
                     <div>
                       <span className="text-secondary-600">Assigned to:</span>
                       <span className="ml-2 text-secondary-900">
-                        {teamMembers.find(m => m.id === assignment.assignedTo)?.name || 'Unknown'}
+                        {teamMembers.find((m) => m.id === assignment.assignedTo)?.name || 'Unknown'}
                       </span>
                     </div>
                     <div>
                       <span className="text-secondary-600">Due Date:</span>
                       <span className="ml-2 text-secondary-900">
-                        {assignment.dueDate ? new Date(assignment.dueDate).toLocaleDateString() : 'No due date'}
+                        {assignment.dueDate
+                          ? new Date(assignment.dueDate).toLocaleDateString()
+                          : 'No due date'}
                       </span>
                     </div>
                     <div>
                       <span className="text-secondary-600">Assigned by:</span>
                       <span className="ml-2 text-secondary-900">
-                        {teamMembers.find(m => m.id === assignment.assignedBy)?.name || 'Unknown'}
+                        {teamMembers.find((m) => m.id === assignment.assignedBy)?.name || 'Unknown'}
                       </span>
                     </div>
                   </div>
@@ -942,29 +984,43 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                 <div
                   key={notification.id}
                   className={`flex items-start space-x-3 p-4 border rounded-lg cursor-pointer transition-colors ${
-                    notification.read 
-                      ? 'border-secondary-200 bg-white' 
+                    notification.read
+                      ? 'border-secondary-200 bg-white'
                       : 'border-primary-200 bg-primary-50'
                   }`}
                   onClick={() => handleMarkNotificationRead(notification.id)}
                 >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    notification.type === 'assignment' ? 'bg-blue-100' :
-                    notification.type === 'comment' ? 'bg-green-100' :
-                    notification.type === 'mention' ? 'bg-yellow-100' :
-                    notification.type === 'approval' ? 'bg-purple-100' :
-                    'bg-gray-100'
-                  }`}>
-                    {notification.type === 'assignment' ? <UserPlus className="w-4 h-4 text-blue-600" /> :
-                     notification.type === 'comment' ? <MessageSquare className="w-4 h-4 text-green-600" /> :
-                     notification.type === 'mention' ? <User className="w-4 h-4 text-yellow-600" /> :
-                     notification.type === 'approval' ? <CheckCircle className="w-4 h-4 text-purple-600" /> :
-                     <Bell className="w-4 h-4 text-gray-600" />}
+                  <div
+                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      notification.type === 'assignment'
+                        ? 'bg-blue-100'
+                        : notification.type === 'comment'
+                          ? 'bg-green-100'
+                          : notification.type === 'mention'
+                            ? 'bg-yellow-100'
+                            : notification.type === 'approval'
+                              ? 'bg-purple-100'
+                              : 'bg-gray-100'
+                    }`}
+                  >
+                    {notification.type === 'assignment' ? (
+                      <UserPlus className="w-4 h-4 text-blue-600" />
+                    ) : notification.type === 'comment' ? (
+                      <MessageSquare className="w-4 h-4 text-green-600" />
+                    ) : notification.type === 'mention' ? (
+                      <User className="w-4 h-4 text-yellow-600" />
+                    ) : notification.type === 'approval' ? (
+                      <CheckCircle className="w-4 h-4 text-purple-600" />
+                    ) : (
+                      <Bell className="w-4 h-4 text-gray-600" />
+                    )}
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center justify-between mb-1">
                       <h4 className="font-medium text-secondary-900">{notification.title}</h4>
-                      <span className="text-sm text-secondary-500">{formatTimeAgo(notification.timestamp)}</span>
+                      <span className="text-sm text-secondary-500">
+                        {formatTimeAgo(notification.timestamp)}
+                      </span>
                     </div>
                     <p className="text-sm text-secondary-600">{notification.message}</p>
                   </div>
@@ -983,9 +1039,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-semibold text-secondary-900">
-                Member Details
-              </h3>
+              <h3 className="text-2xl font-semibold text-secondary-900">Member Details</h3>
               <button
                 onClick={() => setShowMemberModal(false)}
                 className="text-secondary-400 hover:text-secondary-600"
@@ -1005,13 +1059,19 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                     className="w-16 h-16 rounded-full"
                   />
                   <div>
-                    <h4 className="text-xl font-semibold text-secondary-900">{selectedMember.name}</h4>
+                    <h4 className="text-xl font-semibold text-secondary-900">
+                      {selectedMember.name}
+                    </h4>
                     <p className="text-secondary-600">{selectedMember.email}</p>
                     <div className="flex items-center space-x-2 mt-2">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(selectedMember.role)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getRoleColor(selectedMember.role)}`}
+                      >
                         {selectedMember.role}
                       </span>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedMember.status)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(selectedMember.status)}`}
+                      >
                         {selectedMember.status}
                       </span>
                     </div>
@@ -1023,7 +1083,10 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                     <h5 className="font-medium text-secondary-900 mb-2">Skills</h5>
                     <div className="flex flex-wrap gap-2">
                       {selectedMember.skills.map((skill, index) => (
-                        <span key={index} className="px-2 py-1 bg-secondary-100 text-secondary-700 text-xs rounded">
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-secondary-100 text-secondary-700 text-xs rounded"
+                        >
                           {skill}
                         </span>
                       ))}
@@ -1034,7 +1097,10 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                     <h5 className="font-medium text-secondary-900 mb-2">Permissions</h5>
                     <div className="flex flex-wrap gap-2">
                       {selectedMember.permissions.map((permission, index) => (
-                        <span key={index} className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded">
+                        <span
+                          key={index}
+                          className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded"
+                        >
                           {permission}
                         </span>
                       ))}
@@ -1056,7 +1122,9 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                     <div className="w-full bg-secondary-200 rounded-full h-2">
                       <div
                         className="bg-primary-600 h-2 rounded-full"
-                        style={{ width: `${Math.min((selectedMember.performance.tasksCompleted / 50) * 100, 100)}%` }}
+                        style={{
+                          width: `${Math.min((selectedMember.performance.tasksCompleted / 50) * 100, 100)}%`,
+                        }}
                       />
                     </div>
                   </div>
@@ -1112,10 +1180,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default CollaborativeFeatures
-
-
-
+export default CollaborativeFeatures;

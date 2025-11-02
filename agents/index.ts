@@ -22,6 +22,9 @@ export { SecurityMonitoringAgent } from './security/SecurityMonitoringAgent';
 // Remediation agents
 export { ErrorRecoveryAgent } from './remediation/ErrorRecoveryAgent';
 
+// Guidance agents
+export { FrenlyGuidanceAgent, frenlyGuidanceAgent } from './guidance/FrenlyGuidanceAgent';
+
 // Agent framework initialization
 export async function initializeAgentFramework(): Promise<void> {
   console.log('🚀 Initializing Meta-Agent Framework...');
@@ -31,6 +34,17 @@ export async function initializeAgentFramework(): Promise<void> {
   
   // Initialize registry
   // Already initialized as singleton
+  
+  // Register Frenly Guidance Agent
+  const { agentRegistry } = await import('./core/registry');
+  const { frenlyGuidanceAgent } = await import('./guidance/FrenlyGuidanceAgent');
+  
+  await agentRegistry.register(frenlyGuidanceAgent, {
+    enabled: true,
+    priority: 'high',
+    autonomyLevel: 'partial',
+    hilRequired: ['critical-decisions'],
+  });
   
   console.log('✅ Meta-Agent Framework initialized');
 }

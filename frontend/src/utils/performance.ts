@@ -1,5 +1,5 @@
 // Performance Monitoring Utilities
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 // Provides comprehensive performance monitoring for the Reconciliation Platform
 
 interface PerformanceMetrics {
@@ -59,18 +59,18 @@ class PerformanceMonitor {
 
     // Initialize performance observer
     this.initializePerformanceObserver();
-    
+
     // Initialize network monitoring
     this.initializeNetworkMonitoring();
-    
+
     // Initialize user metrics
     this.initializeUserMetrics();
-    
+
     // Initialize memory monitoring
     this.initializeMemoryMonitoring();
-    
+
     this.isMonitoring = true;
-    logger.log('Performance monitoring initialized');
+    logger.info('Performance monitoring initialized');
   }
 
   private initializePerformanceObserver(): void {
@@ -85,7 +85,15 @@ class PerformanceMonitor {
 
     // Observe different types of performance entries
     try {
-      observer.observe({ entryTypes: ['navigation', 'paint', 'largest-contentful-paint', 'first-input', 'layout-shift'] });
+      observer.observe({
+        entryTypes: [
+          'navigation',
+          'paint',
+          'largest-contentful-paint',
+          'first-input',
+          'layout-shift',
+        ],
+      });
     } catch (error) {
       logger.warn('PerformanceObserver not fully supported:', error);
     }
@@ -181,7 +189,7 @@ class PerformanceMonitor {
 
   private initializeUserMetrics(): void {
     this.pageViewCount++;
-    
+
     const userMetrics: UserMetrics = {
       timestamp: Date.now(),
       userId: this.getUserId(),
@@ -203,10 +211,10 @@ class PerformanceMonitor {
     if (!('memory' in performance)) return;
 
     const memoryInfo = (performance as any).memory;
-    
+
     const metrics: Partial<PerformanceMetrics> = {
       timestamp: Date.now(),
-      memoryUsage: memoryInfo.usedJSHeapSize / memoryInfo.totalJSHeapSize * 100,
+      memoryUsage: (memoryInfo.usedJSHeapSize / memoryInfo.totalJSHeapSize) * 100,
       jsHeapSizeUsed: memoryInfo.usedJSHeapSize,
       jsHeapSizeLimit: memoryInfo.totalJSHeapSize,
     };
@@ -292,16 +300,19 @@ class PerformanceMonitor {
   public getAverageMetrics(): Partial<PerformanceMetrics> {
     if (this.metrics.length === 0) return {};
 
-    const sum = this.metrics.reduce((acc, metric) => ({
-      pageLoadTime: (acc.pageLoadTime || 0) + metric.pageLoadTime,
-      domContentLoaded: (acc.domContentLoaded || 0) + metric.domContentLoaded,
-      firstContentfulPaint: (acc.firstContentfulPaint || 0) + metric.firstContentfulPaint,
-      largestContentfulPaint: (acc.largestContentfulPaint || 0) + metric.largestContentfulPaint,
-      firstInputDelay: (acc.firstInputDelay || 0) + metric.firstInputDelay,
-      cumulativeLayoutShift: (acc.cumulativeLayoutShift || 0) + metric.cumulativeLayoutShift,
-      totalBlockingTime: (acc.totalBlockingTime || 0) + metric.totalBlockingTime,
-      memoryUsage: (acc.memoryUsage || 0) + metric.memoryUsage,
-    }), {} as Partial<PerformanceMetrics>);
+    const sum = this.metrics.reduce(
+      (acc, metric) => ({
+        pageLoadTime: (acc.pageLoadTime || 0) + metric.pageLoadTime,
+        domContentLoaded: (acc.domContentLoaded || 0) + metric.domContentLoaded,
+        firstContentfulPaint: (acc.firstContentfulPaint || 0) + metric.firstContentfulPaint,
+        largestContentfulPaint: (acc.largestContentfulPaint || 0) + metric.largestContentfulPaint,
+        firstInputDelay: (acc.firstInputDelay || 0) + metric.firstInputDelay,
+        cumulativeLayoutShift: (acc.cumulativeLayoutShift || 0) + metric.cumulativeLayoutShift,
+        totalBlockingTime: (acc.totalBlockingTime || 0) + metric.totalBlockingTime,
+        memoryUsage: (acc.memoryUsage || 0) + metric.memoryUsage,
+      }),
+      {} as Partial<PerformanceMetrics>
+    );
 
     const count = this.metrics.length;
     return {
@@ -339,7 +350,7 @@ class PerformanceMonitor {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
-    }).catch(error => {
+    }).catch((error) => {
       logger.error('Failed to send performance metrics:', error);
     });
   }
@@ -358,7 +369,7 @@ class PerformanceMonitor {
 // React hook for performance monitoring
 export function usePerformanceMonitoring() {
   const monitor = new PerformanceMonitor();
-  
+
   return {
     metrics: monitor.getMetrics(),
     networkMetrics: monitor.getNetworkMetrics(),
@@ -376,7 +387,7 @@ export function debounce<T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
-  let timeout: NodeJS.Timeout;
+  let timeout: number;
   return (...args: Parameters<T>) => {
     clearTimeout(timeout);
     timeout = setTimeout(() => func(...args), wait);
@@ -392,7 +403,7 @@ export function throttle<T extends (...args: any[]) => any>(
     if (!inThrottle) {
       func(...args);
       inThrottle = true;
-      setTimeout(() => inThrottle = false, limit);
+      setTimeout(() => (inThrottle = false), limit);
     }
   };
 }

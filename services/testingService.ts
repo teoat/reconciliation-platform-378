@@ -1,61 +1,66 @@
 // Consolidated Testing Service
 // Combines collaboration testing, data consistency testing, and general testing functionality
 
-import { BaseService } from './BaseService'
+import { BaseService } from './BaseService';
 
-export interface TestResult {
-  id: string
-  name: string
-  success: boolean
-  message: string
-  details?: any
-  timestamp: Date
-  duration: number
-  errors?: string[]
-  category: 'collaboration' | 'data-consistency' | 'performance' | 'integration'
-  priority: 'high' | 'medium' | 'low'
+export function createTestResult(data = {}) {
+  return {
+    id: '',
+    name: '',
+    success: false,
+    message: '',
+    details: null,
+    timestamp: new Date(),
+    duration: 0,
+    errors: [],
+    category: 'integration',
+    priority: 'medium',
+    ...data,
+  };
 }
 
-export interface TestConfig {
-  timeout: number
-  retryAttempts: number
-  retryDelay: number
-  maxConcurrentTests: number
-  enableRealTimeTests: boolean
-  enablePerformanceTests: boolean
-  enableIntegrationTests: boolean
+export function createTestConfig(data = {}) {
+  return {
+    timeout: 30000,
+    retryAttempts: 3,
+    retryDelay: 1000,
+    maxConcurrentTests: 5,
+    enableRealTimeTests: true,
+    enablePerformanceTests: true,
+    enableIntegrationTests: true,
+    ...data,
+  };
 }
 
-export interface CollaborationTestData {
-  participants: string[]
-  conflicts?: Array<{
-    type: 'edit' | 'delete' | 'move' | 'rename'
-    user: string
-    field: string
-    value: any
-    timestamp: Date
-    resolved: boolean
-  }>
+export function createCollaborationTestData(data = {}) {
+  return {
+    participants: [],
+    conflicts: [],
+    ...data,
+  };
 }
 
-export interface DataConsistencyTestData {
-  dataFlow: any
-  stateSync: any
-  cacheInvalidation: any
+export function createDataConsistencyTestData(data = {}) {
+  return {
+    dataFlow: null,
+    stateSync: null,
+    cacheInvalidation: null,
+    ...data,
+  };
 }
 
-export class TestingService extends BaseService<TestResult> {
-  private config: TestConfig
-  private runningTests: Map<string, Promise<TestResult>> = new Map()
-  private testQueue: Array<() => Promise<TestResult>> = []
+export class TestingService extends BaseService {
+  config;
+  runningTests = new Map();
+  testQueue = [];
 
   constructor() {
     super({
       enabled: true,
       persistence: true,
       events: true,
-      caching: true
-    })
+      caching: true,
+    });
 
     this.config = {
       timeout: 30000,
@@ -64,31 +69,28 @@ export class TestingService extends BaseService<TestResult> {
       maxConcurrentTests: 5,
       enableRealTimeTests: true,
       enablePerformanceTests: true,
-      enableIntegrationTests: true
-    }
+      enableIntegrationTests: true,
+    };
 
-    this.initializeDefaultTests()
+    this.initializeDefaultTests();
   }
 
   // Test Management
-  public async runTest(testId: string, testFunction: () => Promise<TestResult>): Promise<TestResult> {
-    const startTime = Date.now()
-    
-    try {
-      const result = await Promise.race([
-        testFunction(),
-        this.createTimeoutPromise(testId)
-      ])
+  async runTest(testId, testFunction) {
+    const startTime = Date.now();
 
-      result.duration = Date.now() - startTime
-      result.timestamp = new Date()
-      
-      this.set(testId, result)
-      this.emit('testCompleted', { testId, result })
-      
-      return result
+    try {
+      const result = await Promise.race([testFunction(), this.createTimeoutPromise(testId)]);
+
+      result.duration = Date.now() - startTime;
+      result.timestamp = new Date();
+
+      this.set(testId, result);
+      this.emit('testCompleted', { testId, result });
+
+      return result;
     } catch (error) {
-      const result: TestResult = {
+      const result = createTestResult({
         id: testId,
         name: testId,
         success: false,
@@ -97,58 +99,58 @@ export class TestingService extends BaseService<TestResult> {
         duration: Date.now() - startTime,
         errors: [error instanceof Error ? error.message : 'Unknown error'],
         category: 'integration',
-        priority: 'medium'
-      }
+        priority: 'medium',
+      });
 
-      this.set(testId, result)
-      this.emit('testFailed', { testId, result })
-      
-      return result
+      this.set(testId, result);
+      this.emit('testFailed', { testId, result });
+
+      return result;
     }
   }
 
-  public async runTestSuite(suiteName: string, tests: Array<{ id: string; test: () => Promise<TestResult> }>): Promise<TestResult[]> {
-    const results: TestResult[] = []
-    
-    this.emit('testSuiteStarted', { suiteName, testCount: tests.length })
+  async runTestSuite(suiteName, tests) {
+    const results = [];
+
+    this.emit('testSuiteStarted', { suiteName, testCount: tests.length });
 
     for (const { id, test } of tests) {
       try {
-        const result = await this.runTest(`${suiteName}_${id}`, test)
-        results.push(result)
-        
+        const result = await this.runTest(`${suiteName}_${id}`, test);
+        results.push(result);
+
         // Emit progress
-        this.emit('testSuiteProgress', { 
-          suiteName, 
-          completed: results.length, 
+        this.emit('testSuiteProgress', {
+          suiteName,
+          completed: results.length,
           total: tests.length,
-          currentTest: id
-        })
+          currentTest: id,
+        });
       } catch (error) {
-        console.error(`Test ${id} failed:`, error)
+        console.error(`Test ${id} failed:`, error);
       }
     }
 
-    this.emit('testSuiteCompleted', { suiteName, results })
-    return results
+    this.emit('testSuiteCompleted', { suiteName, results });
+    return results;
   }
 
   // Collaboration Testing
-  public async testCollaboration(testData: CollaborationTestData): Promise<TestResult> {
+  async testCollaboration(testData) {
     return this.runTest('collaboration_test', async () => {
-      const startTime = Date.now()
-      
-      // Test presence
-      const presenceResult = await this.testPresence(testData.participants)
-      
-      // Test conflict resolution
-      const conflictResult = await this.testConflictResolution(testData.conflicts || [])
-      
-      // Test synchronization
-      const syncResult = await this.testSynchronization(testData.participants)
+      const startTime = Date.now();
 
-      const success = presenceResult && conflictResult && syncResult
-      
+      // Test presence
+      const presenceResult = await this.testPresence(testData.participants);
+
+      // Test conflict resolution
+      const conflictResult = await this.testConflictResolution(testData.conflicts || []);
+
+      // Test synchronization
+      const syncResult = await this.testSynchronization(testData.participants);
+
+      const success = presenceResult && conflictResult && syncResult;
+
       return {
         id: 'collaboration_test',
         name: 'Collaboration Test',
@@ -158,89 +160,91 @@ export class TestingService extends BaseService<TestResult> {
           presence: presenceResult,
           conflictResolution: conflictResult,
           synchronization: syncResult,
-          participants: testData.participants
+          participants: testData.participants,
         },
         timestamp: new Date(),
         duration: Date.now() - startTime,
         category: 'collaboration',
-        priority: 'high'
-      }
-    })
+        priority: 'high',
+      };
+    });
   }
 
-  private async testPresence(participants: string[]): Promise<boolean> {
+  async testPresence(participants) {
     // Simplified presence testing
-    return participants.length > 0
+    return participants.length > 0;
   }
 
-  private async testConflictResolution(conflicts: CollaborationTestData['conflicts']): Promise<boolean> {
+  async testConflictResolution(conflicts) {
     // Simplified conflict resolution testing
-    return conflicts ? conflicts.every(c => c.resolved) : true
+    return conflicts ? conflicts.every((c) => c.resolved) : true;
   }
 
-  private async testSynchronization(participants: string[]): Promise<boolean> {
+  async testSynchronization(participants) {
     // Simplified synchronization testing
-    return participants.length >= 2
+    return participants.length >= 2;
   }
 
   // Data Consistency Testing
-  public async testDataConsistency(testData: DataConsistencyTestData): Promise<TestResult> {
+  async testDataConsistency(testData) {
     return this.runTest('data_consistency_test', async () => {
-      const startTime = Date.now()
-      
-      // Test data flow
-      const dataFlowResult = await this.testDataFlow(testData.dataFlow)
-      
-      // Test state synchronization
-      const stateSyncResult = await this.testStateSync(testData.stateSync)
-      
-      // Test cache invalidation
-      const cacheResult = await this.testCacheInvalidation(testData.cacheInvalidation)
+      const startTime = Date.now();
 
-      const success = dataFlowResult && stateSyncResult && cacheResult
-      
+      // Test data flow
+      const dataFlowResult = await this.testDataFlow(testData.dataFlow);
+
+      // Test state synchronization
+      const stateSyncResult = await this.testStateSync(testData.stateSync);
+
+      // Test cache invalidation
+      const cacheResult = await this.testCacheInvalidation(testData.cacheInvalidation);
+
+      const success = dataFlowResult && stateSyncResult && cacheResult;
+
       return {
         id: 'data_consistency_test',
         name: 'Data Consistency Test',
         success,
-        message: success ? 'All data consistency tests passed' : 'Some data consistency tests failed',
+        message: success
+          ? 'All data consistency tests passed'
+          : 'Some data consistency tests failed',
         details: {
           dataFlow: dataFlowResult,
           stateSync: stateSyncResult,
-          cacheInvalidation: cacheResult
+          cacheInvalidation: cacheResult,
         },
         timestamp: new Date(),
         duration: Date.now() - startTime,
         category: 'data-consistency',
-        priority: 'high'
-      }
-    })
+        priority: 'high',
+      };
+    });
   }
 
-  private async testDataFlow(dataFlow: any): Promise<boolean> {
+  async testDataFlow(dataFlow) {
     // Simplified data flow testing
-    return dataFlow !== null
+    return dataFlow !== null;
   }
 
-  private async testStateSync(stateSync: any): Promise<boolean> {
+  async testStateSync(stateSync) {
     // Simplified state sync testing
-    return stateSync !== null
+    return stateSync !== null;
   }
 
-  private async testCacheInvalidation(cacheInvalidation: any): Promise<boolean> {
+  async testCacheInvalidation(cacheInvalidation) {
     // Simplified cache invalidation testing
-    return cacheInvalidation !== null
+    return cacheInvalidation !== null;
   }
 
   // Performance Testing
-  public async testPerformance(testName: string, testFunction: () => Promise<any>): Promise<TestResult> {
+  async testPerformance(testName, testFunction) {
     return this.runTest(`performance_${testName}`, async () => {
-      const startTime = Date.now()
-      
+      const startTime = Date.now();
+
       try {
-        await testFunction()
-        const duration = Date.now() - startTime
-        
+        await testFunction();
+        const duration = Date.now() - startTime;
+
         return {
           id: `performance_${testName}`,
           name: `Performance Test: ${testName}`,
@@ -250,8 +254,8 @@ export class TestingService extends BaseService<TestResult> {
           timestamp: new Date(),
           duration,
           category: 'performance',
-          priority: 'medium'
-        }
+          priority: 'medium',
+        };
       } catch (error) {
         return {
           id: `performance_${testName}`,
@@ -262,20 +266,20 @@ export class TestingService extends BaseService<TestResult> {
           duration: Date.now() - startTime,
           errors: [error instanceof Error ? error.message : 'Unknown error'],
           category: 'performance',
-          priority: 'medium'
-        }
+          priority: 'medium',
+        };
       }
-    })
+    });
   }
 
   // Integration Testing
-  public async testIntegration(testName: string, testFunction: () => Promise<any>): Promise<TestResult> {
+  async testIntegration(testName, testFunction) {
     return this.runTest(`integration_${testName}`, async () => {
-      const startTime = Date.now()
-      
+      const startTime = Date.now();
+
       try {
-        const result = await testFunction()
-        
+        const result = await testFunction();
+
         return {
           id: `integration_${testName}`,
           name: `Integration Test: ${testName}`,
@@ -285,8 +289,8 @@ export class TestingService extends BaseService<TestResult> {
           timestamp: new Date(),
           duration: Date.now() - startTime,
           category: 'integration',
-          priority: 'high'
-        }
+          priority: 'high',
+        };
       } catch (error) {
         return {
           id: `integration_${testName}`,
@@ -297,109 +301,105 @@ export class TestingService extends BaseService<TestResult> {
           duration: Date.now() - startTime,
           errors: [error instanceof Error ? error.message : 'Unknown error'],
           category: 'integration',
-          priority: 'high'
-        }
+          priority: 'high',
+        };
       }
-    })
+    });
   }
 
   // Test Results Management
-  public getTestResults(testId?: string): TestResult[] {
+  getTestResults(testId) {
     if (testId) {
-      const result = this.get(testId)
-      return result ? [result] : []
+      const result = this.get(testId);
+      return result ? [result] : [];
     }
-    return this.getAll()
+    return this.getAll();
   }
 
-  public getTestResultsByCategory(category: TestResult['category']): TestResult[] {
-    return this.getAll().filter(result => result.category === category)
+  getTestResultsByCategory(category) {
+    return this.getAll().filter((result) => result.category === category);
   }
 
-  public getFailedTests(): TestResult[] {
-    return this.getAll().filter(result => !result.success)
+  getFailedTests() {
+    return this.getAll().filter((result) => !result.success);
   }
 
-  public getTestStatistics(): {
-    total: number
-    passed: number
-    failed: number
-    byCategory: Record<string, { total: number; passed: number; failed: number }>
-    averageDuration: number
-  } {
-    const results = this.getAll()
-    const total = results.length
-    const passed = results.filter(r => r.success).length
-    const failed = total - passed
-    const averageDuration = results.reduce((sum, r) => sum + r.duration, 0) / total
+  getTestStatistics() {
+    const results = this.getAll();
+    const total = results.length;
+    const passed = results.filter((r) => r.success).length;
+    const failed = total - passed;
+    const averageDuration = results.reduce((sum, r) => sum + r.duration, 0) / total;
 
     const byCategory = results.reduce((acc, result) => {
       if (!acc[result.category]) {
-        acc[result.category] = { total: 0, passed: 0, failed: 0 }
+        acc[result.category] = { total: 0, passed: 0, failed: 0 };
       }
-      acc[result.category].total++
+      acc[result.category].total++;
       if (result.success) {
-        acc[result.category].passed++
+        acc[result.category].passed++;
       } else {
-        acc[result.category].failed++
+        acc[result.category].failed++;
       }
-      return acc
-    }, {} as Record<string, { total: number; passed: number; failed: number }>)
+      return acc;
+    }, {});
 
     return {
       total,
       passed,
       failed,
       byCategory,
-      averageDuration
-    }
+      averageDuration,
+    };
   }
 
   // Configuration Management
-  public updateConfig(newConfig: Partial<TestConfig>): void {
-    this.config = { ...this.config, ...newConfig }
-    this.emit('configUpdated', { config: this.config })
+  updateConfig(newConfig) {
+    this.config = { ...this.config, ...newConfig };
+    this.emit('configUpdated', { config: this.config });
   }
 
-  public getConfig(): TestConfig {
-    return { ...this.config }
+  getConfig() {
+    return { ...this.config };
   }
 
   // Utility Methods
-  private createTimeoutPromise(testId: string): Promise<never> {
+  createTimeoutPromise(testId) {
     return new Promise((_, reject) => {
       setTimeout(() => {
-        reject(new Error(`Test ${testId} timed out after ${this.config.timeout}ms`))
-      }, this.config.timeout)
-    })
+        reject(new Error(`Test ${testId} timed out after ${this.config.timeout}ms`));
+      }, this.config.timeout);
+    });
   }
 
-  private initializeDefaultTests(): void {
+  initializeDefaultTests() {
     // Initialize default test configurations
-    this.emit('testingServiceInitialized', { config: this.config })
+    this.emit('testingServiceInitialized', { config: this.config });
   }
 
   // Validation methods required by BaseService
-  public validate(data: TestResult): boolean {
-    return data && 
-           typeof data.id === 'string' && 
-           typeof data.success === 'boolean' && 
-           typeof data.message === 'string'
+  validate(data) {
+    return (
+      data &&
+      typeof data.id === 'string' &&
+      typeof data.success === 'boolean' &&
+      typeof data.message === 'string'
+    );
   }
 
   // Cleanup
-  public cleanup(): void {
-    super.cleanup()
-    
+  cleanup() {
+    super.cleanup();
+
     // Cancel running tests
     for (const [testId, promise] of this.runningTests.entries()) {
       // Note: Promises can't be cancelled, but we can track them
-      this.runningTests.delete(testId)
+      this.runningTests.delete(testId);
     }
-    
-    this.testQueue = []
+
+    this.testQueue = [];
   }
 }
 
 // Export singleton instance
-export const testingService = new TestingService()
+export const testingService = new TestingService();

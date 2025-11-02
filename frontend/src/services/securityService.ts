@@ -4,122 +4,112 @@
 import { EventEmitter } from 'events';
 import { logger } from './logger';
 
-export interface SecurityConfig {
-  enableCSP: boolean;
-  enableXSSProtection: boolean;
-  enableCSRFProtection: boolean;
-  enableContentSecurityPolicy: boolean;
-  enableStrictTransportSecurity: boolean;
-  maxSessionDuration: number;
-  enableAutoLogout: boolean;
-  enableInputSanitization: boolean;
-  enablePasswordStrengthValidation: boolean;
-}
+// Factory functions for creating objects
+export const createSecurityConfig = (config = {}) => ({
+  enableCSP: true,
+  enableXSSProtection: true,
+  enableCSRFProtection: true,
+  enableContentSecurityPolicy: true,
+  enableStrictTransportSecurity: true,
+  maxSessionDuration: 8 * 60 * 60 * 1000,
+  enableAutoLogout: true,
+  enableInputSanitization: true,
+  enablePasswordStrengthValidation: true,
+  ...config,
+});
 
-export interface SecurityEvent {
-  id: string;
-  type: SecurityEventType;
-  severity: SecuritySeverity;
-  description: string;
-  timestamp: string;
-  metadata?: Record<string, unknown>;
-}
+export const createSecurityEvent = (type, severity, description, metadata = null) => ({
+  id: Math.random().toString(36).substr(2, 9),
+  type,
+  severity,
+  description,
+  timestamp: new Date().toISOString(),
+  metadata,
+});
 
-export enum SecurityEventType {
+export const SecurityEventType = {
   // Authentication Events
-  LOGIN_SUCCESS = 'login_success',
-  LOGIN_FAILURE = 'login_failure',
-  LOGOUT = 'logout',
-  PASSWORD_CHANGE = 'password_change',
-  PASSWORD_RESET_REQUEST = 'password_reset_request',
-  PASSWORD_RESET_SUCCESS = 'password_reset_success',
-  PASSWORD_RESET_FAILURE = 'password_reset_failure',
+  LOGIN_SUCCESS: 'login_success',
+  LOGIN_FAILURE: 'login_failure',
+  LOGOUT: 'logout',
+  PASSWORD_CHANGE: 'password_change',
+  PASSWORD_RESET_REQUEST: 'password_reset_request',
+  PASSWORD_RESET_SUCCESS: 'password_reset_success',
+  PASSWORD_RESET_FAILURE: 'password_reset_failure',
 
   // Authorization Events
-  UNAUTHORIZED_ACCESS = 'unauthorized_access',
-  PERMISSION_DENIED = 'permission_denied',
-  ROLE_CHANGE = 'role_change',
-  ELEVATED_PRIVILEGES = 'elevated_privileges',
+  UNAUTHORIZED_ACCESS: 'unauthorized_access',
+  PERMISSION_DENIED: 'permission_denied',
+  ROLE_CHANGE: 'role_change',
+  ELEVATED_PRIVILEGES: 'elevated_privileges',
 
   // Session Events
-  SESSION_START = 'session_start',
-  SESSION_END = 'session_end',
-  SESSION_TIMEOUT = 'session_timeout',
-  SESSION_RENEWAL = 'session_renewal',
-  CONCURRENT_SESSION = 'concurrent_session',
+  SESSION_START: 'session_start',
+  SESSION_END: 'session_end',
+  SESSION_TIMEOUT: 'session_timeout',
+  SESSION_RENEWAL: 'session_renewal',
+  CONCURRENT_SESSION: 'concurrent_session',
 
   // Input Validation Events
-  XSS_ATTEMPT = 'xss_attempt',
-  SQL_INJECTION_ATTEMPT = 'sql_injection_attempt',
-  INVALID_INPUT = 'invalid_input',
-  MALFORMED_REQUEST = 'malformed_request',
+  XSS_ATTEMPT: 'xss_attempt',
+  SQL_INJECTION_ATTEMPT: 'sql_injection_attempt',
+  INVALID_INPUT: 'invalid_input',
+  MALFORMED_REQUEST: 'malformed_request',
 
   // File Upload Events
-  FILE_UPLOAD_SUCCESS = 'file_upload_success',
-  FILE_UPLOAD_FAILURE = 'file_upload_failure',
-  MALICIOUS_FILE_DETECTED = 'malicious_file_detected',
-  LARGE_FILE_UPLOAD = 'large_file_upload',
+  FILE_UPLOAD_SUCCESS: 'file_upload_success',
+  FILE_UPLOAD_FAILURE: 'file_upload_failure',
+  MALICIOUS_FILE_DETECTED: 'malicious_file_detected',
+  LARGE_FILE_UPLOAD: 'large_file_upload',
 
   // Network Events
-  CSRF_VIOLATION = 'csrf_violation',
-  RATE_LIMIT_EXCEEDED = 'rate_limit_exceeded',
-  SUSPICIOUS_IP = 'suspicious_ip',
-  GEO_BLOCKED_ACCESS = 'geo_blocked_access',
+  CSRF_VIOLATION: 'csrf_violation',
+  RATE_LIMIT_EXCEEDED: 'rate_limit_exceeded',
+  SUSPICIOUS_IP: 'suspicious_ip',
+  GEO_BLOCKED_ACCESS: 'geo_blocked_access',
 
   // System Events
-  SUSPICIOUS_ACTIVITY = 'suspicious_activity',
-  ANOMALOUS_BEHAVIOR = 'anomalous_behavior',
-  PASSWORD_WEAK = 'password_weak',
-  ACCOUNT_LOCKOUT = 'account_lockout',
-  ACCOUNT_UNLOCK = 'account_unlock',
+  SUSPICIOUS_ACTIVITY: 'suspicious_activity',
+  ANOMALOUS_BEHAVIOR: 'anomalous_behavior',
+  PASSWORD_WEAK: 'password_weak',
+  ACCOUNT_LOCKOUT: 'account_lockout',
+  ACCOUNT_UNLOCK: 'account_unlock',
 
   // Data Protection Events
-  SENSITIVE_DATA_ACCESS = 'sensitive_data_access',
-  DATA_EXPORT = 'data_export',
-  BULK_DATA_OPERATION = 'bulk_data_operation',
+  SENSITIVE_DATA_ACCESS: 'sensitive_data_access',
+  DATA_EXPORT: 'data_export',
+  BULK_DATA_OPERATION: 'bulk_data_operation',
 
   // Audit Events
-  CONFIG_CHANGE = 'config_change',
-  SECURITY_POLICY_UPDATE = 'security_policy_update',
-  USER_CREATED = 'user_created',
-  USER_DELETED = 'user_deleted',
-  USER_UPDATED = 'user_updated',
-}
+  CONFIG_CHANGE: 'config_change',
+  SECURITY_POLICY_UPDATE: 'security_policy_update',
+  USER_CREATED: 'user_created',
+  USER_DELETED: 'user_deleted',
+  USER_UPDATED: 'user_updated',
+};
 
-export enum SecuritySeverity {
-  LOW = 'low',
-  MEDIUM = 'medium',
-  HIGH = 'high',
-  CRITICAL = 'critical',
-}
+export const SecuritySeverity = {
+  LOW: 'low',
+  MEDIUM: 'medium',
+  HIGH: 'high',
+  CRITICAL: 'critical',
+};
 
 class SecurityService extends EventEmitter {
-  private config: SecurityConfig;
-  private securityEvents: SecurityEvent[] = [];
-  private sessionStartTime: number = Date.now();
-  private lastActivity: number = Date.now();
-  private inactivityTimer: NodeJS.Timeout | null = null;
-  private cspViolations: string[] = [];
+  config;
+  securityEvents = [];
+  sessionStartTime = Date.now();
+  lastActivity = Date.now();
+  inactivityTimer = null;
+  cspViolations = [];
 
-  constructor(config: Partial<SecurityConfig> = {}) {
+  constructor(config = {}) {
     super();
-    this.config = {
-      enableCSP: true,
-      enableXSSProtection: true,
-      enableCSRFProtection: true,
-      enableContentSecurityPolicy: true,
-      enableStrictTransportSecurity: true,
-      maxSessionDuration: 8 * 60 * 60 * 1000, // 8 hours
-      enableAutoLogout: true,
-      enableInputSanitization: true,
-      enablePasswordStrengthValidation: true,
-      ...config,
-    };
-
+    this.config = createSecurityConfig(config);
     this.initializeSecurity();
   }
 
-  private initializeSecurity() {
+  initializeSecurity() {
     if (typeof window !== 'undefined') {
       this.setupCSP();
       this.setupXSSProtection();
@@ -132,7 +122,7 @@ class SecurityService extends EventEmitter {
   }
 
   // Content Security Policy
-  private setupCSP() {
+  setupCSP() {
     if (this.config.enableCSP) {
       const meta = document.createElement('meta');
       meta.httpEquiv = 'Content-Security-Policy';
@@ -156,7 +146,7 @@ class SecurityService extends EventEmitter {
     }
   }
 
-  private handleCSPViolation(event: SecurityPolicyViolationEvent) {
+  handleCSPViolation(event) {
     const violation = {
       blockedURI: event.blockedURI,
       violatedDirective: event.violatedDirective,
@@ -165,18 +155,18 @@ class SecurityService extends EventEmitter {
     };
 
     this.cspViolations.push(JSON.stringify(violation));
-    this.logSecurityEvent({
-      id: this.generateId(),
-      type: SecurityEventType.SUSPICIOUS_ACTIVITY,
-      severity: SecuritySeverity.MEDIUM,
-      description: 'CSP violation detected',
-      timestamp: new Date().toISOString(),
-      metadata: violation,
-    });
+    this.logSecurityEvent(
+      createSecurityEvent(
+        SecurityEventType.SUSPICIOUS_ACTIVITY,
+        SecuritySeverity.MEDIUM,
+        'CSP violation detected',
+        violation
+      )
+    );
   }
 
   // XSS Protection
-  private setupXSSProtection() {
+  setupXSSProtection() {
     if (this.config.enableXSSProtection) {
       // Sanitize all user inputs
       this.interceptFormSubmissions();
@@ -185,13 +175,13 @@ class SecurityService extends EventEmitter {
     }
   }
 
-  private interceptFormSubmissions() {
+  interceptFormSubmissions() {
     document.addEventListener('submit', (e) => {
-      const form = e.target as HTMLFormElement;
+      const form = e.target;
       const inputs = form.querySelectorAll('input, textarea, select');
 
-      inputs.forEach((input: Element) => {
-        const htmlInput = input as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+      inputs.forEach((input) => {
+        const htmlInput = input;
         if (htmlInput.value) {
           const sanitized = this.sanitizeInput(htmlInput.value);
           if (sanitized !== htmlInput.value) {
@@ -210,7 +200,7 @@ class SecurityService extends EventEmitter {
     });
   }
 
-  private interceptInnerHTML() {
+  interceptInnerHTML() {
     const originalInnerHTML = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
     if (originalInnerHTML) {
       Object.defineProperty(Element.prototype, 'innerHTML', {
@@ -233,9 +223,9 @@ class SecurityService extends EventEmitter {
     }
   }
 
-  private interceptEval() {
+  interceptEval() {
     const originalEval = window.eval;
-    window.eval = (code: string) => {
+    window.eval = (code) => {
       this.logSecurityEvent({
         id: this.generateId(),
         type: SecurityEventType.SUSPICIOUS_ACTIVITY,
@@ -249,7 +239,7 @@ class SecurityService extends EventEmitter {
   }
 
   // CSRF Protection
-  private setupCSRFProtection() {
+  setupCSRFProtection() {
     if (this.config.enableCSRFProtection) {
       // Generate CSRF token
       const csrfToken = this.generateCSRFToken();
@@ -265,13 +255,13 @@ class SecurityService extends EventEmitter {
     }
   }
 
-  private generateCSRFToken(): string {
+  generateCSRFToken() {
     const array = new Uint8Array(32);
     crypto.getRandomValues(array);
     return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
   }
 
-  private addCSRFTokenToForms(token: string) {
+  addCSRFTokenToForms(token) {
     const forms = document.querySelectorAll('form');
     forms.forEach((form) => {
       if (!form.querySelector('input[name="csrf_token"]')) {
@@ -284,10 +274,10 @@ class SecurityService extends EventEmitter {
     });
   }
 
-  private validateCSRFToken() {
+  validateCSRFToken() {
     document.addEventListener('submit', (e) => {
-      const form = e.target as HTMLFormElement;
-      const csrfInput = form.querySelector('input[name="csrf_token"]') as HTMLInputElement;
+      const form = e.target;
+      const csrfInput = form.querySelector('input[name="csrf_token"]');
 
       if (csrfInput) {
         const storedToken = sessionStorage.getItem('csrf_token');
@@ -307,13 +297,13 @@ class SecurityService extends EventEmitter {
   }
 
   // Session Monitoring
-  private setupSessionMonitoring() {
+  setupSessionMonitoring() {
     if (this.config.enableAutoLogout) {
       this.startSessionTimer();
     }
   }
 
-  private startSessionTimer() {
+  startSessionTimer() {
     const checkSession = () => {
       const now = Date.now();
       const sessionDuration = now - this.sessionStartTime;
@@ -344,18 +334,18 @@ class SecurityService extends EventEmitter {
     setInterval(checkSession, 60000); // Check every minute
   }
 
-  private logout() {
+  logout() {
     localStorage.removeItem('accessToken');
     sessionStorage.removeItem('csrf_token');
     window.location.href = '/login';
   }
 
   // Input Sanitization
-  private setupInputSanitization() {
+  setupInputSanitization() {
     if (this.config.enableInputSanitization) {
       // Sanitize all text inputs
       document.addEventListener('input', (e) => {
-        const target = e.target as HTMLInputElement;
+        const target = e.target;
         if (target.type === 'text' || target.type === 'textarea') {
           const sanitized = this.sanitizeInput(target.value);
           if (sanitized !== target.value) {
@@ -374,7 +364,7 @@ class SecurityService extends EventEmitter {
     }
   }
 
-  public sanitizeInput(input: string): string {
+  sanitizeInput(input) {
     return input
       .replace(/[<>]/g, '') // Remove < and >
       .replace(/javascript:/gi, '') // Remove javascript: protocol
@@ -389,10 +379,10 @@ class SecurityService extends EventEmitter {
   }
 
   // Password Validation
-  private setupPasswordValidation() {
+  setupPasswordValidation() {
     if (this.config.enablePasswordStrengthValidation) {
       document.addEventListener('input', (e) => {
-        const target = e.target as HTMLInputElement;
+        const target = e.target;
         if (target.type === 'password') {
           const strength = this.validatePasswordStrength(target.value);
           if (strength.score < 3) {
@@ -410,8 +400,8 @@ class SecurityService extends EventEmitter {
     }
   }
 
-  public validatePasswordStrength(password: string): { score: number; feedback: string[] } {
-    const feedback: string[] = [];
+  validatePasswordStrength(password) {
+    const feedback = [];
     let score = 0;
 
     if (password.length >= 8) score++;
@@ -433,7 +423,7 @@ class SecurityService extends EventEmitter {
   }
 
   // Activity Monitoring
-  private setupActivityMonitoring() {
+  setupActivityMonitoring() {
     const updateActivity = () => {
       this.lastActivity = Date.now();
     };
@@ -444,8 +434,8 @@ class SecurityService extends EventEmitter {
   }
 
   // Enhanced Security Event Logging
-  private async logSecurityEvent(event: Omit<SecurityEvent, 'id' | 'timestamp'>): Promise<void> {
-    const fullEvent: SecurityEvent = {
+  async logSecurityEvent(event) {
+    const fullEvent = {
       ...event,
       id: this.generateId(),
       timestamp: new Date().toISOString(),
@@ -477,7 +467,7 @@ class SecurityService extends EventEmitter {
     }
   }
 
-  private async sendSecurityEventToServer(event: SecurityEvent): Promise<void> {
+  async sendSecurityEventToServer(event) {
     // Import apiClient dynamically to avoid circular dependencies
     const { apiClient } = await import('../services/apiClient');
 
@@ -494,7 +484,7 @@ class SecurityService extends EventEmitter {
     }
   }
 
-  private storeFailedEvent(event: SecurityEvent): void {
+  storeFailedEvent(event) {
     const failedEvents = JSON.parse(localStorage.getItem('failedSecurityEvents') || '[]');
     failedEvents.push({
       ...event,
@@ -510,11 +500,11 @@ class SecurityService extends EventEmitter {
     localStorage.setItem('failedSecurityEvents', JSON.stringify(failedEvents));
   }
 
-  private async retryFailedEvents(): Promise<void> {
+  async retryFailedEvents() {
     const failedEvents = JSON.parse(localStorage.getItem('failedSecurityEvents') || '[]');
     if (failedEvents.length === 0) return;
 
-    const remainingEvents: SecurityEvent[] = [];
+    const remainingEvents = [];
 
     for (const failedEvent of failedEvents) {
       try {
@@ -532,7 +522,7 @@ class SecurityService extends EventEmitter {
     localStorage.setItem('failedSecurityEvents', JSON.stringify(remainingEvents));
   }
 
-  private getSessionId(): string {
+  getSessionId() {
     let sessionId = sessionStorage.getItem('sessionId');
     if (!sessionId) {
       sessionId = this.generateId();
@@ -541,19 +531,12 @@ class SecurityService extends EventEmitter {
     return sessionId;
   }
 
-  private generateId(): string {
+  generateId() {
     return Math.random().toString(36).substr(2, 9);
   }
 
   // Public Methods
-  public getSecurityEvents(filters?: {
-    type?: SecurityEventType;
-    severity?: SecuritySeverity;
-    userId?: string;
-    startDate?: string;
-    endDate?: string;
-    limit?: number;
-  }): SecurityEvent[] {
+  getSecurityEvents(filters) {
     let events = [...this.securityEvents];
 
     if (filters) {
@@ -567,10 +550,10 @@ class SecurityService extends EventEmitter {
         events = events.filter((event) => event.metadata?.userId === filters.userId);
       }
       if (filters.startDate) {
-        events = events.filter((event) => event.timestamp >= filters.startDate!);
+        events = events.filter((event) => event.timestamp >= filters.startDate);
       }
       if (filters.endDate) {
-        events = events.filter((event) => event.timestamp <= filters.endDate!);
+        events = events.filter((event) => event.timestamp <= filters.endDate);
       }
       if (filters.limit) {
         events = events.slice(-filters.limit);
@@ -581,12 +564,7 @@ class SecurityService extends EventEmitter {
   }
 
   // Enhanced Security Event Logging Methods
-  public async logAuthenticationEvent(
-    type: SecurityEventType,
-    success: boolean,
-    userId?: string,
-    metadata?: Record<string, unknown>
-  ): Promise<void> {
+  async logAuthenticationEvent(type, success, userId, metadata) {
     await this.logSecurityEvent({
       type,
       severity: success ? SecuritySeverity.LOW : SecuritySeverity.MEDIUM,
@@ -599,14 +577,7 @@ class SecurityService extends EventEmitter {
     });
   }
 
-  public async logAuthorizationEvent(
-    type: SecurityEventType,
-    resource: string,
-    action: string,
-    userId?: string,
-    allowed: boolean = false,
-    metadata?: Record<string, unknown>
-  ): Promise<void> {
+  async logAuthorizationEvent(type, resource, action, userId, allowed, metadata) {
     await this.logSecurityEvent({
       type,
       severity: allowed ? SecuritySeverity.LOW : SecuritySeverity.MEDIUM,
@@ -621,14 +592,7 @@ class SecurityService extends EventEmitter {
     });
   }
 
-  public async logInputValidationEvent(
-    type: SecurityEventType,
-    field: string,
-    value: string,
-    reason: string,
-    userId?: string,
-    metadata?: Record<string, unknown>
-  ): Promise<void> {
+  async logInputValidationEvent(type, field, value, reason, userId, metadata) {
     await this.logSecurityEvent({
       type,
       severity: SecuritySeverity.MEDIUM,
@@ -643,14 +607,7 @@ class SecurityService extends EventEmitter {
     });
   }
 
-  public async logFileUploadEvent(
-    type: SecurityEventType,
-    fileName: string,
-    fileSize: number,
-    mimeType: string,
-    userId?: string,
-    metadata?: Record<string, unknown>
-  ): Promise<void> {
+  async logFileUploadEvent(type, fileName, fileSize, mimeType, userId, metadata) {
     const severity =
       type === SecurityEventType.MALICIOUS_FILE_DETECTED
         ? SecuritySeverity.HIGH
@@ -670,12 +627,7 @@ class SecurityService extends EventEmitter {
     });
   }
 
-  public async logSessionEvent(
-    type: SecurityEventType,
-    userId?: string,
-    sessionId?: string,
-    metadata?: Record<string, unknown>
-  ): Promise<void> {
+  async logSessionEvent(type, userId, sessionId, metadata) {
     await this.logSecurityEvent({
       type,
       severity: SecuritySeverity.LOW,
@@ -688,14 +640,7 @@ class SecurityService extends EventEmitter {
     });
   }
 
-  public async logDataAccessEvent(
-    type: SecurityEventType,
-    resource: string,
-    operation: string,
-    recordCount?: number,
-    userId?: string,
-    metadata?: Record<string, unknown>
-  ): Promise<void> {
+  async logDataAccessEvent(type, resource, operation, recordCount, userId, metadata) {
     await this.logSecurityEvent({
       type,
       severity: SecuritySeverity.MEDIUM,
@@ -711,7 +656,7 @@ class SecurityService extends EventEmitter {
   }
 
   // Utility Methods
-  private sanitizeForLogging(value: string): string {
+  sanitizeForLogging(value) {
     // Remove sensitive data and limit length
     if (value.length > 100) {
       return value.substring(0, 100) + '...';
@@ -719,7 +664,7 @@ class SecurityService extends EventEmitter {
     return value.replace(/password|token|key|secret/gi, '[REDACTED]');
   }
 
-  private formatFileSize(bytes: number): string {
+  formatFileSize(bytes) {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     if (bytes === 0) return '0 Bytes';
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
@@ -727,26 +672,8 @@ class SecurityService extends EventEmitter {
   }
 
   // Anomaly Detection
-  public async detectAnomalies(
-    userId: string,
-    eventType: string,
-    timeWindowMinutes: number = 60
-  ): Promise<
-    Array<{
-      type: string;
-      severity: SecuritySeverity;
-      description: string;
-      confidence: number;
-      metadata: Record<string, unknown>;
-    }>
-  > {
-    const anomalies: Array<{
-      type: string;
-      severity: SecuritySeverity;
-      description: string;
-      confidence: number;
-      metadata: Record<string, unknown>;
-    }> = [];
+  async detectAnomalies(userId, eventType, timeWindowMinutes = 60) {
+    const anomalies = [];
 
     const now = new Date();
     const timeWindowStart = new Date(now.getTime() - timeWindowMinutes * 60 * 1000);
@@ -778,16 +705,7 @@ class SecurityService extends EventEmitter {
     return anomalies;
   }
 
-  private detectLoginAnomalies(
-    events: SecurityEvent[],
-    userId: string
-  ): Array<{
-    type: string;
-    severity: SecuritySeverity;
-    description: string;
-    confidence: number;
-    metadata: Record<string, unknown>;
-  }> {
+  detectLoginAnomalies(events, userId) {
     const anomalies = [];
     const loginEvents = events.filter((e) => e.type === SecurityEventType.LOGIN_SUCCESS);
     const failedLoginEvents = events.filter((e) => e.type === SecurityEventType.LOGIN_FAILURE);
@@ -828,16 +746,7 @@ class SecurityService extends EventEmitter {
     return anomalies;
   }
 
-  private detectFailedLoginAnomalies(
-    events: SecurityEvent[],
-    userId: string
-  ): Array<{
-    type: string;
-    severity: SecuritySeverity;
-    description: string;
-    confidence: number;
-    metadata: Record<string, unknown>;
-  }> {
+  detectFailedLoginAnomalies(events, userId) {
     const anomalies = [];
     const failedLogins = events.filter((e) => e.type === SecurityEventType.LOGIN_FAILURE);
 
@@ -866,7 +775,7 @@ class SecurityService extends EventEmitter {
     }
 
     // Check for distributed attacks (same password tried from multiple IPs)
-    const passwordAttempts = new Map<string, string[]>();
+    const passwordAttempts = new Map();
     failedLogins.forEach((event) => {
       const password = event.metadata?.passwordAttempt;
       const ip = event.metadata?.ipAddress;
@@ -874,7 +783,7 @@ class SecurityService extends EventEmitter {
         if (!passwordAttempts.has(password)) {
           passwordAttempts.set(password, []);
         }
-        passwordAttempts.get(password)!.push(ip);
+        passwordAttempts.get(password).push(ip);
       }
     });
 
@@ -898,16 +807,7 @@ class SecurityService extends EventEmitter {
     return anomalies;
   }
 
-  private detectAccessPatternAnomalies(
-    events: SecurityEvent[],
-    userId: string
-  ): Array<{
-    type: string;
-    severity: SecuritySeverity;
-    description: string;
-    confidence: number;
-    metadata: Record<string, unknown>;
-  }> {
+  detectAccessPatternAnomalies(events, userId) {
     const anomalies = [];
     const accessEvents = events.filter((e) =>
       [SecurityEventType.UNAUTHORIZED_ACCESS, SecurityEventType.PERMISSION_DENIED].includes(e.type)
@@ -926,7 +826,7 @@ class SecurityService extends EventEmitter {
     }
 
     // Check for unusual resource access patterns
-    const resourceAccess = new Map<string, number>();
+    const resourceAccess = new Map();
     accessEvents.forEach((event) => {
       const resource = event.metadata?.resource;
       if (resource) {
@@ -949,16 +849,7 @@ class SecurityService extends EventEmitter {
     return anomalies;
   }
 
-  private detectFileUploadAnomalies(
-    events: SecurityEvent[],
-    userId: string
-  ): Array<{
-    type: string;
-    severity: SecuritySeverity;
-    description: string;
-    confidence: number;
-    metadata: Record<string, unknown>;
-  }> {
+  detectFileUploadAnomalies(events, userId) {
     const anomalies = [];
     const uploadEvents = events.filter((e) => e.type === SecurityEventType.FILE_UPLOAD_SUCCESS);
     const maliciousEvents = events.filter(
@@ -994,16 +885,7 @@ class SecurityService extends EventEmitter {
     return anomalies;
   }
 
-  private detectDataAccessAnomalies(
-    events: SecurityEvent[],
-    userId: string
-  ): Array<{
-    type: string;
-    severity: SecuritySeverity;
-    description: string;
-    confidence: number;
-    metadata: Record<string, unknown>;
-  }> {
+  detectDataAccessAnomalies(events, userId) {
     const anomalies = [];
     const dataAccessEvents = events.filter(
       (e) => e.type === SecurityEventType.SENSITIVE_DATA_ACCESS
@@ -1028,7 +910,7 @@ class SecurityService extends EventEmitter {
     }
 
     // Check for unusual data access patterns
-    const resourceAccess = new Map<string, number>();
+    const resourceAccess = new Map();
     dataAccessEvents.forEach((event) => {
       const resource = event.metadata?.resource;
       if (resource) {
@@ -1051,11 +933,11 @@ class SecurityService extends EventEmitter {
     return anomalies;
   }
 
-  public getCSPViolations(): string[] {
+  getCSPViolations() {
     return [...this.cspViolations];
   }
 
-  public getSessionInfo(): { startTime: number; lastActivity: number; duration: number } {
+  getSessionInfo() {
     return {
       startTime: this.sessionStartTime,
       lastActivity: this.lastActivity,
@@ -1063,7 +945,7 @@ class SecurityService extends EventEmitter {
     };
   }
 
-  public validateFileUpload(file: File): { valid: boolean; reason?: string } {
+  validateFileUpload(file) {
     // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
       return { valid: false, reason: 'File size exceeds 10MB limit' };
@@ -1090,31 +972,24 @@ class SecurityService extends EventEmitter {
     return { valid: true };
   }
 
-  public generateSecureToken(length: number = 32): string {
+  generateSecureToken(length = 32) {
     const array = new Uint8Array(length);
     crypto.getRandomValues(array);
     return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
   }
 
-  public hashPassword(password: string): Promise<string> {
+  hashPassword(password) {
     // This would integrate with a proper password hashing library
     // For now, return a placeholder
     return Promise.resolve('hashed_password_placeholder');
   }
 
   // Automated Security Alerts
-  private alertRules: Array<{
-    id: string;
-    condition: (events: SecurityEvent[]) => boolean;
-    severity: SecuritySeverity;
-    message: string;
-    cooldownMinutes: number;
-    lastTriggered?: number;
-  }> = [];
+  alertRules = [];
 
-  private alertCooldowns: Map<string, number> = new Map();
+  alertCooldowns = new Map();
 
-  public setupAutomatedAlerts(): void {
+  setupAutomatedAlerts() {
     // Define alert rules
     this.alertRules = [
       {
@@ -1195,14 +1070,14 @@ class SecurityService extends EventEmitter {
     this.startAlertMonitoring();
   }
 
-  private startAlertMonitoring(): void {
+  startAlertMonitoring() {
     // Check for alerts every minute
     setInterval(() => {
       this.checkAndTriggerAlerts();
     }, 60 * 1000);
   }
 
-  private async checkAndTriggerAlerts(): Promise<void> {
+  async checkAndTriggerAlerts() {
     for (const rule of this.alertRules) {
       // Check cooldown
       const lastTriggered = this.alertCooldowns.get(rule.id);
@@ -1218,11 +1093,7 @@ class SecurityService extends EventEmitter {
     }
   }
 
-  private async triggerSecurityAlert(rule: {
-    id: string;
-    severity: SecuritySeverity;
-    message: string;
-  }): Promise<void> {
+  async triggerSecurityAlert(rule) {
     // Log the alert
     await this.logSecurityEvent({
       type: SecurityEventType.SUSPICIOUS_ACTIVITY,
@@ -1248,11 +1119,7 @@ class SecurityService extends EventEmitter {
   }
 
   // Public method to manually trigger alerts
-  public async triggerManualAlert(
-    message: string,
-    severity: SecuritySeverity,
-    metadata?: Record<string, unknown>
-  ): Promise<void> {
+  async triggerManualAlert(message, severity, metadata) {
     await this.logSecurityEvent({
       type: SecurityEventType.SUSPICIOUS_ACTIVITY,
       severity,
@@ -1272,7 +1139,7 @@ class SecurityService extends EventEmitter {
     });
   }
 
-  public destroy() {
+  destroy() {
     if (this.inactivityTimer) {
       clearInterval(this.inactivityTimer);
     }

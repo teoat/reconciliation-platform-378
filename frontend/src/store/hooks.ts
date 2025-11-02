@@ -65,13 +65,31 @@ export const useProjects = () => {
 
   return {
     ...projects,
-    fetchProjects: useCallback((params?: { page?: number; per_page?: number; search?: string; status?: string }) => dispatch(fetchProjects(params)), [dispatch]),
+    fetchProjects: useCallback(
+      (params?: { page?: number; per_page?: number; search?: string; status?: string }) =>
+        dispatch(fetchProjects(params)),
+      [dispatch]
+    ),
     createProject: useCallback(
-      (projectData: { name: string; description?: string; settings?: Record<string, unknown>; status?: string }) => dispatch(createProject(projectData)),
+      (projectData: {
+        name: string;
+        description?: string;
+        settings?: Record<string, unknown>;
+        status?: string;
+      }) => dispatch(createProject(projectData)),
       [dispatch]
     ),
     updateProject: useCallback(
-      (params: { id: string; data: Partial<{ name?: string; description?: string; settings?: Record<string, unknown>; status?: string; is_active?: boolean }> }) => dispatch(updateProject(params)),
+      (params: {
+        id: string;
+        data: Partial<{
+          name?: string;
+          description?: string;
+          settings?: Record<string, unknown>;
+          status?: string;
+          is_active?: boolean;
+        }>;
+      }) => dispatch(updateProject(params)),
       [dispatch]
     ),
     deleteProject: useCallback((id: string) => dispatch(deleteProject(id)), [dispatch]),
@@ -101,7 +119,11 @@ export const useDataIngestion = () => {
   return {
     ...dataIngestion,
     uploadFile: useCallback(
-      (params: { projectId: string; file: File; metadata?: { name: string; source_type: string } }) => dispatch(uploadFile(params)),
+      (params: {
+        projectId: string;
+        file: File;
+        metadata?: { name: string; source_type: string };
+      }) => dispatch(uploadFile(params)),
       [dispatch]
     ),
     fetchUploadedFiles: useCallback(
@@ -130,11 +152,23 @@ export const useReconciliation = () => {
       [dispatch]
     ),
     runMatching: useCallback(
-      (params: { projectId: string; rules: Array<{ field_a: string; field_b: string; rule_type: string; weight: number }> }) => dispatch(runMatching(params)),
+      (params: {
+        projectId: string;
+        rules: Array<{ field_a: string; field_b: string; rule_type: string; weight: number }>;
+      }) => dispatch(runMatching(params)),
       [dispatch]
     ),
     setConfig: useCallback(
-      (config: Partial<{ matchingRules: string[]; tolerance: number; autoMatch: boolean; priority: 'high' | 'medium' | 'low'; batchSize: number; timeout: number }>) => dispatch(reconciliationRecordsActions.setConfig(config)),
+      (
+        config: Partial<{
+          matchingRules: string[];
+          tolerance: number;
+          autoMatch: boolean;
+          priority: 'high' | 'medium' | 'low';
+          batchSize: number;
+          timeout: number;
+        }>
+      ) => dispatch(reconciliationRecordsActions.setConfig(config)),
       [dispatch]
     ),
     setMatchingProgress: useCallback(
@@ -190,16 +224,22 @@ export const useUI = () => {
       [dispatch]
     ),
     openModal: useCallback(
-      (modal: 'createProject' | 'exportData' | 'settings' | 'deleteConfirmation' | 'batchOperation') => dispatch(uiActions.openModal(modal)),
+      (
+        modal: 'createProject' | 'exportData' | 'settings' | 'deleteConfirmation' | 'batchOperation'
+      ) => dispatch(uiActions.openModal(modal)),
       [dispatch]
     ),
     closeModal: useCallback(
-      (modal: 'createProject' | 'exportData' | 'settings' | 'deleteConfirmation' | 'batchOperation') => dispatch(uiActions.closeModal(modal)),
+      (
+        modal: 'createProject' | 'exportData' | 'settings' | 'deleteConfirmation' | 'batchOperation'
+      ) => dispatch(uiActions.closeModal(modal)),
       [dispatch]
     ),
     setLoadingState: useCallback(
-      (params: { key: 'global' | 'projects' | 'reconciliation' | 'ingestion' | 'analytics'; loading: boolean }) =>
-        dispatch(uiActions.setLoadingState(params)),
+      (params: {
+        key: 'global' | 'projects' | 'reconciliation' | 'ingestion' | 'analytics';
+        loading: boolean;
+      }) => dispatch(uiActions.setLoadingState(params)),
       [dispatch]
     ),
   };
@@ -238,7 +278,7 @@ export const useNotifications = () => {
 
   const markAsRead = useCallback(
     (id: string) => {
-      const notification = notifications.find((n: Notification) => n.id === id);
+      const notification = notifications.find((n) => n.id === id);
       if (notification) {
         dispatch(
           notificationsActions.addNotification({
@@ -252,7 +292,7 @@ export const useNotifications = () => {
   );
 
   const markAllAsRead = useCallback(() => {
-    notifications.forEach((notification: Notification) => {
+    notifications.forEach((notification) => {
       if (!notification.read) {
         dispatch(
           notificationsActions.addNotification({
@@ -273,7 +313,7 @@ export const useNotifications = () => {
 
   return {
     items: notifications,
-    unreadCount: notifications.filter((n: Notification) => !n.read).length,
+    unreadCount: notifications.filter((n) => !n.read).length,
     markAsRead,
     markAllAsRead,
     removeNotification,

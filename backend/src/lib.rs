@@ -63,11 +63,13 @@ pub mod integrations;
 pub mod api {
     pub mod gdpr;
 }
+pub mod startup;
 
 // Re-export commonly used types
 pub use config::Config;
 pub use database::Database;
 pub use errors::{AppError, AppResult};
+pub use startup::{AppStartup, resilience_config_from_env};
 
 /// Application version
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

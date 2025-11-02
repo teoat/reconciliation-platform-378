@@ -405,7 +405,7 @@ class BusinessIntelligenceService {
       this.startReportScheduling();
 
       this.isInitialized = true;
-      logger.log('Business Intelligence Service initialized');
+      logger.info('Business Intelligence Service initialized');
     } catch (error) {
       logger.error('Failed to initialize Business Intelligence Service:', error);
     }
@@ -730,7 +730,10 @@ class BusinessIntelligenceService {
     return Array.from(this.queries.values());
   }
 
-  public async executeQuery(id: string, parameters?: Metadata): Promise<Array<Record<string, unknown>>> {
+  public async executeQuery(
+    id: string,
+    parameters?: Metadata
+  ): Promise<Array<Record<string, unknown>>> {
     const query = this.queries.get(id);
     if (!query) {
       throw new Error(`Query ${id} not found`);
@@ -925,7 +928,10 @@ class BusinessIntelligenceService {
     }
   }
 
-  private async executeReportQuery(report: ReportConfig, parameters?: Metadata): Promise<Array<Record<string, unknown>>> {
+  private async executeReportQuery(
+    report: ReportConfig,
+    parameters?: Metadata
+  ): Promise<Array<Record<string, unknown>>> {
     // Simulate report query execution
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
@@ -942,7 +948,11 @@ class BusinessIntelligenceService {
     }
   }
 
-  private applyFilters(data: Array<Record<string, unknown>>, filters: ReportFilter[], parameters?: Metadata): Array<Record<string, unknown>> {
+  private applyFilters(
+    data: Array<Record<string, unknown>>,
+    filters: ReportFilter[],
+    parameters?: Metadata
+  ): Array<Record<string, unknown>> {
     return data.filter((item) => {
       return filters.every((filter) => {
         const value = item[filter.field];
@@ -975,7 +985,10 @@ class BusinessIntelligenceService {
     });
   }
 
-  private async renderWidget(widget: DashboardWidget, filters?: Metadata): Promise<Record<string, unknown>> {
+  private async renderWidget(
+    widget: DashboardWidget,
+    filters?: Metadata
+  ): Promise<Record<string, unknown>> {
     // Simulate widget rendering
     await this.delay(500);
 
@@ -1031,7 +1044,7 @@ class BusinessIntelligenceService {
     alert.lastTriggered = new Date();
 
     // Send notifications
-    logger.log(`KPI Alert triggered: ${kpi.name} - ${alert.name}`);
+    logger.info(`KPI Alert triggered: ${kpi.name} - ${alert.name}`);
 
     // Emit event (commented out to avoid errors)
     // this.emit('kpiAlertTriggered', { kpi, alert, value })
@@ -1043,7 +1056,10 @@ class BusinessIntelligenceService {
     return 'critical';
   }
 
-  private async executeAnalyticsQuery(query: AnalyticsQuery, parameters?: Metadata): Promise<Array<Record<string, unknown>>> {
+  private async executeAnalyticsQuery(
+    query: AnalyticsQuery,
+    parameters?: Metadata
+  ): Promise<Array<Record<string, unknown>>> {
     // Simulate query execution
     await this.delay(1500);
 

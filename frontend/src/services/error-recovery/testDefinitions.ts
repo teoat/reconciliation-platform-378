@@ -2,7 +2,13 @@
 // Contains all test definitions for error recovery testing
 // Extracted from errorRecoveryTester.ts
 
-import { ErrorRecoveryTest } from './types';
+import {
+  ErrorRecoveryTest,
+  RetryAttempt,
+  CircuitBreakerTest,
+  FallbackTest,
+  EscalationTest,
+} from './types';
 import { ErrorSimulation } from './errorSimulation';
 
 export class ErrorRecoveryTestDefinitions {
@@ -20,7 +26,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const retryAttempts: any[] = [];
+            const retryAttempts: RetryAttempt[] = [];
             let success = false;
             const maxAttempts = 5;
 
@@ -94,7 +100,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const retryAttempts: any[] = [];
+            const retryAttempts: RetryAttempt[] = [];
             let success = false;
             const maxAttempts = 5;
 
@@ -166,7 +172,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const retryAttempts: any[] = [];
+            const retryAttempts: RetryAttempt[] = [];
             let success = false;
             const maxAttempts = 5;
 
@@ -238,7 +244,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const retryAttempts: any[] = [];
+            const retryAttempts: RetryAttempt[] = [];
             let success = false;
             const maxAttempts = 5;
 
@@ -312,7 +318,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const circuitBreakerTests: any[] = [];
+            const circuitBreakerTests: CircuitBreakerTest[] = [];
 
             // Reset circuit breaker to closed state
             ErrorSimulation.resetCircuitBreaker();
@@ -370,7 +376,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const circuitBreakerTests: any[] = [];
+            const circuitBreakerTests: CircuitBreakerTest[] = [];
 
             // Reset and force open state by recording failures
             ErrorSimulation.resetCircuitBreaker();
@@ -426,7 +432,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const circuitBreakerTests: any[] = [];
+            const circuitBreakerTests: CircuitBreakerTest[] = [];
 
             // Reset and force open state, then attempt half-open
             ErrorSimulation.resetCircuitBreaker();
@@ -485,7 +491,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const circuitBreakerTests: any[] = [];
+            const circuitBreakerTests: CircuitBreakerTest[] = [];
 
             // Reset and force open state, then attempt recovery
             ErrorSimulation.resetCircuitBreaker();
@@ -555,7 +561,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const fallbackTests: any[] = [];
+            const fallbackTests: FallbackTest[] = [];
 
             // Test default value fallback
             const fallbackResult = await ErrorSimulation.simulateDefaultValueFallback();
@@ -602,7 +608,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const fallbackTests: any[] = [];
+            const fallbackTests: FallbackTest[] = [];
 
             // Test cached data fallback
             const fallbackResult = await ErrorSimulation.simulateCachedDataFallback();
@@ -649,7 +655,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const fallbackTests: any[] = [];
+            const fallbackTests: FallbackTest[] = [];
 
             // Test alternative service fallback
             const fallbackResult = await ErrorSimulation.simulateAlternativeServiceFallback();
@@ -696,7 +702,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const fallbackTests: any[] = [];
+            const fallbackTests: FallbackTest[] = [];
 
             // Test user prompt fallback
             const fallbackResult = await ErrorSimulation.simulateUserPromptFallback();
@@ -744,7 +750,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const escalationTests: any[] = [];
+            const escalationTests: EscalationTest[] = [];
 
             // Test user level escalation
             const escalationResult = await ErrorSimulation.simulateUserLevelEscalation();
@@ -791,7 +797,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const escalationTests: any[] = [];
+            const escalationTests: EscalationTest[] = [];
 
             // Test admin level escalation
             const escalationResult = await ErrorSimulation.simulateAdminLevelEscalation();
@@ -838,7 +844,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const escalationTests: any[] = [];
+            const escalationTests: EscalationTest[] = [];
 
             // Test support level escalation
             const escalationResult = await ErrorSimulation.simulateSupportLevelEscalation();
@@ -885,7 +891,7 @@ export class ErrorRecoveryTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const escalationTests: any[] = [];
+            const escalationTests: EscalationTest[] = [];
 
             // Test system level escalation
             const escalationResult = await ErrorSimulation.simulateSystemLevelEscalation();

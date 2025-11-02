@@ -339,13 +339,14 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
               0
             );
             break;
-          case 'average':
+          case 'average': {
             const values = data
               .map((record) => Number(record[metric.field]) || 0)
               .filter((v) => v > 0);
             metricsData[metric.id] =
               values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
             break;
+          }
           case 'percentage':
             if (metric.calculation) {
               // Simple calculation parser (would need more robust implementation)
@@ -369,7 +370,7 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       const reportData = generateReportData(report);
 
       // In a real implementation, this would generate and download the file
-      logger.log(`Exporting report ${report.name} as ${format}`, reportData);
+      logger.info(`Exporting report ${report.name} as ${format}`, reportData);
 
       // Simulate download
       const blob = new Blob([JSON.stringify(reportData, null, 2)], { type: 'application/json' });

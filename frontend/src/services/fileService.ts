@@ -1,68 +1,90 @@
 // Minimal FileService implementation to satisfy build requirements
 // Note: Full file service functionality is implemented in the backend
 
-export interface FileData {
-  id: string
-  fileName: string
-  fileSize: number
-  mimeType: string
-  checksum: string
-  uploadedBy: string
-  uploadedAt: Date
-  version: number
-  status: 'uploading' | 'completed' | 'failed' | 'processing'
+// Factory functions for creating objects
+export const createFileData = (
+  id = '',
+  fileName = '',
+  fileSize = 0,
+  mimeType = '',
+  checksum = '',
+  uploadedBy = '',
+  uploadedAt = new Date(),
+  version = 1,
+  status = 'uploading',
+  metadata = {},
+  data = {}
+) => ({
+  id,
+  fileName,
+  fileSize,
+  mimeType,
+  checksum,
+  uploadedBy,
+  uploadedAt,
+  version,
+  status,
   metadata: {
-    description?: string
-    tags?: string[]
-    projectId?: string
-    isActive: boolean
-    isDeleted: boolean
-  }
+    description: '',
+    tags: [],
+    projectId: '',
+    isActive: true,
+    isDeleted: false,
+    ...metadata,
+  },
   data: {
-    url?: string
-    blob?: Blob
-    content?: string
-  }
-}
+    url: '',
+    blob: null,
+    content: '',
+    ...data,
+  },
+});
 
-export interface UploadSession {
-  id: string
-  fileId: string
-  fileName: string
-  fileSize: number
-  progress: number
-  status: 'pending' | 'uploading' | 'completed' | 'failed'
-}
+export const createUploadSession = (
+  id = '',
+  fileId = '',
+  fileName = '',
+  fileSize = 0,
+  progress = 0,
+  status = 'pending'
+) => ({
+  id,
+  fileId,
+  fileName,
+  fileSize,
+  progress,
+  status,
+});
 
 export class FileService {
-  private uploadSessions: Map<string, UploadSession> = new Map()
+  uploadSessions = new Map();
 
   constructor() {
     // Minimal constructor
   }
 
-  startUpload(file: File): UploadSession {
-    const session: UploadSession = {
-      id: Math.random().toString(36).substr(2, 9),
-      fileId: Math.random().toString(36).substr(2, 9),
-      fileName: file.name,
-      fileSize: file.size,
-      progress: 0,
-      status: 'pending'
-    }
-    this.uploadSessions.set(session.id, session)
-    return session
+  startUpload(file) {
+    const session = createUploadSession(
+      Math.random().toString(36).substr(2, 9),
+      Math.random().toString(36).substr(2, 9),
+      file.name,
+      file.size,
+      0,
+      'pending'
+    );
+    this.uploadSessions.set(session.id, session);
+    return session;
   }
 
-  cancelUpload(sessionId: string): void {
-    this.uploadSessions.delete(sessionId)
+  cancelUpload(sessionId) {
+    this.uploadSessions.delete(sessionId);
   }
 
   // Stub methods to satisfy interface
-  getAll(): FileData[] {
-    return []
+  getAll() {
+    return [];
   }
 }
 
 // Export singleton instance
-export const fileService = new FileService()
+export const fileService = new FileService();

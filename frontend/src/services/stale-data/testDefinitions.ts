@@ -2,7 +2,7 @@
 // Contains all test definitions for stale data detection testing
 // Extracted from staleDataTester.ts
 
-import { StaleDataTest } from './types';
+import { StaleDataTest, StaleDataInfo, FreshnessCheck, RefreshAction } from './types';
 import { DataFreshness } from './dataFreshness';
 
 export class StaleDataTestDefinitions {
@@ -61,9 +61,9 @@ export class StaleDataTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const staleDataDetected: any[] = [];
-            const freshnessChecks: any[] = [];
-            const refreshActions: any[] = [];
+            const staleDataDetected: StaleDataInfo[] = [];
+            const freshnessChecks: FreshnessCheck[] = [];
+            const refreshActions: RefreshAction[] = [];
 
             // Test data with different ages
             const testData = [
@@ -130,8 +130,8 @@ export class StaleDataTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const staleDataDetected: any[] = [];
-            const freshnessChecks: any[] = [];
+            const staleDataDetected: StaleDataInfo[] = [];
+            const freshnessChecks: FreshnessCheck[] = [];
 
             // Test different thresholds
             const thresholds = [
@@ -203,8 +203,8 @@ export class StaleDataTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const staleDataDetected: any[] = [];
-            const refreshActions: any[] = [];
+            const staleDataDetected: StaleDataInfo[] = [];
+            const refreshActions: RefreshAction[] = [];
 
             // Test data refresh
             const testData = { key: 'refresh-test-data', age: 600000 }; // 10 minutes old
@@ -268,8 +268,8 @@ export class StaleDataTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const staleDataDetected: any[] = [];
-            const freshnessChecks: any[] = [];
+            const staleDataDetected: StaleDataInfo[] = [];
+            const freshnessChecks: FreshnessCheck[] = [];
 
             // Test data with different versions
             const testData = [
@@ -350,8 +350,8 @@ export class StaleDataTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const staleDataDetected: any[] = [];
-            const refreshActions: any[] = [];
+            const staleDataDetected: StaleDataInfo[] = [];
+            const refreshActions: RefreshAction[] = [];
 
             // Test version conflicts
             const testData = { key: 'conflict-data', localVersion: 2, serverVersion: 3 };
@@ -418,8 +418,8 @@ export class StaleDataTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const staleDataDetected: any[] = [];
-            const refreshActions: any[] = [];
+            const staleDataDetected: StaleDataInfo[] = [];
+            const refreshActions: RefreshAction[] = [];
 
             // Test version synchronization
             const testData = { key: 'sync-data', localVersion: 1, serverVersion: 2 };
@@ -490,8 +490,8 @@ export class StaleDataTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const staleDataDetected: any[] = [];
-            const freshnessChecks: any[] = [];
+            const staleDataDetected: StaleDataInfo[] = [];
+            const freshnessChecks: FreshnessCheck[] = [];
 
             // Test data with different checksums
             const testData = [
@@ -568,8 +568,8 @@ export class StaleDataTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const staleDataDetected: any[] = [];
-            const refreshActions: any[] = [];
+            const staleDataDetected: StaleDataInfo[] = [];
+            const refreshActions: RefreshAction[] = [];
 
             // Test data integrity
             const testData = {
@@ -643,7 +643,7 @@ export class StaleDataTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const refreshActions: any[] = [];
+            const refreshActions: RefreshAction[] = [];
 
             // Test checksum performance
             const testData = { key: 'performance-data', size: 1024 * 1024 }; // 1MB
@@ -717,9 +717,9 @@ export class StaleDataTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const staleDataDetected: any[] = [];
-            const freshnessChecks: any[] = [];
-            const refreshActions: any[] = [];
+            const staleDataDetected: StaleDataInfo[] = [];
+            const freshnessChecks: FreshnessCheck[] = [];
+            const refreshActions: RefreshAction[] = [];
 
             // Test hybrid detection
             const testData = {
@@ -814,8 +814,8 @@ export class StaleDataTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const staleDataDetected: any[] = [];
-            const refreshActions: any[] = [];
+            const staleDataDetected: StaleDataInfo[] = [];
+            const refreshActions: RefreshAction[] = [];
 
             // Test priority detection
             const testData = {
@@ -898,8 +898,8 @@ export class StaleDataTestDefinitions {
           const startTime = Date.now();
 
           try {
-            const staleDataDetected: any[] = [];
-            const refreshActions: any[] = [];
+            const staleDataDetected: StaleDataInfo[] = [];
+            const refreshActions: RefreshAction[] = [];
 
             // Test fallback detection
             const testData = {

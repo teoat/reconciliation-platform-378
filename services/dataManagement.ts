@@ -1,432 +1,649 @@
 // Centralized Data Management System for Reconciliation App
 // This service manages data flow between Ingestion, Reconciliation, and Cashflow Evaluation pages
 
-export interface ProjectData {
-  id: string
-  name: string
-  description: string
-  createdAt: string
-  updatedAt: string
-  status: 'active' | 'completed' | 'archived'
-  ingestionData: IngestionData
-  reconciliationData: ReconciliationData
-  cashflowData: CashflowData
-  analytics: ProjectAnalytics
-}
+export const createProjectData = (
+  id,
+  name,
+  description,
+  createdAt,
+  updatedAt,
+  status,
+  ingestionData,
+  reconciliationData,
+  cashflowData,
+  analytics
+) => ({
+  id,
+  name,
+  description,
+  createdAt,
+  updatedAt,
+  status,
+  ingestionData,
+  reconciliationData,
+  cashflowData,
+  analytics,
+});
 
-export interface IngestionData {
-  uploadedFiles: UploadedFile[]
-  processedData: ProcessedRecord[]
-  dataQuality: DataQualityMetrics
-  mappings: FieldMapping[]
-  validations: DataValidation[]
-  lastProcessed: string
-}
+export const createIngestionData = (
+  uploadedFiles,
+  processedData,
+  dataQuality,
+  mappings,
+  validations,
+  lastProcessed
+) => ({
+  uploadedFiles,
+  processedData,
+  dataQuality,
+  mappings,
+  validations,
+  lastProcessed,
+});
 
-export interface ReconciliationData {
-  records: ReconciliationRecord[]
-  matchingRules: MatchingRule[]
-  metrics: ReconciliationMetrics
-  auditTrail: AuditEntry[]
-  lastReconciled: string
-}
+export const createReconciliationData = (
+  records,
+  matchingRules,
+  metrics,
+  auditTrail,
+  lastReconciled
+) => ({
+  records,
+  matchingRules,
+  metrics,
+  auditTrail,
+  lastReconciled,
+});
 
-export interface CashflowData {
-  categories: ExpenseCategory[]
-  metrics: CashflowMetrics
-  discrepancies: DiscrepancyRecord[]
-  lastAnalyzed: string
-}
+export const createCashflowData = (categories, metrics, discrepancies, lastAnalyzed) => ({
+  categories,
+  metrics,
+  discrepancies,
+  lastAnalyzed,
+});
 
-export interface ProcessedRecord {
-  id: string
-  sourceFile: string
-  fileType: 'expenses' | 'bank_statement' | 'other'
-  data: Record<string, any>
-  quality: DataQualityMetrics
-  processedAt: string
-  validated: boolean
-  errors: string[]
-}
+export const createProcessedRecord = (
+  id,
+  sourceFile,
+  fileType,
+  data,
+  quality,
+  processedAt,
+  validated,
+  errors
+) => ({
+  id,
+  sourceFile,
+  fileType,
+  data,
+  quality,
+  processedAt,
+  validated,
+  errors,
+});
 
-export interface ReconciliationRecord {
-  id: string
-  reconciliationId: string
-  batchId: string
-  sources: ReconciliationSource[]
-  status: 'matched' | 'unmatched' | 'discrepancy' | 'pending' | 'resolved' | 'escalated'
-  confidence: number
-  matchingRules: MatchingRule[]
-  auditTrail: AuditEntry[]
-  metadata: RecordMetadata
-  relationships: RecordRelationship[]
-  resolution?: Resolution
-  matchScore: number
-  difference?: number
-  riskLevel: 'low' | 'medium' | 'high' | 'critical'
-}
+export const createReconciliationRecord = (
+  id,
+  reconciliationId,
+  batchId,
+  sources,
+  status,
+  confidence,
+  matchingRules,
+  auditTrail,
+  metadata,
+  relationships,
+  resolution,
+  matchScore,
+  difference,
+  riskLevel
+) => ({
+  id,
+  reconciliationId,
+  batchId,
+  sources,
+  status,
+  confidence,
+  matchingRules,
+  auditTrail,
+  metadata,
+  relationships,
+  resolution,
+  matchScore,
+  difference,
+  riskLevel,
+});
 
-export interface ReconciliationSource {
-  id: string
-  systemId: string
-  systemName: string
-  recordId: string
-  data: Record<string, any>
-  timestamp: string
-  quality: DataQualityMetrics
-  confidence: number
-  metadata: Record<string, any>
-}
+export const createReconciliationSource = (
+  id,
+  systemId,
+  systemName,
+  recordId,
+  data,
+  timestamp,
+  quality,
+  confidence,
+  metadata
+) => ({
+  id,
+  systemId,
+  systemName,
+  recordId,
+  data,
+  timestamp,
+  quality,
+  confidence,
+  metadata,
+});
 
-export interface MatchingRule {
-  id: string
-  name: string
-  type: 'exact' | 'fuzzy' | 'algorithmic' | 'manual'
-  criteria: MatchingCriteria[]
-  weight: number
-  applied: boolean
-  result: MatchingResult
-  confidence: number
-}
+export const createMatchingRule = (
+  id,
+  name,
+  type,
+  criteria,
+  weight,
+  applied,
+  result,
+  confidence
+) => ({
+  id,
+  name,
+  type,
+  criteria,
+  weight,
+  applied,
+  result,
+  confidence,
+});
 
-export interface MatchingCriteria {
-  field: string
-  operator: 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'regex' | 'fuzzy'
-  value: any
-  tolerance?: number
-  weight: number
-}
+export const createMatchingCriteria = (field, operator, value, tolerance, weight) => ({
+  field,
+  operator,
+  value,
+  tolerance,
+  weight,
+});
 
-export interface MatchingResult {
-  matched: boolean
-  confidence: number
-  reason: string
-  details: Record<string, any>
-}
+export const createMatchingResult = (matched, confidence, reason, details) => ({
+  matched,
+  confidence,
+  reason,
+  details,
+});
 
-export interface AuditEntry {
-  id: string
-  userId: string
-  userName: string
-  action: string
-  timestamp: string
-  details: Record<string, any>
-  previousValue?: any
-  newValue?: any
-  ipAddress?: string
-  userAgent?: string
-}
+export const createAuditEntry = (
+  id,
+  userId,
+  userName,
+  action,
+  timestamp,
+  details,
+  previousValue,
+  newValue,
+  ipAddress,
+  userAgent
+) => ({
+  id,
+  userId,
+  userName,
+  action,
+  timestamp,
+  details,
+  previousValue,
+  newValue,
+  ipAddress,
+  userAgent,
+});
 
-export interface RecordMetadata {
-  createdAt: string
-  updatedAt: string
-  createdBy: string
-  updatedBy: string
-  version: number
-  tags: string[]
-  priority: 'low' | 'medium' | 'high' | 'critical'
-}
+export const createRecordMetadata = (
+  createdAt,
+  updatedAt,
+  createdBy,
+  updatedBy,
+  version,
+  tags,
+  priority
+) => ({
+  createdAt,
+  updatedAt,
+  createdBy,
+  updatedBy,
+  version,
+  tags,
+  priority,
+});
 
-export interface RecordRelationship {
-  id: string
-  type: 'parent' | 'child' | 'sibling' | 'related'
-  targetRecordId: string
-  confidence: number
-  reason: string
-}
+export const createRecordRelationship = (id, type, targetRecordId, confidence, reason) => ({
+  id,
+  type,
+  targetRecordId,
+  confidence,
+  reason,
+});
 
-export interface Resolution {
-  id: string
-  type: 'automatic' | 'manual' | 'approved'
-  status: 'pending' | 'approved' | 'rejected' | 'escalated'
-  assignedTo?: string
-  assignedBy?: string
-  assignedAt?: string
-  resolvedAt?: string
-  resolution: string
-  comments: string[]
-  attachments: string[]
-}
+export const createResolution = (
+  id,
+  type,
+  status,
+  assignedTo,
+  assignedBy,
+  assignedAt,
+  resolvedAt,
+  resolution,
+  comments,
+  attachments
+) => ({
+  id,
+  type,
+  status,
+  assignedTo,
+  assignedBy,
+  assignedAt,
+  resolvedAt,
+  resolution,
+  comments,
+  attachments,
+});
 
-export interface ReconciliationMetrics {
-  totalRecords: number
-  matchedRecords: number
-  unmatchedRecords: number
-  discrepancyRecords: number
-  pendingRecords: number
-  resolvedRecords: number
-  escalatedRecords: number
-  averageConfidence: number
-  averageProcessingTime: number
-  matchRate: number
-  accuracy: number
-  throughput: number
-  errorRate: number
-  slaCompliance: number
-}
+export const createReconciliationMetrics = (
+  totalRecords,
+  matchedRecords,
+  unmatchedRecords,
+  discrepancyRecords,
+  pendingRecords,
+  resolvedRecords,
+  escalatedRecords,
+  averageConfidence,
+  averageProcessingTime,
+  matchRate,
+  accuracy,
+  throughput,
+  errorRate,
+  slaCompliance
+) => ({
+  totalRecords,
+  matchedRecords,
+  unmatchedRecords,
+  discrepancyRecords,
+  pendingRecords,
+  resolvedRecords,
+  escalatedRecords,
+  averageConfidence,
+  averageProcessingTime,
+  matchRate,
+  accuracy,
+  throughput,
+  errorRate,
+  slaCompliance,
+});
 
-export interface ExpenseCategory {
-  id: string
-  name: string
-  description: string
-  color: string
-  icon: string
-  totalReported: number
-  totalCashflow: number
-  discrepancy: number
-  discrepancyPercentage: number
-  transactionCount: number
-  lastUpdated: string
-  status: 'balanced' | 'discrepancy' | 'missing' | 'excess'
-  subcategories: ExpenseSubcategory[]
-}
+export const createExpenseCategory = (
+  id,
+  name,
+  description,
+  color,
+  icon,
+  totalReported,
+  totalCashflow,
+  discrepancy,
+  discrepancyPercentage,
+  transactionCount,
+  lastUpdated,
+  status,
+  subcategories
+) => ({
+  id,
+  name,
+  description,
+  color,
+  icon,
+  totalReported,
+  totalCashflow,
+  discrepancy,
+  discrepancyPercentage,
+  transactionCount,
+  lastUpdated,
+  status,
+  subcategories,
+});
 
-export interface ExpenseSubcategory {
-  id: string
-  name: string
-  reportedAmount: number
-  cashflowAmount: number
-  discrepancy: number
-  transactions: ExpenseTransaction[]
-}
+export const createExpenseSubcategory = (
+  id,
+  name,
+  reportedAmount,
+  cashflowAmount,
+  discrepancy,
+  transactions
+) => ({
+  id,
+  name,
+  reportedAmount,
+  cashflowAmount,
+  discrepancy,
+  transactions,
+});
 
-export interface ExpenseTransaction {
-  id: string
-  date: string
-  description: string
-  reportedAmount: number
-  cashflowAmount: number
-  discrepancy: number
-  source: 'journal' | 'bank_statement' | 'both'
-  status: 'matched' | 'discrepancy' | 'missing' | 'excess'
-  reference: string
-  category: string
-  subcategory: string
-}
+export const createExpenseTransaction = (
+  id,
+  date,
+  description,
+  reportedAmount,
+  cashflowAmount,
+  discrepancy,
+  source,
+  status,
+  reference,
+  category,
+  subcategory
+) => ({
+  id,
+  date,
+  description,
+  reportedAmount,
+  cashflowAmount,
+  discrepancy,
+  source,
+  status,
+  reference,
+  category,
+  subcategory,
+});
 
-export interface CashflowMetrics {
-  totalReportedExpenses: number
-  totalCashflowExpenses: number
-  totalDiscrepancy: number
-  discrepancyPercentage: number
-  balancedCategories: number
-  discrepancyCategories: number
-  missingTransactions: number
-  excessTransactions: number
-  averageDiscrepancy: number
-  largestDiscrepancy: number
-  lastReconciliationDate: string
-  dataQualityScore: number
-}
+export const createCashflowMetrics = (
+  totalReportedExpenses,
+  totalCashflowExpenses,
+  totalDiscrepancy,
+  discrepancyPercentage,
+  balancedCategories,
+  discrepancyCategories,
+  missingTransactions,
+  excessTransactions,
+  averageDiscrepancy,
+  largestDiscrepancy,
+  lastReconciliationDate,
+  dataQualityScore
+) => ({
+  totalReportedExpenses,
+  totalCashflowExpenses,
+  totalDiscrepancy,
+  discrepancyPercentage,
+  balancedCategories,
+  discrepancyCategories,
+  missingTransactions,
+  excessTransactions,
+  averageDiscrepancy,
+  largestDiscrepancy,
+  lastReconciliationDate,
+  dataQualityScore,
+});
 
-export interface DiscrepancyRecord {
-  id: string
-  type: 'amount' | 'date' | 'description' | 'category' | 'missing'
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  description: string
-  sourceRecord: string
-  targetRecord: string
-  difference: number
-  confidence: number
-  status: 'open' | 'investigating' | 'resolved' | 'false_positive'
-  assignedTo?: string
-  createdAt: string
-  updatedAt: string
-  resolution?: string
-}
+export const createDiscrepancyRecord = (
+  id,
+  type,
+  severity,
+  description,
+  sourceRecord,
+  targetRecord,
+  difference,
+  confidence,
+  status,
+  assignedTo,
+  createdAt,
+  updatedAt,
+  resolution
+) => ({
+  id,
+  type,
+  severity,
+  description,
+  sourceRecord,
+  targetRecord,
+  difference,
+  confidence,
+  status,
+  assignedTo,
+  createdAt,
+  updatedAt,
+  resolution,
+});
 
-export interface ProjectAnalytics {
-  performance: PerformanceMetrics
-  trends: TrendAnalysis
-  patterns: PatternAnalysis
-  quality: QualityMetrics
-  efficiency: EfficiencyMetrics
-  predictions: PredictiveAnalytics
-}
+export const createProjectAnalytics = (
+  performance,
+  trends,
+  patterns,
+  quality,
+  efficiency,
+  predictions
+) => ({
+  performance,
+  trends,
+  patterns,
+  quality,
+  efficiency,
+  predictions,
+});
 
-export interface PerformanceMetrics {
-  matchRate: number
-  accuracy: number
-  processingTime: number
-  throughput: number
-  errorRate: number
-  slaCompliance: number
-}
+export const createPerformanceMetrics = (
+  matchRate,
+  accuracy,
+  processingTime,
+  throughput,
+  errorRate,
+  slaCompliance
+) => ({
+  matchRate,
+  accuracy,
+  processingTime,
+  throughput,
+  errorRate,
+  slaCompliance,
+});
 
-export interface TrendAnalysis {
-  period: string
-  data: Array<{
-    date: string
-    value: number
-    metric: string
-  }>
-}
+export const createTrendAnalysis = (period, data) => ({
+  period,
+  data,
+});
 
-export interface PatternAnalysis {
-  recurringPatterns: Array<{
-    pattern: string
-    frequency: number
-    confidence: number
-  }>
-  anomalies: Array<{
-    type: string
-    description: string
-    severity: number
-  }>
-}
+export const createPatternAnalysis = (recurringPatterns, anomalies) => ({
+  recurringPatterns,
+  anomalies,
+});
 
-export interface QualityMetrics {
-  completeness: number
-  accuracy: number
-  consistency: number
-  validity: number
-  duplicates: number
-  errors: number
-}
+export const createQualityMetrics = (
+  completeness,
+  accuracy,
+  consistency,
+  validity,
+  duplicates,
+  errors
+) => ({
+  completeness,
+  accuracy,
+  consistency,
+  validity,
+  duplicates,
+  errors,
+});
 
-export interface EfficiencyMetrics {
-  automationRate: number
-  manualInterventionRate: number
-  averageResolutionTime: number
-  costPerTransaction: number
-}
+export const createEfficiencyMetrics = (
+  automationRate,
+  manualInterventionRate,
+  averageResolutionTime,
+  costPerTransaction
+) => ({
+  automationRate,
+  manualInterventionRate,
+  averageResolutionTime,
+  costPerTransaction,
+});
 
-export interface PredictiveAnalytics {
-  forecastAccuracy: number
-  riskPredictions: Array<{
-    risk: string
-    probability: number
-    impact: number
-  }>
-  recommendations: string[]
-}
+export const createPredictiveAnalytics = (forecastAccuracy, riskPredictions, recommendations) => ({
+  forecastAccuracy,
+  riskPredictions,
+  recommendations,
+});
 
 // Legacy interfaces for compatibility
-export interface UploadedFile {
-  id: string
-  name: string
-  size: number
-  type: string
-  status: 'uploading' | 'completed' | 'error' | 'processing' | 'validating' | 'extracting' | 'analyzing'
-  progress: number
-  records?: number
-  data?: any[]
-  columns?: ColumnInfo[]
-  fileType: 'expenses' | 'bank_statement' | 'chat_history' | 'pdf_document' | 'image' | 'video' | 'audio' | 'contract' | 'other'
-  qualityMetrics?: DataQualityMetrics
-  validations?: DataValidation[]
-  mappings?: FieldMapping[]
-  cleanedData?: any[]
-  originalData?: any[]
-  extractedContent?: ExtractedContent
-  chatMessages?: ChatMessage[]
-  contractAnalysis?: ContractAnalysis
-  previewUrl?: string
-  thumbnailUrl?: string
-}
+export const createUploadedFile = (
+  id,
+  name,
+  size,
+  type,
+  status,
+  progress,
+  records,
+  data,
+  columns,
+  fileType,
+  qualityMetrics,
+  validations,
+  mappings,
+  cleanedData,
+  originalData,
+  extractedContent,
+  chatMessages,
+  contractAnalysis,
+  previewUrl,
+  thumbnailUrl
+) => ({
+  id,
+  name,
+  size,
+  type,
+  status,
+  progress,
+  records,
+  data,
+  columns,
+  fileType,
+  qualityMetrics,
+  validations,
+  mappings,
+  cleanedData,
+  originalData,
+  extractedContent,
+  chatMessages,
+  contractAnalysis,
+  previewUrl,
+  thumbnailUrl,
+});
 
-export interface DataQualityMetrics {
-  completeness: number
-  accuracy: number
-  consistency: number
-  validity: number
-  duplicates: number
-  errors: number
-}
+export const createDataQualityMetrics = (
+  completeness,
+  accuracy,
+  consistency,
+  validity,
+  duplicates,
+  errors
+) => ({
+  completeness,
+  accuracy,
+  consistency,
+  validity,
+  duplicates,
+  errors,
+});
 
-export interface FieldMapping {
-  sourceField: string
-  targetField: string
-  transformation?: string
-  validation?: string[]
-  isRequired: boolean
-}
+export const createFieldMapping = (
+  sourceField,
+  targetField,
+  transformation,
+  validation,
+  isRequired
+) => ({
+  sourceField,
+  targetField,
+  transformation,
+  validation,
+  isRequired,
+});
 
-export interface DataValidation {
-  field: string
-  rule: string
-  passed: boolean
-  message: string
-  severity: 'error' | 'warning' | 'info'
-}
+export const createDataValidation = (field, rule, passed, message, severity) => ({
+  field,
+  rule,
+  passed,
+  message,
+  severity,
+});
 
-export interface ColumnInfo {
-  name: string
-  type: 'string' | 'number' | 'date' | 'currency' | 'boolean'
-  nullable: boolean
-  unique: boolean
-  sampleValues: any[]
-  statistics?: {
-    min?: number
-    max?: number
-    avg?: number
-    count: number
-    nullCount: number
-  }
-}
+export const createColumnInfo = (name, type, nullable, unique, sampleValues, statistics) => ({
+  name,
+  type,
+  nullable,
+  unique,
+  sampleValues,
+  statistics,
+});
 
-export interface ExtractedContent {
-  text?: string
-  metadata?: Record<string, any>
-  entities?: Array<{
-    type: string
-    value: string
-    confidence: number
-  }>
-  summary?: string
-  keyTerms?: string[]
-  sentiment?: 'positive' | 'negative' | 'neutral'
-  language?: string
-  pages?: number
-  duration?: number
-  resolution?: string
-  format?: string
-  exif?: any
-  videoMetadata?: any
-  fileSize?: number
-  creationDate?: string
-  modificationDate?: string
-  mimeType?: string
-  checksum?: string
-}
+export const createExtractedContent = (
+  text,
+  metadata,
+  entities,
+  summary,
+  keyTerms,
+  sentiment,
+  language,
+  pages,
+  duration,
+  resolution,
+  format,
+  exif,
+  videoMetadata,
+  fileSize,
+  creationDate,
+  modificationDate,
+  mimeType,
+  checksum
+) => ({
+  text,
+  metadata,
+  entities,
+  summary,
+  keyTerms,
+  sentiment,
+  language,
+  pages,
+  duration,
+  resolution,
+  format,
+  exif,
+  videoMetadata,
+  fileSize,
+  creationDate,
+  modificationDate,
+  mimeType,
+  checksum,
+});
 
-export interface ChatMessage {
-  timestamp: string
-  sender: string
-  content: string
-  type: 'text' | 'image' | 'file' | 'system'
-}
+export const createChatMessage = (timestamp, sender, content, type) => ({
+  timestamp,
+  sender,
+  content,
+  type,
+});
 
-export interface ContractAnalysis {
-  parties: string[]
-  keyTerms: Array<{
-    term: string
-    value: string
-    confidence: number
-  }>
-  clauses: Array<{
-    clause: string
-    type: string
-    status: 'compliant' | 'non-compliant' | 'unknown'
-  }>
-}
+export const createContractAnalysis = (parties, keyTerms, clauses) => ({
+  parties,
+  keyTerms,
+  clauses,
+});
 
 // Data Management Service
 class DataManagementService {
-  private static instance: DataManagementService
-  private projectData: Map<string, ProjectData> = new Map()
-  private listeners: Map<string, Set<(data: ProjectData) => void>> = new Map()
+  static instance;
+  projectData = new Map();
+  listeners = new Map();
 
-  static getInstance(): DataManagementService {
+  static getInstance() {
     if (!DataManagementService.instance) {
-      DataManagementService.instance = new DataManagementService()
+      DataManagementService.instance = new DataManagementService();
     }
-    return DataManagementService.instance
+    return DataManagementService.instance;
   }
 
   // Project Management
-  createProject(project: Partial<ProjectData>): ProjectData {
-    const projectData: ProjectData = {
+  createProject(project) {
+    const projectData = {
       id: project.id || `project_${Date.now()}`,
       name: project.name || 'New Project',
       description: project.description || '',
@@ -442,11 +659,11 @@ class DataManagementService {
           consistency: 0,
           validity: 0,
           duplicates: 0,
-          errors: 0
+          errors: 0,
         },
         mappings: [],
         validations: [],
-        lastProcessed: new Date().toISOString()
+        lastProcessed: new Date().toISOString(),
       },
       reconciliationData: {
         records: [],
@@ -465,10 +682,10 @@ class DataManagementService {
           accuracy: 0,
           throughput: 0,
           errorRate: 0,
-          slaCompliance: 0
+          slaCompliance: 0,
         },
         auditTrail: [],
-        lastReconciled: new Date().toISOString()
+        lastReconciled: new Date().toISOString(),
       },
       cashflowData: {
         categories: [],
@@ -484,10 +701,10 @@ class DataManagementService {
           averageDiscrepancy: 0,
           largestDiscrepancy: 0,
           lastReconciliationDate: new Date().toISOString(),
-          dataQualityScore: 0
+          dataQualityScore: 0,
         },
         discrepancies: [],
-        lastAnalyzed: new Date().toISOString()
+        lastAnalyzed: new Date().toISOString(),
       },
       analytics: {
         performance: {
@@ -496,15 +713,15 @@ class DataManagementService {
           processingTime: 0,
           throughput: 0,
           errorRate: 0,
-          slaCompliance: 0
+          slaCompliance: 0,
         },
         trends: {
           period: 'daily',
-          data: []
+          data: [],
         },
         patterns: {
           recurringPatterns: [],
-          anomalies: []
+          anomalies: [],
         },
         quality: {
           completeness: 0,
@@ -512,114 +729,114 @@ class DataManagementService {
           consistency: 0,
           validity: 0,
           duplicates: 0,
-          errors: 0
+          errors: 0,
         },
         efficiency: {
           automationRate: 0,
           manualInterventionRate: 0,
           averageResolutionTime: 0,
-          costPerTransaction: 0
+          costPerTransaction: 0,
         },
         predictions: {
           forecastAccuracy: 0,
           riskPredictions: [],
-          recommendations: []
-        }
+          recommendations: [],
+        },
       },
-      ...project
-    }
+      ...project,
+    };
 
-    this.projectData.set(projectData.id, projectData)
-    this.notifyListeners(projectData.id, projectData)
-    return projectData
+    this.projectData.set(projectData.id, projectData);
+    this.notifyListeners(projectData.id, projectData);
+    return projectData;
   }
 
-  getProject(projectId: string): ProjectData | undefined {
-    return this.projectData.get(projectId)
+  getProject(projectId) {
+    return this.projectData.get(projectId);
   }
 
-  updateProject(projectId: string, updates: Partial<ProjectData>): ProjectData | null {
-    const project = this.projectData.get(projectId)
-    if (!project) return null
+  updateProject(projectId, updates) {
+    const project = this.projectData.get(projectId);
+    if (!project) return null;
 
     const updatedProject = {
       ...project,
       ...updates,
-      updatedAt: new Date().toISOString()
-    }
+      updatedAt: new Date().toISOString(),
+    };
 
-    this.projectData.set(projectId, updatedProject)
-    this.notifyListeners(projectId, updatedProject)
-    return updatedProject
+    this.projectData.set(projectId, updatedProject);
+    this.notifyListeners(projectId, updatedProject);
+    return updatedProject;
   }
 
   // Ingestion Data Management
-  addIngestionData(projectId: string, ingestionData: Partial<IngestionData>): ProjectData | null {
-    const project = this.projectData.get(projectId)
-    if (!project) return null
+  addIngestionData(projectId, ingestionData) {
+    const project = this.projectData.get(projectId);
+    if (!project) return null;
 
     const updatedProject = {
       ...project,
       ingestionData: {
         ...project.ingestionData,
         ...ingestionData,
-        lastProcessed: new Date().toISOString()
+        lastProcessed: new Date().toISOString(),
       },
-      updatedAt: new Date().toISOString()
-    }
+      updatedAt: new Date().toISOString(),
+    };
 
-    this.projectData.set(projectId, updatedProject)
-    this.notifyListeners(projectId, updatedProject)
-    return updatedProject
+    this.projectData.set(projectId, updatedProject);
+    this.notifyListeners(projectId, updatedProject);
+    return updatedProject;
   }
 
   // Reconciliation Data Management
-  addReconciliationData(projectId: string, reconciliationData: Partial<ReconciliationData>): ProjectData | null {
-    const project = this.projectData.get(projectId)
-    if (!project) return null
+  addReconciliationData(projectId, reconciliationData) {
+    const project = this.projectData.get(projectId);
+    if (!project) return null;
 
     const updatedProject = {
       ...project,
       reconciliationData: {
         ...project.reconciliationData,
         ...reconciliationData,
-        lastReconciled: new Date().toISOString()
+        lastReconciled: new Date().toISOString(),
       },
-      updatedAt: new Date().toISOString()
-    }
+      updatedAt: new Date().toISOString(),
+    };
 
-    this.projectData.set(projectId, updatedProject)
-    this.notifyListeners(projectId, updatedProject)
-    return updatedProject
+    this.projectData.set(projectId, updatedProject);
+    this.notifyListeners(projectId, updatedProject);
+    return updatedProject;
   }
 
   // Cashflow Data Management
-  addCashflowData(projectId: string, cashflowData: Partial<CashflowData>): ProjectData | null {
-    const project = this.projectData.get(projectId)
-    if (!project) return null
+  addCashflowData(projectId, cashflowData) {
+    const project = this.projectData.get(projectId);
+    if (!project) return null;
 
     const updatedProject = {
       ...project,
       cashflowData: {
         ...project.cashflowData,
         ...cashflowData,
-        lastAnalyzed: new Date().toISOString()
+        lastAnalyzed: new Date().toISOString(),
       },
-      updatedAt: new Date().toISOString()
-    }
+      updatedAt: new Date().toISOString(),
+    };
 
-    this.projectData.set(projectId, updatedProject)
-    this.notifyListeners(projectId, updatedProject)
-    return updatedProject
+    this.projectData.set(projectId, updatedProject);
+    this.notifyListeners(projectId, updatedProject);
+    return updatedProject;
   }
 
   // Data Transformation
-  transformIngestionToReconciliation(projectId: string): ProjectData | null {
-    const project = this.projectData.get(projectId)
-    if (!project) return null
+  transformIngestionToReconciliation(projectId) {
+    const project = this.projectData.get(projectId);
+    if (!project) return null;
 
-    const { ingestionData } = project
-    const reconciliationRecords: ReconciliationRecord[] = []
+    const { ingestionData } = project;
+    const reconciliationRecords: ReconciliationRecord[] = [];
 
     // Transform processed data into reconciliation records
     ingestionData.processedData.forEach((record, index) => {
@@ -627,32 +844,36 @@ class DataManagementService {
         id: `rec_${record.id}`,
         reconciliationId: `REC-${Date.now()}-${index}`,
         batchId: `BATCH-${project.id}`,
-        sources: [{
-          id: `src_${record.id}`,
-          systemId: record.sourceFile,
-          systemName: record.fileType === 'expenses' ? 'Expense Journal' : 'Bank Statement',
-          recordId: record.id,
-          data: record.data,
-          timestamp: record.processedAt,
-          quality: record.quality,
-          confidence: record.validated ? 95 : 75,
-          metadata: {
-            source: record.sourceFile,
-            fileType: record.fileType,
-            processedAt: record.processedAt
-          }
-        }],
+        sources: [
+          {
+            id: `src_${record.id}`,
+            systemId: record.sourceFile,
+            systemName: record.fileType === 'expenses' ? 'Expense Journal' : 'Bank Statement',
+            recordId: record.id,
+            data: record.data,
+            timestamp: record.processedAt,
+            quality: record.quality,
+            confidence: record.validated ? 95 : 75,
+            metadata: {
+              source: record.sourceFile,
+              fileType: record.fileType,
+              processedAt: record.processedAt,
+            },
+          },
+        ],
         status: 'pending',
         confidence: record.validated ? 95 : 75,
         matchingRules: [],
-        auditTrail: [{
-          id: `audit_${record.id}`,
-          userId: 'system',
-          userName: 'System',
-          action: 'Record Created',
-          timestamp: record.processedAt,
-          details: { source: record.sourceFile }
-        }],
+        auditTrail: [
+          {
+            id: `audit_${record.id}`,
+            userId: 'system',
+            userName: 'System',
+            action: 'Record Created',
+            timestamp: record.processedAt,
+            details: { source: record.sourceFile },
+          },
+        ],
         metadata: {
           createdAt: record.processedAt,
           updatedAt: record.processedAt,
@@ -660,41 +881,46 @@ class DataManagementService {
           updatedBy: 'system',
           version: 1,
           tags: [record.fileType],
-          priority: 'medium'
+          priority: 'medium',
         },
         relationships: [],
         matchScore: record.validated ? 95 : 75,
-        riskLevel: record.errors.length > 0 ? 'high' : 'low'
-      }
+        riskLevel: record.errors.length > 0 ? 'high' : 'low',
+      };
 
-      reconciliationRecords.push(reconciliationRecord)
-    })
+      reconciliationRecords.push(reconciliationRecord);
+    });
 
     // Update project with reconciliation data
     const updatedProject = this.addReconciliationData(projectId, {
       records: reconciliationRecords,
-      metrics: this.calculateReconciliationMetrics(reconciliationRecords)
-    })
+      metrics: this.calculateReconciliationMetrics(reconciliationRecords),
+    });
 
-    return updatedProject
+    return updatedProject;
   }
 
-  transformReconciliationToCashflow(projectId: string): ProjectData | null {
-    const project = this.projectData.get(projectId)
-    if (!project) return null
+  transformReconciliationToCashflow(projectId) {
+    const project = this.projectData.get(projectId);
+    if (!project) return null;
 
-    const { reconciliationData } = project
-    const expenseCategories: ExpenseCategory[] = []
-    const discrepancies: DiscrepancyRecord[] = []
+    const { reconciliationData } = project;
+    const expenseCategories: ExpenseCategory[] = [];
+    const discrepancies: DiscrepancyRecord[] = [];
 
     // Group records by category and analyze discrepancies
-    const categoryMap = new Map<string, ExpenseCategory>()
+    const categoryMap = new Map<string, ExpenseCategory>();
 
-    reconciliationData.records.forEach(record => {
-      const amount = record.sources[0]?.data?.amount || record.sources[0]?.data?.Kredit || record.sources[0]?.data?.Debit || 0
-      const description = record.sources[0]?.data?.description || record.sources[0]?.data?.Uraian || 'Unknown'
-      const category = this.inferCategory(description)
-      
+    reconciliationData.records.forEach((record) => {
+      const amount =
+        record.sources[0]?.data?.amount ||
+        record.sources[0]?.data?.Kredit ||
+        record.sources[0]?.data?.Debit ||
+        0;
+      const description =
+        record.sources[0]?.data?.description || record.sources[0]?.data?.Uraian || 'Unknown';
+      const category = this.inferCategory(description);
+
       if (!categoryMap.has(category)) {
         categoryMap.set(category, {
           id: category.toLowerCase().replace(/\s+/g, '-'),
@@ -709,19 +935,19 @@ class DataManagementService {
           transactionCount: 0,
           lastUpdated: new Date().toISOString(),
           status: 'balanced',
-          subcategories: []
-        })
+          subcategories: [],
+        });
       }
 
-      const categoryData = categoryMap.get(category)!
-      categoryData.totalReported += amount
-      categoryData.transactionCount++
+      const categoryData = categoryMap.get(category)!;
+      categoryData.totalReported += amount;
+      categoryData.transactionCount++;
 
       // Check for discrepancies
       if (record.status === 'discrepancy' && record.difference) {
-        categoryData.discrepancy += record.difference
-        categoryData.status = 'discrepancy'
-        
+        categoryData.discrepancy += record.difference;
+        categoryData.status = 'discrepancy';
+
         discrepancies.push({
           id: `disc_${record.id}`,
           type: 'amount',
@@ -733,58 +959,63 @@ class DataManagementService {
           confidence: record.confidence,
           status: 'open',
           createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        })
+          updatedAt: new Date().toISOString(),
+        });
       }
-    })
+    });
 
     // Calculate metrics
-    expenseCategories.push(...Array.from(categoryMap.values()))
-    expenseCategories.forEach(category => {
-      category.totalCashflow = category.totalReported - category.discrepancy
-      category.discrepancyPercentage = category.totalReported > 0 ? 
-        (category.discrepancy / category.totalReported) * 100 : 0
-    })
+    expenseCategories.push(...Array.from(categoryMap.values()));
+    expenseCategories.forEach((category) => {
+      category.totalCashflow = category.totalReported - category.discrepancy;
+      category.discrepancyPercentage =
+        category.totalReported > 0 ? (category.discrepancy / category.totalReported) * 100 : 0;
+    });
 
     const cashflowMetrics: CashflowMetrics = {
       totalReportedExpenses: expenseCategories.reduce((sum, cat) => sum + cat.totalReported, 0),
       totalCashflowExpenses: expenseCategories.reduce((sum, cat) => sum + cat.totalCashflow, 0),
       totalDiscrepancy: expenseCategories.reduce((sum, cat) => sum + cat.discrepancy, 0),
       discrepancyPercentage: 0,
-      balancedCategories: expenseCategories.filter(cat => cat.status === 'balanced').length,
-      discrepancyCategories: expenseCategories.filter(cat => cat.status === 'discrepancy').length,
-      missingTransactions: discrepancies.filter(d => d.type === 'missing').length,
-      excessTransactions: discrepancies.filter(d => d.type === 'amount' && d.difference > 0).length,
+      balancedCategories: expenseCategories.filter((cat) => cat.status === 'balanced').length,
+      discrepancyCategories: expenseCategories.filter((cat) => cat.status === 'discrepancy').length,
+      missingTransactions: discrepancies.filter((d) => d.type === 'missing').length,
+      excessTransactions: discrepancies.filter((d) => d.type === 'amount' && d.difference > 0)
+        .length,
       averageDiscrepancy: 0,
-      largestDiscrepancy: Math.max(...expenseCategories.map(cat => Math.abs(cat.discrepancy))),
+      largestDiscrepancy: Math.max(...expenseCategories.map((cat) => Math.abs(cat.discrepancy))),
       lastReconciliationDate: new Date().toISOString(),
-      dataQualityScore: 95.5
-    }
+      dataQualityScore: 95.5,
+    };
 
-    cashflowMetrics.discrepancyPercentage = cashflowMetrics.totalReportedExpenses > 0 ?
-      (cashflowMetrics.totalDiscrepancy / cashflowMetrics.totalReportedExpenses) * 100 : 0
-    cashflowMetrics.averageDiscrepancy = expenseCategories.length > 0 ?
-      cashflowMetrics.totalDiscrepancy / expenseCategories.length : 0
+    cashflowMetrics.discrepancyPercentage =
+      cashflowMetrics.totalReportedExpenses > 0
+        ? (cashflowMetrics.totalDiscrepancy / cashflowMetrics.totalReportedExpenses) * 100
+        : 0;
+    cashflowMetrics.averageDiscrepancy =
+      expenseCategories.length > 0
+        ? cashflowMetrics.totalDiscrepancy / expenseCategories.length
+        : 0;
 
     // Update project with cashflow data
     const updatedProject = this.addCashflowData(projectId, {
       categories: expenseCategories,
       metrics: cashflowMetrics,
-      discrepancies: discrepancies
-    })
+      discrepancies: discrepancies,
+    });
 
-    return updatedProject
+    return updatedProject;
   }
 
   // Helper Methods
-  private calculateReconciliationMetrics(records: ReconciliationRecord[]): ReconciliationMetrics {
-    const totalRecords = records.length
-    const matchedRecords = records.filter(r => r.status === 'matched').length
-    const unmatchedRecords = records.filter(r => r.status === 'unmatched').length
-    const discrepancyRecords = records.filter(r => r.status === 'discrepancy').length
-    const pendingRecords = records.filter(r => r.status === 'pending').length
-    const resolvedRecords = records.filter(r => r.status === 'resolved').length
-    const escalatedRecords = records.filter(r => r.status === 'escalated').length
+  calculateReconciliationMetrics(records) {
+    const totalRecords = records.length;
+    const matchedRecords = records.filter((r) => r.status === 'matched').length;
+    const unmatchedRecords = records.filter((r) => r.status === 'unmatched').length;
+    const discrepancyRecords = records.filter((r) => r.status === 'discrepancy').length;
+    const pendingRecords = records.filter((r) => r.status === 'pending').length;
+    const resolvedRecords = records.filter((r) => r.status === 'resolved').length;
+    const escalatedRecords = records.filter((r) => r.status === 'escalated').length;
 
     return {
       totalRecords,
@@ -800,83 +1031,86 @@ class DataManagementService {
       accuracy: 96.5,
       throughput: 150,
       errorRate: 2.1,
-      slaCompliance: 98.5
-    }
+      slaCompliance: 98.5,
+    };
   }
 
-  private inferCategory(description: string): string {
-    const desc = description.toLowerCase()
-    if (desc.includes('operasional') || desc.includes('lapangan') || desc.includes('kas')) return 'Operational'
-    if (desc.includes('lelang') || desc.includes('tender') || desc.includes('proyek')) return 'Company'
-    if (desc.includes('keluarga') || desc.includes('personal')) return 'Personal'
-    if (desc.includes('pulsa') || desc.includes('emoney') || desc.includes('utility')) return 'Utilities'
-    return 'Other'
+  inferCategory(description) {
+    const desc = description.toLowerCase();
+    if (desc.includes('operasional') || desc.includes('lapangan') || desc.includes('kas'))
+      return 'Operational';
+    if (desc.includes('lelang') || desc.includes('tender') || desc.includes('proyek'))
+      return 'Company';
+    if (desc.includes('keluarga') || desc.includes('personal')) return 'Personal';
+    if (desc.includes('pulsa') || desc.includes('emoney') || desc.includes('utility'))
+      return 'Utilities';
+    return 'Other';
   }
 
-  private getCategoryColor(category: string): string {
+  getCategoryColor(category) {
     const colors: Record<string, string> = {
-      'Operational': 'blue',
-      'Company': 'green',
-      'Personal': 'purple',
-      'Utilities': 'orange',
-      'Other': 'gray'
-    }
-    return colors[category] || 'gray'
+      Operational: 'blue',
+      Company: 'green',
+      Personal: 'purple',
+      Utilities: 'orange',
+      Other: 'gray',
+    };
+    return colors[category] || 'gray';
   }
 
-  private getCategoryIcon(category: string): string {
+  getCategoryIcon(category) {
     const icons: Record<string, string> = {
-      'Operational': 'Activity',
-      'Company': 'Building',
-      'Personal': 'User',
-      'Utilities': 'Wifi',
-      'Other': 'File'
-    }
-    return icons[category] || 'File'
+      Operational: 'Activity',
+      Company: 'Building',
+      Personal: 'User',
+      Utilities: 'Wifi',
+      Other: 'File',
+    };
+    return icons[category] || 'File';
   }
 
   // Event System
-  subscribe(projectId: string, callback: (data: ProjectData) => void): () => void {
+  subscribe(projectId, callback) {
     if (!this.listeners.has(projectId)) {
-      this.listeners.set(projectId, new Set())
+      this.listeners.set(projectId, new Set());
     }
-    this.listeners.get(projectId)!.add(callback)
+    this.listeners.get(projectId)!.add(callback);
 
     return () => {
-      const listeners = this.listeners.get(projectId)
+      const listeners = this.listeners.get(projectId);
       if (listeners) {
-        listeners.delete(callback)
+        listeners.delete(callback);
         if (listeners.size === 0) {
-          this.listeners.delete(projectId)
+          this.listeners.delete(projectId);
         }
       }
-    }
+    };
   }
 
-  private notifyListeners(projectId: string, data: ProjectData): void {
-    const listeners = this.listeners.get(projectId)
+  notifyListeners(projectId, data) {
+    const listeners = this.listeners.get(projectId);
     if (listeners) {
-      listeners.forEach(callback => callback(data))
+      listeners.forEach((callback) => callback(data));
     }
   }
 
   // Data Export/Import
-  exportProject(projectId: string): string {
-    const project = this.projectData.get(projectId)
-    return JSON.stringify(project, null, 2)
+  exportProject(projectId) {
+    const project = this.projectData.get(projectId);
+    return JSON.stringify(project, null, 2);
   }
 
-  importProject(data: string): ProjectData | null {
+  importProject(data) {
     try {
-      const project = JSON.parse(data) as ProjectData
-      this.projectData.set(project.id, project)
-      this.notifyListeners(project.id, project)
-      return project
+      const project = JSON.parse(data);
+      this.projectData.set(project.id, project);
+      this.notifyListeners(project.id, project);
+      return project;
     } catch (error) {
-      console.error('Failed to import project:', error)
-      return null
+      console.error('Failed to import project:', error);
+      return null;
     }
   }
 }
 
-export default DataManagementService
+export default DataManagementService;

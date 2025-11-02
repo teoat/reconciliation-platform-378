@@ -159,6 +159,14 @@ impl AnalyticsService {
         Self { db, cache }
     }
     
+    /// Create analytics service with resilience support
+    pub fn new_with_resilience(
+        db: Database,
+        cache: Arc<MultiLevelCache>,
+    ) -> Self {
+        Self { db, cache }
+    }
+    
     /// Get dashboard data
     pub async fn get_dashboard_data(&self) -> AppResult<DashboardData> {
         // Check cache first

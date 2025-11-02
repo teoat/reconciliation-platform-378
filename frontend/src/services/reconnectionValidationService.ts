@@ -1,50 +1,51 @@
 // Reconnection State Validation Service
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 // Handles inconsistent state after reconnection and data refresh
 
-import React from 'react'
+import React from 'react';
 
 export interface ConnectionState {
-  isOnline: boolean
-  lastConnected: number | null
-  lastDisconnected: number | null
-  reconnectionAttempts: number
-  maxReconnectionAttempts: number
-  reconnectionDelay: number
+  isOnline: boolean;
+  lastConnected: number | null;
+  lastDisconnected: number | null;
+  reconnectionAttempts: number;
+  maxReconnectionAttempts: number;
+  reconnectionDelay: number;
 }
 
 export interface DataValidationResult {
-  isValid: boolean
-  inconsistencies: DataInconsistency[]
-  recommendations: string[]
-  requiresRefresh: boolean
+  isValid: boolean;
+  inconsistencies: DataInconsistency[];
+  recommendations: string[];
+  requiresRefresh: boolean;
 }
 
 export interface DataInconsistency {
-  type: 'timestamp' | 'version' | 'state' | 'permission' | 'data'
-  field: string
-  expected: any
-  actual: any
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  description: string
+  type: 'timestamp' | 'version' | 'state' | 'permission' | 'data';
+  field: string;
+  expected: unknown;
+  actual: unknown;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  description: string;
 }
 
 export interface ValidationConfig {
-  enabled: boolean
-  checkInterval: number
-  maxInconsistencies: number
-  autoRefresh: boolean
-  showNotifications: boolean
-  validationTimeout: number
+  enabled: boolean;
+  checkInterval: number;
+  maxInconsistencies: number;
+  autoRefresh: boolean;
+  showNotifications: boolean;
+  validationTimeout: number;
 }
 
 class ReconnectionValidationService {
-  private static instance: ReconnectionValidationService
-  private connectionState: ConnectionState
-  private config: ValidationConfig
-  private validationTimers: Map<string, NodeJS.Timeout> = new Map()
-  private listeners: Map<string, (result: DataValidationResult) => void> = new Map()
-  private cachedData: Map<string, { data: any; timestamp: number; version: number }> = new Map()
+  private static instance: ReconnectionValidationService;
+  private connectionState: ConnectionState;
+  private config: ValidationConfig;
+  private validationTimers: Map<string, NodeJS.Timeout> = new Map();
+  private listeners: Map<string, (result: DataValidationResult) => void> = new Map();
+  private cachedData: Map<string, { data: unknown; timestamp: number; version: number }> =
+    new Map();
 
   private constructor() {
     this.connectionState = {
@@ -53,8 +54,8 @@ class ReconnectionValidationService {
       lastDisconnected: navigator.onLine ? null : Date.now(),
       reconnectionAttempts: 0,
       maxReconnectionAttempts: 5,
-      reconnectionDelay: 1000
-    }
+      reconnectionDelay: 1000,
+    };
 
     this.config = {
       enabled: true,
@@ -62,18 +63,18 @@ class ReconnectionValidationService {
       maxInconsistencies: 10,
       autoRefresh: true,
       showNotifications: true,
-      validationTimeout: 10000 // 10 seconds
-    }
+      validationTimeout: 10000, // 10 seconds
+    };
 
-    this.loadConfig()
-    this.setupNetworkListeners()
+    this.loadConfig();
+    this.setupNetworkListeners();
   }
 
   public static getInstance(): ReconnectionValidationService {
     if (!ReconnectionValidationService.instance) {
-      ReconnectionValidationService.instance = new ReconnectionValidationService()
+      ReconnectionValidationService.instance = new ReconnectionValidationService();
     }
-    return ReconnectionValidationService.instance
+    return ReconnectionValidationService.instance;
   }
 
   // ============================================================================
@@ -82,26 +83,26 @@ class ReconnectionValidationService {
 
   private loadConfig(): void {
     try {
-      const saved = localStorage.getItem('reconnectionValidationConfig')
+      const saved = localStorage.getItem('reconnectionValidationConfig');
       if (saved) {
-        this.config = { ...this.config, ...JSON.parse(saved) }
+        this.config = { ...this.config, ...JSON.parse(saved) };
       }
-    } catch (error) {
-      logger.warn('Failed to load reconnection validation config:', error)
+    } catch (error: unknown) {
+      logger.warning('Failed to load reconnection validation config', { error });
     }
   }
 
   public updateConfig(newConfig: Partial<ValidationConfig>): void {
-    this.config = { ...this.config, ...newConfig }
+    this.config = { ...this.config, ...newConfig };
     try {
-      localStorage.setItem('reconnectionValidationConfig', JSON.stringify(this.config))
-    } catch (error) {
-      logger.warn('Failed to save reconnection validation config:', error)
+      localStorage.setItem('reconnectionValidationConfig', JSON.stringify(this.config));
+    } catch (error: unknown) {
+      logger.warning('Failed to save reconnection validation config', { error });
     }
   }
 
   public getConfig(): ValidationConfig {
-    return { ...this.config }
+    return { ...this.config };
   }
 
   // ============================================================================
@@ -109,33 +110,33 @@ class ReconnectionValidationService {
   // ============================================================================
 
   private setupNetworkListeners(): void {
-    window.addEventListener('online', this.handleOnline.bind(this))
-    window.addEventListener('offline', this.handleOffline.bind(this))
+    window.addEventListener('online', this.handleOnline.bind(this));
+    window.addEventListener('offline', this.handleOffline.bind(this));
   }
 
   private handleOnline(): void {
-    this.connectionState.isOnline = true
-    this.connectionState.lastConnected = Date.now()
-    this.connectionState.reconnectionAttempts = 0
+    this.connectionState.isOnline = true;
+    this.connectionState.lastConnected = Date.now();
+    this.connectionState.reconnectionAttempts = 0;
 
-    logger.info('Network reconnected, starting validation...')
-    
+    logger.info('Network reconnected, starting validation...');
+
     // Start validation for all cached data
-    this.validateAllCachedData()
+    this.validateAllCachedData();
   }
 
   private handleOffline(): void {
-    this.connectionState.isOnline = false
-    this.connectionState.lastDisconnected = Date.now()
+    this.connectionState.isOnline = false;
+    this.connectionState.lastDisconnected = Date.now();
 
-    logger.info('Network disconnected, pausing validation...')
-    
+    logger.info('Network disconnected, pausing validation...');
+
     // Clear validation timers
-    this.clearAllValidationTimers()
+    this.clearAllValidationTimers();
   }
 
   public getConnectionState(): ConnectionState {
-    return { ...this.connectionState }
+    return { ...this.connectionState };
   }
 
   // ============================================================================
@@ -147,34 +148,34 @@ class ReconnectionValidationService {
     getCurrentData: () => any,
     getServerData: () => Promise<any>,
     metadata: {
-      userId?: string
-      projectId?: string
-      workflowStage?: string
-      dataType: string
+      userId?: string;
+      projectId?: string;
+      workflowStage?: string;
+      dataType: string;
     }
   ): void {
-    if (!this.config.enabled || !this.connectionState.isOnline) return
+    if (!this.config.enabled || !this.connectionState.isOnline) return;
 
     // Clear existing timer
-    this.stopValidation(key)
+    this.stopValidation(key);
 
     // Set up new timer
     const timer = setInterval(async () => {
       try {
-        await this.validateData(key, getCurrentData, getServerData, metadata)
-      } catch (error) {
-        logger.warn(`Validation failed for ${key}:`, error)
+        await this.validateData(key, getCurrentData, getServerData, metadata);
+      } catch (error: unknown) {
+        logger.warning(`Validation failed for ${key}`, { key, error });
       }
-    }, this.config.checkInterval)
+    }, this.config.checkInterval);
 
-    this.validationTimers.set(key, timer)
+    this.validationTimers.set(key, timer);
   }
 
   public stopValidation(key: string): void {
-    const timer = this.validationTimers.get(key)
+    const timer = this.validationTimers.get(key);
     if (timer) {
-      clearInterval(timer)
-      this.validationTimers.delete(key)
+      clearInterval(timer);
+      this.validationTimers.delete(key);
     }
   }
 
@@ -183,40 +184,41 @@ class ReconnectionValidationService {
     getCurrentData: () => any,
     getServerData: () => Promise<any>,
     metadata: {
-      userId?: string
-      projectId?: string
-      workflowStage?: string
-      dataType: string
+      userId?: string;
+      projectId?: string;
+      workflowStage?: string;
+      dataType: string;
     }
   ): Promise<DataValidationResult> {
-    const currentData = getCurrentData()
-    const cached = this.cachedData.get(key)
+    const currentData = getCurrentData();
+    const cached = this.cachedData.get(key);
 
     try {
       // Get server data with timeout
-      const serverData = await Promise.race([
+      const serverData = (await Promise.race([
         getServerData(),
-        new Promise((_, reject) => 
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Validation timeout')), this.config.validationTimeout)
-        )
-      ]) as any
+        ),
+      ])) as any;
 
-      const inconsistencies: DataInconsistency[] = []
-      const recommendations: string[] = []
+      const inconsistencies: DataInconsistency[] = [];
+      const recommendations: string[] = [];
 
       // Check timestamp consistency
       if (serverData.timestamp && currentData.timestamp) {
-        const timeDiff = Math.abs(serverData.timestamp - currentData.timestamp)
-        if (timeDiff > 300000) { // 5 minutes
+        const timeDiff = Math.abs(serverData.timestamp - currentData.timestamp);
+        if (timeDiff > 300000) {
+          // 5 minutes
           inconsistencies.push({
             type: 'timestamp',
             field: 'timestamp',
             expected: serverData.timestamp,
             actual: currentData.timestamp,
             severity: 'medium',
-            description: `Data is ${Math.floor(timeDiff / 60000)} minutes out of sync`
-          })
-          recommendations.push('Refresh data to get latest changes')
+            description: `Data is ${Math.floor(timeDiff / 60000)} minutes out of sync`,
+          });
+          recommendations.push('Refresh data to get latest changes');
         }
       }
 
@@ -229,9 +231,9 @@ class ReconnectionValidationService {
             expected: serverData.version,
             actual: currentData.version,
             severity: 'high',
-            description: 'Data version mismatch detected'
-          })
-          recommendations.push('Data has been updated by another user')
+            description: 'Data version mismatch detected',
+          });
+          recommendations.push('Data has been updated by another user');
         }
       }
 
@@ -244,72 +246,76 @@ class ReconnectionValidationService {
             expected: serverData.state,
             actual: currentData.state,
             severity: 'high',
-            description: 'Workflow state has changed'
-          })
-          recommendations.push('Workflow state has been updated')
+            description: 'Workflow state has changed',
+          });
+          recommendations.push('Workflow state has been updated');
         }
       }
 
       // Check data consistency
-      const dataInconsistencies = this.checkDataConsistency(currentData, serverData)
-      inconsistencies.push(...dataInconsistencies)
+      const dataInconsistencies = this.checkDataConsistency(currentData, serverData);
+      inconsistencies.push(...dataInconsistencies);
 
       // Check permission consistency
       if (serverData.permissions && currentData.permissions) {
         const permissionInconsistencies = this.checkPermissionConsistency(
           currentData.permissions,
           serverData.permissions
-        )
-        inconsistencies.push(...permissionInconsistencies)
+        );
+        inconsistencies.push(...permissionInconsistencies);
       }
 
       const result: DataValidationResult = {
         isValid: inconsistencies.length === 0,
         inconsistencies,
         recommendations,
-        requiresRefresh: inconsistencies.some(i => i.severity === 'high' || i.severity === 'critical')
-      }
+        requiresRefresh: inconsistencies.some(
+          (i) => i.severity === 'high' || i.severity === 'critical'
+        ),
+      };
 
       // Update cached data
       this.cachedData.set(key, {
         data: serverData,
         timestamp: Date.now(),
-        version: serverData.version || 1
-      })
+        version: serverData.version || 1,
+      });
 
       // Notify listeners
-      this.notifyListeners(key, result)
+      this.notifyListeners(key, result);
 
       // Auto-refresh if configured
       if (this.config.autoRefresh && result.requiresRefresh) {
-        this.handleAutoRefresh(key, result)
+        this.handleAutoRefresh(key, result);
       }
 
-      return result
+      return result;
     } catch (error) {
-      logger.warn(`Validation failed for ${key}:`, error)
-      
+      logger.warn(`Validation failed for ${key}:`, error);
+
       const result: DataValidationResult = {
         isValid: false,
-        inconsistencies: [{
-          type: 'data',
-          field: 'connection',
-          expected: 'connected',
-          actual: 'disconnected',
-          severity: 'critical',
-          description: 'Unable to validate data due to connection issues'
-        }],
+        inconsistencies: [
+          {
+            type: 'data',
+            field: 'connection',
+            expected: 'connected',
+            actual: 'disconnected',
+            severity: 'critical',
+            description: 'Unable to validate data due to connection issues',
+          },
+        ],
         recommendations: ['Check your internet connection and try again'],
-        requiresRefresh: true
-      }
+        requiresRefresh: true,
+      };
 
-      this.notifyListeners(key, result)
-      return result
+      this.notifyListeners(key, result);
+      return result;
     }
   }
 
-  private checkDataConsistency(currentData: any, serverData: any): DataInconsistency[] {
-    const inconsistencies: DataInconsistency[] = []
+  private checkDataConsistency(currentData: unknown, serverData: unknown): DataInconsistency[] {
+    const inconsistencies: DataInconsistency[] = [];
 
     // Check for missing fields
     for (const [key, value] of Object.entries(serverData)) {
@@ -320,8 +326,8 @@ class ReconnectionValidationService {
           expected: value,
           actual: undefined,
           severity: 'medium',
-          description: `Field '${key}' is missing from current data`
-        })
+          description: `Field '${key}' is missing from current data`,
+        });
       }
     }
 
@@ -334,34 +340,40 @@ class ReconnectionValidationService {
           expected: undefined,
           actual: value,
           severity: 'low',
-          description: `Field '${key}' exists in current data but not on server`
-        })
+          description: `Field '${key}' exists in current data but not on server`,
+        });
       }
     }
 
     // Check for value differences
     for (const [key, serverValue] of Object.entries(serverData)) {
-      const currentValue = currentData[key]
-      if (currentValue !== undefined && JSON.stringify(currentValue) !== JSON.stringify(serverValue)) {
+      const currentValue = currentData[key];
+      if (
+        currentValue !== undefined &&
+        JSON.stringify(currentValue) !== JSON.stringify(serverValue)
+      ) {
         inconsistencies.push({
           type: 'data',
           field: key,
           expected: serverValue,
           actual: currentValue,
           severity: 'medium',
-          description: `Field '${key}' has different values`
-        })
+          description: `Field '${key}' has different values`,
+        });
       }
     }
 
-    return inconsistencies
+    return inconsistencies;
   }
 
-  private checkPermissionConsistency(currentPermissions: any, serverPermissions: any): DataInconsistency[] {
-    const inconsistencies: DataInconsistency[] = []
+  private checkPermissionConsistency(
+    currentPermissions: unknown,
+    serverPermissions: unknown
+  ): DataInconsistency[] {
+    const inconsistencies: DataInconsistency[] = [];
 
     for (const [permission, currentValue] of Object.entries(currentPermissions)) {
-      const serverValue = serverPermissions[permission]
+      const serverValue = serverPermissions[permission];
       if (currentValue !== serverValue) {
         inconsistencies.push({
           type: 'permission',
@@ -369,32 +381,32 @@ class ReconnectionValidationService {
           expected: serverValue,
           actual: currentValue,
           severity: 'high',
-          description: `Permission '${permission}' has changed`
-        })
+          description: `Permission '${permission}' has changed`,
+        });
       }
     }
 
-    return inconsistencies
+    return inconsistencies;
   }
 
   private async validateAllCachedData(): Promise<void> {
-    const keys = Array.from(this.cachedData.keys())
+    const keys = Array.from(this.cachedData.keys());
     for (const key of keys) {
       try {
         // This would need to be implemented by the calling code
         // as we don't have access to the original validation functions
-        logger.debug(`Validating cached data for ${key}`)
-      } catch (error) {
-        logger.warning(`Failed to validate cached data for ${key}`, { key, error })
+        logger.debug(`Validating cached data for ${key}`);
+      } catch (error: unknown) {
+        logger.warning(`Failed to validate cached data for ${key}`, { key, error });
       }
     }
   }
 
   private handleAutoRefresh(key: string, result: DataValidationResult): void {
     if (result.requiresRefresh) {
-        logger.debug(`Auto-refreshing data for ${key}`)
+      logger.debug(`Auto-refreshing data for ${key}`);
       // This would trigger a data refresh in the calling component
-      this.notifyListeners(key, { ...result, requiresRefresh: true })
+      this.notifyListeners(key, { ...result, requiresRefresh: true });
     }
   }
 
@@ -403,18 +415,18 @@ class ReconnectionValidationService {
   // ============================================================================
 
   private notifyListeners(key: string, result: DataValidationResult): void {
-    const listener = this.listeners.get(key)
+    const listener = this.listeners.get(key);
     if (listener) {
-      listener(result)
+      listener(result);
     }
   }
 
   public addListener(key: string, listener: (result: DataValidationResult) => void): void {
-    this.listeners.set(key, listener)
+    this.listeners.set(key, listener);
   }
 
   public removeListener(key: string): void {
-    this.listeners.delete(key)
+    this.listeners.delete(key);
   }
 
   // ============================================================================
@@ -423,21 +435,21 @@ class ReconnectionValidationService {
 
   private clearAllValidationTimers(): void {
     for (const timer of this.validationTimers.values()) {
-      clearInterval(timer)
+      clearInterval(timer);
     }
-    this.validationTimers.clear()
+    this.validationTimers.clear();
   }
 
   public clearCachedData(key?: string): void {
     if (key) {
-      this.cachedData.delete(key)
+      this.cachedData.delete(key);
     } else {
-      this.cachedData.clear()
+      this.cachedData.clear();
     }
   }
 
-  public getCachedData(key: string): { data: any; timestamp: number; version: number } | null {
-    return this.cachedData.get(key) || null
+  public getCachedData(key: string): { data: unknown; timestamp: number; version: number } | null {
+    return this.cachedData.get(key) || null;
   }
 
   // ============================================================================
@@ -445,12 +457,12 @@ class ReconnectionValidationService {
   // ============================================================================
 
   public cleanup(): void {
-    this.clearAllValidationTimers()
-    this.listeners.clear()
-    this.cachedData.clear()
-    
-    window.removeEventListener('online', this.handleOnline.bind(this))
-    window.removeEventListener('offline', this.handleOffline.bind(this))
+    this.clearAllValidationTimers();
+    this.listeners.clear();
+    this.cachedData.clear();
+
+    window.removeEventListener('online', this.handleOnline.bind(this));
+    window.removeEventListener('offline', this.handleOffline.bind(this));
   }
 
   // ============================================================================
@@ -458,17 +470,17 @@ class ReconnectionValidationService {
   // ============================================================================
 
   public getStatistics(): {
-    totalValidations: number
-    activeValidations: number
-    cachedDataCount: number
-    connectionState: ConnectionState
+    totalValidations: number;
+    activeValidations: number;
+    cachedDataCount: number;
+    connectionState: ConnectionState;
   } {
     return {
       totalValidations: this.validationTimers.size,
       activeValidations: this.validationTimers.size,
       cachedDataCount: this.cachedData.size,
-      connectionState: this.getConnectionState()
-    }
+      connectionState: this.getConnectionState(),
+    };
   }
 }
 
@@ -481,56 +493,56 @@ export const useReconnectionValidation = (
   getCurrentData: () => any,
   getServerData: () => Promise<any>,
   metadata: {
-    userId?: string
-    projectId?: string
-    workflowStage?: string
-    dataType: string
+    userId?: string;
+    projectId?: string;
+    workflowStage?: string;
+    dataType: string;
   },
   enabled: boolean = true
 ) => {
-  const [validationResult, setValidationResult] = React.useState<DataValidationResult | null>(null)
-  const [isValidating, setIsValidating] = React.useState(false)
-  const [lastValidation, setLastValidation] = React.useState<Date | null>(null)
+  const [validationResult, setValidationResult] = React.useState<DataValidationResult | null>(null);
+  const [isValidating, setIsValidating] = React.useState(false);
+  const [lastValidation, setLastValidation] = React.useState<Date | null>(null);
 
   React.useEffect(() => {
-    if (!enabled) return
+    if (!enabled) return;
 
-    const service = ReconnectionValidationService.getInstance()
-    
+    const service = ReconnectionValidationService.getInstance();
+
     // Set up validation
-    service.startValidation(key, getCurrentData, getServerData, metadata)
+    service.startValidation(key, getCurrentData, getServerData, metadata);
 
     // Add listener
     const listener = (result: DataValidationResult) => {
-      setValidationResult(result)
-      setIsValidating(false)
-      setLastValidation(new Date())
-    }
+      setValidationResult(result);
+      setIsValidating(false);
+      setLastValidation(new Date());
+    };
 
-    service.addListener(key, listener)
+    service.addListener(key, listener);
 
     // Cleanup
     return () => {
-      service.removeListener(key)
-      service.stopValidation(key)
-    }
-  }, [key, enabled])
+      service.removeListener(key);
+      service.stopValidation(key);
+    };
+  }, [key, enabled]);
 
   const manualValidation = React.useCallback(async () => {
-    setIsValidating(true)
-    const service = ReconnectionValidationService.getInstance()
-    const result = await service.validateData(key, getCurrentData, getServerData, metadata)
-    setValidationResult(result)
-    setIsValidating(false)
-    setLastValidation(new Date())
-    return result
-  }, [key, getCurrentData, getServerData, metadata])
+    setIsValidating(true);
+    const service = ReconnectionValidationService.getInstance();
+    const result = await service.validateData(key, getCurrentData, getServerData, metadata);
+    setValidationResult(result);
+    setIsValidating(false);
+    setLastValidation(new Date());
+    return result;
+  }, [key, getCurrentData, getServerData, metadata]);
 
   const clearValidation = React.useCallback(() => {
-    setValidationResult(null)
-    const service = ReconnectionValidationService.getInstance()
-    service.clearCachedData(key)
-  }, [key])
+    setValidationResult(null);
+    const service = ReconnectionValidationService.getInstance();
+    service.clearCachedData(key);
+  }, [key]);
 
   return {
     validationResult,
@@ -538,8 +550,8 @@ export const useReconnectionValidation = (
     lastValidation,
     manualValidation,
     clearValidation,
-    connectionState: ReconnectionValidationService.getInstance().getConnectionState()
-  }
-}
+    connectionState: ReconnectionValidationService.getInstance().getConnectionState(),
+  };
+};
 
-export default ReconnectionValidationService
+export default ReconnectionValidationService;

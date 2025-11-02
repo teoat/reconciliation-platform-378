@@ -1,12 +1,12 @@
 // Real-time Frontend Service
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 // This service handles WebSocket connections and real-time updates
 
 import { EventEmitter } from 'events';
 
 export interface WebSocketMessage {
   type: string;
-  data?: any;
+  data?: Record<string, unknown>;
   id?: string;
   timestamp?: string;
 }
@@ -52,7 +52,12 @@ export interface Notification {
 export interface RealtimeUpdate {
   id: string;
   user_id: string;
-  update_type: 'reconciliation_progress' | 'file_upload_progress' | 'system_alert' | 'user_activity' | 'data_change';
+  update_type:
+    | 'reconciliation_progress'
+    | 'file_upload_progress'
+    | 'system_alert'
+    | 'user_activity'
+    | 'data_change';
   data: any;
   timestamp: string;
 }
@@ -95,7 +100,7 @@ class RealtimeService extends EventEmitter {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-          logger.log('WebSocket connected');
+          logger.info('WebSocket connected');
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.startHeartbeat();
@@ -113,7 +118,7 @@ class RealtimeService extends EventEmitter {
         };
 
         this.ws.onclose = (event) => {
-          logger.log('WebSocket disconnected:', event.code, event.reason);
+          logger.info('WebSocket disconnected:', event.code, event.reason);
           this.isConnected = false;
           this.isAuthenticated = false;
           this.stopHeartbeat();
@@ -136,9 +141,9 @@ class RealtimeService extends EventEmitter {
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-      
-      logger.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
-      
+
+      logger.info(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
+
       this.reconnectTimeout = setTimeout(() => {
         this.connect();
       }, delay);
@@ -243,7 +248,7 @@ class RealtimeService extends EventEmitter {
         break;
 
       default:
-        logger.log('Unknown message type:', message.type);
+        logger.warn('Unknown message type:', message.type);
     }
   }
 
@@ -251,7 +256,7 @@ class RealtimeService extends EventEmitter {
   async authenticate(token: string): Promise<void> {
     this.send({
       type: 'auth',
-      data: { token }
+      data: { token },
     });
   }
 
@@ -264,8 +269,8 @@ class RealtimeService extends EventEmitter {
         data: {
           user_id: this.userId,
           username: this.username,
-          page: page
-        }
+          page: page,
+        },
       });
     }
   }
@@ -276,8 +281,8 @@ class RealtimeService extends EventEmitter {
         type: 'user_leave',
         data: {
           user_id: this.userId,
-          page: this.currentPage
-        }
+          page: this.currentPage,
+        },
       });
       this.currentPage = null;
     }
@@ -290,8 +295,8 @@ class RealtimeService extends EventEmitter {
         data: {
           user_id: this.userId,
           page: this.currentPage,
-          position: { x, y, element }
-        }
+          position: { x, y, element },
+        },
       });
     }
   }
@@ -307,8 +312,8 @@ class RealtimeService extends EventEmitter {
           page: this.currentPage,
           message,
           position,
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
     }
   }
@@ -318,8 +323,8 @@ class RealtimeService extends EventEmitter {
       type: 'comment_update',
       data: {
         id: commentId,
-        message
-      }
+        message,
+      },
     });
   }
 
@@ -327,8 +332,8 @@ class RealtimeService extends EventEmitter {
     this.send({
       type: 'comment_delete',
       data: {
-        id: commentId
-      }
+        id: commentId,
+      },
     });
   }
 
@@ -338,8 +343,8 @@ class RealtimeService extends EventEmitter {
       type: 'reconciliation_start',
       data: {
         job_id: jobId,
-        project_id: projectId
-      }
+        project_id: projectId,
+      },
     });
   }
 
@@ -349,8 +354,8 @@ class RealtimeService extends EventEmitter {
       type: 'file_upload_start',
       data: {
         file_id: fileId,
-        filename: filename
-      }
+        filename: filename,
+      },
     });
   }
 

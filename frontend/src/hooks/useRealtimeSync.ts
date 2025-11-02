@@ -1,6 +1,6 @@
 // Real-time Data Synchronization Hook
-import { logger } from '@/services/logger'
-'use client';
+import { logger } from '@/services/logger';
+('use client');
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWebSocket } from './useApi';
@@ -17,7 +17,7 @@ interface DataSyncOptions {
   page: string;
   autoSync?: boolean;
   syncInterval?: number;
-  onDataUpdate?: (data: any) => void;
+  onDataUpdate?: (data: Record<string, unknown>) => void;
   onSyncError?: (error: string) => void;
 }
 
@@ -27,7 +27,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
     autoSync = true,
     syncInterval = 30000, // 30 seconds
     onDataUpdate,
-    onSyncError
+    onSyncError,
   } = options;
 
   const { isConnected, sendMessage, onMessage, offMessage } = useWebSocket();
@@ -36,119 +36,131 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
     isSyncing: false,
     lastSync: null,
     syncCount: 0,
-    errors: []
+    errors: [],
   });
 
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sync data with backend
-  const syncData = useCallback(async (data: any, targetPage?: string) => {
-    if (!isConnected) {
-      const error = 'WebSocket not connected';
-      setSyncStatus(prev => ({
+  const syncData = useCallback(
+    async (data: Record<string, unknown>, targetPage?: string) => {
+      if (!isConnected) {
+        const error = 'WebSocket not connected';
+        setSyncStatus((prev) => ({
+          ...prev,
+          errors: [...prev.errors.slice(-4), error], // Keep last 5 errors
+        }));
+        onSyncError?.(error);
+        return false;
+      }
+
+      setSyncStatus((prev) => ({
         ...prev,
-        errors: [...prev.errors.slice(-4), error] // Keep last 5 errors
-      }));
-      onSyncError?.(error);
-      return false;
-    }
-
-    setSyncStatus(prev => ({
-      ...prev,
-      isSyncing: true
-    }));
-
-    try {
-      sendMessage('data:sync', {
-        fromPage: page,
-        toPage: targetPage || page,
-        data,
-        timestamp: new Date().toISOString()
-      });
-
-      setSyncStatus(prev => ({
-        ...prev,
-        lastSync: new Date(),
-        syncCount: prev.syncCount + 1,
-        isSyncing: false,
-        errors: [] // Clear errors on successful sync
+        isSyncing: true,
       }));
 
-      return true;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Sync failed';
-      setSyncStatus(prev => ({
-        ...prev,
-        isSyncing: false,
-        errors: [...prev.errors.slice(-4), errorMessage]
-      }));
-      onSyncError?.(errorMessage);
-      return false;
-    }
-  }, [isConnected, sendMessage, page, onSyncError]);
+      try {
+        sendMessage('data:sync', {
+          fromPage: page,
+          toPage: targetPage || page,
+          data,
+          timestamp: new Date().toISOString(),
+        });
+
+        setSyncStatus((prev) => ({
+          ...prev,
+          lastSync: new Date(),
+          syncCount: prev.syncCount + 1,
+          isSyncing: false,
+          errors: [], // Clear errors on successful sync
+        }));
+
+        return true;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Sync failed';
+        setSyncStatus((prev) => ({
+          ...prev,
+          isSyncing: false,
+          errors: [...prev.errors.slice(-4), errorMessage],
+        }));
+        onSyncError?.(errorMessage);
+        return false;
+      }
+    },
+    [isConnected, sendMessage, page, onSyncError]
+  );
 
   // Request data from backend
-  const requestData = useCallback(async (dataType: string, filters?: any) => {
-    if (!isConnected) {
-      const error = 'WebSocket not connected';
-      onSyncError?.(error);
-      return false;
-    }
+  const requestData = useCallback(
+    async (dataType: string, filters?: Record<string, unknown>) => {
+      if (!isConnected) {
+        const error = 'WebSocket not connected';
+        onSyncError?.(error);
+        return false;
+      }
 
-    try {
-      sendMessage('data:request', {
-        page,
-        dataType,
-        filters,
-        timestamp: new Date().toISOString()
-      });
-      return true;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Request failed';
-      onSyncError?.(errorMessage);
-      return false;
-    }
-  }, [isConnected, sendMessage, page, onSyncError]);
+      try {
+        sendMessage('data:request', {
+          page,
+          dataType,
+          filters,
+          timestamp: new Date().toISOString(),
+        });
+        return true;
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Request failed';
+        onSyncError?.(errorMessage);
+        return false;
+      }
+    },
+    [isConnected, sendMessage, page, onSyncError]
+  );
 
   // Handle incoming data updates
-  const handleDataUpdate = useCallback((data: any) => {
-    if (data.page === page) {
-      onDataUpdate?.(data.data);
-      setSyncStatus(prev => ({
-        ...prev,
-        lastSync: new Date(),
-        syncCount: prev.syncCount + 1
-      }));
-    }
-  }, [page, onDataUpdate]);
+  const handleDataUpdate = useCallback(
+    (data: Record<string, unknown>) => {
+      if (data.page === page) {
+        onDataUpdate?.(data.data);
+        setSyncStatus((prev) => ({
+          ...prev,
+          lastSync: new Date(),
+          syncCount: prev.syncCount + 1,
+        }));
+      }
+    },
+    [page, onDataUpdate]
+  );
 
   // Handle sync responses
-  const handleSyncResponse = useCallback((data: any) => {
-    setSyncStatus(prev => ({
+  const handleSyncResponse = useCallback((data: Record<string, unknown>) => {
+    setSyncStatus((prev) => ({
       ...prev,
       isSyncing: false,
       lastSync: new Date(),
-      syncCount: prev.syncCount + 1
+      syncCount: prev.syncCount + 1,
     }));
   }, []);
 
   // Handle sync errors
-  const handleSyncError = useCallback((data: any) => {
-    const error = data.message || 'Sync error';
-    setSyncStatus(prev => ({
-      ...prev,
-      isSyncing: false,
-      errors: [...prev.errors.slice(-4), error]
-    }));
-    onSyncError?.(error);
-  }, [onSyncError]);
+  const handleSyncError = useCallback(
+    (data: Record<string, unknown>) => {
+      const error = data.message || 'Sync error';
+      setSyncStatus((prev) => ({
+        ...prev,
+        isSyncing: false,
+        errors: [...prev.errors.slice(-4), error],
+      }));
+      onSyncError?.(error);
+    },
+    [onSyncError]
+  );
 
   // Handle connection status changes
   const handleConnectionChange = useCallback((connected: boolean) => {
-    setSyncStatus(prev => ({
+    setSyncStatus((prev) => ({
       ...prev,
-      isConnected: connected
+      isConnected: connected,
     }));
 
     if (connected) {
@@ -161,7 +173,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
       // Schedule reconnect attempt
       reconnectTimeoutRef.current = setTimeout(() => {
         // This would trigger a reconnection in the WebSocket hook
-        logger.log('Attempting to reconnect...');
+        logger.info('Attempting to reconnect...');
       }, 5000);
     }
   }, []);
@@ -181,7 +193,15 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
       offMessage('data:sync_error', handleSyncError);
       offMessage('connection:status', handleConnectionChange);
     };
-  }, [isConnected, onMessage, offMessage, handleDataUpdate, handleSyncResponse, handleSyncError, handleConnectionChange]);
+  }, [
+    isConnected,
+    onMessage,
+    offMessage,
+    handleDataUpdate,
+    handleSyncResponse,
+    handleSyncError,
+    handleConnectionChange,
+  ]);
 
   // Auto-sync setup
   useEffect(() => {
@@ -217,34 +237,35 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
   }, []);
 
   // Manual sync trigger
-  const triggerSync = useCallback(async (data?: any) => {
-    if (data) {
-      return await syncData(data);
-    } else {
-      return await requestData('manual_sync');
-    }
-  }, [syncData, requestData]);
+  const triggerSync = useCallback(
+    async (data?: Record<string, unknown>) => {
+      if (data) {
+        return await syncData(data);
+      } else {
+        return await requestData('manual_sync');
+      }
+    },
+    [syncData, requestData]
+  );
 
   // Clear errors
   const clearErrors = useCallback(() => {
-    setSyncStatus(prev => ({
+    setSyncStatus((prev) => ({
       ...prev,
-      errors: []
+      errors: [],
     }));
   }, []);
 
   // Get sync status summary
   const getSyncStatusSummary = useCallback(() => {
     const { isConnected, isSyncing, lastSync, syncCount, errors } = syncStatus;
-    
+
     return {
-      status: isConnected 
-        ? (isSyncing ? 'syncing' : 'connected')
-        : 'disconnected',
+      status: isConnected ? (isSyncing ? 'syncing' : 'connected') : 'disconnected',
       lastSync: lastSync?.toLocaleTimeString() || 'Never',
       syncCount,
       errorCount: errors.length,
-      hasErrors: errors.length > 0
+      hasErrors: errors.length > 0,
     };
   }, [syncStatus]);
 
@@ -254,7 +275,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
     requestData,
     triggerSync,
     clearErrors,
-    getSyncStatusSummary
+    getSyncStatusSummary,
   };
 };
 
@@ -274,13 +295,16 @@ export const useRealtimeMetrics = (page: string) => {
     onSyncError: (error) => {
       logger.error('Metrics sync error:', error);
       setIsLoading(false);
-    }
+    },
   });
 
-  const updateMetrics = useCallback(async (newMetrics: any) => {
-    setIsLoading(true);
-    await syncData(newMetrics);
-  }, [syncData]);
+  const updateMetrics = useCallback(
+    async (newMetrics: Record<string, unknown>) => {
+      setIsLoading(true);
+      await syncData(newMetrics);
+    },
+    [syncData]
+  );
 
   const refreshMetrics = useCallback(async () => {
     setIsLoading(true);
@@ -292,7 +316,7 @@ export const useRealtimeMetrics = (page: string) => {
     isLoading,
     updateMetrics,
     refreshMetrics,
-    syncStatus
+    syncStatus,
   };
 };
 
@@ -307,42 +331,43 @@ export const useRealtimeNotifications = (page: string) => {
     syncInterval: 5000, // 5 seconds for notifications
     onDataUpdate: (data) => {
       if (data.type === 'notification') {
-        setNotifications(prev => [data, ...prev.slice(0, 99)]); // Keep last 100
+        setNotifications((prev) => [data, ...prev.slice(0, 99)]); // Keep last 100
         if (!data.isRead) {
-          setUnreadCount(prev => prev + 1);
+          setUnreadCount((prev) => prev + 1);
         }
       }
-    }
+    },
   });
 
-  const markAsRead = useCallback(async (notificationId: string) => {
-    await syncData({
-      type: 'mark_read',
-      notificationId
-    });
-    
-    setNotifications(prev => 
-      prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
-  }, [syncData]);
+  const markAsRead = useCallback(
+    async (notificationId: string) => {
+      await syncData({
+        type: 'mark_read',
+        notificationId,
+      });
+
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n))
+      );
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    },
+    [syncData]
+  );
 
   const markAllAsRead = useCallback(async () => {
     await syncData({
-      type: 'mark_all_read'
+      type: 'mark_all_read',
     });
-    
-    setNotifications(prev => 
-      prev.map(n => ({ ...n, isRead: true }))
-    );
+
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     setUnreadCount(0);
   }, [syncData]);
 
   const clearNotifications = useCallback(async () => {
     await syncData({
-      type: 'clear_notifications'
+      type: 'clear_notifications',
     });
-    
+
     setNotifications([]);
     setUnreadCount(0);
   }, [syncData]);
@@ -352,7 +377,7 @@ export const useRealtimeNotifications = (page: string) => {
     unreadCount,
     markAsRead,
     markAllAsRead,
-    clearNotifications
+    clearNotifications,
   };
 };
 

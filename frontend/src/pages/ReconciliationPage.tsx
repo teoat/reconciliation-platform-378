@@ -4,7 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { SkipLink } from '../components/ui/SkipLink';
 import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 import { UserFriendlyError } from '../components/ui/UserFriendlyError';
-import { ContextualHelp, HelpSection } from '../components/ui/ContextualHelp';
+import { ContextualHelp } from '../components/ui/ContextualHelp';
 import { useErrorRecovery } from '../hooks/useErrorRecovery';
 import { Upload } from 'lucide-react';
 import { FileText } from 'lucide-react';
@@ -29,7 +29,12 @@ import Modal from '../components/ui/Modal';
 import StatusBadge from '../components/ui/StatusBadge';
 import MetricCard from '../components/ui/MetricCard';
 import { SkeletonDashboard } from '../components/ui/LoadingSpinner';
-import { apiClient } from '../services/apiClient';
+import {
+  apiClient,
+  BackendDataSource,
+  BackendReconciliationJob,
+  BackendReconciliationMatch,
+} from '../services/apiClient';
 
 // Lazy load heavy components
 const FileDropzone = lazy(() =>
@@ -53,7 +58,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  
+
   // Error recovery
   const { recoveryActions, suggestions, errorTitle } = useErrorRecovery({
     error: error || '',
@@ -68,22 +73,6 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       // Reset component state
     },
   });
-  
-  // Help content for reconciliation workflow
-  const reconciliationHelp: HelpSection = {
-    id: 'reconciliation-help',
-    title: 'Reconciliation Workflow Help',
-    content: 'The reconciliation workflow has been simplified to 3 steps: Data Setup, AI Reconciliation, and Review & Export. Use the tabs above to navigate between stages.',
-    tips: [
-      { id: 'tip-1', title: 'Upload Files', content: 'Upload CSV or Excel files in the Upload Data tab. Use AI suggestions for automatic field mapping.', category: 'tip' },
-      { id: 'tip-2', title: 'Run Reconciliation', content: 'Configure matching thresholds in the Configure tab, then start a reconciliation job in the Run Jobs tab.', category: 'tip' },
-      { id: 'tip-3', title: 'Review Results', content: 'Review matches and export results in the Results tab. You can approve or reject matches individually.', category: 'tip' },
-    ],
-    links: [
-      { title: 'Reconciliation Guide', url: '/docs/reconciliation' },
-      { title: 'Quick Start', url: '/docs/quick-start' },
-    ],
-  };
 
   const [reconciliationSettings, setReconciliationSettings] = useState({
     matchingThreshold: 0.8,
@@ -135,7 +124,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       setError(error instanceof Error ? error : new Error('Failed to start reconciliation job'));
     }
   };
-  
+
   // Perform data sync (placeholder)
   const performDataSync = async () => {
     // Placeholder for data sync operation
@@ -143,12 +132,12 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   };
 
   // Data table columns for data sources
-  const dataSourceColumns: Column<any>[] = [
+  const dataSourceColumns: Column<BackendDataSource>[] = [
     {
       key: 'name',
       label: 'Name',
       sortable: true,
-      render: (value, row) => (
+      render: (value) => (
         <div className="flex items-center space-x-2">
           <FileText className="h-4 w-4 text-gray-400" />
           <span className="font-medium">{value}</span>
@@ -186,7 +175,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
     {
       key: 'actions',
       label: 'Actions',
-      render: (value, row) => (
+      render: (_, row) => (
         <div className="flex space-x-2">
           <Button
             size="sm"
@@ -202,7 +191,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   ];
 
   // Data table columns for reconciliation jobs
-  const jobColumns: Column<any>[] = [
+  const jobColumns: Column<BackendReconciliationJob>[] = [
     {
       key: 'id',
       label: 'Job ID',
@@ -283,7 +272,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   ];
 
   // Data table columns for matches
-  const matchColumns: Column<any>[] = [
+  const matchColumns: Column<BackendReconciliationMatch>[] = [
     {
       key: 'id',
       label: 'Match ID',
@@ -410,17 +399,27 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   // Keyboard navigation for tabs
   useKeyboardNavigation({
     onArrowLeft: () => {
-      const tabs = ['upload', 'configure', 'run', 'results'];
+      const tabs: ('upload' | 'configure' | 'run' | 'results')[] = [
+        'upload',
+        'configure',
+        'run',
+        'results',
+      ];
       const currentIndex = tabs.indexOf(activeTab);
       if (currentIndex > 0) {
-        setActiveTab(tabs[currentIndex - 1] as any);
+        setActiveTab(tabs[currentIndex - 1]);
       }
     },
     onArrowRight: () => {
-      const tabs = ['upload', 'configure', 'run', 'results'];
+      const tabs: ('upload' | 'configure' | 'run' | 'results')[] = [
+        'upload',
+        'configure',
+        'run',
+        'results',
+      ];
       const currentIndex = tabs.indexOf(activeTab);
       if (currentIndex < tabs.length - 1) {
-        setActiveTab(tabs[currentIndex + 1] as any);
+        setActiveTab(tabs[currentIndex + 1]);
       }
     },
     enabled: true,
@@ -450,7 +449,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       {/* Skip Links */}
       <SkipLink href="#main-content" label="Skip to main content" />
       <SkipLink href="#navigation-tabs" label="Skip to navigation tabs" />
-      
+
       {/* Screen reader announcements */}
       <div
         id="tab-announcement"
@@ -459,7 +458,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
         aria-live="polite"
         aria-atomic="true"
       />
-      
+
       {/* Header */}
       <header className="bg-white shadow-sm border-b" role="banner">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -492,16 +491,16 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       {/* Navigation Tabs */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="navigation-tabs">
         <div className="border-b border-gray-200">
-          <nav 
+          <nav
             className="-mb-px flex space-x-8"
             role="tablist"
             aria-label="Reconciliation workflow tabs"
           >
             {[
-              { id: 'upload', label: 'Upload Data', icon: Upload },
-              { id: 'configure', label: 'Configure', icon: Settings },
-              { id: 'run', label: 'Run Jobs', icon: Play },
-              { id: 'results', label: 'Results', icon: BarChart3 },
+              { id: 'upload' as const, label: 'Upload Data', icon: Upload },
+              { id: 'configure' as const, label: 'Configure', icon: Settings },
+              { id: 'run' as const, label: 'Run Jobs', icon: Play },
+              { id: 'results' as const, label: 'Results', icon: BarChart3 },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -510,11 +509,11 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
                 aria-controls={`tabpanel-${tab.id}`}
                 id={`tab-${tab.id}`}
                 tabIndex={activeTab === tab.id ? 0 : -1}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    setActiveTab(tab.id as any);
+                    setActiveTab(tab.id);
                   }
                 }}
                 className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
@@ -547,10 +546,10 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
             />
           </div>
         )}
-        
+
         {/* Upload Tab */}
         {activeTab === 'upload' && (
-          <div 
+          <div
             id="tabpanel-upload"
             role="tabpanel"
             aria-labelledby="tab-upload"
@@ -592,12 +591,28 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
                       helpContent={{
                         id: 'data-sources-help',
                         title: 'Upload Data Files',
-                        content: 'Upload CSV or Excel files containing your reconciliation data. Supported formats: .csv, .xlsx, .xls. Maximum file size: 50MB per file.',
-                      tips: [
-                        { id: 'tip-1', title: 'Upload Method', content: 'Use the Upload Files button or drag and drop files', category: 'tip' },
-                        { id: 'tip-2', title: 'Validation', content: 'Files are automatically validated after upload', category: 'tip' },
-                        { id: 'tip-3', title: 'Multiple Files', content: 'Multiple files can be uploaded at once', category: 'tip' },
-                      ],
+                        content:
+                          'Upload CSV or Excel files containing your reconciliation data. Supported formats: .csv, .xlsx, .xls. Maximum file size: 50MB per file.',
+                        tips: [
+                          {
+                            id: 'tip-1',
+                            title: 'Upload Method',
+                            content: 'Use the Upload Files button or drag and drop files',
+                            category: 'tip',
+                          },
+                          {
+                            id: 'tip-2',
+                            title: 'Validation',
+                            content: 'Files are automatically validated after upload',
+                            category: 'tip',
+                          },
+                          {
+                            id: 'tip-3',
+                            title: 'Multiple Files',
+                            content: 'Multiple files can be uploaded at once',
+                            category: 'tip',
+                          },
+                        ],
                       }}
                     />
                   </div>
@@ -618,7 +633,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
 
         {/* Configure Tab */}
         {activeTab === 'configure' && (
-          <div 
+          <div
             id="tabpanel-configure"
             role="tabpanel"
             aria-labelledby="tab-configure"
@@ -680,12 +695,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
 
         {/* Run Jobs Tab */}
         {activeTab === 'run' && (
-          <div 
-            id="tabpanel-run"
-            role="tabpanel"
-            aria-labelledby="tab-run"
-            className="space-y-6"
-          >
+          <div id="tabpanel-run" role="tabpanel" aria-labelledby="tab-run" className="space-y-6">
             <Card>
               <div className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -711,7 +721,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
 
         {/* Results Tab */}
         {activeTab === 'results' && (
-          <div 
+          <div
             id="tabpanel-results"
             role="tabpanel"
             aria-labelledby="tab-results"

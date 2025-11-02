@@ -54,6 +54,36 @@ where
     }
 }
 
+/// Helper to create cache middleware with pre-initialized cache service
+/// This allows using cache that was initialized with ResilienceManager
+pub struct CacheWithService {
+    cache: Arc<MultiLevelCache>,
+}
+
+impl CacheWithService {
+    pub fn new(cache: Arc<MultiLevelCache>) -> Self {
+        Self { cache }
+    }
+}
+
+impl<S, B> Transform<S, ServiceRequest> for CacheWithService
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S::Future: 'static,
+    B: MessageBody + 'static,
+    <B as MessageBody>::Error: std::fmt::Debug,
+{
+    type Response = ServiceResponse<BoxBody>;
+    type Error = Error;
+    type InitError = ();
+    type Transform = CacheMiddleware<S>;
+    type Future = Ready<Result<Self::Transform, Self::InitError>>;
+
+    fn new_transform(&self, service: S) -> Self::Future {
+        ok(CacheMiddleware::new(Rc::new(service), self.cache.clone()))
+    }
+}
+
 impl<S, B> Service<ServiceRequest> for CacheMiddleware<S>
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,

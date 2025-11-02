@@ -5,50 +5,56 @@ import React from 'react'
 import { onCLS, onFCP, onLCP, onTTFB } from 'web-vitals'
 import { APP_CONFIG } from '../constants'
 
-// Performance metrics interface
-export interface PerformanceMetrics {
-  // Core Web Vitals
-  CLS: number // Cumulative Layout Shift
-  FID: number // First Input Delay
-  LCP: number // Largest Contentful Paint
-  
-  // Additional metrics
-  FCP: number // First Contentful Paint
-  TTFB: number // Time to First Byte
-  
-  // Custom metrics
-  loadTime: number
-  renderTime: number
-  interactionTime: number
-  memoryUsage: number
-  
-  // User experience metrics
-  bounceRate: number
-  sessionDuration: number
-  pageViews: number
-  
-  // Performance scores
-  performanceScore: number
-  accessibilityScore: number
-  bestPracticesScore: number
-  seoScore: number
-  
-  // Timestamp
-  timestamp: Date
+// Performance metrics factory function
+export function createPerformanceMetrics(data = {}) {
+  return {
+    // Core Web Vitals
+    CLS: 0, // Cumulative Layout Shift
+    FID: 0, // First Input Delay
+    LCP: 0, // Largest Contentful Paint
+    
+    // Additional metrics
+    FCP: 0, // First Contentful Paint
+    TTFB: 0, // Time to First Byte
+    
+    // Custom metrics
+    loadTime: 0,
+    renderTime: 0,
+    interactionTime: 0,
+    memoryUsage: 0,
+    
+    // User experience metrics
+    bounceRate: 0,
+    sessionDuration: 0,
+    pageViews: 0,
+    
+    // Performance scores
+    performanceScore: 0,
+    accessibilityScore: 0,
+    bestPracticesScore: 0,
+    seoScore: 0,
+    
+    // Timestamp
+    timestamp: new Date(),
+    ...data
+  }
 }
 
-// Performance configuration
-interface PerformanceConfig {
-  enabled: boolean
-  sampleRate: number
-  reportInterval: number
-  maxRetries: number
-  endpoint: string
-  debug: boolean
+// Performance configuration factory function
+function createPerformanceConfig(data = {}) {
+  return {
+    enabled: true,
+    sampleRate: 1.0,
+    reportInterval: 30000, // 30 seconds
+    maxRetries: 3,
+    endpoint: '/api/analytics/performance',
+    debug: false,
+    ...data
+  }
 }
 
 // Default configuration
-const defaultConfig: PerformanceConfig = {
+const defaultConfig = createPerformanceConfig()
   enabled: true,
   sampleRate: 1.0,
   reportInterval: 30000, // 30 seconds
@@ -58,18 +64,18 @@ const defaultConfig: PerformanceConfig = {
 }
 
 class PerformanceMonitor {
-  private config: PerformanceConfig
-  private metrics: Partial<PerformanceMetrics> = {}
-  private observers: PerformanceObserver[] = []
-  private reportTimer?: NodeJS.Timeout
-  private isInitialized = false
+  config
+  metrics = {}
+  observers = []
+  reportTimer
+  isInitialized = false
 
-  constructor(config: Partial<PerformanceConfig> = {}) {
+  constructor(config = {}) {
     this.config = { ...defaultConfig, ...config }
     this.init()
   }
 
-  private init(): void {
+  init() {
     if (!this.config.enabled || this.isInitialized) return
 
     try {
@@ -87,7 +93,7 @@ class PerformanceMonitor {
     }
   }
 
-  private setupWebVitals(): void {
+  setupWebVitals() {
     // Core Web Vitals
     onCLS((metric) => {
       this.metrics.CLS = metric.value
@@ -111,7 +117,7 @@ class PerformanceMonitor {
     })
   }
 
-  private setupCustomMetrics(): void {
+  setupCustomMetrics() {
     // Page load time
     window.addEventListener('load', () => {
       const loadTime = performance.now()
@@ -129,7 +135,7 @@ class PerformanceMonitor {
     this.trackUserInteractions()
   }
 
-  private setupPerformanceObserver(): void {
+  setupPerformanceObserver() {
     // Long task observer
     if ('PerformanceObserver' in window) {
       const longTaskObserver = new PerformanceObserver((list) => {
@@ -157,7 +163,7 @@ class PerformanceMonitor {
     }
   }
 
-  private trackUserInteractions(): void {
+  trackUserInteractions() {
     let interactionStart = 0
     let interactionCount = 0
 
@@ -183,26 +189,26 @@ class PerformanceMonitor {
     })
   }
 
-  private startReporting(): void {
+  startReporting() {
     this.reportTimer = setInterval(() => {
       this.reportMetrics()
     }, this.config.reportInterval)
   }
 
-  private reportMetric(name: string, value: number): void {
+  reportMetric(name, value) {
     if (this.config.debug) {
       console.log(`Performance metric ${name}:`, value)
     }
 
     // Store metric
-    this.metrics[name as keyof PerformanceMetrics] = value as any
+    this.metrics[name] = value
     this.metrics.timestamp = new Date()
 
     // Send to analytics endpoint
     this.sendMetric(name, value)
   }
 
-  private async sendMetric(name: string, value: number): Promise<void> {
+  async sendMetric(name, value) {
     try {
       const payload = {
         metric: name,
@@ -230,7 +236,7 @@ class PerformanceMonitor {
     }
   }
 
-  private async reportMetrics(): Promise<void> {
+  async reportMetrics() {
     if (Object.keys(this.metrics).length === 0) return
 
     try {
@@ -263,7 +269,7 @@ class PerformanceMonitor {
     }
   }
 
-  private getConnectionInfo(): any {
+  getConnectionInfo() {
     if ('connection' in navigator) {
       const conn = (navigator as any).connection
       return {
@@ -276,7 +282,7 @@ class PerformanceMonitor {
     return null
   }
 
-  private getDeviceInfo(): any {
+  getDeviceInfo() {
     return {
       platform: navigator.platform,
       language: navigator.language,
@@ -287,11 +293,11 @@ class PerformanceMonitor {
   }
 
   // Public methods
-  public getMetrics(): Partial<PerformanceMetrics> {
+  getMetrics() {
     return { ...this.metrics }
   }
 
-  public getPerformanceScore(): number {
+  getPerformanceScore() {
     const metrics = this.metrics
     let score = 100
 
@@ -316,11 +322,11 @@ class PerformanceMonitor {
     return Math.max(0, score)
   }
 
-  public markCustomMetric(name: string, value: number): void {
+  markCustomMetric(name, value) {
     this.reportMetric(name, value)
   }
 
-  public measureCustomFunction<T>(name: string, fn: () => T): T {
+  measureCustomFunction(name, fn) {
     const start = performance.now()
     const result = fn()
     const duration = performance.now() - start
@@ -329,7 +335,7 @@ class PerformanceMonitor {
     return result
   }
 
-  public async measureAsyncFunction<T>(name: string, fn: () => Promise<T>): Promise<T> {
+  async measureAsyncFunction(name, fn) {
     const start = performance.now()
     const result = await fn()
     const duration = performance.now() - start
@@ -338,7 +344,7 @@ class PerformanceMonitor {
     return result
   }
 
-  public destroy(): void {
+  destroy() {
     if (this.reportTimer) {
       clearInterval(this.reportTimer)
     }
@@ -351,10 +357,10 @@ class PerformanceMonitor {
 
 // Performance optimization utilities
 export class PerformanceOptimizer {
-  private static instance: PerformanceOptimizer
-  private optimizations: Map<string, () => void> = new Map()
+  static instance
+  optimizations = new Map()
 
-  public static getInstance(): PerformanceOptimizer {
+  static getInstance() {
     if (!PerformanceOptimizer.instance) {
       PerformanceOptimizer.instance = new PerformanceOptimizer()
     }
@@ -362,7 +368,7 @@ export class PerformanceOptimizer {
   }
 
   // Image optimization
-  public optimizeImages(): void {
+  optimizeImages() {
     const images = document.querySelectorAll('img')
     images.forEach(img => {
       // Lazy loading
@@ -383,7 +389,7 @@ export class PerformanceOptimizer {
   }
 
   // Resource hints
-  public addResourceHints(urls: string[]): void {
+  addResourceHints(urls) {
     urls.forEach(url => {
       const link = document.createElement('link')
       link.rel = 'prefetch'
@@ -393,19 +399,19 @@ export class PerformanceOptimizer {
   }
 
   // Critical CSS inlining
-  public inlineCriticalCSS(css: string): void {
+  inlineCriticalCSS(css) {
     const style = document.createElement('style')
     style.textContent = css
     document.head.appendChild(style)
   }
 
   // Bundle splitting
-  public loadChunk(chunkName: string): Promise<any> {
+  loadChunk(chunkName) {
     return import(/* webpackChunkName: "[request]" */ `../chunks/${chunkName}`)
   }
 
   // Memory optimization
-  public optimizeMemory(): void {
+  optimizeMemory() {
     // Clear unused event listeners
     if (window.gc) {
       window.gc()
@@ -419,7 +425,7 @@ export class PerformanceOptimizer {
   }
 
   // Debounced scroll handler
-  public addOptimizedScrollHandler(handler: () => void, delay = 16): void {
+  addOptimizedScrollHandler(handler, delay = 16) {
     let ticking = false
     
     const optimizedHandler = () => {
@@ -436,12 +442,7 @@ export class PerformanceOptimizer {
   }
 
   // Virtual scrolling for large lists
-  public createVirtualScroller(
-    container: HTMLElement,
-    itemHeight: number,
-    totalItems: number,
-    renderItem: (index: number) => HTMLElement
-  ): void {
+  createVirtualScroller(container, itemHeight, totalItems, renderItem) {
     const visibleItems = Math.ceil(container.clientHeight / itemHeight)
     let scrollTop = 0
 
@@ -483,7 +484,7 @@ export const performanceOptimizer = PerformanceOptimizer.getInstance()
 
 // React performance hooks
 export const usePerformanceMonitor = () => {
-  const [metrics, setMetrics] = React.useState<Partial<PerformanceMetrics>>({})
+  const [metrics, setMetrics] = React.useState({})
 
   React.useEffect(() => {
     const updateMetrics = () => {
@@ -497,14 +498,14 @@ export const usePerformanceMonitor = () => {
   return {
     metrics,
     getPerformanceScore: () => performanceMonitor.getPerformanceScore(),
-    markMetric: (name: string, value: number) => performanceMonitor.markCustomMetric(name, value),
-    measureFunction: <T>(name: string, fn: () => T) => performanceMonitor.measureCustomFunction(name, fn),
-    measureAsyncFunction: <T>(name: string, fn: () => Promise<T>) => performanceMonitor.measureAsyncFunction(name, fn),
+    markMetric: (name, value) => performanceMonitor.markCustomMetric(name, value),
+    measureFunction: (name, fn) => performanceMonitor.measureCustomFunction(name, fn),
+    measureAsyncFunction: (name, fn) => performanceMonitor.measureAsyncFunction(name, fn),
   }
 }
 
 // Performance middleware for API calls
-export const performanceMiddleware = (store: any) => (next: any) => (action: any) => {
+export const performanceMiddleware = (store) => (next) => (action) => {
   const start = performance.now()
   const result = next(action)
   const duration = performance.now() - start

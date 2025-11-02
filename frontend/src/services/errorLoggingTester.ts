@@ -1,77 +1,77 @@
 // Error Logging Testing
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 // Comprehensive testing suite for verifying error logging and monitoring
 
-import React from 'react'
+import React from 'react';
 
 export interface ErrorLoggingTest {
-  id: string
-  name: string
-  description: string
-  testFunction: () => Promise<ErrorLoggingTestResult>
-  category: 'log-capture' | 'log-transmission' | 'log-storage' | 'log-monitoring'
-  priority: 'high' | 'medium' | 'low'
-  requiresLoggingSimulation: boolean
+  id: string;
+  name: string;
+  description: string;
+  testFunction: () => Promise<ErrorLoggingTestResult>;
+  category: 'log-capture' | 'log-transmission' | 'log-storage' | 'log-monitoring';
+  priority: 'high' | 'medium' | 'low';
+  requiresLoggingSimulation: boolean;
 }
 
 export interface ErrorLoggingTestResult {
-  success: boolean
-  message: string
-  details?: any
-  timestamp: Date
-  duration: number
-  errors?: string[]
-  logEntries?: LogEntry[]
-  transmissionTests?: TransmissionTest[]
-  storageTests?: StorageTest[]
-  monitoringTests?: MonitoringTest[]
+  success: boolean;
+  message: string;
+  details?: any;
+  timestamp: Date;
+  duration: number;
+  errors?: string[];
+  logEntries?: LogEntry[];
+  transmissionTests?: TransmissionTest[];
+  storageTests?: StorageTest[];
+  monitoringTests?: MonitoringTest[];
 }
 
 export interface LogEntry {
-  level: 'debug' | 'info' | 'warn' | 'error' | 'fatal'
-  message: string
-  timestamp: Date
-  context?: any
-  stackTrace?: string
-  userId?: string
-  sessionId?: string
-  requestId?: string
+  level: 'debug' | 'info' | 'warn' | 'error' | 'fatal';
+  message: string;
+  timestamp: Date;
+  context?: any;
+  stackTrace?: string;
+  userId?: string;
+  sessionId?: string;
+  requestId?: string;
 }
 
 export interface TransmissionTest {
-  destination: 'console' | 'file' | 'remote-server' | 'database'
-  success: boolean
-  latency: number
-  timestamp: Date
-  details?: any
+  destination: 'console' | 'file' | 'remote-server' | 'database';
+  success: boolean;
+  latency: number;
+  timestamp: Date;
+  details?: any;
 }
 
 export interface StorageTest {
-  storageType: 'local' | 'remote' | 'database' | 'cloud'
-  success: boolean
-  size: number
-  timestamp: Date
-  details?: any
+  storageType: 'local' | 'remote' | 'database' | 'cloud';
+  success: boolean;
+  size: number;
+  timestamp: Date;
+  details?: any;
 }
 
 export interface MonitoringTest {
-  monitoringType: 'alerts' | 'metrics' | 'dashboards' | 'notifications'
-  success: boolean
-  threshold?: number
-  timestamp: Date
-  details?: any
+  monitoringType: 'alerts' | 'metrics' | 'dashboards' | 'notifications';
+  success: boolean;
+  threshold?: number;
+  timestamp: Date;
+  details?: any;
 }
 
 export interface ErrorLoggingConfig {
-  testTimeout: number
-  retryAttempts: number
-  retryDelay: number
-  enableLogCaptureTests: boolean
-  enableLogTransmissionTests: boolean
-  enableLogStorageTests: boolean
-  enableLogMonitoringTests: boolean
-  logLevels: string[]
-  maxLogSize: number
+  testTimeout: number;
+  retryAttempts: number;
+  retryDelay: number;
+  enableLogCaptureTests: boolean;
+  enableLogTransmissionTests: boolean;
+  enableLogStorageTests: boolean;
+  enableLogMonitoringTests: boolean;
+  logLevels: string[];
+  maxLogSize: number;
 }
 
 const defaultConfig: ErrorLoggingConfig = {
@@ -83,19 +83,19 @@ const defaultConfig: ErrorLoggingConfig = {
   enableLogStorageTests: true,
   enableLogMonitoringTests: true,
   logLevels: ['debug', 'info', 'warn', 'error', 'fatal'],
-  maxLogSize: 1024 * 1024 // 1MB
-}
+  maxLogSize: 1024 * 1024, // 1MB
+};
 
 export class ErrorLoggingTester {
-  private config: ErrorLoggingConfig
-  private tests: Map<string, ErrorLoggingTest> = new Map()
-  private results: Map<string, ErrorLoggingTestResult[]> = new Map()
-  private isRunning: boolean = false
-  private logEntries: LogEntry[] = []
+  private config: ErrorLoggingConfig;
+  private tests: Map<string, ErrorLoggingTest> = new Map();
+  private results: Map<string, ErrorLoggingTestResult[]> = new Map();
+  private isRunning: boolean = false;
+  private logEntries: LogEntry[] = [];
 
   constructor(config: Partial<ErrorLoggingConfig> = {}) {
-    this.config = { ...defaultConfig, ...config }
-    this.initializeTests()
+    this.config = { ...defaultConfig, ...config };
+    this.initializeTests();
   }
 
   private initializeTests(): void {
@@ -108,8 +108,8 @@ export class ErrorLoggingTester {
         category: 'log-capture',
         priority: 'high',
         requiresLoggingSimulation: false,
-        testFunction: this.testLogLevelCapture.bind(this)
-      })
+        testFunction: this.testLogLevelCapture.bind(this),
+      });
 
       this.addTest({
         id: 'log-context-capture',
@@ -118,8 +118,8 @@ export class ErrorLoggingTester {
         category: 'log-capture',
         priority: 'high',
         requiresLoggingSimulation: false,
-        testFunction: this.testLogContextCapture.bind(this)
-      })
+        testFunction: this.testLogContextCapture.bind(this),
+      });
 
       this.addTest({
         id: 'log-stack-trace-capture',
@@ -128,8 +128,8 @@ export class ErrorLoggingTester {
         category: 'log-capture',
         priority: 'medium',
         requiresLoggingSimulation: false,
-        testFunction: this.testLogStackTraceCapture.bind(this)
-      })
+        testFunction: this.testLogStackTraceCapture.bind(this),
+      });
 
       this.addTest({
         id: 'log-performance-capture',
@@ -138,8 +138,8 @@ export class ErrorLoggingTester {
         category: 'log-capture',
         priority: 'medium',
         requiresLoggingSimulation: false,
-        testFunction: this.testLogPerformanceCapture.bind(this)
-      })
+        testFunction: this.testLogPerformanceCapture.bind(this),
+      });
     }
 
     // Log Transmission Tests
@@ -151,8 +151,8 @@ export class ErrorLoggingTester {
         category: 'log-transmission',
         priority: 'high',
         requiresLoggingSimulation: false,
-        testFunction: this.testConsoleLogTransmission.bind(this)
-      })
+        testFunction: this.testConsoleLogTransmission.bind(this),
+      });
 
       this.addTest({
         id: 'file-log-transmission',
@@ -161,8 +161,8 @@ export class ErrorLoggingTester {
         category: 'log-transmission',
         priority: 'high',
         requiresLoggingSimulation: false,
-        testFunction: this.testFileLogTransmission.bind(this)
-      })
+        testFunction: this.testFileLogTransmission.bind(this),
+      });
 
       this.addTest({
         id: 'remote-server-transmission',
@@ -171,8 +171,8 @@ export class ErrorLoggingTester {
         category: 'log-transmission',
         priority: 'medium',
         requiresLoggingSimulation: true,
-        testFunction: this.testRemoteServerTransmission.bind(this)
-      })
+        testFunction: this.testRemoteServerTransmission.bind(this),
+      });
 
       this.addTest({
         id: 'database-log-transmission',
@@ -181,8 +181,8 @@ export class ErrorLoggingTester {
         category: 'log-transmission',
         priority: 'medium',
         requiresLoggingSimulation: true,
-        testFunction: this.testDatabaseLogTransmission.bind(this)
-      })
+        testFunction: this.testDatabaseLogTransmission.bind(this),
+      });
     }
 
     // Log Storage Tests
@@ -194,8 +194,8 @@ export class ErrorLoggingTester {
         category: 'log-storage',
         priority: 'high',
         requiresLoggingSimulation: false,
-        testFunction: this.testLocalLogStorage.bind(this)
-      })
+        testFunction: this.testLocalLogStorage.bind(this),
+      });
 
       this.addTest({
         id: 'remote-log-storage',
@@ -204,8 +204,8 @@ export class ErrorLoggingTester {
         category: 'log-storage',
         priority: 'medium',
         requiresLoggingSimulation: true,
-        testFunction: this.testRemoteLogStorage.bind(this)
-      })
+        testFunction: this.testRemoteLogStorage.bind(this),
+      });
 
       this.addTest({
         id: 'database-log-storage',
@@ -214,8 +214,8 @@ export class ErrorLoggingTester {
         category: 'log-storage',
         priority: 'medium',
         requiresLoggingSimulation: true,
-        testFunction: this.testDatabaseLogStorage.bind(this)
-      })
+        testFunction: this.testDatabaseLogStorage.bind(this),
+      });
 
       this.addTest({
         id: 'cloud-log-storage',
@@ -224,8 +224,8 @@ export class ErrorLoggingTester {
         category: 'log-storage',
         priority: 'low',
         requiresLoggingSimulation: true,
-        testFunction: this.testCloudLogStorage.bind(this)
-      })
+        testFunction: this.testCloudLogStorage.bind(this),
+      });
     }
 
     // Log Monitoring Tests
@@ -237,8 +237,8 @@ export class ErrorLoggingTester {
         category: 'log-monitoring',
         priority: 'high',
         requiresLoggingSimulation: true,
-        testFunction: this.testLogAlertMonitoring.bind(this)
-      })
+        testFunction: this.testLogAlertMonitoring.bind(this),
+      });
 
       this.addTest({
         id: 'log-metrics-monitoring',
@@ -247,8 +247,8 @@ export class ErrorLoggingTester {
         category: 'log-monitoring',
         priority: 'high',
         requiresLoggingSimulation: true,
-        testFunction: this.testLogMetricsMonitoring.bind(this)
-      })
+        testFunction: this.testLogMetricsMonitoring.bind(this),
+      });
 
       this.addTest({
         id: 'log-dashboard-monitoring',
@@ -257,8 +257,8 @@ export class ErrorLoggingTester {
         category: 'log-monitoring',
         priority: 'medium',
         requiresLoggingSimulation: true,
-        testFunction: this.testLogDashboardMonitoring.bind(this)
-      })
+        testFunction: this.testLogDashboardMonitoring.bind(this),
+      });
 
       this.addTest({
         id: 'log-notification-monitoring',
@@ -267,30 +267,33 @@ export class ErrorLoggingTester {
         category: 'log-monitoring',
         priority: 'medium',
         requiresLoggingSimulation: true,
-        testFunction: this.testLogNotificationMonitoring.bind(this)
-      })
+        testFunction: this.testLogNotificationMonitoring.bind(this),
+      });
     }
   }
 
   private addTest(test: ErrorLoggingTest): void {
-    this.tests.set(test.id, test)
+    this.tests.set(test.id, test);
   }
 
   // Test Implementation Methods
   private async testLogLevelCapture(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const logEntries: LogEntry[] = []
+      const logEntries: LogEntry[] = [];
 
       // Test all log levels
       for (const level of this.config.logLevels) {
-        const logEntry = await this.captureLogEntry(level as LogEntry['level'], `Test ${level} message`)
-        logEntries.push(logEntry)
+        const logEntry = await this.captureLogEntry(
+          level as LogEntry['level'],
+          `Test ${level} message`
+        );
+        logEntries.push(logEntry);
       }
 
-      const allLevelsCaptured = logEntries.length === this.config.logLevels.length
-      const duration = Date.now() - startTime
+      const allLevelsCaptured = logEntries.length === this.config.logLevels.length;
+      const duration = Date.now() - startTime;
 
       return {
         success: allLevelsCaptured,
@@ -300,45 +303,49 @@ export class ErrorLoggingTester {
         details: {
           logEntries,
           expectedLevels: this.config.logLevels,
-          capturedLevels: logEntries.map(entry => entry.level)
+          capturedLevels: logEntries.map((entry) => entry.level),
         },
         timestamp: new Date(),
         duration,
-        logEntries
-      }
+        logEntries,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Log level capture test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testLogContextCapture(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const logEntries: LogEntry[] = []
+      const logEntries: LogEntry[] = [];
 
       // Test log context capture
       const testContexts = [
         { userId: 'user-123', sessionId: 'session-456', requestId: 'req-789' },
         { userId: 'user-456', sessionId: 'session-789', requestId: 'req-123' },
-        { userId: 'user-789', sessionId: 'session-123', requestId: 'req-456' }
-      ]
+        { userId: 'user-789', sessionId: 'session-123', requestId: 'req-456' },
+      ];
 
       for (const context of testContexts) {
-        const logEntry = await this.captureLogEntryWithContext('info', 'Test context message', context)
-        logEntries.push(logEntry)
+        const logEntry = await this.captureLogEntryWithContext(
+          'info',
+          'Test context message',
+          context
+        );
+        logEntries.push(logEntry);
       }
 
-      const allContextsCaptured = logEntries.every(entry => 
-        entry.userId && entry.sessionId && entry.requestId
-      )
-      const duration = Date.now() - startTime
+      const allContextsCaptured = logEntries.every(
+        (entry) => entry.userId && entry.sessionId && entry.requestId
+      );
+      const duration = Date.now() - startTime;
 
       return {
         success: allContextsCaptured,
@@ -347,39 +354,45 @@ export class ErrorLoggingTester {
           : 'Log context capture issues detected',
         details: {
           logEntries,
-          testContexts
+          testContexts,
         },
         timestamp: new Date(),
         duration,
-        logEntries
-      }
+        logEntries,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Log context capture test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testLogStackTraceCapture(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const logEntries: LogEntry[] = []
+      const logEntries: LogEntry[] = [];
 
       // Test stack trace capture
       try {
-        throw new Error('Test error for stack trace')
+        throw new Error('Test error for stack trace');
       } catch (error) {
-        const logEntry = await this.captureLogEntryWithStackTrace('error', 'Test error message', error as Error)
-        logEntries.push(logEntry)
+        const logEntry = await this.captureLogEntryWithStackTrace(
+          'error',
+          'Test error message',
+          error as Error
+        );
+        logEntries.push(logEntry);
       }
 
-      const stackTraceCaptured = logEntries.some(entry => entry.stackTrace && entry.stackTrace.length > 0)
-      const duration = Date.now() - startTime
+      const stackTraceCaptured = logEntries.some(
+        (entry) => entry.stackTrace && entry.stackTrace.length > 0
+      );
+      const duration = Date.now() - startTime;
 
       return {
         success: stackTraceCaptured,
@@ -388,46 +401,47 @@ export class ErrorLoggingTester {
           : 'Log stack trace capture issues detected',
         details: {
           logEntries,
-          stackTracePresent: stackTraceCaptured
+          stackTracePresent: stackTraceCaptured,
         },
         timestamp: new Date(),
         duration,
-        logEntries
-      }
+        logEntries,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Log stack trace capture test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testLogPerformanceCapture(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const logEntries: LogEntry[] = []
-      const performanceTests: { duration: number; timestamp: Date }[] = []
+      const logEntries: LogEntry[] = [];
+      const performanceTests: { duration: number; timestamp: Date }[] = [];
 
       // Test log capture performance
       for (let i = 0; i < 100; i++) {
-        const captureStartTime = Date.now()
-        const logEntry = await this.captureLogEntry('info', `Performance test message ${i}`)
-        const captureDuration = Date.now() - captureStartTime
-        
-        logEntries.push(logEntry)
+        const captureStartTime = Date.now();
+        const logEntry = await this.captureLogEntry('info', `Performance test message ${i}`);
+        const captureDuration = Date.now() - captureStartTime;
+
+        logEntries.push(logEntry);
         performanceTests.push({
           duration: captureDuration,
-          timestamp: new Date()
-        })
+          timestamp: new Date(),
+        });
       }
 
-      const averageDuration = performanceTests.reduce((sum, test) => sum + test.duration, 0) / performanceTests.length
-      const performanceAcceptable = averageDuration < 10 // Less than 10ms average
-      const duration = Date.now() - startTime
+      const averageDuration =
+        performanceTests.reduce((sum, test) => sum + test.duration, 0) / performanceTests.length;
+      const performanceAcceptable = averageDuration < 10; // Less than 10ms average
+      const duration = Date.now() - startTime;
 
       return {
         success: performanceAcceptable,
@@ -438,35 +452,35 @@ export class ErrorLoggingTester {
           logEntries,
           performanceTests,
           averageDuration,
-          totalEntries: logEntries.length
+          totalEntries: logEntries.length,
         },
         timestamp: new Date(),
         duration,
-        logEntries
-      }
+        logEntries,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Log performance capture test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testConsoleLogTransmission(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const transmissionTests: TransmissionTest[] = []
+      const transmissionTests: TransmissionTest[] = [];
 
       // Test console log transmission
-      const transmissionTest = await this.testLogTransmission('console', 'Test console message')
-      transmissionTests.push(transmissionTest)
+      const transmissionTest = await this.testLogTransmission('console', 'Test console message');
+      transmissionTests.push(transmissionTest);
 
-      const consoleTransmissionWorking = transmissionTest.success
-      const duration = Date.now() - startTime
+      const consoleTransmissionWorking = transmissionTest.success;
+      const duration = Date.now() - startTime;
 
       return {
         success: consoleTransmissionWorking,
@@ -474,35 +488,35 @@ export class ErrorLoggingTester {
           ? 'Console log transmission working correctly'
           : 'Console log transmission issues detected',
         details: {
-          transmissionTests
+          transmissionTests,
         },
         timestamp: new Date(),
         duration,
-        transmissionTests
-      }
+        transmissionTests,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Console log transmission test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testFileLogTransmission(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const transmissionTests: TransmissionTest[] = []
+      const transmissionTests: TransmissionTest[] = [];
 
       // Test file log transmission
-      const transmissionTest = await this.testLogTransmission('file', 'Test file message')
-      transmissionTests.push(transmissionTest)
+      const transmissionTest = await this.testLogTransmission('file', 'Test file message');
+      transmissionTests.push(transmissionTest);
 
-      const fileTransmissionWorking = transmissionTest.success
-      const duration = Date.now() - startTime
+      const fileTransmissionWorking = transmissionTest.success;
+      const duration = Date.now() - startTime;
 
       return {
         success: fileTransmissionWorking,
@@ -510,35 +524,38 @@ export class ErrorLoggingTester {
           ? 'File log transmission working correctly'
           : 'File log transmission issues detected',
         details: {
-          transmissionTests
+          transmissionTests,
         },
         timestamp: new Date(),
         duration,
-        transmissionTests
-      }
+        transmissionTests,
+      };
     } catch (error) {
       return {
         success: false,
         message: `File log transmission test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testRemoteServerTransmission(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const transmissionTests: TransmissionTest[] = []
+      const transmissionTests: TransmissionTest[] = [];
 
       // Test remote server log transmission
-      const transmissionTest = await this.testLogTransmission('remote-server', 'Test remote server message')
-      transmissionTests.push(transmissionTest)
+      const transmissionTest = await this.testLogTransmission(
+        'remote-server',
+        'Test remote server message'
+      );
+      transmissionTests.push(transmissionTest);
 
-      const remoteTransmissionWorking = transmissionTest.success
-      const duration = Date.now() - startTime
+      const remoteTransmissionWorking = transmissionTest.success;
+      const duration = Date.now() - startTime;
 
       return {
         success: remoteTransmissionWorking,
@@ -546,35 +563,35 @@ export class ErrorLoggingTester {
           ? 'Remote server log transmission working correctly'
           : 'Remote server log transmission issues detected',
         details: {
-          transmissionTests
+          transmissionTests,
         },
         timestamp: new Date(),
         duration,
-        transmissionTests
-      }
+        transmissionTests,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Remote server log transmission test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testDatabaseLogTransmission(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const transmissionTests: TransmissionTest[] = []
+      const transmissionTests: TransmissionTest[] = [];
 
       // Test database log transmission
-      const transmissionTest = await this.testLogTransmission('database', 'Test database message')
-      transmissionTests.push(transmissionTest)
+      const transmissionTest = await this.testLogTransmission('database', 'Test database message');
+      transmissionTests.push(transmissionTest);
 
-      const databaseTransmissionWorking = transmissionTest.success
-      const duration = Date.now() - startTime
+      const databaseTransmissionWorking = transmissionTest.success;
+      const duration = Date.now() - startTime;
 
       return {
         success: databaseTransmissionWorking,
@@ -582,35 +599,35 @@ export class ErrorLoggingTester {
           ? 'Database log transmission working correctly'
           : 'Database log transmission issues detected',
         details: {
-          transmissionTests
+          transmissionTests,
         },
         timestamp: new Date(),
         duration,
-        transmissionTests
-      }
+        transmissionTests,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Database log transmission test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testLocalLogStorage(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const storageTests: StorageTest[] = []
+      const storageTests: StorageTest[] = [];
 
       // Test local log storage
-      const storageTest = await this.testLogStorage('local', 'Test local storage message')
-      storageTests.push(storageTest)
+      const storageTest = await this.testLogStorage('local', 'Test local storage message');
+      storageTests.push(storageTest);
 
-      const localStorageWorking = storageTest.success
-      const duration = Date.now() - startTime
+      const localStorageWorking = storageTest.success;
+      const duration = Date.now() - startTime;
 
       return {
         success: localStorageWorking,
@@ -618,35 +635,35 @@ export class ErrorLoggingTester {
           ? 'Local log storage working correctly'
           : 'Local log storage issues detected',
         details: {
-          storageTests
+          storageTests,
         },
         timestamp: new Date(),
         duration,
-        storageTests
-      }
+        storageTests,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Local log storage test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testRemoteLogStorage(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const storageTests: StorageTest[] = []
+      const storageTests: StorageTest[] = [];
 
       // Test remote log storage
-      const storageTest = await this.testLogStorage('remote', 'Test remote storage message')
-      storageTests.push(storageTest)
+      const storageTest = await this.testLogStorage('remote', 'Test remote storage message');
+      storageTests.push(storageTest);
 
-      const remoteStorageWorking = storageTest.success
-      const duration = Date.now() - startTime
+      const remoteStorageWorking = storageTest.success;
+      const duration = Date.now() - startTime;
 
       return {
         success: remoteStorageWorking,
@@ -654,35 +671,35 @@ export class ErrorLoggingTester {
           ? 'Remote log storage working correctly'
           : 'Remote log storage issues detected',
         details: {
-          storageTests
+          storageTests,
         },
         timestamp: new Date(),
         duration,
-        storageTests
-      }
+        storageTests,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Remote log storage test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testDatabaseLogStorage(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const storageTests: StorageTest[] = []
+      const storageTests: StorageTest[] = [];
 
       // Test database log storage
-      const storageTest = await this.testLogStorage('database', 'Test database storage message')
-      storageTests.push(storageTest)
+      const storageTest = await this.testLogStorage('database', 'Test database storage message');
+      storageTests.push(storageTest);
 
-      const databaseStorageWorking = storageTest.success
-      const duration = Date.now() - startTime
+      const databaseStorageWorking = storageTest.success;
+      const duration = Date.now() - startTime;
 
       return {
         success: databaseStorageWorking,
@@ -690,35 +707,35 @@ export class ErrorLoggingTester {
           ? 'Database log storage working correctly'
           : 'Database log storage issues detected',
         details: {
-          storageTests
+          storageTests,
         },
         timestamp: new Date(),
         duration,
-        storageTests
-      }
+        storageTests,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Database log storage test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testCloudLogStorage(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const storageTests: StorageTest[] = []
+      const storageTests: StorageTest[] = [];
 
       // Test cloud log storage
-      const storageTest = await this.testLogStorage('cloud', 'Test cloud storage message')
-      storageTests.push(storageTest)
+      const storageTest = await this.testLogStorage('cloud', 'Test cloud storage message');
+      storageTests.push(storageTest);
 
-      const cloudStorageWorking = storageTest.success
-      const duration = Date.now() - startTime
+      const cloudStorageWorking = storageTest.success;
+      const duration = Date.now() - startTime;
 
       return {
         success: cloudStorageWorking,
@@ -726,35 +743,35 @@ export class ErrorLoggingTester {
           ? 'Cloud log storage working correctly'
           : 'Cloud log storage issues detected',
         details: {
-          storageTests
+          storageTests,
         },
         timestamp: new Date(),
         duration,
-        storageTests
-      }
+        storageTests,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Cloud log storage test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testLogAlertMonitoring(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const monitoringTests: MonitoringTest[] = []
+      const monitoringTests: MonitoringTest[] = [];
 
       // Test log alert monitoring
-      const monitoringTest = await this.testLogMonitoring('alerts', 'Test alert monitoring')
-      monitoringTests.push(monitoringTest)
+      const monitoringTest = await this.testLogMonitoring('alerts', 'Test alert monitoring');
+      monitoringTests.push(monitoringTest);
 
-      const alertMonitoringWorking = monitoringTest.success
-      const duration = Date.now() - startTime
+      const alertMonitoringWorking = monitoringTest.success;
+      const duration = Date.now() - startTime;
 
       return {
         success: alertMonitoringWorking,
@@ -762,35 +779,35 @@ export class ErrorLoggingTester {
           ? 'Log alert monitoring working correctly'
           : 'Log alert monitoring issues detected',
         details: {
-          monitoringTests
+          monitoringTests,
         },
         timestamp: new Date(),
         duration,
-        monitoringTests
-      }
+        monitoringTests,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Log alert monitoring test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testLogMetricsMonitoring(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const monitoringTests: MonitoringTest[] = []
+      const monitoringTests: MonitoringTest[] = [];
 
       // Test log metrics monitoring
-      const monitoringTest = await this.testLogMonitoring('metrics', 'Test metrics monitoring')
-      monitoringTests.push(monitoringTest)
+      const monitoringTest = await this.testLogMonitoring('metrics', 'Test metrics monitoring');
+      monitoringTests.push(monitoringTest);
 
-      const metricsMonitoringWorking = monitoringTest.success
-      const duration = Date.now() - startTime
+      const metricsMonitoringWorking = monitoringTest.success;
+      const duration = Date.now() - startTime;
 
       return {
         success: metricsMonitoringWorking,
@@ -798,35 +815,38 @@ export class ErrorLoggingTester {
           ? 'Log metrics monitoring working correctly'
           : 'Log metrics monitoring issues detected',
         details: {
-          monitoringTests
+          monitoringTests,
         },
         timestamp: new Date(),
         duration,
-        monitoringTests
-      }
+        monitoringTests,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Log metrics monitoring test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testLogDashboardMonitoring(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const monitoringTests: MonitoringTest[] = []
+      const monitoringTests: MonitoringTest[] = [];
 
       // Test log dashboard monitoring
-      const monitoringTest = await this.testLogMonitoring('dashboards', 'Test dashboard monitoring')
-      monitoringTests.push(monitoringTest)
+      const monitoringTest = await this.testLogMonitoring(
+        'dashboards',
+        'Test dashboard monitoring'
+      );
+      monitoringTests.push(monitoringTest);
 
-      const dashboardMonitoringWorking = monitoringTest.success
-      const duration = Date.now() - startTime
+      const dashboardMonitoringWorking = monitoringTest.success;
+      const duration = Date.now() - startTime;
 
       return {
         success: dashboardMonitoringWorking,
@@ -834,35 +854,38 @@ export class ErrorLoggingTester {
           ? 'Log dashboard monitoring working correctly'
           : 'Log dashboard monitoring issues detected',
         details: {
-          monitoringTests
+          monitoringTests,
         },
         timestamp: new Date(),
         duration,
-        monitoringTests
-      }
+        monitoringTests,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Log dashboard monitoring test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testLogNotificationMonitoring(): Promise<ErrorLoggingTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const monitoringTests: MonitoringTest[] = []
+      const monitoringTests: MonitoringTest[] = [];
 
       // Test log notification monitoring
-      const monitoringTest = await this.testLogMonitoring('notifications', 'Test notification monitoring')
-      monitoringTests.push(monitoringTest)
+      const monitoringTest = await this.testLogMonitoring(
+        'notifications',
+        'Test notification monitoring'
+      );
+      monitoringTests.push(monitoringTest);
 
-      const notificationMonitoringWorking = monitoringTest.success
-      const duration = Date.now() - startTime
+      const notificationMonitoringWorking = monitoringTest.success;
+      const duration = Date.now() - startTime;
 
       return {
         success: notificationMonitoringWorking,
@@ -870,20 +893,20 @@ export class ErrorLoggingTester {
           ? 'Log notification monitoring working correctly'
           : 'Log notification monitoring issues detected',
         details: {
-          monitoringTests
+          monitoringTests,
         },
         timestamp: new Date(),
         duration,
-        monitoringTests
-      }
+        monitoringTests,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Log notification monitoring test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
@@ -894,16 +917,20 @@ export class ErrorLoggingTester {
       level,
       message,
       timestamp: new Date(),
-      context: { test: true }
-    }
-    
-    this.logEntries.push(logEntry)
-    logger.log(`[${level.toUpperCase()}] ${message}`)
-    
-    return logEntry
+      context: { test: true },
+    };
+
+    this.logEntries.push(logEntry);
+    logger.info(`[${level.toUpperCase()}] ${message}`);
+
+    return logEntry;
   }
 
-  private async captureLogEntryWithContext(level: LogEntry['level'], message: string, context: any): Promise<LogEntry> {
+  private async captureLogEntryWithContext(
+    level: LogEntry['level'],
+    message: string,
+    context: any
+  ): Promise<LogEntry> {
     // Mock implementation
     const logEntry: LogEntry = {
       level,
@@ -912,178 +939,195 @@ export class ErrorLoggingTester {
       context,
       userId: context.userId,
       sessionId: context.sessionId,
-      requestId: context.requestId
-    }
-    
-    this.logEntries.push(logEntry)
-    logger.log(`[${level.toUpperCase()}] ${message}`, context)
-    
-    return logEntry
+      requestId: context.requestId,
+    };
+
+    this.logEntries.push(logEntry);
+    logger.info(`[${level.toUpperCase()}] ${message}`, context);
+
+    return logEntry;
   }
 
-  private async captureLogEntryWithStackTrace(level: LogEntry['level'], message: string, error: Error): Promise<LogEntry> {
+  private async captureLogEntryWithStackTrace(
+    level: LogEntry['level'],
+    message: string,
+    error: Error
+  ): Promise<LogEntry> {
     // Mock implementation
     const logEntry: LogEntry = {
       level,
       message,
       timestamp: new Date(),
       context: { test: true },
-      stackTrace: error.stack
-    }
-    
-    this.logEntries.push(logEntry)
-    logger.log(`[${level.toUpperCase()}] ${message}`, error.stack)
-    
-    return logEntry
+      stackTrace: error.stack,
+    };
+
+    this.logEntries.push(logEntry);
+    logger.info(`[${level.toUpperCase()}] ${message}`, error.stack);
+
+    return logEntry;
   }
 
-  private async testLogTransmission(destination: TransmissionTest['destination'], message: string): Promise<TransmissionTest> {
+  private async testLogTransmission(
+    destination: TransmissionTest['destination'],
+    message: string
+  ): Promise<TransmissionTest> {
     // Mock implementation
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
       // Simulate transmission
-      await new Promise(resolve => setTimeout(resolve, Math.random() * 100))
-      
-      const latency = Date.now() - startTime
-      const success = Math.random() > 0.1 // 90% success rate
-      
+      await new Promise((resolve) => setTimeout(resolve, Math.random() * 100));
+
+      const latency = Date.now() - startTime;
+      const success = Math.random() > 0.1; // 90% success rate
+
       return {
         destination,
         success,
         latency,
         timestamp: new Date(),
-        details: { message, simulated: true }
-      }
+        details: { message, simulated: true },
+      };
     } catch (error) {
       return {
         destination,
         success: false,
         latency: Date.now() - startTime,
         timestamp: new Date(),
-        details: { error: error instanceof Error ? error.message : 'Unknown error' }
-      }
+        details: { error: error instanceof Error ? error.message : 'Unknown error' },
+      };
     }
   }
 
-  private async testLogStorage(storageType: StorageTest['storageType'], message: string): Promise<StorageTest> {
+  private async testLogStorage(
+    storageType: StorageTest['storageType'],
+    message: string
+  ): Promise<StorageTest> {
     // Mock implementation
     try {
-      const size = JSON.stringify({ message, timestamp: new Date() }).length
-      const success = Math.random() > 0.05 // 95% success rate
-      
+      const size = JSON.stringify({ message, timestamp: new Date() }).length;
+      const success = Math.random() > 0.05; // 95% success rate
+
       return {
         storageType,
         success,
         size,
         timestamp: new Date(),
-        details: { message, simulated: true }
-      }
+        details: { message, simulated: true },
+      };
     } catch (error) {
       return {
         storageType,
         success: false,
         size: 0,
         timestamp: new Date(),
-        details: { error: error instanceof Error ? error.message : 'Unknown error' }
-      }
+        details: { error: error instanceof Error ? error.message : 'Unknown error' },
+      };
     }
   }
 
-  private async testLogMonitoring(monitoringType: MonitoringTest['monitoringType'], message: string): Promise<MonitoringTest> {
+  private async testLogMonitoring(
+    monitoringType: MonitoringTest['monitoringType'],
+    message: string
+  ): Promise<MonitoringTest> {
     // Mock implementation
     try {
-      const success = Math.random() > 0.1 // 90% success rate
-      const threshold = Math.random() * 100
-      
+      const success = Math.random() > 0.1; // 90% success rate
+      const threshold = Math.random() * 100;
+
       return {
         monitoringType,
         success,
         threshold,
         timestamp: new Date(),
-        details: { message, simulated: true }
-      }
+        details: { message, simulated: true },
+      };
     } catch (error) {
       return {
         monitoringType,
         success: false,
         timestamp: new Date(),
-        details: { error: error instanceof Error ? error.message : 'Unknown error' }
-      }
+        details: { error: error instanceof Error ? error.message : 'Unknown error' },
+      };
     }
   }
 
   // Public Methods
   public async runTest(testId: string): Promise<ErrorLoggingTestResult> {
-    const test = this.tests.get(testId)
+    const test = this.tests.get(testId);
     if (!test) {
-      throw new Error(`Test with id ${testId} not found`)
+      throw new Error(`Test with id ${testId} not found`);
     }
 
-    const result = await this.executeTestWithRetry(test)
-    
+    const result = await this.executeTestWithRetry(test);
+
     // Store result
     if (!this.results.has(testId)) {
-      this.results.set(testId, [])
+      this.results.set(testId, []);
     }
-    this.results.get(testId)!.push(result)
-    
-    return result
+    this.results.get(testId)!.push(result);
+
+    return result;
   }
 
   public async runAllTests(): Promise<Map<string, ErrorLoggingTestResult>> {
     if (this.isRunning) {
-      throw new Error('Tests are already running')
+      throw new Error('Tests are already running');
     }
 
-    this.isRunning = true
-    const results = new Map<string, ErrorLoggingTestResult>()
+    this.isRunning = true;
+    const results = new Map<string, ErrorLoggingTestResult>();
 
     try {
       const testPromises = Array.from(this.tests.entries()).map(async ([testId, test]) => {
-        const result = await this.executeTestWithRetry(test)
-        results.set(testId, result)
-        return result
-      })
+        const result = await this.executeTestWithRetry(test);
+        results.set(testId, result);
+        return result;
+      });
 
-      await Promise.all(testPromises)
+      await Promise.all(testPromises);
     } finally {
-      this.isRunning = false
+      this.isRunning = false;
     }
 
-    return results
+    return results;
   }
 
-  public async runTestsByCategory(category: ErrorLoggingTest['category']): Promise<Map<string, ErrorLoggingTestResult>> {
-    const categoryTests = Array.from(this.tests.entries()).filter(([, test]) => test.category === category)
-    const results = new Map<string, ErrorLoggingTestResult>()
+  public async runTestsByCategory(
+    category: ErrorLoggingTest['category']
+  ): Promise<Map<string, ErrorLoggingTestResult>> {
+    const categoryTests = Array.from(this.tests.entries()).filter(
+      ([, test]) => test.category === category
+    );
+    const results = new Map<string, ErrorLoggingTestResult>();
 
     for (const [testId, test] of categoryTests) {
-      const result = await this.executeTestWithRetry(test)
-      results.set(testId, result)
+      const result = await this.executeTestWithRetry(test);
+      results.set(testId, result);
     }
 
-    return results
+    return results;
   }
 
   private async executeTestWithRetry(test: ErrorLoggingTest): Promise<ErrorLoggingTestResult> {
-    let lastError: Error | null = null
+    let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
       try {
         const result = await Promise.race([
           test.testFunction(),
-          new Promise<never>((_, reject) => 
+          new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('Test timeout')), this.config.testTimeout)
-          )
-        ])
+          ),
+        ]);
 
-        return result
+        return result;
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error('Unknown error')
-        
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+
         if (attempt < this.config.retryAttempts) {
-          await new Promise(resolve => setTimeout(resolve, this.config.retryDelay * attempt))
+          await new Promise((resolve) => setTimeout(resolve, this.config.retryDelay * attempt));
         }
       }
     }
@@ -1093,43 +1137,61 @@ export class ErrorLoggingTester {
       message: `Test failed after ${this.config.retryAttempts} attempts: ${lastError?.message}`,
       timestamp: new Date(),
       duration: 0,
-      errors: [lastError?.message || 'Unknown error']
-    }
+      errors: [lastError?.message || 'Unknown error'],
+    };
   }
 
-  public getTestResults(testId?: string): ErrorLoggingTestResult[] | Map<string, ErrorLoggingTestResult[]> {
+  public getTestResults(
+    testId?: string
+  ): ErrorLoggingTestResult[] | Map<string, ErrorLoggingTestResult[]> {
     if (testId) {
-      return this.results.get(testId) || []
+      return this.results.get(testId) || [];
     }
-    return this.results
+    return this.results;
   }
 
   public getTestSummary(): {
-    total: number
-    passed: number
-    failed: number
-    successRate: number
-    averageDuration: number
-    totalLogEntries: number
-    totalTransmissionTests: number
-    totalStorageTests: number
-    totalMonitoringTests: number
+    total: number;
+    passed: number;
+    failed: number;
+    successRate: number;
+    averageDuration: number;
+    totalLogEntries: number;
+    totalTransmissionTests: number;
+    totalStorageTests: number;
+    totalMonitoringTests: number;
   } {
-    const allResults = Array.from(this.results.values()).flat()
-    
+    const allResults = Array.from(this.results.values()).flat();
+
     if (allResults.length === 0) {
-      return { total: 0, passed: 0, failed: 0, successRate: 0, averageDuration: 0, totalLogEntries: 0, totalTransmissionTests: 0, totalStorageTests: 0, totalMonitoringTests: 0 }
+      return {
+        total: 0,
+        passed: 0,
+        failed: 0,
+        successRate: 0,
+        averageDuration: 0,
+        totalLogEntries: 0,
+        totalTransmissionTests: 0,
+        totalStorageTests: 0,
+        totalMonitoringTests: 0,
+      };
     }
 
-    const passed = allResults.filter(r => r.success).length
-    const failed = allResults.length - passed
-    const successRate = (passed / allResults.length) * 100
-    const averageDuration = allResults.reduce((sum, r) => sum + r.duration, 0) / allResults.length
-    
-    const totalLogEntries = allResults.reduce((sum, r) => sum + (r.logEntries?.length || 0), 0)
-    const totalTransmissionTests = allResults.reduce((sum, r) => sum + (r.transmissionTests?.length || 0), 0)
-    const totalStorageTests = allResults.reduce((sum, r) => sum + (r.storageTests?.length || 0), 0)
-    const totalMonitoringTests = allResults.reduce((sum, r) => sum + (r.monitoringTests?.length || 0), 0)
+    const passed = allResults.filter((r) => r.success).length;
+    const failed = allResults.length - passed;
+    const successRate = (passed / allResults.length) * 100;
+    const averageDuration = allResults.reduce((sum, r) => sum + r.duration, 0) / allResults.length;
+
+    const totalLogEntries = allResults.reduce((sum, r) => sum + (r.logEntries?.length || 0), 0);
+    const totalTransmissionTests = allResults.reduce(
+      (sum, r) => sum + (r.transmissionTests?.length || 0),
+      0
+    );
+    const totalStorageTests = allResults.reduce((sum, r) => sum + (r.storageTests?.length || 0), 0);
+    const totalMonitoringTests = allResults.reduce(
+      (sum, r) => sum + (r.monitoringTests?.length || 0),
+      0
+    );
 
     return {
       total: allResults.length,
@@ -1140,18 +1202,18 @@ export class ErrorLoggingTester {
       totalLogEntries,
       totalTransmissionTests,
       totalStorageTests,
-      totalMonitoringTests
-    }
+      totalMonitoringTests,
+    };
   }
 
   public clearResults(): void {
-    this.results.clear()
+    this.results.clear();
   }
 
   public getAvailableTests(): ErrorLoggingTest[] {
-    return Array.from(this.tests.values())
+    return Array.from(this.tests.values());
   }
 }
 
 // Export the tester class
-export default ErrorLoggingTester
+export default ErrorLoggingTester;

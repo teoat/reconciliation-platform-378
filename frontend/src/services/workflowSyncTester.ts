@@ -1,56 +1,56 @@
 // Workflow State Synchronization Testing
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 // Comprehensive testing suite for verifying workflow state synchronization across browsers
 
-import React from 'react'
+import React from 'react';
 
 export interface WorkflowSyncTest {
-  id: string
-  name: string
-  description: string
-  testFunction: () => Promise<WorkflowSyncTestResult>
-  category: 'state-propagation' | 'step-synchronization' | 'progress-sync' | 'error-handling'
-  priority: 'high' | 'medium' | 'low'
-  requiresMultipleBrowsers: boolean
+  id: string;
+  name: string;
+  description: string;
+  testFunction: () => Promise<WorkflowSyncTestResult>;
+  category: 'state-propagation' | 'step-synchronization' | 'progress-sync' | 'error-handling';
+  priority: 'high' | 'medium' | 'low';
+  requiresMultipleBrowsers: boolean;
 }
 
 export interface WorkflowSyncTestResult {
-  success: boolean
-  message: string
-  details?: any
-  timestamp: Date
-  duration: number
-  errors?: string[]
-  browsers?: string[]
-  stateChanges?: StateChange[]
-  conflicts?: StateConflict[]
+  success: boolean;
+  message: string;
+  details?: Record<string, unknown>;
+  timestamp: Date;
+  duration: number;
+  errors?: string[];
+  browsers?: string[];
+  stateChanges?: StateChange[];
+  conflicts?: StateConflict[];
 }
 
 export interface StateChange {
-  browser: string
-  step: string
-  progress: number
-  timestamp: Date
-  data?: any
+  browser: string;
+  step: string;
+  progress: number;
+  timestamp: Date;
+  data?: Record<string, unknown>;
 }
 
 export interface StateConflict {
-  type: 'step' | 'progress' | 'data'
-  browsers: string[]
-  conflictingValues: any[]
-  resolution: 'resolved' | 'pending' | 'failed'
-  timestamp: Date
+  type: 'step' | 'progress' | 'data';
+  browsers: string[];
+  conflictingValues: unknown[];
+  resolution: 'resolved' | 'pending' | 'failed';
+  timestamp: Date;
 }
 
 export interface WorkflowSyncConfig {
-  testTimeout: number
-  retryAttempts: number
-  retryDelay: number
-  maxBrowsers: number
-  enableStatePropagationTests: boolean
-  enableStepSyncTests: boolean
-  enableProgressSyncTests: boolean
-  enableErrorHandlingTests: boolean
+  testTimeout: number;
+  retryAttempts: number;
+  retryDelay: number;
+  maxBrowsers: number;
+  enableStatePropagationTests: boolean;
+  enableStepSyncTests: boolean;
+  enableProgressSyncTests: boolean;
+  enableErrorHandlingTests: boolean;
 }
 
 const defaultConfig: WorkflowSyncConfig = {
@@ -61,19 +61,19 @@ const defaultConfig: WorkflowSyncConfig = {
   enableStatePropagationTests: true,
   enableStepSyncTests: true,
   enableProgressSyncTests: true,
-  enableErrorHandlingTests: true
-}
+  enableErrorHandlingTests: true,
+};
 
 export class WorkflowSyncTester {
-  private config: WorkflowSyncConfig
-  private tests: Map<string, WorkflowSyncTest> = new Map()
-  private results: Map<string, WorkflowSyncTestResult[]> = new Map()
-  private isRunning: boolean = false
-  private activeBrowsers: Set<string> = new Set()
+  private config: WorkflowSyncConfig;
+  private tests: Map<string, WorkflowSyncTest> = new Map();
+  private results: Map<string, WorkflowSyncTestResult[]> = new Map();
+  private isRunning: boolean = false;
+  private activeBrowsers: Set<string> = new Set();
 
   constructor(config: Partial<WorkflowSyncConfig> = {}) {
-    this.config = { ...defaultConfig, ...config }
-    this.initializeTests()
+    this.config = { ...defaultConfig, ...config };
+    this.initializeTests();
   }
 
   private initializeTests(): void {
@@ -86,8 +86,8 @@ export class WorkflowSyncTester {
         category: 'state-propagation',
         priority: 'high',
         requiresMultipleBrowsers: true,
-        testFunction: this.testWorkflowStatePropagation.bind(this)
-      })
+        testFunction: this.testWorkflowStatePropagation.bind(this),
+      });
 
       this.addTest({
         id: 'step-transition-propagation',
@@ -96,8 +96,8 @@ export class WorkflowSyncTester {
         category: 'state-propagation',
         priority: 'high',
         requiresMultipleBrowsers: true,
-        testFunction: this.testStepTransitionPropagation.bind(this)
-      })
+        testFunction: this.testStepTransitionPropagation.bind(this),
+      });
 
       this.addTest({
         id: 'data-state-propagation',
@@ -106,8 +106,8 @@ export class WorkflowSyncTester {
         category: 'state-propagation',
         priority: 'medium',
         requiresMultipleBrowsers: true,
-        testFunction: this.testDataStatePropagation.bind(this)
-      })
+        testFunction: this.testDataStatePropagation.bind(this),
+      });
     }
 
     // Step Synchronization Tests
@@ -119,8 +119,8 @@ export class WorkflowSyncTester {
         category: 'step-synchronization',
         priority: 'high',
         requiresMultipleBrowsers: true,
-        testFunction: this.testStepSynchronization.bind(this)
-      })
+        testFunction: this.testStepSynchronization.bind(this),
+      });
 
       this.addTest({
         id: 'step-validation-sync',
@@ -129,8 +129,8 @@ export class WorkflowSyncTester {
         category: 'step-synchronization',
         priority: 'medium',
         requiresMultipleBrowsers: true,
-        testFunction: this.testStepValidationSync.bind(this)
-      })
+        testFunction: this.testStepValidationSync.bind(this),
+      });
 
       this.addTest({
         id: 'step-permissions-sync',
@@ -139,8 +139,8 @@ export class WorkflowSyncTester {
         category: 'step-synchronization',
         priority: 'medium',
         requiresMultipleBrowsers: true,
-        testFunction: this.testStepPermissionsSync.bind(this)
-      })
+        testFunction: this.testStepPermissionsSync.bind(this),
+      });
     }
 
     // Progress Synchronization Tests
@@ -152,8 +152,8 @@ export class WorkflowSyncTester {
         category: 'progress-sync',
         priority: 'high',
         requiresMultipleBrowsers: true,
-        testFunction: this.testProgressSynchronization.bind(this)
-      })
+        testFunction: this.testProgressSynchronization.bind(this),
+      });
 
       this.addTest({
         id: 'progress-calculation-sync',
@@ -162,8 +162,8 @@ export class WorkflowSyncTester {
         category: 'progress-sync',
         priority: 'medium',
         requiresMultipleBrowsers: true,
-        testFunction: this.testProgressCalculationSync.bind(this)
-      })
+        testFunction: this.testProgressCalculationSync.bind(this),
+      });
 
       this.addTest({
         id: 'progress-indicator-sync',
@@ -172,8 +172,8 @@ export class WorkflowSyncTester {
         category: 'progress-sync',
         priority: 'medium',
         requiresMultipleBrowsers: true,
-        testFunction: this.testProgressIndicatorSync.bind(this)
-      })
+        testFunction: this.testProgressIndicatorSync.bind(this),
+      });
     }
 
     // Error Handling Tests
@@ -185,8 +185,8 @@ export class WorkflowSyncTester {
         category: 'error-handling',
         priority: 'high',
         requiresMultipleBrowsers: true,
-        testFunction: this.testErrorStateSync.bind(this)
-      })
+        testFunction: this.testErrorStateSync.bind(this),
+      });
 
       this.addTest({
         id: 'recovery-state-sync',
@@ -195,8 +195,8 @@ export class WorkflowSyncTester {
         category: 'error-handling',
         priority: 'medium',
         requiresMultipleBrowsers: true,
-        testFunction: this.testRecoveryStateSync.bind(this)
-      })
+        testFunction: this.testRecoveryStateSync.bind(this),
+      });
 
       this.addTest({
         id: 'rollback-state-sync',
@@ -205,39 +205,39 @@ export class WorkflowSyncTester {
         category: 'error-handling',
         priority: 'medium',
         requiresMultipleBrowsers: true,
-        testFunction: this.testRollbackStateSync.bind(this)
-      })
+        testFunction: this.testRollbackStateSync.bind(this),
+      });
     }
   }
 
   private addTest(test: WorkflowSyncTest): void {
-    this.tests.set(test.id, test)
+    this.tests.set(test.id, test);
   }
 
   // Test Implementation Methods
   private async testWorkflowStatePropagation(): Promise<WorkflowSyncTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3']
-      
+      const browsers = ['browser-1', 'browser-2', 'browser-3'];
+
       // Simulate browsers connecting
-      await Promise.all(browsers.map(browser => this.simulateBrowserConnect(browser)))
-      
+      await Promise.all(browsers.map((browser) => this.simulateBrowserConnect(browser)));
+
       // Simulate workflow state change
-      const newState = { step: 'reconciliation', progress: 50, data: { records: 1000 } }
-      await this.simulateWorkflowStateChange(newState)
-      
+      const newState = { step: 'reconciliation', progress: 50, data: { records: 1000 } };
+      await this.simulateWorkflowStateChange(newState);
+
       // Check if state propagated to all browsers
       const propagationChecks = await Promise.all(
         browsers.map(async (browser) => {
-          const browserState = await this.getBrowserWorkflowState(browser)
-          return { browser, propagated: this.compareWorkflowStates(newState, browserState) }
+          const browserState = await this.getBrowserWorkflowState(browser);
+          return { browser, propagated: this.compareWorkflowStates(newState, browserState) };
         })
-      )
+      );
 
-      const allPropagated = propagationChecks.every(check => check.propagated)
-      const duration = Date.now() - startTime
+      const allPropagated = propagationChecks.every((check) => check.propagated);
+      const duration = Date.now() - startTime;
 
       return {
         success: allPropagated,
@@ -247,46 +247,46 @@ export class WorkflowSyncTester {
         details: {
           browsers,
           newState,
-          propagationChecks
+          propagationChecks,
         },
         timestamp: new Date(),
         duration,
-        browsers
-      }
+        browsers,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Workflow state propagation test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testStepTransitionPropagation(): Promise<WorkflowSyncTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3']
-      
+      const browsers = ['browser-1', 'browser-2', 'browser-3'];
+
       // Simulate browsers connecting
-      await Promise.all(browsers.map(browser => this.simulateBrowserConnect(browser)))
-      
+      await Promise.all(browsers.map((browser) => this.simulateBrowserConnect(browser)));
+
       // Simulate step transition
-      const stepTransition = { from: 'ingestion', to: 'reconciliation', timestamp: Date.now() }
-      await this.simulateStepTransition(stepTransition)
-      
+      const stepTransition = { from: 'ingestion', to: 'reconciliation', timestamp: Date.now() };
+      await this.simulateStepTransition(stepTransition);
+
       // Check if step transition propagated to all browsers
       const transitionChecks = await Promise.all(
         browsers.map(async (browser) => {
-          const browserStep = await this.getBrowserCurrentStep(browser)
-          return { browser, transitioned: browserStep === stepTransition.to }
+          const browserStep = await this.getBrowserCurrentStep(browser);
+          return { browser, transitioned: browserStep === stepTransition.to };
         })
-      )
+      );
 
-      const allTransitioned = transitionChecks.every(check => check.transitioned)
-      const duration = Date.now() - startTime
+      const allTransitioned = transitionChecks.every((check) => check.transitioned);
+      const duration = Date.now() - startTime;
 
       return {
         success: allTransitioned,
@@ -296,46 +296,46 @@ export class WorkflowSyncTester {
         details: {
           browsers,
           stepTransition,
-          transitionChecks
+          transitionChecks,
         },
         timestamp: new Date(),
         duration,
-        browsers
-      }
+        browsers,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Step transition propagation test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testDataStatePropagation(): Promise<WorkflowSyncTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3']
-      
+      const browsers = ['browser-1', 'browser-2', 'browser-3'];
+
       // Simulate browsers connecting
-      await Promise.all(browsers.map(browser => this.simulateBrowserConnect(browser)))
-      
+      await Promise.all(browsers.map((browser) => this.simulateBrowserConnect(browser)));
+
       // Simulate data state change
-      const dataChange = { records: 1500, matches: 1400, discrepancies: 100 }
-      await this.simulateDataStateChange(dataChange)
-      
+      const dataChange = { records: 1500, matches: 1400, discrepancies: 100 };
+      await this.simulateDataStateChange(dataChange);
+
       // Check if data state propagated to all browsers
       const dataChecks = await Promise.all(
         browsers.map(async (browser) => {
-          const browserData = await this.getBrowserDataState(browser)
-          return { browser, propagated: this.compareDataStates(dataChange, browserData) }
+          const browserData = await this.getBrowserDataState(browser);
+          return { browser, propagated: this.compareDataStates(dataChange, browserData) };
         })
-      )
+      );
 
-      const allPropagated = dataChecks.every(check => check.propagated)
-      const duration = Date.now() - startTime
+      const allPropagated = dataChecks.every((check) => check.propagated);
+      const duration = Date.now() - startTime;
 
       return {
         success: allPropagated,
@@ -345,53 +345,53 @@ export class WorkflowSyncTester {
         details: {
           browsers,
           dataChange,
-          dataChecks
+          dataChecks,
         },
         timestamp: new Date(),
         duration,
-        browsers
-      }
+        browsers,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Data state propagation test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testStepSynchronization(): Promise<WorkflowSyncTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3']
-      
+      const browsers = ['browser-1', 'browser-2', 'browser-3'];
+
       // Simulate browsers connecting
-      await Promise.all(browsers.map(browser => this.simulateBrowserConnect(browser)))
-      
+      await Promise.all(browsers.map((browser) => this.simulateBrowserConnect(browser)));
+
       // Simulate step changes from different browsers
       const stepChanges = [
         { browser: browsers[0], step: 'reconciliation' },
         { browser: browsers[1], step: 'reconciliation' },
-        { browser: browsers[2], step: 'reconciliation' }
-      ]
+        { browser: browsers[2], step: 'reconciliation' },
+      ];
 
       await Promise.all(
-        stepChanges.map(change => this.simulateBrowserStepChange(change.browser, change.step))
-      )
-      
+        stepChanges.map((change) => this.simulateBrowserStepChange(change.browser, change.step))
+      );
+
       // Check if all browsers are synchronized on the same step
       const syncChecks = await Promise.all(
         browsers.map(async (browser) => {
-          const browserStep = await this.getBrowserCurrentStep(browser)
-          return { browser, step: browserStep }
+          const browserStep = await this.getBrowserCurrentStep(browser);
+          return { browser, step: browserStep };
         })
-      )
+      );
 
-      const allSynced = syncChecks.every(check => check.step === 'reconciliation')
-      const duration = Date.now() - startTime
+      const allSynced = syncChecks.every((check) => check.step === 'reconciliation');
+      const duration = Date.now() - startTime;
 
       return {
         success: allSynced,
@@ -401,46 +401,49 @@ export class WorkflowSyncTester {
         details: {
           browsers,
           stepChanges,
-          syncChecks
+          syncChecks,
         },
         timestamp: new Date(),
         duration,
-        browsers
-      }
+        browsers,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Step synchronization test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testStepValidationSync(): Promise<WorkflowSyncTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3']
-      
+      const browsers = ['browser-1', 'browser-2', 'browser-3'];
+
       // Simulate browsers connecting
-      await Promise.all(browsers.map(browser => this.simulateBrowserConnect(browser)))
-      
+      await Promise.all(browsers.map((browser) => this.simulateBrowserConnect(browser)));
+
       // Simulate step validation
-      const validationResult = { valid: true, errors: [], warnings: [] }
-      await this.simulateStepValidation(validationResult)
-      
+      const validationResult = { valid: true, errors: [], warnings: [] };
+      await this.simulateStepValidation(validationResult);
+
       // Check if validation results are synchronized
       const validationChecks = await Promise.all(
         browsers.map(async (browser) => {
-          const browserValidation = await this.getBrowserStepValidation(browser)
-          return { browser, synchronized: this.compareValidationResults(validationResult, browserValidation) }
+          const browserValidation = await this.getBrowserStepValidation(browser);
+          return {
+            browser,
+            synchronized: this.compareValidationResults(validationResult, browserValidation),
+          };
         })
-      )
+      );
 
-      const allSynced = validationChecks.every(check => check.synchronized)
-      const duration = Date.now() - startTime
+      const allSynced = validationChecks.every((check) => check.synchronized);
+      const duration = Date.now() - startTime;
 
       return {
         success: allSynced,
@@ -450,46 +453,49 @@ export class WorkflowSyncTester {
         details: {
           browsers,
           validationResult,
-          validationChecks
+          validationChecks,
         },
         timestamp: new Date(),
         duration,
-        browsers
-      }
+        browsers,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Step validation sync test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testStepPermissionsSync(): Promise<WorkflowSyncTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3']
-      
+      const browsers = ['browser-1', 'browser-2', 'browser-3'];
+
       // Simulate browsers connecting
-      await Promise.all(browsers.map(browser => this.simulateBrowserConnect(browser)))
-      
+      await Promise.all(browsers.map((browser) => this.simulateBrowserConnect(browser)));
+
       // Simulate permission changes
-      const permissions = { canEdit: true, canDelete: false, canAdvance: true }
-      await this.simulateStepPermissionsChange(permissions)
-      
+      const permissions = { canEdit: true, canDelete: false, canAdvance: true };
+      await this.simulateStepPermissionsChange(permissions);
+
       // Check if permissions are synchronized
       const permissionChecks = await Promise.all(
         browsers.map(async (browser) => {
-          const browserPermissions = await this.getBrowserStepPermissions(browser)
-          return { browser, synchronized: this.comparePermissions(permissions, browserPermissions) }
+          const browserPermissions = await this.getBrowserStepPermissions(browser);
+          return {
+            browser,
+            synchronized: this.comparePermissions(permissions, browserPermissions),
+          };
         })
-      )
+      );
 
-      const allSynced = permissionChecks.every(check => check.synchronized)
-      const duration = Date.now() - startTime
+      const allSynced = permissionChecks.every((check) => check.synchronized);
+      const duration = Date.now() - startTime;
 
       return {
         success: allSynced,
@@ -499,47 +505,51 @@ export class WorkflowSyncTester {
         details: {
           browsers,
           permissions,
-          permissionChecks
+          permissionChecks,
         },
         timestamp: new Date(),
         duration,
-        browsers
-      }
+        browsers,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Step permissions sync test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testProgressSynchronization(): Promise<WorkflowSyncTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3']
-      
+      const browsers = ['browser-1', 'browser-2', 'browser-3'];
+
       // Simulate browsers connecting
-      await Promise.all(browsers.map(browser => this.simulateBrowserConnect(browser)))
-      
+      await Promise.all(browsers.map((browser) => this.simulateBrowserConnect(browser)));
+
       // Simulate progress updates
-      const progressUpdates = [25, 50, 75, 100]
-      
+      const progressUpdates = [25, 50, 75, 100];
+
       for (const progress of progressUpdates) {
-        await this.simulateProgressUpdate(progress)
-        
+        await this.simulateProgressUpdate(progress);
+
         // Check if progress is synchronized after each update
         const progressChecks = await Promise.all(
           browsers.map(async (browser) => {
-            const browserProgress = await this.getBrowserProgress(browser)
-            return { browser, progress: browserProgress, synchronized: browserProgress === progress }
+            const browserProgress = await this.getBrowserProgress(browser);
+            return {
+              browser,
+              progress: browserProgress,
+              synchronized: browserProgress === progress,
+            };
           })
-        )
+        );
 
-        const allSynced = progressChecks.every(check => check.synchronized)
+        const allSynced = progressChecks.every((check) => check.synchronized);
         if (!allSynced) {
           return {
             success: false,
@@ -547,16 +557,16 @@ export class WorkflowSyncTester {
             details: {
               browsers,
               progress,
-              progressChecks
+              progressChecks,
             },
             timestamp: new Date(),
             duration: Date.now() - startTime,
-            browsers
-          }
+            browsers,
+          };
         }
       }
 
-      const duration = Date.now() - startTime
+      const duration = Date.now() - startTime;
 
       return {
         success: true,
@@ -564,68 +574,68 @@ export class WorkflowSyncTester {
         details: {
           browsers,
           progressUpdates,
-          totalUpdates: progressUpdates.length
+          totalUpdates: progressUpdates.length,
         },
         timestamp: new Date(),
         duration,
-        browsers
-      }
+        browsers,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Progress synchronization test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testProgressCalculationSync(): Promise<WorkflowSyncTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3']
-      
+      const browsers = ['browser-1', 'browser-2', 'browser-3'];
+
       // Simulate browsers connecting
-      await Promise.all(browsers.map(browser => this.simulateBrowserConnect(browser)))
-      
+      await Promise.all(browsers.map((browser) => this.simulateBrowserConnect(browser)));
+
       // Simulate data changes that should trigger progress recalculation
       const dataChanges = [
         { records: 1000, matches: 800 },
         { records: 1000, matches: 900 },
-        { records: 1000, matches: 950 }
-      ]
+        { records: 1000, matches: 950 },
+      ];
 
-      const calculationChecks = []
+      const calculationChecks = [];
 
       for (const dataChange of dataChanges) {
-        await this.simulateDataChange(dataChange)
-        
+        await this.simulateDataChange(dataChange);
+
         // Check if progress calculations are consistent
         const progressChecks = await Promise.all(
           browsers.map(async (browser) => {
-            const browserProgress = await this.getBrowserProgress(browser)
-            const browserData = await this.getBrowserDataState(browser)
-            const calculatedProgress = this.calculateProgress(browserData)
-            
-            return { 
-              browser, 
-              progress: browserProgress, 
-              calculatedProgress,
-              consistent: browserProgress === calculatedProgress
-            }
-          })
-        )
+            const browserProgress = await this.getBrowserProgress(browser);
+            const browserData = await this.getBrowserDataState(browser);
+            const calculatedProgress = this.calculateProgress(browserData);
 
-        calculationChecks.push({ dataChange, progressChecks })
+            return {
+              browser,
+              progress: browserProgress,
+              calculatedProgress,
+              consistent: browserProgress === calculatedProgress,
+            };
+          })
+        );
+
+        calculationChecks.push({ dataChange, progressChecks });
       }
 
-      const allConsistent = calculationChecks.every(check => 
-        check.progressChecks.every(pc => pc.consistent)
-      )
+      const allConsistent = calculationChecks.every((check) =>
+        check.progressChecks.every((pc) => pc.consistent)
+      );
 
-      const duration = Date.now() - startTime
+      const duration = Date.now() - startTime;
 
       return {
         success: allConsistent,
@@ -635,56 +645,56 @@ export class WorkflowSyncTester {
         details: {
           browsers,
           dataChanges,
-          calculationChecks
+          calculationChecks,
         },
         timestamp: new Date(),
         duration,
-        browsers
-      }
+        browsers,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Progress calculation sync test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testProgressIndicatorSync(): Promise<WorkflowSyncTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3']
-      
+      const browsers = ['browser-1', 'browser-2', 'browser-3'];
+
       // Simulate browsers connecting
-      await Promise.all(browsers.map(browser => this.simulateBrowserConnect(browser)))
-      
+      await Promise.all(browsers.map((browser) => this.simulateBrowserConnect(browser)));
+
       // Simulate progress indicator updates
       const indicatorUpdates = [
         { progress: 25, label: 'Processing...', color: 'blue' },
         { progress: 50, label: 'Halfway done', color: 'yellow' },
         { progress: 75, label: 'Almost complete', color: 'orange' },
-        { progress: 100, label: 'Complete', color: 'green' }
-      ]
+        { progress: 100, label: 'Complete', color: 'green' },
+      ];
 
       for (const indicator of indicatorUpdates) {
-        await this.simulateProgressIndicatorUpdate(indicator)
-        
+        await this.simulateProgressIndicatorUpdate(indicator);
+
         // Check if progress indicators are synchronized
         const indicatorChecks = await Promise.all(
           browsers.map(async (browser) => {
-            const browserIndicator = await this.getBrowserProgressIndicator(browser)
-            return { 
-              browser, 
-              indicator: browserIndicator, 
-              synchronized: this.compareProgressIndicators(indicator, browserIndicator)
-            }
+            const browserIndicator = await this.getBrowserProgressIndicator(browser);
+            return {
+              browser,
+              indicator: browserIndicator,
+              synchronized: this.compareProgressIndicators(indicator, browserIndicator),
+            };
           })
-        )
+        );
 
-        const allSynced = indicatorChecks.every(check => check.synchronized)
+        const allSynced = indicatorChecks.every((check) => check.synchronized);
         if (!allSynced) {
           return {
             success: false,
@@ -692,16 +702,16 @@ export class WorkflowSyncTester {
             details: {
               browsers,
               indicator,
-              indicatorChecks
+              indicatorChecks,
             },
             timestamp: new Date(),
             duration: Date.now() - startTime,
-            browsers
-          }
+            browsers,
+          };
         }
       }
 
-      const duration = Date.now() - startTime
+      const duration = Date.now() - startTime;
 
       return {
         success: true,
@@ -709,52 +719,52 @@ export class WorkflowSyncTester {
         details: {
           browsers,
           indicatorUpdates,
-          totalUpdates: indicatorUpdates.length
+          totalUpdates: indicatorUpdates.length,
         },
         timestamp: new Date(),
         duration,
-        browsers
-      }
+        browsers,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Progress indicator sync test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testErrorStateSync(): Promise<WorkflowSyncTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3']
-      
+      const browsers = ['browser-1', 'browser-2', 'browser-3'];
+
       // Simulate browsers connecting
-      await Promise.all(browsers.map(browser => this.simulateBrowserConnect(browser)))
-      
+      await Promise.all(browsers.map((browser) => this.simulateBrowserConnect(browser)));
+
       // Simulate error state
-      const errorState = { 
-        hasError: true, 
-        errorType: 'validation', 
+      const errorState = {
+        hasError: true,
+        errorType: 'validation',
         message: 'Data validation failed',
-        details: { field: 'amount', value: 'invalid' }
-      }
-      
-      await this.simulateErrorState(errorState)
-      
+        details: { field: 'amount', value: 'invalid' },
+      };
+
+      await this.simulateErrorState(errorState);
+
       // Check if error state is synchronized
       const errorChecks = await Promise.all(
         browsers.map(async (browser) => {
-          const browserErrorState = await this.getBrowserErrorState(browser)
-          return { browser, synchronized: this.compareErrorStates(errorState, browserErrorState) }
+          const browserErrorState = await this.getBrowserErrorState(browser);
+          return { browser, synchronized: this.compareErrorStates(errorState, browserErrorState) };
         })
-      )
+      );
 
-      const allSynced = errorChecks.every(check => check.synchronized)
-      const duration = Date.now() - startTime
+      const allSynced = errorChecks.every((check) => check.synchronized);
+      const duration = Date.now() - startTime;
 
       return {
         success: allSynced,
@@ -764,52 +774,55 @@ export class WorkflowSyncTester {
         details: {
           browsers,
           errorState,
-          errorChecks
+          errorChecks,
         },
         timestamp: new Date(),
         duration,
-        browsers
-      }
+        browsers,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Error state sync test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testRecoveryStateSync(): Promise<WorkflowSyncTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3']
-      
+      const browsers = ['browser-1', 'browser-2', 'browser-3'];
+
       // Simulate browsers connecting
-      await Promise.all(browsers.map(browser => this.simulateBrowserConnect(browser)))
-      
+      await Promise.all(browsers.map((browser) => this.simulateBrowserConnect(browser)));
+
       // Simulate recovery state
-      const recoveryState = { 
-        isRecovering: true, 
-        recoveryStep: 'rollback', 
+      const recoveryState = {
+        isRecovering: true,
+        recoveryStep: 'rollback',
         progress: 50,
-        estimatedTime: 30000
-      }
-      
-      await this.simulateRecoveryState(recoveryState)
-      
+        estimatedTime: 30000,
+      };
+
+      await this.simulateRecoveryState(recoveryState);
+
       // Check if recovery state is synchronized
       const recoveryChecks = await Promise.all(
         browsers.map(async (browser) => {
-          const browserRecoveryState = await this.getBrowserRecoveryState(browser)
-          return { browser, synchronized: this.compareRecoveryStates(recoveryState, browserRecoveryState) }
+          const browserRecoveryState = await this.getBrowserRecoveryState(browser);
+          return {
+            browser,
+            synchronized: this.compareRecoveryStates(recoveryState, browserRecoveryState),
+          };
         })
-      )
+      );
 
-      const allSynced = recoveryChecks.every(check => check.synchronized)
-      const duration = Date.now() - startTime
+      const allSynced = recoveryChecks.every((check) => check.synchronized);
+      const duration = Date.now() - startTime;
 
       return {
         success: allSynced,
@@ -819,52 +832,55 @@ export class WorkflowSyncTester {
         details: {
           browsers,
           recoveryState,
-          recoveryChecks
+          recoveryChecks,
         },
         timestamp: new Date(),
         duration,
-        browsers
-      }
+        browsers,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Recovery state sync test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   private async testRollbackStateSync(): Promise<WorkflowSyncTestResult> {
-    const startTime = Date.now()
-    
+    const startTime = Date.now();
+
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3']
-      
+      const browsers = ['browser-1', 'browser-2', 'browser-3'];
+
       // Simulate browsers connecting
-      await Promise.all(browsers.map(browser => this.simulateBrowserConnect(browser)))
-      
+      await Promise.all(browsers.map((browser) => this.simulateBrowserConnect(browser)));
+
       // Simulate rollback state
-      const rollbackState = { 
-        isRollingBack: true, 
-        rollbackStep: 'ingestion', 
+      const rollbackState = {
+        isRollingBack: true,
+        rollbackStep: 'ingestion',
         progress: 75,
-        reason: 'Data corruption detected'
-      }
-      
-      await this.simulateRollbackState(rollbackState)
-      
+        reason: 'Data corruption detected',
+      };
+
+      await this.simulateRollbackState(rollbackState);
+
       // Check if rollback state is synchronized
       const rollbackChecks = await Promise.all(
         browsers.map(async (browser) => {
-          const browserRollbackState = await this.getBrowserRollbackState(browser)
-          return { browser, synchronized: this.compareRollbackStates(rollbackState, browserRollbackState) }
+          const browserRollbackState = await this.getBrowserRollbackState(browser);
+          return {
+            browser,
+            synchronized: this.compareRollbackStates(rollbackState, browserRollbackState),
+          };
         })
-      )
+      );
 
-      const allSynced = rollbackChecks.every(check => check.synchronized)
-      const duration = Date.now() - startTime
+      const allSynced = rollbackChecks.every((check) => check.synchronized);
+      const duration = Date.now() - startTime;
 
       return {
         success: allSynced,
@@ -874,258 +890,262 @@ export class WorkflowSyncTester {
         details: {
           browsers,
           rollbackState,
-          rollbackChecks
+          rollbackChecks,
         },
         timestamp: new Date(),
         duration,
-        browsers
-      }
+        browsers,
+      };
     } catch (error) {
       return {
         success: false,
         message: `Rollback state sync test failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
         timestamp: new Date(),
         duration: Date.now() - startTime,
-        errors: [error instanceof Error ? error.message : 'Unknown error']
-      }
+        errors: [error instanceof Error ? error.message : 'Unknown error'],
+      };
     }
   }
 
   // Helper Methods (Mock implementations - replace with actual API calls)
   private async simulateBrowserConnect(browser: string): Promise<void> {
     // Mock implementation
-    this.activeBrowsers.add(browser)
-    logger.log(`Browser ${browser} connected`)
+    this.activeBrowsers.add(browser);
+    logger.info(`Browser ${browser} connected`, { browser });
   }
 
-  private async simulateWorkflowStateChange(state: any): Promise<void> {
+  private async simulateWorkflowStateChange(state: Record<string, unknown>): Promise<void> {
     // Mock implementation
-    logger.log('Workflow state changed:', state)
+    logger.debug('Workflow state changed', { state });
   }
 
-  private async simulateStepTransition(transition: any): Promise<void> {
+  private async simulateStepTransition(transition: Record<string, unknown>): Promise<void> {
     // Mock implementation
-    logger.log('Step transition:', transition)
+    logger.debug('Step transition', { transition });
   }
 
-  private async simulateDataStateChange(dataChange: any): Promise<void> {
+  private async simulateDataStateChange(dataChange: Record<string, unknown>): Promise<void> {
     // Mock implementation
-    logger.log('Data state changed:', dataChange)
+    logger.debug('Data state changed', { dataChange });
   }
 
   private async simulateBrowserStepChange(browser: string, step: string): Promise<void> {
     // Mock implementation
-    logger.log(`Browser ${browser} changed step to ${step}`)
+    logger.debug(`Browser ${browser} changed step to ${step}`, { browser, step });
   }
 
-  private async simulateStepValidation(validation: any): Promise<void> {
+  private async simulateStepValidation(validation: Record<string, unknown>): Promise<void> {
     // Mock implementation
-    logger.log('Step validation:', validation)
+    logger.debug('Step validation', { validation });
   }
 
-  private async simulateStepPermissionsChange(permissions: any): Promise<void> {
+  private async simulateStepPermissionsChange(permissions: Record<string, unknown>): Promise<void> {
     // Mock implementation
-    logger.log('Step permissions changed:', permissions)
+    logger.debug('Step permissions changed', { permissions });
   }
 
   private async simulateProgressUpdate(progress: number): Promise<void> {
     // Mock implementation
-    logger.log('Progress updated:', progress)
+    logger.debug('Progress updated', { progress });
   }
 
-  private async simulateDataChange(dataChange: any): Promise<void> {
+  private async simulateDataChange(dataChange: Record<string, unknown>): Promise<void> {
     // Mock implementation
-    logger.log('Data changed:', dataChange)
+    logger.debug('Data changed', { dataChange });
   }
 
   private async simulateProgressIndicatorUpdate(indicator: any): Promise<void> {
     // Mock implementation
-    logger.log('Progress indicator updated:', indicator)
+    logger.info('Progress indicator updated:', indicator);
   }
 
   private async simulateErrorState(errorState: any): Promise<void> {
     // Mock implementation
-    logger.log('Error state:', errorState)
+    logger.info('Error state:', errorState);
   }
 
   private async simulateRecoveryState(recoveryState: any): Promise<void> {
     // Mock implementation
-    logger.log('Recovery state:', recoveryState)
+    logger.info('Recovery state:', recoveryState);
   }
 
   private async simulateRollbackState(rollbackState: any): Promise<void> {
     // Mock implementation
-    logger.log('Rollback state:', rollbackState)
+    logger.info('Rollback state:', rollbackState);
   }
 
   private async getBrowserWorkflowState(browser: string): Promise<any> {
     // Mock implementation
-    return { step: 'reconciliation', progress: 50, data: { records: 1000 } }
+    return { step: 'reconciliation', progress: 50, data: { records: 1000 } };
   }
 
   private async getBrowserCurrentStep(browser: string): Promise<string> {
     // Mock implementation
-    return 'reconciliation'
+    return 'reconciliation';
   }
 
   private async getBrowserDataState(browser: string): Promise<any> {
     // Mock implementation
-    return { records: 1000, matches: 950, discrepancies: 50 }
+    return { records: 1000, matches: 950, discrepancies: 50 };
   }
 
   private async getBrowserStepValidation(browser: string): Promise<any> {
     // Mock implementation
-    return { valid: true, errors: [], warnings: [] }
+    return { valid: true, errors: [], warnings: [] };
   }
 
   private async getBrowserStepPermissions(browser: string): Promise<any> {
     // Mock implementation
-    return { canEdit: true, canDelete: false, canAdvance: true }
+    return { canEdit: true, canDelete: false, canAdvance: true };
   }
 
   private async getBrowserProgress(browser: string): Promise<number> {
     // Mock implementation
-    return 75
+    return 75;
   }
 
   private async getBrowserProgressIndicator(browser: string): Promise<any> {
     // Mock implementation
-    return { progress: 75, label: 'Almost complete', color: 'orange' }
+    return { progress: 75, label: 'Almost complete', color: 'orange' };
   }
 
   private async getBrowserErrorState(browser: string): Promise<any> {
     // Mock implementation
-    return { hasError: true, errorType: 'validation', message: 'Data validation failed' }
+    return { hasError: true, errorType: 'validation', message: 'Data validation failed' };
   }
 
   private async getBrowserRecoveryState(browser: string): Promise<any> {
     // Mock implementation
-    return { isRecovering: true, recoveryStep: 'rollback', progress: 50 }
+    return { isRecovering: true, recoveryStep: 'rollback', progress: 50 };
   }
 
   private async getBrowserRollbackState(browser: string): Promise<any> {
     // Mock implementation
-    return { isRollingBack: true, rollbackStep: 'ingestion', progress: 75 }
+    return { isRollingBack: true, rollbackStep: 'ingestion', progress: 75 };
   }
 
   // Comparison Methods
   private compareWorkflowStates(state1: any, state2: any): boolean {
     // Mock comparison logic
-    return JSON.stringify(state1) === JSON.stringify(state2)
+    return JSON.stringify(state1) === JSON.stringify(state2);
   }
 
   private compareDataStates(data1: any, data2: any): boolean {
     // Mock comparison logic
-    return JSON.stringify(data1) === JSON.stringify(data2)
+    return JSON.stringify(data1) === JSON.stringify(data2);
   }
 
   private compareValidationResults(validation1: any, validation2: any): boolean {
     // Mock comparison logic
-    return JSON.stringify(validation1) === JSON.stringify(validation2)
+    return JSON.stringify(validation1) === JSON.stringify(validation2);
   }
 
   private comparePermissions(permissions1: any, permissions2: any): boolean {
     // Mock comparison logic
-    return JSON.stringify(permissions1) === JSON.stringify(permissions2)
+    return JSON.stringify(permissions1) === JSON.stringify(permissions2);
   }
 
   private compareProgressIndicators(indicator1: any, indicator2: any): boolean {
     // Mock comparison logic
-    return JSON.stringify(indicator1) === JSON.stringify(indicator2)
+    return JSON.stringify(indicator1) === JSON.stringify(indicator2);
   }
 
   private compareErrorStates(error1: any, error2: any): boolean {
     // Mock comparison logic
-    return JSON.stringify(error1) === JSON.stringify(error2)
+    return JSON.stringify(error1) === JSON.stringify(error2);
   }
 
   private compareRecoveryStates(recovery1: any, recovery2: any): boolean {
     // Mock comparison logic
-    return JSON.stringify(recovery1) === JSON.stringify(recovery2)
+    return JSON.stringify(recovery1) === JSON.stringify(recovery2);
   }
 
   private compareRollbackStates(rollback1: any, rollback2: any): boolean {
     // Mock comparison logic
-    return JSON.stringify(rollback1) === JSON.stringify(rollback2)
+    return JSON.stringify(rollback1) === JSON.stringify(rollback2);
   }
 
   private calculateProgress(data: any): number {
     // Mock progress calculation
-    if (data.records === 0) return 0
-    return Math.round((data.matches / data.records) * 100)
+    if (data.records === 0) return 0;
+    return Math.round((data.matches / data.records) * 100);
   }
 
   // Public Methods
   public async runTest(testId: string): Promise<WorkflowSyncTestResult> {
-    const test = this.tests.get(testId)
+    const test = this.tests.get(testId);
     if (!test) {
-      throw new Error(`Test with id ${testId} not found`)
+      throw new Error(`Test with id ${testId} not found`);
     }
 
-    const result = await this.executeTestWithRetry(test)
-    
+    const result = await this.executeTestWithRetry(test);
+
     // Store result
     if (!this.results.has(testId)) {
-      this.results.set(testId, [])
+      this.results.set(testId, []);
     }
-    this.results.get(testId)!.push(result)
-    
-    return result
+    this.results.get(testId)!.push(result);
+
+    return result;
   }
 
   public async runAllTests(): Promise<Map<string, WorkflowSyncTestResult>> {
     if (this.isRunning) {
-      throw new Error('Tests are already running')
+      throw new Error('Tests are already running');
     }
 
-    this.isRunning = true
-    const results = new Map<string, WorkflowSyncTestResult>()
+    this.isRunning = true;
+    const results = new Map<string, WorkflowSyncTestResult>();
 
     try {
       const testPromises = Array.from(this.tests.entries()).map(async ([testId, test]) => {
-        const result = await this.executeTestWithRetry(test)
-        results.set(testId, result)
-        return result
-      })
+        const result = await this.executeTestWithRetry(test);
+        results.set(testId, result);
+        return result;
+      });
 
-      await Promise.all(testPromises)
+      await Promise.all(testPromises);
     } finally {
-      this.isRunning = false
+      this.isRunning = false;
     }
 
-    return results
+    return results;
   }
 
-  public async runTestsByCategory(category: WorkflowSyncTest['category']): Promise<Map<string, WorkflowSyncTestResult>> {
-    const categoryTests = Array.from(this.tests.entries()).filter(([, test]) => test.category === category)
-    const results = new Map<string, WorkflowSyncTestResult>()
+  public async runTestsByCategory(
+    category: WorkflowSyncTest['category']
+  ): Promise<Map<string, WorkflowSyncTestResult>> {
+    const categoryTests = Array.from(this.tests.entries()).filter(
+      ([, test]) => test.category === category
+    );
+    const results = new Map<string, WorkflowSyncTestResult>();
 
     for (const [testId, test] of categoryTests) {
-      const result = await this.executeTestWithRetry(test)
-      results.set(testId, result)
+      const result = await this.executeTestWithRetry(test);
+      results.set(testId, result);
     }
 
-    return results
+    return results;
   }
 
   private async executeTestWithRetry(test: WorkflowSyncTest): Promise<WorkflowSyncTestResult> {
-    let lastError: Error | null = null
+    let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
       try {
         const result = await Promise.race([
           test.testFunction(),
-          new Promise<never>((_, reject) => 
+          new Promise<never>((_, reject) =>
             setTimeout(() => reject(new Error('Test timeout')), this.config.testTimeout)
-          )
-        ])
+          ),
+        ]);
 
-        return result
+        return result;
       } catch (error) {
-        lastError = error instanceof Error ? error : new Error('Unknown error')
-        
+        lastError = error instanceof Error ? error : new Error('Unknown error');
+
         if (attempt < this.config.retryAttempts) {
-          await new Promise(resolve => setTimeout(resolve, this.config.retryDelay * attempt))
+          await new Promise((resolve) => setTimeout(resolve, this.config.retryDelay * attempt));
         }
       }
     }
@@ -1135,39 +1155,52 @@ export class WorkflowSyncTester {
       message: `Test failed after ${this.config.retryAttempts} attempts: ${lastError?.message}`,
       timestamp: new Date(),
       duration: 0,
-      errors: [lastError?.message || 'Unknown error']
-    }
+      errors: [lastError?.message || 'Unknown error'],
+    };
   }
 
-  public getTestResults(testId?: string): WorkflowSyncTestResult[] | Map<string, WorkflowSyncTestResult[]> {
+  public getTestResults(
+    testId?: string
+  ): WorkflowSyncTestResult[] | Map<string, WorkflowSyncTestResult[]> {
     if (testId) {
-      return this.results.get(testId) || []
+      return this.results.get(testId) || [];
     }
-    return this.results
+    return this.results;
   }
 
   public getTestSummary(): {
-    total: number
-    passed: number
-    failed: number
-    successRate: number
-    averageDuration: number
-    totalConflicts: number
-    resolvedConflicts: number
+    total: number;
+    passed: number;
+    failed: number;
+    successRate: number;
+    averageDuration: number;
+    totalConflicts: number;
+    resolvedConflicts: number;
   } {
-    const allResults = Array.from(this.results.values()).flat()
-    
+    const allResults = Array.from(this.results.values()).flat();
+
     if (allResults.length === 0) {
-      return { total: 0, passed: 0, failed: 0, successRate: 0, averageDuration: 0, totalConflicts: 0, resolvedConflicts: 0 }
+      return {
+        total: 0,
+        passed: 0,
+        failed: 0,
+        successRate: 0,
+        averageDuration: 0,
+        totalConflicts: 0,
+        resolvedConflicts: 0,
+      };
     }
 
-    const passed = allResults.filter(r => r.success).length
-    const failed = allResults.length - passed
-    const successRate = (passed / allResults.length) * 100
-    const averageDuration = allResults.reduce((sum, r) => sum + r.duration, 0) / allResults.length
-    
-    const totalConflicts = allResults.reduce((sum, r) => sum + (r.conflicts?.length || 0), 0)
-    const resolvedConflicts = allResults.reduce((sum, r) => sum + (r.conflicts?.filter(c => c.resolution === 'resolved').length || 0), 0)
+    const passed = allResults.filter((r) => r.success).length;
+    const failed = allResults.length - passed;
+    const successRate = (passed / allResults.length) * 100;
+    const averageDuration = allResults.reduce((sum, r) => sum + r.duration, 0) / allResults.length;
+
+    const totalConflicts = allResults.reduce((sum, r) => sum + (r.conflicts?.length || 0), 0);
+    const resolvedConflicts = allResults.reduce(
+      (sum, r) => sum + (r.conflicts?.filter((c) => c.resolution === 'resolved').length || 0),
+      0
+    );
 
     return {
       total: allResults.length,
@@ -1176,18 +1209,18 @@ export class WorkflowSyncTester {
       successRate,
       averageDuration,
       totalConflicts,
-      resolvedConflicts
-    }
+      resolvedConflicts,
+    };
   }
 
   public clearResults(): void {
-    this.results.clear()
+    this.results.clear();
   }
 
   public getAvailableTests(): WorkflowSyncTest[] {
-    return Array.from(this.tests.values())
+    return Array.from(this.tests.values());
   }
 }
 
 // Export the tester class
-export default WorkflowSyncTester
+export default WorkflowSyncTester;

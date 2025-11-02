@@ -227,9 +227,17 @@ backups/
 # ============================================================================
 
 # Environment files with secrets
+.env
 .env.*
 !.env.example
 !.env.template
+
+# Config directory environment files
+config/*.env
+!config/*.env.example
+
+# Test environment files (except examples)
+backend/tests/test.env
 
 # SSH keys
 *.pem

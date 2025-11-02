@@ -4,200 +4,246 @@
 import React from 'react'
 import { APP_CONFIG } from '../constants'
 
-// Report configuration
-interface ReportConfig {
-  id: string
-  name: string
-  description: string
-  type: 'dashboard' | 'table' | 'chart' | 'kpi' | 'summary' | 'detailed'
-  category: 'financial' | 'operational' | 'compliance' | 'performance' | 'custom'
-  dataSource: string
-  filters: ReportFilter[]
-  aggregations: ReportAggregation[]
-  visualizations: ReportVisualization[]
-  schedule?: ReportSchedule
-  permissions: ReportPermissions
-  metadata: ReportMetadata
-  createdAt: Date
-  updatedAt: Date
-  isActive: boolean
+// Report configuration factory function
+function createReportConfig(data = {}) {
+  return {
+    id: '',
+    name: '',
+    description: '',
+    type: 'dashboard',
+    category: 'financial',
+    dataSource: '',
+    filters: [],
+    aggregations: [],
+    visualizations: [],
+    schedule: null,
+    permissions: createReportPermissions(),
+    metadata: createReportMetadata(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    isActive: true,
+    ...data
+  }
 }
 
-// Report filter
-interface ReportFilter {
-  id: string
-  field: string
-  operator: 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'greater_than' | 'less_than' | 'between' | 'in' | 'not_in'
-  value: any
-  isRequired: boolean
-  isDynamic: boolean
+// Report filter factory function
+function createReportFilter(data = {}) {
+  return {
+    id: '',
+    field: '',
+    operator: 'equals',
+    value: null,
+    isRequired: false,
+    isDynamic: false,
+    ...data
+  }
 }
 
-// Report aggregation
-interface ReportAggregation {
-  id: string
-  field: string
-  function: 'sum' | 'avg' | 'count' | 'min' | 'max' | 'median' | 'stddev' | 'variance'
-  alias: string
-  groupBy?: string
-  orderBy?: 'asc' | 'desc'
-  limit?: number
+// Report aggregation factory function
+function createReportAggregation(data = {}) {
+  return {
+    id: '',
+    field: '',
+    function: 'sum',
+    alias: '',
+    groupBy: '',
+    orderBy: 'asc',
+    limit: null,
+    ...data
+  }
 }
 
-// Report visualization
-interface ReportVisualization {
-  id: string
-  type: 'bar' | 'line' | 'pie' | 'area' | 'scatter' | 'heatmap' | 'sankey' | 'treemap' | 'gauge' | 'table'
-  title: string
-  dataField: string
-  xAxis?: string
-  yAxis?: string
-  colorField?: string
-  sizeField?: string
-  options: VisualizationOptions
-  position: { x: number; y: number; width: number; height: number }
+// Report visualization factory function
+function createReportVisualization(data = {}) {
+  return {
+    id: '',
+    type: 'bar',
+    title: '',
+    dataField: '',
+    xAxis: '',
+    yAxis: '',
+    colorField: '',
+    sizeField: '',
+    options: createVisualizationOptions(),
+    position: { x: 0, y: 0, width: 100, height: 100 },
+    ...data
+  }
 }
 
-// Visualization options
-interface VisualizationOptions {
-  showLegend: boolean
-  showGrid: boolean
-  showLabels: boolean
-  showTooltips: boolean
-  colors: string[]
-  animation: boolean
-  responsive: boolean
-  customOptions: Record<string, any>
+// Visualization options factory function
+function createVisualizationOptions(data = {}) {
+  return {
+    showLegend: true,
+    showGrid: true,
+    showLabels: true,
+    showTooltips: true,
+    colors: [],
+    animation: true,
+    responsive: true,
+    customOptions: {},
+    ...data
+  }
 }
 
-// Report schedule
-interface ReportSchedule {
-  enabled: boolean
-  frequency: 'hourly' | 'daily' | 'weekly' | 'monthly' | 'quarterly' | 'yearly'
-  time: string
-  timezone: string
-  recipients: string[]
-  format: 'pdf' | 'excel' | 'csv' | 'json' | 'html'
-  deliveryMethod: 'email' | 'ftp' | 'sftp' | 'webhook' | 'api'
-  lastRun?: Date
-  nextRun?: Date
+// Report schedule factory function
+function createReportSchedule(data = {}) {
+  return {
+    enabled: true,
+    frequency: 'daily',
+    time: '00:00',
+    timezone: 'UTC',
+    recipients: [],
+    format: 'pdf',
+    deliveryMethod: 'email',
+    lastRun: null,
+    nextRun: null,
+    ...data
+  }
 }
 
-// Report permissions
-interface ReportPermissions {
-  view: string[]
-  edit: string[]
-  delete: string[]
-  share: string[]
-  export: string[]
-  schedule: string[]
+// Report permissions factory function
+function createReportPermissions(data = {}) {
+  return {
+    view: [],
+    edit: [],
+    delete: [],
+    share: [],
+    export: [],
+    schedule: [],
+    ...data
+  }
 }
 
-// Report metadata
-interface ReportMetadata {
-  version: string
-  author: string
-  tags: string[]
-  lastModifiedBy: string
-  lastModifiedAt: Date
-  viewCount: number
-  shareCount: number
-  exportCount: number
-  performance: ReportPerformance
+// Report metadata factory function
+function createReportMetadata(data = {}) {
+  return {
+    version: '1.0.0',
+    author: '',
+    tags: [],
+    lastModifiedBy: '',
+    lastModifiedAt: new Date(),
+    viewCount: 0,
+    shareCount: 0,
+    exportCount: 0,
+    performance: createReportPerformance(),
+    ...data
+  }
 }
 
-// Report performance metrics
-interface ReportPerformance {
-  averageLoadTime: number
-  lastLoadTime: number
-  cacheHitRate: number
-  errorRate: number
-  userSatisfaction: number
+// Report performance metrics factory function
+function createReportPerformance(data = {}) {
+  return {
+    averageLoadTime: 0,
+    lastLoadTime: 0,
+    cacheHitRate: 0,
+    errorRate: 0,
+    userSatisfaction: 0,
+    ...data
+  }
 }
 
-// Dashboard configuration
-interface DashboardConfig {
-  id: string
-  name: string
-  description: string
-  layout: DashboardLayout
-  widgets: DashboardWidget[]
-  filters: DashboardFilter[]
-  permissions: DashboardPermissions
-  metadata: DashboardMetadata
-  createdAt: Date
-  updatedAt: Date
-  isActive: boolean
+// Dashboard configuration factory function
+function createDashboardConfig(data = {}) {
+  return {
+    id: '',
+    name: '',
+    description: '',
+    layout: createDashboardLayout(),
+    widgets: [],
+    filters: [],
+    permissions: createDashboardPermissions(),
+    metadata: createDashboardMetadata(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    isActive: true,
+    ...data
+  }
 }
 
-// Dashboard layout
-interface DashboardLayout {
-  type: 'grid' | 'flex' | 'custom'
-  columns: number
-  rows: number
-  gap: number
-  padding: number
-  responsive: boolean
-  breakpoints: Record<string, any>
+// Dashboard layout factory function
+function createDashboardLayout(data = {}) {
+  return {
+    type: 'grid',
+    columns: 12,
+    rows: 8,
+    gap: 16,
+    padding: 16,
+    responsive: true,
+    breakpoints: {},
+    ...data
+  }
 }
 
-// Dashboard widget
-interface DashboardWidget {
-  id: string
-  type: 'chart' | 'kpi' | 'table' | 'text' | 'image' | 'iframe' | 'custom'
-  title: string
-  reportId?: string
-  dataSource?: string
-  position: { x: number; y: number; width: number; height: number }
-  options: WidgetOptions
-  refreshInterval?: number
-  isVisible: boolean
+// Dashboard widget factory function
+function createDashboardWidget(data = {}) {
+  return {
+    id: '',
+    type: 'chart',
+    title: '',
+    reportId: '',
+    dataSource: '',
+    position: { x: 0, y: 0, width: 100, height: 100 },
+    options: createWidgetOptions(),
+    refreshInterval: null,
+    isVisible: true,
+    ...data
+  }
 }
 
-// Widget options
-interface WidgetOptions {
-  backgroundColor: string
-  borderColor: string
-  borderWidth: number
-  borderRadius: number
-  padding: number
-  margin: number
-  shadow: boolean
-  animation: boolean
-  customCss?: string
+// Widget options factory function
+function createWidgetOptions(data = {}) {
+  return {
+    backgroundColor: '#ffffff',
+    borderColor: '#e0e0e0',
+    borderWidth: 1,
+    borderRadius: 4,
+    padding: 16,
+    margin: 8,
+    shadow: false,
+    animation: true,
+    customCss: '',
+    ...data
+  }
 }
 
-// Dashboard filter
-interface DashboardFilter {
-  id: string
-  field: string
-  type: 'date' | 'select' | 'multiselect' | 'range' | 'text' | 'number'
-  label: string
-  options?: any[]
-  defaultValue?: any
-  isRequired: boolean
-  position: { x: number; y: number; width: number; height: number }
+// Dashboard filter factory function
+function createDashboardFilter(data = {}) {
+  return {
+    id: '',
+    field: '',
+    type: 'select',
+    label: '',
+    options: [],
+    defaultValue: null,
+    isRequired: false,
+    position: { x: 0, y: 0, width: 100, height: 40 },
+    ...data
+  }
 }
 
-// Dashboard permissions
-interface DashboardPermissions {
-  view: string[]
-  edit: string[]
-  delete: string[]
-  share: string[]
-  export: string[]
+// Dashboard permissions factory function
+function createDashboardPermissions(data = {}) {
+  return {
+    view: [],
+    edit: [],
+    delete: [],
+    share: [],
+    export: [],
+    ...data
+  }
 }
 
-// Dashboard metadata
-interface DashboardMetadata {
-  version: string
-  author: string
-  tags: string[]
-  lastModifiedBy: string
-  lastModifiedAt: Date
-  viewCount: number
-  shareCount: number
-  exportCount: number
+// Dashboard metadata factory function
+function createDashboardMetadata(data = {}) {
+  return {
+    version: '1.0.0',
+    author: '',
+    tags: [],
+    lastModifiedBy: '',
+    lastModifiedAt: new Date(),
+    viewCount: 0,
+    shareCount: 0,
+    exportCount: 0,
   performance: DashboardPerformance
 }
 

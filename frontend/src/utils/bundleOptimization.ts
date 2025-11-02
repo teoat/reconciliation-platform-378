@@ -1,5 +1,5 @@
 // ============================================================================
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 // BUNDLE OPTIMIZATION CONFIGURATION - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
@@ -49,19 +49,19 @@ export const webpackOptimizationConfig = {
       },
     },
   },
-  
+
   // Runtime chunk
   runtimeChunk: {
     name: 'runtime',
   },
-  
+
   // Module concatenation
   concatenateModules: true,
-  
+
   // Tree shaking
   usedExports: true,
   sideEffects: false,
-}
+};
 
 // ============================================================================
 // DYNAMIC IMPORTS CONFIGURATION
@@ -76,7 +76,7 @@ export const dynamicImportConfig = {
     'components/layout/AppLayout',
     'components/layout/Navigation',
   ],
-  
+
   // Heavy components (lazy load)
   heavy: [
     'components/charts/DataVisualization',
@@ -85,7 +85,7 @@ export const dynamicImportConfig = {
     'components/DataAnalysis',
     'components/CollaborationPanel',
   ],
-  
+
   // Page components (route-based loading)
   pages: [
     'pages/ProjectPage',
@@ -96,14 +96,14 @@ export const dynamicImportConfig = {
     'pages/SummaryPage',
     'pages/VisualizationPage',
   ],
-  
+
   // AI components (conditional loading)
   ai: [
     'components/FrenlyAI',
     'components/frenly/FrenlyAIProvider',
     'components/frenly/FrenlyGuidance',
   ],
-}
+};
 
 // ============================================================================
 // PRELOADING STRATEGY
@@ -116,28 +116,19 @@ export const preloadingStrategy = {
     '/reconciliation': ['components/ReconciliationAnalytics'],
     '/projects': ['components/DataAnalysis'],
   },
-  
+
   // Preload on user interaction
   interactionPreload: {
-    hover: [
-      'components/charts/Charts',
-      'components/CollaborationPanel',
-    ],
-    click: [
-      'components/AdvancedFilters',
-      'components/FrenlyAI',
-    ],
+    hover: ['components/charts/Charts', 'components/CollaborationPanel'],
+    click: ['components/AdvancedFilters', 'components/FrenlyAI'],
   },
-  
+
   // Preload after initial load
   delayedPreload: {
     delay: 2000, // 2 seconds after initial load
-    components: [
-      'components/frenly/FrenlyAIProvider',
-      'components/frenly/FrenlyGuidance',
-    ],
+    components: ['components/frenly/FrenlyAIProvider', 'components/frenly/FrenlyGuidance'],
   },
-}
+};
 
 // ============================================================================
 // BUNDLE SIZE TARGETS
@@ -149,31 +140,31 @@ export const bundleSizeTargets = {
     maxSize: '200kb',
     targetSize: '150kb',
   },
-  
+
   // Vendor bundle
   vendor: {
     maxSize: '500kb',
     targetSize: '400kb',
   },
-  
+
   // Page bundles
   page: {
     maxSize: '100kb',
     targetSize: '75kb',
   },
-  
+
   // Component bundles
   component: {
     maxSize: '50kb',
     targetSize: '30kb',
   },
-  
+
   // Total bundle size
   total: {
     maxSize: '2MB',
     targetSize: '1.5MB',
   },
-}
+};
 
 // ============================================================================
 // COMPRESSION SETTINGS
@@ -186,14 +177,14 @@ export const compressionConfig = {
     level: 6,
     threshold: 1024,
   },
-  
+
   // Brotli compression
   brotli: {
     enabled: true,
     level: 4,
     threshold: 1024,
   },
-  
+
   // Minification
   minification: {
     enabled: true,
@@ -201,7 +192,7 @@ export const compressionConfig = {
     removeEmptyAttributes: true,
     collapseWhitespace: true,
   },
-}
+};
 
 // ============================================================================
 // CACHING STRATEGY
@@ -213,25 +204,25 @@ export const cachingStrategy = {
     maxAge: 31536000, // 1 year
     immutable: true,
   },
-  
+
   // JavaScript bundles
   js: {
     maxAge: 86400, // 1 day
     immutable: true,
   },
-  
+
   // CSS bundles
   css: {
     maxAge: 86400, // 1 day
     immutable: true,
   },
-  
+
   // API responses
   api: {
     maxAge: 300, // 5 minutes
     staleWhileRevalidate: 3600, // 1 hour
   },
-}
+};
 
 // ============================================================================
 // PERFORMANCE MONITORING
@@ -241,23 +232,23 @@ export const performanceMonitoring = {
   // Core Web Vitals thresholds
   coreWebVitals: {
     LCP: 2500, // Largest Contentful Paint (ms)
-    FID: 100,  // First Input Delay (ms)
-    CLS: 0.1,  // Cumulative Layout Shift
+    FID: 100, // First Input Delay (ms)
+    CLS: 0.1, // Cumulative Layout Shift
   },
-  
+
   // Bundle analysis
   bundleAnalysis: {
     enabled: process.env.NODE_ENV === 'development',
     outputPath: './bundle-analysis',
   },
-  
+
   // Performance budgets
   performanceBudget: {
     maxInitialBundleSize: '200kb',
     maxTotalBundleSize: '2MB',
     maxAssetSize: '100kb',
   },
-}
+};
 
 // ============================================================================
 // OPTIMIZATION UTILITIES
@@ -267,39 +258,39 @@ export const performanceMonitoring = {
 export const analyzeBundleSize = async () => {
   if (process.env.NODE_ENV === 'development') {
     try {
-      const { BundleAnalyzerPlugin } = await import('webpack-bundle-analyzer')
-      return BundleAnalyzerPlugin
+      const { BundleAnalyzerPlugin } = await import('webpack-bundle-analyzer');
+      return BundleAnalyzerPlugin;
     } catch (error) {
-      logger.warn('Bundle analyzer not available:', error)
-      return null
+      logger.warn('Bundle analyzer not available:', error);
+      return null;
     }
   }
-  return null
-}
+  return null;
+};
 
 // Tree shaking analyzer
 export const analyzeTreeShaking = () => {
   if (process.env.NODE_ENV === 'development') {
-    logger.log('Tree shaking analysis enabled')
+    logger.info('Tree shaking analysis enabled');
     return {
       usedExports: true,
       sideEffects: false,
-    }
+    };
   }
-  return {}
-}
+  return {};
+};
 
 // Code splitting analyzer
 export const analyzeCodeSplitting = () => {
   if (process.env.NODE_ENV === 'development') {
-    logger.log('Code splitting analysis enabled')
+    logger.info('Code splitting analysis enabled');
     return {
       chunks: 'all',
       cacheGroups: webpackOptimizationConfig.splitChunks.cacheGroups,
-    }
+    };
   }
-  return {}
-}
+  return {};
+};
 
 // ============================================================================
 // EXPORT CONFIGURATION
@@ -316,4 +307,4 @@ export default {
   analyzeBundleSize,
   analyzeTreeShaking,
   analyzeCodeSplitting,
-}
+};

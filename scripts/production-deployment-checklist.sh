@@ -23,22 +23,35 @@ echo ""
 echo -e "${BLUE}[1/7] Build & Bundle Verification${NC}"
 echo ""
 
-if npm run build > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Build completed successfully${NC}"
-    PASS=$((PASS + 1))
+# Check if npm/node is available
+if ! command -v npm &> /dev/null; then
+    echo -e "${YELLOW}⚠️  npm not found - skipping build checks${NC}"
+    echo -e "${YELLOW}   Install Node.js/npm to run build verification${NC}"
+    WARN=$((WARN + 1))
 else
-    echo -e "${RED}❌ Build failed${NC}"
-    FAIL=$((FAIL + 1))
-    echo -e "${YELLOW}   Fix build errors before deploying${NC}"
-fi
+    if npm run build > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Build completed successfully${NC}"
+        PASS=$((PASS + 1))
+    else
+        echo -e "${RED}❌ Build failed${NC}"
+        FAIL=$((FAIL + 1))
+        echo -e "${YELLOW}   Fix build errors before deploying${NC}"
+    fi
 
-if npm run check-bundle-size > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Bundle size within limits (<3MB)${NC}"
-    PASS=$((PASS + 1))
-else
-    echo -e "${RED}❌ Bundle size exceeds 3MB target${NC}"
-    FAIL=$((FAIL + 1))
-    echo -e "${YELLOW}   Run: npm run analyze-bundle to identify large chunks${NC}"
+    # Check bundle size (only if build succeeded and bundle dir exists)
+    if [ -d ".next/static/chunks" ] || [ -d "frontend/dist" ]; then
+        if npm run check-bundle-size > /dev/null 2>&1; then
+            echo -e "${GREEN}✅ Bundle size within limits (<3MB)${NC}"
+            PASS=$((PASS + 1))
+        else
+            echo -e "${RED}❌ Bundle size exceeds 3MB target${NC}"
+            FAIL=$((FAIL + 1))
+            echo -e "${YELLOW}   Run: npm run analyze-bundle to identify large chunks${NC}"
+        fi
+    else
+        echo -e "${YELLOW}⚠️  Bundle not found - run build first${NC}"
+        WARN=$((WARN + 1))
+    fi
 fi
 echo ""
 
@@ -46,22 +59,27 @@ echo ""
 echo -e "${BLUE}[2/7] Code Quality Checks${NC}"
 echo ""
 
-if npm run lint > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Linting passed${NC}"
-    PASS=$((PASS + 1))
-else
-    echo -e "${RED}❌ Linting errors found${NC}"
-    FAIL=$((FAIL + 1))
-    echo -e "${YELLOW}   Run: npm run lint:fix${NC}"
-fi
-
-if npm run format:check > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Code formatting correct${NC}"
-    PASS=$((PASS + 1))
-else
-    echo -e "${YELLOW}⚠️  Formatting issues detected${NC}"
+if ! command -v npm &> /dev/null; then
+    echo -e "${YELLOW}⚠️  npm not found - skipping lint checks${NC}"
     WARN=$((WARN + 1))
-    echo -e "${YELLOW}   Run: npm run format${NC}"
+else
+    if npm run lint > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Linting passed${NC}"
+        PASS=$((PASS + 1))
+    else
+        echo -e "${RED}❌ Linting errors found${NC}"
+        FAIL=$((FAIL + 1))
+        echo -e "${YELLOW}   Run: npm run lint:fix${NC}"
+    fi
+
+    if npm run format:check > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Code formatting correct${NC}"
+        PASS=$((PASS + 1))
+    else
+        echo -e "${YELLOW}⚠️  Formatting issues detected${NC}"
+        WARN=$((WARN + 1))
+        echo -e "${YELLOW}   Run: npm run format${NC}"
+    fi
 fi
 echo ""
 
@@ -69,13 +87,18 @@ echo ""
 echo -e "${BLUE}[3/7] Test Verification${NC}"
 echo ""
 
-if npm run test:ci > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ All tests passing${NC}"
-    PASS=$((PASS + 1))
+if ! command -v npm &> /dev/null; then
+    echo -e "${YELLOW}⚠️  npm not found - skipping test checks${NC}"
+    WARN=$((WARN + 1))
 else
-    echo -e "${RED}❌ Tests failing${NC}"
-    FAIL=$((FAIL + 1))
-    echo -e "${YELLOW}   Fix failing tests before deploying${NC}"
+    if npm run test:ci > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ All tests passing${NC}"
+        PASS=$((PASS + 1))
+    else
+        echo -e "${RED}❌ Tests failing${NC}"
+        FAIL=$((FAIL + 1))
+        echo -e "${YELLOW}   Fix failing tests before deploying${NC}"
+    fi
 fi
 echo ""
 
@@ -168,13 +191,18 @@ else
     WARN=$((WARN + 1))
 fi
 
-# Check for .env files committed (basic check)
-if git ls-files | grep -q "\.env$"; then
+# Check for .env files committed (excluding .env.example)
+ENV_FILES=$(git ls-files | grep -E "\.env$|\.env\." | grep -v "\.env\.example" | grep -v "\.env\.template" || true)
+
+if [ -n "$ENV_FILES" ]; then
     echo -e "${RED}❌ .env files detected in git${NC}"
     FAIL=$((FAIL + 1))
-    echo -e "${YELLOW}   Remove .env files from git: git rm --cached .env${NC}"
+    echo -e "${YELLOW}   Remove .env files from git:${NC}"
+    echo "$ENV_FILES" | while read -r file; do
+        echo -e "${YELLOW}     git rm --cached $file${NC}"
+    done
 else
-    echo -e "${GREEN}✅ No .env files in git${NC}"
+    echo -e "${GREEN}✅ No .env files in git (excluding examples)${NC}"
     PASS=$((PASS + 1))
 fi
 echo ""

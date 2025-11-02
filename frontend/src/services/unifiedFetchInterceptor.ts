@@ -1,13 +1,13 @@
 // ============================================================================
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 // UNIFIED FETCH INTERCEPTOR - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
 interface InterceptorConfig {
-  enablePerformanceTracking?: boolean
-  enableMonitoring?: boolean
-  enableErrorTracking?: boolean
-  samplingRate?: number
+  enablePerformanceTracking?: boolean;
+  enableMonitoring?: boolean;
+  enableErrorTracking?: boolean;
+  samplingRate?: number;
 }
 
 /**
@@ -18,27 +18,27 @@ interface InterceptorConfig {
  * - services/monitoring.ts
  */
 export class UnifiedFetchInterceptor {
-  private static instance: UnifiedFetchInterceptor | null = null
-  private originalFetch: typeof fetch
-  private config: Required<InterceptorConfig>
-  private initialized = false
+  private static instance: UnifiedFetchInterceptor | null = null;
+  private originalFetch: typeof fetch;
+  private config: Required<InterceptorConfig>;
+  private initialized = false;
 
   private constructor(config: InterceptorConfig = {}) {
     this.config = {
       enablePerformanceTracking: config.enablePerformanceTracking ?? true,
       enableMonitoring: config.enableMonitoring ?? true,
       enableErrorTracking: config.enableErrorTracking ?? true,
-      samplingRate: config.samplingRate ?? 1.0
-    }
+      samplingRate: config.samplingRate ?? 1.0,
+    };
 
-    this.originalFetch = window.fetch
+    this.originalFetch = window.fetch;
   }
 
   static getInstance(config?: InterceptorConfig): UnifiedFetchInterceptor {
     if (!UnifiedFetchInterceptor.instance) {
-      UnifiedFetchInterceptor.instance = new UnifiedFetchInterceptor(config)
+      UnifiedFetchInterceptor.instance = new UnifiedFetchInterceptor(config);
     }
-    return UnifiedFetchInterceptor.instance
+    return UnifiedFetchInterceptor.instance;
   }
 
   /**
@@ -46,41 +46,41 @@ export class UnifiedFetchInterceptor {
    */
   initialize(): void {
     if (this.initialized) {
-      logger.warn('Fetch interceptor already initialized')
-      return
+      logger.warn('Fetch interceptor already initialized');
+      return;
     }
 
     window.fetch = async (...args) => {
-      const startTime = performance.now()
-      const url = args[0] as string
-      const options = args[1] || {}
-      const method = options.method || 'GET'
+      const startTime = performance.now();
+      const url = args[0] as string;
+      const options = args[1] || {};
+      const method = options.method || 'GET';
 
       try {
         // Call original fetch with proper context binding to prevent "Illegal invocation" error
-        const response = await this.originalFetch.call(window, ...args)
-        const duration = performance.now() - startTime
+        const response = await this.originalFetch.call(window, ...args);
+        const duration = performance.now() - startTime;
 
         // Track metrics if sampling
         if (Math.random() <= this.config.samplingRate) {
-          this.trackMetrics(url, method, response.status, duration, false, response)
+          this.trackMetrics(url, method, response.status, duration, false, response);
         }
 
-        return response
+        return response;
       } catch (error) {
-        const duration = performance.now() - startTime
+        const duration = performance.now() - startTime;
 
         // Track error if sampling
         if (Math.random() <= this.config.samplingRate) {
-          this.trackMetrics(url, method, 0, duration, true, null, error as Error)
+          this.trackMetrics(url, method, 0, duration, true, null, error as Error);
         }
 
-        throw error
+        throw error;
       }
-    }
+    };
 
-    this.initialized = true
-    logger.log('✅ Unified fetch interceptor initialized')
+    this.initialized = true;
+    logger.info('✅ Unified fetch interceptor initialized');
   }
 
   /**
@@ -101,35 +101,41 @@ export class UnifiedFetchInterceptor {
       statusCode,
       duration,
       isError,
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    };
 
     // Performance tracking
     if (this.config.enablePerformanceTracking && typeof window !== 'undefined') {
-      const win = window as unknown as Record<string, unknown>
-      const monitor = win.performanceMonitor as { recordMetric?: (name: string, value: number, tags: Record<string, string>) => void } | undefined
+      const win = window as unknown as Record<string, unknown>;
+      const monitor = win.performanceMonitor as
+        | { recordMetric?: (name: string, value: number, tags: Record<string, string>) => void }
+        | undefined;
       monitor?.recordMetric?.('apiResponseTime', duration, {
         url,
         method,
-        status: statusCode.toString()
-      })
+        status: statusCode.toString(),
+      });
     }
 
     // Monitoring
     if (this.config.enableMonitoring && typeof window !== 'undefined') {
-      const win = window as unknown as Record<string, unknown>
-      const monitoring = win.monitoring as { collectMetric?: (type: string, metrics: Record<string, unknown>) => void } | undefined
-      monitoring?.collectMetric?.('api', metrics)
+      const win = window as unknown as Record<string, unknown>;
+      const monitoring = win.monitoring as
+        | { collectMetric?: (type: string, metrics: Record<string, unknown>) => void }
+        | undefined;
+      monitoring?.collectMetric?.('api', metrics);
     }
 
     // Error tracking
     if (this.config.enableErrorTracking && isError) {
-      logger.error('API Error:', metrics, error)
-      
+      logger.error('API Error:', metrics, error);
+
       if (typeof window !== 'undefined') {
-        const win = window as unknown as Record<string, unknown>
-        const tracker = win.errorTracker as { trackError?: (error: Error, metrics: Record<string, unknown>) => void } | undefined
-        tracker?.trackError?.(error || new Error('API Request Failed'), metrics)
+        const win = window as unknown as Record<string, unknown>;
+        const tracker = win.errorTracker as
+          | { trackError?: (error: Error, metrics: Record<string, unknown>) => void }
+          | undefined;
+        tracker?.trackError?.(error || new Error('API Request Failed'), metrics);
       }
     }
   }
@@ -138,20 +144,19 @@ export class UnifiedFetchInterceptor {
    * Restore original fetch
    */
   restore(): void {
-    if (!this.initialized) return
+    if (!this.initialized) return;
 
-    window.fetch = this.originalFetch
-    this.initialized = false
-    logger.log('🔄 Original fetch restored')
+    window.fetch = this.originalFetch;
+    this.initialized = false;
+    logger.info('🔄 Original fetch restored');
   }
 
   /**
    * Update configuration
    */
   updateConfig(config: Partial<InterceptorConfig>): void {
-    this.config = { ...this.config, ...config }
+    this.config = { ...this.config, ...config };
   }
 }
 
-export default UnifiedFetchInterceptor
-
+export default UnifiedFetchInterceptor;

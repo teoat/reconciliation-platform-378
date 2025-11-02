@@ -6,6 +6,51 @@ import React from 'react';
 // import { onCLS, onFCP, onLCP, onTTFB } from 'web-vitals'
 import { APP_CONFIG } from '../config/AppConfig';
 
+// Connection info interface
+export interface ConnectionInfo {
+  effectiveType?: string;
+  downlink?: number;
+  rtt?: number;
+  saveData?: boolean;
+}
+
+// Device info interface
+export interface DeviceInfo {
+  platform: string;
+  language: string;
+  cookieEnabled: boolean;
+  onLine: boolean;
+  hardwareConcurrency?: number;
+}
+
+// Redux middleware types
+export interface ReduxStore {
+  dispatch: (action: unknown) => unknown;
+  getState: () => unknown;
+}
+
+export interface ReduxAction {
+  type: string;
+  [key: string]: unknown;
+}
+
+export type ReduxMiddlewareNext = (action: ReduxAction) => unknown;
+
+// Performance memory interface
+export interface PerformanceMemory {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
+
+// Navigator connection interface
+export interface NavigatorConnection {
+  effectiveType?: string;
+  downlink?: number;
+  rtt?: number;
+  saveData?: boolean;
+}
+
 // Performance metrics interface
 export interface PerformanceMetrics {
   // Core Web Vitals
@@ -62,7 +107,7 @@ class PerformanceMonitor {
   private config: PerformanceConfig;
   private metrics: Partial<PerformanceMetrics> = {};
   private observers: PerformanceObserver[] = [];
-  private reportTimer?: NodeJS.Timeout;
+  private reportTimer?: number;
   private isInitialized = false;
 
   constructor(config: Partial<PerformanceConfig> = {}) {
@@ -81,7 +126,7 @@ class PerformanceMonitor {
       this.isInitialized = true;
 
       if (this.config.debug) {
-        logger.log('Performance monitoring initialized');
+        logger.info('Performance monitoring initialized');
       }
     } catch (error) {
       logger.error('Failed to initialize performance monitoring:', error);
@@ -122,7 +167,7 @@ class PerformanceMonitor {
 
     // Memory usage (if available)
     if ('memory' in performance) {
-      const memory = (performance as any).memory;
+      const memory = (performance as { memory: PerformanceMemory }).memory;
       this.metrics.memoryUsage = memory.usedJSHeapSize / 1024 / 1024; // MB
     }
 
@@ -194,11 +239,12 @@ class PerformanceMonitor {
 
   private reportMetric(name: string, value: number): void {
     if (this.config.debug) {
-      logger.log(`Performance metric ${name}:`, value);
+      logger.info(`Performance metric ${name}:`, value);
     }
 
     // Store metric
-    this.metrics[name as keyof PerformanceMetrics] = value as any;
+    this.metrics[name as keyof PerformanceMetrics] =
+      value as unknown as PerformanceMetrics[keyof PerformanceMetrics];
     this.metrics.timestamp = new Date();
 
     // Send to analytics endpoint
@@ -266,9 +312,9 @@ class PerformanceMonitor {
     }
   }
 
-  private getConnectionInfo(): any {
+  private getConnectionInfo(): ConnectionInfo | null {
     if ('connection' in navigator) {
-      const conn = (navigator as any).connection;
+      const conn = (navigator as { connection?: NavigatorConnection }).connection;
       return {
         effectiveType: conn.effectiveType,
         downlink: conn.downlink,
@@ -279,7 +325,7 @@ class PerformanceMonitor {
     return null;
   }
 
-  private getDeviceInfo(): any {
+  private getDeviceInfo(): DeviceInfo {
     return {
       platform: navigator.platform,
       language: navigator.language,
@@ -403,7 +449,7 @@ export class PerformanceOptimizer {
   }
 
   // Bundle splitting
-  public loadChunk(chunkName: string): Promise<any> {
+  public loadChunk(chunkName: string): Promise<unknown> {
     return import(/* webpackChunkName: "[request]" */ `../chunks/${chunkName}`);
   }
 
@@ -511,18 +557,19 @@ export const usePerformanceMonitor = () => {
 };
 
 // Performance middleware for API calls
-export const performanceMiddleware = (store: any) => (next: any) => (action: any) => {
-  const start = performance.now();
-  const result = next(action);
-  const duration = performance.now() - start;
+export const performanceMiddleware =
+  (store: ReduxStore) => (next: ReduxMiddlewareNext) => (action: ReduxAction) => {
+    const start = performance.now();
+    const result = next(action);
+    const duration = performance.now() - start;
 
-  if (duration > 100) {
-    // Log slow actions
-    logger.warn(`Slow action: ${action.type} took ${duration.toFixed(2)}ms`);
-  }
+    if (duration > 100) {
+      // Log slow actions
+      logger.warn(`Slow action: ${action.type} took ${duration.toFixed(2)}ms`);
+    }
 
-  performanceMonitor.markCustomMetric(`action_${action.type}`, duration);
-  return result;
-};
+    performanceMonitor.markCustomMetric(`action_${action.type}`, duration);
+    return result;
+  };
 
 export default performanceMonitor;

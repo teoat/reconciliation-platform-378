@@ -1,82 +1,18 @@
 // Smart Filter Presets & AI Field Mapping Service
-import { logger } from '@/services/logger'
-// Implements intelligent filter presets, AI-powered field mapping, and one-click mapping
+// DEPRECATED: This file has been refactored into modular structure.
+// Use: import { smartFilterService } from './smartFilter'
+import { smartFilterService as service } from './smartFilter'
+export { service as default, service as smartFilterService }
+export * from './smartFilter'
 
-export interface FilterPreset {
-  id: string
-  name: string
-  description: string
-  category: 'recent' | 'saved' | 'smart' | 'template' | 'default' | 'history'
-  filters: FilterConfig[]
-  usageCount: number
-  lastUsed: Date
-  createdBy: string
-  isPublic: boolean
-  tags: string[]
-  confidence: number // AI confidence score
-  isDefault?: boolean
-  isSmart?: boolean
-  metadata?: {
-    projectId?: string
-    workflowStage?: string
-    dataType?: string
-  }
-}
-
-export interface FilterConfig {
-  field: string
-  operator: 'equals' | 'contains' | 'starts_with' | 'ends_with' | 'greater_than' | 'less_than' | 'between' | 'in' | 'not_in'
-  value: any
-  label: string
-  isRequired: boolean
-  weight: number // For AI scoring
-}
-
-export interface FieldMapping {
-  sourceField: string
-  targetField: string
-  confidence: number
-  mappingType: 'exact' | 'fuzzy' | 'semantic' | 'ai_suggested'
-  transformation?: {
-    type: 'format' | 'convert' | 'extract' | 'combine'
-    rules: any[]
-  }
-  validation?: {
-    required: boolean
-    format?: string
-    minLength?: number
-    maxLength?: number
-  }
-}
-
-export interface AIMappingSuggestion {
-  id: string
-  sourceFields: string[]
-  targetFields: string[]
-  confidence: number
-  reasoning: string
-  alternatives: FieldMapping[]
-  suggestedTransformations: any[]
-}
-
-export interface SmartDefaults {
-  filters: FilterConfig[]
-  sorting: {
-    field: string
-    direction: 'asc' | 'desc'
-  }
-  pagination: {
-    pageSize: number
-  }
-  viewMode: 'table' | 'cards' | 'timeline'
-  columns: string[]
-}
+// Legacy exports for backward compatibility - will be removed
+import { FilterPreset, FilterConfig, FieldMapping, AIMappingSuggestion, SmartDefaults } from './smartFilter/types';
+import { PresetManager } from './smartFilter/presets';
 
 class SmartFilterService {
   private static instance: SmartFilterService
-  private presets: Map<string, FilterPreset> = new Map()
+  private presetManager: PresetManager
   private fieldMappings: Map<string, FieldMapping[]> = new Map()
-  private usageHistory: Map<string, number> = new Map()
   private aiSuggestions: Map<string, AIMappingSuggestion[]> = new Map()
   private listeners: Map<string, Function[]> = new Map()
 
@@ -88,219 +24,57 @@ class SmartFilterService {
   }
 
   constructor() {
-    this.initializeDefaultPresets()
-    this.loadPersistedData()
-  }
-
-  private initializeDefaultPresets(): void {
-    // Recent items preset
-    const recentPreset: FilterPreset = {
-      id: 'recent_items',
-      name: 'Recent Items',
-      description: 'Show items from the last 7 days',
-      category: 'smart',
-      filters: [
-        {
-          field: 'created_at',
-          operator: 'greater_than',
-          value: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-          label: 'Created After',
-          isRequired: true,
-          weight: 1.0
-        }
-      ],
-      usageCount: 0,
-      lastUsed: new Date(),
-      createdBy: 'system',
-      isPublic: true,
-      tags: ['recent', 'time'],
-      confidence: 0.95
-    }
-
-    // High priority preset
-    const highPriorityPreset: FilterPreset = {
-      id: 'high_priority',
-      name: 'High Priority Items',
-      description: 'Show high priority reconciliation items',
-      category: 'smart',
-      filters: [
-        {
-          field: 'priority',
-          operator: 'equals',
-          value: 'high',
-          label: 'Priority',
-          isRequired: true,
-          weight: 1.0
-        },
-        {
-          field: 'status',
-          operator: 'in',
-          value: ['pending', 'in_progress'],
-          label: 'Status',
-          isRequired: false,
-          weight: 0.8
-        }
-      ],
-      usageCount: 0,
-      lastUsed: new Date(),
-      createdBy: 'system',
-      isPublic: true,
-      tags: ['priority', 'urgent'],
-      confidence: 0.9
-    }
-
-    // Unmatched items preset
-    const unmatchedPreset: FilterPreset = {
-      id: 'unmatched_items',
-      name: 'Unmatched Items',
-      description: 'Show items that need reconciliation',
-      category: 'smart',
-      filters: [
-        {
-          field: 'match_status',
-          operator: 'equals',
-          value: 'unmatched',
-          label: 'Match Status',
-          isRequired: true,
-          weight: 1.0
-        },
-        {
-          field: 'confidence',
-          operator: 'less_than',
-          value: 0.8,
-          label: 'Confidence',
-          isRequired: false,
-          weight: 0.7
-        }
-      ],
-      usageCount: 0,
-      lastUsed: new Date(),
-      createdBy: 'system',
-      isPublic: true,
-      tags: ['unmatched', 'reconciliation'],
-      confidence: 0.85
-    }
-
-    this.presets.set(recentPreset.id, recentPreset)
-    this.presets.set(highPriorityPreset.id, highPriorityPreset)
-    this.presets.set(unmatchedPreset.id, unmatchedPreset)
-  }
-
-  private loadPersistedData(): void {
-    try {
-      const stored = localStorage.getItem('smart_filter_presets')
-      if (stored) {
-        const data = JSON.parse(stored)
-        this.presets = new Map(data.presets)
-        this.fieldMappings = new Map(data.fieldMappings)
-        this.usageHistory = new Map(data.usageHistory)
-      }
-    } catch (error) {
-      logger.error('Failed to load smart filter data:', error)
-    }
-  }
-
-  private savePersistedData(): void {
-    try {
-      const data = {
-        presets: Array.from(this.presets.entries()),
-        fieldMappings: Array.from(this.fieldMappings.entries()),
-        usageHistory: Array.from(this.usageHistory.entries())
-      }
-      localStorage.setItem('smart_filter_presets', JSON.stringify(data))
-    } catch (error) {
-      logger.error('Failed to save smart filter data:', error)
-    }
+    this.presetManager = new PresetManager()
   }
 
   // Filter Preset Management
   public createPreset(
-    name: string,
-    description: string,
-    filters: FilterConfig[],
-    options: {
-      category?: FilterPreset['category']
-      isPublic?: boolean
-      tags?: string[]
-      createdBy?: string
-    } = {}
+    preset: Omit<FilterPreset, 'id' | 'usageCount' | 'lastUsed'>
   ): FilterPreset {
-    const id = `preset_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-    
-    const preset: FilterPreset = {
-      id,
-      name,
-      description,
-      category: options.category || 'saved',
-      filters,
-      usageCount: 0,
-      lastUsed: new Date(),
-      createdBy: options.createdBy || 'user',
-      isPublic: options.isPublic || false,
-      tags: options.tags || [],
-      confidence: this.calculatePresetConfidence(filters)
-    }
-
-    this.presets.set(id, preset)
-    this.savePersistedData()
-    this.emit('presetCreated', preset)
-    
-    return preset
+    const newPreset = this.presetManager.createPreset(preset);
+    this.emit('presetCreated', newPreset);
+    return newPreset;
   }
 
   public getPreset(id: string): FilterPreset | undefined {
-    return this.presets.get(id)
+    return this.presetManager.getPreset(id);
   }
 
   public getAllPresets(category?: FilterPreset['category']): FilterPreset[] {
-    const presets = Array.from(this.presets.values())
-    return category ? presets.filter(p => p.category === category) : presets
+    return this.presetManager.getAllPresets(category);
   }
 
   public getRecentPresets(limit: number = 5): FilterPreset[] {
-    return Array.from(this.presets.values())
-      .sort((a, b) => b.lastUsed.getTime() - a.lastUsed.getTime())
-      .slice(0, limit)
+    return this.presetManager.getRecentPresets(limit);
   }
 
   public getPopularPresets(limit: number = 5): FilterPreset[] {
-    return Array.from(this.presets.values())
-      .sort((a, b) => b.usageCount - a.usageCount)
-      .slice(0, limit)
+    return this.presetManager.getPopularPresets(limit);
   }
 
   public usePreset(id: string): FilterPreset | undefined {
-    const preset = this.presets.get(id)
-    if (!preset) return undefined
+    const preset = this.presetManager.getPreset(id);
+    if (!preset) return undefined;
 
-    preset.usageCount++
-    preset.lastUsed = new Date()
-    this.presets.set(id, preset)
-    this.savePersistedData()
-    
-    this.emit('presetUsed', preset)
-    return preset
+    this.presetManager.incrementUsage(id);
+    this.emit('presetUsed', preset);
+    return preset;
   }
 
   public updatePreset(id: string, updates: Partial<FilterPreset>): FilterPreset | undefined {
-    const preset = this.presets.get(id)
-    if (!preset) return undefined
-
-    const updated = { ...preset, ...updates }
-    this.presets.set(id, updated)
-    this.savePersistedData()
-    
-    this.emit('presetUpdated', updated)
-    return updated
+    const updated = this.presetManager.updatePreset(id, updates);
+    if (updated) {
+      this.emit('presetUpdated', updated);
+    }
+    return updated;
   }
 
   public deletePreset(id: string): boolean {
-    const deleted = this.presets.delete(id)
+    const deleted = this.presetManager.deletePreset(id);
     if (deleted) {
-      this.savePersistedData()
-      this.emit('presetDeleted', id)
+      this.emit('presetDeleted', id);
     }
-    return deleted
+    return deleted;
   }
 
   private calculatePresetConfidence(filters: FilterConfig[]): number {

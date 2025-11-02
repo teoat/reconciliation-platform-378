@@ -68,7 +68,7 @@ export const registerServiceWorker = async (
       scope: finalConfig.scope,
     })
 
-    logger.log('Service Worker registered successfully:', registration)
+    logger.info('Service Worker registered successfully:', registration)
     return registration
   } catch (error) {
     logger.error('Service Worker registration failed:', error)
@@ -89,7 +89,7 @@ export const unregisterServiceWorker = async (): Promise<boolean> => {
       await registration.unregister()
     }
     
-    logger.log('Service Worker unregistered successfully')
+    logger.info('Service Worker unregistered successfully')
     return true
   } catch (error) {
     logger.error('Service Worker unregistration failed:', error)

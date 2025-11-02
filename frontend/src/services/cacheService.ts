@@ -1,75 +1,72 @@
 import { logger } from '@/services/logger';
-import { PerformanceMemory } from '../types/performance';
 // Implements multi-level caching with Redis, browser cache, and memory cache
 
 import React from 'react';
-import { Metadata } from '@/types/metadata';
 
-// Cache configuration
-interface CacheConfig {
+// Cache configuration factory
+const createCacheConfig = () => ({
   // Memory cache
-  memoryCacheSize: number;
-  memoryCacheTTL: number;
+  memoryCacheSize: 1000,
+  memoryCacheTTL: 5 * 60 * 1000,
 
   // Browser cache
-  browserCacheSize: number;
-  browserCacheTTL: number;
+  browserCacheSize: 500,
+  browserCacheTTL: 15 * 60 * 1000,
 
   // Redis cache
-  redisEnabled: boolean;
-  redisTTL: number;
+  redisEnabled: false,
+  redisTTL: 60 * 60 * 1000,
 
   // Cache strategies
-  defaultStrategy: CacheStrategy;
-  strategies: Map<string, CacheStrategy>;
-}
+  defaultStrategy: 'cache-first',
+  strategies: new Map([
+    ['api', 'network-first'],
+    ['static', 'cache-first'],
+    ['user', 'stale-while-revalidate'],
+    ['project', 'network-first'],
+    ['reconciliation', 'stale-while-revalidate'],
+  ]),
+});
 
 // Cache strategies
-export enum CacheStrategy {
-  CACHE_FIRST = 'cache-first',
-  NETWORK_FIRST = 'network-first',
-  CACHE_ONLY = 'cache-only',
-  NETWORK_ONLY = 'network-only',
-  STALE_WHILE_REVALIDATE = 'stale-while-revalidate',
-}
+export const CacheStrategy = {
+  CACHE_FIRST: 'cache-first',
+  NETWORK_FIRST: 'network-first',
+  CACHE_ONLY: 'cache-only',
+  NETWORK_ONLY: 'network-only',
+  STALE_WHILE_REVALIDATE: 'stale-while-revalidate',
+};
 
-// Cache entry interface
-interface CacheEntry<T = unknown> {
-  key: string;
-  value: T;
-  timestamp: Date;
-  ttl: number;
-  strategy: CacheStrategy;
-  tags: string[];
-  metadata: Metadata;
-}
+// Cache entry factory
+const createCacheEntry = (key, value, options = {}) => ({
+  key,
+  value,
+  timestamp: new Date(),
+  ttl: options.ttl || 5 * 60 * 1000,
+  strategy: options.strategy || 'cache-first',
+  tags: options.tags || [],
+  metadata: options.metadata || {},
+});
 
-// Cache statistics
-interface CacheStats {
-  hits: number;
-  misses: number;
-  sets: number;
-  deletes: number;
-  size: number;
-  memoryUsage: number;
-}
+// Cache statistics factory
+const createCacheStats = () => ({
+  hits: 0,
+  misses: 0,
+  sets: 0,
+  deletes: 0,
+  size: 0,
+  memoryUsage: 0,
+});
 
 class CacheService {
-  private static instance: CacheService;
-  private config: CacheConfig;
-  private memoryCache: Map<string, CacheEntry> = new Map();
-  private browserCache: Map<string, CacheEntry> = new Map();
-  private stats: CacheStats = {
-    hits: 0,
-    misses: 0,
-    sets: 0,
-    deletes: 0,
-    size: 0,
-    memoryUsage: 0,
-  };
-  private cleanupInterval?: NodeJS.Timeout;
+  static instance = null;
+  config;
+  memoryCache = new Map();
+  browserCache = new Map();
+  stats = createCacheStats();
+  cleanupInterval = null;
 
-  public static getInstance(): CacheService {
+  static getInstance() {
     if (!CacheService.instance) {
       CacheService.instance = new CacheService();
     }
@@ -77,27 +74,11 @@ class CacheService {
   }
 
   constructor() {
-    this.config = {
-      memoryCacheSize: 1000,
-      memoryCacheTTL: 5 * 60 * 1000, // 5 minutes
-      browserCacheSize: 500,
-      browserCacheTTL: 15 * 60 * 1000, // 15 minutes
-      redisEnabled: false,
-      redisTTL: 60 * 60 * 1000, // 1 hour
-      defaultStrategy: CacheStrategy.CACHE_FIRST,
-      strategies: new Map([
-        ['api', CacheStrategy.NETWORK_FIRST],
-        ['static', CacheStrategy.CACHE_FIRST],
-        ['user', CacheStrategy.STALE_WHILE_REVALIDATE],
-        ['project', CacheStrategy.NETWORK_FIRST],
-        ['reconciliation', CacheStrategy.STALE_WHILE_REVALIDATE],
-      ]),
-    };
-
+    this.config = createCacheConfig();
     this.init();
   }
 
-  private init(): void {
+  init() {
     // Load browser cache from localStorage
     this.loadBrowserCache();
 
@@ -110,12 +91,12 @@ class CacheService {
     this.setupMemoryMonitoring();
   }
 
-  private loadBrowserCache(): void {
+  loadBrowserCache() {
     try {
       const cached = localStorage.getItem('cache_browser');
       if (cached) {
         const entries = JSON.parse(cached);
-        entries.forEach((entry: CacheEntry) => {
+        entries.forEach((entry) => {
           this.browserCache.set(entry.key, {
             ...entry,
             timestamp: new Date(entry.timestamp),
@@ -127,7 +108,7 @@ class CacheService {
     }
   }
 
-  private saveBrowserCache(): void {
+  saveBrowserCache() {
     try {
       const entries = Array.from(this.browserCache.values());
       localStorage.setItem('cache_browser', JSON.stringify(entries));
@@ -136,59 +117,47 @@ class CacheService {
     }
   }
 
-  private setupMemoryMonitoring(): void {
+  setupMemoryMonitoring() {
     if ('memory' in performance) {
       setInterval(() => {
-        const memory = (performance as Performance & { memory: PerformanceMemory }).memory;
+        const memory = performance.memory;
         this.stats.memoryUsage = memory.usedJSHeapSize;
       }, 5000);
     }
   }
 
   // Public cache methods
-  public async get<T>(key: string, strategy?: CacheStrategy): Promise<T | null> {
+  async get(key, strategy) {
     const cacheStrategy = strategy || this.getStrategyForKey(key);
 
     switch (cacheStrategy) {
       case CacheStrategy.CACHE_FIRST:
-        return this.cacheFirst<T>(key);
+        return this.cacheFirst(key);
 
       case CacheStrategy.NETWORK_FIRST:
-        return this.networkFirst<T>(key);
+        return this.networkFirst(key);
 
       case CacheStrategy.CACHE_ONLY:
-        return this.cacheOnly<T>(key);
+        return this.cacheOnly(key);
 
       case CacheStrategy.NETWORK_ONLY:
-        return this.networkOnly<T>(key);
+        return this.networkOnly(key);
 
       case CacheStrategy.STALE_WHILE_REVALIDATE:
-        return this.staleWhileRevalidate<T>(key);
+        return this.staleWhileRevalidate(key);
 
       default:
-        return this.cacheFirst<T>(key);
+        return this.cacheFirst(key);
     }
   }
 
-  public async set<T>(
-    key: string,
-    value: T,
-    options: {
-      ttl?: number;
-      strategy?: CacheStrategy;
-      tags?: string[];
-      metadata?: Metadata;
-    } = {}
-  ): Promise<void> {
-    const entry: CacheEntry<T> = {
-      key,
-      value,
-      timestamp: new Date(),
+  async set(key, value, options = {}) {
+    const entry = createCacheEntry(key, value, {
       ttl: options.ttl || this.getTTLForKey(key),
       strategy: options.strategy || this.getStrategyForKey(key),
-      tags: options.tags || [],
-      metadata: options.metadata || {},
-    };
+      tags: options.tags,
+      metadata: options.metadata,
+    });
 
     // Store in memory cache
     this.memoryCache.set(key, entry);
@@ -206,7 +175,7 @@ class CacheService {
     this.updateStats();
   }
 
-  public async delete(key: string): Promise<void> {
+  async delete(key) {
     this.memoryCache.delete(key);
     this.browserCache.delete(key);
     this.saveBrowserCache();
@@ -219,7 +188,7 @@ class CacheService {
     this.updateStats();
   }
 
-  public async clear(pattern?: string): Promise<void> {
+  async clear(pattern) {
     if (pattern) {
       // Clear entries matching pattern
       const regex = new RegExp(pattern);
@@ -247,8 +216,8 @@ class CacheService {
     this.updateStats();
   }
 
-  public async invalidateByTag(tag: string): Promise<void> {
-    const keysToDelete: string[] = [];
+  async invalidateByTag(tag) {
+    const keysToDelete = [];
 
     // Find keys with matching tag
     for (const [key, entry] of Array.from(this.memoryCache.entries())) {
@@ -264,12 +233,12 @@ class CacheService {
   }
 
   // Cache strategy implementations
-  private async cacheFirst<T>(key: string): Promise<T | null> {
+  async cacheFirst(key) {
     // Try memory cache first
     let entry = this.memoryCache.get(key);
     if (entry && !this.isExpired(entry)) {
       this.stats.hits++;
-      return entry.value as T | null;
+      return entry.value;
     }
 
     // Try browser cache
@@ -278,7 +247,7 @@ class CacheService {
       this.stats.hits++;
       // Promote to memory cache
       this.memoryCache.set(key, entry);
-      return entry.value as T | null;
+      return entry.value;
     }
 
     // Try Redis cache
@@ -290,7 +259,7 @@ class CacheService {
         this.memoryCache.set(key, redisEntry);
         this.browserCache.set(key, redisEntry);
         this.saveBrowserCache();
-        return redisEntry.value as T | null;
+        return redisEntry.value;
       }
     }
 
@@ -298,10 +267,10 @@ class CacheService {
     return null;
   }
 
-  private async networkFirst<T>(key: string): Promise<T | null> {
+  async networkFirst(key) {
     // Try network first (this would typically be an API call)
     try {
-      const networkValue = await this.fetchFromNetwork<T>(key);
+      const networkValue = await this.fetchFromNetwork(key);
       if (networkValue !== null) {
         // Cache the result
         await this.set(key, networkValue);
@@ -312,25 +281,25 @@ class CacheService {
     }
 
     // Fallback to cache
-    return this.cacheFirst<T>(key);
+    return this.cacheFirst(key);
   }
 
-  private async cacheOnly<T>(key: string): Promise<T | null> {
-    return this.cacheFirst<T>(key);
+  async cacheOnly(key) {
+    return this.cacheFirst(key);
   }
 
-  private async networkOnly<T>(key: string): Promise<T | null> {
+  async networkOnly(key) {
     try {
-      return await this.fetchFromNetwork<T>(key);
+      return await this.fetchFromNetwork(key);
     } catch (error) {
       logger.error('Network request failed', { error });
       return null;
     }
   }
 
-  private async staleWhileRevalidate<T>(key: string): Promise<T | null> {
+  async staleWhileRevalidate(key) {
     // Get stale value from cache
-    const staleValue = await this.cacheFirst<T>(key);
+    const staleValue = await this.cacheFirst(key);
 
     // Revalidate in background
     this.revalidateInBackground(key);
@@ -338,9 +307,9 @@ class CacheService {
     return staleValue;
   }
 
-  private async revalidateInBackground<T>(key: string): Promise<void> {
+  async revalidateInBackground(key) {
     try {
-      const networkValue = await this.fetchFromNetwork<T>(key);
+      const networkValue = await this.fetchFromNetwork(key);
       if (networkValue !== null) {
         await this.set(key, networkValue);
       }
@@ -350,49 +319,49 @@ class CacheService {
   }
 
   // Network fetch simulation
-  private async fetchFromNetwork<T>(_key: string): Promise<T | null> {
+  async fetchFromNetwork(key) {
     // This would typically make an actual API call
     // For now, return null to simulate network failure
     return null;
   }
 
   // Redis operations (simulated)
-  private async getRedis(_key: string): Promise<CacheEntry | null> {
+  async getRedis(key) {
     // This would typically use a Redis client
     // For now, return null
     return null;
   }
 
-  private async setRedis(_key: string, _entry: CacheEntry): Promise<void> {
+  async setRedis(key, entry) {
     // This would typically use a Redis client
     // For now, do nothing
   }
 
-  private async deleteRedis(_key: string): Promise<void> {
+  async deleteRedis(key) {
     // This would typically use a Redis client
     // For now, do nothing
   }
 
   // Utility methods
-  private isExpired(entry: CacheEntry): boolean {
+  isExpired(entry) {
     const now = new Date();
     const expiryTime = new Date(entry.timestamp.getTime() + entry.ttl);
     return now > expiryTime;
   }
 
-  private getStrategyForKey(key: string): CacheStrategy {
+  getStrategyForKey(key) {
     // Determine strategy based on key prefix
     const prefixes = Array.from(this.config.strategies.keys());
     for (let i = 0; i < prefixes.length; i++) {
       const prefix = prefixes[i];
       if (key.startsWith(prefix)) {
-        return this.config.strategies.get(prefix)!;
+        return this.config.strategies.get(prefix);
       }
     }
     return this.config.defaultStrategy;
   }
 
-  private getTTLForKey(key: string): number {
+  getTTLForKey(key) {
     // Determine TTL based on key prefix
     if (key.startsWith('api/')) {
       return this.config.redisTTL;
@@ -403,7 +372,7 @@ class CacheService {
     }
   }
 
-  private cleanup(): void {
+  cleanup() {
     // Cleanup memory cache
     const memoryEntries = Array.from(this.memoryCache.entries());
     for (let i = 0; i < memoryEntries.length; i++) {
@@ -429,7 +398,7 @@ class CacheService {
     this.updateStats();
   }
 
-  private enforceSizeLimits(): void {
+  enforceSizeLimits() {
     // Memory cache size limit
     if (this.memoryCache.size > this.config.memoryCacheSize) {
       const entries = Array.from(this.memoryCache.entries());
@@ -449,41 +418,39 @@ class CacheService {
     }
   }
 
-  private updateStats(): void {
+  updateStats() {
     this.stats.size = this.memoryCache.size + this.browserCache.size;
   }
 
   // Public utility methods
-  public getStats(): CacheStats {
+  getStats() {
     return { ...this.stats };
   }
 
-  public getMemoryUsage(): number {
+  getMemoryUsage() {
     return this.stats.memoryUsage;
   }
 
-  public getCacheSize(): number {
+  getCacheSize() {
     return this.stats.size;
   }
 
-  public getHitRate(): number {
+  getHitRate() {
     const total = this.stats.hits + this.stats.misses;
     return total > 0 ? this.stats.hits / total : 0;
   }
 
-  public async preload(keys: string[]): Promise<void> {
+  async preload(keys) {
     const promises = keys.map((key) => this.get(key));
     await Promise.all(promises);
   }
 
-  public async warmup(
-    entries: Array<{ key: string; value: unknown; ttl?: number }>
-  ): Promise<void> {
+  async warmup(entries) {
     const promises = entries.map((entry) => this.set(entry.key, entry.value, { ttl: entry.ttl }));
     await Promise.all(promises);
   }
 
-  public destroy(): void {
+  destroy() {
     if (this.cleanupInterval) {
       clearInterval(this.cleanupInterval);
     }
@@ -494,7 +461,7 @@ class CacheService {
 
 // React hook for caching
 export const useCache = () => {
-  const [stats, setStats] = React.useState<CacheStats>(() => {
+  const [stats, setStats] = React.useState(() => {
     const cache = CacheService.getInstance();
     return cache.getStats();
   });
@@ -528,25 +495,21 @@ export const useCache = () => {
 };
 
 // Cache decorator for functions
-export const cached = <T extends (...args: unknown[]) => Promise<unknown>>(
-  key: string,
-  ttl?: number,
-  strategy?: CacheStrategy
-) => {
-  return function (target: unknown, propertyName: string, descriptor: TypedPropertyDescriptor<T>) {
+export const cached = (key, ttl, strategy) => {
+  return function (target, propertyName, descriptor) {
     const method = descriptor.value;
     if (!method) {
       return descriptor;
     }
     const cache = CacheService.getInstance();
 
-    descriptor.value = async function (this: unknown, ...args: Parameters<T>) {
+    descriptor.value = async function (...args) {
       const cacheKey = `${key}:${JSON.stringify(args)}`;
 
       // Try to get from cache
       const cached = await cache.get(cacheKey, strategy);
       if (cached !== null) {
-        return cached as Awaited<ReturnType<T>>;
+        return cached;
       }
 
       // Execute method and cache result
@@ -554,7 +517,7 @@ export const cached = <T extends (...args: unknown[]) => Promise<unknown>>(
       await cache.set(cacheKey, result, { ttl });
 
       return result;
-    } as T;
+    };
 
     return descriptor;
   };

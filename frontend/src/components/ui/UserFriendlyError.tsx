@@ -6,6 +6,7 @@
 
 import React, { useState } from 'react';
 import { AlertCircle, X, RefreshCw, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { ErrorCodeDisplay } from './ErrorCodeDisplay';
 // Import ariaLiveRegionsService with fallback
 import ariaLiveRegionsServiceModule from '../services/ariaLiveRegionsService';
 const ariaLiveRegionsService = 
@@ -29,6 +30,8 @@ export interface UserFriendlyErrorProps {
   severity?: 'error' | 'warning' | 'info';
   showDetails?: boolean;
   errorId?: string;
+  errorCode?: string;
+  correlationId?: string;
 }
 
 /**
@@ -44,6 +47,8 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
   severity = 'error',
   showDetails = false,
   errorId,
+  errorCode,
+  correlationId,
 }) => {
   const [isExpanded, setIsExpanded] = useState(showDetails);
   const [isRecovering, setIsRecovering] = useState(false);
@@ -72,6 +77,8 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
     } catch (recoveryError) {
       // Handle recovery error
       console.error('Recovery action failed:', recoveryError);
+      // Optionally surface a user-friendly error message for recovery failures
+      // This could be passed via a prop like onRecoveryError
     } finally {
       setIsRecovering(false);
     }
@@ -111,7 +118,7 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
                   type="button"
                   onClick={() => setIsExpanded(!isExpanded)}
                   className="text-sm font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded"
-                  aria-expanded={ariaExpandedValue}
+                  aria-expanded={isExpanded}
                   aria-controls={errorId ? `error-details-${errorId}` : 'error-details'}
                 >
                   {isExpanded ? (
@@ -147,6 +154,18 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
             <p className="mt-2 text-sm opacity-90">
               <span className="font-medium">Context:</span> {context}
             </p>
+          )}
+
+          {/* Error Code and Correlation ID Display */}
+          {(errorCode || correlationId) && (
+            <div className="mt-3">
+              <ErrorCodeDisplay
+                errorCode={errorCode}
+                correlationId={correlationId}
+                timestamp={new Date()}
+                showLabel={true}
+              />
+            </div>
           )}
 
           {/* Expanded details with recovery actions and suggestions */}

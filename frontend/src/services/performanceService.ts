@@ -4,54 +4,57 @@ import { logger } from '@/services/logger';
 
 import { EventEmitter } from 'events';
 
-interface PerformanceMemory {
-  usedJSHeapSize: number;
-  totalJSHeapSize: number;
-  jsHeapSizeLimit: number;
-}
+const createPerformanceMemory = (usedJSHeapSize, totalJSHeapSize, jsHeapSizeLimit) => ({
+  usedJSHeapSize,
+  totalJSHeapSize,
+  jsHeapSizeLimit,
+});
 
-export interface PerformanceMetrics {
-  pageLoadTime: number;
-  firstContentfulPaint: number;
-  largestContentfulPaint: number;
-  firstInputDelay: number;
-  cumulativeLayoutShift: number;
-  memoryUsage: number;
-  bundleSize: number;
-  cacheHitRate: number;
-  apiResponseTime: number;
-  timestamp: string;
-}
+export const createPerformanceMetrics = (
+  pageLoadTime,
+  firstContentfulPaint,
+  largestContentfulPaint,
+  firstInputDelay,
+  cumulativeLayoutShift,
+  memoryUsage,
+  bundleSize,
+  cacheHitRate,
+  apiResponseTime,
+  timestamp
+) => ({
+  pageLoadTime,
+  firstContentfulPaint,
+  largestContentfulPaint,
+  firstInputDelay,
+  cumulativeLayoutShift,
+  memoryUsage,
+  bundleSize,
+  cacheHitRate,
+  apiResponseTime,
+  timestamp,
+});
 
-export interface BundleAnalysis {
-  totalSize: number;
-  gzippedSize: number;
-  chunks: Array<{
-    name: string;
-    size: number;
-    gzippedSize: number;
-  }>;
-  duplicates: Array<{
-    module: string;
-    chunks: string[];
-    size: number;
-  }>;
-}
+export const createBundleAnalysis = (totalSize, gzippedSize, chunks, duplicates) => ({
+  totalSize,
+  gzippedSize,
+  chunks,
+  duplicates,
+});
 
-export interface CacheStrategy {
-  name: string;
-  maxAge: number;
-  maxSize: number;
-  strategy: 'memory' | 'localStorage' | 'sessionStorage' | 'indexedDB';
-}
+export const createCacheStrategy = (name, maxAge, maxSize, strategy) => ({
+  name,
+  maxAge,
+  maxSize,
+  strategy,
+});
 
 class PerformanceService extends EventEmitter {
-  private metrics: PerformanceMetrics | null = null;
-  private observers: PerformanceObserver[] = [];
-  private cacheStrategies: Map<string, CacheStrategy> = new Map();
-  private memoryCache: Map<string, { data: unknown; timestamp: number; ttl: number }> = new Map();
-  private apiCache: Map<string, { data: unknown; timestamp: number; ttl: number }> = new Map();
-  private bundleAnalysis: BundleAnalysis | null = null;
+  metrics = null;
+  observers = [];
+  cacheStrategies = new Map();
+  memoryCache = new Map();
+  apiCache = new Map();
+  bundleAnalysis = null;
 
   constructor() {
     super();
@@ -77,10 +80,10 @@ class PerformanceService extends EventEmitter {
     }
   }
 
-  private observeWebVitals(): void {
+  observeWebVitals() {
     // First Contentful Paint
     if ('PerformanceObserver' in window) {
-      const fcpObserver = new PerformanceObserver((list: PerformanceObserverEntryList) => {
+      const fcpObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach((entry) => {
           if (entry.name === 'first-contentful-paint') {
@@ -92,7 +95,7 @@ class PerformanceService extends EventEmitter {
       this.observers.push(fcpObserver);
 
       // Largest Contentful Paint
-      const lcpObserver = new PerformanceObserver((list: PerformanceObserverEntryList) => {
+      const lcpObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         const lastEntry = entries[entries.length - 1];
         this.updateMetric('largestContentfulPaint', lastEntry.startTime);
@@ -101,7 +104,7 @@ class PerformanceService extends EventEmitter {
       this.observers.push(lcpObserver);
 
       // First Input Delay
-      const fidObserver = new PerformanceObserver((list: PerformanceObserverEntryList) => {
+      const fidObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach((entry) => {
           const timing = entry as PerformanceEventTiming;
@@ -114,7 +117,7 @@ class PerformanceService extends EventEmitter {
       this.observers.push(fidObserver);
 
       // Cumulative Layout Shift
-      const clsObserver = new PerformanceObserver((list: PerformanceObserverEntryList) => {
+      const clsObserver = new PerformanceObserver((list) => {
         let clsValue = 0;
         const entries = list.getEntries();
         entries.forEach((entry) => {
@@ -132,14 +135,14 @@ class PerformanceService extends EventEmitter {
     }
   }
 
-  private observeMemoryUsage(): void {
+  observeMemoryUsage() {
     if ('memory' in performance) {
-      const memory = performance.memory as PerformanceMemory;
+      const memory = performance.memory;
       this.updateMetric('memoryUsage', memory.usedJSHeapSize / 1024 / 1024); // MB
     }
   }
 
-  private observeApiPerformance(): void {
+  observeApiPerformance() {
     // Intercept fetch requests
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
@@ -172,16 +175,15 @@ class PerformanceService extends EventEmitter {
     };
   }
 
-  private observeBundlePerformance(): void {
+  observeBundlePerformance() {
     // Analyze loaded resources
     if ('getEntriesByType' in performance) {
       const resources = performance.getEntriesByType('resource');
       let totalSize = 0;
 
       resources.forEach((resource) => {
-        const resourceTiming = resource as PerformanceResourceTiming;
-        if (resourceTiming && 'transferSize' in resourceTiming && resourceTiming.transferSize) {
-          totalSize += resourceTiming.transferSize;
+        if (resource && 'transferSize' in resource && resource.transferSize) {
+          totalSize += resource.transferSize;
         }
       });
 
@@ -189,7 +191,7 @@ class PerformanceService extends EventEmitter {
     }
   }
 
-  private updateMetric(key: Exclude<keyof PerformanceMetrics, 'timestamp'>, value: number): void {
+  updateMetric(key, value) {
     if (!this.metrics) {
       this.metrics = this.getDefaultMetrics();
     }
@@ -200,7 +202,7 @@ class PerformanceService extends EventEmitter {
     this.emit('metrics_updated', this.metrics);
   }
 
-  private getDefaultMetrics(): PerformanceMetrics {
+  getDefaultMetrics() {
     return {
       pageLoadTime: 0,
       firstContentfulPaint: 0,
@@ -216,7 +218,7 @@ class PerformanceService extends EventEmitter {
   }
 
   // Cache Management
-  private setupCacheStrategies(): void {
+  setupCacheStrategies() {
     this.cacheStrategies.set('api', {
       name: 'API Cache',
       maxAge: 5 * 60 * 1000, // 5 minutes
@@ -247,7 +249,7 @@ class PerformanceService extends EventEmitter {
   }
 
   // Memory Cache
-  setCache<T>(key: string, data: T, ttl: number = 300000): void {
+  setCache(key, data, ttl = 300000) {
     const strategy = this.cacheStrategies.get('api');
     if (!strategy) return;
 
@@ -261,7 +263,7 @@ class PerformanceService extends EventEmitter {
     this.cleanupExpiredCache();
   }
 
-  getCache<T>(key: string): T | null {
+  getCache(key) {
     const cached = this.memoryCache.get(key);
     if (!cached) return null;
 
@@ -273,7 +275,7 @@ class PerformanceService extends EventEmitter {
     return cached.data;
   }
 
-  clearCache(key?: string): void {
+  clearCache(key) {
     if (key) {
       this.memoryCache.delete(key);
     } else {
@@ -281,7 +283,7 @@ class PerformanceService extends EventEmitter {
     }
   }
 
-  private cleanupExpiredCache(): void {
+  cleanupExpiredCache() {
     const now = Date.now();
     for (const [key, cached] of this.memoryCache.entries()) {
       if (now - cached.timestamp > cached.ttl) {
@@ -291,7 +293,7 @@ class PerformanceService extends EventEmitter {
   }
 
   // Local Storage Cache
-  setLocalCache<T>(key: string, data: T, ttl: number = 1800000): void {
+  setLocalCache(key, data, ttl = 1800000) {
     try {
       const cacheData = {
         data,
@@ -304,7 +306,7 @@ class PerformanceService extends EventEmitter {
     }
   }
 
-  getLocalCache<T>(key: string): T | null {
+  getLocalCache(key) {
     try {
       const cached = localStorage.getItem(`cache_${key}`);
       if (!cached) return null;
@@ -323,7 +325,7 @@ class PerformanceService extends EventEmitter {
   }
 
   // Session Storage Cache
-  setSessionCache<T>(key: string, data: T, ttl: number = 900000): void {
+  setSessionCache(key, data, ttl = 900000) {
     try {
       const cacheData = {
         data,
@@ -336,7 +338,7 @@ class PerformanceService extends EventEmitter {
     }
   }
 
-  getSessionCache<T>(key: string): T | null {
+  getSessionCache(key) {
     try {
       const cached = sessionStorage.getItem(`cache_${key}`);
       if (!cached) return null;
@@ -355,11 +357,11 @@ class PerformanceService extends EventEmitter {
   }
 
   // Bundle Analysis
-  private analyzeBundle(): void {
+  analyzeBundle() {
     if (typeof window !== 'undefined' && 'getEntriesByType' in performance) {
-      const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
-      const chunks: Array<{ name: string; size: number; gzippedSize: number }> = [];
-      const duplicates: Array<{ module: string; chunks: string[]; size: number }> = [];
+      const resources = performance.getEntriesByType('resource');
+      const chunks = [];
+      const duplicates = [];
 
       let totalSize = 0;
       let gzippedSize = 0;
@@ -390,7 +392,7 @@ class PerformanceService extends EventEmitter {
   }
 
   // Performance Optimization Methods
-  lazyLoadImages(): void {
+  lazyLoadImages() {
     if ('IntersectionObserver' in window) {
       const imageObserver = new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
@@ -411,7 +413,7 @@ class PerformanceService extends EventEmitter {
     }
   }
 
-  preloadCriticalResources(): void {
+  preloadCriticalResources() {
     const criticalResources = ['/api/auth/me', '/api/projects', '/api/dashboard'];
 
     criticalResources.forEach((resource) => {
@@ -422,7 +424,7 @@ class PerformanceService extends EventEmitter {
     });
   }
 
-  optimizeImages(): void {
+  optimizeImages() {
     // Convert images to WebP format if supported
     if (this.supportsWebP()) {
       document.querySelectorAll('img').forEach((img) => {
@@ -435,7 +437,7 @@ class PerformanceService extends EventEmitter {
     }
   }
 
-  private supportsWebP(): boolean {
+  supportsWebP() {
     const canvas = document.createElement('canvas');
     canvas.width = 1;
     canvas.height = 1;
@@ -443,15 +445,15 @@ class PerformanceService extends EventEmitter {
   }
 
   // Performance Reporting
-  getMetrics(): PerformanceMetrics | null {
+  getMetrics() {
     return this.metrics;
   }
 
-  getBundleAnalysis(): BundleAnalysis | null {
+  getBundleAnalysis() {
     return this.bundleAnalysis;
   }
 
-  getCacheStats(): { hits: number; misses: number; size: number } {
+  getCacheStats() {
     return {
       hits: this.memoryCache.size,
       misses: 0, // This would need to be tracked
@@ -460,7 +462,7 @@ class PerformanceService extends EventEmitter {
   }
 
   // Cleanup
-  destroy(): void {
+  destroy() {
     this.observers.forEach((observer) => observer.disconnect());
     this.observers = [];
     this.memoryCache.clear();
