@@ -4,9 +4,16 @@
 
 import React, { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import {
-  Menu, X, Search, Bell, Home, BarChart3, Users, Settings, FileText, Upload
-} from 'lucide-react'
+import { Menu } from 'lucide-react'
+import { X } from 'lucide-react'
+import { Search } from 'lucide-react'
+import { Bell } from 'lucide-react'
+import { Home } from 'lucide-react'
+import { BarChart3 } from 'lucide-react'
+import { Users } from 'lucide-react'
+import { Settings } from 'lucide-react'
+import { FileText } from 'lucide-react'
+import { Upload } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import Button from '../ui/Button'
 

@@ -3,18 +3,16 @@
 import React, { useState, useEffect } from 'react'
 import { useFrenly } from './FrenlyProvider'
 import { FrenlyMessage } from '../types/frenly'
-import { 
-  CheckCircle, 
-  XCircle, 
-  AlertTriangle, 
-  Play, 
-  RotateCcw,
-  Eye,
-  MessageCircle,
-  Settings,
-  Zap,
-  Heart
-} from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { XCircle } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { Play } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
+import { Eye } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
+import { Settings } from 'lucide-react'
+import { Zap } from 'lucide-react'
+import { Heart } from 'lucide-react'
 
 interface FrenlyTestResult {
   testName: string

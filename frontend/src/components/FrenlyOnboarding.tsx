@@ -1,25 +1,23 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { 
-  Sparkles, 
-  ArrowRight, 
-  CheckCircle, 
-  X, 
-  Play, 
-  Pause,
-  SkipForward,
-  RotateCcw,
-  Heart,
-  Star,
-  Zap,
-  Target,
-  BookOpen,
-  Lightbulb,
-  MessageCircle,
-  Smile,
-  Laugh
-} from 'lucide-react'
+import { Sparkles } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { X } from 'lucide-react'
+import { Play } from 'lucide-react'
+import { Pause } from 'lucide-react'
+import { SkipForward } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
+import { Heart } from 'lucide-react'
+import { Star } from 'lucide-react'
+import { Zap } from 'lucide-react'
+import { Target } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
+import { Lightbulb } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
+import { Smile } from 'lucide-react'
+import { Laugh } from 'lucide-react'
 
 interface OnboardingStep {
   id: string

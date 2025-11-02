@@ -1,4 +1,13 @@
 // Centralized Data Management System for Reconciliation App
+import { logger } from '@/services/logger'
+import { 
+  ProcessedRecordData, 
+  ReconciliationSourceData, 
+  MatchingResultDetails, 
+  AuditEntryDetails, 
+  UploadedFileData, 
+  ExtractedContentMetadata 
+} from '../types/data';
 // This service manages data flow between Ingestion, Reconciliation, and Cashflow Evaluation pages
 
 export interface ProjectData {
@@ -42,7 +51,7 @@ export interface ProcessedRecord {
   id: string
   sourceFile: string
   fileType: 'expenses' | 'bank_statement' | 'other'
-  data: Record<string, any>
+  data: ProcessedRecordData
   quality: DataQualityMetrics
   processedAt: string
   validated: boolean
@@ -71,11 +80,11 @@ export interface ReconciliationSource {
   systemId: string
   systemName: string
   recordId: string
-  data: Record<string, any>
+  data: ReconciliationSourceData
   timestamp: string
   quality: DataQualityMetrics
   confidence: number
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 }
 
 export interface MatchingRule {
@@ -92,7 +101,7 @@ export interface MatchingRule {
 export interface MatchingCriteria {
   field: string
   operator: 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'regex' | 'fuzzy'
-  value: any
+  value: string | number | boolean | null | undefined
   tolerance?: number
   weight: number
 }
@@ -100,8 +109,7 @@ export interface MatchingCriteria {
 export interface MatchingResult {
   matched: boolean
   confidence: number
-  reason: string
-  details: Record<string, any>
+  details: MatchingResultDetails
 }
 
 export interface AuditEntry {
@@ -110,9 +118,9 @@ export interface AuditEntry {
   userName: string
   action: string
   timestamp: string
-  details: Record<string, any>
-  previousValue?: any
-  newValue?: any
+  details: AuditEntryDetails
+  previousValue?: unknown
+  newValue?: unknown
   ipAddress?: string
   userAgent?: string
 }
@@ -310,14 +318,14 @@ export interface UploadedFile {
   status: 'uploading' | 'completed' | 'error' | 'processing' | 'validating' | 'extracting' | 'analyzing'
   progress: number
   records?: number
-  data?: any[]
+  data?: Array<UploadedFileData>
   columns?: ColumnInfo[]
   fileType: 'expenses' | 'bank_statement' | 'chat_history' | 'pdf_document' | 'image' | 'video' | 'audio' | 'contract' | 'other'
   qualityMetrics?: DataQualityMetrics
   validations?: DataValidation[]
   mappings?: FieldMapping[]
-  cleanedData?: any[]
-  originalData?: any[]
+  cleanedData?: Array<Record<string, unknown>>
+  originalData?: Array<Record<string, unknown>>
   extractedContent?: ExtractedContent
   chatMessages?: ChatMessage[]
   contractAnalysis?: ContractAnalysis
@@ -355,7 +363,7 @@ export interface ColumnInfo {
   type: 'string' | 'number' | 'date' | 'currency' | 'boolean'
   nullable: boolean
   unique: boolean
-  sampleValues: any[]
+  sampleValues: Array<string | number | boolean | null>
   statistics?: {
     min?: number
     max?: number
@@ -367,7 +375,7 @@ export interface ColumnInfo {
 
 export interface ExtractedContent {
   text?: string
-  metadata?: Record<string, any>
+  metadata?: ExtractedContentMetadata
   entities?: Array<{
     type: string
     value: string
@@ -381,8 +389,8 @@ export interface ExtractedContent {
   duration?: number
   resolution?: string
   format?: string
-  exif?: any
-  videoMetadata?: any
+  exif?: Record<string, unknown>
+  videoMetadata?: Record<string, unknown>
   fileSize?: number
   creationDate?: string
   modificationDate?: string
@@ -873,7 +881,7 @@ class DataManagementService {
       this.notifyListeners(project.id, project)
       return project
     } catch (error) {
-      console.error('Failed to import project:', error)
+      logger.error('Failed to import project:', error)
       return null
     }
   }

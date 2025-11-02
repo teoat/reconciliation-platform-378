@@ -20,7 +20,7 @@ export interface IntegrationConfig {
   name: string
   type: 'calendar' | 'email' | 'slack' | 'teams' | 'api'
   enabled: boolean
-  settings: Record<string, any>
+  settings: Record<string, unknown>
   lastSync?: string
 }
 
@@ -168,7 +168,7 @@ export class IntegrationService {
     return this.integrations
   }
 
-  static updateIntegration(id: string, settings: Record<string, any>): boolean {
+  static updateIntegration(id: string, settings: Record<string, unknown>): boolean {
     const integration = this.integrations.find(i => i.id === id)
     if (integration) {
       integration.settings = { ...integration.settings, ...settings }

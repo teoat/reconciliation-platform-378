@@ -51,7 +51,7 @@ export {
 
 // Specialized Services
 export { default as DataManagementService } from './dataManagement'
-export { default as SecurityService } from './securityService'
+export { securityService as SecurityService, default as securityService } from './security/index'
 export { default as CacheService } from './cacheService'
 export { default as FileService } from './fileService'
 export { default as FormService } from './formService'

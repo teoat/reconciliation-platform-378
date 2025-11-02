@@ -13,6 +13,7 @@ use std::sync::Arc;
 
 use crate::errors::{AppError, AppResult};
 use crate::services::auth::{AuthService, Claims};
+use crate::services::security_monitor::{SecurityMonitor, SecurityEvent, SecurityEventType, SecuritySeverity};
 use crate::monitoring::SecurityMetrics;
 
 /// Authentication middleware configuration
@@ -43,6 +44,7 @@ pub struct AuthMiddlewareState {
     pub auth_service: Arc<AuthService>,
     pub config: AuthMiddlewareConfig,
     pub security_metrics: Arc<SecurityMetrics>,
+    pub security_monitor: Option<Arc<SecurityMonitor>>,
 }
 
 /// Authentication middleware
@@ -50,11 +52,17 @@ pub struct AuthMiddleware {
     auth_service: Arc<AuthService>,
     config: AuthMiddlewareConfig,
     security_metrics: Arc<SecurityMetrics>,
+    security_monitor: Option<Arc<SecurityMonitor>>,
 }
 
 impl AuthMiddleware {
     pub fn new(auth_service: Arc<AuthService>, config: AuthMiddlewareConfig, security_metrics: Arc<SecurityMetrics>) -> Self {
-        Self { auth_service, config, security_metrics }
+        Self { 
+            auth_service, 
+            config, 
+            security_metrics,
+            security_monitor: None,
+        }
     }
 
     pub fn with_auth_service(auth_service: Arc<AuthService>, security_metrics: Arc<SecurityMetrics>) -> Self {
@@ -62,7 +70,13 @@ impl AuthMiddleware {
             auth_service,
             config: AuthMiddlewareConfig::default(),
             security_metrics,
+            security_monitor: None,
         }
+    }
+
+    pub fn with_security_monitor(mut self, security_monitor: Arc<SecurityMonitor>) -> Self {
+        self.security_monitor = Some(security_monitor);
+        self
     }
 }
 
@@ -82,6 +96,7 @@ where
             auth_service: self.auth_service.clone(),
             config: self.config.clone(),
             security_metrics: self.security_metrics.clone(),
+            security_monitor: self.security_monitor.clone(),
         };
 
         ok(AuthMiddlewareService {
@@ -124,8 +139,31 @@ where
             let token = match extract_token(&req, &state.config) {
                 Ok(token) => token,
                 Err(_) => {
+                    let ip = get_client_ip_from_req(&req);
+                    
                     // Record security metric
                     state.security_metrics.record_auth_denied();
+
+                    // Log security event to SecurityMonitor if available
+                    if let Some(monitor) = &state.security_monitor {
+                        let event = SecurityEvent {
+                            id: uuid::Uuid::new_v4().to_string(),
+                            event_type: SecurityEventType::AuthenticationFailure,
+                            severity: SecuritySeverity::Medium,
+                            timestamp: chrono::Utc::now().to_rfc3339(),
+                            source_ip: Some(ip.clone()),
+                            user_id: None,
+                            description: format!("Authentication denied: missing token on {}", req.path()),
+                            metadata: {
+                                let mut meta = std::collections::HashMap::new();
+                                meta.insert("path".to_string(), req.path().to_string());
+                                meta.insert("method".to_string(), req.method().as_str().to_string());
+                                meta.insert("user_agent".to_string(), get_user_agent_from_req(&req));
+                                meta
+                            },
+                        };
+                        let _ = monitor.record_event(event).await;
+                    }
 
                     // Audit log for missing authentication
                     let logger = crate::services::structured_logging::StructuredLogging::new("auth".to_string());
@@ -134,7 +172,7 @@ where
                     fields.insert("reason".to_string(), serde_json::json!("missing_token"));
                     fields.insert("path".to_string(), serde_json::json!(req.path()));
                     fields.insert("method".to_string(), serde_json::json!(req.method().as_str()));
-                    fields.insert("ip_address".to_string(), serde_json::json!(get_client_ip_from_req(&req)));
+                    fields.insert("ip_address".to_string(), serde_json::json!(ip));
                     fields.insert("user_agent".to_string(), serde_json::json!(get_user_agent_from_req(&req)));
                     fields.insert("timestamp".to_string(), serde_json::json!(chrono::Utc::now().to_rfc3339()));
                     logger.log(crate::services::structured_logging::LogLevel::Warn, "Authentication denied: missing token", fields);
@@ -156,8 +194,39 @@ where
             let claims = match state.auth_service.validate_token(&token) {
                 Ok(claims) => claims,
                 Err(_) => {
+                    let ip = get_client_ip_from_req(&req);
+                    
                     // Record security metric
                     state.security_metrics.record_auth_denied();
+
+                    // Log security event to SecurityMonitor if available
+                    if let Some(monitor) = &state.security_monitor {
+                        let event = SecurityEvent {
+                            id: uuid::Uuid::new_v4().to_string(),
+                            event_type: SecurityEventType::AuthenticationFailure,
+                            severity: SecuritySeverity::Medium,
+                            timestamp: chrono::Utc::now().to_rfc3339(),
+                            source_ip: Some(ip.clone()),
+                            user_id: None,
+                            description: format!("Authentication denied: invalid token on {}", req.path()),
+                            metadata: {
+                                let mut meta = std::collections::HashMap::new();
+                                meta.insert("path".to_string(), req.path().to_string());
+                                meta.insert("method".to_string(), req.method().as_str().to_string());
+                                meta.insert("user_agent".to_string(), get_user_agent_from_req(&req));
+                                meta
+                            },
+                        };
+                        let _ = monitor.record_event(event).await;
+                        
+                        // Check for brute force attack
+                        if let Ok(is_brute_force) = monitor.detect_brute_force(&ip, false).await {
+                            if is_brute_force {
+                                log::warn!("Brute force attack detected from IP: {}", ip);
+                                // In production, would trigger alert/block
+                            }
+                        }
+                    }
 
                     // Audit log for invalid token
                     let logger = crate::services::structured_logging::StructuredLogging::new("auth".to_string());
@@ -166,7 +235,7 @@ where
                     fields.insert("reason".to_string(), serde_json::json!("invalid_token"));
                     fields.insert("path".to_string(), serde_json::json!(req.path()));
                     fields.insert("method".to_string(), serde_json::json!(req.method().as_str()));
-                    fields.insert("ip_address".to_string(), serde_json::json!(get_client_ip_from_req(&req)));
+                    fields.insert("ip_address".to_string(), serde_json::json!(ip));
                     fields.insert("user_agent".to_string(), serde_json::json!(get_user_agent_from_req(&req)));
                     fields.insert("timestamp".to_string(), serde_json::json!(chrono::Utc::now().to_rfc3339()));
                     logger.log(crate::services::structured_logging::LogLevel::Warn, "Authentication denied: invalid token", fields);

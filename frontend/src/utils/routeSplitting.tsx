@@ -1,4 +1,5 @@
 import { lazy } from 'react'
+import { logger } from '@/services/logger'
 import { createLazyRoute } from './lazyLoading'
 
 // ============================================================================
@@ -189,7 +190,7 @@ export async function analyzeRouteBundles() {
       const endTime = performance.now()
       results[name] = endTime - startTime
     } catch (error) {
-      console.error(`Failed to load ${name}:`, error)
+      logger.error(`Failed to load ${name}:`, error)
       results[name] = -1
     }
   }
@@ -240,7 +241,7 @@ export function createSmartRouteLoader() {
 
       loadedRoutes.add(routeName)
     } catch (error) {
-      console.error(`Failed to preload ${routeName}:`, error)
+      logger.error(`Failed to preload ${routeName}:`, error)
     } finally {
       preloadQueue.delete(routeName)
     }

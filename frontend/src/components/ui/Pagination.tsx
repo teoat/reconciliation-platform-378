@@ -1,13 +1,14 @@
-import React from 'react'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import React from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { memo } from 'react';
 
 export interface PaginationProps {
-  currentPage: number
-  totalPages: number
-  onPageChange: (page: number) => void
-  showPageNumbers?: boolean
-  maxVisiblePages?: number
-  className?: string
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  showPageNumbers?: boolean;
+  maxVisiblePages?: number;
+  className?: string;
 }
 
 const Pagination: React.FC<PaginationProps> = ({
@@ -16,35 +17,35 @@ const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
   showPageNumbers = true,
   maxVisiblePages = 5,
-  className = ''
+  className = '',
 }) => {
   const getVisiblePages = () => {
-    const pages: number[] = []
-    const halfVisible = Math.floor(maxVisiblePages / 2)
-    
-    let startPage = Math.max(1, currentPage - halfVisible)
-    let endPage = Math.min(totalPages, currentPage + halfVisible)
-    
+    const pages: number[] = [];
+    const halfVisible = Math.floor(maxVisiblePages / 2);
+
+    let startPage = Math.max(1, currentPage - halfVisible);
+    let endPage = Math.min(totalPages, currentPage + halfVisible);
+
     // Adjust if we're near the beginning or end
     if (endPage - startPage + 1 < maxVisiblePages) {
       if (startPage === 1) {
-        endPage = Math.min(totalPages, startPage + maxVisiblePages - 1)
+        endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
       } else {
-        startPage = Math.max(1, endPage - maxVisiblePages + 1)
+        startPage = Math.max(1, endPage - maxVisiblePages + 1);
       }
     }
-    
+
     for (let i = startPage; i <= endPage; i++) {
-      pages.push(i)
+      pages.push(i);
     }
-    
-    return pages
-  }
-  
-  const visiblePages = getVisiblePages()
-  
-  if (totalPages <= 1) return null
-  
+
+    return pages;
+  };
+
+  const visiblePages = getVisiblePages();
+
+  if (totalPages <= 1) return null;
+
   return (
     <div className={`flex items-center justify-between ${className}`}>
       <div className="flex items-center space-x-2">
@@ -57,7 +58,7 @@ const Pagination: React.FC<PaginationProps> = ({
           <ChevronLeft className="w-4 h-4 mr-1" />
           Previous
         </button>
-        
+
         {/* Page Numbers */}
         {showPageNumbers && (
           <div className="flex items-center space-x-1">
@@ -75,7 +76,7 @@ const Pagination: React.FC<PaginationProps> = ({
                 )}
               </>
             )}
-            
+
             {/* Visible pages */}
             {visiblePages.map((page) => (
               <button
@@ -90,7 +91,7 @@ const Pagination: React.FC<PaginationProps> = ({
                 {page}
               </button>
             ))}
-            
+
             {/* Last page */}
             {visiblePages[visiblePages.length - 1] < totalPages && (
               <>
@@ -107,7 +108,7 @@ const Pagination: React.FC<PaginationProps> = ({
             )}
           </div>
         )}
-        
+
         {/* Next Button */}
         <button
           onClick={() => onPageChange(currentPage + 1)}
@@ -118,14 +119,14 @@ const Pagination: React.FC<PaginationProps> = ({
           <ChevronRight className="w-4 h-4 ml-1" />
         </button>
       </div>
-      
+
       {/* Page Info */}
       <div className="text-sm text-gray-700">
         Page {currentPage} of {totalPages}
       </div>
     </div>
-  )
-}
+  );
+};
 
 export { Pagination };
-export default Pagination
+export default memo(Pagination);

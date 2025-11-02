@@ -268,7 +268,7 @@ export function useSearchAndFilter<T>(
   config: {
     searchFields: (keyof T)[]
     searchTerm: string
-    filters: Record<string, any>
+    filters: Record<string, unknown>
     onSearchChange: (term: string) => void
     onFilterChange: (key: string, value: any) => void
   }

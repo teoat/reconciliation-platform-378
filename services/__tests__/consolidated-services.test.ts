@@ -1,7 +1,7 @@
 // Comprehensive Test Suite for Consolidated Services
 // Tests all consolidated services and components
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals'
 import { formService } from '../services/formService'
 import { fileService } from '../services/fileService'
 import { uiService } from '../services/uiService'
@@ -230,7 +230,7 @@ describe('UI Service Tests', () => {
 
   it('should announce to screen reader', () => {
     // Mock console.log to verify announcement
-    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
     
     uiService.announceToScreenReader('Test announcement', 'polite')
     

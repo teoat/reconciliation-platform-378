@@ -1,4 +1,6 @@
 // PWA Service for Offline Support and Progressive Web App Features
+import { logger } from '@/services/logger'
+import { secureStorage } from './secureStorage'
 // Manages service worker registration, offline data, and PWA functionality
 
 import React from 'react'
@@ -96,22 +98,22 @@ class PWAService {
       // Check for updates
       this.checkForUpdates()
       
-      console.log('PWA Service initialized successfully')
-    } catch (error) {
-      console.error('Failed to initialize PWA Service:', error)
+      logger.info('PWA Service initialized successfully')
+    } catch (error: unknown) {
+      logger.error('Failed to initialize PWA Service', { error })
     }
   }
 
   private async registerServiceWorker(): Promise<void> {
     if (!('serviceWorker' in navigator)) {
-      console.warn('Service Worker not supported')
+      logger.warning('Service Worker not supported')
       return
     }
 
     try {
       const registration = await navigator.serviceWorker.register(this.config.serviceWorkerPath)
       
-      console.log('Service Worker registered:', registration.scope)
+      logger.info('Service Worker registered', { scope: registration.scope })
       
       // Handle service worker updates
       registration.addEventListener('updatefound', () => {
@@ -139,7 +141,7 @@ class PWAService {
       })
 
     } catch (error) {
-      console.error('Service Worker registration failed:', error)
+      logger.error('Service Worker registration failed:', error)
     }
   }
 
@@ -182,26 +184,26 @@ class PWAService {
 
   private async loadOfflineData(): Promise<void> {
     try {
-      const data = localStorage.getItem('pwa_offline_data')
+      const data = secureStorage.getItem<OfflineData[]>('pwa_offline_data', false)
       if (data) {
-        this.offlineData = JSON.parse(data).map((item: any) => ({
+        this.offlineData = data.map((item: OfflineData) => ({
           ...item,
           timestamp: new Date(item.timestamp),
         }))
         this.status.offlineDataCount = this.offlineData.length
       }
     } catch (error) {
-      console.error('Failed to load offline data:', error)
+      logger.error('Failed to load offline data:', error)
       this.offlineData = []
     }
   }
 
   private async saveOfflineData(): Promise<void> {
     try {
-      localStorage.setItem('pwa_offline_data', JSON.stringify(this.offlineData))
+      secureStorage.setItem('pwa_offline_data', this.offlineData, false)
       this.status.offlineDataCount = this.offlineData.length
     } catch (error) {
-      console.error('Failed to save offline data:', error)
+      logger.error('Failed to save offline data:', error)
     }
   }
 
@@ -232,7 +234,7 @@ class PWAService {
         this.emit('updateAvailable')
         break
       default:
-        console.log('Unknown service worker message:', data.type)
+        logger.info('Unknown service worker message', { type: data.type })
     }
   }
 
@@ -254,7 +256,7 @@ class PWAService {
       
       return false
     } catch (error) {
-      console.error('Install prompt failed:', error)
+      logger.error('Install prompt failed:', error)
       return false
     }
   }
@@ -270,13 +272,13 @@ class PWAService {
         window.location.reload()
       }
     } catch (error) {
-      console.error('Update failed:', error)
+      logger.error('Update failed:', error)
     }
   }
 
   public async requestNotificationPermission(): Promise<boolean> {
     if (!('Notification' in window)) {
-      console.warn('Notifications not supported')
+      logger.warn('Notifications not supported')
       return false
     }
 
@@ -294,7 +296,7 @@ class PWAService {
       this.config.notificationPermission = permission === 'granted'
       return this.config.notificationPermission
     } catch (error) {
-      console.error('Notification permission request failed:', error)
+      logger.error('Notification permission request failed:', error)
       return false
     }
   }
@@ -317,7 +319,7 @@ class PWAService {
         notification.close()
       }
     } catch (error) {
-      console.error('Failed to send notification:', error)
+      logger.error('Failed to send notification:', error)
     }
   }
 
@@ -392,7 +394,7 @@ class PWAService {
         await this.syncAction(action)
         syncedActions.push(action.id)
       } catch (error) {
-        console.error('Failed to sync action:', error)
+        logger.error('Failed to sync action:', error)
         action.retryCount++
         
         if (action.retryCount >= action.maxRetries) {

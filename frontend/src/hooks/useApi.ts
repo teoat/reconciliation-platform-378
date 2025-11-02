@@ -1,4 +1,5 @@
 // React Hooks for API Integration
+import { logger } from '@/services/logger'
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -598,7 +599,7 @@ export const useWebSocket = () => {
       setConnectionStatus('connected');
       wsRef.current = wsClient;
     } catch (error) {
-      console.error('WebSocket connection failed:', error);
+      logger.error('WebSocket connection failed:', error);
       setIsConnected(false);
       setConnectionStatus('error');
     }
@@ -771,7 +772,7 @@ export const useHealthCheck = () => {
     setIsChecking(true);
     try {
       const response = await apiClient.healthCheck();
-      setIsHealthy(!response.error);
+      setIsHealthy(response.success && !response.error);
       setLastChecked(new Date());
     } catch (error) {
       setIsHealthy(false);

@@ -26,6 +26,7 @@ tokio = { version = "1.0", features = ["full"] }
 futures = "0.3"
 futures-util = "0.3"
 actix-service = "2.0"
+async-trait = "0.1"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
@@ -35,6 +36,7 @@ serde_json = "1.0"
 diesel = { version = "2.0", features = ["postgres", "chrono", "uuid", "numeric", "r2d2"] }
 diesel_migrations = "2.0"
 diesel_derives = "2.0"
+sqlx = { version = "0.7", features = ["runtime-tokio", "postgres", "chrono", "uuid", "json"] }
 
 # Additional dependencies
 regex = "1.0"
@@ -77,6 +79,10 @@ log = "0.4"
 
 # Email
 lettre = "0.11"
+
+# OpenAPI/Swagger documentation
+utoipa = { version = "3.0", features = ["actix_extras"] }
+utoipa-swagger-ui = { version = "3.0", features = ["actix-web"] }
 
 # Monitoring
 prometheus = "0.13"

@@ -6,6 +6,7 @@ use diesel::{Connection, PgConnection, RunQueryDsl};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use std::fs;
 use log::{info, error};
+use diesel::result::QueryResult;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 
@@ -28,7 +29,7 @@ pub fn run_migrations(database_url: &str) -> Result<(), Box<dyn std::error::Erro
 }
 
 /// Get migration version
-pub fn migration_version(database_url: &str) -> ExecResult<Vec<MigrationVersion>, diesel::result::Error> {
+pub fn migration_version(database_url: &str) -> QueryResult<Vec<MigrationVersion>> {
     let mut conn = PgConnection::establish(database_url)?;
     conn.version()
 }

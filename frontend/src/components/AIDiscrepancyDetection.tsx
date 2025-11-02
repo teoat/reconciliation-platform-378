@@ -1,23 +1,20 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
-import {
-  Brain,
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  Activity,
-  Eye,
-  RefreshCw,
-  Download,
-  Calendar,
-  Tag,
-  AlertCircle,
-  DollarSign,
-
-  FileText,
-  X
-} from 'lucide-react'
+import { Brain } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { XCircle } from 'lucide-react'
+import { Activity } from 'lucide-react'
+import { Eye } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
+import { Download } from 'lucide-react'
+import { Calendar } from 'lucide-react'
+import { Tag } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { DollarSign } from 'lucide-react'
+import { FileText } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useData } from '../components/DataProvider'
 
 // AI Discrepancy Detection Interfaces
@@ -41,7 +38,7 @@ interface AIDiscrepancyDetectionData {
     modelVersion: string
     features: string[]
     threshold: number
-    context: Record<string, any>
+    context: Record<string, unknown>
   }
 }
 
@@ -65,7 +62,7 @@ interface AIModel {
 interface AIPrediction {
   id: string
   modelId: string
-  input: Record<string, any>
+  input: Record<string, unknown>
   output: {
     prediction: any
     confidence: number

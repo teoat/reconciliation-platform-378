@@ -10,11 +10,11 @@
 // Environment-agnostic configuration reading
 const getEnvVar = (key: string, fallback: string) => {
   // Try VITE_ prefix (Vite)
-  if (import.meta.env?.[key]) return import.meta.env[key]
+  if (import.meta.env?.[key]) return import.meta.env[key];
   // Try process.env (Node/React)
-  if (process.env?.[key]) return process.env[key]
-  return fallback
-}
+  if (process.env?.[key]) return process.env[key];
+  return fallback;
+};
 
 // ============================================================================
 // APP CONFIGURATION
@@ -26,17 +26,17 @@ export const APP_CONFIG = {
   WS_URL: getEnvVar('VITE_WS_URL', 'ws://localhost:2000'),
   API_BASE_URL: getEnvVar('VITE_API_URL', 'http://localhost:2000'), // Legacy alias
   WS_BASE_URL: getEnvVar('VITE_WS_URL', 'ws://localhost:2000'), // Legacy alias
-  
+
   // Application Configuration
   APP_NAME: getEnvVar('VITE_APP_NAME', 'Reconciliation Platform'),
   APP_VERSION: getEnvVar('VITE_APP_VERSION', '1.0.0'),
   VERSION: '1.0.0', // Legacy alias
-  
+
   // Environment
   ENVIRONMENT: getEnvVar('NODE_ENV', 'development'),
   DEBUG: getEnvVar('VITE_DEBUG', 'false') === 'true',
   LOG_LEVEL: getEnvVar('VITE_LOG_LEVEL', 'info'),
-  
+
   // File & Performance Configuration
   MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
   SESSION_TIMEOUT: 30 * 60 * 1000, // 30 minutes
@@ -44,7 +44,7 @@ export const APP_CONFIG = {
   DEBOUNCE_DELAY: 300, // 300ms
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000, // 1 second
-}
+};
 
 // ============================================================================
 // API ENDPOINTS
@@ -55,7 +55,7 @@ export const API_ENDPOINTS = {
     LOGIN: '/auth/login',
     LOGOUT: '/auth/logout',
     REFRESH: '/auth/refresh',
-    PROFILE: '/auth/profile'
+    PROFILE: '/auth/profile',
   },
   PROJECTS: {
     LIST: '/projects',
@@ -63,25 +63,25 @@ export const API_ENDPOINTS = {
     GET: '/projects/:id',
     UPDATE: '/projects/:id',
     DELETE: '/projects/:id',
-    ARCHIVE: '/projects/:id/archive'
+    ARCHIVE: '/projects/:id/archive',
   },
   RECONCILIATION: {
     RECORDS: '/reconciliation/records',
     START: '/reconciliation/start',
     MATCH: '/reconciliation/match',
-    RESOLVE: '/reconciliation/resolve'
+    RESOLVE: '/reconciliation/resolve',
   },
   FILES: {
-    UPLOAD: '/files/upload',
+    UPLOAD: '/projects/:projectId/files/upload',
     DOWNLOAD: '/files/:id',
-    DELETE: '/files/:id'
+    DELETE: '/files/:id',
   },
   ANALYTICS: {
     DASHBOARD: '/analytics/dashboard',
     REPORTS: '/analytics/reports',
-    METRICS: '/analytics/metrics'
-  }
-}
+    METRICS: '/analytics/metrics',
+  },
+};
 
 // ============================================================================
 // WEBSOCKET EVENTS
@@ -95,8 +95,8 @@ export const WEBSOCKET_EVENTS = {
   PROJECT_UPDATE: 'project_update',
   USER_JOIN: 'user_join',
   USER_LEAVE: 'user_leave',
-  NOTIFICATION: 'notification'
-}
+  NOTIFICATION: 'notification',
+};
 
 // ============================================================================
 // STORAGE KEYS
@@ -110,8 +110,8 @@ export const STORAGE_KEYS = {
   FORM_DATA: 'form_data',
   THEME: 'theme',
   LANGUAGE: 'language',
-  SETTINGS: 'settings'
-}
+  SETTINGS: 'settings',
+};
 
 // ============================================================================
 // VALIDATION RULES
@@ -123,8 +123,8 @@ export const VALIDATION_RULES = {
   PROJECT_NAME_MAX_LENGTH: 100,
   DESCRIPTION_MAX_LENGTH: 500,
   FILE_MAX_SIZE: 10 * 1024 * 1024, // 10MB
-  ALLOWED_FILE_TYPES: ['.csv', '.xlsx', '.xls', '.json', '.xml', '.txt']
-}
+  ALLOWED_FILE_TYPES: ['.csv', '.xlsx', '.xls', '.json', '.xml', '.txt'],
+};
 
 // ============================================================================
 // ERROR MESSAGES
@@ -140,8 +140,8 @@ export const ERROR_MESSAGES = {
   UNAUTHORIZED: 'You are not authorized to perform this action',
   NOT_FOUND: 'The requested resource was not found',
   SERVER_ERROR: 'An internal server error occurred',
-  VALIDATION_ERROR: 'Please check your input and try again'
-}
+  VALIDATION_ERROR: 'Please check your input and try again',
+};
 
 // ============================================================================
 // SUCCESS MESSAGES
@@ -157,8 +157,8 @@ export const SUCCESS_MESSAGES = {
   RECONCILIATION_STARTED: 'Reconciliation process started',
   RECONCILIATION_COMPLETED: 'Reconciliation completed successfully',
   DATA_SAVED: 'Data saved successfully',
-  SETTINGS_UPDATED: 'Settings updated successfully'
-}
+  SETTINGS_UPDATED: 'Settings updated successfully',
+};
 
 // ============================================================================
 // UI CONSTANTS
@@ -172,8 +172,8 @@ export const UI_CONSTANTS = {
   LOADING_SPINNER_SIZE: 24,
   PAGINATION_DEFAULT_PAGE_SIZE: 20,
   MAX_SEARCH_RESULTS: 100,
-  AUTO_SAVE_DELAY: 2000
-}
+  AUTO_SAVE_DELAY: 2000,
+};
 
 // ============================================================================
 // THEME COLORS
@@ -191,8 +191,8 @@ export const THEME_COLORS = {
   TEXT_PRIMARY: '#111827',
   TEXT_SECONDARY: '#6B7280',
   BORDER: '#E5E7EB',
-  DISABLED: '#9CA3AF'
-}
+  DISABLED: '#9CA3AF',
+};
 
 // ============================================================================
 // BREAKPOINTS
@@ -203,8 +203,8 @@ export const BREAKPOINTS = {
   MD: '768px',
   LG: '1024px',
   XL: '1280px',
-  '2XL': '1536px'
-}
+  '2XL': '1536px',
+};
 
 // ============================================================================
 // Z-INDEX
@@ -218,8 +218,8 @@ export const Z_INDEX = {
   MODAL: 1050,
   POPOVER: 1060,
   TOOLTIP: 1070,
-  TOAST: 1080
-}
+  TOAST: 1080,
+};
 
 // ============================================================================
 // HTTP STATUS CODES
@@ -237,11 +237,11 @@ export const HTTP_STATUS = {
   UNPROCESSABLE_ENTITY: 422,
   INTERNAL_SERVER_ERROR: 500,
   BAD_GATEWAY: 502,
-  SERVICE_UNAVAILABLE: 503
-}
+  SERVICE_UNAVAILABLE: 503,
+};
 
 // Re-export as ERROR_CODES for backward compatibility
-export const ERROR_CODES = HTTP_STATUS
+export const ERROR_CODES = HTTP_STATUS;
 
 // ============================================================================
 // STATUS ENUMS
@@ -252,24 +252,24 @@ export const RECONCILIATION_STATUS = {
   IN_PROGRESS: 'in_progress',
   COMPLETED: 'completed',
   FAILED: 'failed',
-  CANCELLED: 'cancelled'
-}
+  CANCELLED: 'cancelled',
+};
 
 export const MATCH_STATUS = {
   MATCHED: 'matched',
   UNMATCHED: 'unmatched',
   MANUAL_REVIEW: 'manual_review',
   RESOLVED: 'resolved',
-  CONFLICT: 'conflict'
-}
+  CONFLICT: 'conflict',
+};
 
 export const FILE_STATUS = {
   UPLOADING: 'uploading',
   PROCESSING: 'processing',
   COMPLETED: 'completed',
   FAILED: 'failed',
-  CANCELLED: 'cancelled'
-}
+  CANCELLED: 'cancelled',
+};
 
 // ============================================================================
 // USER ROLES & PERMISSIONS
@@ -279,8 +279,8 @@ export const USER_ROLES = {
   ADMIN: 'admin',
   MANAGER: 'manager',
   ANALYST: 'analyst',
-  VIEWER: 'viewer'
-}
+  VIEWER: 'viewer',
+};
 
 export const PERMISSIONS = {
   PROJECT_CREATE: 'project:create',
@@ -294,8 +294,8 @@ export const PERMISSIONS = {
   FILE_DOWNLOAD: 'file:download',
   ANALYTICS_VIEW: 'analytics:view',
   USER_MANAGE: 'user:manage',
-  SETTINGS_UPDATE: 'settings:update'
-}
+  SETTINGS_UPDATE: 'settings:update',
+};
 
 // ============================================================================
 // NOTIFICATION TYPES
@@ -305,8 +305,8 @@ export const NOTIFICATION_TYPES = {
   INFO: 'info',
   SUCCESS: 'success',
   WARNING: 'warning',
-  ERROR: 'error'
-}
+  ERROR: 'error',
+};
 
 // ============================================================================
 // CHART TYPES
@@ -319,11 +319,15 @@ export const CHART_TYPES = {
   DOUGHNUT: 'doughnut',
   SCATTER: 'scatter',
   RADAR: 'radar',
-  POLAR_AREA: 'polarArea'
-}
+  POLAR_AREA: 'polarArea',
+  AREA: 'area',
+  HEATMAP: 'heatmap',
+  SANKEY: 'sankey',
+  TREEMAP: 'treemap',
+};
 
 // Export as CHART_CONFIG for backward compatibility
-export const CHART_CONFIG = CHART_TYPES
+export const CHART_CONFIG = CHART_TYPES;
 
 // ============================================================================
 // DATE FORMATS
@@ -334,8 +338,8 @@ export const DATE_FORMATS = {
   LONG: 'MMMM dd, yyyy',
   TIME: 'HH:mm:ss',
   DATETIME: 'MM/dd/yyyy HH:mm:ss',
-  ISO: 'yyyy-MM-dd\'T\'HH:mm:ss.SSS\'Z\''
-}
+  ISO: "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+};
 
 // ============================================================================
 // LOCALE CONFIG
@@ -344,8 +348,8 @@ export const DATE_FORMATS = {
 export const LOCALE_CONFIG = {
   DEFAULT: 'en-US',
   SUPPORTED: ['en-US', 'es-ES', 'fr-FR', 'de-DE'],
-  FALLBACK: 'en-US'
-}
+  FALLBACK: 'en-US',
+};
 
 // ============================================================================
 // FEATURE FLAGS
@@ -362,11 +366,10 @@ export const FEATURE_FLAGS = {
   MULTI_LANGUAGE: 'multi_language',
   // From config/index.ts
   REAL_TIME_COLLABORATION: true,
-  ADVANCED_ANALYTICS: true,
   FILE_UPLOAD: true,
   WEBHOOK_INTEGRATION: true,
   API_RATE_LIMITING: true,
-}
+};
 
 // ============================================================================
 // PERFORMANCE METRICS
@@ -377,8 +380,8 @@ export const PERFORMANCE_METRICS = {
   PAGE_LOAD_TIME_THRESHOLD: 3000, // 3 seconds
   MEMORY_USAGE_THRESHOLD: 100 * 1024 * 1024, // 100MB
   CPU_USAGE_THRESHOLD: 80, // 80%
-  ERROR_RATE_THRESHOLD: 0.05 // 5%
-}
+  ERROR_RATE_THRESHOLD: 0.05, // 5%
+};
 
 // ============================================================================
 // SECURITY CONFIG
@@ -396,7 +399,7 @@ export const SECURITY_CONFIG = {
   TOKEN_REFRESH_THRESHOLD: 5 * 60 * 1000, // 5 minutes
   // From config/index.ts
   CSP_ENABLED: true,
-}
+};
 
 // ============================================================================
 // UNIFIED CONFIG OBJECT
@@ -427,7 +430,6 @@ export const Config = {
   features: FEATURE_FLAGS,
   performance: PERFORMANCE_METRICS,
   security: SECURITY_CONFIG,
-}
+};
 
-export default Config
-
+export default Config;

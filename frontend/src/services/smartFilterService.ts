@@ -1,4 +1,5 @@
 // Smart Filter Presets & AI Field Mapping Service
+import { logger } from '@/services/logger'
 // Implements intelligent filter presets, AI-powered field mapping, and one-click mapping
 
 export interface FilterPreset {
@@ -195,7 +196,7 @@ class SmartFilterService {
         this.usageHistory = new Map(data.usageHistory)
       }
     } catch (error) {
-      console.error('Failed to load smart filter data:', error)
+      logger.error('Failed to load smart filter data:', error)
     }
   }
 
@@ -208,7 +209,7 @@ class SmartFilterService {
       }
       localStorage.setItem('smart_filter_presets', JSON.stringify(data))
     } catch (error) {
-      console.error('Failed to save smart filter data:', error)
+      logger.error('Failed to save smart filter data:', error)
     }
   }
 
@@ -501,7 +502,7 @@ class SmartFilterService {
         // Validate data if specified
         if (validateData && mapping.validation) {
           if (!this.validateValue(value, mapping.validation)) {
-            console.warn(`Validation failed for field ${mapping.targetField}:`, value)
+            logger.warn(`Validation failed for field ${mapping.targetField}:`, value)
           }
         }
         

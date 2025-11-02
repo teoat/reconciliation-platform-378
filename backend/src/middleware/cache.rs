@@ -40,8 +40,16 @@ where
     fn new_transform(&self, service: S) -> Self::Future {
         let redis_url = std::env::var("REDIS_URL")
             .unwrap_or_else(|_| "redis://localhost:6379".to_string());
-        let cache_service = MultiLevelCache::new(&redis_url)
-            .expect("Failed to create cache service - ensure REDIS_URL is set correctly");
+        let cache_service = match MultiLevelCache::new(&redis_url) {
+            Ok(cache) => cache,
+            Err(e) => {
+                log::error!("Failed to create cache service with REDIS_URL {}: {}", redis_url, e);
+                log::error!("Cache middleware will not function correctly - ensure REDIS_URL is set correctly");
+                // Return a fallback or panic depending on requirements
+                // For now, we'll panic as cache service is critical
+                panic!("Failed to create cache service - ensure REDIS_URL is set correctly: {}", e);
+            }
+        };
         ok(CacheMiddleware::new(Rc::new(service), Arc::new(cache_service)))
     }
 }
@@ -84,12 +92,19 @@ where
             if method == "GET" && response.status().is_success() {
                 let cache_key = format!("cache:{}:{}", method, path);
                 let (req, res) = response.into_parts();
-                let bytes = actix_web::body::to_bytes(res.into_body()).await.unwrap();
-                if let Ok(body) = serde_json::from_slice::<serde_json::Value>(&bytes) {
-                    let _ = cache_service.set(&cache_key, &body, Some(Duration::from_secs(60))).await;
+                match actix_web::body::to_bytes(res.into_body()).await {
+                    Ok(bytes) => {
+                        if let Ok(body) = serde_json::from_slice::<serde_json::Value>(&bytes) {
+                            let _ = cache_service.set(&cache_key, &body, Some(Duration::from_secs(60))).await;
+                        }
+                        let res = HttpResponse::Ok().body(bytes);
+                        return Ok(ServiceResponse::new(req, res.map_into_boxed_body()));
+                    }
+                    Err(e) => {
+                        log::warn!("Failed to read response body for caching: {}", e);
+                        // Continue without caching if body read fails
+                    }
                 }
-                let res = HttpResponse::Ok().body(bytes);
-                return Ok(ServiceResponse::new(req, res.map_into_boxed_body()));
             }
 
             Ok(response.map_into_boxed_body())

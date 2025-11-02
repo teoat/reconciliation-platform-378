@@ -104,7 +104,10 @@ impl AdvancedRateLimiter {
             let window = self.config.window_size.as_secs();
             let now = SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
-                .unwrap()
+                .unwrap_or_else(|_| {
+                    log::error!("System time is before Unix epoch");
+                    std::time::Duration::ZERO
+                })
                 .as_secs();
             
             let _window_start = now - window;

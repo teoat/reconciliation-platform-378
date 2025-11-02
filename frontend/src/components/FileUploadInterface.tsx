@@ -1,96 +1,95 @@
 'use client'
+import { logger } from '@/services/logger'
 
 import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { useLoading } from '../hooks/useLoading'
 import { RetryUtility } from '../utils/retryUtility'
-import { 
-  Upload,
-  File,
-  FileText,
-  FileCheck,
-  FileX,
-  FilePlus,
-  FileMinus,
-  FileEdit,
-  FileSearch,
-  X,
-  CheckCircle,
-  AlertCircle,
-  AlertTriangle,
-  Clock,
-  Download,
-  RefreshCw,
-  Settings,
-  Eye,
-  Edit,
-  Trash2,
-  Plus,
-  Minus,
-  ArrowUpDown,
-  ChevronDown,
-  ChevronUp,
-  ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
-  Users,
-  Target,
-  TrendingUp,
-  BarChart3,
-  PieChart,
-  Activity,
-  Zap,
-  Shield,
-  Info,
-  CheckSquare,
-  Square,
-  Calendar,
-  DollarSign,
-  Hash,
-  Type,
-  MapPin,
-  Layers,
-  Workflow,
-  MessageSquare,
-  Bell,
-  Star,
-  Bookmark,
-  Share2,
-  Copy,
-  ExternalLink,
-  Database,
-  Cloud,
-  Server,
-  Wifi,
-  Lock,
-  Unlock,
-  Key,
-  Globe,
-  Mail,
-  Phone,
-  User,
-  UserCheck,
-  UserX,
-  UserPlus,
-  UserMinus,
-  Crown,
-  Award,
-  Trophy,
-  Medal,
-  Flag,
-  Tag,
-  Folder,
-  FileArchive,
-  FileImage,
-  FileVideo,
-  FileAudio,
-  FileSpreadsheet,
-  FileCode,
-  FileJson,
-  Play,
-  Pause,
-  Square as StopIcon,
-  Loader2
-} from 'lucide-react'
+import { Upload } from 'lucide-react'
+import { File } from 'lucide-react'
+import { FileText } from 'lucide-react'
+import { FileCheck } from 'lucide-react'
+import { FileX } from 'lucide-react'
+import { FilePlus } from 'lucide-react'
+import { FileMinus } from 'lucide-react'
+import { FileEdit } from 'lucide-react'
+import { FileSearch } from 'lucide-react'
+import { X } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { Clock } from 'lucide-react'
+import { Download } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
+import { Settings } from 'lucide-react'
+import { Eye } from 'lucide-react'
+import { Edit } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { Minus } from 'lucide-react'
+import { ArrowUpDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
+import { ChevronUp } from 'lucide-react'
+import { ChevronLeft } from 'lucide-react'
+import { ChevronRight } from 'lucide-react'
+import { MoreHorizontal } from 'lucide-react'
+import { Users } from 'lucide-react'
+import { Target } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
+import { BarChart3 } from 'lucide-react'
+import { PieChart } from 'lucide-react'
+import { Activity } from 'lucide-react'
+import { Zap } from 'lucide-react'
+import { Shield } from 'lucide-react'
+import { Info } from 'lucide-react'
+import { CheckSquare } from 'lucide-react'
+import { Square } from 'lucide-react'
+import { Calendar } from 'lucide-react'
+import { DollarSign } from 'lucide-react'
+import { Hash } from 'lucide-react'
+import { Type } from 'lucide-react'
+import { MapPin } from 'lucide-react'
+import { Layers } from 'lucide-react'
+import { Workflow } from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
+import { Bell } from 'lucide-react'
+import { Star } from 'lucide-react'
+import { Bookmark } from 'lucide-react'
+import { Share2 } from 'lucide-react'
+import { Copy } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
+import { Database } from 'lucide-react'
+import { Cloud } from 'lucide-react'
+import { Server } from 'lucide-react'
+import { Wifi } from 'lucide-react'
+import { Lock } from 'lucide-react'
+import { Unlock } from 'lucide-react'
+import { Key } from 'lucide-react'
+import { Globe } from 'lucide-react'
+import { Mail } from 'lucide-react'
+import { Phone } from 'lucide-react'
+import { User } from 'lucide-react'
+import { UserCheck } from 'lucide-react'
+import { UserX } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
+import { UserMinus } from 'lucide-react'
+import { Crown } from 'lucide-react'
+import { Award } from 'lucide-react'
+import { Trophy } from 'lucide-react'
+import { Medal } from 'lucide-react'
+import { Flag } from 'lucide-react'
+import { Tag } from 'lucide-react'
+import { Folder } from 'lucide-react'
+import { FileArchive } from 'lucide-react'
+import { FileImage } from 'lucide-react'
+import { FileVideo } from 'lucide-react'
+import { FileAudio } from 'lucide-react'
+import { FileSpreadsheet } from 'lucide-react'
+import { FileCode } from 'lucide-react'
+import { FileJson } from 'lucide-react'
+import { Play } from 'lucide-react'
+import { Pause } from 'lucide-react'
+import { Square as StopIcon } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { apiClient } from '../services/apiClient'
 import { useWebSocketIntegration } from '../hooks/useWebSocketIntegration'
 
@@ -367,7 +366,7 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
           description: `Uploaded ${file.name}`
         })
       } catch (err) {
-        console.error('Failed to upload file:', err)
+        logger.error('Failed to upload file:', err)
       }
     }
   }, [maxFileSize, allowedTypes, uploadFile, projectId])

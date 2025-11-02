@@ -394,29 +394,29 @@ mod tests {
             </html>
         "#.to_string();
         
-        let audit = service.perform_audit("https://example.com".to_string(), content).await.unwrap();
+        let audit = service.perform_audit("https://example.com".to_string(), content).await.expect("Failed to perform audit");
         
         assert!(audit.total_issues > 0);
         assert!(audit.score < 100.0);
         
         // Test getting audit
-        let retrieved_audit = service.get_audit(audit.id).await.unwrap();
+        let retrieved_audit = service.get_audit(audit.id).await.expect("Failed to get audit");
         assert!(retrieved_audit.is_some());
         
         // Test listing audits
-        let audits = service.list_audits(Some(10), None).await.unwrap();
+        let audits = service.list_audits(Some(10), None).await.expect("Failed to list audits");
         assert!(!audits.is_empty());
         
         // Test getting guidelines
-        let guidelines = service.list_guidelines().await.unwrap();
+        let guidelines = service.list_guidelines().await.expect("Failed to list guidelines");
         assert!(!guidelines.is_empty());
         
         // Test getting compliance stats
-        let stats = service.get_compliance_stats().await.unwrap();
+        let stats = service.get_compliance_stats().await.expect("Failed to get compliance stats");
         assert!(stats.total_audits > 0);
         
         // Test generating report
-        let report = service.generate_report(audit.id).await.unwrap();
+        let report = service.generate_report(audit.id).await.expect("Failed to generate report");
         assert!(report.contains("Accessibility Audit Report"));
     }
 }

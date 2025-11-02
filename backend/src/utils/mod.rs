@@ -1,28 +1,21 @@
-//! Utility modules for the Reconciliation Backend
+// ============================================================================
+// UTILITIES MODULE
+// ============================================================================
 
-pub mod file;
-pub mod validation;
-pub mod crypto;
+pub mod error_handling;
+pub mod error_logging;
 pub mod date;
-pub mod string;
 pub mod authorization;
+pub mod validation;
+pub mod string;
+pub mod file;
+pub mod crypto;
 
-// Re-export commonly used utilities
-pub use file::*;
-pub use validation::*;
-pub use crypto::*;
-pub use date::*;
-pub use string::*;
-pub use authorization::*;
+pub use error_handling::{AppError, AppResult, OptionExt, ResultExt};
+pub use authorization::{check_project_permission, check_admin_permission, check_job_permission, check_job_access};
 
-use actix_web::{HttpRequest, HttpMessage};
-
-/// Extract user ID from request extensions
-/// Returns error if authentication is missing or invalid
-pub fn extract_user_id(req: &HttpRequest) -> Result<uuid::Uuid, crate::errors::AppError> {
-    req.extensions()
-        .get::<crate::services::auth::Claims>()
-        .map(|claims| uuid::Uuid::parse_str(&claims.sub))
-        .ok_or_else(|| crate::errors::AppError::Unauthorized("Missing authentication".to_string()))?
-        .map_err(|_| crate::errors::AppError::Unauthorized("Invalid user ID".to_string()))
+// Re-export extract_user_id from handlers::helpers for convenience
+// This function extracts user ID from JWT token in request headers
+pub fn extract_user_id(req: &actix_web::HttpRequest) -> Result<uuid::Uuid, crate::errors::AppError> {
+    crate::handlers::helpers::extract_user_id(req)
 }

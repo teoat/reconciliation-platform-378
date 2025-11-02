@@ -1,4 +1,5 @@
 // ============================================================================
+import { logger } from '@/services/logger'
 // CACHING UTILITIES - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
@@ -205,7 +206,7 @@ export class LocalStorageCache<T = any> {
         JSON.stringify(entry)
       )
     } catch (error) {
-      console.warn('Failed to set cache entry:', error)
+      logger.warn('Failed to set cache entry:', error)
     }
   }
 
@@ -234,7 +235,7 @@ export class LocalStorageCache<T = any> {
 
       return entry.data
     } catch (error) {
-      console.warn('Failed to get cache entry:', error)
+      logger.warn('Failed to get cache entry:', error)
       return null
     }
   }
@@ -258,7 +259,7 @@ export class LocalStorageCache<T = any> {
 
       return true
     } catch (error) {
-      console.warn('Failed to check cache entry:', error)
+      logger.warn('Failed to check cache entry:', error)
       return false
     }
   }
@@ -269,7 +270,7 @@ export class LocalStorageCache<T = any> {
       localStorage.removeItem(`${this.prefix}${key}`)
       return true
     } catch (error) {
-      console.warn('Failed to delete cache entry:', error)
+      logger.warn('Failed to delete cache entry:', error)
       return false
     }
   }
@@ -284,7 +285,7 @@ export class LocalStorageCache<T = any> {
         }
       }
     } catch (error) {
-      console.warn('Failed to clear cache:', error)
+      logger.warn('Failed to clear cache:', error)
     }
   }
 
@@ -311,7 +312,7 @@ export class LocalStorageCache<T = any> {
         }
       }
     } catch (error) {
-      console.warn('Failed to clean expired cache entries:', error)
+      logger.warn('Failed to clean expired cache entries:', error)
     }
   }
 }
@@ -354,7 +355,7 @@ export class SessionStorageCache<T = any> {
         JSON.stringify(entry)
       )
     } catch (error) {
-      console.warn('Failed to set session cache entry:', error)
+      logger.warn('Failed to set session cache entry:', error)
     }
   }
 
@@ -383,7 +384,7 @@ export class SessionStorageCache<T = any> {
 
       return entry.data
     } catch (error) {
-      console.warn('Failed to get session cache entry:', error)
+      logger.warn('Failed to get session cache entry:', error)
       return null
     }
   }
@@ -407,7 +408,7 @@ export class SessionStorageCache<T = any> {
 
       return true
     } catch (error) {
-      console.warn('Failed to check session cache entry:', error)
+      logger.warn('Failed to check session cache entry:', error)
       return false
     }
   }
@@ -418,7 +419,7 @@ export class SessionStorageCache<T = any> {
       sessionStorage.removeItem(`${this.prefix}${key}`)
       return true
     } catch (error) {
-      console.warn('Failed to delete session cache entry:', error)
+      logger.warn('Failed to delete session cache entry:', error)
       return false
     }
   }
@@ -433,7 +434,7 @@ export class SessionStorageCache<T = any> {
         }
       }
     } catch (error) {
-      console.warn('Failed to clear session cache:', error)
+      logger.warn('Failed to clear session cache:', error)
     }
   }
 
@@ -460,7 +461,7 @@ export class SessionStorageCache<T = any> {
         }
       }
     } catch (error) {
-      console.warn('Failed to clean expired session cache entries:', error)
+      logger.warn('Failed to clean expired session cache entries:', error)
     }
   }
 }

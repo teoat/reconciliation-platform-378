@@ -135,7 +135,7 @@ mod authorization_security_tests {
         test_client2.authenticate_as("user2@test.com", "password123").await.unwrap();
         
         // Try to upload file to user1's project as user2
-        let req = test_client2.authenticated_request("POST", &format!("/api/files/upload?project_id={}", project_id)).await;
+        let req = test_client2.authenticated_request("POST", &format!("/api/projects/{}/files/upload", project_id)).await;
         let resp = test::call_service(&test_client2.app, req).await;
         
         // Should return 403 Forbidden
@@ -461,8 +461,8 @@ mod input_validation_security_tests {
         let mut test_client = TestClient::new().await;
         test_client.authenticate_as("admin@test.com", "admin123").await.unwrap();
         
-        // Try path traversal in file upload
-        let req = test_client.authenticated_request("POST", "/api/files/upload?project_id=../../../etc/passwd").await;
+        // Try path traversal in project_id path parameter
+        let req = test_client.authenticated_request("POST", "/api/projects/../../../etc/passwd/files/upload").await;
         let resp = test::call_service(&test_client.app, req).await;
         
         // Should fail with validation error

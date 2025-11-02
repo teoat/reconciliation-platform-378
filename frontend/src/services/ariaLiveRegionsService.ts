@@ -1,4 +1,5 @@
 // Enhanced ARIA Live Regions + Announcement System
+import { logger } from '@/services/logger'
 // Comprehensive ARIA live regions and announcement system for screen readers
 
 import React from 'react'
@@ -155,7 +156,7 @@ export class AriaLiveRegionsService {
     this.isInitialized = true
 
     if (this.config.enableLogging) {
-      console.log('ARIA Live Regions Service initialized')
+      logger.info('ARIA Live Regions Service initialized')
     }
   }
 
@@ -240,7 +241,7 @@ export class AriaLiveRegionsService {
 
     if (!region || !region.isActive) {
       if (this.config.enableDebugMode) {
-        console.warn(`No active region found for announcement: ${announcement.message}`)
+        logger.warn(`No active region found for announcement: ${announcement.message}`)
       }
       return
     }
@@ -253,7 +254,7 @@ export class AriaLiveRegionsService {
       region.element.textContent = announcement.message
       
       if (this.config.enableLogging) {
-        console.log(`ARIA Announcement [${announcement.category}]: ${announcement.message}`)
+        logger.info(`ARIA Announcement [${announcement.category}]: ${announcement.message}`, { category: announcement.category, message: announcement.message })
       }
 
       // Notify observers
@@ -619,10 +620,26 @@ export class AriaLiveRegionsService {
     this.isInitialized = false
 
     if (this.config.enableLogging) {
-      console.log('ARIA Live Regions Service destroyed')
+      logger.info('ARIA Live Regions Service destroyed')
     }
   }
 }
 
+// Singleton instance
+let serviceInstance: AriaLiveRegionsService | null = null;
+
+export const getAriaLiveRegionsService = (): AriaLiveRegionsService => {
+  if (!serviceInstance) {
+    serviceInstance = new AriaLiveRegionsService();
+  }
+  return serviceInstance;
+};
+
 // Export the service
 export default AriaLiveRegionsService
+
+// Export singleton instance for convenience
+export const ariaLiveRegionsService = getAriaLiveRegionsService();
+
+// Re-export types for convenience
+export type { AnnouncementContext, AriaLiveRegion, Announcement };

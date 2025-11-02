@@ -2,23 +2,21 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
-import {
-  Users,
-  User,
-  UserCheck,
-  UserPlus,
-  MessageSquare,
-  Bell,
-  Plus,
-  Eye,
-  Search,
-  Building,
-  Activity,
-  Upload,
-  CheckCircle,
-  XCircle,
-  X
-} from 'lucide-react'
+import { Users } from 'lucide-react'
+import { User } from 'lucide-react'
+import { UserCheck } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
+import { Bell } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { Eye } from 'lucide-react'
+import { Search } from 'lucide-react'
+import { Building } from 'lucide-react'
+import { Activity } from 'lucide-react'
+import { Upload } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { XCircle } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useData } from '../components/DataProvider'
 
 // Collaborative Features Interfaces
@@ -93,7 +91,7 @@ interface Activity {
   description: string
   timestamp: string
   recordId?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
   readBy: string[]
 }
 
@@ -120,7 +118,7 @@ interface Notification {
   timestamp: string
   read: boolean
   actionUrl?: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 interface CollaborativeFeaturesProps {

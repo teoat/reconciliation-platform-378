@@ -4,10 +4,14 @@ use chrono::{DateTime, Utc, TimeZone};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Get current timestamp as Unix timestamp
+/// Returns 0 if system time is before Unix epoch (should never happen in practice)
 pub fn current_timestamp() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_else(|_| {
+            log::error!("System time is before Unix epoch - this should never happen");
+            std::time::Duration::ZERO
+        })
         .as_secs() as i64
 }
 
@@ -17,8 +21,14 @@ pub fn current_utc() -> DateTime<Utc> {
 }
 
 /// Convert Unix timestamp to UTC datetime
+/// Returns current time if timestamp is invalid
 pub fn timestamp_to_utc(timestamp: i64) -> DateTime<Utc> {
-    Utc.timestamp_opt(timestamp, 0).unwrap()
+    Utc.timestamp_opt(timestamp, 0)
+        .single()
+        .unwrap_or_else(|| {
+            log::warn!("Invalid timestamp {}, using current time", timestamp);
+            Utc::now()
+        })
 }
 
 /// Convert UTC datetime to Unix timestamp
@@ -45,12 +55,26 @@ pub fn parse_iso_datetime(iso_str: &str) -> Result<DateTime<Utc>, String> {
 
 /// Get start of day for a given datetime
 pub fn start_of_day(dt: DateTime<Utc>) -> DateTime<Utc> {
-    dt.date_naive().and_hms_opt(0, 0, 0).unwrap().and_utc()
+    dt.date_naive()
+        .and_hms_opt(0, 0, 0)
+        .ok_or_else(|| {
+            log::warn!("Failed to create start of day for datetime, using original datetime");
+            dt
+        })
+        .unwrap_or_else(|e| e)
+        .and_utc()
 }
 
 /// Get end of day for a given datetime
 pub fn end_of_day(dt: DateTime<Utc>) -> DateTime<Utc> {
-    dt.date_naive().and_hms_opt(23, 59, 59).unwrap().and_utc()
+    dt.date_naive()
+        .and_hms_opt(23, 59, 59)
+        .ok_or_else(|| {
+            log::warn!("Failed to create end of day for datetime, using original datetime");
+            dt
+        })
+        .unwrap_or_else(|e| e)
+        .and_utc()
 }
 
 /// Check if a datetime is within a date range

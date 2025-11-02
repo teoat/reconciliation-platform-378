@@ -13,7 +13,11 @@ use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::services::cache::MultiLevelCache;
 use crate::models::schema::{
-    users, projects, reconciliation_jobs, data_sources, reconciliation_results, audit_logs,
+    users, projects,
+};
+use crate::models::schema::auth::audit_logs;
+use crate::models::schema::projects::{
+    reconciliation_jobs, data_sources, reconciliation_results,
 };
 use std::sync::Arc;
 
@@ -146,8 +150,10 @@ impl AnalyticsService {
         let cache = Arc::new(MultiLevelCache::new(&redis_url).unwrap_or_else(|e| {
             log::error!("Failed to initialize cache with Redis URL {}, falling back to localhost: {}", redis_url, e);
             // Fallback to localhost only in development scenarios
-            MultiLevelCache::new("redis://localhost:6379")
-                .expect("Failed to create fallback cache - Redis connection required")
+            MultiLevelCache::new("redis://localhost:6379").unwrap_or_else(|fallback_err| {
+                log::error!("Failed to initialize fallback cache: {}", fallback_err);
+                panic!("Cannot initialize cache: both primary and fallback Redis connections failed");
+            })
         }));
         
         Self { db, cache }

@@ -1,4 +1,5 @@
 import { ApiError } from './enhancedApiClient'
+import { logger } from '@/services/logger'
 
 export interface ErrorHandlerConfig {
   showNotifications?: boolean;
@@ -23,7 +24,7 @@ export class ApiErrorHandler {
   handle(error: ApiError): void {
     // Log error if enabled
     if (this.config.logErrors) {
-      console.error('API Error:', {
+      logger.error('API Error:', {
         message: error.message,
         statusCode: error.statusCode,
         code: error.code,
@@ -171,8 +172,9 @@ export const createApiError = (
   message: string,
   statusCode: number = 0,
   code?: string,
-  details?: any
-): ApiError => {
+  details?: unknown
+):
+ ApiError => {
   const error = new Error(message) as ApiError;
   error.statusCode = statusCode;
   error.code = code;
@@ -180,21 +182,21 @@ export const createApiError = (
   return error;
 };
 
-export const isApiError = (error: any): error is ApiError => {
+export const isApiError = (error: unknown): error is ApiError => {
   return error instanceof Error && 'statusCode' in error;
 };
 
-export const getErrorMessage = (error: any): string => {
+export const getErrorMessage = (error: unknown): string => {
   if (isApiError(error)) {
     return error.message;
   }
-  if (error?.message) {
+  if (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string') {
     return error.message;
   }
   return 'An unexpected error occurred';
 };
 
-export const getErrorStatusCode = (error: any): number => {
+export const getErrorStatusCode = (error: unknown): number => {
   if (isApiError(error)) {
     return error.statusCode || 0;
   }

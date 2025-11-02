@@ -2,22 +2,20 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Users, 
-  MessageSquare, 
-  Send, 
-  X, 
-  Minimize2, 
-  Maximize2,
-  Wifi,
-  WifiOff,
-  Clock,
-  User,
-  MoreHorizontal,
-  Reply,
-  Edit,
-  Trash2
-} from 'lucide-react';
+import { Users } from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
+import { Send } from 'lucide-react'
+import { X } from 'lucide-react'
+import { Minimize2 } from 'lucide-react'
+import { Maximize2 } from 'lucide-react'
+import { Wifi } from 'lucide-react'
+import { WifiOff } from 'lucide-react'
+import { Clock } from 'lucide-react'
+import { User } from 'lucide-react'
+import { MoreHorizontal } from 'lucide-react'
+import { Reply } from 'lucide-react'
+import { Edit } from 'lucide-react'
+import { Trash2 } from 'lucide-react';
 import { useRealtimeCollaboration } from '../hooks/useWebSocketIntegration';
 
 interface LiveComment {

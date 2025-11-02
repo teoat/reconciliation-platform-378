@@ -1,5 +1,8 @@
 import React, { memo, useMemo } from 'react'
-import { CheckCircle, AlertCircle, Clock, XCircle } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { Clock } from 'lucide-react'
+import { XCircle } from 'lucide-react'
 
 export interface StatusBadgeProps {
   status: string

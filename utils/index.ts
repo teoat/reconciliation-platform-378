@@ -11,7 +11,7 @@ export const isString = (value: any): value is string => typeof value === 'strin
 export const isNumber = (value: any): value is number => typeof value === 'number' && !isNaN(value)
 export const isBoolean = (value: any): value is boolean => typeof value === 'boolean'
 export const isArray = (value: any): value is any[] => Array.isArray(value)
-export const isObject = (value: any): value is Record<string, any> => 
+export const isObject = (value: any): value is Record<string, unknown> => 
   value !== null && typeof value === 'object' && !Array.isArray(value)
 export const isFunction = (value: any): value is Function => typeof value === 'function'
 export const isDate = (value: any): value is Date => value instanceof Date
@@ -446,7 +446,7 @@ export const deepClone = <T>(obj: T): T => {
   return obj
 }
 
-export const deepMerge = <T extends Record<string, any>>(target: T, source: Partial<T>): T => {
+export const deepMerge = <T extends Record<string, unknown>>(target: T, source: Partial<T>): T => {
   const result = { ...target }
   
   for (const key in source) {
@@ -465,7 +465,7 @@ export const deepMerge = <T extends Record<string, any>>(target: T, source: Part
   return result
 }
 
-export const pick = <T extends Record<string, any>, K extends keyof T>(
+export const pick = <T extends Record<string, unknown>, K extends keyof T>(
   obj: T,
   keys: K[]
 ): Pick<T, K> => {
@@ -478,7 +478,7 @@ export const pick = <T extends Record<string, any>, K extends keyof T>(
   return result
 }
 
-export const omit = <T extends Record<string, any>, K extends keyof T>(
+export const omit = <T extends Record<string, unknown>, K extends keyof T>(
   obj: T,
   keys: K[]
 ): Omit<T, K> => {
@@ -716,7 +716,7 @@ export const sessionStorage = {
 // URL UTILITIES
 // ============================================================================
 
-export const buildURL = (base: string, params: Record<string, any>): string => {
+export const buildURL = (base: string, params: Record<string, unknown>): string => {
   const url = new URL(base)
   
   Object.entries(params).forEach(([key, value]) => {

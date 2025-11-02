@@ -1,4 +1,5 @@
 // ============================================================================
+import { logger } from '@/services/logger'
 // SERVICE WORKER UTILITIES - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
@@ -67,10 +68,10 @@ export const registerServiceWorker = async (
       scope: finalConfig.scope,
     })
 
-    console.log('Service Worker registered successfully:', registration)
+    logger.log('Service Worker registered successfully:', registration)
     return registration
   } catch (error) {
-    console.error('Service Worker registration failed:', error)
+    logger.error('Service Worker registration failed:', error)
     return null
   }
 }
@@ -88,10 +89,10 @@ export const unregisterServiceWorker = async (): Promise<boolean> => {
       await registration.unregister()
     }
     
-    console.log('Service Worker unregistered successfully')
+    logger.log('Service Worker unregistered successfully')
     return true
   } catch (error) {
-    console.error('Service Worker unregistration failed:', error)
+    logger.error('Service Worker unregistration failed:', error)
     return false
   }
 }
@@ -110,7 +111,7 @@ export const getServiceWorkerRegistration = async (): Promise<ServiceWorkerRegis
   try {
     return await navigator.serviceWorker.ready
   } catch (error) {
-    console.error('Failed to get service worker registration:', error)
+    logger.error('Failed to get service worker registration:', error)
     return null
   }
 }

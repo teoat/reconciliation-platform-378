@@ -1,4 +1,5 @@
 import React, { ComponentType, ReactNode, lazy, Suspense } from 'react'
+import { logger } from '@/services/logger'
 import { APP_CONFIG } from '../config/AppConfig'
 
 // Loading component
@@ -23,7 +24,7 @@ class LazyErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Lazy component error:', error, errorInfo)
+    logger.error('Lazy component error:', error, errorInfo)
   }
 
   render() {

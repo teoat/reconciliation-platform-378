@@ -1,10 +1,10 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { 
-  FileText, 
-  CheckCircle, 
-  AlertCircle, 
+import { useState, useEffect, useCallback, useMemo } from 'react';
+import {
+  FileText,
+  CheckCircle,
+  AlertCircle,
   X,
   Database,
   Settings,
@@ -81,192 +81,197 @@ import {
   FileAudio,
   FileSpreadsheet,
   FileCode,
-  FileJson
-} from 'lucide-react'
-import { 
-  IndonesianDataProcessor, 
-  ProcessedExpenseRecord, 
-  ProcessedBankRecord 
-} from '../utils/indonesianDataProcessor'
+  FileJson,
+} from 'lucide-react';
+import {
+  IndonesianDataProcessor,
+  ProcessedExpenseRecord,
+  ProcessedBankRecord,
+} from '../utils/indonesianDataProcessor';
 
 // Enhanced Interfaces for Integration
 interface SynchronizedDataState {
-  ingestionData: ProcessedData[]
-  reconciliationData: ReconciliationRecord[]
-  indonesianData: IndonesianProcessedData[]
-  dataFlow: 'idle' | 'processing' | 'syncing' | 'error'
-  synchronizationStatus: 'synchronized' | 'pending' | 'conflict' | 'error'
-  lastSyncTime: string
-  syncQueue: SynchronizationTask[]
+  ingestionData: ProcessedData[];
+  reconciliationData: ReconciliationRecord[];
+  indonesianData: IndonesianProcessedData[];
+  dataFlow: 'idle' | 'processing' | 'syncing' | 'error';
+  synchronizationStatus: 'synchronized' | 'pending' | 'conflict' | 'error';
+  lastSyncTime: string;
+  syncQueue: SynchronizationTask[];
 }
 
 interface ProcessedData {
-  id: string
-  source: 'ingestion' | 'reconciliation' | 'indonesian'
-  type: 'expense' | 'bank' | 'mixed'
-  data: any
-  quality: DataQualityMetrics
-  isIndonesian: boolean
-  processedAt: string
-  metadata: Record<string, any>
+  id: string;
+  source: 'ingestion' | 'reconciliation' | 'indonesian';
+  type: 'expense' | 'bank' | 'mixed';
+  data: Record<string, unknown>;
+  quality: DataQualityMetrics;
+  isIndonesian: boolean;
+  processedAt: string;
+  metadata: Record<string, unknown>;
 }
 
 interface ReconciliationRecord {
-  id: string
-  sources: ReconciliationSource[]
-  status: 'matched' | 'unmatched' | 'discrepancy' | 'pending' | 'resolved' | 'escalated'
-  confidence: number
-  matchScore: number
-  difference?: number
-  riskLevel: 'low' | 'medium' | 'high' | 'critical'
-  metadata: RecordMetadata
-  auditTrail: AuditEntry[]
-  resolution?: Resolution
+  id: string;
+  sources: ReconciliationSource[];
+  status: 'matched' | 'unmatched' | 'discrepancy' | 'pending' | 'resolved' | 'escalated';
+  confidence: number;
+  matchScore: number;
+  difference?: number;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  metadata: RecordMetadata;
+  auditTrail: AuditEntry[];
+  resolution?: Resolution;
 }
 
 interface IndonesianProcessedData extends ProcessedData {
   indonesianFormat: {
-    amountFormat: 'indonesian' | 'standard'
-    dateFormat: 'indonesian' | 'iso'
-    textFormat: 'indonesian' | 'standard'
-  }
+    amountFormat: 'indonesian' | 'standard';
+    dateFormat: 'indonesian' | 'iso';
+    textFormat: 'indonesian' | 'standard';
+  };
   culturalContext: {
-    currency: 'IDR'
-    locale: 'id-ID'
-    numberFormat: 'indonesian'
-    dateFormat: 'indonesian'
-  }
+    currency: 'IDR';
+    locale: 'id-ID';
+    numberFormat: 'indonesian';
+    dateFormat: 'indonesian';
+  };
   normalizationApplied: {
-    amountNormalized: boolean
-    dateNormalized: boolean
-    textNormalized: boolean
-  }
+    amountNormalized: boolean;
+    dateNormalized: boolean;
+    textNormalized: boolean;
+  };
 }
 
 interface SynchronizationTask {
-  id: string
-  type: 'ingestion_to_reconciliation' | 'reconciliation_to_ingestion' | 'indonesian_processing'
-  data: any
-  timestamp: number
-  status: 'pending' | 'processing' | 'completed' | 'error'
-  source: string
-  target: string
+  id: string;
+  type: 'ingestion_to_reconciliation' | 'reconciliation_to_ingestion' | 'indonesian_processing';
+  data: any;
+  timestamp: number;
+  status: 'pending' | 'processing' | 'completed' | 'error';
+  source: string;
+  target: string;
 }
 
 interface DataQualityMetrics {
-  completeness: number
-  accuracy: number
-  consistency: number
-  validity: number
-  duplicates: number
-  errors: number
-  indonesianFormatCompliance?: number
-  amountFormatAccuracy?: number
-  dateFormatConsistency?: number
-  textNormalizationQuality?: number
-  culturalContextAccuracy?: number
+  completeness: number;
+  accuracy: number;
+  consistency: number;
+  validity: number;
+  duplicates: number;
+  errors: number;
+  indonesianFormatCompliance?: number;
+  amountFormatAccuracy?: number;
+  dateFormatConsistency?: number;
+  textNormalizationQuality?: number;
+  culturalContextAccuracy?: number;
 }
 
 interface ReconciliationSource {
-  id: string
-  systemId: string
-  systemName: string
-  recordId: string
-  data: Record<string, any>
-  timestamp: string
-  quality: DataQualityMetrics
-  confidence: number
-  metadata: Record<string, any>
+  id: string;
+  systemId: string;
+  systemName: string;
+  recordId: string;
+  data: Record<string, unknown>;
+  timestamp: string;
+  quality: DataQualityMetrics;
+  confidence: number;
+  metadata: Record<string, unknown>;
 }
 
 interface RecordMetadata {
-  createdAt: string
-  updatedAt: string
-  createdBy: string
-  updatedBy: string
-  version: number
-  tags: string[]
-  priority: 'low' | 'medium' | 'high' | 'critical'
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  updatedBy: string;
+  version: number;
+  tags: string[];
+  priority: 'low' | 'medium' | 'high' | 'critical';
 }
 
 interface AuditEntry {
-  id: string
-  userId: string
-  userName: string
-  action: string
-  timestamp: string
-  details: Record<string, any>
-  previousValue?: any
-  newValue?: any
-  ipAddress?: string
-  userAgent?: string
+  id: string;
+  userId: string;
+  userName: string;
+  action: string;
+  timestamp: string;
+  details: Record<string, unknown>;
+  previousValue?: any;
+  newValue?: any;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 interface Resolution {
-  id: string
-  type: 'automatic' | 'manual' | 'approved'
-  status: 'pending' | 'approved' | 'rejected' | 'escalated'
-  assignedTo?: string
-  assignedBy?: string
-  assignedAt?: string
-  resolvedAt?: string
-  resolution: string
-  comments: string[]
-  attachments: string[]
+  id: string;
+  type: 'automatic' | 'manual' | 'approved';
+  status: 'pending' | 'approved' | 'rejected' | 'escalated';
+  assignedTo?: string;
+  assignedBy?: string;
+  assignedAt?: string;
+  resolvedAt?: string;
+  resolution: string;
+  comments: string[];
+  attachments: string[];
 }
 
 // Utility functions
 const readFileContent = async (file: File): Promise<string> => {
   return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = reject
-    reader.readAsText(file)
-  })
-}
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+};
 
-  const parseCSVContent = (content: string): any[] => {
-    const lines = content.split('\n')
-    const headers = lines[0].split(',').map(h => h.trim())
-    return lines.slice(1).map(line => {
-      const values = line.split(',').map(v => v.trim())
-      const record: any = {}
+const parseCSVContent = (content: string): Record<string, string>[] => {
+  const lines = content.split('\n');
+  const headers = lines[0].split(',').map((h) => h.trim());
+  return lines
+    .slice(1)
+    .map((line) => {
+      const values = line.split(',').map((v) => v.trim());
+      const record: any = {};
       headers.forEach((header, index) => {
-        record[header] = values[index] || ''
-      })
-      return record
-    }).filter(record => Object.values(record).some(value => value !== ''))
-  }
+        record[header] = values[index] || '';
+      });
+      return record;
+    })
+    .filter((record) => Object.values(record).some((value) => value !== ''));
+};
 
-  const calculateIndonesianQualityMetrics = (data: any): any => {
-    const metrics = {
-      completeness: 0,
-      accuracy: 0,
-      consistency: 0,
-      overall: 0
-    }
+const calculateIndonesianQualityMetrics = (data: any): any => {
+  const metrics = {
+    completeness: 0,
+    accuracy: 0,
+    consistency: 0,
+    overall: 0,
+  };
 
-    // Calculate completeness based on required fields
-    const requiredFields = ['tanggal', 'deskripsi', 'jumlah', 'kategori']
-    const filledFields = requiredFields.filter(field => data[field] && data[field].toString().trim() !== '')
-    metrics.completeness = (filledFields.length / requiredFields.length) * 100
+  // Calculate completeness based on required fields
+  const requiredFields = ['tanggal', 'deskripsi', 'jumlah', 'kategori'];
+  const filledFields = requiredFields.filter(
+    (field) => data[field] && data[field].toString().trim() !== ''
+  );
+  metrics.completeness = (filledFields.length / requiredFields.length) * 100;
 
-    // Calculate accuracy based on data format validation
-    let accuracyScore = 0
-    if (data.tanggal && /^\d{4}-\d{2}-\d{2}$/.test(data.tanggal)) accuracyScore += 25
-    if (data.jumlah && !isNaN(parseFloat(data.jumlah))) accuracyScore += 25
-    if (data.deskripsi && data.deskripsi.length > 5) accuracyScore += 25
-    if (data.kategori && data.kategori.length > 2) accuracyScore += 25
-    metrics.accuracy = accuracyScore
+  // Calculate accuracy based on data format validation
+  let accuracyScore = 0;
+  if (data.tanggal && /^\d{4}-\d{2}-\d{2}$/.test(data.tanggal)) accuracyScore += 25;
+  if (data.jumlah && !isNaN(parseFloat(data.jumlah))) accuracyScore += 25;
+  if (data.deskripsi && data.deskripsi.length > 5) accuracyScore += 25;
+  if (data.kategori && data.kategori.length > 2) accuracyScore += 25;
+  metrics.accuracy = accuracyScore;
 
-    // Calculate consistency (simplified)
-    metrics.consistency = metrics.completeness * 0.8 + metrics.accuracy * 0.2
+  // Calculate consistency (simplified)
+  metrics.consistency = metrics.completeness * 0.8 + metrics.accuracy * 0.2;
 
-    // Calculate overall score
-    metrics.overall = (metrics.completeness + metrics.accuracy + metrics.consistency) / 3
+  // Calculate overall score
+  metrics.overall = (metrics.completeness + metrics.accuracy + metrics.consistency) / 3;
 
-    return metrics
-  }
+  return metrics;
+};
 
 // Enhanced Ingestion Page with Indonesian Integration
 const EnhancedIngestionPage = () => {
@@ -277,40 +282,40 @@ const EnhancedIngestionPage = () => {
     dataFlow: 'idle',
     synchronizationStatus: 'synchronized',
     lastSyncTime: '',
-    syncQueue: []
-  })
+    syncQueue: [],
+  });
 
-  const [uploadedFiles, setUploadedFiles] = useState<File[]>([])
-  const [processedData, setProcessedData] = useState<ProcessedData[]>([])
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [processingProgress, setProcessingProgress] = useState(0)
-  const [showDataAnalysis, setShowDataAnalysis] = useState(false)
-  const [activeTab, setActiveTab] = useState<'upload' | 'process' | 'analyze' | 'sync'>('upload')
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
+  const [processedData, setProcessedData] = useState<ProcessedData[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [showDataAnalysis, setShowDataAnalysis] = useState(false);
+  const [activeTab, setActiveTab] = useState<'upload' | 'process' | 'analyze' | 'sync'>('upload');
 
   // Indonesian file detection
   const detectIndonesianFormat = useCallback((file: File): boolean => {
-    const fileName = file.name.toLowerCase()
+    const fileName = file.name.toLowerCase();
     const indonesianIndicators = [
       'expenses-table',
       'bank-statements',
       'indonesia',
       'idr',
-      'rupiah'
-    ]
-    
-    return indonesianIndicators.some(indicator => fileName.includes(indicator))
-  }, [])
+      'rupiah',
+    ];
+
+    return indonesianIndicators.some((indicator) => fileName.includes(indicator));
+  }, []);
 
   // Process Indonesian files
   const processIndonesianFile = useCallback(async (file: File): Promise<ProcessedData[]> => {
-    const content = await readFileContent(file)
-    const rawData = parseCSVContent(content)
-    
-    let processedData: ProcessedData[]
-    
+    const content = await readFileContent(file);
+    const rawData = parseCSVContent(content);
+
+    let processedData: ProcessedData[];
+
     if (file.name.includes('expenses')) {
-      const expenses = IndonesianDataProcessor.processExpensesData(rawData)
-      processedData = expenses.map(expense => ({
+      const expenses = IndonesianDataProcessor.processExpensesData(rawData);
+      processedData = expenses.map((expense) => ({
         id: expense.id,
         source: 'ingestion' as const,
         type: 'expense' as const,
@@ -321,12 +326,12 @@ const EnhancedIngestionPage = () => {
         metadata: {
           originalFile: file.name,
           processingMethod: 'indonesian',
-          format: 'expenses'
-        }
-      }))
+          format: 'expenses',
+        },
+      }));
     } else if (file.name.includes('bank')) {
-      const bankRecords = IndonesianDataProcessor.processBankData(rawData)
-      processedData = bankRecords.map(bank => ({
+      const bankRecords = IndonesianDataProcessor.processBankData(rawData);
+      processedData = bankRecords.map((bank) => ({
         id: bank.id,
         source: 'ingestion' as const,
         type: 'bank' as const,
@@ -337,9 +342,9 @@ const EnhancedIngestionPage = () => {
         metadata: {
           originalFile: file.name,
           processingMethod: 'indonesian',
-          format: 'bank'
-        }
-      }))
+          format: 'bank',
+        },
+      }));
     } else {
       // Mixed data
       processedData = rawData.map((record, index) => ({
@@ -353,19 +358,19 @@ const EnhancedIngestionPage = () => {
         metadata: {
           originalFile: file.name,
           processingMethod: 'indonesian',
-          format: 'mixed'
-        }
-      }))
+          format: 'mixed',
+        },
+      }));
     }
-    
-    return processedData
-  }, [])
+
+    return processedData;
+  }, []);
 
   // Process standard files
   const processStandardFile = useCallback(async (file: File): Promise<ProcessedData[]> => {
-    const content = await readFileContent(file)
-    const rawData = parseCSVContent(content)
-    
+    const content = await readFileContent(file);
+    const rawData = parseCSVContent(content);
+
     return rawData.map((record, index) => ({
       id: `STD-${index + 1}`,
       source: 'ingestion' as const,
@@ -377,83 +382,85 @@ const EnhancedIngestionPage = () => {
       metadata: {
         originalFile: file.name,
         processingMethod: 'standard',
-        format: 'csv'
-      }
-    }))
-  }, [])
+        format: 'csv',
+      },
+    }));
+  }, []);
 
   // Sync to reconciliation
   const syncToReconciliation = useCallback(async (data: ProcessedData[]) => {
-    setDataState(prev => ({ 
-      ...prev, 
+    setDataState((prev) => ({
+      ...prev,
       synchronizationStatus: 'pending',
-      syncQueue: data.map(item => ({
+      syncQueue: data.map((item) => ({
         id: item.id,
         type: 'ingestion_to_reconciliation',
         status: 'pending',
         data: item,
         timestamp: Date.now(),
         source: 'ingestion',
-        target: 'reconciliation'
-      }))
-    }))
+        target: 'reconciliation',
+      })),
+    }));
 
     // Simulate sync process
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    setDataState(prev => ({ 
-      ...prev, 
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    setDataState((prev) => ({
+      ...prev,
       synchronizationStatus: 'synchronized',
       lastSyncTime: new Date().toISOString(),
-      syncQueue: []
-    }))
-  }, [])
+      syncQueue: [],
+    }));
+  }, []);
 
   // Enhanced file processing with Indonesian support
-  const processFiles = useCallback(async (files: File[]) => {
-    setIsProcessing(true)
-    setProcessingProgress(0)
-    setDataState(prev => ({ ...prev, dataFlow: 'processing' }))
+  const processFiles = useCallback(
+    async (files: File[]) => {
+      setIsProcessing(true);
+      setProcessingProgress(0);
+      setDataState((prev) => ({ ...prev, dataFlow: 'processing' }));
 
-    try {
-      const processedFiles: ProcessedData[] = []
+      try {
+        const processedFiles: ProcessedData[] = [];
 
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-        setProcessingProgress((i / files.length) * 100)
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          setProcessingProgress((i / files.length) * 100);
 
-        // Detect Indonesian format
-        const isIndonesian = detectIndonesianFormat(file)
-        
-        if (isIndonesian) {
-          // Process with Indonesian data processor
-          const indonesianData = await processIndonesianFile(file)
-          processedFiles.push(...indonesianData)
-        } else {
-          // Process with standard processor
-          const standardData = await processStandardFile(file)
-          processedFiles.push(...standardData)
+          // Detect Indonesian format
+          const isIndonesian = detectIndonesianFormat(file);
+
+          if (isIndonesian) {
+            // Process with Indonesian data processor
+            const indonesianData = await processIndonesianFile(file);
+            processedFiles.push(...indonesianData);
+          } else {
+            // Process with standard processor
+            const standardData = await processStandardFile(file);
+            processedFiles.push(...standardData);
+          }
         }
+
+        setProcessedData(processedFiles);
+        setDataState((prev) => ({
+          ...prev,
+          ingestionData: processedFiles,
+          dataFlow: 'syncing',
+        }));
+
+        // Auto-sync to reconciliation
+        await syncToReconciliation(processedFiles);
+      } catch (error) {
+        console.error('Error processing files:', error);
+        setDataState((prev) => ({ ...prev, dataFlow: 'error' }));
+      } finally {
+        setIsProcessing(false);
+        setProcessingProgress(100);
       }
-
-      setProcessedData(processedFiles)
-      setDataState(prev => ({
-        ...prev,
-        ingestionData: processedFiles,
-        dataFlow: 'syncing'
-      }))
-
-      // Auto-sync to reconciliation
-      await syncToReconciliation(processedFiles)
-
-    } catch (error) {
-      console.error('Error processing files:', error)
-      setDataState(prev => ({ ...prev, dataFlow: 'error' }))
-    } finally {
-      setIsProcessing(false)
-      setProcessingProgress(100)
-    }
-   }, [processIndonesianFile, processStandardFile, syncToReconciliation, detectIndonesianFormat])
+    },
+    [processIndonesianFile, processStandardFile, syncToReconciliation, detectIndonesianFormat]
+  );
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -461,20 +468,24 @@ const EnhancedIngestionPage = () => {
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h1 className="text-3xl font-bold text-secondary-900 mb-2">
-              Enhanced Data Ingestion
-            </h1>
+            <h1 className="text-3xl font-bold text-secondary-900 mb-2">Enhanced Data Ingestion</h1>
             <p className="text-secondary-600">
-              Intelligent data processing with Indonesian format support and real-time synchronization
+              Intelligent data processing with Indonesian format support and real-time
+              synchronization
             </p>
           </div>
           <div className="flex items-center space-x-2">
-            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-              dataState.synchronizationStatus === 'synchronized' ? 'bg-green-100 text-green-800' :
-              dataState.synchronizationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-              dataState.synchronizationStatus === 'error' ? 'bg-red-100 text-red-800' :
-              'bg-gray-100 text-gray-800'
-            }`}>
+            <div
+              className={`px-3 py-1 rounded-full text-sm font-medium ${
+                dataState.synchronizationStatus === 'synchronized'
+                  ? 'bg-green-100 text-green-800'
+                  : dataState.synchronizationStatus === 'pending'
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : dataState.synchronizationStatus === 'error'
+                      ? 'bg-red-100 text-red-800'
+                      : 'bg-gray-100 text-gray-800'
+              }`}
+            >
               <RefreshCw className="w-4 h-4 inline mr-1" />
               {dataState.synchronizationStatus}
             </div>
@@ -496,11 +507,11 @@ const EnhancedIngestionPage = () => {
             { id: 'upload', label: 'Upload', icon: Upload },
             { id: 'process', label: 'Processing', icon: Settings },
             { id: 'analyze', label: 'Analysis', icon: BarChart3 },
-            { id: 'sync', label: 'Synchronization', icon: RefreshCw }
-          ].map(tab => (
+            { id: 'sync', label: 'Synchronization', icon: RefreshCw },
+          ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'upload' | 'process' | 'analyze' | 'sync')}
               className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab.id
                   ? 'border-primary-500 text-primary-600'
@@ -533,17 +544,14 @@ const EnhancedIngestionPage = () => {
                 multiple
                 accept=".csv,.xlsx,.xls"
                 onChange={(e) => {
-                  const files = Array.from(e.target.files || [])
-                  setUploadedFiles(files)
-                  processFiles(files)
+                  const files = Array.from(e.target.files || []);
+                  setUploadedFiles(files);
+                  processFiles(files);
                 }}
                 className="hidden"
                 id="file-upload"
               />
-              <label
-                htmlFor="file-upload"
-                className="btn-primary cursor-pointer"
-              >
+              <label htmlFor="file-upload" className="btn-primary cursor-pointer">
                 Select Files
               </label>
             </div>
@@ -555,7 +563,10 @@ const EnhancedIngestionPage = () => {
               <h3 className="text-lg font-semibold text-secondary-900 mb-4">Uploaded Files</h3>
               <div className="space-y-2">
                 {uploadedFiles.map((file, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-secondary-50 rounded-lg">
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-secondary-50 rounded-lg"
+                  >
                     <div className="flex items-center space-x-3">
                       <FileText className="w-5 h-5 text-primary-600" />
                       <div>
@@ -589,16 +600,21 @@ const EnhancedIngestionPage = () => {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-secondary-600">Data Flow Status</span>
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  dataState.dataFlow === 'idle' ? 'bg-gray-100 text-gray-800' :
-                  dataState.dataFlow === 'processing' ? 'bg-blue-100 text-blue-800' :
-                  dataState.dataFlow === 'syncing' ? 'bg-yellow-100 text-yellow-800' :
-                  'bg-red-100 text-red-800'
-                }`}>
+                <span
+                  className={`px-2 py-1 text-xs font-medium rounded-full ${
+                    dataState.dataFlow === 'idle'
+                      ? 'bg-gray-100 text-gray-800'
+                      : dataState.dataFlow === 'processing'
+                        ? 'bg-blue-100 text-blue-800'
+                        : dataState.dataFlow === 'syncing'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-red-100 text-red-800'
+                  }`}
+                >
                   {dataState.dataFlow}
                 </span>
               </div>
-              
+
               {isProcessing && (
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -615,11 +631,13 @@ const EnhancedIngestionPage = () => {
                   </div>
                 </div>
               )}
-              
+
               <div className="flex items-center justify-between">
                 <span className="text-sm text-secondary-600">Last Sync Time</span>
                 <span className="text-sm text-secondary-900">
-                  {dataState.lastSyncTime ? new Date(dataState.lastSyncTime).toLocaleString() : 'Never'}
+                  {dataState.lastSyncTime
+                    ? new Date(dataState.lastSyncTime).toLocaleString()
+                    : 'Never'}
                 </span>
               </div>
             </div>
@@ -636,13 +654,20 @@ const EnhancedIngestionPage = () => {
                       <th className="text-left py-3 px-4 font-medium text-secondary-700">ID</th>
                       <th className="text-left py-3 px-4 font-medium text-secondary-700">Type</th>
                       <th className="text-left py-3 px-4 font-medium text-secondary-700">Format</th>
-                      <th className="text-left py-3 px-4 font-medium text-secondary-700">Quality</th>
-                      <th className="text-left py-3 px-4 font-medium text-secondary-700">Actions</th>
+                      <th className="text-left py-3 px-4 font-medium text-secondary-700">
+                        Quality
+                      </th>
+                      <th className="text-left py-3 px-4 font-medium text-secondary-700">
+                        Actions
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {processedData.slice(0, 10).map((item) => (
-                      <tr key={item.id} className="border-b border-secondary-100 hover:bg-secondary-50">
+                      <tr
+                        key={item.id}
+                        className="border-b border-secondary-100 hover:bg-secondary-50"
+                      >
                         <td className="py-3 px-4 font-medium text-secondary-900">{item.id}</td>
                         <td className="py-3 px-4">
                           <span className="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
@@ -700,15 +725,19 @@ const EnhancedIngestionPage = () => {
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-green-600">
-                  {processedData.filter(d => d.isIndonesian).length}
+                  {processedData.filter((d) => d.isIndonesian).length}
                 </div>
                 <div className="text-sm text-secondary-600">Indonesian Records</div>
               </div>
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">
-                  {processedData.length > 0 ? 
-                    (processedData.reduce((sum, d) => sum + d.quality.completeness, 0) / processedData.length).toFixed(1) : 0
-                  }%
+                  {processedData.length > 0
+                    ? (
+                        processedData.reduce((sum, d) => sum + d.quality.completeness, 0) /
+                        processedData.length
+                      ).toFixed(1)
+                    : 0}
+                  %
                 </div>
                 <div className="text-sm text-secondary-600">Avg Quality</div>
               </div>
@@ -721,7 +750,9 @@ const EnhancedIngestionPage = () => {
         <div className="space-y-6">
           {/* Synchronization Status */}
           <div className="card">
-            <h3 className="text-lg font-semibold text-secondary-900 mb-4">Synchronization Status</h3>
+            <h3 className="text-lg font-semibold text-secondary-900 mb-4">
+              Synchronization Status
+            </h3>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-secondary-600">Reconciliation Records</span>
@@ -732,13 +763,13 @@ const EnhancedIngestionPage = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-secondary-600">Matched Records</span>
                 <span className="text-sm font-bold text-green-600">
-                  {dataState.reconciliationData.filter(r => r.status === 'matched').length}
+                  {dataState.reconciliationData.filter((r) => r.status === 'matched').length}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-secondary-600">Pending Records</span>
                 <span className="text-sm font-bold text-yellow-600">
-                  {dataState.reconciliationData.filter(r => r.status === 'pending').length}
+                  {dataState.reconciliationData.filter((r) => r.status === 'pending').length}
                 </span>
               </div>
             </div>
@@ -747,10 +778,15 @@ const EnhancedIngestionPage = () => {
           {/* Sync Queue */}
           {dataState.syncQueue.length > 0 && (
             <div className="card">
-              <h3 className="text-lg font-semibold text-secondary-900 mb-4">Synchronization Queue</h3>
+              <h3 className="text-lg font-semibold text-secondary-900 mb-4">
+                Synchronization Queue
+              </h3>
               <div className="space-y-2">
                 {dataState.syncQueue.map((task) => (
-                  <div key={task.id} className="flex items-center justify-between p-3 bg-secondary-50 rounded-lg">
+                  <div
+                    key={task.id}
+                    className="flex items-center justify-between p-3 bg-secondary-50 rounded-lg"
+                  >
                     <div className="flex items-center space-x-3">
                       <RefreshCw className="w-4 h-4 text-primary-600" />
                       <div>
@@ -760,12 +796,17 @@ const EnhancedIngestionPage = () => {
                         </div>
                       </div>
                     </div>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                      task.status === 'completed' ? 'bg-green-100 text-green-800' :
-                      task.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                      task.status === 'error' ? 'bg-red-100 text-red-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${
+                        task.status === 'completed'
+                          ? 'bg-green-100 text-green-800'
+                          : task.status === 'processing'
+                            ? 'bg-blue-100 text-blue-800'
+                            : task.status === 'error'
+                              ? 'bg-red-100 text-red-800'
+                              : 'bg-yellow-100 text-yellow-800'
+                      }`}
+                    >
                       {task.status}
                     </span>
                   </div>
@@ -776,7 +817,7 @@ const EnhancedIngestionPage = () => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default EnhancedIngestionPage
+export default EnhancedIngestionPage;

@@ -25,6 +25,12 @@ impl ShardConfiguration {
             };
             
             if let Ok(connection_string) = env::var(&env_var) {
+                // Parse connection string to extract database name, host, port
+                // For now, use defaults - in production this should be properly parsed
+                let database_name = format!("reconciliation_shard_{}", i);
+                let host = "postgres".to_string();
+                let port = 5432;
+
                 shards.push(ShardConfig {
                     id: i,
                     name: format!("shard_{}", i),
@@ -35,6 +41,9 @@ impl ShardConfiguration {
                     } else {
                         (u64::MAX / shard_count as u64) * (i + 1) as u64 - 1
                     },
+                    database_name,
+                    host,
+                    port,
                 });
             }
         }

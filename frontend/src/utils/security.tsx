@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { logger } from '@/services/logger'
 
 // ============================================================================
 // SECURITY UTILITIES
@@ -128,7 +129,7 @@ export async function encryptData(data: string, key: string): Promise<string> {
 
     return btoa(String.fromCharCode(...result))
   } catch (error) {
-    console.error('Encryption failed:', error)
+    logger.error('Encryption failed:', error)
     throw new Error('Failed to encrypt data')
   }
 }
@@ -161,7 +162,7 @@ export async function decryptData(encryptedData: string, key: string): Promise<s
 
     return decoder.decode(decrypted)
   } catch (error) {
-    console.error('Decryption failed:', error)
+    logger.error('Decryption failed:', error)
     throw new Error('Failed to decrypt data')
   }
 }
@@ -211,7 +212,7 @@ export function validateJWT(token: string): { isValid: boolean; payload?: any; e
 /**
  * Hook for secure form handling
  */
-export function useSecureForm<T extends Record<string, any>>(
+export function useSecureForm<T extends Record<string, unknown>>(
   initialValues: T,
   validationRules: Record<keyof T, (value: any) => string | null>
 ) {
@@ -405,7 +406,7 @@ class SecureStorage {
     } catch (error) {
       // Silently fail in production to avoid exposing errors
       if (process.env.NODE_ENV === 'development') {
-        console.warn('Storage error:', error)
+        logger.warn('Storage error:', error)
       }
     }
   }
@@ -418,7 +419,7 @@ class SecureStorage {
       return localStorage.getItem(key)
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('Storage read error:', error)
+        logger.warn('Storage read error:', error)
       }
       return null
     }
@@ -433,7 +434,7 @@ class SecureStorage {
       }
     } catch (error) {
       if (process.env.NODE_ENV === 'development') {
-        console.warn('Storage remove error:', error)
+        logger.warn('Storage remove error:', error)
       }
     }
   }

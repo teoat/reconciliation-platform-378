@@ -13,6 +13,8 @@ pub mod projects;
 pub mod reconciliation;
 pub mod files;
 pub mod analytics;
+pub mod settings;
+pub mod profile;
 
 // Placeholder modules for future implementation
 #[allow(unused_imports)]
@@ -78,6 +80,16 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .service(
             web::scope("/api/analytics")
                 .configure(analytics::configure_routes)
+        )
+        // Settings routes
+        .service(
+            web::scope("/api/settings")
+                .configure(settings::configure_routes)
+        )
+        // Profile routes
+        .service(
+            web::scope("/api/profile")
+                .configure(profile::configure_routes)
         )
         // System routes
         .service(

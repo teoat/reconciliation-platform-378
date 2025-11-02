@@ -255,7 +255,7 @@ impl ValidationService {
 
 impl Default for ValidationService {
     fn default() -> Self {
-        Self::new().unwrap()
+        Self::new().expect("Failed to create ValidationService")
     }
 }
 

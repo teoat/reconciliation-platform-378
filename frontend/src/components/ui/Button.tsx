@@ -48,18 +48,36 @@ const Button: React.FC<ButtonProps> = memo(({
   // Memoize disabled state calculation
   const isDisabled = useMemo(() => disabled || loading, [disabled, loading])
   
+  // Generate aria-label if not provided
+  const ariaLabel = useMemo(() => {
+    if (props['aria-label']) return props['aria-label']
+    if (typeof children === 'string') return children
+    if (loading) return 'Loading...'
+    return undefined
+  }, [props['aria-label'], children, loading])
+  
+  // Generate aria-describedby if help text exists
+  const ariaDescribedBy = props['aria-describedby'] || (props['aria-label'] && `${props['aria-label']}-help` ? `${props['aria-label']}-help` : undefined)
+  
+  // Build ARIA props conditionally
+  const ariaProps: React.ButtonHTMLAttributes<HTMLButtonElement> = {
+    'aria-label': ariaLabel,
+    'aria-describedby': ariaDescribedBy,
+    ...(loading && { 'aria-busy': true }),
+    ...props,
+  }
+
   return (
     <button
       className={classes}
       disabled={isDisabled}
-      aria-label={props['aria-label'] || (typeof children === 'string' ? children : undefined)}
-      aria-busy={loading}
-      {...props}
+      {...ariaProps}
     >
-      {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-      {!loading && leftIcon && <span className="mr-2">{leftIcon}</span>}
+      {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" aria-hidden="true" />}
+      {!loading && leftIcon && <span className="mr-2" aria-hidden="true">{leftIcon}</span>}
+      {ariaLabel && typeof children !== 'string' && <span className="sr-only">{ariaLabel}</span>}
       {children}
-      {!loading && rightIcon && <span className="ml-2">{rightIcon}</span>}
+      {!loading && rightIcon && <span className="ml-2" aria-hidden="true">{rightIcon}</span>}
     </button>
   )
 })

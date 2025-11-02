@@ -2,8 +2,11 @@
 
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
+use crate::models::{NewUploadedFile, UploadedFile};
+use crate::models::schema;
 use actix_multipart::Multipart;
 use actix_web::http::header::CONTENT_DISPOSITION;
+use diesel::prelude::*;
 use futures_util::TryStreamExt as _;
 use tokio::fs;
 use tokio::io::AsyncWriteExt as _;
@@ -229,13 +232,32 @@ impl FileService {
 
         let filename = saved_filename.ok_or_else(|| AppError::Validation("No file field provided".to_string()))?;
 
-        // TODO: Persist file record in database when schema is available
-        Ok(FileUploadResult {
-            id: Uuid::new_v4(),
-            filename,
-            size: total_size,
-            status: "uploaded".to_string(),
+        // Persist file record in database
+        let new_file = NewUploadedFile {
             project_id,
+            filename: filename.clone(),
+            original_filename: filename.clone(), // For now, using same as filename
+            file_size: total_size,
+            content_type: "application/octet-stream".to_string(), // Default content type
+            file_path: format!("uploads/{}/{}", project_id, filename),
+            status: "uploaded".to_string(),
+            uploaded_by: _user_id,
+        };
+
+        let uploaded_file: UploadedFile = {
+            use crate::models::schema::projects::uploaded_files::dsl::*;
+            diesel::insert_into(uploaded_files)
+                .values(&new_file)
+                .get_result(&mut self.db.get_connection()?)
+                .map_err(|e| AppError::Internal(format!("Failed to save file record: {}", e)))?
+        };
+
+        Ok(FileUploadResult {
+            id: uploaded_file.id,
+            filename: uploaded_file.filename,
+            size: uploaded_file.file_size,
+            status: uploaded_file.status,
+            project_id: uploaded_file.project_id,
         })
     }
 
@@ -246,8 +268,27 @@ impl FileService {
     }
 
     /// Delete a file
-    pub async fn delete_file(&self, _file_id: Uuid) -> AppResult<()> {
-        // Placeholder implementation
+    pub async fn delete_file(&self, file_id: Uuid) -> AppResult<()> {
+        let mut conn = self.db.get_connection()?;
+
+        // Get file info first
+        let file_info: UploadedFile = schema::uploaded_files::table
+            .find(file_id)
+            .first(&mut conn)
+            .map_err(AppError::Database)?;
+
+        // Delete the physical file
+        let file_path = PathBuf::from(&self.upload_path).join(&file_info.file_path);
+        if file_path.exists() {
+            fs::remove_file(&file_path).await
+                .map_err(|e| AppError::Internal(format!("Failed to delete file: {}", e)))?;
+        }
+
+        // Delete the database record
+        diesel::delete(schema::uploaded_files::table.find(file_id))
+            .execute(&mut conn)
+            .map_err(AppError::Database)?;
+
         Ok(())
     }
 
@@ -259,6 +300,39 @@ impl FileService {
             processing_time: 0.0,
             errors: vec![],
         })
+    }
+
+    /// Get file preview (safe content preview)
+    pub async fn get_file_preview(&self, file_path: &str) -> AppResult<String> {
+        let full_path = PathBuf::from(&self.upload_path).join(file_path);
+
+        // Check if file exists
+        if !full_path.exists() {
+            return Err(AppError::NotFound("File not found".to_string()));
+        }
+
+        // Read first 1KB or 10 lines, whichever comes first
+        let content = fs::read_to_string(&full_path).await
+            .map_err(|e| AppError::Internal(format!("Failed to read file: {}", e)))?;
+
+        // For security, limit preview to first 10 lines or 1KB
+        let mut preview = String::new();
+        let mut lines = 0;
+        for line in content.lines() {
+            if lines >= 10 || preview.len() + line.len() > 1024 {
+                break;
+            }
+            preview.push_str(line);
+            preview.push('\n');
+            lines += 1;
+        }
+
+        // Remove trailing newline if present
+        if preview.ends_with('\n') {
+            preview.pop();
+        }
+
+        Ok(preview)
     }
 }
 

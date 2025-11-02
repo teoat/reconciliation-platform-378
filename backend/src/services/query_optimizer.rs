@@ -276,7 +276,13 @@ impl QueryOptimizer {
         let mut keys = Vec::new();
         
         // Look for "ON table.column = table.column" patterns
-        let pattern = regex::Regex::new(r"(\w+)\.(\w+)\s*=\s*(\w+)\.(\w+)").unwrap();
+        let pattern = match regex::Regex::new(r"(\w+)\.(\w+)\s*=\s*(\w+)\.(\w+)") {
+            Ok(p) => p,
+            Err(e) => {
+                log::error!("Failed to compile regex pattern for join detection: {}", e);
+                return keys;
+            }
+        };
         
         for cap in pattern.captures_iter(sql) {
             if let Some(key) = cap.get(2) {

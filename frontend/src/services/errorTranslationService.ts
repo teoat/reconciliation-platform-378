@@ -1,296 +1,289 @@
-// Error Translation Service - Maps backend error codes to user-friendly messages
-// Implements comprehensive error code translation with context preservation
+// Error Translation Service - Frontend equivalent of backend error translation
+// Translates backend error codes to user-friendly messages
 
-import { ERROR_CODES } from '../config/AppConfig'
-
-export interface ErrorTranslation {
-  userMessage: string
-  technicalMessage: string
-  actionRequired: string
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  retryable: boolean
-  context: {
-    projectId?: string
-    userId?: string
-    workflowStage?: string
-    timestamp: Date
-  }
+export interface ErrorTranslationContext {
+  component?: string;
+  action?: string;
+  data?: any;
+  statusCode?: number;
 }
 
-export interface ErrorContext {
-  projectId?: string
-  userId?: string
-  workflowStage?: string
-  component?: string
-  action?: string
-  data?: any
+export interface ErrorTranslation {
+  userMessage: string;
+  suggestion?: string;
+  category:
+    | 'authentication'
+    | 'authorization'
+    | 'validation'
+    | 'network'
+    | 'database'
+    | 'file'
+    | 'payment'
+    | 'system'
+    | 'user_action';
 }
 
 class ErrorTranslationService {
-  private static instance: ErrorTranslationService
-  private translations: Map<string, ErrorTranslation> = new Map()
+  private static instance: ErrorTranslationService;
+  private translations: Map<string, ErrorTranslation>;
 
   public static getInstance(): ErrorTranslationService {
     if (!ErrorTranslationService.instance) {
-      ErrorTranslationService.instance = new ErrorTranslationService()
+      ErrorTranslationService.instance = new ErrorTranslationService();
     }
-    return ErrorTranslationService.instance
+    return ErrorTranslationService.instance;
   }
 
   constructor() {
-    this.initializeTranslations()
+    this.translations = new Map();
+
+    // Initialize translations based on backend error codes
+    this.initializeTranslations();
   }
 
   private initializeTranslations(): void {
-    // Authentication Errors
-    this.translations.set(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
-      userMessage: 'Invalid email or password. Please check your credentials and try again.',
-      technicalMessage: 'Authentication failed: Invalid credentials provided',
-      actionRequired: 'Please verify your email and password, then try logging in again.',
-      severity: 'medium',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    // Authentication errors
+    this.translations.set('UNAUTHORIZED', {
+      userMessage: 'Please log in to continue',
+      suggestion: 'Click the login button to sign in',
+      category: 'authentication',
+    });
 
-    this.translations.set(ERROR_CODES.AUTH_TOKEN_EXPIRED, {
-      userMessage: 'Your session has expired. Please log in again to continue.',
-      technicalMessage: 'JWT token has expired',
-      actionRequired: 'Please log in again to continue your work.',
-      severity: 'low',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    this.translations.set('INVALID_TOKEN', {
+      userMessage: 'Your session has expired. Please log in again',
+      suggestion: 'Click the login button to sign in again',
+      category: 'authentication',
+    });
 
-    this.translations.set(ERROR_CODES.AUTH_ACCESS_DENIED, {
-      userMessage: 'You don\'t have permission to perform this action.',
-      technicalMessage: 'Access denied: Insufficient permissions',
-      actionRequired: 'Contact your administrator to request access to this feature.',
-      severity: 'high',
-      retryable: false,
-      context: { timestamp: new Date() }
-    })
+    this.translations.set('AUTH_INVALID_CREDENTIALS', {
+      userMessage: 'Invalid email or password',
+      suggestion: 'Please check your credentials and try again',
+      category: 'authentication',
+    });
 
-    // Validation Errors
-    this.translations.set(ERROR_CODES.VALIDATION_REQUIRED_FIELD, {
-      userMessage: 'Please fill in all required fields.',
-      technicalMessage: 'Required field validation failed',
-      actionRequired: 'Complete all required fields marked with * and try again.',
-      severity: 'low',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    this.translations.set('AUTH_INSUFFICIENT_PERMISSIONS', {
+      userMessage: "You don't have permission to perform this action",
+      suggestion: 'Contact your administrator if you believe this is an error',
+      category: 'authorization',
+    });
 
-    this.translations.set(ERROR_CODES.VALIDATION_INVALID_FORMAT, {
-      userMessage: 'The data format is incorrect. Please check your input.',
-      technicalMessage: 'Data format validation failed',
-      actionRequired: 'Verify the format of your data and try again.',
-      severity: 'low',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    // Authorization errors
+    this.translations.set('FORBIDDEN', {
+      userMessage: "You don't have permission to perform this action",
+      suggestion: 'Contact your administrator if you believe this is an error',
+      category: 'authorization',
+    });
 
-    // File Errors
-    this.translations.set(ERROR_CODES.FILE_TOO_LARGE, {
-      userMessage: 'File is too large. Please choose a smaller file or contact support.',
-      technicalMessage: 'File size exceeds maximum allowed limit',
-      actionRequired: 'Reduce file size or split into smaller files.',
-      severity: 'medium',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    this.translations.set('AUTHORIZATION_ERROR', {
+      userMessage: 'Access denied',
+      suggestion: 'You may not have the required permissions for this action',
+      category: 'authorization',
+    });
 
-    this.translations.set(ERROR_CODES.FILE_INVALID_TYPE, {
-      userMessage: 'Invalid file type. Please upload a CSV or Excel file.',
-      technicalMessage: 'File type validation failed',
-      actionRequired: 'Convert your file to CSV or Excel format and try again.',
-      severity: 'low',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    // Validation errors
+    this.translations.set('VALIDATION_ERROR', {
+      userMessage: 'Please check your input and try again',
+      suggestion: 'Review the highlighted fields for errors',
+      category: 'validation',
+    });
 
-    this.translations.set(ERROR_CODES.FILE_UPLOAD_FAILED, {
-      userMessage: 'File upload failed. Please check your connection and try again.',
-      technicalMessage: 'File upload process failed',
-      actionRequired: 'Check your internet connection and try uploading again.',
-      severity: 'medium',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    this.translations.set('VALIDATION_FAILED', {
+      userMessage: 'Some information is missing or incorrect',
+      suggestion: 'Please review all fields and correct any errors',
+      category: 'validation',
+    });
 
-    // Data Errors
-    this.translations.set(ERROR_CODES.DATA_NOT_FOUND, {
-      userMessage: 'The requested data was not found.',
-      technicalMessage: 'Data not found in database',
-      actionRequired: 'Refresh the page or contact support if the issue persists.',
-      severity: 'medium',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    this.translations.set('EMAIL_INVALID', {
+      userMessage: 'Please enter a valid email address',
+      suggestion: 'Check that your email address is formatted correctly',
+      category: 'validation',
+    });
 
-    this.translations.set(ERROR_CODES.DATA_PROCESSING_FAILED, {
-      userMessage: 'Data processing failed. Please check your data and try again.',
-      technicalMessage: 'Data processing error occurred',
-      actionRequired: 'Verify your data format and try again.',
-      severity: 'high',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    // Network errors
+    this.translations.set('CONNECTION_ERROR', {
+      userMessage: 'Unable to connect to the server',
+      suggestion: 'Check your internet connection and try again',
+      category: 'network',
+    });
 
-    // Business Logic Errors
-    this.translations.set(ERROR_CODES.WORKFLOW_INVALID_STATE, {
-      userMessage: 'Cannot perform this action in the current workflow state.',
-      technicalMessage: 'Workflow state validation failed',
-      actionRequired: 'Complete the current step before proceeding.',
-      severity: 'medium',
-      retryable: false,
-      context: { timestamp: new Date() }
-    })
+    this.translations.set('TIMEOUT', {
+      userMessage: 'The request timed out',
+      suggestion: 'Please try again in a moment',
+      category: 'network',
+    });
 
-    this.translations.set(ERROR_CODES.CONCURRENT_MODIFICATION, {
-      userMessage: 'This data was modified by another user. Please refresh and try again.',
-      technicalMessage: 'Concurrent modification detected',
-      actionRequired: 'Refresh the page to get the latest data, then try again.',
-      severity: 'medium',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    // Database errors
+    this.translations.set('DATABASE_ERROR', {
+      userMessage: 'A database error occurred',
+      suggestion: 'Please try again. If the problem persists, contact support',
+      category: 'database',
+    });
 
-    // System Errors
-    this.translations.set(ERROR_CODES.NETWORK_ERROR, {
-      userMessage: 'Network connection issue. Please check your internet connection.',
-      technicalMessage: 'Network request failed',
-      actionRequired: 'Check your internet connection and try again.',
-      severity: 'medium',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    this.translations.set('REDIS_ERROR', {
+      userMessage: 'Cache service is temporarily unavailable',
+      suggestion: 'Some features may be slower than usual',
+      category: 'database',
+    });
 
-    this.translations.set(ERROR_CODES.TIMEOUT_ERROR, {
-      userMessage: 'Request timed out. Please try again.',
-      technicalMessage: 'Request timeout exceeded',
-      actionRequired: 'Try again in a moment.',
-      severity: 'medium',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    // File errors
+    this.translations.set('FILE_ERROR', {
+      userMessage: 'File upload failed',
+      suggestion: 'Check the file format and size, then try again',
+      category: 'file',
+    });
 
-    this.translations.set(ERROR_CODES.RATE_LIMIT_EXCEEDED, {
-      userMessage: 'Too many requests. Please wait a moment before trying again.',
-      technicalMessage: 'Rate limit exceeded',
-      actionRequired: 'Wait a few seconds before trying again.',
-      severity: 'low',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    // System errors
+    this.translations.set('INTERNAL_ERROR', {
+      userMessage: 'An unexpected error occurred',
+      suggestion: 'Please try again. If the problem persists, contact support',
+      category: 'system',
+    });
 
-    // External Service Errors
-    this.translations.set(ERROR_CODES.EXTERNAL_SERVICE_ERROR, {
-      userMessage: 'External service is temporarily unavailable. Please try again later.',
-      technicalMessage: 'External service error',
-      actionRequired: 'Try again in a few minutes.',
-      severity: 'medium',
-      retryable: true,
-      context: { timestamp: new Date() }
-    })
+    this.translations.set('SERVICE_UNAVAILABLE', {
+      userMessage: 'Service is temporarily unavailable',
+      suggestion: 'Please try again in a few minutes',
+      category: 'system',
+    });
+
+    this.translations.set('CONFIG_ERROR', {
+      userMessage: 'Configuration error',
+      suggestion: 'The application is not properly configured. Please contact support',
+      category: 'system',
+    });
+
+    // Resource errors
+    this.translations.set('RESOURCE_NOT_FOUND', {
+      userMessage: 'The requested item was not found',
+      suggestion: 'The item may have been deleted or you may not have access to it',
+      category: 'user_action',
+    });
+
+    this.translations.set('NOT_FOUND', {
+      userMessage: 'The requested resource was not found',
+      suggestion: 'Please check the URL and try again',
+      category: 'user_action',
+    });
+
+    this.translations.set('RESOURCE_CONFLICT', {
+      userMessage: 'This action conflicts with existing data',
+      suggestion: 'Please review your changes and try again',
+      category: 'user_action',
+    });
+
+    this.translations.set('CONFLICT', {
+      userMessage: 'A conflict occurred',
+      suggestion: 'The item may have been modified by someone else',
+      category: 'user_action',
+    });
+
+    // Rate limiting
+    this.translations.set('RATE_LIMIT_EXCEEDED', {
+      userMessage: 'Too many requests',
+      suggestion: 'Please wait a moment before trying again',
+      category: 'system',
+    });
+
+    // CSRF errors
+    this.translations.set('CSRF_TOKEN_MISSING', {
+      userMessage: 'Security token missing',
+      suggestion: 'Please refresh the page and try again',
+      category: 'system',
+    });
+
+    this.translations.set('CSRF_TOKEN_INVALID', {
+      userMessage: 'Invalid security token',
+      suggestion: 'Please refresh the page and try again',
+      category: 'system',
+    });
+
+    // JWT errors
+    this.translations.set('JWT_ERROR', {
+      userMessage: 'Authentication token error',
+      suggestion: 'Please log in again',
+      category: 'authentication',
+    });
+
+    // IO errors
+    this.translations.set('IO_ERROR', {
+      userMessage: 'File system error occurred',
+      suggestion: 'Please try again. If the problem persists, contact support',
+      category: 'system',
+    });
+
+    // Serialization errors
+    this.translations.set('SERIALIZATION_ERROR', {
+      userMessage: 'Invalid data format',
+      suggestion: 'The data received is not in the expected format',
+      category: 'system',
+    });
+
+    // Alert errors
+    this.translations.set('ALERT', {
+      userMessage: 'System alert',
+      suggestion: 'Please check system notifications for more information',
+      category: 'system',
+    });
+
+    // Offline errors
+    this.translations.set('OFFLINE', {
+      userMessage: 'You appear to be offline',
+      suggestion: 'Check your internet connection and try again',
+      category: 'network',
+    });
+
+    // Optimistic update errors
+    this.translations.set('OPTIMISTIC_UPDATE', {
+      userMessage: 'Your changes could not be saved',
+      suggestion: 'The data may have been modified by someone else. Please refresh and try again',
+      category: 'user_action',
+    });
+
+    // Bad request
+    this.translations.set('BAD_REQUEST', {
+      userMessage: 'Invalid request',
+      suggestion: 'Please check your input and try again',
+      category: 'validation',
+    });
+
+    // Unknown errors
+    this.translations.set('UNKNOWN_ERROR', {
+      userMessage: 'An unexpected error occurred',
+      suggestion: 'Please try again. If the problem persists, contact support',
+      category: 'system',
+    });
   }
 
-  public translateError(
-    errorCode: string, 
-    context: ErrorContext = {},
-    customMessage?: string
-  ): ErrorTranslation {
-    const baseTranslation = this.translations.get(errorCode)
-    
-    if (!baseTranslation) {
-      return {
-        userMessage: customMessage || 'An unexpected error occurred. Please try again.',
-        technicalMessage: `Unknown error code: ${errorCode}`,
-        actionRequired: 'Please try again or contact support if the issue persists.',
-        severity: 'medium',
-        retryable: true,
-        context: {
-          ...context,
-          timestamp: new Date()
-        }
-      }
+  public translateError(errorCode: string, _context?: ErrorTranslationContext): ErrorTranslation {
+    const translation = this.translations.get(errorCode);
+
+    if (translation) {
+      return translation;
     }
 
-    // Enhance the translation with context
-    let enhancedMessage = baseTranslation.userMessage
-    
-    // Add context-specific information
-    if (context.workflowStage) {
-      enhancedMessage += ` (Current stage: ${context.workflowStage})`
-    }
-    
-    if (context.component) {
-      enhancedMessage += ` (Component: ${context.component})`
-    }
-
+    // Return default translation for unknown error codes
     return {
-      ...baseTranslation,
-      userMessage: enhancedMessage,
-      context: {
-        ...baseTranslation.context,
-        ...context,
-        timestamp: new Date()
-      }
-    }
+      userMessage: 'An unexpected error occurred',
+      suggestion: 'Please try again. If the problem persists, contact support',
+      category: 'system',
+    };
   }
 
-  public getRetryDelay(attempt: number): number {
-    // Exponential backoff: 1s, 2s, 4s, 8s, 16s
-    return Math.min(1000 * Math.pow(2, attempt), 16000)
+  public addTranslation(errorCode: string, translation: ErrorTranslation): void {
+    this.translations.set(errorCode, translation);
   }
 
-  public shouldRetry(errorCode: string, attempt: number): boolean {
-    const translation = this.translations.get(errorCode)
-    if (!translation) return false
-    
-    return translation.retryable && attempt < 5
-  }
-
-  public getErrorSeverity(errorCode: string): 'low' | 'medium' | 'high' | 'critical' {
-    const translation = this.translations.get(errorCode)
-    return translation?.severity || 'medium'
+  public removeTranslation(errorCode: string): void {
+    this.translations.delete(errorCode);
   }
 
   public getAllTranslations(): Map<string, ErrorTranslation> {
-    return new Map(this.translations)
+    return new Map(this.translations);
   }
 
-  public addCustomTranslation(errorCode: string, translation: ErrorTranslation): void {
-    this.translations.set(errorCode, translation)
-  }
-}
-
-// React hook for error translation
-export const useErrorTranslation = () => {
-  const service = ErrorTranslationService.getInstance()
-
-  const translateError = (errorCode: string, context?: ErrorContext, customMessage?: string) => {
-    return service.translateError(errorCode, context, customMessage)
-  }
-
-  const getRetryDelay = (attempt: number) => {
-    return service.getRetryDelay(attempt)
-  }
-
-  const shouldRetry = (errorCode: string, attempt: number) => {
-    return service.shouldRetry(errorCode, attempt)
-  }
-
-  const getErrorSeverity = (errorCode: string) => {
-    return service.getErrorSeverity(errorCode)
-  }
-
-  return {
-    translateError,
-    getRetryDelay,
-    shouldRetry,
-    getErrorSeverity
+  public hasTranslation(errorCode: string): boolean {
+    return this.translations.has(errorCode);
   }
 }
 
 // Export singleton instance
-export const errorTranslationService = ErrorTranslationService.getInstance()
+export const errorTranslationService = ErrorTranslationService.getInstance();

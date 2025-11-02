@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { logger } from '@/services/logger'
 
 // Debounce hook for delaying execution of functions
 export const useDebounce = <T>(value: T, delay: number): T => {
@@ -299,7 +300,7 @@ export const useCopyToClipboard = () => {
 
   const copy = useCallback(async (text: string) => {
     if (!navigator?.clipboard) {
-      console.warn('Clipboard not supported')
+      logger.warn('Clipboard not supported')
       return false
     }
 
@@ -308,7 +309,7 @@ export const useCopyToClipboard = () => {
       setCopiedText(text)
       return true
     } catch (error) {
-      console.warn('Failed to copy text: ', error)
+      logger.warn('Failed to copy text: ', error)
       setCopiedText(null)
       return false
     }
@@ -324,7 +325,7 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
       const item = window.localStorage.getItem(key)
       return item ? JSON.parse(item) : initialValue
     } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error)
+      logger.error(`Error reading localStorage key "${key}":`, error)
       return initialValue
     }
   })
@@ -336,7 +337,7 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
         setStoredValue(valueToStore)
         window.localStorage.setItem(key, JSON.stringify(valueToStore))
       } catch (error) {
-        console.error(`Error setting localStorage key "${key}":`, error)
+        logger.error(`Error setting localStorage key "${key}":`, error)
       }
     },
     [key, storedValue]
@@ -347,7 +348,7 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
       setStoredValue(initialValue)
       window.localStorage.removeItem(key)
     } catch (error) {
-      console.error(`Error removing localStorage key "${key}":`, error)
+      logger.error(`Error removing localStorage key "${key}":`, error)
     }
   }, [key, initialValue])
 
@@ -361,7 +362,7 @@ export const useSessionStorage = <T>(key: string, initialValue: T) => {
       const item = window.sessionStorage.getItem(key)
       return item ? JSON.parse(item) : initialValue
     } catch (error) {
-      console.error(`Error reading sessionStorage key "${key}":`, error)
+      logger.error(`Error reading sessionStorage key "${key}":`, error)
       return initialValue
     }
   })
@@ -373,7 +374,7 @@ export const useSessionStorage = <T>(key: string, initialValue: T) => {
         setStoredValue(valueToStore)
         window.sessionStorage.setItem(key, JSON.stringify(valueToStore))
       } catch (error) {
-        console.error(`Error setting sessionStorage key "${key}":`, error)
+        logger.error(`Error setting sessionStorage key "${key}":`, error)
       }
     },
     [key, storedValue]
@@ -384,7 +385,7 @@ export const useSessionStorage = <T>(key: string, initialValue: T) => {
       setStoredValue(initialValue)
       window.sessionStorage.removeItem(key)
     } catch (error) {
-      console.error(`Error removing sessionStorage key "${key}":`, error)
+      logger.error(`Error removing sessionStorage key "${key}":`, error)
     }
   }, [key, initialValue])
 

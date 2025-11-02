@@ -1,4 +1,5 @@
 // React Hooks for Real-time Features
+import { logger } from '@/services/logger'
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { realtimeService, UserPresence, Comment, Notification, RealtimeUpdate } from '../services/realtimeService';
 
@@ -15,7 +16,7 @@ export const useRealtimeConnection = () => {
       setIsConnected(true);
       setConnectionStatus('connected');
     } catch (error) {
-      console.error('Realtime connection failed:', error);
+      logger.error('Realtime connection failed:', error);
       setIsConnected(false);
       setConnectionStatus('error');
     }

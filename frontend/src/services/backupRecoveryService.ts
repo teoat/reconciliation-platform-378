@@ -1,4 +1,5 @@
 // Data Backup & Recovery Service
+import { logger } from '@/services/logger'
 // Implements comprehensive backup and disaster recovery with automated scheduling, encryption, and restoration
 
 import { APP_CONFIG } from '../config/AppConfig'
@@ -147,7 +148,7 @@ interface RecoveryStep {
   retryCount: number
   retryDelay: number
   dependencies: string[]
-  parameters: Record<string, any>
+  parameters: Record<string, unknown>
   scripts?: string[]
   isOptional: boolean
   isParallel: boolean
@@ -161,7 +162,7 @@ interface ValidationStep {
   type: 'data_integrity' | 'service_health' | 'performance_test' | 'security_scan' | 'compliance_check'
   order: number
   timeout: number
-  parameters: Record<string, any>
+  parameters: Record<string, unknown>
   expectedResults: any
   tolerance: number
   isCritical: boolean
@@ -175,7 +176,7 @@ interface RollbackStep {
   type: 'file_rollback' | 'database_rollback' | 'service_rollback' | 'configuration_rollback'
   order: number
   timeout: number
-  parameters: Record<string, any>
+  parameters: Record<string, unknown>
   scripts?: string[]
   isAutomatic: boolean
 }
@@ -268,9 +269,9 @@ class BackupRecoveryService {
       this.startRecoveryMonitor()
       
       this.isInitialized = true
-      console.log('Backup & Recovery Service initialized')
+      logger.log('Backup & Recovery Service initialized')
     } catch (error) {
-      console.error('Failed to initialize Backup & Recovery Service:', error)
+      logger.error('Failed to initialize Backup & Recovery Service:', error)
     }
   }
 
@@ -501,7 +502,7 @@ class BackupRecoveryService {
       
       return isValid
     } catch (error) {
-      console.error('Backup validation failed:', error)
+      logger.error('Backup validation failed:', error)
       return false
     }
   }
@@ -520,7 +521,7 @@ class BackupRecoveryService {
       
       return success
     } catch (error) {
-      console.error('Restoration failed:', error)
+      logger.error('Restoration failed:', error)
       return false
     }
   }
@@ -548,7 +549,7 @@ class BackupRecoveryService {
       this.emit('backupsCleaned', cleanedCount)
       return cleanedCount
     } catch (error) {
-      console.error('Backup cleanup failed:', error)
+      logger.error('Backup cleanup failed:', error)
       return 0
     }
   }
@@ -564,7 +565,7 @@ class BackupRecoveryService {
         })
       }
     } catch (error) {
-      console.error('Failed to load backup configurations:', error)
+      logger.error('Failed to load backup configurations:', error)
     }
   }
 
@@ -573,7 +574,7 @@ class BackupRecoveryService {
       const configs = Array.from(this.configs.values())
       localStorage.setItem('backup_configurations', JSON.stringify(configs))
     } catch (error) {
-      console.error('Failed to save backup configurations:', error)
+      logger.error('Failed to save backup configurations:', error)
     }
   }
 
@@ -587,7 +588,7 @@ class BackupRecoveryService {
         })
       }
     } catch (error) {
-      console.error('Failed to load recovery plans:', error)
+      logger.error('Failed to load recovery plans:', error)
     }
   }
 
@@ -596,7 +597,7 @@ class BackupRecoveryService {
       const plans = Array.from(this.plans.values())
       localStorage.setItem('recovery_plans', JSON.stringify(plans))
     } catch (error) {
-      console.error('Failed to save recovery plans:', error)
+      logger.error('Failed to save recovery plans:', error)
     }
   }
 
@@ -605,7 +606,7 @@ class BackupRecoveryService {
       const jobs = Array.from(this.jobs.values())
       localStorage.setItem('backup_jobs', JSON.stringify(jobs))
     } catch (error) {
-      console.error('Failed to save backup jobs:', error)
+      logger.error('Failed to save backup jobs:', error)
     }
   }
 
@@ -642,7 +643,7 @@ class BackupRecoveryService {
           
           await this.saveConfigurations()
         } catch (error) {
-          console.error(`Scheduled backup failed for ${config.id}:`, error)
+          logger.error(`Scheduled backup failed for ${config.id}:`, error)
         }
       }
     }

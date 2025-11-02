@@ -14,7 +14,11 @@ export default [
       parser: tsParser,
       ecmaVersion: 2020,
       sourceType: 'module',
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        React: 'readonly',
+      },
     },
     plugins: {
       '@typescript-eslint': tsPlugin,
@@ -35,6 +39,7 @@ export default [
       globals: {
         ...globals.browser,
         ...globals.jest,
+        ...globals.node,
       },
     },
     plugins: {
@@ -64,7 +69,10 @@ export default [
     languageOptions: {
       ecmaVersion: 2020,
       sourceType: 'module',
-      globals: globals.browser,
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+      },
     },
     rules: {
       'no-unused-vars': 'warn',

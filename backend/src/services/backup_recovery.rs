@@ -744,15 +744,15 @@ mod tests {
         let backup_service = BackupService::new(config);
         
         // Test full backup
-        let backup_id = backup_service.create_full_backup().await.unwrap();
+        let backup_id = backup_service.create_full_backup().await.expect("Failed to create full backup");
         assert!(!backup_id.is_nil());
         
         // Test listing backups
-        let backups = backup_service.list_backups().await.unwrap();
+        let backups = backup_service.list_backups().await.expect("Failed to list backups");
         assert_eq!(backups.len(), 1);
         
         // Test getting backup metadata
-        let metadata = backup_service.get_backup_metadata(backup_id).await.unwrap();
+        let metadata = backup_service.get_backup_metadata(backup_id).await.expect("Failed to get backup metadata");
         assert_eq!(metadata.id, backup_id);
         assert!(matches!(metadata.status, BackupStatus::Completed));
     }
@@ -798,10 +798,10 @@ mod tests {
             dependencies: Vec::new(),
         };
         
-        recovery_service.add_recovery_procedure(procedure).await.unwrap();
+        recovery_service.add_recovery_procedure(procedure).await.expect("Failed to add recovery procedure");
         
         // Test listing procedures
-        let procedures = recovery_service.list_recovery_procedures().await.unwrap();
+        let procedures = recovery_service.list_recovery_procedures().await.expect("Failed to list recovery procedures");
         assert_eq!(procedures.len(), 1);
     }
 }

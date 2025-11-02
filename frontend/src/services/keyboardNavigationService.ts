@@ -1,4 +1,5 @@
 // Enhanced Keyboard Navigation + Focus Management
+import { logger } from '@/services/logger'
 // Comprehensive keyboard navigation and focus management system
 
 import { useEffect, useRef, useCallback } from 'react'
@@ -238,7 +239,7 @@ export class KeyboardNavigationService {
     this.createSkipLinks()
     this.isInitialized = true
 
-    console.log('Keyboard Navigation Service initialized')
+    logger.info('Keyboard Navigation Service initialized')
   }
 
   private setupEventListeners(): void {
@@ -490,9 +491,9 @@ export class KeyboardNavigationService {
 
   private showHelp(): void {
     // Show keyboard navigation help dialog
-    console.log('Keyboard Navigation Help:')
+    logger.info('Keyboard Navigation Help')
     for (const shortcut of this.shortcuts.values()) {
-      console.log(`${shortcut.key}${shortcut.ctrlKey ? ' + Ctrl' : ''}${shortcut.shiftKey ? ' + Shift' : ''}${shortcut.altKey ? ' + Alt' : ''}${shortcut.metaKey ? ' + Meta' : ''}: ${shortcut.description}`)
+      logger.debug(`Shortcut: ${shortcut.key}${shortcut.ctrlKey ? ' + Ctrl' : ''}${shortcut.shiftKey ? ' + Shift' : ''}${shortcut.altKey ? ' + Alt' : ''}${shortcut.metaKey ? ' + Meta' : ''}: ${shortcut.description}`)
     }
   }
 
@@ -673,7 +674,7 @@ export class KeyboardNavigationService {
     if (liveRegion) {
       liveRegion.textContent = announcement
     } else {
-      console.log(announcement)
+      logger.debug(announcement)
     }
   }
 
@@ -881,7 +882,7 @@ export class KeyboardNavigationService {
     this.observers.clear()
     this.isInitialized = false
 
-    console.log('Keyboard Navigation Service destroyed')
+    logger.info('Keyboard Navigation Service destroyed')
   }
 }
 

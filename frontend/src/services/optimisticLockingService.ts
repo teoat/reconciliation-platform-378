@@ -1,4 +1,5 @@
 // Optimistic Locking with Conflict Resolution Service
+import { logger } from '@/services/logger'
 // Prevents concurrent user modifications from causing data overwrites
 
 export interface OptimisticLock {
@@ -107,7 +108,7 @@ class OptimisticLockingService {
         })
       }
     } catch (error) {
-      console.error('Failed to load persisted locks:', error)
+      logger.error('Failed to load persisted locks:', error)
     }
   }
 
@@ -118,7 +119,7 @@ class OptimisticLockingService {
       }
       localStorage.setItem('optimistic_locks', JSON.stringify(data))
     } catch (error) {
-      console.error('Failed to save locks:', error)
+      logger.error('Failed to save locks:', error)
     }
   }
 
@@ -128,7 +129,7 @@ class OptimisticLockingService {
     userId: string,
     options: {
       duration?: number
-      metadata?: Record<string, any>
+      metadata?: Record<string, unknown>
     } = {}
   ): Promise<OptimisticLock | null> {
     const lockKey = `${entityType}:${entityId}`

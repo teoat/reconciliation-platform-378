@@ -1,4 +1,5 @@
 // Performance Monitoring Utilities
+import { logger } from '@/services/logger'
 // Provides comprehensive performance monitoring for the Reconciliation Platform
 
 interface PerformanceMetrics {
@@ -69,7 +70,7 @@ class PerformanceMonitor {
     this.initializeMemoryMonitoring();
     
     this.isMonitoring = true;
-    console.log('Performance monitoring initialized');
+    logger.log('Performance monitoring initialized');
   }
 
   private initializePerformanceObserver(): void {
@@ -86,7 +87,7 @@ class PerformanceMonitor {
     try {
       observer.observe({ entryTypes: ['navigation', 'paint', 'largest-contentful-paint', 'first-input', 'layout-shift'] });
     } catch (error) {
-      console.warn('PerformanceObserver not fully supported:', error);
+      logger.warn('PerformanceObserver not fully supported:', error);
     }
   }
 
@@ -96,34 +97,39 @@ class PerformanceMonitor {
     };
 
     switch (entry.entryType) {
-      case 'navigation':
+      case 'navigation': {
         const navEntry = entry as PerformanceNavigationTiming;
         metrics.pageLoadTime = navEntry.loadEventEnd - navEntry.navigationStart;
         metrics.domContentLoaded = navEntry.domContentLoadedEventEnd - navEntry.navigationStart;
         break;
+      }
 
-      case 'paint':
+      case 'paint': {
         const paintEntry = entry as PerformancePaintTiming;
         if (paintEntry.name === 'first-contentful-paint') {
           metrics.firstContentfulPaint = paintEntry.startTime;
         }
         break;
+      }
 
-      case 'largest-contentful-paint':
+      case 'largest-contentful-paint': {
         metrics.largestContentfulPaint = entry.startTime;
         break;
+      }
 
-      case 'first-input':
+      case 'first-input': {
         const fiEntry = entry as PerformanceEventTiming;
         metrics.firstInputDelay = fiEntry.processingStart - fiEntry.startTime;
         break;
+      }
 
-      case 'layout-shift':
+      case 'layout-shift': {
         const lsEntry = entry as PerformanceLayoutShift;
         if (!lsEntry.hadRecentInput) {
           metrics.cumulativeLayoutShift = lsEntry.value;
         }
         break;
+      }
     }
 
     // Calculate total blocking time
@@ -154,7 +160,7 @@ class PerformanceMonitor {
     try {
       networkObserver.observe({ entryTypes: ['resource'] });
     } catch (error) {
-      console.warn('Network monitoring not supported:', error);
+      logger.warn('Network monitoring not supported:', error);
     }
   }
 
@@ -334,7 +340,7 @@ class PerformanceMonitor {
       },
       body: JSON.stringify(data),
     }).catch(error => {
-      console.error('Failed to send performance metrics:', error);
+      logger.error('Failed to send performance metrics:', error);
     });
   }
 

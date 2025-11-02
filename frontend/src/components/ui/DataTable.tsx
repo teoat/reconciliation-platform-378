@@ -1,36 +1,40 @@
-import React, { useState, useMemo } from 'react'
-import { useVirtualScroll } from '../../utils/virtualScrolling'
-import { ChevronUp, ChevronDown, MoreHorizontal, Search } from 'lucide-react'
-import Button from './Button'
-import Input from './Input'
-import Select from './Select'
+import React, { useState, useMemo, memo, useCallback } from 'react';
+import { useVirtualScroll } from '../../utils/virtualScrolling';
+import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
+import { ChevronUp } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
+import { MoreHorizontal } from 'lucide-react';
+import { Search } from 'lucide-react';
+import Button from './Button';
+import Input from './Input';
+import Select from './Select';
 
 export interface Column<T> {
-  key: keyof T
-  label: string
-  sortable?: boolean
-  filterable?: boolean
-  render?: (value: any, row: T) => React.ReactNode
-  className?: string
+  key: keyof T;
+  header: string;
+  sortable?: boolean;
+  filterable?: boolean;
+  render?: (value: unknown, row: T) => React.ReactNode;
+  className?: string;
 }
 
 export interface DataTableProps<T> {
-  data: T[]
-  columns: Column<T>[]
-  searchable?: boolean
-  filterable?: boolean
-  sortable?: boolean
-  pagination?: boolean
-  pageSize?: number
-  className?: string
-  onRowClick?: (row: T) => void
-  emptyMessage?: string
-  virtualized?: boolean
-  virtualRowHeight?: number
-  virtualContainerHeight?: number
+  data: T[];
+  columns: Column<T>[];
+  searchable?: boolean;
+  filterable?: boolean;
+  sortable?: boolean;
+  pagination?: boolean;
+  pageSize?: number;
+  className?: string;
+  onRowClick?: (row: T) => void;
+  emptyMessage?: string;
+  virtualized?: boolean;
+  virtualRowHeight?: number;
+  virtualContainerHeight?: number;
 }
 
-export function DataTable<T extends Record<string, any>>({
+const DataTableComponent = <T extends Record<string, unknown>>({
   data,
   columns,
   searchable = true,
@@ -41,100 +45,162 @@ export function DataTable<T extends Record<string, any>>({
   className = '',
   onRowClick,
   emptyMessage = 'No data available',
-  virtualized = false,
+  virtualized,
   virtualRowHeight = 44,
-  virtualContainerHeight = 480
-}: DataTableProps<T>) {
-  const [searchTerm, setSearchTerm] = useState('')
+  virtualContainerHeight = 480,
+}: DataTableProps<T>) => {
+  // Auto-enable virtualization for large datasets (>1k rows)
+  const shouldVirtualize = virtualized !== undefined ? virtualized : data.length > 1000;
+  const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState<{
-    key: keyof T | null
-    direction: 'asc' | 'desc'
-  }>({ key: null, direction: 'asc' })
-  const [currentPage, setCurrentPage] = useState(1)
-  const [filters, setFilters] = useState<Record<string, string>>({})
+    key: keyof T | null;
+    direction: 'asc' | 'desc';
+  }>({ key: null, direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState(1);
+  const [filters, setFilters] = useState<Record<string, string>>({});
+  const [selectedRowIndex, setSelectedRowIndex] = useState<number>(-1);
 
   // Filter and search data
   const filteredData = useMemo(() => {
-    let filtered = data
+    let filtered = data;
 
     // Apply search
     if (searchTerm) {
-      filtered = filtered.filter(row =>
-        columns.some(column => {
-          const value = row[column.key]
-          return value && value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter((row) =>
+        columns.some((column) => {
+          const value = row[column.key];
+          return value && value.toString().toLowerCase().includes(searchTerm.toLowerCase());
         })
-      )
+      );
     }
 
     // Apply filters
     Object.entries(filters).forEach(([key, value]) => {
       if (value) {
-        filtered = filtered.filter(row => {
-          const cellValue = row[key]
-          return cellValue && cellValue.toString().toLowerCase().includes(value.toLowerCase())
-        })
+        filtered = filtered.filter((row) => {
+          const cellValue = row[key];
+          return cellValue && cellValue.toString().toLowerCase().includes(value.toLowerCase());
+        });
       }
-    })
+    });
 
-    return filtered
-  }, [data, searchTerm, filters, columns])
+    return filtered;
+  }, [data, searchTerm, filters, columns]);
 
   // Sort data
   const sortedData = useMemo(() => {
-    if (!sortConfig.key) return filteredData
+    if (!sortConfig.key) return filteredData;
 
     return [...filteredData].sort((a, b) => {
-      const aValue = a[sortConfig.key!]
-      const bValue = b[sortConfig.key!]
+      const aValue = a[sortConfig.key!];
+      const bValue = b[sortConfig.key!];
 
       if (aValue < bValue) {
-        return sortConfig.direction === 'asc' ? -1 : 1
+        return sortConfig.direction === 'asc' ? -1 : 1;
       }
       if (aValue > bValue) {
-        return sortConfig.direction === 'asc' ? 1 : -1
+        return sortConfig.direction === 'asc' ? 1 : -1;
       }
-      return 0
-    })
-  }, [filteredData, sortConfig])
+      return 0;
+    });
+  }, [filteredData, sortConfig]);
 
   // Paginate data (disabled when virtualized)
   const paginatedData = useMemo(() => {
-    if (!pagination || virtualized) return sortedData
-    const startIndex = (currentPage - 1) * pageSize
-    return sortedData.slice(startIndex, startIndex + pageSize)
-  }, [sortedData, currentPage, pageSize, pagination, virtualized])
+    if (!pagination || shouldVirtualize) return sortedData;
+    const startIndex = (currentPage - 1) * pageSize;
+    return sortedData.slice(startIndex, startIndex + pageSize);
+  }, [sortedData, currentPage, pageSize, pagination, shouldVirtualize]);
 
-  const totalPages = Math.ceil(sortedData.length / pageSize)
+  const totalPages = Math.ceil(sortedData.length / pageSize);
 
-  const v = virtualized
+  const v = shouldVirtualize
     ? useVirtualScroll(sortedData, {
         itemHeight: virtualRowHeight,
         containerHeight: virtualContainerHeight,
         overscan: 8,
       })
-    : null
+    : null;
 
   const handleSort = (key: keyof T) => {
-    if (!sortable) return
+    if (!sortable) return;
 
-    setSortConfig(prev => ({
+    setSortConfig((prev) => ({
       key,
-      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
-    }))
-  }
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
+    }));
+  };
+
+  // Keyboard navigation for row selection
+  const navigateToRow = useCallback(
+    (index: number) => {
+      const displayData = shouldVirtualize ? sortedData : paginatedData;
+      if (index >= 0 && index < displayData.length) {
+        setSelectedRowIndex(index);
+        // Scroll into view if needed (for virtualized tables, this is handled by the virtual scroll)
+        if (!shouldVirtualize && pagination) {
+          const pageIndex = Math.floor(index / pageSize);
+          if (pageIndex + 1 !== currentPage) {
+            setCurrentPage(pageIndex + 1);
+          }
+        }
+        // Focus the row for accessibility
+        const rowElement = document.querySelector(`[data-row-index="${index}"]`) as HTMLElement;
+        if (rowElement) {
+          rowElement.focus();
+        }
+      }
+    },
+    [shouldVirtualize, sortedData, paginatedData, pageSize, currentPage, pagination]
+  );
+
+  const handleArrowUp = useCallback(() => {
+    const newIndex = Math.max(0, selectedRowIndex - 1);
+    navigateToRow(newIndex);
+  }, [selectedRowIndex, navigateToRow]);
+
+  const handleArrowDown = useCallback(() => {
+    const displayData = shouldVirtualize ? sortedData : paginatedData;
+    const newIndex = Math.min(displayData.length - 1, selectedRowIndex + 1);
+    navigateToRow(newIndex);
+  }, [selectedRowIndex, navigateToRow, shouldVirtualize, sortedData, paginatedData]);
+
+  const handleEnter = useCallback(() => {
+    const displayData = shouldVirtualize ? sortedData : paginatedData;
+    if (selectedRowIndex >= 0 && selectedRowIndex < displayData.length) {
+      onRowClick?.(displayData[selectedRowIndex]);
+    }
+  }, [selectedRowIndex, onRowClick, shouldVirtualize, sortedData, paginatedData]);
+
+  const handleHome = useCallback(() => {
+    navigateToRow(0);
+  }, [navigateToRow]);
+
+  const handleEnd = useCallback(() => {
+    const displayData = shouldVirtualize ? sortedData : paginatedData;
+    navigateToRow(displayData.length - 1);
+  }, [navigateToRow, shouldVirtualize, sortedData, paginatedData]);
+
+  useKeyboardNavigation({
+    onArrowUp: handleArrowUp,
+    onArrowDown: handleArrowDown,
+    onEnter: handleEnter,
+    onHome: handleHome,
+    onEnd: handleEnd,
+    enabled: !!onRowClick,
+  });
 
   const handleFilterChange = (key: string, value: string) => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
-      [key]: value
-    }))
-  }
+      [key]: value,
+    }));
+  };
 
   const clearFilters = () => {
-    setFilters({})
-    setSearchTerm('')
-  }
+    setFilters({});
+    setSearchTerm('');
+  };
 
   return (
     <div className={`bg-white rounded-lg shadow ${className}`}>
@@ -150,32 +216,36 @@ export function DataTable<T extends Record<string, any>>({
                     type="text"
                     placeholder="Search..."
                     value={searchTerm}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSearchTerm(e.target.value)}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setSearchTerm(e.target.value)
+                    }
                     className="pl-10"
                     aria-label="Search table data"
                   />
                 </div>
               </div>
             )}
-            
+
             {filterable && (
               <div className="flex gap-2">
                 {columns
-                  .filter(col => col.filterable)
-                  .map(column => (
+                  .filter((col) => col.filterable)
+                  .map((column) => (
                     <div key={String(column.key)} className="min-w-32">
                       <Select
                         value={filters[String(column.key)] || ''}
-                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleFilterChange(String(column.key), e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) =>
+                          handleFilterChange(String(column.key), e.target.value)
+                        }
                         className="text-sm"
                         options={[
                           { value: '', label: `All ${column.label}` },
-                          ...Array.from(new Set(data.map(row => row[column.key])))
+                          ...Array.from(new Set(data.map((row) => row[column.key])))
                             .filter(Boolean)
-                            .map(value => ({
+                            .map((value) => ({
                               value: String(value),
-                              label: String(value)
-                            }))
+                              label: String(value),
+                            })),
                         ]}
                       />
                     </div>
@@ -196,7 +266,7 @@ export function DataTable<T extends Record<string, any>>({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full divide-y divide-gray-200" role="table" aria-label="Data table">
           <thead className="bg-gray-50">
             <tr>
               {columns.map((column) => (
@@ -231,84 +301,120 @@ export function DataTable<T extends Record<string, any>>({
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {(!virtualized ? paginatedData : sortedData).length === 0 ? (
+            {(!shouldVirtualize ? paginatedData : sortedData).length === 0 ? (
               <tr>
                 <td colSpan={columns.length} className="px-6 py-12 text-center text-gray-500">
                   {emptyMessage}
                 </td>
               </tr>
-            ) : (
-              virtualized ? (
-                <tr>
-                  <td colSpan={columns.length} className="p-0">
-                    <div
-                      ref={v!.containerRef}
-                      onScroll={v!.handleScroll}
-                      style={{ height: virtualContainerHeight, overflow: 'auto', position: 'relative' }}
-                    >
-                      <div style={{ height: v!.totalHeight, position: 'relative' }}>
-                        {v!.visibleItems.map(({ index, top, height }) => {
-                          const row = sortedData[index]
-                          return (
-                            <div key={index} style={{ position: 'absolute', top, height, left: 0, right: 0 }}>
-                              <div
-                                className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer' : ''} transition-colors duration-150`}
-                                onClick={() => onRowClick?.(row)}
-                                tabIndex={onRowClick ? 0 : undefined}
-                                onKeyDown={(e) => {
-                                  if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
-                                    e.preventDefault()
-                                    onRowClick(row)
-                                  }
-                                }}
-                              >
-                                <div className="table-row">
-                                  {columns.map((column) => (
-                                    <div key={String(column.key)} className={`table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${column.className || ''}`}>
-                                      {column.render ? column.render(row[column.key], row) : String(row[column.key] || '-')}
-                                    </div>
-                                  ))}
-                                </div>
+            ) : shouldVirtualize ? (
+              <tr>
+                <td colSpan={columns.length} className="p-0">
+                  <div
+                    ref={v!.containerRef}
+                    onScroll={v!.handleScroll}
+                    style={{
+                      height: virtualContainerHeight,
+                      overflow: 'auto',
+                      position: 'relative',
+                    }}
+                  >
+                    <div style={{ height: v!.totalHeight, position: 'relative' }}>
+                      {v!.visibleItems.map(({ index, top, height }) => {
+                        const row = sortedData[index];
+                        return (
+                          <div
+                            key={index}
+                            style={{ position: 'absolute', top, height, left: 0, right: 0 }}
+                            data-row-index={index}
+                          >
+                            <div
+                              role="row"
+                              aria-rowindex={index + 2}
+                              className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500' : ''} transition-colors duration-150 ${
+                                index === selectedRowIndex
+                                  ? 'bg-blue-50 ring-2 ring-blue-500 ring-inset'
+                                  : ''
+                              }`}
+                              onClick={() => {
+                                setSelectedRowIndex(index);
+                                onRowClick?.(row);
+                              }}
+                              tabIndex={onRowClick ? 0 : undefined}
+                              onKeyDown={(e) => {
+                                if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                                  e.preventDefault();
+                                  onRowClick(row);
+                                }
+                              }}
+                              aria-selected={index === selectedRowIndex}
+                            >
+                              <div className="table-row">
+                                {columns.map((column) => (
+                                  <div
+                                    key={String(column.key)}
+                                    className={`table-cell px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${column.className || ''}`}
+                                  >
+                                    {column.render
+                                      ? column.render(row[column.key], row)
+                                      : String(row[column.key] || '-')}
+                                  </div>
+                                ))}
                               </div>
                             </div>
-                          )
-                        })}
-                      </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  </td>
-                </tr>
-              ) : (
-                paginatedData.map((row, index) => (
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              paginatedData.map((row, index) => {
+                const globalIndex = (currentPage - 1) * pageSize + index;
+                const isSelected = globalIndex === selectedRowIndex;
+                return (
                   <tr
                     key={index}
-                    className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer' : ''} transition-colors duration-150`}
-                    onClick={() => onRowClick?.(row)}
+                    data-row-index={globalIndex}
+                    role="row"
+                    aria-rowindex={globalIndex + 2}
+                    className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500' : ''} transition-colors duration-150 ${
+                      isSelected ? 'bg-blue-50 ring-2 ring-blue-500 ring-inset' : ''
+                    }`}
+                    onClick={() => {
+                      setSelectedRowIndex(globalIndex);
+                      onRowClick?.(row);
+                    }}
                     tabIndex={onRowClick ? 0 : undefined}
                     onKeyDown={(e) => {
                       if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
-                        e.preventDefault()
-                        onRowClick(row)
+                        e.preventDefault();
+                        onRowClick(row);
                       }
                     }}
+                    aria-selected={isSelected}
                   >
                     {columns.map((column) => (
                       <td
                         key={String(column.key)}
                         className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${column.className || ''}`}
                       >
-                        {column.render ? column.render(row[column.key], row) : String(row[column.key] || '-')}
+                        {column.render
+                          ? column.render(row[column.key], row)
+                          : String(row[column.key] || '-')}
                       </td>
                     ))}
                   </tr>
-                ))
-              )
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
 
       {/* Pagination */}
-      {pagination && !virtualized && totalPages > 1 && (
+      {pagination && !shouldVirtualize && totalPages > 1 && (
         <div className="px-6 py-3 border-t border-gray-200">
           <div className="flex items-center justify-between">
             <div className="text-sm text-gray-700">
@@ -319,7 +425,7 @@ export function DataTable<T extends Record<string, any>>({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
                 aria-label="Previous page"
               >
@@ -331,7 +437,7 @@ export function DataTable<T extends Record<string, any>>({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
                 aria-label="Next page"
               >
@@ -342,5 +448,9 @@ export function DataTable<T extends Record<string, any>>({
         </div>
       )}
     </div>
-  )
-}
+  );
+};
+
+export const DataTable = memo(DataTableComponent) as <T extends Record<string, unknown>>(
+  props: DataTableProps<T>
+) => JSX.Element;

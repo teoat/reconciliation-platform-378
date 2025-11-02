@@ -27,8 +27,12 @@ pub use logging::{LoggingMiddleware, LoggingConfig};
 pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
 pub use advanced_rate_limiter::{AdvancedRateLimiter, RateLimitConfig};
 pub use request_validation::{RequestValidator, ValidationConfig};
-pub use distributed_tracing::{DistributedTracing, TracingConfig};
+pub use distributed_tracing::{DistributedTracing, TracingConfig, DistributedTracingMiddleware};
 pub use performance::{PerformanceMiddleware, PerformanceMonitoringConfig};
 pub use validation::Validation;
 pub use cache::Cache;
 pub use request_tracing::{RequestIdMiddleware, RequestIdExt};
+
+// Correlation ID middleware
+pub mod correlation_id;
+pub use correlation_id::{CorrelationIdMiddleware, CorrelationIdExt};

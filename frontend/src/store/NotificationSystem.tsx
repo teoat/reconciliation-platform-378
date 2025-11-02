@@ -1,5 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { X, CheckCircle, AlertCircle, AlertTriangle, Info, Bell } from 'lucide-react'
+import { X } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { Info } from 'lucide-react'
+import { Bell } from 'lucide-react'
 import { useNotifications, useNotificationHelpers } from './hooks'
 import Button from '../components/ui/Button'
 

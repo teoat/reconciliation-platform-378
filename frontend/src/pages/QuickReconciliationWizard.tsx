@@ -1,13 +1,20 @@
 // Quick Reconciliation Wizard - Single-page streamlined workflow
+import { logger } from '@/services/logger'
 // Reduces workflow steps by 22% (9 steps → 7 steps)
 // Combines: Upload + Configure + Start in one flow
 
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { 
-  Upload, CheckCircle, Settings, Play, ArrowRight, ArrowLeft,
-  FileText, Target, TrendingUp, AlertCircle
-} from 'lucide-react'
+import { Upload } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { Settings } from 'lucide-react'
+import { Play } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import { FileText } from 'lucide-react'
+import { Target } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import { FileDropzone } from '../components/EnhancedDropzone'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -58,7 +65,7 @@ const QuickReconciliationWizard: React.FC = () => {
         }
       }
     } catch (error) {
-      console.error('Failed to load projects:', error)
+      logger.error('Failed to load projects:', error)
     } finally {
       setLoading(false)
     }
@@ -116,7 +123,7 @@ const QuickReconciliationWizard: React.FC = () => {
         }, 1500)
       }
     } catch (error) {
-      console.error('Reconciliation failed:', error)
+      logger.error('Reconciliation failed:', error)
       setJobStatus('idle')
     }
   }

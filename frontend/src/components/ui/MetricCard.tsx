@@ -1,5 +1,7 @@
 import React, { memo, useMemo } from 'react'
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
+import { TrendingDown } from 'lucide-react'
+import { Minus } from 'lucide-react'
 
 export interface MetricCardProps {
   title: string

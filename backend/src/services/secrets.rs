@@ -103,7 +103,9 @@ impl DefaultSecretsManager {
         #[cfg(not(debug_assertions))]
         {
             std::env::var("JWT_SECRET")
-                .expect("JWT_SECRET environment variable must be set in production")
+                .unwrap_or_else(|_| {
+                    panic!("JWT_SECRET environment variable must be set in production");
+                })
         }
         
         // In development, allow fallback
@@ -118,7 +120,9 @@ impl DefaultSecretsManager {
         #[cfg(not(debug_assertions))]
         {
             std::env::var("DATABASE_URL")
-                .expect("DATABASE_URL environment variable must be set in production")
+                .unwrap_or_else(|_| {
+                    panic!("DATABASE_URL environment variable must be set in production");
+                })
         }
         
         #[cfg(debug_assertions)]

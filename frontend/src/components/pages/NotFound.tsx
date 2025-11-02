@@ -1,6 +1,8 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Home, ArrowLeft, Search } from 'lucide-react'
+import { Home } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { Button } from '../ui/Button'
 
 const NotFound: React.FC = () => {

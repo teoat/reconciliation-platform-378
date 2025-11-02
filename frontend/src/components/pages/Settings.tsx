@@ -1,10 +1,12 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { apiClient } from '../../services/apiClient'
+import { updateSettings, getSettings } from '../../services/apiClient/settings'
 import { useAuth } from '../../hooks/useAuth'
 import { Button } from '../ui/Button'
 import { useToast } from '../../hooks/useToast'
-import { ArrowLeft, Save, Bell, Shield, Palette, Globe } from 'lucide-react'
+import { logger } from '../../services/logger'
+import { SkipLink, ARIALiveRegion } from '../ui/Accessibility'
+import { ArrowLeft, Save, Bell, Shield, Palette } from 'lucide-react'
 
 interface SettingsData {
   notifications: {
@@ -25,10 +27,12 @@ interface SettingsData {
 
 const Settings: React.FC = () => {
   const navigate = useNavigate()
-  const { user, refreshUser } = useAuth()
+  const { refreshUser } = useAuth()
   const toast = useToast()
   const [isSaving, setIsSaving] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<'notifications' | 'preferences' | 'security'>('preferences')
+  const [liveMessage, setLiveMessage] = useState('')
   const [settings, setSettings] = useState<SettingsData>({
     notifications: {
       email: true,
@@ -46,31 +50,163 @@ const Settings: React.FC = () => {
     },
   })
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     setIsSaving(true)
     try {
-      // TODO: Implement settings API endpoint
-      // await apiClient.updateSettings(settings)
-      toast.success('Settings saved successfully')
-      // Refresh user to get updated preferences
-      await refreshUser()
+      logger.logUserAction('save_settings', 'Settings', { activeTab })
+      
+      // Transform frontend settings format to API format
+      const apiSettings = {
+        notifications: {
+          email: settings.notifications.email,
+          push: settings.notifications.push,
+          reconciliation_complete: settings.notifications.reconciliationComplete,
+        },
+        preferences: {
+          theme: settings.preferences.theme,
+          language: settings.preferences.language,
+          timezone: settings.preferences.timezone,
+        },
+        security: {
+          two_factor_enabled: settings.security.twoFactorEnabled,
+          session_timeout: settings.security.sessionTimeout,
+        },
+      }
+
+      const response = await updateSettings(apiSettings)
+
+      if (response.success && response.data) {
+        // Update local state with response data
+        setSettings({
+          notifications: {
+            email: response.data.notifications.email,
+            push: response.data.notifications.push,
+            reconciliationComplete: response.data.notifications.reconciliation_complete,
+          },
+          preferences: {
+            theme: response.data.preferences.theme,
+            language: response.data.preferences.language,
+            timezone: response.data.preferences.timezone,
+          },
+          security: {
+            twoFactorEnabled: response.data.security.two_factor_enabled,
+            sessionTimeout: response.data.security.session_timeout,
+          },
+        })
+
+        toast.success('Settings saved successfully')
+        logger.info('Settings updated successfully', { settings: apiSettings })
+        setLiveMessage('Settings saved successfully')
+        
+        // Refresh user to get updated preferences
+        await refreshUser()
+      } else {
+        throw new Error(response.message || 'Failed to save settings')
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to save settings')
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save settings'
+      logger.error('Failed to save settings', { error: errorMessage, settings })
+      toast.error(errorMessage)
     } finally {
       setIsSaving(false)
     }
+  }, [settings, toast, refreshUser, activeTab])
+
+  // Memoize tab change handlers
+  const handleTabChange = useCallback((tab: 'notifications' | 'preferences' | 'security') => {
+    setActiveTab(tab)
+  }, [])
+
+  // Memoize settings update handlers
+  const updatePreferences = useCallback((key: keyof SettingsData['preferences'], value: any) => {
+    setSettings(prev => ({
+      ...prev,
+      preferences: { ...prev.preferences, [key]: value }
+    }))
+  }, [])
+
+  const updateNotifications = useCallback((key: keyof SettingsData['notifications'], value: any) => {
+    setSettings(prev => ({
+      ...prev,
+      notifications: { ...prev.notifications, [key]: value }
+    }))
+  }, [])
+
+  const updateSecurity = useCallback((key: keyof SettingsData['security'], value: any) => {
+    setSettings(prev => ({
+      ...prev,
+      security: { ...prev.security, [key]: value }
+    }))
+  }, [])
+
+  // Memoize tab classes
+  const tabClasses = useMemo(() => ({
+    active: 'border-blue-500 text-blue-600',
+    inactive: 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+  }), [])
+
+  // Load settings on mount
+  useEffect(() => {
+    const loadSettings = async () => {
+      setIsLoading(true)
+      try {
+        const response = await getSettings()
+        if (response.success && response.data) {
+          setSettings({
+            notifications: {
+              email: response.data.notifications.email,
+              push: response.data.notifications.push,
+              reconciliationComplete: response.data.notifications.reconciliation_complete,
+            },
+            preferences: {
+              theme: response.data.preferences.theme,
+              language: response.data.preferences.language,
+              timezone: response.data.preferences.timezone,
+            },
+            security: {
+              twoFactorEnabled: response.data.security.two_factor_enabled,
+              sessionTimeout: response.data.security.session_timeout,
+            },
+          })
+          logger.info('Settings loaded successfully')
+        } else {
+          logger.warning('Failed to load settings, using defaults', { response })
+        }
+      } catch (error) {
+        logger.error('Error loading settings', { error })
+        // Use default settings on error
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadSettings()
+  }, [])
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="max-w-4xl mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" aria-label="Loading settings" />
+        </div>
+      </div>
+    )
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className="max-w-4xl mx-auto p-6" id="main-content">
+      <SkipLink />
+      <ARIALiveRegion message={liveMessage} priority="polite" />
       <div className="mb-6">
         <button
           onClick={() => navigate('/')}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          className="flex items-center text-gray-600 hover:text-gray-900 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
           aria-label="Back to dashboard"
+          type="button"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
+          <ArrowLeft className="w-4 h-4 mr-2" aria-hidden="true" />
+          <span>Back to Dashboard</span>
         </button>
         <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
         <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
@@ -81,50 +217,71 @@ const Settings: React.FC = () => {
         <div className="border-b border-gray-200">
           <nav className="flex -mb-px" aria-label="Tabs" role="tablist">
             <button
-              onClick={() => setActiveTab('preferences')}
+              onClick={() => handleTabChange('preferences')}
               className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'preferences'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? tabClasses.active
+                  : tabClasses.inactive
               }`}
               aria-label="Preferences"
               role="tab"
-              aria-selected={activeTab === 'preferences'}
+                    aria-selected={activeTab === 'preferences' ? 'true' : 'false'}
+              type="button"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleTabChange('preferences')
+                }
+              }}
             >
               <div className="flex items-center justify-center space-x-2">
-                <Palette className="w-4 h-4" />
+                <Palette className="w-4 h-4" aria-hidden="true" />
                 <span>Preferences</span>
               </div>
             </button>
             <button
-              onClick={() => setActiveTab('notifications')}
+              onClick={() => handleTabChange('notifications')}
               className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'notifications'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? tabClasses.active
+                  : tabClasses.inactive
               }`}
               aria-label="Notifications"
               role="tab"
-              aria-selected={activeTab === 'notifications'}
+                    aria-selected={activeTab === 'notifications' ? 'true' : 'false'}
+              type="button"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleTabChange('notifications')
+                }
+              }}
             >
               <div className="flex items-center justify-center space-x-2">
-                <Bell className="w-4 h-4" />
+                <Bell className="w-4 h-4" aria-hidden="true" />
                 <span>Notifications</span>
               </div>
             </button>
             <button
-              onClick={() => setActiveTab('security')}
+              onClick={() => handleTabChange('security')}
               className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'security'
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? tabClasses.active
+                  : tabClasses.inactive
               }`}
               aria-label="Security"
               role="tab"
-              aria-selected={activeTab === 'security'}
+                    aria-selected={activeTab === 'security' ? 'true' : 'false'}
+              type="button"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleTabChange('security')
+                }
+              }}
             >
               <div className="flex items-center justify-center space-x-2">
-                <Shield className="w-4 h-4" />
+                <Shield className="w-4 h-4" aria-hidden="true" />
                 <span>Security</span>
               </div>
             </button>
@@ -142,15 +299,7 @@ const Settings: React.FC = () => {
                 <select
                   id="theme"
                   value={settings.preferences.theme}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      preferences: {
-                        ...settings.preferences,
-                        theme: e.target.value as 'light' | 'dark' | 'auto',
-                      },
-                    })
-                  }
+                  onChange={(e) => updatePreferences('theme', e.target.value as 'light' | 'dark' | 'auto')}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   aria-label="Theme selection"
                 >
@@ -167,12 +316,7 @@ const Settings: React.FC = () => {
                 <select
                   id="language"
                   value={settings.preferences.language}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      preferences: { ...settings.preferences, language: e.target.value },
-                    })
-                  }
+                  onChange={(e) => updatePreferences('language', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   aria-label="Language selection"
                 >
@@ -190,12 +334,7 @@ const Settings: React.FC = () => {
                 <select
                   id="timezone"
                   value={settings.preferences.timezone}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      preferences: { ...settings.preferences, timezone: e.target.value },
-                    })
-                  }
+                  onChange={(e) => updatePreferences('timezone', e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   aria-label="Timezone selection"
                 >
@@ -224,12 +363,7 @@ const Settings: React.FC = () => {
                   type="checkbox"
                   id="email-notifications"
                   checked={settings.notifications.email}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      notifications: { ...settings.notifications, email: e.target.checked },
-                    })
-                  }
+                  onChange={(e) => updateNotifications('email', e.target.checked)}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   aria-label="Email notifications"
                 />
@@ -246,12 +380,7 @@ const Settings: React.FC = () => {
                   type="checkbox"
                   id="push-notifications"
                   checked={settings.notifications.push}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      notifications: { ...settings.notifications, push: e.target.checked },
-                    })
-                  }
+                  onChange={(e) => updateNotifications('push', e.target.checked)}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   aria-label="Push notifications"
                 />
@@ -268,15 +397,7 @@ const Settings: React.FC = () => {
                   type="checkbox"
                   id="reconciliation-complete"
                   checked={settings.notifications.reconciliationComplete}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      notifications: {
-                        ...settings.notifications,
-                        reconciliationComplete: e.target.checked,
-                      },
-                    })
-                  }
+                  onChange={(e) => updateNotifications('reconciliationComplete', e.target.checked)}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   aria-label="Reconciliation complete notifications"
                 />
@@ -297,12 +418,7 @@ const Settings: React.FC = () => {
                   type="checkbox"
                   id="two-factor"
                   checked={settings.security.twoFactorEnabled}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      security: { ...settings.security, twoFactorEnabled: e.target.checked },
-                    })
-                  }
+                  onChange={(e) => updateSecurity('twoFactorEnabled', e.target.checked)}
                   className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                   aria-label="Two-factor authentication"
                 />
@@ -318,15 +434,7 @@ const Settings: React.FC = () => {
                   min="15"
                   max="1440"
                   value={settings.security.sessionTimeout / 60}
-                  onChange={(e) =>
-                    setSettings({
-                      ...settings,
-                      security: {
-                        ...settings.security,
-                        sessionTimeout: parseInt(e.target.value) * 60,
-                      },
-                    })
-                  }
+                  onChange={(e) => updateSecurity('sessionTimeout', parseInt(e.target.value) * 60)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   aria-label="Session timeout in minutes"
                 />

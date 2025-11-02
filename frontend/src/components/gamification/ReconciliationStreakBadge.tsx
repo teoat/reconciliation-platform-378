@@ -2,7 +2,9 @@
 // Visual representation of user's reconciliation streak
 
 import React from 'react'
-import { Flame, Shield, Trophy } from 'lucide-react'
+import { Flame } from 'lucide-react'
+import { Shield } from 'lucide-react'
+import { Trophy } from 'lucide-react'
 import Card from '../ui/Card'
 import { useReconciliationStreak } from '../../hooks/useReconciliationStreak'
 

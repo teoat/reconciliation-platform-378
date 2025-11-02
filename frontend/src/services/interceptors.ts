@@ -1,8 +1,10 @@
 import { RequestInterceptor, ResponseInterceptor, ApiError } from './enhancedApiClient'
+import { logger } from '@/services/logger'
+import { ApiRequestConfig } from '../types/api';
 
 // Request interceptor for adding common headers and logging
 export const createRequestInterceptor = (): RequestInterceptor => ({
-  onRequest: async (config: any) => {
+  onRequest: async (config: ApiRequestConfig): Promise<ApiRequestConfig> => {
     // Add request ID for tracking
     const requestId = Math.random().toString(36).substr(2, 9);
     config.headers = {
@@ -17,7 +19,7 @@ export const createRequestInterceptor = (): RequestInterceptor => ({
 
     // Log request in development
     if (process.env.NODE_ENV === 'development') {
-      console.log(`[API Request] ${config.method || 'GET'} ${config.url || ''}`, {
+      logger.info(`[API Request] ${config.method || 'GET'} ${config.url || ''}`, {
         requestId,
         headers: config.headers,
         body: config.body
@@ -27,15 +29,15 @@ export const createRequestInterceptor = (): RequestInterceptor => ({
     return config;
   },
 
-  onRequestError: async (error: any) => {
-    console.error('[API Request Error]', error);
+  onRequestError: async (error: Error | unknown): Promise<never> => {
+    logger.error('[API Request Error]', error);
     throw error;
   }
 });
 
 // Response interceptor for handling common responses
 export const createResponseInterceptor = (): ResponseInterceptor => ({
-  onResponse: async (response: any) => {
+  onResponse: async (response: Response & { url?: string; status?: number; headers?: Headers }): Promise<Response> => {
     // Log response in development
     if (process.env.NODE_ENV === 'development') {
       const requestId = response.headers.get('X-Request-ID');
@@ -44,7 +46,7 @@ export const createResponseInterceptor = (): ResponseInterceptor => ({
         ? Date.now() - parseInt(requestTimestamp)
         : 0;
 
-      console.log(`[API Response] ${response.status} ${response.url}`, {
+      logger.info(`[API Response] ${response.status} ${response.url}`, {
         requestId,
         duration: `${duration}ms`,
         status: response.status,
@@ -55,10 +57,10 @@ export const createResponseInterceptor = (): ResponseInterceptor => ({
     return response;
   },
 
-  onResponseError: async (error: ApiError) => {
+  onResponseError: async (error: ApiError): Promise<never> => {
     // Log response error in development
     if (process.env.NODE_ENV === 'development') {
-      console.error('[API Response Error]', {
+      logger.error('[API Response Error]', {
         message: error.message,
         statusCode: error.statusCode,
         code: error.code,
@@ -72,7 +74,7 @@ export const createResponseInterceptor = (): ResponseInterceptor => ({
 
 // Authentication interceptor
 export const createAuthInterceptor = (): RequestInterceptor => ({
-  onRequest: async (config: any) => {
+  onRequest: async (config: ApiRequestConfig): Promise<ApiRequestConfig> => {
     // Skip auth for certain endpoints
     const skipAuthEndpoints = ['/auth/login', '/auth/register', '/health'];
     const shouldSkipAuth = skipAuthEndpoints.some(endpoint => 
@@ -95,13 +97,13 @@ export const createAuthInterceptor = (): RequestInterceptor => ({
 
 // Retry interceptor for specific error types
 export const createRetryInterceptor = (): ResponseInterceptor => ({
-  onResponseError: async (error: ApiError) => {
+  onResponseError: async (error: ApiError): Promise<never> => {
     // Only retry on specific error codes
     const retryableCodes = [408, 429, 500, 502, 503, 504];
     
     if (error.statusCode && retryableCodes.includes(error.statusCode)) {
       // Add retry flag to error
-      (error as any).shouldRetry = true;
+      (error as ApiError & { shouldRetry?: boolean }).shouldRetry = true;
     }
 
     throw error;
@@ -110,7 +112,7 @@ export const createRetryInterceptor = (): ResponseInterceptor => ({
 
 // Rate limiting interceptor
 export const createRateLimitInterceptor = (): ResponseInterceptor => ({
-  onResponseError: async (error: ApiError) => {
+  onResponseError: async (error: ApiError): Promise<never> => {
     if (error.statusCode === 429) {
       const retryAfter = error.details?.retryAfter || 60;
       
@@ -127,7 +129,7 @@ export const createRateLimitInterceptor = (): ResponseInterceptor => ({
 
 // Offline detection interceptor
 export const createOfflineInterceptor = (): RequestInterceptor => ({
-  onRequest: async (config: any) => {
+  onRequest: async (config: ApiRequestConfig): Promise<ApiRequestConfig> => {
     if (!navigator.onLine) {
       const offlineError = new Error('You are currently offline') as ApiError;
       offlineError.statusCode = 0;
@@ -148,26 +150,24 @@ export const createOfflineInterceptor = (): RequestInterceptor => ({
 
 // Request timing interceptor
 export const createTimingInterceptor = (): RequestInterceptor => ({
-  onRequest: async (config: any) => {
+  onRequest: async (config: ApiRequestConfig): Promise<ApiRequestConfig> => {
     // Add performance timing
-    const startTime = performance.now();
-    (config as any).startTime = startTime;
+    config.startTime = performance.now();
 
     return config;
   }
 });
 
 export const createTimingResponseInterceptor = (): ResponseInterceptor => ({
-  onResponse: async (response: any) => {
+  onResponse: async (response: Response & { url?: string; status?: number; headers?: Headers; config?: ApiRequestConfig }) => {
     // Calculate request duration
-    const requestId = response.headers.get('X-Request-ID');
-    if (requestId) {
+    if (response.config?.startTime) {
       const endTime = performance.now();
-      const duration = endTime - (response as any).startTime;
+      const duration = endTime - response.config.startTime;
       
       // Log slow requests
       if (duration > 5000) { // 5 seconds
-        console.warn(`[Slow Request] ${response.url} took ${duration.toFixed(2)}ms`);
+        logger.warning(`[Slow Request] ${response.url} took ${duration.toFixed(2)}ms`, { duration, url: response.url });
       }
     }
 
@@ -177,7 +177,7 @@ export const createTimingResponseInterceptor = (): ResponseInterceptor => ({
 
 // Error reporting interceptor
 export const createErrorReportingInterceptor = (): ResponseInterceptor => ({
-  onResponseError: async (error: ApiError) => {
+  onResponseError: async (error: ApiError): Promise<never> => {
     // Report critical errors to monitoring service
     if (error.statusCode && error.statusCode >= 500) {
       const event = new CustomEvent('error-report', {

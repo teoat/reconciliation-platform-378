@@ -1,4 +1,5 @@
 // ============================================================================
+import { logger } from '@/services/logger'
 // FONT OPTIMIZATION UTILITIES - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
@@ -218,7 +219,7 @@ export const useFontOptimization = (
           setState(prev => ({ ...prev, fallback: true, error: false }))
         }
       } catch (error) {
-        console.warn(`Failed to load font ${family}:`, error)
+        logger.warn(`Failed to load font ${family}:`, error)
         setState(prev => ({ ...prev, error: true, fallback: true }))
       }
     }

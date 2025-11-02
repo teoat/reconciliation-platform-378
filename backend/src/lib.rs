@@ -7,6 +7,7 @@
 pub mod config;
 pub mod monitoring;
 pub mod database;
+pub mod database_migrations;
 pub mod models;
 pub mod handlers;
 pub mod services {
@@ -25,14 +26,24 @@ pub mod services {
     pub mod email;
     pub mod error_recovery;
     pub mod error_translation;
+    pub mod error_logging;
+    pub mod resilience;
     pub mod file;
     pub mod internationalization;
+    pub mod internationalization_data;
+    pub mod internationalization_models;
     pub mod mobile_optimization;
     pub mod monitoring;
     pub mod offline_persistence;
     pub mod optimistic_ui;
     pub mod performance;
     pub mod project;
+    pub mod project_aggregations;
+    pub mod project_analytics;
+    pub mod project_crud;
+    pub mod project_models;
+    pub mod project_permissions;
+    pub mod project_queries;
     pub mod query_optimizer;
     pub mod realtime;
     pub mod reconciliation;

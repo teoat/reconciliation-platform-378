@@ -1,4 +1,5 @@
 // ============================================================================
+import { logger } from '@/services/logger'
 // UNIFIED FETCH INTERCEPTOR - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
@@ -45,7 +46,7 @@ export class UnifiedFetchInterceptor {
    */
   initialize(): void {
     if (this.initialized) {
-      console.warn('Fetch interceptor already initialized')
+      logger.warn('Fetch interceptor already initialized')
       return
     }
 
@@ -79,7 +80,7 @@ export class UnifiedFetchInterceptor {
     }
 
     this.initialized = true
-    console.log('✅ Unified fetch interceptor initialized')
+    logger.log('✅ Unified fetch interceptor initialized')
   }
 
   /**
@@ -123,7 +124,7 @@ export class UnifiedFetchInterceptor {
 
     // Error tracking
     if (this.config.enableErrorTracking && isError) {
-      console.error('API Error:', metrics, error)
+      logger.error('API Error:', metrics, error)
       
       if (typeof window !== 'undefined') {
         const win = window as unknown as Record<string, unknown>
@@ -141,7 +142,7 @@ export class UnifiedFetchInterceptor {
 
     window.fetch = this.originalFetch
     this.initialized = false
-    console.log('🔄 Original fetch restored')
+    logger.log('🔄 Original fetch restored')
   }
 
   /**

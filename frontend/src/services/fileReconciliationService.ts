@@ -165,11 +165,11 @@ class FileReconciliationService {
     timestamp: string
     version: string
   }>> {
-    return apiClient.makeRequest<{
+    return apiClient.healthCheck() as Promise<ApiResponse<{
       status: string
       timestamp: string
       version: string
-    }>('/health', { skipAuth: true })
+    }>>;
   }
 }
 

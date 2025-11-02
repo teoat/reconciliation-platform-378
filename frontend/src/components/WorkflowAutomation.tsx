@@ -1,21 +1,19 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import {
-  Workflow,
-  CheckCircle,
-  XCircle,
-  User,
-  Settings,
-  Edit,
-  Eye,
-  Bell,
-  Zap,
-  Shield,
-  Activity,
-  X,
-  Plus,
-} from 'lucide-react'
+import { Workflow } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { XCircle } from 'lucide-react'
+import { User } from 'lucide-react'
+import { Settings } from 'lucide-react'
+import { Edit } from 'lucide-react'
+import { Eye } from 'lucide-react'
+import { Bell } from 'lucide-react'
+import { Zap } from 'lucide-react'
+import { Shield } from 'lucide-react'
+import { Activity } from 'lucide-react'
+import { X } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { useData } from './DataProvider'
 import { Project } from '../types'
 
@@ -31,7 +29,7 @@ interface WorkflowCondition {
 interface WorkflowAction {
   id: string
   type: 'notify' | 'assign' | 'escalate' | 'create_task' | 'update_field'
-  parameters: Record<string, any>
+  parameters: Record<string, unknown>
   order: number
 }
 
@@ -82,7 +80,7 @@ interface WorkflowInstanceData {
   startedAt?: string | Date
   assignedTo?: string
   priority: 'low' | 'medium' | 'high' | 'critical'
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 }
 
 interface ApprovalRequestData {
@@ -96,7 +94,7 @@ interface ApprovalRequestData {
   status: 'pending' | 'approved' | 'rejected' | 'cancelled'
   priority: 'low' | 'medium' | 'high' | 'critical'
   dueDate?: Date
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 }
 
 type TabId = 'workflows' | 'instances' | 'rules' | 'approvals'
@@ -294,7 +292,7 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
         executionCount: 890,
         successRate: 95.2
       }
-    ]
+    ])
 
     // Initialize sample workflow instances
     const sampleInstances: WorkflowInstanceData[] = [

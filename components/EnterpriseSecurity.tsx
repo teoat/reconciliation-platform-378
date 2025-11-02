@@ -1,207 +1,209 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { 
-  Shield, 
-  Lock, 
-  Key, 
-  Eye, 
-  EyeOff, 
-  User, 
-  Users, 
-  Settings, 
-  AlertTriangle, 
-  CheckCircle, 
-  XCircle, 
-  Info, 
-  Activity, 
-  BarChart3, 
-  PieChart, 
-  LineChart, 
-  Target, 
-  Zap, 
-  TrendingUp, 
-  TrendingDown, 
-  Minus, 
-  Plus, 
-  Equal, 
-  Divide, 
-  Percent, 
-  Calculator, 
-  File, 
-  FileCheck, 
-  FileX, 
-  FilePlus, 
-  FileMinus, 
-  FileEdit, 
-  FileSearch, 
-  Folder, 
-  FolderOpen, 
-  FolderPlus, 
-  FolderMinus, 
-  FolderCheck, 
-  FolderX, 
-  Database, 
-  Server, 
-  Cloud, 
-  Wifi, 
-  Unlock, 
-  Hash, 
-  Type, 
-  Layers, 
-  ArrowRight, 
-  ArrowLeft, 
-  ArrowUp, 
-  ArrowDown, 
-  ChevronRight, 
-  ChevronLeft, 
-  ChevronUp, 
-  ChevronDown, 
-  MoreHorizontal, 
-  MoreVertical, 
-  Star, 
-  Award, 
-  Trophy, 
-  Medal, 
-  Flag, 
-  Tag, 
-  Bookmark, 
-  Share2, 
-  Copy, 
-  ExternalLink, 
-  Mail, 
-  Phone, 
-  Crown, 
-  Building, 
-  Home, 
-  Building2, 
-  Factory, 
-  Store, 
-  CreditCard, 
-  DollarSign, 
-  Euro, 
-  PoundSterling, 
-  Bitcoin, 
-  Bell, 
-  MessageSquare, 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Settings as SettingsIcon, 
-  X, 
-  RefreshCw, 
-  Download, 
-  Upload, 
-  Edit, 
-  Trash2, 
-  Plus as PlusIcon
-} from 'lucide-react'
-import { useData } from '../components/DataProvider'
+import { useState, useEffect } from 'react';
+import {
+  Shield,
+  Lock,
+  Key,
+  Eye,
+  EyeOff,
+  User,
+  Users,
+  Settings,
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Info,
+  Activity,
+  BarChart3,
+  PieChart,
+  LineChart,
+  Target,
+  Zap,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Plus,
+  Equal,
+  Divide,
+  Percent,
+  Calculator,
+  File,
+  FileCheck,
+  FileX,
+  FilePlus,
+  FileMinus,
+  FileEdit,
+  FileSearch,
+  Folder,
+  FolderOpen,
+  FolderPlus,
+  FolderMinus,
+  FolderCheck,
+  FolderX,
+  Database,
+  Server,
+  Cloud,
+  Wifi,
+  Unlock,
+  Hash,
+  Type,
+  Layers,
+  ArrowRight,
+  ArrowLeft,
+  ArrowUp,
+  ArrowDown,
+  ChevronRight,
+  ChevronLeft,
+  ChevronUp,
+  ChevronDown,
+  MoreHorizontal,
+  MoreVertical,
+  Star,
+  Award,
+  Trophy,
+  Medal,
+  Flag,
+  Tag,
+  Bookmark,
+  Share2,
+  Copy,
+  ExternalLink,
+  Mail,
+  Phone,
+  Crown,
+  Building,
+  Home,
+  Building2,
+  Factory,
+  Store,
+  CreditCard,
+  DollarSign,
+  Euro,
+  PoundSterling,
+  Bitcoin,
+  Bell,
+  MessageSquare,
+  Calendar,
+  Clock,
+  MapPin,
+  Settings as SettingsIcon,
+  X,
+  RefreshCw,
+  Download,
+  Upload,
+  Edit,
+  Trash2,
+  Plus as PlusIcon,
+} from 'lucide-react';
+import { useData } from '../components/DataProvider';
 
 // Enterprise Security Interfaces
 interface SecurityPolicy {
-  id: string
-  name: string
-  description: string
-  category: 'access_control' | 'data_protection' | 'audit' | 'compliance' | 'encryption'
-  rules: SecurityRule[]
-  status: 'active' | 'inactive' | 'draft'
-  priority: 'low' | 'medium' | 'high' | 'critical'
-  createdAt: string
-  updatedAt: string
-  lastReviewed: string
+  id: string;
+  name: string;
+  description: string;
+  category: 'access_control' | 'data_protection' | 'audit' | 'compliance' | 'encryption';
+  rules: SecurityRule[];
+  status: 'active' | 'inactive' | 'draft';
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  createdAt: string;
+  updatedAt: string;
+  lastReviewed: string;
   compliance: {
-    gdpr: boolean
-    sox: boolean
-    pci: boolean
-    hipaa: boolean
-  }
+    gdpr: boolean;
+    sox: boolean;
+    pci: boolean;
+    hipaa: boolean;
+  };
 }
 
 interface SecurityRule {
-  id: string
-  name: string
-  description: string
-  condition: string
-  action: 'allow' | 'deny' | 'log' | 'alert'
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  enabled: boolean
+  id: string;
+  name: string;
+  description: string;
+  condition: string;
+  action: 'allow' | 'deny' | 'log' | 'alert';
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  enabled: boolean;
 }
 
 interface AccessControl {
-  id: string
-  userId: string
-  userName: string
-  role: string
-  permissions: string[]
-  resources: string[]
-  expiresAt?: string
-  lastAccess: string
-  ipAddress: string
-  userAgent: string
-  status: 'active' | 'expired' | 'revoked'
+  id: string;
+  userId: string;
+  userName: string;
+  role: string;
+  permissions: string[];
+  resources: string[];
+  expiresAt?: string;
+  lastAccess: string;
+  ipAddress: string;
+  userAgent: string;
+  status: 'active' | 'expired' | 'revoked';
 }
 
 interface AuditLog {
-  id: string
-  userId: string
-  userName: string
-  action: string
-  resource: string
-  timestamp: string
-  ipAddress: string
-  userAgent: string
-  result: 'success' | 'failure' | 'blocked'
-  details: Record<string, any>
-  riskLevel: 'low' | 'medium' | 'high' | 'critical'
+  id: string;
+  userId: string;
+  userName: string;
+  action: string;
+  resource: string;
+  timestamp: string;
+  ipAddress: string;
+  userAgent: string;
+  result: 'success' | 'failure' | 'blocked';
+  details: Record<string, unknown>;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
 }
 
 interface ComplianceReport {
-  id: string
-  name: string
-  framework: 'gdpr' | 'sox' | 'pci' | 'hipaa' | 'iso27001'
-  status: 'compliant' | 'non_compliant' | 'partial' | 'pending'
-  score: number
-  lastAssessment: string
-  nextAssessment: string
-  findings: ComplianceFinding[]
-  recommendations: string[]
+  id: string;
+  name: string;
+  framework: 'gdpr' | 'sox' | 'pci' | 'hipaa' | 'iso27001';
+  status: 'compliant' | 'non_compliant' | 'partial' | 'pending';
+  score: number;
+  lastAssessment: string;
+  nextAssessment: string;
+  findings: ComplianceFinding[];
+  recommendations: string[];
 }
 
 interface ComplianceFinding {
-  id: string
-  title: string
-  description: string
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  status: 'open' | 'in_progress' | 'resolved' | 'accepted'
-  dueDate: string
-  assignedTo: string
-  evidence: string[]
+  id: string;
+  title: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  status: 'open' | 'in_progress' | 'resolved' | 'accepted';
+  dueDate: string;
+  assignedTo: string;
+  evidence: string[];
 }
 
 interface EnterpriseSecurityProps {
-  project: any
-  onProgressUpdate?: (step: string) => void
+  project: any;
+  onProgressUpdate?: (step: string) => void;
 }
 
 const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityProps) => {
-  const { currentProject } = useData()
-  const [securityPolicies, setSecurityPolicies] = useState<SecurityPolicy[]>([])
-  const [accessControls, setAccessControls] = useState<AccessControl[]>([])
-  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
-  const [complianceReports, setComplianceReports] = useState<ComplianceReport[]>([])
-  const [selectedPolicy, setSelectedPolicy] = useState<SecurityPolicy | null>(null)
-  const [selectedReport, setSelectedReport] = useState<ComplianceReport | null>(null)
-  const [showPolicyModal, setShowPolicyModal] = useState(false)
-  const [showReportModal, setShowReportModal] = useState(false)
-  const [activeTab, setActiveTab] = useState<'policies' | 'access' | 'audit' | 'compliance'>('policies')
-  const [isCreating, setIsCreating] = useState(false)
+  const { currentProject } = useData();
+  const [securityPolicies, setSecurityPolicies] = useState<SecurityPolicy[]>([]);
+  const [accessControls, setAccessControls] = useState<AccessControl[]>([]);
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [complianceReports, setComplianceReports] = useState<ComplianceReport[]>([]);
+  const [selectedPolicy, setSelectedPolicy] = useState<SecurityPolicy | null>(null);
+  const [selectedReport, setSelectedReport] = useState<ComplianceReport | null>(null);
+  const [showPolicyModal, setShowPolicyModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [activeTab, setActiveTab] = useState<'policies' | 'access' | 'audit' | 'compliance'>(
+    'policies'
+  );
+  const [isCreating, setIsCreating] = useState(false);
 
   // Initialize enterprise security
   useEffect(() => {
-    initializeEnterpriseSecurity()
-    onProgressUpdate?.('enterprise_security_started')
-   }, [currentProject, onProgressUpdate])
+    initializeEnterpriseSecurity();
+    onProgressUpdate?.('enterprise_security_started');
+  }, [currentProject, onProgressUpdate]);
 
   const initializeEnterpriseSecurity = () => {
     // Initialize sample security policies
@@ -219,7 +221,7 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
             condition: 'user.role in ["admin", "manager", "analyst"]',
             action: 'allow',
             severity: 'high',
-            enabled: true
+            enabled: true,
           },
           {
             id: 'rule-002',
@@ -228,8 +230,8 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
             condition: 'current_time.hour >= 8 AND current_time.hour <= 18',
             action: 'deny',
             severity: 'medium',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         status: 'active',
         priority: 'high',
@@ -240,8 +242,8 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
           gdpr: true,
           sox: true,
           pci: false,
-          hipaa: false
-        }
+          hipaa: false,
+        },
       },
       {
         id: 'policy-002',
@@ -256,7 +258,7 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
             condition: 'data.sensitivity == "high"',
             action: 'allow',
             severity: 'critical',
-            enabled: true
+            enabled: true,
           },
           {
             id: 'rule-004',
@@ -265,8 +267,8 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
             condition: 'protocol != "https"',
             action: 'deny',
             severity: 'critical',
-            enabled: true
-          }
+            enabled: true,
+          },
         ],
         status: 'active',
         priority: 'critical',
@@ -277,10 +279,10 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
           gdpr: true,
           sox: true,
           pci: true,
-          hipaa: true
-        }
-      }
-    ]
+          hipaa: true,
+        },
+      },
+    ];
 
     // Initialize sample access controls
     const sampleAccessControls: AccessControl[] = [
@@ -294,7 +296,7 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
         lastAccess: new Date(Date.now() - 300000).toISOString(),
         ipAddress: '192.168.1.100',
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        status: 'active'
+        status: 'active',
       },
       {
         id: 'access-002',
@@ -307,9 +309,9 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
         lastAccess: new Date(Date.now() - 600000).toISOString(),
         ipAddress: '192.168.1.101',
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        status: 'active'
-      }
-    ]
+        status: 'active',
+      },
+    ];
 
     // Initialize sample audit logs
     const sampleAuditLogs: AuditLog[] = [
@@ -324,7 +326,7 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         result: 'success',
         details: { method: 'password', mfa: true },
-        riskLevel: 'low'
+        riskLevel: 'low',
       },
       {
         id: 'audit-002',
@@ -337,7 +339,7 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
         userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
         result: 'success',
         details: { recordId: 'REC-2023-001', amount: 15000000 },
-        riskLevel: 'low'
+        riskLevel: 'low',
       },
       {
         id: 'audit-003',
@@ -350,9 +352,9 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
         userAgent: 'curl/7.68.0',
         result: 'blocked',
         details: { reason: 'insufficient_permissions' },
-        riskLevel: 'high'
-      }
-    ]
+        riskLevel: 'high',
+      },
+    ];
 
     // Initialize sample compliance reports
     const sampleComplianceReports: ComplianceReport[] = [
@@ -373,14 +375,14 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
             status: 'resolved',
             dueDate: '2024-01-20T00:00:00Z',
             assignedTo: 'legal-team',
-            evidence: ['data-processing-agreements.pdf', 'consent-records.csv']
-          }
+            evidence: ['data-processing-agreements.pdf', 'consent-records.csv'],
+          },
         ],
         recommendations: [
           'Implement automated data retention policies',
           'Enhance user consent management',
-          'Regular privacy impact assessments'
-        ]
+          'Regular privacy impact assessments',
+        ],
       },
       {
         id: 'report-002',
@@ -399,22 +401,22 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
             status: 'in_progress',
             dueDate: '2024-02-15T00:00:00Z',
             assignedTo: 'compliance-team',
-            evidence: ['control-documentation.pdf']
-          }
+            evidence: ['control-documentation.pdf'],
+          },
         ],
         recommendations: [
           'Complete internal controls documentation',
           'Implement automated control testing',
-          'Enhance audit trail completeness'
-        ]
-      }
-    ]
+          'Enhance audit trail completeness',
+        ],
+      },
+    ];
 
-    setSecurityPolicies(samplePolicies)
-    setAccessControls(sampleAccessControls)
-    setAuditLogs(sampleAuditLogs)
-    setComplianceReports(sampleComplianceReports)
-  }
+    setSecurityPolicies(samplePolicies);
+    setAccessControls(sampleAccessControls);
+    setAuditLogs(sampleAuditLogs);
+    setComplianceReports(sampleComplianceReports);
+  };
 
   // Helper functions
   const getStatusColor = (status: string) => {
@@ -422,85 +424,85 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
       case 'active':
       case 'compliant':
       case 'success':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-100 text-green-800';
       case 'inactive':
       case 'non_compliant':
       case 'failure':
       case 'blocked':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-100 text-red-800';
       case 'partial':
       case 'in_progress':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-yellow-100 text-yellow-800';
       case 'draft':
       case 'pending':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800';
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800';
     }
-  }
+  };
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical':
-        return 'bg-red-100 text-red-800'
+        return 'bg-red-100 text-red-800';
       case 'high':
-        return 'bg-orange-100 text-orange-800'
+        return 'bg-orange-100 text-orange-800';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800'
+        return 'bg-yellow-100 text-yellow-800';
       case 'low':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-100 text-green-800';
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800';
     }
-  }
+  };
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
       case 'access_control':
-        return <User className="w-4 h-4" />
+        return <User className="w-4 h-4" />;
       case 'data_protection':
-        return <Shield className="w-4 h-4" />
+        return <Shield className="w-4 h-4" />;
       case 'audit':
-        return <Activity className="w-4 h-4" />
+        return <Activity className="w-4 h-4" />;
       case 'compliance':
-        return <CheckCircle className="w-4 h-4" />
+        return <CheckCircle className="w-4 h-4" />;
       case 'encryption':
-        return <Lock className="w-4 h-4" />
+        return <Lock className="w-4 h-4" />;
       default:
-        return <Shield className="w-4 h-4" />
+        return <Shield className="w-4 h-4" />;
     }
-  }
+  };
 
   const getFrameworkColor = (framework: string) => {
     switch (framework) {
       case 'gdpr':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-blue-100 text-blue-800';
       case 'sox':
-        return 'bg-green-100 text-green-800'
+        return 'bg-green-100 text-green-800';
       case 'pci':
-        return 'bg-purple-100 text-purple-800'
+        return 'bg-purple-100 text-purple-800';
       case 'hipaa':
-        return 'bg-orange-100 text-orange-800'
+        return 'bg-orange-100 text-orange-800';
       case 'iso27001':
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800';
       default:
-        return 'bg-gray-100 text-gray-800'
+        return 'bg-gray-100 text-gray-800';
     }
-  }
+  };
 
   const formatTimeAgo = (timestamp: string) => {
-    const now = new Date()
-    const time = new Date(timestamp)
-    const diffInSeconds = Math.floor((now.getTime() - time.getTime()) / 1000)
-    
-    if (diffInSeconds < 60) return 'Just now'
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
-    return `${Math.floor(diffInSeconds / 86400)}d ago`
-  }
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffInSeconds = Math.floor((now.getTime() - time.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
+    return `${Math.floor(diffInSeconds / 86400)}d ago`;
+  };
 
   const handleCreatePolicy = () => {
-    setIsCreating(true)
+    setIsCreating(true);
     // Simulate policy creation
     setTimeout(() => {
       const newPolicy: SecurityPolicy = {
@@ -518,13 +520,13 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
           gdpr: false,
           sox: false,
           pci: false,
-          hipaa: false
-        }
-      }
-      setSecurityPolicies(prev => [...prev, newPolicy])
-      setIsCreating(false)
-    }, 1000)
-  }
+          hipaa: false,
+        },
+      };
+      setSecurityPolicies((prev) => [...prev, newPolicy]);
+      setIsCreating(false);
+    }, 1000);
+  };
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -554,7 +556,7 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
             </button>
           </div>
         </div>
-        
+
         {project && (
           <div className="text-sm text-primary-600 bg-primary-50 px-3 py-2 rounded-lg inline-block">
             Project: {project.name}
@@ -569,25 +571,25 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
             <div>
               <p className="text-sm font-medium text-secondary-600">Active Policies</p>
               <p className="text-2xl font-bold text-secondary-900">
-                {securityPolicies.filter(p => p.status === 'active').length}
+                {securityPolicies.filter((p) => p.status === 'active').length}
               </p>
             </div>
             <Shield className="w-8 h-8 text-green-600" />
           </div>
         </div>
-        
+
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-secondary-600">Active Users</p>
               <p className="text-2xl font-bold text-secondary-900">
-                {accessControls.filter(a => a.status === 'active').length}
+                {accessControls.filter((a) => a.status === 'active').length}
               </p>
             </div>
             <Users className="w-8 h-8 text-blue-600" />
           </div>
         </div>
-        
+
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
@@ -599,13 +601,16 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
             <Activity className="w-8 h-8 text-purple-600" />
           </div>
         </div>
-        
+
         <div className="card">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-secondary-600">Compliance Score</p>
               <p className="text-2xl font-bold text-secondary-900">
-                {Math.round(complianceReports.reduce((sum, r) => sum + r.score, 0) / complianceReports.length)}%
+                {Math.round(
+                  complianceReports.reduce((sum, r) => sum + r.score, 0) / complianceReports.length
+                )}
+                %
               </p>
             </div>
             <CheckCircle className="w-8 h-8 text-orange-600" />
@@ -621,13 +626,15 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
               { id: 'policies', label: 'Security Policies', icon: Shield },
               { id: 'access', label: 'Access Control', icon: User },
               { id: 'audit', label: 'Audit Logs', icon: Activity },
-              { id: 'compliance', label: 'Compliance', icon: CheckCircle }
+              { id: 'compliance', label: 'Compliance', icon: CheckCircle },
             ].map((tab) => {
-              const Icon = tab.icon
+              const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() =>
+                    setActiveTab(tab.id as 'policies' | 'access' | 'audit' | 'compliance')
+                  }
                   className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === tab.id
                       ? 'border-primary-500 text-primary-600'
@@ -637,7 +644,7 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
                   <Icon className="w-4 h-4" />
                   <span>{tab.label}</span>
                 </button>
-              )
+              );
             })}
           </nav>
         </div>
@@ -647,7 +654,10 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
           <div className="p-6">
             <div className="space-y-4">
               {securityPolicies.map((policy) => (
-                <div key={policy.id} className="border border-secondary-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div
+                  key={policy.id}
+                  className="border border-secondary-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-primary-100 rounded-lg flex items-center justify-center">
@@ -659,15 +669,19 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(policy.status)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(policy.status)}`}
+                      >
                         {policy.status}
                       </span>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(policy.priority)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(policy.priority)}`}
+                      >
                         {policy.priority}
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm mb-3">
                     <div>
                       <span className="text-secondary-600">Rules:</span>
@@ -696,8 +710,8 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
                   <div className="flex space-x-2">
                     <button
                       onClick={() => {
-                        setSelectedPolicy(policy)
-                        setShowPolicyModal(true)
+                        setSelectedPolicy(policy);
+                        setShowPolicyModal(true);
                       }}
                       className="btn-secondary text-sm flex-1"
                     >
@@ -720,7 +734,10 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
           <div className="p-6">
             <div className="space-y-4">
               {accessControls.map((access) => (
-                <div key={access.id} className="border border-secondary-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div
+                  key={access.id}
+                  className="border border-secondary-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -732,17 +749,21 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(access.status)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(access.status)}`}
+                      >
                         {access.status}
                       </span>
                       <span className="text-xs text-secondary-500">{access.role}</span>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-3">
                     <div>
                       <span className="text-secondary-600">Last Access:</span>
-                      <span className="ml-2 text-secondary-900">{formatTimeAgo(access.lastAccess)}</span>
+                      <span className="ml-2 text-secondary-900">
+                        {formatTimeAgo(access.lastAccess)}
+                      </span>
                     </div>
                     <div>
                       <span className="text-secondary-600">IP Address:</span>
@@ -775,7 +796,10 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
           <div className="p-6">
             <div className="space-y-3">
               {auditLogs.map((log) => (
-                <div key={log.id} className="flex items-center justify-between p-3 border border-secondary-200 rounded-lg">
+                <div
+                  key={log.id}
+                  className="flex items-center justify-between p-3 border border-secondary-200 rounded-lg"
+                >
                   <div className="flex items-center space-x-4">
                     <div className="w-8 h-8 bg-secondary-100 rounded-lg flex items-center justify-center">
                       <Activity className="w-4 h-4 text-secondary-600" />
@@ -793,10 +817,14 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(log.result)}`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(log.result)}`}
+                    >
                       {log.result}
                     </span>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(log.riskLevel)}`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(log.riskLevel)}`}
+                    >
                       {log.riskLevel}
                     </span>
                   </div>
@@ -811,7 +839,10 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
           <div className="p-6">
             <div className="space-y-4">
               {complianceReports.map((report) => (
-                <div key={report.id} className="border border-secondary-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div
+                  key={report.id}
+                  className="border border-secondary-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
@@ -819,19 +850,25 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
                       </div>
                       <div>
                         <h3 className="font-semibold text-secondary-900">{report.name}</h3>
-                        <p className="text-sm text-secondary-600">{report.framework.toUpperCase()} Framework</p>
+                        <p className="text-sm text-secondary-600">
+                          {report.framework.toUpperCase()} Framework
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getFrameworkColor(report.framework)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getFrameworkColor(report.framework)}`}
+                      >
                         {report.framework.toUpperCase()}
                       </span>
-                      <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(report.status)}`}>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(report.status)}`}
+                      >
                         {report.status}
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm mb-3">
                     <div>
                       <span className="text-secondary-600">Score:</span>
@@ -858,8 +895,8 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
                   <div className="flex space-x-2">
                     <button
                       onClick={() => {
-                        setSelectedReport(report)
-                        setShowReportModal(true)
+                        setSelectedReport(report);
+                        setShowReportModal(true);
                       }}
                       className="btn-secondary text-sm flex-1"
                     >
@@ -878,10 +915,7 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default EnterpriseSecurity
-
-
-
+export default EnterpriseSecurity;

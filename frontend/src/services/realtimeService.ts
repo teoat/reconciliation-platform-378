@@ -1,4 +1,5 @@
 // Real-time Frontend Service
+import { logger } from '@/services/logger'
 // This service handles WebSocket connections and real-time updates
 
 import { EventEmitter } from 'events';
@@ -94,7 +95,7 @@ class RealtimeService extends EventEmitter {
         this.ws = new WebSocket(wsUrl);
 
         this.ws.onopen = () => {
-          console.log('WebSocket connected');
+          logger.log('WebSocket connected');
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.startHeartbeat();
@@ -107,12 +108,12 @@ class RealtimeService extends EventEmitter {
             const message: WebSocketMessage = JSON.parse(event.data);
             this.handleMessage(message);
           } catch (error) {
-            console.error('Failed to parse WebSocket message:', error);
+            logger.error('Failed to parse WebSocket message:', error);
           }
         };
 
         this.ws.onclose = (event) => {
-          console.log('WebSocket disconnected:', event.code, event.reason);
+          logger.log('WebSocket disconnected:', event.code, event.reason);
           this.isConnected = false;
           this.isAuthenticated = false;
           this.stopHeartbeat();
@@ -121,7 +122,7 @@ class RealtimeService extends EventEmitter {
         };
 
         this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
+          logger.error('WebSocket error:', error);
           this.emit('error', error);
           reject(error);
         };
@@ -136,13 +137,13 @@ class RealtimeService extends EventEmitter {
       this.reconnectAttempts++;
       const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
       
-      console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
+      logger.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
       
       this.reconnectTimeout = setTimeout(() => {
         this.connect();
       }, delay);
     } else {
-      console.error('Max reconnection attempts reached');
+      logger.error('Max reconnection attempts reached');
       this.emit('max_reconnect_attempts_reached');
     }
   }
@@ -242,7 +243,7 @@ class RealtimeService extends EventEmitter {
         break;
 
       default:
-        console.log('Unknown message type:', message.type);
+        logger.log('Unknown message type:', message.type);
     }
   }
 
@@ -358,7 +359,7 @@ class RealtimeService extends EventEmitter {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
-      console.warn('WebSocket is not connected');
+      logger.warn('WebSocket is not connected');
     }
   }
 

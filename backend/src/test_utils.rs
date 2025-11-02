@@ -248,13 +248,20 @@ pub mod database {
     use super::*;
     use crate::database::Database;
     use diesel::prelude::*;
-    use crate::models::schema::{users, projects, data_sources, reconciliation_jobs};
+    use crate::models::schema::users;
+    use crate::models::schema::projects::{projects, data_sources, reconciliation_jobs};
     
     /// Create a test database connection
     pub async fn create_test_db() -> Database {
         Database::new(TEST_DATABASE_URL)
             .await
-            .expect("Failed to create test database connection")
+            .unwrap()
+    }
+    
+    /// Setup test database (alias for create_test_db for backward compatibility)
+    pub async fn setup_test_database() -> (Database, ()) {
+        let db = create_test_db().await;
+        (db, ())
     }
     
     /// Clean up test data
@@ -388,8 +395,8 @@ pub mod http {
         response: &mut actix_web::dev::ServiceResponse,
     ) -> T {
         let body = test::read_body(response).await;
-        let body_str = String::from_utf8(body.to_vec()).expect("Failed to convert body to string");
-        serde_json::from_str(&body_str).expect("Failed to parse JSON response")
+        let body_str = String::from_utf8(body.to_vec()).unwrap();
+        serde_json::from_str(&body_str).unwrap()
     }
 }
 

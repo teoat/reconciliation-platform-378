@@ -540,7 +540,7 @@ impl ValidationService {
 
 impl Default for ValidationService {
     fn default() -> Self {
-        Self::new().unwrap()
+        Self::new().expect("Failed to create ValidationService")
     }
 }
 
@@ -550,7 +550,7 @@ mod tests {
 
     #[test]
     fn test_validate_email() {
-        let service = ValidationService::new().unwrap();
+        let service = ValidationService::new().expect("Failed to create ValidationService");
         
         // Valid emails
         assert!(service.validate_email("test@example.com").is_ok());
@@ -564,7 +564,7 @@ mod tests {
 
     #[test]
     fn test_validate_password() {
-        let service = ValidationService::new().unwrap();
+        let service = ValidationService::new().expect("Failed to create ValidationService");
         
         // Valid passwords
         assert!(service.validate_password("Password123!").is_ok());
@@ -581,12 +581,12 @@ mod tests {
 
     #[test]
     fn test_validate_csv_structure() {
-        let service = ValidationService::new().unwrap();
+        let service = ValidationService::new().expect("Failed to create ValidationService");
         
         let valid_csv = "id,name,email\n1,John,john@example.com\n2,Jane,jane@example.com";
         let result = service.validate_csv_structure(valid_csv);
         assert!(result.is_ok());
-        assert_eq!(result.unwrap(), vec!["id", "name", "email"]);
+        assert_eq!(result.expect("Expected valid CSV structure"), vec!["id", "name", "email"]);
         
         let invalid_csv = "id,name\n1,John,john@example.com"; // Wrong number of fields
         assert!(service.validate_csv_structure(invalid_csv).is_err());
@@ -594,7 +594,7 @@ mod tests {
 
     #[test]
     fn test_validate_uuid() {
-        let service = ValidationService::new().unwrap();
+        let service = ValidationService::new().expect("Failed to create ValidationService");
         
         let valid_uuid = "550e8400-e29b-41d4-a716-446655440000";
         assert!(service.validate_uuid(valid_uuid).is_ok());

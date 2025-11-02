@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { logger } from '@/services/logger'
 
 interface User {
   id: string
@@ -30,7 +31,7 @@ export const useAuth = (): UseAuthReturn => {
         try {
           setUser(JSON.parse(storedUser))
         } catch (error) {
-          console.error('Error parsing stored user:', error)
+          logger.error('Error parsing stored user:', error)
           localStorage.removeItem('user')
           localStorage.removeItem('token')
         }
@@ -59,7 +60,7 @@ export const useAuth = (): UseAuthReturn => {
       localStorage.setItem('token', 'mock-token')
       setUser(mockUser)
     } catch (error) {
-      console.error('Login failed:', error)
+      logger.error('Login failed:', error)
       throw error
     } finally {
       setIsLoading(false)
@@ -74,7 +75,7 @@ export const useAuth = (): UseAuthReturn => {
       localStorage.removeItem('token')
       setUser(null)
     } catch (error) {
-      console.error('Logout failed:', error)
+      logger.error('Logout failed:', error)
       throw error
     } finally {
       setIsLoading(false)

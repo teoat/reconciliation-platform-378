@@ -1,4 +1,5 @@
 // Consolidated Testing Service
+import { logger } from '@/services/logger'
 // Combines collaboration testing, data consistency testing, and general testing functionality
 
 import { BaseService } from './BaseService'
@@ -125,7 +126,7 @@ export class TestingService extends BaseService<TestResult> {
           currentTest: id
         })
       } catch (error) {
-        console.error(`Test ${id} failed:`, error)
+        logger.error(`Test ${id} failed:`, error)
       }
     }
 

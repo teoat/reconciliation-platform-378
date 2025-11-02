@@ -1,4 +1,5 @@
 // Error Context Preservation Service - Enhanced error context preservation
+import { logger } from '@/services/logger'
 // Implements comprehensive error context tracking with project ID, user ID, workflow stage
 
 export interface ErrorContext {
@@ -14,7 +15,7 @@ export interface ErrorContext {
   url?: string
   referrer?: string
   data?: any
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 export interface ErrorContextConfig {
@@ -98,7 +99,7 @@ class ErrorContextService {
         this.events = data.events || []
       }
     } catch (error) {
-      console.error('Failed to load persisted error contexts:', error)
+      logger.error('Failed to load persisted error contexts:', error)
     }
   }
 
@@ -112,7 +113,7 @@ class ErrorContextService {
       }
       localStorage.setItem('error_contexts', JSON.stringify(data))
     } catch (error) {
-      console.error('Failed to save error contexts:', error)
+      logger.error('Failed to save error contexts:', error)
     }
   }
 
@@ -193,7 +194,7 @@ class ErrorContextService {
     options: {
       stack?: string
       data?: any
-      metadata?: Record<string, any>
+      metadata?: Record<string, unknown>
     } = {}
   ): ErrorContextEvent {
     const context = this.currentContext || this.initializeContext()!
@@ -221,7 +222,7 @@ class ErrorContextService {
   private sendToAnalytics(event: ErrorContextEvent): void {
     // This would integrate with your analytics service
     // For now, we'll just log it
-    console.log('Analytics Event:', {
+    logger.log('Analytics Event:', {
       type: event.type,
       message: event.message,
       severity: event.severity,
@@ -236,7 +237,7 @@ class ErrorContextService {
       component?: string
       action?: string
       data?: any
-      metadata?: Record<string, any>
+      metadata?: Record<string, unknown>
     } = {}
   ): ErrorContextEvent {
     return this.createErrorContext(
@@ -262,7 +263,7 @@ class ErrorContextService {
       component?: string
       action?: string
       data?: any
-      metadata?: Record<string, any>
+      metadata?: Record<string, unknown>
     } = {}
   ): ErrorContextEvent {
     return this.createErrorContext(
@@ -286,7 +287,7 @@ class ErrorContextService {
       component?: string
       action?: string
       data?: any
-      metadata?: Record<string, any>
+      metadata?: Record<string, unknown>
     } = {}
   ): ErrorContextEvent {
     return this.createErrorContext(
@@ -427,7 +428,7 @@ class ErrorContextService {
       this.emit('contextsImported', { count: this.contexts.size })
       return true
     } catch (error) {
-      console.error('Failed to import contexts:', error)
+      logger.error('Failed to import contexts:', error)
       return false
     }
   }

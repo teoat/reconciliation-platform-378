@@ -1,4 +1,5 @@
 // ============================================================================
+import { logger } from '@/services/logger'
 // ICON REGISTRY - Optimized Icon Management
 // ============================================================================
 
@@ -157,7 +158,7 @@ export const Icon: React.FC<IconProps> = ({ name, className = '', size = 20, col
   const IconComponent = getIcon(name)
   
   if (!IconComponent) {
-    console.warn(`Icon "${name}" not found in registry`)
+    logger.warn(`Icon "${name}" not found in registry`)
     return null
   }
   

@@ -1,4 +1,5 @@
 import { lazy, Suspense, ComponentType } from 'react'
+import { logger } from '@/services/logger'
 import { LoadingSpinner } from '../components/ui/LoadingSpinner'
 
 // ============================================================================
@@ -86,7 +87,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('Error caught by boundary:', error, errorInfo)
+    logger.error('Error caught by boundary:', error, errorInfo)
   }
 
   retry = () => {
@@ -198,7 +199,7 @@ export function createRetryableImport<T>(
         return await importFn()
       } catch (error) {
         lastError = error as Error
-        console.warn(`Import attempt ${attempt} failed:`, error)
+        logger.warn(`Import attempt ${attempt} failed:`, error)
         
         if (attempt < maxRetries) {
           await new Promise(resolve => setTimeout(resolve, delay * attempt))
@@ -229,7 +230,7 @@ export function measureComponentLoadTime<T extends ComponentType<any>>(
       return result
     } catch (error) {
       const endTime = performance.now()
-      console.error(`${componentName} failed to load after ${endTime - startTime}ms:`, error)
+      logger.error(`${componentName} failed to load after ${endTime - startTime}ms:`, error)
       throw error
     }
   }

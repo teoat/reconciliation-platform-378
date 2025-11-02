@@ -149,3 +149,9 @@ pub struct SystemChecks {
     pub cache: String,
     pub memory: String,
 }
+
+/// Error response type - re-export from errors module
+pub use crate::errors::ErrorResponse;
+
+/// Login response type - alias for AuthResponse
+pub use crate::services::auth::AuthResponse as LoginResponse;

@@ -1,4 +1,5 @@
 // Enhanced Progress Visualization & Workflow Guidance Service
+import { logger } from '@/services/logger'
 // Implements animated progress, contextual help, and stage guidance
 
 export interface WorkflowStage {
@@ -54,7 +55,7 @@ export interface ValidationRule {
   id: string
   field: string
   condition: 'required' | 'min_length' | 'max_length' | 'format' | 'range' | 'custom'
-  value?: any
+  value?: string | number | boolean | [number, number] | RegExp | Record<string, unknown>
   message: string
   severity: 'error' | 'warning' | 'info'
 }
@@ -82,7 +83,11 @@ export interface ContextualHelp {
       type: 'primary' | 'secondary' | 'link'
     }[]
   }
-  conditions?: any[]
+  conditions?: Array<{
+    field: string
+    operator: 'equals' | 'not_equals' | 'contains' | 'greater_than' | 'less_than' | 'in' | 'not_in'
+    value: string | number | boolean | string[] | null | undefined
+  }>
 }
 
 export interface WorkflowGuidance {
@@ -121,16 +126,16 @@ class ProgressVisualizationService {
   }
 
   private initializeDefaultWorkflows(): void {
-    // Reconciliation workflow
+    // Simplified Reconciliation workflow - 3 steps instead of 5
     const reconciliationWorkflow: WorkflowStage[] = [
       {
-        id: 'data_ingestion',
-        name: 'Data Ingestion',
-        description: 'Upload and validate your data files',
+        id: 'data_setup',
+        name: 'Data Setup',
+        description: 'Upload, validate, and map your data fields',
         order: 1,
         status: 'pending',
         progress: 0,
-        estimatedTime: 15,
+        estimatedTime: 25, // Combined time from ingestion (15) + mapping (10)
         dependencies: [],
         requirements: [
           {
@@ -146,15 +151,23 @@ class ProgressVisualizationService {
             description: 'Validate file format and structure',
             isRequired: true,
             isCompleted: false
+          },
+          {
+            id: 'map_required_fields',
+            type: 'validation',
+            description: 'Map all required fields',
+            isRequired: true,
+            isCompleted: false
           }
         ],
         help: {
-          title: 'Data Ingestion Help',
-          description: 'Learn how to properly upload and validate your data',
+          title: 'Data Setup Help',
+          description: 'Upload your files, validate format, and map fields in one streamlined step',
           tips: [
             'Ensure your files are in CSV or Excel format',
-            'Check that required columns are present',
-            'Verify data quality before proceeding'
+            'Use AI suggestions for automatic field mapping',
+            'Verify mapped fields before proceeding',
+            'Save your progress - you can continue later'
           ],
           examples: [
             'Sample CSV file with proper headers',
@@ -167,9 +180,9 @@ class ProgressVisualizationService {
               type: 'documentation'
             },
             {
-              title: 'Upload Tutorial',
-              url: '/tutorials/upload',
-              type: 'video'
+              title: 'Field Mapping Guide',
+              url: '/docs/field-mapping',
+              type: 'documentation'
             }
           ],
           faq: [
@@ -178,8 +191,8 @@ class ProgressVisualizationService {
               answer: 'We support CSV and Excel files (.xlsx, .xls)'
             },
             {
-              question: 'What is the maximum file size?',
-              answer: 'The maximum file size is 100MB per file'
+              question: 'Can I save my progress and continue later?',
+              answer: 'Yes! Your data setup is automatically saved as you work'
             }
           ]
         },
@@ -191,56 +204,7 @@ class ProgressVisualizationService {
               condition: 'required',
               message: 'At least one file must be uploaded',
               severity: 'error'
-            }
-          ],
-          autoValidate: true,
-          showProgress: true,
-          allowSkip: false
-        }
-      },
-      {
-        id: 'data_mapping',
-        name: 'Field Mapping',
-        description: 'Map your data fields to the system',
-        order: 2,
-        status: 'pending',
-        progress: 0,
-        estimatedTime: 10,
-        dependencies: ['data_ingestion'],
-        requirements: [
-          {
-            id: 'map_required_fields',
-            type: 'validation',
-            description: 'Map all required fields',
-            isRequired: true,
-            isCompleted: false
-          }
-        ],
-        help: {
-          title: 'Field Mapping Help',
-          description: 'Learn how to map your data fields correctly',
-          tips: [
-            'Use AI suggestions for automatic mapping',
-            'Verify mapped fields before proceeding',
-            'Check for data type compatibility'
-          ],
-          examples: [],
-          links: [
-            {
-              title: 'Field Mapping Guide',
-              url: '/docs/field-mapping',
-              type: 'documentation'
-            }
-          ],
-          faq: [
-            {
-              question: 'Can I change field mappings later?',
-              answer: 'Yes, you can modify field mappings at any time'
-            }
-          ]
-        },
-        validation: {
-          rules: [
+            },
             {
               id: 'required_fields_mapped',
               field: 'mappedFields',
@@ -258,11 +222,11 @@ class ProgressVisualizationService {
         id: 'reconciliation',
         name: 'AI Reconciliation',
         description: 'Run AI-powered reconciliation algorithms',
-        order: 3,
+        order: 2,
         status: 'pending',
         progress: 0,
         estimatedTime: 30,
-        dependencies: ['data_mapping'],
+        dependencies: ['data_setup'],
         requirements: [
           {
             id: 'run_algorithms',
@@ -303,13 +267,13 @@ class ProgressVisualizationService {
         }
       },
       {
-        id: 'review_results',
-        name: 'Review Results',
-        description: 'Review and approve reconciliation results',
-        order: 4,
+        id: 'review_and_export',
+        name: 'Review & Export',
+        description: 'Review results and export final reconciliation report',
+        order: 3,
         status: 'pending',
         progress: 0,
-        estimatedTime: 20,
+        estimatedTime: 25, // Combined time from review (20) + export (5)
         dependencies: ['reconciliation'],
         requirements: [
           {
@@ -325,15 +289,24 @@ class ProgressVisualizationService {
             description: 'Handle unmatched items',
             isRequired: false,
             isCompleted: false
+          },
+          {
+            id: 'generate_report',
+            type: 'data',
+            description: 'Generate and export final report',
+            isRequired: true,
+            isCompleted: false
           }
         ],
         help: {
-          title: 'Review Results Help',
-          description: 'Learn how to review and approve results',
+          title: 'Review & Export Help',
+          description: 'Review reconciliation results and export your final report',
           tips: [
             'Check match confidence scores',
             'Review unmatched items carefully',
-            'Use bulk actions for efficiency'
+            'Use bulk actions for efficiency',
+            'Choose appropriate export format (CSV, Excel, PDF, JSON)',
+            'Save reports for future reference'
           ],
           examples: [],
           links: [
@@ -341,51 +314,7 @@ class ProgressVisualizationService {
               title: 'Results Review Guide',
               url: '/docs/results-review',
               type: 'documentation'
-            }
-          ],
-          faq: [
-            {
-              question: 'What if I disagree with a match?',
-              answer: 'You can manually adjust or reject any match'
-            }
-          ]
-        },
-        validation: {
-          rules: [],
-          autoValidate: false,
-          showProgress: true,
-          allowSkip: true,
-          skipReason: 'Skip if no discrepancies found'
-        }
-      },
-      {
-        id: 'export_results',
-        name: 'Export Results',
-        description: 'Export final reconciliation results',
-        order: 5,
-        status: 'pending',
-        progress: 0,
-        estimatedTime: 5,
-        dependencies: ['review_results'],
-        requirements: [
-          {
-            id: 'generate_report',
-            type: 'data',
-            description: 'Generate final report',
-            isRequired: true,
-            isCompleted: false
-          }
-        ],
-        help: {
-          title: 'Export Results Help',
-          description: 'Learn how to export your results',
-          tips: [
-            'Choose appropriate export format',
-            'Include all necessary data',
-            'Save reports for future reference'
-          ],
-          examples: [],
-          links: [
+            },
             {
               title: 'Export Guide',
               url: '/docs/export',
@@ -393,6 +322,10 @@ class ProgressVisualizationService {
             }
           ],
           faq: [
+            {
+              question: 'What if I disagree with a match?',
+              answer: 'You can manually adjust or reject any match'
+            },
             {
               question: 'What export formats are available?',
               answer: 'CSV, Excel, PDF, and JSON formats are supported'
@@ -441,7 +374,7 @@ class ProgressVisualizationService {
         actions: [
           {
             label: 'Use AI Suggestions',
-            action: () => console.log('Use AI suggestions'),
+            action: () => logger.log('Use AI suggestions'),
             type: 'primary'
           }
         ]
@@ -631,25 +564,19 @@ class ProgressVisualizationService {
     const suggestions: string[] = []
     
     switch (stage.id) {
-      case 'data_ingestion':
+      case 'data_setup':
         suggestions.push('Use drag-and-drop for faster file uploads')
-        suggestions.push('Check file format before uploading')
-        break
-      case 'data_mapping':
         suggestions.push('Use AI suggestions for automatic field mapping')
-        suggestions.push('Verify mapped fields before proceeding')
+        suggestions.push('Save your progress - you can continue later')
         break
       case 'reconciliation':
         suggestions.push('Review matching rules before running')
         suggestions.push('Monitor progress and adjust settings if needed')
         break
-      case 'review_results':
+      case 'review_and_export':
         suggestions.push('Use bulk actions for efficiency')
         suggestions.push('Check match confidence scores')
-        break
-      case 'export_results':
         suggestions.push('Choose appropriate export format')
-        suggestions.push('Save reports for future reference')
         break
     }
     
@@ -660,25 +587,35 @@ class ProgressVisualizationService {
     const shortcuts: { label: string; action: () => void; shortcut: string }[] = []
     
     switch (stage.id) {
-      case 'data_ingestion':
+      case 'data_setup':
         shortcuts.push({
           label: 'Upload Files',
-          action: () => console.log('Upload files'),
+          action: () => logger.log('Upload files'),
           shortcut: 'Ctrl+U'
         })
-        break
-      case 'data_mapping':
         shortcuts.push({
           label: 'Use AI Mapping',
-          action: () => console.log('Use AI mapping'),
+          action: () => logger.log('Use AI mapping'),
           shortcut: 'Ctrl+M'
+        })
+        shortcuts.push({
+          label: 'Save Progress',
+          action: () => logger.log('Save progress'),
+          shortcut: 'Ctrl+S'
         })
         break
       case 'reconciliation':
         shortcuts.push({
           label: 'Start Reconciliation',
-          action: () => console.log('Start reconciliation'),
+          action: () => logger.log('Start reconciliation'),
           shortcut: 'Ctrl+R'
+        })
+        break
+      case 'review_and_export':
+        shortcuts.push({
+          label: 'Export Results',
+          action: () => logger.log('Export results'),
+          shortcut: 'Ctrl+E'
         })
         break
     }
@@ -854,7 +791,7 @@ class ProgressVisualizationService {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: string | Record<string, unknown>): void {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
       callbacks.forEach(callback => callback(data))

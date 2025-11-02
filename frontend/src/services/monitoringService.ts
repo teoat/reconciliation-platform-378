@@ -1,4 +1,5 @@
 // Comprehensive Monitoring Service
+import { logger } from '@/services/logger'
 import { apiClient } from '../apiClient';
 
 export interface SystemMetrics {
@@ -196,9 +197,9 @@ export class MonitoringService {
       this.startFlushTimer();
 
       this.isInitialized = true;
-      console.log('Monitoring service initialized successfully');
+      logger.log('Monitoring service initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize monitoring service:', error);
+      logger.error('Failed to initialize monitoring service:', error);
       throw error;
     }
   }
@@ -463,7 +464,7 @@ export class MonitoringService {
     try {
       await this.sendMetrics(type, metrics);
     } catch (error) {
-      console.error(`Failed to send ${type} metrics:`, error);
+      logger.error(`Failed to send ${type} metrics:`, error);
       // Re-add metrics to buffer for retry
       buffer.unshift(...metrics);
     }

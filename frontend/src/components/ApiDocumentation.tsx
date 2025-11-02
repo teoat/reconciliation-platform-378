@@ -1,28 +1,26 @@
-import React, { useState } from 'react'
-import { 
-  BookOpen, 
-  Code, 
-  Database, 
-  Users, 
-  BarChart3, 
-  Settings,
-  Play,
-  Copy,
-  ExternalLink,
-  CheckCircle,
-  AlertCircle,
-  Info
-} from 'lucide-react'
-import Button from './ui/Button'
-import Card from './ui/Card'
-import { StatusBadge } from './ui/StatusBadge'
+import React, { useState } from 'react';
+import { BookOpen } from 'lucide-react';
+import { Code } from 'lucide-react';
+import { Database } from 'lucide-react';
+import { Users } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
+import { Settings } from 'lucide-react';
+import { Play } from 'lucide-react';
+import { Copy } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { Info } from 'lucide-react';
+import Button from './ui/Button';
+import Card from './ui/Card';
+import { StatusBadge } from './ui/StatusBadge';
 
 interface ApiDocumentationProps {
-  className?: string
+  className?: string;
 }
 
 const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) => {
-  const [selectedSection, setSelectedSection] = useState('overview')
+  const [selectedSection, setSelectedSection] = useState('overview');
 
   const sections = [
     { id: 'overview', label: 'Overview', icon: BookOpen },
@@ -30,12 +28,12 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
     { id: 'projects', label: 'Projects', icon: Database },
     { id: 'reconciliation', label: 'Reconciliation', icon: BarChart3 },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'websocket', label: 'WebSocket', icon: Settings }
-  ]
+    { id: 'websocket', label: 'WebSocket', icon: Settings },
+  ];
 
   const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-  }
+    navigator.clipboard.writeText(text);
+  };
 
   const apiEndpoints = {
     authentication: [
@@ -45,13 +43,13 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
         description: 'Authenticate user and get access token',
         request: {
           email: 'string',
-          password: 'string'
+          password: 'string',
         },
         response: {
           token: 'string',
           user: 'User object',
-          expires_at: 'number'
-        }
+          expires_at: 'number',
+        },
       },
       {
         method: 'POST',
@@ -62,28 +60,28 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
           password: 'string',
           first_name: 'string',
           last_name: 'string',
-          role: 'string (optional)'
+          role: 'string (optional)',
         },
         response: {
           token: 'string',
           user: 'User object',
-          expires_at: 'number'
-        }
+          expires_at: 'number',
+        },
       },
       {
         method: 'GET',
         endpoint: '/auth/me',
         description: 'Get current user information',
         request: 'None (requires authentication)',
-        response: 'User object'
+        response: 'User object',
       },
       {
         method: 'POST',
         endpoint: '/auth/logout',
         description: 'Logout user and invalidate token',
         request: 'None (requires authentication)',
-        response: 'Success message'
-      }
+        response: 'Success message',
+      },
     ],
     projects: [
       {
@@ -94,19 +92,19 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
           page: 'number (optional)',
           per_page: 'number (optional)',
           search: 'string (optional)',
-          status: 'string (optional)'
+          status: 'string (optional)',
         },
         response: {
           data: 'Array of Project objects',
-          pagination: 'Pagination object'
-        }
+          pagination: 'Pagination object',
+        },
       },
       {
         method: 'GET',
         endpoint: '/projects/{id}',
         description: 'Get project by ID',
         request: 'None (requires authentication)',
-        response: 'Project object'
+        response: 'Project object',
       },
       {
         method: 'POST',
@@ -116,9 +114,9 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
           name: 'string',
           description: 'string (optional)',
           settings: 'object (optional)',
-          status: 'string (optional)'
+          status: 'string (optional)',
         },
-        response: 'Project object'
+        response: 'Project object',
       },
       {
         method: 'PUT',
@@ -129,17 +127,17 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
           description: 'string (optional)',
           settings: 'object (optional)',
           status: 'string (optional)',
-          is_active: 'boolean (optional)'
+          is_active: 'boolean (optional)',
         },
-        response: 'Project object'
+        response: 'Project object',
       },
       {
         method: 'DELETE',
         endpoint: '/projects/{id}',
         description: 'Delete project',
         request: 'None (requires authentication)',
-        response: 'Success message'
-      }
+        response: 'Success message',
+      },
     ],
     reconciliation: [
       {
@@ -147,21 +145,21 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
         endpoint: '/projects/{id}/data-sources',
         description: 'Get data sources for project',
         request: 'None (requires authentication)',
-        response: 'Array of DataSource objects'
+        response: 'Array of DataSource objects',
       },
       {
         method: 'POST',
         endpoint: '/projects/{id}/data-sources/upload',
         description: 'Upload file to project',
         request: 'FormData with file and metadata',
-        response: 'DataSource object'
+        response: 'DataSource object',
       },
       {
         method: 'POST',
         endpoint: '/projects/{id}/data-sources/{source_id}/process',
         description: 'Process uploaded file',
         request: 'None (requires authentication)',
-        response: 'Processing result'
+        response: 'Processing result',
       },
       {
         method: 'GET',
@@ -171,12 +169,12 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
           page: 'number (optional)',
           per_page: 'number (optional)',
           status: 'string (optional)',
-          search: 'string (optional)'
+          search: 'string (optional)',
         },
         response: {
           data: 'Array of ReconciliationRecord objects',
-          pagination: 'Pagination object'
-        }
+          pagination: 'Pagination object',
+        },
       },
       {
         method: 'GET',
@@ -187,12 +185,12 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
           per_page: 'number (optional)',
           status: 'string (optional)',
           min_confidence: 'number (optional)',
-          max_confidence: 'number (optional)'
+          max_confidence: 'number (optional)',
         },
         response: {
           data: 'Array of ReconciliationMatch objects',
-          pagination: 'Pagination object'
-        }
+          pagination: 'Pagination object',
+        },
       },
       {
         method: 'POST',
@@ -202,9 +200,9 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
           record_a_id: 'string',
           record_b_id: 'string',
           confidence_score: 'number',
-          status: 'string (optional)'
+          status: 'string (optional)',
         },
-        response: 'ReconciliationMatch object'
+        response: 'ReconciliationMatch object',
       },
       {
         method: 'PUT',
@@ -213,16 +211,16 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
         request: {
           status: 'string (optional)',
           confidence_score: 'number (optional)',
-          reviewed_by: 'string (optional)'
+          reviewed_by: 'string (optional)',
         },
-        response: 'ReconciliationMatch object'
+        response: 'ReconciliationMatch object',
       },
       {
         method: 'GET',
         endpoint: '/projects/{id}/reconciliation-jobs',
         description: 'Get reconciliation jobs',
         request: 'None (requires authentication)',
-        response: 'Array of ReconciliationJob objects'
+        response: 'Array of ReconciliationJob objects',
       },
       {
         method: 'POST',
@@ -231,24 +229,24 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
         request: {
           settings: 'object (optional)',
           priority: 'string (optional)',
-          description: 'string (optional)'
+          description: 'string (optional)',
         },
-        response: 'ReconciliationJob object'
+        response: 'ReconciliationJob object',
       },
       {
         method: 'POST',
         endpoint: '/projects/{id}/reconciliation-jobs/{job_id}/start',
         description: 'Start reconciliation job',
         request: 'None (requires authentication)',
-        response: 'ReconciliationJob object'
+        response: 'ReconciliationJob object',
       },
       {
         method: 'POST',
         endpoint: '/projects/{id}/reconciliation-jobs/{job_id}/stop',
         description: 'Stop reconciliation job',
         request: 'None (requires authentication)',
-        response: 'ReconciliationJob object'
-      }
+        response: 'ReconciliationJob object',
+      },
     ],
     analytics: [
       {
@@ -256,34 +254,39 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
         endpoint: '/analytics/dashboard',
         description: 'Get dashboard analytics data',
         request: 'None (requires authentication)',
-        response: 'DashboardData object'
+        response: 'DashboardData object',
       },
       {
         method: 'GET',
         endpoint: '/analytics/projects/{id}/stats',
         description: 'Get project statistics',
         request: 'None (requires authentication)',
-        response: 'ProjectStats object'
+        response: 'ProjectStats object',
       },
       {
         method: 'GET',
         endpoint: '/analytics/reconciliation/stats',
         description: 'Get reconciliation statistics',
         request: 'None (requires authentication)',
-        response: 'ReconciliationStats object'
-      }
-    ]
-  }
+        response: 'ReconciliationStats object',
+      },
+    ],
+  };
 
   const renderEndpoint = (endpoint: any, index: number) => (
     <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-3">
-          <StatusBadge 
-            status={endpoint.method === 'GET' ? 'active' : 
-                   endpoint.method === 'POST' ? 'warning' : 
-                   endpoint.method === 'PUT' ? 'warning' : 'inactive'}
-            variant="outline"
+          <StatusBadge
+            status={
+              endpoint.method === 'GET'
+                ? 'active'
+                : endpoint.method === 'POST'
+                  ? 'warning'
+                  : endpoint.method === 'PUT'
+                    ? 'warning'
+                    : 'inactive'
+            }
           >
             {endpoint.method}
           </StatusBadge>
@@ -299,9 +302,9 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
           <Copy className="h-4 w-4" />
         </Button>
       </div>
-      
+
       <p className="text-sm text-gray-700 mb-3">{endpoint.description}</p>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <h4 className="text-sm font-medium text-gray-900 mb-2">Request</h4>
@@ -317,7 +320,7 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
         </div>
       </div>
     </div>
-  )
+  );
 
   const renderSection = () => {
     switch (selectedSection) {
@@ -327,8 +330,8 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">API Overview</h2>
               <p className="text-gray-700 mb-6">
-                The Reconciliation Platform API provides comprehensive endpoints for managing 
-                projects, data sources, reconciliation processes, and analytics. All endpoints 
+                The Reconciliation Platform API provides comprehensive endpoints for managing
+                projects, data sources, reconciliation processes, and analytics. All endpoints
                 require authentication except for health checks and authentication endpoints.
               </p>
             </div>
@@ -370,7 +373,9 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
               <div className="text-center p-4 bg-blue-50 rounded-lg">
                 <Users className="h-8 w-8 text-blue-600 mx-auto mb-2" />
                 <h4 className="font-semibold text-gray-900">User Management</h4>
-                <p className="text-sm text-gray-600">CRUD operations for users and authentication</p>
+                <p className="text-sm text-gray-600">
+                  CRUD operations for users and authentication
+                </p>
               </div>
               <div className="text-center p-4 bg-green-50 rounded-lg">
                 <Database className="h-8 w-8 text-green-600 mx-auto mb-2" />
@@ -384,7 +389,7 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
               </div>
             </div>
           </div>
-        )
+        );
 
       case 'websocket':
         return (
@@ -402,19 +407,21 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
                 <code className="text-sm bg-gray-100 p-2 rounded block mb-4">
                   {import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws'}
                 </code>
-                
+
                 <div className="space-y-4">
                   <div>
-                    <h4 className="font-medium text-gray-900 mb-2">Connection with Authentication</h4>
+                    <h4 className="font-medium text-gray-900 mb-2">
+                      Connection with Authentication
+                    </h4>
                     <code className="text-sm bg-gray-100 p-2 rounded block">
                       ws://localhost:8080/ws?token={'{your_token}'}
                     </code>
                   </div>
-                  
+
                   <div>
                     <h4 className="font-medium text-gray-900 mb-2">Message Format</h4>
                     <pre className="text-sm bg-gray-100 p-2 rounded">
-{`{
+                      {`{
   "type": "event_type",
   "data": {
     "key": "value"
@@ -462,27 +469,27 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
               </div>
             </Card>
           </div>
-        )
+        );
 
       default:
         return (
           <div className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold text-gray-900 mb-4">
-                {sections.find(s => s.id === selectedSection)?.label} API
+                {sections.find((s) => s.id === selectedSection)?.label} API
               </h2>
               <p className="text-gray-700 mb-6">
                 Complete API reference for {selectedSection} endpoints.
               </p>
             </div>
 
-            {apiEndpoints[selectedSection as keyof typeof apiEndpoints]?.map((endpoint, index) => 
+            {apiEndpoints[selectedSection as keyof typeof apiEndpoints]?.map((endpoint, index) =>
               renderEndpoint(endpoint, index)
             )}
           </div>
-        )
+        );
     }
-  }
+  };
 
   return (
     <div className={`max-w-7xl mx-auto ${className}`}>
@@ -515,14 +522,12 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
         {/* Main Content */}
         <div className="lg:col-span-3">
           <Card>
-            <div className="p-6">
-              {renderSection()}
-            </div>
+            <div className="p-6">{renderSection()}</div>
           </Card>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ApiDocumentation
+export default ApiDocumentation;

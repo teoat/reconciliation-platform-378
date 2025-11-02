@@ -1,20 +1,23 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { TrendingUp, TrendingDown, BarChart3, PieChart, Activity } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react';
+import { TrendingUp } from 'lucide-react';
+import { TrendingDown } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
+import { Activity } from 'lucide-react';
 
 export interface ChartData {
-  label: string
-  value: number
-  color?: string
+  label: string;
+  value: number;
+  color?: string;
 }
 
 export interface LineChartProps {
-  data: ChartData[]
-  width?: number
-  height?: number
-  showGrid?: boolean
-  showLegend?: boolean
-  className?: string
-  title?: string
+  data: ChartData[];
+  width?: number;
+  height?: number;
+  showGrid?: boolean;
+  showLegend?: boolean;
+  className?: string;
+  title?: string;
 }
 
 export const LineChart: React.FC<LineChartProps> = ({
@@ -24,37 +27,37 @@ export const LineChart: React.FC<LineChartProps> = ({
   showGrid = true,
   showLegend = true,
   className = '',
-  title
+  title,
 }) => {
-  const svgRef = useRef<SVGSVGElement>(null)
-  const [dimensions, setDimensions] = useState({ width, height })
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [dimensions, setDimensions] = useState({ width, height });
 
   useEffect(() => {
     const handleResize = () => {
       if (svgRef.current) {
-        const rect = svgRef.current.getBoundingClientRect()
-        setDimensions({ width: rect.width, height: rect.height })
+        const rect = svgRef.current.getBoundingClientRect();
+        setDimensions({ width: rect.width, height: rect.height });
       }
-    }
+    };
 
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  const margin = { top: 20, right: 30, bottom: 40, left: 40 }
-  const chartWidth = dimensions.width - margin.left - margin.right
-  const chartHeight = dimensions.height - margin.top - margin.bottom
+  const margin = { top: 20, right: 30, bottom: 40, left: 40 };
+  const chartWidth = dimensions.width - margin.left - margin.right;
+  const chartHeight = dimensions.height - margin.top - margin.bottom;
 
-  const maxValue = Math.max(...data.map(d => d.value))
-  const minValue = Math.min(...data.map(d => d.value))
-  const valueRange = maxValue - minValue
+  const maxValue = Math.max(...data.map((d) => d.value));
+  const minValue = Math.min(...data.map((d) => d.value));
+  const valueRange = maxValue - minValue;
 
-  const xScale = (index: number) => (index / (data.length - 1)) * chartWidth
-  const yScale = (value: number) => chartHeight - ((value - minValue) / valueRange) * chartHeight
+  const xScale = (index: number) => (index / (data.length - 1)) * chartWidth;
+  const yScale = (value: number) => chartHeight - ((value - minValue) / valueRange) * chartHeight;
 
   const pathData = data
     .map((point, index) => `${index === 0 ? 'M' : 'L'} ${xScale(index)} ${yScale(point.value)}`)
-    .join(' ')
+    .join(' ');
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border ${className}`}>
@@ -77,7 +80,7 @@ export const LineChart: React.FC<LineChartProps> = ({
               <stop offset="100%" stopColor="#8B5CF6" />
             </linearGradient>
           </defs>
-          
+
           {/* Grid */}
           {showGrid && (
             <g>
@@ -124,7 +127,7 @@ export const LineChart: React.FC<LineChartProps> = ({
 
           {/* Y-axis labels */}
           {Array.from({ length: 5 }).map((_, i) => {
-            const value = minValue + (valueRange * i) / 4
+            const value = minValue + (valueRange * i) / 4;
             return (
               <text
                 key={i}
@@ -135,7 +138,7 @@ export const LineChart: React.FC<LineChartProps> = ({
               >
                 {value.toFixed(0)}
               </text>
-            )
+            );
           })}
 
           {/* X-axis labels */}
@@ -153,17 +156,17 @@ export const LineChart: React.FC<LineChartProps> = ({
         </svg>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export interface BarChartProps {
-  data: ChartData[]
-  width?: number
-  height?: number
-  showLegend?: boolean
-  className?: string
-  title?: string
-  orientation?: 'vertical' | 'horizontal'
+  data: ChartData[];
+  width?: number;
+  height?: number;
+  showLegend?: boolean;
+  className?: string;
+  title?: string;
+  orientation?: 'vertical' | 'horizontal';
 }
 
 export const BarChart: React.FC<BarChartProps> = ({
@@ -173,35 +176,43 @@ export const BarChart: React.FC<BarChartProps> = ({
   showLegend = true,
   className = '',
   title,
-  orientation = 'vertical'
+  orientation = 'vertical',
 }) => {
-  const svgRef = useRef<SVGSVGElement>(null)
-  const [dimensions, setDimensions] = useState({ width, height })
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [dimensions, setDimensions] = useState({ width, height });
 
   useEffect(() => {
     const handleResize = () => {
       if (svgRef.current) {
-        const rect = svgRef.current.getBoundingClientRect()
-        setDimensions({ width: rect.width, height: rect.height })
+        const rect = svgRef.current.getBoundingClientRect();
+        setDimensions({ width: rect.width, height: rect.height });
       }
-    }
+    };
 
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  const margin = { top: 20, right: 30, bottom: 40, left: 40 }
-  const chartWidth = dimensions.width - margin.left - margin.right
-  const chartHeight = dimensions.height - margin.top - margin.bottom
+  const margin = { top: 20, right: 30, bottom: 40, left: 40 };
+  const chartWidth = dimensions.width - margin.left - margin.right;
+  const chartHeight = dimensions.height - margin.top - margin.bottom;
 
-  const maxValue = Math.max(...data.map(d => d.value))
-  const barWidth = chartWidth / data.length * 0.8
-  const barSpacing = chartWidth / data.length * 0.2
+  const maxValue = Math.max(...data.map((d) => d.value));
+  const barWidth = (chartWidth / data.length) * 0.8;
+  const barSpacing = (chartWidth / data.length) * 0.2;
 
   const colors = [
-    '#3B82F6', '#8B5CF6', '#EF4444', '#10B981', '#F59E0B',
-    '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
-  ]
+    '#3B82F6',
+    '#8B5CF6',
+    '#EF4444',
+    '#10B981',
+    '#F59E0B',
+    '#EC4899',
+    '#06B6D4',
+    '#84CC16',
+    '#F97316',
+    '#6366F1',
+  ];
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border ${className}`}>
@@ -221,10 +232,10 @@ export const BarChart: React.FC<BarChartProps> = ({
           {/* Chart Area */}
           <g transform={`translate(${margin.left}, ${margin.top})`}>
             {data.map((item, index) => {
-              const barHeight = (item.value / maxValue) * chartHeight
-              const x = index * (barWidth + barSpacing)
-              const y = chartHeight - barHeight
-              
+              const barHeight = (item.value / maxValue) * chartHeight;
+              const x = index * (barWidth + barSpacing);
+              const y = chartHeight - barHeight;
+
               return (
                 <g key={index}>
                   <rect
@@ -237,7 +248,7 @@ export const BarChart: React.FC<BarChartProps> = ({
                   >
                     <title>{`${item.label}: ${item.value}`}</title>
                   </rect>
-                  
+
                   {/* Value labels */}
                   <text
                     x={x + barWidth / 2}
@@ -248,13 +259,13 @@ export const BarChart: React.FC<BarChartProps> = ({
                     {item.value}
                   </text>
                 </g>
-              )
+              );
             })}
           </g>
 
           {/* Y-axis labels */}
           {Array.from({ length: 5 }).map((_, i) => {
-            const value = (maxValue * i) / 4
+            const value = (maxValue * i) / 4;
             return (
               <text
                 key={i}
@@ -265,7 +276,7 @@ export const BarChart: React.FC<BarChartProps> = ({
               >
                 {value.toFixed(0)}
               </text>
-            )
+            );
           })}
 
           {/* X-axis labels */}
@@ -283,16 +294,16 @@ export const BarChart: React.FC<BarChartProps> = ({
         </svg>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export interface PieChartProps {
-  data: ChartData[]
-  width?: number
-  height?: number
-  showLegend?: boolean
-  className?: string
-  title?: string
+  data: ChartData[];
+  width?: number;
+  height?: number;
+  showLegend?: boolean;
+  className?: string;
+  title?: string;
 }
 
 export const PieChart: React.FC<PieChartProps> = ({
@@ -301,35 +312,48 @@ export const PieChart: React.FC<PieChartProps> = ({
   height = 300,
   showLegend = true,
   className = '',
-  title
+  title,
 }) => {
   const colors = [
-    '#3B82F6', '#8B5CF6', '#EF4444', '#10B981', '#F59E0B',
-    '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
-  ]
+    '#3B82F6',
+    '#8B5CF6',
+    '#EF4444',
+    '#10B981',
+    '#F59E0B',
+    '#EC4899',
+    '#06B6D4',
+    '#84CC16',
+    '#F97316',
+    '#6366F1',
+  ];
 
-  const total = data.reduce((sum, item) => sum + item.value, 0)
-  const radius = Math.min(width, height) / 2 - 20
-  const centerX = width / 2
-  const centerY = height / 2
+  const total = data.reduce((sum, item) => sum + item.value, 0);
+  const radius = Math.min(width, height) / 2 - 20;
+  const centerX = width / 2;
+  const centerY = height / 2;
 
-  let currentAngle = 0
+  let currentAngle = 0;
 
   const createArc = (startAngle: number, endAngle: number) => {
-    const start = polarToCartesian(centerX, centerY, radius, endAngle)
-    const end = polarToCartesian(centerX, centerY, radius, startAngle)
-    const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1'
-    
-    return `M ${centerX} ${centerY} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`
-  }
+    const start = polarToCartesian(centerX, centerY, radius, endAngle);
+    const end = polarToCartesian(centerX, centerY, radius, startAngle);
+    const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
 
-  const polarToCartesian = (centerX: number, centerY: number, radius: number, angleInDegrees: number) => {
-    const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0
+    return `M ${centerX} ${centerY} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y} Z`;
+  };
+
+  const polarToCartesian = (
+    centerX: number,
+    centerY: number,
+    radius: number,
+    angleInDegrees: number
+  ) => {
+    const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
     return {
-      x: centerX + (radius * Math.cos(angleInRadians)),
-      y: centerY + (radius * Math.sin(angleInRadians))
-    }
-  }
+      x: centerX + radius * Math.cos(angleInRadians),
+      y: centerY + radius * Math.sin(angleInRadians),
+    };
+  };
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border ${className}`}>
@@ -342,10 +366,10 @@ export const PieChart: React.FC<PieChartProps> = ({
         <div className="flex items-center justify-center">
           <svg width={width} height={height} className="mr-4">
             {data.map((item, index) => {
-              const percentage = (item.value / total) * 100
-              const startAngle = currentAngle
-              const endAngle = currentAngle + (percentage / 100) * 360
-              currentAngle = endAngle
+              const percentage = (item.value / total) * 100;
+              const startAngle = currentAngle;
+              const endAngle = currentAngle + (percentage / 100) * 360;
+              currentAngle = endAngle;
 
               return (
                 <path
@@ -356,10 +380,10 @@ export const PieChart: React.FC<PieChartProps> = ({
                 >
                   <title>{`${item.label}: ${item.value} (${percentage.toFixed(1)}%)`}</title>
                 </path>
-              )
+              );
             })}
           </svg>
-          
+
           {showLegend && (
             <div className="space-y-2">
               {data.map((item, index) => (
@@ -379,5 +403,5 @@ export const PieChart: React.FC<PieChartProps> = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};

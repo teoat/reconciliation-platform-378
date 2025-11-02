@@ -1,4 +1,5 @@
 // Error handling utilities and types
+import { logger } from '@/services/logger'
 
 export enum ErrorType {
   VALIDATION = 'validation',
@@ -22,7 +23,7 @@ export interface AppError {
   severity: ErrorSeverity
   message: string
   code: string
-  details?: any
+  details?: Record<string, unknown>
   recoverable: boolean
   retryable: boolean
   timestamp: Date
@@ -57,7 +58,7 @@ export class ErrorHandler {
     }
   }
 
-  public handleError(error: Error | AppError, context?: any): AppError {
+  public handleError(error: Error | AppError, context?: Record<string, unknown>): AppError {
     const appError = this.normalizeError(error, context)
     
     if (this.config.enableLogging) {
@@ -75,7 +76,7 @@ export class ErrorHandler {
     return appError
   }
 
-  private normalizeError(error: Error | AppError, context?: any): AppError {
+  private normalizeError(error: Error | AppError, context?: Record<string, unknown>): AppError {
     if (this.isAppError(error)) {
       return error
     }
@@ -96,8 +97,15 @@ export class ErrorHandler {
     }
   }
 
-  private isAppError(error: any): error is AppError {
-    return error && typeof error.type === 'string' && typeof error.severity === 'string'
+  private isAppError(error: unknown): error is AppError {
+    return (
+      typeof error === 'object' &&
+      error !== null &&
+      'type' in error &&
+      'severity' in error &&
+      typeof (error as { type?: unknown }).type === 'string' &&
+      typeof (error as { severity?: unknown }).severity === 'string'
+    )
   }
 
   private determineErrorType(error: Error): ErrorType {
@@ -160,17 +168,26 @@ export class ErrorHandler {
     this.errorLog.push(error)
     
     const logMessage = `[${error.severity.toUpperCase()}] ${error.type}: ${error.message}`
+    const errorData: Record<string, unknown> = {
+      type: error.type,
+      message: error.message,
+      severity: error.severity,
+      code: error.code,
+      retryable: error.retryable,
+      recoverable: error.recoverable,
+      timestamp: error.timestamp,
+    }
     
     switch (error.severity) {
       case ErrorSeverity.CRITICAL:
       case ErrorSeverity.HIGH:
-        console.error(logMessage, error)
+        logger.error(logMessage, errorData)
         break
       case ErrorSeverity.MEDIUM:
-        console.warn(logMessage, error)
+        logger.warning(logMessage, errorData)
         break
       case ErrorSeverity.LOW:
-        console.info(logMessage, error)
+        logger.info(logMessage, errorData)
         break
     }
   }
@@ -178,7 +195,13 @@ export class ErrorHandler {
   private reportError(error: AppError): void {
     // In a real application, this would send the error to a monitoring service
     // like Sentry, LogRocket, or a custom error reporting endpoint
-    console.log('Reporting error:', error)
+    const errorData: Record<string, unknown> = {
+      type: error.type,
+      message: error.message,
+      severity: error.severity,
+      code: error.code,
+    }
+    logger.info('Reporting error', errorData)
   }
 
   private attemptRecovery(error: AppError): void {
@@ -200,7 +223,7 @@ export class ErrorHandler {
 
   private retryOperation(error: AppError): void {
     // In a real application, this would retry the failed operation
-    console.log('Retrying operation for error:', error)
+    logger.info('Retrying operation for error', { error })
   }
 
   public getErrorLog(): AppError[] {
@@ -247,9 +270,9 @@ export const globalErrorHandler = new ErrorHandler()
 // Error boundary for React components
 export class ErrorBoundary extends Error {
   public componentStack?: string
-  public errorInfo?: any
+  public errorInfo?: Record<string, unknown>
 
-  constructor(message: string, componentStack?: string, errorInfo?: any) {
+  constructor(message: string, componentStack?: string, errorInfo?: Record<string, unknown>) {
     super(message)
     this.name = 'ErrorBoundary'
     this.componentStack = componentStack
@@ -262,7 +285,7 @@ export const createError = (
   type: ErrorType,
   message: string,
   severity: ErrorSeverity = ErrorSeverity.MEDIUM,
-  details?: any
+  details?: Record<string, unknown>
 ): AppError => {
   return {
     type,
@@ -276,32 +299,62 @@ export const createError = (
   }
 }
 
-export const isNetworkError = (error: any): boolean => {
+export const isNetworkError = (error: unknown): boolean => {
   return error instanceof TypeError && error.message.includes('fetch')
 }
 
-export const isValidationError = (error: any): boolean => {
-  return error && error.type === ErrorType.VALIDATION
+export const isValidationError = (error: unknown): boolean => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'type' in error &&
+    (error as { type?: unknown }).type === ErrorType.VALIDATION
+  )
 }
 
-export const isAuthenticationError = (error: any): boolean => {
-  return error && error.type === ErrorType.AUTHENTICATION
+export const isAuthenticationError = (error: unknown): boolean => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'type' in error &&
+    (error as { type?: unknown }).type === ErrorType.AUTHENTICATION
+  )
 }
 
-export const isAuthorizationError = (error: any): boolean => {
-  return error && error.type === ErrorType.AUTHORIZATION
+export const isAuthorizationError = (error: unknown): boolean => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'type' in error &&
+    (error as { type?: unknown }).type === ErrorType.AUTHORIZATION
+  )
 }
 
-export const isServerError = (error: any): boolean => {
-  return error && error.type === ErrorType.SERVER
+export const isServerError = (error: unknown): boolean => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'type' in error &&
+    (error as { type?: unknown }).type === ErrorType.SERVER
+  )
 }
 
-export const isRetryableError = (error: any): boolean => {
-  return error && error.retryable === true
+export const isRetryableError = (error: unknown): boolean => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'retryable' in error &&
+    (error as { retryable?: boolean }).retryable === true
+  )
 }
 
-export const isRecoverableError = (error: any): boolean => {
-  return error && error.recoverable === true
+export const isRecoverableError = (error: unknown): boolean => {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'recoverable' in error &&
+    (error as { recoverable?: boolean }).recoverable === true
+  )
 }
 
 // Error message mapping

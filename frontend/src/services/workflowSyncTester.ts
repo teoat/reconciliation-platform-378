@@ -1,4 +1,5 @@
 // Workflow State Synchronization Testing
+import { logger } from '@/services/logger'
 // Comprehensive testing suite for verifying workflow state synchronization across browsers
 
 import React from 'react'
@@ -894,67 +895,67 @@ export class WorkflowSyncTester {
   private async simulateBrowserConnect(browser: string): Promise<void> {
     // Mock implementation
     this.activeBrowsers.add(browser)
-    console.log(`Browser ${browser} connected`)
+    logger.log(`Browser ${browser} connected`)
   }
 
   private async simulateWorkflowStateChange(state: any): Promise<void> {
     // Mock implementation
-    console.log('Workflow state changed:', state)
+    logger.log('Workflow state changed:', state)
   }
 
   private async simulateStepTransition(transition: any): Promise<void> {
     // Mock implementation
-    console.log('Step transition:', transition)
+    logger.log('Step transition:', transition)
   }
 
   private async simulateDataStateChange(dataChange: any): Promise<void> {
     // Mock implementation
-    console.log('Data state changed:', dataChange)
+    logger.log('Data state changed:', dataChange)
   }
 
   private async simulateBrowserStepChange(browser: string, step: string): Promise<void> {
     // Mock implementation
-    console.log(`Browser ${browser} changed step to ${step}`)
+    logger.log(`Browser ${browser} changed step to ${step}`)
   }
 
   private async simulateStepValidation(validation: any): Promise<void> {
     // Mock implementation
-    console.log('Step validation:', validation)
+    logger.log('Step validation:', validation)
   }
 
   private async simulateStepPermissionsChange(permissions: any): Promise<void> {
     // Mock implementation
-    console.log('Step permissions changed:', permissions)
+    logger.log('Step permissions changed:', permissions)
   }
 
   private async simulateProgressUpdate(progress: number): Promise<void> {
     // Mock implementation
-    console.log('Progress updated:', progress)
+    logger.log('Progress updated:', progress)
   }
 
   private async simulateDataChange(dataChange: any): Promise<void> {
     // Mock implementation
-    console.log('Data changed:', dataChange)
+    logger.log('Data changed:', dataChange)
   }
 
   private async simulateProgressIndicatorUpdate(indicator: any): Promise<void> {
     // Mock implementation
-    console.log('Progress indicator updated:', indicator)
+    logger.log('Progress indicator updated:', indicator)
   }
 
   private async simulateErrorState(errorState: any): Promise<void> {
     // Mock implementation
-    console.log('Error state:', errorState)
+    logger.log('Error state:', errorState)
   }
 
   private async simulateRecoveryState(recoveryState: any): Promise<void> {
     // Mock implementation
-    console.log('Recovery state:', recoveryState)
+    logger.log('Recovery state:', recoveryState)
   }
 
   private async simulateRollbackState(rollbackState: any): Promise<void> {
     // Mock implementation
-    console.log('Rollback state:', rollbackState)
+    logger.log('Rollback state:', rollbackState)
   }
 
   private async getBrowserWorkflowState(browser: string): Promise<any> {

@@ -13,6 +13,7 @@ use prometheus::{
 };
 use crate::errors::{AppError, AppResult};
 use uuid::Uuid;
+use log;
 
 // ============================================================================
 // COMPREHENSIVE METRICS DEFINITIONS
@@ -23,131 +24,218 @@ lazy_static::lazy_static! {
     static ref HTTP_REQUESTS_TOTAL: CounterVec = CounterVec::new(
         Opts::new("http_requests_total", "Total number of HTTP requests"),
         &["method", "endpoint", "status_code"]
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create HTTP_REQUESTS_TOTAL metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref HTTP_REQUEST_DURATION: HistogramVec = HistogramVec::new(
         HistogramOpts::new("http_request_duration_seconds", "HTTP request duration in seconds"),
         &["method", "endpoint"]
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create HTTP_REQUEST_DURATION metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref HTTP_REQUEST_SIZE: HistogramVec = HistogramVec::new(
         HistogramOpts::new("http_request_size_bytes", "HTTP request size in bytes"),
         &["method", "endpoint"]
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create HTTP_REQUEST_SIZE metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref HTTP_RESPONSE_SIZE: HistogramVec = HistogramVec::new(
         HistogramOpts::new("http_response_size_bytes", "HTTP response size in bytes"),
         &["method", "endpoint"]
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create HTTP_RESPONSE_SIZE metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     // Database Metrics
     static ref DATABASE_CONNECTIONS_ACTIVE: Gauge = Gauge::new(
         "database_connections_active", "Number of active database connections"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create DATABASE_CONNECTIONS_ACTIVE metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref DATABASE_CONNECTIONS_IDLE: Gauge = Gauge::new(
         "database_connections_idle", "Number of idle database connections"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create DATABASE_CONNECTIONS_IDLE metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref DATABASE_QUERY_DURATION: HistogramVec = HistogramVec::new(
         HistogramOpts::new("database_query_duration_seconds", "Database query duration in seconds"),
         &["query_type"]
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create DATABASE_QUERY_DURATION metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref DATABASE_QUERIES_TOTAL: CounterVec = CounterVec::new(
         Opts::new("database_queries_total", "Total number of database queries"),
         &["query_type", "status"]
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create DATABASE_QUERIES_TOTAL metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     // Cache Metrics
     static ref CACHE_HITS_TOTAL: Counter = Counter::new(
         "cache_hits_total", "Total number of cache hits"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create CACHE_HITS_TOTAL metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref CACHE_MISSES_TOTAL: Counter = Counter::new(
         "cache_misses_total", "Total number of cache misses"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create CACHE_MISSES_TOTAL metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref CACHE_SIZE: Gauge = Gauge::new(
         "cache_size_bytes", "Current cache size in bytes"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create CACHE_SIZE metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref CACHE_EVICTIONS_TOTAL: Counter = Counter::new(
         "cache_evictions_total", "Total number of cache evictions"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create CACHE_EVICTIONS_TOTAL metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     // Reconciliation Metrics
     static ref RECONCILIATION_JOBS_TOTAL: Counter = Counter::new(
         "reconciliation_jobs_total", "Total number of reconciliation jobs"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create RECONCILIATION_JOBS_TOTAL metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref RECONCILIATION_JOBS_ACTIVE: Gauge = Gauge::new(
         "reconciliation_jobs_active", "Number of active reconciliation jobs"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create RECONCILIATION_JOBS_ACTIVE metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref RECONCILIATION_JOB_DURATION: Histogram = Histogram::with_opts(
         HistogramOpts::new("reconciliation_job_duration_seconds", "Reconciliation job duration in seconds")
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create RECONCILIATION_JOB_DURATION metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref RECONCILIATION_RECORDS_PROCESSED: Counter = Counter::new(
         "reconciliation_records_processed_total", "Total number of reconciliation records processed"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create RECONCILIATION_RECORDS_PROCESSED metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref RECONCILIATION_MATCHES_FOUND: Counter = Counter::new(
         "reconciliation_matches_found_total", "Total number of reconciliation matches found"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create RECONCILIATION_MATCHES_FOUND metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     // File Processing Metrics
     static ref FILE_UPLOADS_TOTAL: Counter = Counter::new(
         "file_uploads_total", "Total number of file uploads"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create FILE_UPLOADS_TOTAL metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref FILE_UPLOAD_SIZE: Histogram = Histogram::with_opts(
         HistogramOpts::new("file_upload_size_bytes", "File upload size in bytes")
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create FILE_UPLOAD_SIZE metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref FILE_PROCESSING_DURATION: Histogram = Histogram::with_opts(
         HistogramOpts::new("file_processing_duration_seconds", "File processing duration in seconds")
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create FILE_PROCESSING_DURATION metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     // WebSocket Metrics
     static ref WEBSOCKET_CONNECTIONS_ACTIVE: Gauge = Gauge::new(
         "websocket_connections_active", "Number of active WebSocket connections"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create WEBSOCKET_CONNECTIONS_ACTIVE metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref WEBSOCKET_MESSAGES_TOTAL: Counter = Counter::new(
         "websocket_messages_total", "Total number of WebSocket messages"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create WEBSOCKET_MESSAGES_TOTAL metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref WEBSOCKET_MESSAGE_SIZE: Histogram = Histogram::with_opts(
         HistogramOpts::new("websocket_message_size_bytes", "WebSocket message size in bytes")
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create WEBSOCKET_MESSAGE_SIZE metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     // System Metrics
     static ref SYSTEM_MEMORY_USAGE: Gauge = Gauge::new(
         "system_memory_usage_percent", "System memory usage percentage"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create SYSTEM_MEMORY_USAGE metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref SYSTEM_CPU_USAGE: Gauge = Gauge::new(
         "system_cpu_usage_percent", "System CPU usage percentage"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create SYSTEM_CPU_USAGE metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref SYSTEM_DISK_USAGE: Gauge = Gauge::new(
         "system_disk_usage_percent", "System disk usage percentage"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create SYSTEM_DISK_USAGE metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     // User Metrics
     static ref USER_SESSIONS_ACTIVE: Gauge = Gauge::new(
         "user_sessions_active", "Number of active user sessions"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create USER_SESSIONS_ACTIVE metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref USER_LOGINS_TOTAL: Counter = Counter::new(
         "user_logins_total", "Total number of user logins"
-    ).unwrap();
-    
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create USER_LOGINS_TOTAL metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
+
     static ref USER_ACTIONS_TOTAL: Counter = Counter::new(
         "user_actions_total", "Total number of user actions"
-    ).unwrap();
+    ).unwrap_or_else(|e| {
+        log::error!("Failed to create USER_ACTIONS_TOTAL metric: {}", e);
+        panic!("Failed to initialize metrics: {}", e);
+    });
 }
 
 // ============================================================================
@@ -224,36 +312,94 @@ impl MonitoringService {
     pub fn new() -> Self {
         let registry = Registry::new();
         
-        // Register all metrics
-        registry.register(Box::new(HTTP_REQUESTS_TOTAL.clone())).unwrap();
-        registry.register(Box::new(HTTP_REQUEST_DURATION.clone())).unwrap();
-        registry.register(Box::new(HTTP_REQUEST_SIZE.clone())).unwrap();
-        registry.register(Box::new(HTTP_RESPONSE_SIZE.clone())).unwrap();
-        registry.register(Box::new(DATABASE_CONNECTIONS_ACTIVE.clone())).unwrap();
-        registry.register(Box::new(DATABASE_CONNECTIONS_IDLE.clone())).unwrap();
-        registry.register(Box::new(DATABASE_QUERY_DURATION.clone())).unwrap();
-        registry.register(Box::new(DATABASE_QUERIES_TOTAL.clone())).unwrap();
-        registry.register(Box::new(CACHE_HITS_TOTAL.clone())).unwrap();
-        registry.register(Box::new(CACHE_MISSES_TOTAL.clone())).unwrap();
-        registry.register(Box::new(CACHE_SIZE.clone())).unwrap();
-        registry.register(Box::new(CACHE_EVICTIONS_TOTAL.clone())).unwrap();
-        registry.register(Box::new(RECONCILIATION_JOBS_TOTAL.clone())).unwrap();
-        registry.register(Box::new(RECONCILIATION_JOBS_ACTIVE.clone())).unwrap();
-        registry.register(Box::new(RECONCILIATION_JOB_DURATION.clone())).unwrap();
-        registry.register(Box::new(RECONCILIATION_RECORDS_PROCESSED.clone())).unwrap();
-        registry.register(Box::new(RECONCILIATION_MATCHES_FOUND.clone())).unwrap();
-        registry.register(Box::new(FILE_UPLOADS_TOTAL.clone())).unwrap();
-        registry.register(Box::new(FILE_UPLOAD_SIZE.clone())).unwrap();
-        registry.register(Box::new(FILE_PROCESSING_DURATION.clone())).unwrap();
-        registry.register(Box::new(WEBSOCKET_CONNECTIONS_ACTIVE.clone())).unwrap();
-        registry.register(Box::new(WEBSOCKET_MESSAGES_TOTAL.clone())).unwrap();
-        registry.register(Box::new(WEBSOCKET_MESSAGE_SIZE.clone())).unwrap();
-        registry.register(Box::new(SYSTEM_MEMORY_USAGE.clone())).unwrap();
-        registry.register(Box::new(SYSTEM_CPU_USAGE.clone())).unwrap();
-        registry.register(Box::new(SYSTEM_DISK_USAGE.clone())).unwrap();
-        registry.register(Box::new(USER_SESSIONS_ACTIVE.clone())).unwrap();
-        registry.register(Box::new(USER_LOGINS_TOTAL.clone())).unwrap();
-        registry.register(Box::new(USER_ACTIONS_TOTAL.clone())).unwrap();
+        // Register all metrics - log errors but continue if registration fails (duplicates are ok)
+        if let Err(e) = registry.register(Box::new(HTTP_REQUESTS_TOTAL.clone())) {
+            log::warn!("Failed to register HTTP_REQUESTS_TOTAL metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(HTTP_REQUEST_DURATION.clone())) {
+            log::warn!("Failed to register HTTP_REQUEST_DURATION metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(HTTP_REQUEST_SIZE.clone())) {
+            log::warn!("Failed to register HTTP_REQUEST_SIZE metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(HTTP_RESPONSE_SIZE.clone())) {
+            log::warn!("Failed to register HTTP_RESPONSE_SIZE metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(DATABASE_CONNECTIONS_ACTIVE.clone())) {
+            log::warn!("Failed to register DATABASE_CONNECTIONS_ACTIVE metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(DATABASE_CONNECTIONS_IDLE.clone())) {
+            log::warn!("Failed to register DATABASE_CONNECTIONS_IDLE metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(DATABASE_QUERY_DURATION.clone())) {
+            log::warn!("Failed to register DATABASE_QUERY_DURATION metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(DATABASE_QUERIES_TOTAL.clone())) {
+            log::warn!("Failed to register DATABASE_QUERIES_TOTAL metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(CACHE_HITS_TOTAL.clone())) {
+            log::warn!("Failed to register CACHE_HITS_TOTAL metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(CACHE_MISSES_TOTAL.clone())) {
+            log::warn!("Failed to register CACHE_MISSES_TOTAL metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(CACHE_SIZE.clone())) {
+            log::warn!("Failed to register CACHE_SIZE metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(CACHE_EVICTIONS_TOTAL.clone())) {
+            log::warn!("Failed to register CACHE_EVICTIONS_TOTAL metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(RECONCILIATION_JOBS_TOTAL.clone())) {
+            log::warn!("Failed to register RECONCILIATION_JOBS_TOTAL metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(RECONCILIATION_JOBS_ACTIVE.clone())) {
+            log::warn!("Failed to register RECONCILIATION_JOBS_ACTIVE metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(RECONCILIATION_JOB_DURATION.clone())) {
+            log::warn!("Failed to register RECONCILIATION_JOB_DURATION metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(RECONCILIATION_RECORDS_PROCESSED.clone())) {
+            log::warn!("Failed to register RECONCILIATION_RECORDS_PROCESSED metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(RECONCILIATION_MATCHES_FOUND.clone())) {
+            log::warn!("Failed to register RECONCILIATION_MATCHES_FOUND metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(FILE_UPLOADS_TOTAL.clone())) {
+            log::warn!("Failed to register FILE_UPLOADS_TOTAL metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(FILE_UPLOAD_SIZE.clone())) {
+            log::warn!("Failed to register FILE_UPLOAD_SIZE metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(FILE_PROCESSING_DURATION.clone())) {
+            log::warn!("Failed to register FILE_PROCESSING_DURATION metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(WEBSOCKET_CONNECTIONS_ACTIVE.clone())) {
+            log::warn!("Failed to register WEBSOCKET_CONNECTIONS_ACTIVE metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(WEBSOCKET_MESSAGES_TOTAL.clone())) {
+            log::warn!("Failed to register WEBSOCKET_MESSAGES_TOTAL metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(WEBSOCKET_MESSAGE_SIZE.clone())) {
+            log::warn!("Failed to register WEBSOCKET_MESSAGE_SIZE metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(SYSTEM_MEMORY_USAGE.clone())) {
+            log::warn!("Failed to register SYSTEM_MEMORY_USAGE metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(SYSTEM_CPU_USAGE.clone())) {
+            log::warn!("Failed to register SYSTEM_CPU_USAGE metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(SYSTEM_DISK_USAGE.clone())) {
+            log::warn!("Failed to register SYSTEM_DISK_USAGE metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(USER_SESSIONS_ACTIVE.clone())) {
+            log::warn!("Failed to register USER_SESSIONS_ACTIVE metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(USER_LOGINS_TOTAL.clone())) {
+            log::warn!("Failed to register USER_LOGINS_TOTAL metric: {}", e);
+        }
+        if let Err(e) = registry.register(Box::new(USER_ACTIONS_TOTAL.clone())) {
+            log::warn!("Failed to register USER_ACTIONS_TOTAL metric: {}", e);
+        }
         
         Self {
             registry,

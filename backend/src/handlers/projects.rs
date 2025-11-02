@@ -1,5 +1,6 @@
 //! Project management handlers module
 
+use actix_multipart::Multipart;
 use actix_web::{web, HttpRequest, HttpResponse, Result};
 use uuid::Uuid;
 use std::time::Duration;
@@ -9,8 +10,11 @@ use crate::database::Database;
 use crate::config::Config;
 use crate::services::cache::MultiLevelCache;
 use crate::models::JsonValue;
-use crate::handlers::types::{SearchQueryParams, CreateProjectRequest, UpdateProjectRequest, CreateDataSourceRequest, ApiResponse};
+use crate::handlers::types::{SearchQueryParams, CreateProjectRequest, UpdateProjectRequest, CreateDataSourceRequest, ApiResponse, FileUploadRequest};
+use crate::errors::ErrorResponse;
+use crate::models::{Project, UploadedFile};
 use crate::handlers::helpers::extract_user_id;
+use crate::utils::check_project_permission;
 
 /// Configure project management routes
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
@@ -24,10 +28,25 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .route("/{project_id}/data-sources", web::post().to(create_data_source))
         .route("/{project_id}/reconciliation-jobs", web::get().to(get_reconciliation_jobs))
         .route("/{project_id}/reconciliation-jobs", web::post().to(create_reconciliation_job))
-        .route("/{project_id}/reconciliation/view", web::get().to(get_project_reconciliation_view));
+        .route("/{project_id}/reconciliation/view", web::get().to(get_project_reconciliation_view))
+        .route("/{project_id}/files/upload", web::post().to(upload_file_to_project));
 }
 
 /// Get projects endpoint
+#[utoipa::path(
+    get,
+    path = "/api/v1/projects",
+    tag = "projects",
+    params(
+        ("page" = Option<i32>, Query, description = "Page number (1-based)"),
+        ("per_page" = Option<i32>, Query, description = "Items per page (max 100)")
+    ),
+    responses(
+        (status = 200, description = "Projects retrieved successfully", body = ApiResponse<Vec<Project>>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_projects(
     query: web::Query<SearchQueryParams>,
     data: web::Data<Database>,
@@ -390,7 +409,8 @@ pub async fn create_reconciliation_job(
     // Extract matching_rules from settings or use defaults
     let matching_rules = if let Some(settings) = &req.settings {
         if let Some(rules) = settings.get("matching_rules") {
-            serde_json::from_value(rules.clone()).unwrap_or_default()
+            serde_json::from_value(rules.clone())
+                .map_err(|e| AppError::Validation(format!("Invalid matching_rules format: {}", e)))?
         } else {
             vec![]
         }
@@ -406,7 +426,6 @@ pub async fn create_reconciliation_job(
         source_b_id: req.target_data_source_id,
         confidence_threshold: req.confidence_threshold,
         matching_rules,
-        created_by: user_id,
     };
 
     // ✅ ERROR TRANSLATION: Translate errors to user-friendly messages
@@ -442,4 +461,61 @@ pub async fn create_reconciliation_job(
         message: Some("Reconciliation job created successfully".to_string()),
         error: None,
     }))
+}
+
+/// Upload file to project endpoint (REST compliant - uses path parameter)
+#[utoipa::path(
+    post,
+    path = "/api/v1/projects/{project_id}/files/upload",
+    tag = "projects",
+    params(
+        ("project_id" = Uuid, Path, description = "Project ID")
+    ),
+    request_body(content = inline(FileUploadRequest), content_type = "multipart/form-data"),
+    responses(
+        (status = 201, description = "File uploaded successfully", body = ApiResponse<UploadedFile>),
+        (status = 400, description = "Invalid request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden", body = ErrorResponse),
+        (status = 422, description = "Validation error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
+pub async fn upload_file_to_project(
+    project_id: web::Path<Uuid>,
+    payload: Multipart,
+    req: HttpRequest,
+    data: web::Data<Database>,
+    cache: web::Data<MultiLevelCache>,
+    config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let project_id_val = project_id.into_inner();
+
+    // Extract user_id from request
+    let user_id = extract_user_id(&req)?;
+
+    // ✅ SECURITY: Check authorization before allowing upload
+    check_project_permission(data.get_ref(), user_id, project_id_val)?;
+
+    let file_service = crate::services::file::FileService::new(
+        data.get_ref().clone(),
+        config.upload_path.clone(),
+    );
+
+    let file_info = file_service.upload_file(payload, project_id_val, user_id).await?;
+
+    // ✅ CACHE INVALIDATION: Clear project cache after file upload
+    cache.delete(&format!("project:{}", project_id_val)).await.unwrap_or_default();
+    cache.delete(&format!("files:project:{}", project_id_val)).await.unwrap_or_default();
+
+    // REST compliant: Return 201 Created with Location header
+    let location = format!("/api/v1/files/{}", file_info.id);
+    Ok(HttpResponse::Created()
+        .append_header((actix_web::http::header::LOCATION, location))
+        .json(ApiResponse {
+            success: true,
+            data: Some(file_info),
+            message: Some("File uploaded successfully".to_string()),
+            error: None,
+        }))
 }

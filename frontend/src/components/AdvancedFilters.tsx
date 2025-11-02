@@ -1,64 +1,62 @@
 'use client'
 
 import { useState } from 'react'
-import { 
-  X, 
-  Filter, 
-  Search, 
-  Calendar, 
-  DollarSign, 
-  Hash, 
-  Type, 
-  CheckSquare, 
-  Square,
-  Plus,
-  Minus,
-  ArrowUpDown,
-  ChevronDown,
-  ChevronUp,
-  AlertCircle,
-  Info,
-  Settings,
-  Save,
-  RefreshCw,
-  Trash2,
-  Copy,
-  Edit,
-  Eye,
-  EyeOff,
-  Lock,
-  Unlock,
-  Key,
-  Globe,
-  Database,
-  Cloud,
-  Server,
-  Wifi,
-  WifiOff,
-  Bell,
-  BellOff,
-  Star,
-  Bookmark,
-  Share2,
-  ExternalLink,
-  Download,
-  Upload,
-  File,
-  FileText,
-  FileCheck,
-  FileX,
-  FilePlus,
-  FileMinus,
-  FileEdit,
-  FileSearch,
-  FileImage,
-  FileVideo,
-  FileAudio,
-  FileSpreadsheet,
-  FileCode,
-  FileJson,
-  FileArchive
-} from 'lucide-react'
+import { X } from 'lucide-react'
+import { Filter } from 'lucide-react'
+import { Search } from 'lucide-react'
+import { Calendar } from 'lucide-react'
+import { DollarSign } from 'lucide-react'
+import { Hash } from 'lucide-react'
+import { Type } from 'lucide-react'
+import { CheckSquare } from 'lucide-react'
+import { Square } from 'lucide-react'
+import { Plus } from 'lucide-react'
+import { Minus } from 'lucide-react'
+import { ArrowUpDown } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
+import { ChevronUp } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { Info } from 'lucide-react'
+import { Settings } from 'lucide-react'
+import { Save } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
+import { Copy } from 'lucide-react'
+import { Edit } from 'lucide-react'
+import { Eye } from 'lucide-react'
+import { EyeOff } from 'lucide-react'
+import { Lock } from 'lucide-react'
+import { Unlock } from 'lucide-react'
+import { Key } from 'lucide-react'
+import { Globe } from 'lucide-react'
+import { Database } from 'lucide-react'
+import { Cloud } from 'lucide-react'
+import { Server } from 'lucide-react'
+import { Wifi } from 'lucide-react'
+import { WifiOff } from 'lucide-react'
+import { Bell } from 'lucide-react'
+import { BellOff } from 'lucide-react'
+import { Star } from 'lucide-react'
+import { Bookmark } from 'lucide-react'
+import { Share2 } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
+import { Download } from 'lucide-react'
+import { Upload } from 'lucide-react'
+import { File } from 'lucide-react'
+import { FileText } from 'lucide-react'
+import { FileCheck } from 'lucide-react'
+import { FileX } from 'lucide-react'
+import { FilePlus } from 'lucide-react'
+import { FileMinus } from 'lucide-react'
+import { FileEdit } from 'lucide-react'
+import { FileSearch } from 'lucide-react'
+import { FileImage } from 'lucide-react'
+import { FileVideo } from 'lucide-react'
+import { FileAudio } from 'lucide-react'
+import { FileSpreadsheet } from 'lucide-react'
+import { FileCode } from 'lucide-react'
+import { FileJson } from 'lucide-react'
+import { FileArchive } from 'lucide-react'
 
 interface FilterConfig {
   id: string

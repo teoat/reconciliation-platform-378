@@ -1,45 +1,45 @@
 // Auto-Save Recovery Prompt Component
 // Provides UI for handling recovered form data
 
-import React from 'react'
-import { AlertTriangle, RotateCcw, Trash2, Eye, X } from 'lucide-react'
-import { RecoveryPrompt } from './autoSaveService'
+import React from 'react';
+import { AlertTriangle, RotateCcw, Trash2, Eye, X } from 'lucide-react';
+import { RecoveryPrompt } from './autoSaveService';
 
 interface RecoveryPromptProps {
-  prompt: RecoveryPrompt
-  onAction: (action: RecoveryPrompt['action']) => void
-  onDismiss: () => void
-  onCompare?: (data: Record<string, any>) => void
+  prompt: RecoveryPrompt;
+  onAction: (action: RecoveryPrompt['action']) => void;
+  onDismiss: () => void;
+  onCompare?: (data: Record<string, unknown>) => void;
 }
 
 export const AutoSaveRecoveryPrompt: React.FC<RecoveryPromptProps> = ({
   prompt,
   onAction,
   onDismiss,
-  onCompare
+  onCompare,
 }) => {
   const formatTimestamp = (timestamp: number): string => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
-    const diffMinutes = Math.floor(diffMs / (1000 * 60))
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
 
-    if (diffMinutes < 1) return 'Just now'
-    if (diffMinutes < 60) return `${diffMinutes} minutes ago`
-    if (diffHours < 24) return `${diffHours} hours ago`
-    if (diffDays < 7) return `${diffDays} days ago`
-    
-    return date.toLocaleDateString()
-  }
+    if (diffMinutes < 1) return 'Just now';
+    if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+    if (diffHours < 24) return `${diffHours} hours ago`;
+    if (diffDays < 7) return `${diffDays} days ago`;
 
-  const getDataPreview = (data: Record<string, any>): string => {
-    const keys = Object.keys(data)
-    if (keys.length === 0) return 'No data'
-    if (keys.length <= 3) return keys.join(', ')
-    return `${keys.slice(0, 3).join(', ')} and ${keys.length - 3} more...`
-  }
+    return date.toLocaleDateString();
+  };
+
+  const getDataPreview = (data: Record<string, unknown>): string => {
+    const keys = Object.keys(data);
+    if (keys.length === 0) return 'No data';
+    if (keys.length <= 3) return keys.join(', ');
+    return `${keys.slice(0, 3).join(', ')} and ${keys.length - 3} more...`;
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -48,9 +48,7 @@ export const AutoSaveRecoveryPrompt: React.FC<RecoveryPromptProps> = ({
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
             <AlertTriangle className="h-5 w-5 text-amber-500" />
-            <h3 className="text-lg font-semibold text-gray-900">
-              Recover Form Data
-            </h3>
+            <h3 className="text-lg font-semibold text-gray-900">Recover Form Data</h3>
           </div>
           <button
             onClick={onDismiss}
@@ -97,7 +95,7 @@ export const AutoSaveRecoveryPrompt: React.FC<RecoveryPromptProps> = ({
               <RotateCcw className="h-4 w-4" />
               <span>Restore</span>
             </button>
-            
+
             {onCompare && (
               <button
                 onClick={() => onCompare(prompt.data)}
@@ -107,7 +105,7 @@ export const AutoSaveRecoveryPrompt: React.FC<RecoveryPromptProps> = ({
                 <span>Compare</span>
               </button>
             )}
-            
+
             <button
               onClick={() => onAction('discard')}
               className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center space-x-2"
@@ -119,55 +117,55 @@ export const AutoSaveRecoveryPrompt: React.FC<RecoveryPromptProps> = ({
 
           {/* Warning */}
           <div className="text-xs text-gray-500 bg-amber-50 border border-amber-200 rounded-lg p-3">
-            <strong>Note:</strong> Restoring will overwrite your current form data. 
-            Make sure you want to proceed before clicking Restore.
+            <strong>Note:</strong> Restoring will overwrite your current form data. Make sure you
+            want to proceed before clicking Restore.
           </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 // Comparison Modal Component
 interface DataComparisonProps {
-  savedData: Record<string, any>
-  currentData: Record<string, any>
-  onClose: () => void
-  onRestore: () => void
+  savedData: Record<string, unknown>;
+  currentData: Record<string, unknown>;
+  onClose: () => void;
+  onRestore: () => void;
 }
 
 export const DataComparisonModal: React.FC<DataComparisonProps> = ({
   savedData,
   currentData,
   onClose,
-  onRestore
+  onRestore,
 }) => {
   const getDifferences = () => {
     const differences: Array<{
-      field: string
-      saved: any
-      current: any
-      type: 'added' | 'removed' | 'changed'
-    }> = []
+      field: string;
+      saved: any;
+      current: any;
+      type: 'added' | 'removed' | 'changed';
+    }> = [];
 
     // Check for changes and additions
     for (const [key, savedValue] of Object.entries(savedData)) {
-      const currentValue = currentData[key]
-      
+      const currentValue = currentData[key];
+
       if (currentValue === undefined) {
         differences.push({
           field: key,
           saved: savedValue,
           current: undefined,
-          type: 'added'
-        })
+          type: 'added',
+        });
       } else if (JSON.stringify(savedValue) !== JSON.stringify(currentValue)) {
         differences.push({
           field: key,
           saved: savedValue,
           current: currentValue,
-          type: 'changed'
-        })
+          type: 'changed',
+        });
       }
     }
 
@@ -178,54 +176,57 @@ export const DataComparisonModal: React.FC<DataComparisonProps> = ({
           field: key,
           saved: undefined,
           current: currentValue,
-          type: 'removed'
-        })
+          type: 'removed',
+        });
       }
     }
 
-    return differences
-  }
+    return differences;
+  };
 
-  const differences = getDifferences()
+  const differences = getDifferences();
 
   const formatValue = (value: any): string => {
-    if (value === undefined) return 'Not set'
-    if (value === null) return 'null'
-    if (typeof value === 'string') return `"${value}"`
-    if (typeof value === 'object') return JSON.stringify(value, null, 2)
-    return String(value)
-  }
+    if (value === undefined) return 'Not set';
+    if (value === null) return 'null';
+    if (typeof value === 'string') return `"${value}"`;
+    if (typeof value === 'object') return JSON.stringify(value, null, 2);
+    return String(value);
+  };
 
   const getTypeColor = (type: 'added' | 'removed' | 'changed'): string => {
     switch (type) {
-      case 'added': return 'text-green-600 bg-green-50'
-      case 'removed': return 'text-red-600 bg-red-50'
-      case 'changed': return 'text-amber-600 bg-amber-50'
-      default: return 'text-gray-600 bg-gray-50'
+      case 'added':
+        return 'text-green-600 bg-green-50';
+      case 'removed':
+        return 'text-red-600 bg-red-50';
+      case 'changed':
+        return 'text-amber-600 bg-amber-50';
+      default:
+        return 'text-gray-600 bg-gray-50';
     }
-  }
+  };
 
   const getTypeIcon = (type: 'added' | 'removed' | 'changed'): string => {
     switch (type) {
-      case 'added': return '+'
-      case 'removed': return '-'
-      case 'changed': return '~'
-      default: return '?'
+      case 'added':
+        return '+';
+      case 'removed':
+        return '-';
+      case 'changed':
+        return '~';
+      default:
+        return '?';
     }
-  }
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 p-6 max-h-[80vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            Data Comparison
-          </h3>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
+          <h3 className="text-lg font-semibold text-gray-900">Data Comparison</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -242,11 +243,13 @@ export const DataComparisonModal: React.FC<DataComparisonProps> = ({
                 <div key={index} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium text-gray-900">{diff.field}</span>
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(diff.type)}`}>
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-medium ${getTypeColor(diff.type)}`}
+                    >
                       {getTypeIcon(diff.type)} {diff.type}
                     </span>
                   </div>
-                  
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <div className="text-sm text-gray-500 mb-1">Saved Data:</div>
@@ -254,7 +257,7 @@ export const DataComparisonModal: React.FC<DataComparisonProps> = ({
                         {formatValue(diff.saved)}
                       </div>
                     </div>
-                    
+
                     <div>
                       <div className="text-sm text-gray-500 mb-1">Current Data:</div>
                       <div className="bg-gray-50 rounded p-2 text-sm font-mono">
@@ -285,7 +288,7 @@ export const DataComparisonModal: React.FC<DataComparisonProps> = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default AutoSaveRecoveryPrompt
+export default AutoSaveRecoveryPrompt;

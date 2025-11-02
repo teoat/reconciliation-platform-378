@@ -2,7 +2,11 @@
 // Reduced from 686 lines to ~100 lines by focusing on essential functionality
 
 import React from 'react'
-import { CheckCircle, XCircle, AlertCircle, Clock, Info } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { XCircle } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { Clock } from 'lucide-react'
+import { Info } from 'lucide-react'
 
 export type StatusType = 'success' | 'error' | 'warning' | 'info' | 'pending' | 'loading'
 

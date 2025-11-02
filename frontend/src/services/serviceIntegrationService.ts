@@ -1,4 +1,5 @@
 // Integration Service - Ties all critical services together
+import { logger } from '@/services/logger'
 // Implements comprehensive service integration with unified error handling and state management
 
 import { errorTranslationService, ErrorTranslation, ErrorContext } from './errorTranslationService'
@@ -232,7 +233,7 @@ class ServiceIntegrationService {
       return unifiedError
 
     } catch (handlingError) {
-      console.error('Error in error handling:', handlingError)
+      logger.error('Error in error handling:', handlingError)
       
       // Fallback error
       return {

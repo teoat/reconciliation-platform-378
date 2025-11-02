@@ -1,4 +1,5 @@
 // File Processing Analytics Service
+import { logger } from '@/services/logger'
 // High-value enhancement combining File Service + Analytics Service
 
 import { apiClient } from './apiClient'
@@ -20,7 +21,7 @@ interface AnalyticsEvent {
   eventType: 'file_upload_start' | 'file_upload_progress' | 'file_processing_complete' | 'file_error'
   timestamp: Date
   fileId: string
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 }
 
 /**
@@ -174,7 +175,7 @@ export class FileProcessingAnalyticsService {
       try {
         listener(metrics)
       } catch (error) {
-        console.error('Error notifying listener:', error)
+        logger.error('Error notifying listener:', error)
       }
     })
   }

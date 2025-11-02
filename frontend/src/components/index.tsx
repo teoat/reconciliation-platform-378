@@ -835,12 +835,12 @@ export const Progress: React.FC<ProgressProps> = ({
 // ============================================================================
 
 export interface TableProps {
-  data: Record<string, any>[]
+  data: Record<string, unknown>[]
   columns: {
     key: string
     label: string
     sortable?: boolean
-    render?: (value: any, row: Record<string, any>) => React.ReactNode
+    render?: (value: any, row: Record<string, unknown>) => React.ReactNode
   }[]
   sortBy?: string
   sortDirection?: 'asc' | 'desc'

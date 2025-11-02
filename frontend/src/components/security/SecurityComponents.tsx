@@ -1,7 +1,13 @@
 // Security Monitoring Components
 import React, { useState, useEffect } from 'react';
-import { securityService, SecurityEvent, SecuritySeverity, SecurityEventType } from '../services/securityService';
-import { Shield, AlertTriangle, Lock, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
+import { securityService, SecurityEvent, SecuritySeverity, SecurityEventType } from '../services/security';
+import { Shield } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { Lock } from 'lucide-react'
+import { Eye } from 'lucide-react'
+import { EyeOff } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { XCircle } from 'lucide-react';
 
 // Security Dashboard Component
 export const SecurityDashboard: React.FC = () => {

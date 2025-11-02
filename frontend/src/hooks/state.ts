@@ -1,4 +1,5 @@
 // ============================================================================
+import { logger } from '@/services/logger'
 // STATE MANAGEMENT HOOKS - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
@@ -11,7 +12,7 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
       const item = storage.get<T>(key)
       return item !== null ? item : initialValue
     } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error)
+      logger.error(`Error reading localStorage key "${key}":`, error)
       return initialValue
     }
   })
@@ -22,7 +23,7 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
       setStoredValue(valueToStore)
       storage.set(key, valueToStore)
     } catch (error) {
-      console.error(`Error setting localStorage key "${key}":`, error)
+      logger.error(`Error setting localStorage key "${key}":`, error)
     }
   }, [key, storedValue])
 
@@ -31,7 +32,7 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
       setStoredValue(initialValue)
       storage.remove(key)
     } catch (error) {
-      console.error(`Error removing localStorage key "${key}":`, error)
+      logger.error(`Error removing localStorage key "${key}":`, error)
     }
   }, [key, initialValue])
 
@@ -44,7 +45,7 @@ export const useSessionStorage = <T>(key: string, initialValue: T) => {
       const item = sessionStorage.get<T>(key)
       return item !== null ? item : initialValue
     } catch (error) {
-      console.error(`Error reading sessionStorage key "${key}":`, error)
+      logger.error(`Error reading sessionStorage key "${key}":`, error)
       return initialValue
     }
   })
@@ -55,7 +56,7 @@ export const useSessionStorage = <T>(key: string, initialValue: T) => {
       setStoredValue(valueToStore)
       sessionStorage.set(key, valueToStore)
     } catch (error) {
-      console.error(`Error setting sessionStorage key "${key}":`, error)
+      logger.error(`Error setting sessionStorage key "${key}":`, error)
     }
   }, [key, storedValue])
 
@@ -64,7 +65,7 @@ export const useSessionStorage = <T>(key: string, initialValue: T) => {
       setStoredValue(initialValue)
       sessionStorage.remove(key)
     } catch (error) {
-      console.error(`Error removing sessionStorage key "${key}":`, error)
+      logger.error(`Error removing sessionStorage key "${key}":`, error)
     }
   }, [key, initialValue])
 
@@ -111,7 +112,7 @@ export const useArray = <T>(initialValue: T[] = []) => {
   return [array, { push, pop, shift, unshift, insert, remove, update, clear, reset }] as const
 }
 
-export const useObject = <T extends Record<string, any>>(initialValue: T) => {
+export const useObject = <T extends Record<string, unknown>>(initialValue: T) => {
   const [object, setObject] = useState<T>(initialValue)
   
   const setValue = useCallback((key: keyof T, value: T[keyof T]) => 

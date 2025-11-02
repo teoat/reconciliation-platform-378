@@ -1,93 +1,93 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import { 
-  Wifi, 
-  WifiOff, 
-  RefreshCw, 
-  AlertCircle, 
-  CheckCircle,
-  Activity,
-  Database,
-  Users,
-  BarChart3
-} from 'lucide-react'
-import { useWebSocketIntegration } from '../hooks/useWebSocketIntegration'
-import { useHealthCheckAPI } from '../hooks/useApiEnhanced'
-import { useAppSelector } from '../store/store'
-import Button from './ui/Button'
-import Card from './ui/Card'
-import StatusBadge from './ui/StatusBadge'
+import React, { useEffect, useState, useCallback, memo, useMemo } from 'react';
+import { Wifi } from 'lucide-react';
+import { WifiOff } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
+import { Activity } from 'lucide-react';
+import { Database } from 'lucide-react';
+import { Users } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
+import { useWebSocketIntegration } from '../hooks/useWebSocketIntegration';
+import { useHealthCheckAPI } from '../hooks/useApiEnhanced';
+import { useAppSelector } from '../store/unifiedStore';
+import Button from './ui/Button';
+import Card from './ui/Card';
+import StatusBadge from './ui/StatusBadge';
 
 interface ApiIntegrationStatusProps {
-  className?: string
+  className?: string;
 }
 
-const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className = '' }) => {
-  const { 
-    connectionStatus, 
-    activeUsers, 
-    isConnected, 
-    updateUserPresence,
-    sendHeartbeat 
-  } = useWebSocketIntegration()
-  const { isHealthy, isChecking, lastChecked, error: healthError, checkHealth } = useHealthCheckAPI()
-  
-  // Get real-time data from Redux store
-  const auth = useAppSelector(state => state.auth)
-  const projects = useAppSelector(state => state.projects)
-  const dataSources = useAppSelector(state => state.dataSources)
-  const reconciliationJobs = useAppSelector(state => state.reconciliationJobs)
-  const notifications = useAppSelector(state => state.notifications)
+const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ className = '' }) => {
+  const { connectionStatus, activeUsers, isConnected, updateUserPresence, sendHeartbeat } =
+    useWebSocketIntegration();
+  const {
+    isHealthy,
+    isChecking,
+    lastChecked,
+    error: healthError,
+    checkHealth,
+  } = useHealthCheckAPI();
 
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null)
-  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced')
+  // Get real-time data from Redux store
+  const auth = useAppSelector((state) => state.auth);
+  const projects = useAppSelector((state) => state.projects);
+  const dataSources = useAppSelector((state) => state.dataSources);
+  const reconciliationJobs = useAppSelector((state) => state.reconciliationJobs);
+  const notifications = useAppSelector((state) => state.notifications);
+
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
+  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
 
   // Update user presence when component mounts
   useEffect(() => {
     if (isConnected) {
-      updateUserPresence('online', '/api-status')
-      setLastSyncTime(new Date())
-      setSyncStatus('synced')
+      updateUserPresence('online', '/api-status');
+      setLastSyncTime(new Date());
+      setSyncStatus('synced');
     }
-  }, [isConnected, updateUserPresence])
+  }, [isConnected, updateUserPresence]);
 
   // Send heartbeat periodically
   useEffect(() => {
-    if (!isConnected) return
+    if (!isConnected) return;
 
     const heartbeatInterval = setInterval(() => {
-      sendHeartbeat()
-    }, 30000) // Every 30 seconds
+      sendHeartbeat();
+    }, 30000); // Every 30 seconds
 
-    return () => clearInterval(heartbeatInterval)
-  }, [isConnected, sendHeartbeat])
+    return () => clearInterval(heartbeatInterval);
+  }, [isConnected, sendHeartbeat]);
 
   const handleReconnect = useCallback(() => {
-    setSyncStatus('syncing')
+    setSyncStatus('syncing');
     // WebSocket reconnection is handled automatically by the WebSocketProvider
     setTimeout(() => {
-      setSyncStatus('synced')
-    }, 2000)
-  }, [])
+      setSyncStatus('synced');
+    }, 2000);
+  }, []);
 
-  const getConnectionStatusColor = () => {
+  // Memoize color calculations
+  const connectionStatusColor = useMemo(() => {
     switch (connectionStatus) {
       case 'connected':
-        return 'text-green-600'
+        return 'text-green-600';
       case 'connecting':
-        return 'text-yellow-600'
+        return 'text-yellow-600';
       case 'error':
-        return 'text-red-600'
+        return 'text-red-600';
       default:
-        return 'text-gray-600'
+        return 'text-gray-600';
     }
-  }
+  }, [connectionStatus]);
 
-  const getHealthStatusColor = () => {
-    if (isChecking) return 'text-yellow-600'
-    if (isHealthy === true) return 'text-green-600'
-    if (isHealthy === false) return 'text-red-600'
-    return 'text-gray-600'
-  }
+  const healthStatusColor = useMemo(() => {
+    if (isChecking) return 'text-yellow-600';
+    if (isHealthy === true) return 'text-green-600';
+    if (isHealthy === false) return 'text-red-600';
+    return 'text-gray-600';
+  }, [isChecking, isHealthy]);
 
   return (
     <div className={`space-y-4 ${className}`}>
@@ -97,12 +97,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className =
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">API Integration Status</h3>
             <div className="flex items-center space-x-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={checkHealth}
-                disabled={isChecking}
-              >
+              <Button size="sm" variant="outline" onClick={checkHealth} disabled={isChecking}>
                 <RefreshCw className={`h-4 w-4 mr-1 ${isChecking ? 'animate-spin' : ''}`} />
                 Refresh
               </Button>
@@ -122,17 +117,10 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className =
               <div>
                 <p className="text-sm font-medium text-gray-900">WebSocket</p>
                 <div className="flex items-center space-x-2">
-                  <StatusBadge 
-                    status={isConnected ? 'active' : 'inactive'}
-                    variant="outline"
-                  >
+                  <StatusBadge status={isConnected ? 'active' : 'inactive'}>
                     {connectionStatus}
                   </StatusBadge>
-                  {isConnected && (
-                    <span className="text-xs text-gray-500">
-                      Real-time enabled
-                    </span>
-                  )}
+                  {isConnected && <span className="text-xs text-gray-500">Real-time enabled</span>}
                 </div>
               </div>
             </div>
@@ -151,11 +139,18 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className =
               <div>
                 <p className="text-sm font-medium text-gray-900">Backend Health</p>
                 <div className="flex items-center space-x-2">
-                  <StatusBadge 
-                    status={isHealthy === true ? 'active' : isHealthy === false ? 'inactive' : 'warning'}
-                    variant="outline"
+                  <StatusBadge
+                    status={
+                      isHealthy === true ? 'active' : isHealthy === false ? 'inactive' : 'warning'
+                    }
                   >
-                    {isChecking ? 'checking' : isHealthy === true ? 'healthy' : isHealthy === false ? 'unhealthy' : 'unknown'}
+                    {isChecking
+                      ? 'checking'
+                      : isHealthy === true
+                        ? 'healthy'
+                        : isHealthy === false
+                          ? 'unhealthy'
+                          : 'unknown'}
                   </StatusBadge>
                   {lastChecked && (
                     <span className="text-xs text-gray-500">
@@ -197,7 +192,9 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className =
           <div className="mt-4 flex items-center justify-between pt-4 border-t border-gray-200">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`} />
+                <div
+                  className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`}
+                />
                 <span className="text-sm text-gray-600">
                   {isConnected ? 'Connected' : 'Disconnected'}
                 </span>
@@ -208,14 +205,9 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className =
                 </span>
               )}
             </div>
-            
+
             <div className="flex items-center space-x-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleReconnect}
-                disabled={isConnected}
-              >
+              <Button size="sm" variant="outline" onClick={handleReconnect} disabled={isConnected}>
                 <RefreshCw className="h-4 w-4 mr-1" />
                 {isConnected ? 'Connected' : 'Reconnect'}
               </Button>
@@ -228,7 +220,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className =
       <Card>
         <div className="p-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Data Statistics</h3>
-          
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="p-2 bg-blue-100 rounded-lg mx-auto w-fit mb-2">
@@ -237,7 +229,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className =
               <p className="text-sm font-medium text-gray-900">{projects.items.length}</p>
               <p className="text-xs text-gray-500">Projects</p>
             </div>
-            
+
             <div className="text-center">
               <div className="p-2 bg-green-100 rounded-lg mx-auto w-fit mb-2">
                 <Activity className="h-5 w-5 text-green-600" />
@@ -245,7 +237,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className =
               <p className="text-sm font-medium text-gray-900">{dataSources.items.length}</p>
               <p className="text-xs text-gray-500">Data Sources</p>
             </div>
-            
+
             <div className="text-center">
               <div className="p-2 bg-purple-100 rounded-lg mx-auto w-fit mb-2">
                 <BarChart3 className="h-5 w-5 text-purple-600" />
@@ -253,7 +245,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className =
               <p className="text-sm font-medium text-gray-900">{reconciliationJobs.items.length}</p>
               <p className="text-xs text-gray-500">Jobs</p>
             </div>
-            
+
             <div className="text-center">
               <div className="p-2 bg-orange-100 rounded-lg mx-auto w-fit mb-2">
                 <Users className="h-5 w-5 text-orange-600" />
@@ -269,7 +261,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className =
       <Card>
         <div className="p-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Real-time Activity</h3>
-          
+
           <div className="space-y-3">
             {isConnected ? (
               <>
@@ -280,7 +272,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className =
                     <p className="text-xs text-green-600">Real-time updates active</p>
                   </div>
                 </div>
-                
+
                 {lastSyncTime && (
                   <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
                     <Activity className="h-4 w-4 text-blue-600" />
@@ -292,27 +284,26 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className =
                     </div>
                   </div>
                 )}
-                
-                {reconciliationJobs.items.some(job => job.status === 'running') && (
+
+                {reconciliationJobs.items.some((job) => job.status === 'running') && (
                   <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
                     <RefreshCw className="h-4 w-4 text-yellow-600 animate-spin" />
                     <div>
                       <p className="text-sm font-medium text-yellow-800">Reconciliation Running</p>
                       <p className="text-xs text-yellow-600">
-                        {reconciliationJobs.items.filter(job => job.status === 'running').length} active jobs
+                        {reconciliationJobs.items.filter((job) => job.status === 'running').length}{' '}
+                        active jobs
                       </p>
                     </div>
                   </div>
                 )}
-                
+
                 {activeUsers.length > 0 && (
                   <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-lg">
                     <Users className="h-4 w-4 text-blue-600" />
                     <div>
                       <p className="text-sm font-medium text-blue-800">Active Users</p>
-                      <p className="text-xs text-blue-600">
-                        {activeUsers.length} users online
-                      </p>
+                      <p className="text-xs text-blue-600">{activeUsers.length} users online</p>
                     </div>
                   </div>
                 )}
@@ -330,7 +321,9 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = ({ className =
         </div>
       </Card>
     </div>
-  )
-}
+  );
+});
 
-export default ApiIntegrationStatus
+ApiIntegrationStatus.displayName = 'ApiIntegrationStatus';
+
+export default ApiIntegrationStatus;

@@ -2,7 +2,12 @@
 // ============================================================================
 
 import React, { useState, useRef, useCallback, forwardRef } from 'react'
-import { Upload, X, File, CheckCircle, AlertCircle, Search } from 'lucide-react'
+import { Upload } from 'lucide-react'
+import { X } from 'lucide-react'
+import { File } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { Search } from 'lucide-react'
 
 // ============================================================================
 // FORM TYPES AND INTERFACES
@@ -116,6 +121,12 @@ export interface QuickFilterProps {
 /**
  * @deprecated This hook is duplicated. Please use useForm from '../hooks/useForm.ts' instead.
  * This export will be removed in the next version.
+ * 
+ * Migration guide:
+ * - Old: import { useForm } from '@/components/forms'
+ * - New: import { useForm } from '@/hooks/useForm'
+ * 
+ * The API remains the same for backward compatibility.
  */
 export function useForm(options: UseFormOptions = {}): UseFormReturn {
   const { initialValues = {}, validationRules = {}, onSubmit } = options

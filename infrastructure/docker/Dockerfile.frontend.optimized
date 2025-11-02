@@ -17,6 +17,14 @@ COPY frontend/ .
 RUN npm run build
 
 FROM nginx:1.27-alpine
+
+# Install Filebeat
+RUN apk add --no-cache curl \
+    && curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.11.0-linux-x86_64.tar.gz \
+    && tar xzvf filebeat-8.11.0-linux-x86_64.tar.gz \
+    && mv filebeat-8.11.0-linux-x86_64/filebeat /usr/local/bin/ \
+    && rm -rf filebeat-8.11.0-linux-x86_64*
+
 # Static assets
 COPY --from=builder /app/frontend/dist /usr/share/nginx/html
 # SPA fallback and caching headers with CSP
@@ -26,6 +34,9 @@ RUN printf '%s\n' \
   '  server_name _;' \
   '  root /usr/share/nginx/html;' \
   '  index index.html;' \
+  '  # Logging configuration' \
+  '  access_log /var/log/nginx/access.log;' \
+  '  error_log /var/log/nginx/error.log;' \
   '  # CSP headers for frontend (development-friendly)' \
   '  add_header Content-Security-Policy "default-src '\''self'\''; script-src '\''self'\'' '\''unsafe-eval'\'' '\''unsafe-inline'\''; style-src '\''self'\'' '\''unsafe-inline'\''; img-src '\''self'\'' data: https: blob:; font-src '\''self'\'' data:; connect-src '\''self'\'' http://localhost:2000 ws://localhost:2000 http://localhost:1000 ws://localhost:1000 ws://localhost:5173 http://localhost:5173; frame-ancestors '\''none'\''; base-uri '\''self'\''; form-action '\''self'\'';" always;' \
   '  add_header X-Content-Type-Options "nosniff" always;' \
@@ -45,7 +56,10 @@ RUN printf '%s\n' \
 RUN sh -c 'ls /usr/share/nginx/html/*.css >/dev/null 2>&1 || touch /usr/share/nginx/html/dummy.css'
 # Provide a placeholder vite.svg if the app references it but it isn't present
 RUN sh -lc 'if [ ! -f /usr/share/nginx/html/vite.svg ]; then echo "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 256 256\"><defs><linearGradient id=\"g\" x1=\"0\" x2=\"1\"><stop offset=\"0\" stop-color=\"#646cff\"/><stop offset=\"1\" stop-color=\"#61dafb\"/></linearGradient></defs><rect width=\"256\" height=\"256\" fill=\"url(#g)\"/><text x=\"50%\" y=\"50%\" dominant-baseline=\"middle\" text-anchor=\"middle\" font-family=\"Arial, Helvetica, sans-serif\" font-size=\"28\" fill=\"#fff\">vite.svg</text></svg>" > /usr/share/nginx/html/vite.svg; fi'
+# Copy Filebeat configuration
+COPY infrastructure/filebeat/filebeat-frontend.yml /etc/filebeat/filebeat.yml
+
 # Use default nginx config suitable for static files; custom prod config is intended for /etc/nginx/nginx.conf and requires SSL certs
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["/bin/sh", "-c", "nginx -g 'daemon off;' & filebeat -e -c /etc/filebeat/filebeat.yml"]
 

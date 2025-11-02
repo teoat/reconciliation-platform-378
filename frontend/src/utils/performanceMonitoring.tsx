@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from 'react'
+import { logger } from '@/services/logger'
 
 // ============================================================================
 // PERFORMANCE MONITORING UTILITIES
@@ -188,7 +189,7 @@ export function useRenderPerformance(componentName: string) {
     )
 
     if (renderTime > 100) {
-      console.warn(`${componentName} took ${renderTime}ms to render`)
+      logger.warn(`${componentName} took ${renderTime}ms to render`)
     }
   })
 }
@@ -452,7 +453,7 @@ export async function measureComponentBundleSize(componentName: string) {
       bundleSize: 0, // Would be calculated by bundler
     }
   } catch (error) {
-    console.error(`Failed to measure bundle size for ${componentName}:`, error)
+    logger.error(`Failed to measure bundle size for ${componentName}:`, error)
     return null
   }
 }

@@ -1,8 +1,8 @@
 // WebSocket Service for Real-time Collaboration
+import { logger } from '@/services/logger'
 // Implements real-time updates, live collaboration, and presence management
 
 import React from 'react'
-import { APP_CONFIG } from '../config/AppConfig'
 
 // WebSocket message types
 export enum MessageType {
@@ -43,8 +43,8 @@ export interface WebSocketMessage {
   timestamp: Date
   userId: string
   sessionId: string
-  data: any
-  metadata?: Record<string, any>
+  data: unknown
+  metadata?: Record<string, unknown>
 }
 
 // User presence interface
@@ -83,8 +83,8 @@ export interface CollaborationChange {
   id: string
   userId: string
   fieldId: string
-  oldValue: any
-  newValue: any
+  oldValue: unknown
+  newValue: unknown
   timestamp: Date
   applied: boolean
   conflicts: CollaborationConflict[]
@@ -162,8 +162,8 @@ class WebSocketService {
         const user = JSON.parse(userData)
         this.userId = user.id
       }
-    } catch (error) {
-      console.error('Failed to get user ID:', error)
+    } catch (error: unknown) {
+      logger.error('Failed to get user ID', { error })
     }
 
     // Connect when page becomes visible
@@ -187,7 +187,7 @@ class WebSocketService {
       this.socket = new WebSocket(wsUrl)
 
       this.socket.onopen = () => {
-        console.log('WebSocket connected')
+        logger.info('WebSocket connected')
         this.isConnected = true
         this.reconnectAttempts = 0
         this.startPingTimer()
@@ -200,7 +200,7 @@ class WebSocketService {
       }
 
       this.socket.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason)
+        logger.info('WebSocket disconnected', { code: event.code, reason: event.reason })
         this.isConnected = false
         this.stopPingTimer()
         this.emit('disconnected', { code: event.code, reason: event.reason })
@@ -210,13 +210,13 @@ class WebSocketService {
         }
       }
 
-      this.socket.onerror = (error) => {
-        console.error('WebSocket error:', error)
+      this.socket.onerror = (error: Event) => {
+        logger.error('WebSocket error', { error: error.type })
         this.emit('error', error)
       }
 
-    } catch (error) {
-      console.error('Failed to connect WebSocket:', error)
+    } catch (error: unknown) {
+      logger.error('Failed to connect WebSocket', { error })
       this.scheduleReconnect()
     }
   }
@@ -233,7 +233,7 @@ class WebSocketService {
 
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.error('Max reconnection attempts reached')
+      logger.error('Max reconnection attempts reached')
       this.emit('maxReconnectAttemptsReached')
       return
     }
@@ -242,7 +242,7 @@ class WebSocketService {
     const delay = this.config.reconnectInterval * Math.pow(2, this.reconnectAttempts - 1)
     
     this.reconnectTimer = setTimeout(() => {
-      console.log(`Attempting to reconnect (${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`)
+      logger.info(`Attempting to reconnect (${this.reconnectAttempts}/${this.config.maxReconnectAttempts})`)
       this.connect()
     }, delay)
   }
@@ -263,7 +263,7 @@ class WebSocketService {
 
       // Set pong timeout
       this.pongTimer = setTimeout(() => {
-        console.warn('Pong timeout, reconnecting...')
+        logger.warning('Pong timeout, reconnecting...')
         this.disconnect()
         this.scheduleReconnect()
       }, this.config.pongTimeout)
@@ -338,61 +338,79 @@ class WebSocketService {
           break
 
         default:
-          console.warn('Unknown message type:', message.type)
+          logger.warning('Unknown message type', { messageType: message.type })
       }
 
       this.emit('message', message)
-    } catch (error) {
-      console.error('Failed to parse WebSocket message:', error)
+    } catch (error: unknown) {
+      logger.error('Failed to parse WebSocket message', { error })
     }
   }
 
   private handleUserJoined(message: WebSocketMessage): void {
-    const userPresence: UserPresence = message.data
-    this.presence.set(userPresence.userId, userPresence)
-    this.emit('userJoined', userPresence)
+    const data = message.data as UserPresence
+    if (data && typeof data === 'object' && 'userId' in data) {
+      this.presence.set(data.userId, data as UserPresence)
+      this.emit('userJoined', data)
+    }
   }
 
   private handleUserLeft(message: WebSocketMessage): void {
-    const userId = message.data.userId
-    this.presence.delete(userId)
-    this.emit('userLeft', userId)
+    const data = message.data as { userId?: string }
+    if (data && typeof data === 'object' && 'userId' in data && typeof data.userId === 'string') {
+      this.presence.delete(data.userId)
+      this.emit('userLeft', data.userId)
+    }
   }
 
   private handleUserPresence(message: WebSocketMessage): void {
-    const userPresence: UserPresence = message.data
-    this.presence.set(userPresence.userId, userPresence)
-    this.emit('userPresence', userPresence)
+    const data = message.data as UserPresence
+    if (data && typeof data === 'object' && 'userId' in data) {
+      this.presence.set(data.userId, data as UserPresence)
+      this.emit('userPresence', data)
+    }
   }
 
   private handleCursorMove(message: WebSocketMessage): void {
+    const data = message.data as { cursor?: { x: number; y: number } }
+    if (data && typeof data === 'object' && 'cursor' in data) {
     this.emit('cursorMove', {
       userId: message.userId,
-      cursor: message.data.cursor,
+        cursor: data.cursor,
     })
+    }
   }
 
   private handleSelectionChange(message: WebSocketMessage): void {
+    const data = message.data as { selection?: { start: number; end: number } }
+    if (data && typeof data === 'object' && 'selection' in data) {
     this.emit('selectionChange', {
       userId: message.userId,
-      selection: message.data.selection,
+        selection: data.selection,
     })
+    }
   }
 
   private handleTextEdit(message: WebSocketMessage): void {
+    const data = message.data as { fieldId?: string; change?: unknown }
+    if (data && typeof data === 'object' && 'fieldId' in data) {
     this.emit('textEdit', {
       userId: message.userId,
-      fieldId: message.data.fieldId,
-      change: message.data.change,
+        fieldId: data.fieldId,
+        change: data.change,
     })
+    }
   }
 
   private handleFieldUpdate(message: WebSocketMessage): void {
+    const data = message.data as { fieldId?: string; value?: unknown }
+    if (data && typeof data === 'object' && 'fieldId' in data) {
     this.emit('fieldUpdate', {
       userId: message.userId,
-      fieldId: message.data.fieldId,
-      value: message.data.value,
+        fieldId: data.fieldId,
+        value: data.value,
     })
+    }
   }
 
   private handleDataSync(message: WebSocketMessage): void {
@@ -408,7 +426,7 @@ class WebSocketService {
   }
 
   private handleError(message: WebSocketMessage): void {
-    console.error('WebSocket error:', message.data)
+    logger.error('WebSocket error', { data: message.data })
     this.emit('error', message.data)
   }
 
@@ -425,8 +443,8 @@ class WebSocketService {
     if (this.isConnected && this.socket) {
       try {
         this.socket.send(JSON.stringify(fullMessage))
-      } catch (error) {
-        console.error('Failed to send message:', error)
+      } catch (error: unknown) {
+        logger.error('Failed to send message', { error })
         this.queueMessage(fullMessage)
       }
     } else {
@@ -512,14 +530,14 @@ class WebSocketService {
     })
   }
 
-  public sendTextEdit(fieldId: string, change: any): void {
+  public sendTextEdit(fieldId: string, change: Record<string, unknown>): void {
     this.sendMessage({
       type: MessageType.TEXT_EDIT,
       data: { fieldId, change },
     })
   }
 
-  public sendFieldUpdate(fieldId: string, value: any): void {
+  public sendFieldUpdate(fieldId: string, value: unknown): void {
     this.sendMessage({
       type: MessageType.FIELD_UPDATE,
       data: { fieldId, value },
@@ -537,7 +555,7 @@ class WebSocketService {
     })
   }
 
-  public sendDataSync(projectId: string, dataType: string, data: any): void {
+  public sendDataSync(projectId: string, dataType: string, data: Record<string, unknown>): void {
     this.sendMessage({
       type: MessageType.DATA_SYNC,
       data: {
@@ -550,7 +568,7 @@ class WebSocketService {
   }
 
   // Notification methods
-  public sendNotification(userId: string, notification: any): void {
+  public sendNotification(userId: string, notification: Record<string, unknown>): void {
     if (!this.config.enableNotifications) return
 
     this.sendMessage({
@@ -563,14 +581,14 @@ class WebSocketService {
   }
 
   // Event system
-  public on(event: string, callback: Function): void {
+  public on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, [])
     }
     this.listeners.get(event)!.push(callback)
   }
 
-  public off(event: string, callback: Function): void {
+  public off(event: string, callback: (...args: unknown[]) => void): void {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
       const index = callbacks.indexOf(callback)
@@ -580,7 +598,7 @@ class WebSocketService {
     }
   }
 
-  private emit(event: string, ...args: any[]): void {
+  private emit(event: string, ...args: unknown[]): void {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
       callbacks.forEach(callback => callback(...args))
@@ -636,20 +654,29 @@ export const useWebSocket = () => {
       setConnectionStatus(ws.getConnectionStatus())
     }
 
-    const handleUserJoined = (userPresence: UserPresence) => {
-      setPresence(prev => new Map(prev.set(userPresence.userId, userPresence)))
+    const handleUserJoined = (userPresence: unknown) => {
+      const presence = userPresence as UserPresence
+      if (presence && typeof presence === 'object' && 'userId' in presence) {
+        setPresence(prev => new Map(prev.set(presence.userId, presence)))
+      }
     }
 
-    const handleUserLeft = (userId: string) => {
+    const handleUserLeft = (userId: unknown) => {
+      const id = userId as string
+      if (typeof id === 'string') {
       setPresence(prev => {
         const newPresence = new Map(prev)
-        newPresence.delete(userId)
+          newPresence.delete(id)
         return newPresence
       })
     }
+    }
 
-    const handleUserPresence = (userPresence: UserPresence) => {
-      setPresence(prev => new Map(prev.set(userPresence.userId, userPresence)))
+    const handleUserPresence = (userPresence: unknown) => {
+      const presence = userPresence as UserPresence
+      if (presence && typeof presence === 'object' && 'userId' in presence) {
+        setPresence(prev => new Map(prev.set(presence.userId, presence)))
+      }
     }
 
     const handleConnectionStatusChange = () => {

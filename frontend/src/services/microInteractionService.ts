@@ -1,4 +1,5 @@
 // Micro-Interactions & Delightful Feedback Service
+import { logger } from '@/services/logger'
 // Implements success animations, haptic feedback, and sound effects
 
 export interface MicroInteraction {
@@ -209,7 +210,7 @@ class MicroInteractionService {
         this.userPreferences = { ...this.userPreferences, ...JSON.parse(stored) }
       }
     } catch (error) {
-      console.error('Failed to load user preferences:', error)
+      logger.error('Failed to load user preferences:', error)
     }
   }
 
@@ -217,7 +218,7 @@ class MicroInteractionService {
     try {
       localStorage.setItem('micro_interaction_preferences', JSON.stringify(this.userPreferences))
     } catch (error) {
-      console.error('Failed to save user preferences:', error)
+      logger.error('Failed to save user preferences:', error)
     }
   }
 
@@ -225,7 +226,7 @@ class MicroInteractionService {
     try {
       this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
     } catch (error) {
-      console.warn('Audio context not supported:', error)
+      logger.warn('Audio context not supported:', error)
     }
   }
 

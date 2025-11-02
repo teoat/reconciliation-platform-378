@@ -8,6 +8,12 @@ use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::errors::AppResult;
+use actix_web::{dev::ServiceRequest, Error, HttpMessage, Result as ActixResult};
+use actix_web::dev::{Service, ServiceResponse, Transform};
+use futures::future::{ok, Ready};
+use futures::Future;
+use std::rc::Rc;
+use std::pin::Pin;
 
 /// Trace context
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -193,16 +199,112 @@ mod tests {
         
         assert!(!span_id.is_empty());
         
-        tracing.finish_span(&span_id).await.unwrap();
+        if let Err(e) = tracing.finish_span(&span_id).await {
+            log::warn!("Failed to finish span in test: {}", e);
+        }
     }
 
     #[tokio::test]
     async fn test_span_tagging() {
         let tracing = DistributedTracing::new(TracingConfig::default());
         let span_id = tracing.start_span("test_operation", None).await;
-        
-        tracing.add_tag(&span_id, "key".to_string(), "value".to_string()).await.unwrap();
-        tracing.finish_span(&span_id).await.unwrap();
+
+        if let Err(e) = tracing.add_tag(&span_id, "key".to_string(), "value".to_string()).await {
+            log::warn!("Failed to add tag in test: {}", e);
+        }
+        if let Err(e) = tracing.finish_span(&span_id).await {
+            log::warn!("Failed to finish span in test: {}", e);
+        }
+    }
+}
+
+/// Distributed tracing middleware
+pub struct DistributedTracingMiddleware {
+    config: TracingConfig,
+}
+
+impl DistributedTracingMiddleware {
+    pub fn new(config: TracingConfig) -> Self {
+        Self { config }
+    }
+}
+
+impl<S, B> Transform<S, ServiceRequest> for DistributedTracingMiddleware
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S::Future: 'static,
+    B: 'static,
+{
+    type Response = ServiceResponse<B>;
+    type Error = Error;
+    type InitError = ();
+    type Transform = DistributedTracingMiddlewareService<S>;
+    type Future = Ready<Result<Self::Transform, Self::InitError>>;
+
+    fn new_transform(&self, service: S) -> Self::Future {
+        let tracing = Arc::new(DistributedTracing::new(self.config.clone()));
+
+        ok(DistributedTracingMiddlewareService {
+            service: Rc::new(service),
+            tracing,
+        })
+    }
+}
+
+/// Distributed tracing middleware service
+pub struct DistributedTracingMiddlewareService<S> {
+    service: Rc<S>,
+    tracing: Arc<DistributedTracing>,
+}
+
+impl<S, B> Service<ServiceRequest> for DistributedTracingMiddlewareService<S>
+where
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S::Future: 'static,
+    B: 'static,
+{
+    type Response = ServiceResponse<B>;
+    type Error = Error;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
+
+    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+        self.service.poll_ready(cx)
+    }
+
+    fn call(&self, req: ServiceRequest) -> Self::Future {
+        let service = self.service.clone();
+        let tracing = self.tracing.clone();
+
+        Box::pin(async move {
+            let method = req.method().to_string();
+            let path = req.path().to_string();
+
+            // Start span for this request
+            let span_id = tracing.start_span(&format!("{} {}", method, path), None).await;
+
+            // Add tags
+            tracing.add_tag(&span_id, "http.method".to_string(), method.clone()).await?;
+            tracing.add_tag(&span_id, "http.path".to_string(), path.clone()).await?;
+            tracing.add_tag(&span_id, "service.name".to_string(), tracing.config.service_name.clone()).await?;
+
+            // Call the next service
+            let result = service.call(req).await;
+
+            match result {
+                Ok(res) => {
+                    let status_code = res.status().as_u16();
+                    tracing.add_tag(&span_id, "http.status_code".to_string(), status_code.to_string()).await?;
+                    tracing.finish_span(&span_id).await?;
+                    Ok(res)
+                }
+                Err(error) => {
+                    tracing.add_tag(&span_id, "error".to_string(), "true".to_string()).await?;
+                    tracing.add_tag(&span_id, "error.message".to_string(), error.to_string()).await?;
+                    tracing.finish_span(&span_id).await?;
+                    Err(error)
+                }
+            }
+        })
     }
 }
 

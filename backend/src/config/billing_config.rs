@@ -13,11 +13,11 @@ impl BillingConfig {
     pub fn from_env() -> Self {
         // Fail fast for required secrets to avoid insecure defaults
         let stripe_secret_key = env::var("STRIPE_SECRET_KEY")
-            .expect("STRIPE_SECRET_KEY must be set");
+            .expect("Missing required environment variable: STRIPE_SECRET_KEY");
         let stripe_publishable_key = env::var("STRIPE_PUBLISHABLE_KEY")
-            .expect("STRIPE_PUBLISHABLE_KEY must be set");
+            .expect("Missing required environment variable: STRIPE_PUBLISHABLE_KEY");
         let stripe_webhook_secret = env::var("STRIPE_WEBHOOK_SECRET")
-            .expect("STRIPE_WEBHOOK_SECRET must be set");
+            .expect("Missing required environment variable: STRIPE_WEBHOOK_SECRET");
 
         Self {
             stripe_secret_key,

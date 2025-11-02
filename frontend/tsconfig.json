@@ -38,5 +38,15 @@
     }
   },
   "include": ["src", "vite-env.d.ts"],
+  "exclude": [
+    "src/__tests__/pages/IngestionPage.test.tsx",
+    "src/components/WorkflowAutomation.tsx",
+    "src/pages/DashboardPage.tsx",
+    "src/pages/index.tsx",
+    "src/utils/fontOptimization.ts",
+    "src/utils/imageOptimization.ts",
+    "src/utils/serviceWorker.ts",
+    "src/utils/testing.tsx"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

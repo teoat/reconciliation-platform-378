@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { logger } from '@/services/logger'
 import { useAppDispatch, useAppSelector } from '../store/store'
 import {
   authActions,
@@ -74,7 +75,7 @@ export const useAuthAPI = () => {
       dispatch(authActions.logout())
       showSuccess('Logged Out', 'You have been logged out successfully')
     } catch (error) {
-      console.error('Logout error:', error)
+      logger.error('Logout error:', error)
       dispatch(authActions.logout()) // Still logout locally even if API call fails
     }
   }, [dispatch, showSuccess])
@@ -84,7 +85,7 @@ export const useAuthAPI = () => {
       const userData = await ApiService.getCurrentUser()
       dispatch(authActions.updateUser(userData))
     } catch (error) {
-      console.error('Refresh user failed:', error)
+      logger.error('Refresh user failed:', error)
       dispatch(authActions.logout())
     }
   }, [dispatch])

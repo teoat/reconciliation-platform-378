@@ -1,602 +1,273 @@
-//! Unit Tests for Core Services
-//! 
-//! This module contains comprehensive unit tests for all core services
-//! including authentication, user management, project management, and reconciliation.
-
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use actix_web::{test, web, App, HttpRequest, HttpResponse};
-use diesel::prelude::*;
-use diesel::r2d2::{ConnectionManager, Pool};
-
-use reconciliation_backend::services::{
-    AuthService, UserService, ProjectService, ReconciliationService,
-    FileService, AnalyticsService
-};
-use reconciliation_backend::services::auth::{LoginRequest, RegisterRequest};
-use reconciliation_backend::errors::{AppError, AppResult};
-use reconciliation_backend::models::{User, Project, ReconciliationJob, DataSource};
-
-mod test_utils;
-use test_utils::*;
-
-mod api_tests;
-
-/// Test suite for AuthService
+/// Test suite for Database Sharding Service
 #[cfg(test)]
-mod auth_service_tests {
+mod database_sharding_service_tests {
     use super::*;
-    
-    #[tokio::test]
-    async fn test_auth_service_creation() {
-        let auth_service = AuthService::new(
-            "test_secret".to_string(),
-            3600
-        );
-        
-        assert!(auth_service.jwt_secret == "test_secret");
-        assert!(auth_service.expiration == 3600);
-    }
-    
-    #[tokio::test]
-    async fn test_jwt_token_generation() {
-        let auth_service = AuthService::new(
-            "test_secret".to_string(),
-            3600
-        );
-        
-        let claims = Claims {
-            sub: "user123".to_string(),
-            role: "user".to_string(),
-            exp: (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() + 3600) as usize,
-            iat: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as usize,
-        };
-        
-        let token = auth_service.generate_token(&claims).unwrap();
-        assert!(!token.is_empty());
-        
-        // Verify token can be decoded
-        let decoded_claims = auth_service.validate_token(&token).unwrap();
-        assert_eq!(decoded_claims.sub, "user123");
-        assert_eq!(decoded_claims.role, "user");
-    }
-    
-    #[tokio::test]
-    async fn test_password_hashing() {
-        let auth_service = AuthService::new(
-            "test_secret".to_string(),
-            3600
-        );
-        
-        let password = "test_password123";
-        let hashed = auth_service.hash_password(password).unwrap();
-        
-        assert_ne!(password, hashed);
-        assert!(auth_service.verify_password(password, &hashed).unwrap());
-        assert!(!auth_service.verify_password("wrong_password", &hashed).unwrap());
-    }
-    
-    #[tokio::test]
-    async fn test_token_validation() {
-        let auth_service = AuthService::new(
-            "test_secret".to_string(),
-            3600
-        );
-        
-        let claims = Claims {
-            sub: "user123".to_string(),
-            role: "user".to_string(),
-            exp: (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() + 3600) as usize,
-            iat: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as usize,
-        };
-        
-        let token = auth_service.generate_token(&claims).unwrap();
-        
-        // Valid token
-        let decoded_claims = auth_service.validate_token(&token).unwrap();
-        assert_eq!(decoded_claims.sub, "user123");
-        
-        // Invalid token
-        assert!(auth_service.validate_token("invalid_token").is_err());
-        
-        // Expired token
-        let expired_claims = Claims {
-            sub: "user123".to_string(),
-            role: "user".to_string(),
-            exp: (SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() - 3600) as usize,
-            iat: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() as usize,
-        };
-        
-        let expired_token = auth_service.generate_token(&expired_claims).unwrap();
-        assert!(auth_service.validate_token(&expired_token).is_err());
-    }
-}
+    use reconciliation_backend::services::database_sharding::{DatabaseShardingService, ShardKey};
 
-/// Test suite for SecurityService
-#[cfg(test)]
-mod security_service_tests {
-    use super::*;
-    
     #[tokio::test]
-    async fn test_security_service_creation() {
-        let config = SecurityConfig::default();
-        let security_service = SecurityService::new(config);
-        
-        assert!(security_service.config.jwt_secret.len() > 0);
-        assert!(security_service.config.max_login_attempts > 0);
+    async fn test_sharding_service_creation() {
+        let service = DatabaseShardingService::new(4); // 4 shards
+        assert!(service.is_sharding_enabled());
+        assert_eq!(service.shard_count(), 4);
     }
-    
-    #[tokio::test]
-    async fn test_rate_limiting() {
-        let config = SecurityConfig::default();
-        let security_service = SecurityService::new(config);
-        
-        let identifier = "test_user";
-        
-        // First request should succeed
-        assert!(security_service.check_rate_limit(identifier).await.is_ok());
-        
-        // Multiple requests should eventually fail
-        for _ in 0..10 {
-            let _ = security_service.check_rate_limit(identifier).await;
-        }
-        
-        // Should eventually hit rate limit
-        assert!(security_service.check_rate_limit(identifier).await.is_err());
-    }
-    
-    #[tokio::test]
-    async fn test_input_validation() {
-        let config = SecurityConfig::default();
-        let security_service = SecurityService::new(config);
-        
-        // Valid input
-        assert!(security_service.validate_input("normal_text").is_ok());
-        
-        // SQL injection attempt
-        assert!(security_service.validate_input("'; DROP TABLE users; --").is_err());
-        
-        // XSS attempt
-        assert!(security_service.validate_input("<script>alert('xss')</script>").is_err());
-        
-        // Path traversal attempt
-        assert!(security_service.validate_input("../../../etc/passwd").is_err());
-    }
-    
-    #[tokio::test]
-    async fn test_password_strength_validation() {
-        let config = SecurityConfig::default();
-        let security_service = SecurityService::new(config);
-        
-        // Weak password
-        assert!(security_service.validate_password_strength("123").is_err());
-        
-        // Password without uppercase
-        assert!(security_service.validate_password_strength("password123!").is_err());
-        
-        // Password without lowercase
-        assert!(security_service.validate_password_strength("PASSWORD123!").is_err());
-        
-        // Password without digit
-        assert!(security_service.validate_password_strength("Password!").is_err());
-        
-        // Password without special character
-        assert!(security_service.validate_password_strength("Password123").is_err());
-        
-        // Strong password
-        assert!(security_service.validate_password_strength("Password123!").is_ok());
-    }
-    
-    #[tokio::test]
-    async fn test_input_sanitization() {
-        let config = SecurityConfig::default();
-        let security_service = SecurityService::new(config);
-        
-        let input = "<script>alert('xss')</script>";
-        let sanitized = security_service.sanitize_input(input);
-        
-        assert!(!sanitized.contains("<script>"));
-        assert!(!sanitized.contains("</script>"));
-        assert!(sanitized.contains("&lt;script&gt;"));
-    }
-}
 
-/// Test suite for UserService
-#[cfg(test)]
-mod user_service_tests {
-    use super::*;
-    
     #[tokio::test]
-    async fn test_user_creation() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let user_service = UserService::new(test_db.pool.get().unwrap());
-        
-        let user_data = crate::models::NewUser {
-            email: "test@example.com".to_string(),
-            password_hash: "hashed_password".to_string(),
-            first_name: "Test".to_string(),
-            last_name: "User".to_string(),
-            role: "user".to_string(),
-            is_active: true,
-        };
-        
-        let user = user_service.create_user(user_data).await.unwrap();
-        assert_eq!(user.email, "test@example.com");
-        assert_eq!(user.first_name, "Test");
-        assert_eq!(user.last_name, "User");
-        assert_eq!(user.role, "user");
-        assert!(user.is_active);
-    }
-    
-    #[tokio::test]
-    async fn test_user_retrieval() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let user_service = UserService::new(test_db.pool.get().unwrap());
-        
-        // Create a user first
-        let user_data = crate::models::NewUser {
-            email: "test@example.com".to_string(),
-            password_hash: "hashed_password".to_string(),
-            first_name: "Test".to_string(),
-            last_name: "User".to_string(),
-            role: "user".to_string(),
-            is_active: true,
-        };
-        
-        let created_user = user_service.create_user(user_data).await.unwrap();
-        
-        // Retrieve the user
-        let retrieved_user = user_service.get_user_by_id(created_user.id).await.unwrap();
-        assert_eq!(retrieved_user.email, "test@example.com");
-        
-        // Retrieve by email
-        let user_by_email = user_service.get_user_by_email("test@example.com").await.unwrap();
-        assert_eq!(user_by_email.id, created_user.id);
-    }
-    
-    #[tokio::test]
-    async fn test_user_update() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let user_service = UserService::new(test_db.pool.get().unwrap());
-        
-        // Create a user first
-        let user_data = crate::models::NewUser {
-            email: "test@example.com".to_string(),
-            password_hash: "hashed_password".to_string(),
-            first_name: "Test".to_string(),
-            last_name: "User".to_string(),
-            role: "user".to_string(),
-            is_active: true,
-        };
-        
-        let created_user = user_service.create_user(user_data).await.unwrap();
-        
-        // Update the user
-        let update_data = crate::models::UpdateUser {
-            first_name: Some("Updated".to_string()),
-            last_name: Some("Name".to_string()),
-            role: Some("admin".to_string()),
-            is_active: Some(false),
-        };
-        
-        let updated_user = user_service.update_user(created_user.id, update_data).await.unwrap();
-        assert_eq!(updated_user.first_name, "Updated");
-        assert_eq!(updated_user.last_name, "Name");
-        assert_eq!(updated_user.role, "admin");
-        assert!(!updated_user.is_active);
-    }
-    
-    #[tokio::test]
-    async fn test_user_deletion() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let user_service = UserService::new(test_db.pool.get().unwrap());
-        
-        // Create a user first
-        let user_data = crate::models::NewUser {
-            email: "test@example.com".to_string(),
-            password_hash: "hashed_password".to_string(),
-            first_name: "Test".to_string(),
-            last_name: "User".to_string(),
-            role: "user".to_string(),
-            is_active: true,
-        };
-        
-        let created_user = user_service.create_user(user_data).await.unwrap();
-        
-        // Delete the user
-        user_service.delete_user(created_user.id).await.unwrap();
-        
-        // Verify user is deleted
-        assert!(user_service.get_user_by_id(created_user.id).await.is_err());
-    }
-}
-
-/// Test suite for ProjectService
-#[cfg(test)]
-mod project_service_tests {
-    use super::*;
-    
-    #[tokio::test]
-    async fn test_project_creation() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let project_service = ProjectService::new(test_db.pool.get().unwrap());
-        
-        let project_data = crate::models::NewProject {
-            name: "Test Project".to_string(),
-            description: Some("A test project".to_string()),
-            owner_id: Uuid::new_v4(),
-            settings: Some(serde_json::json!({"key": "value"})),
-        };
-        
-        let project = project_service.create_project(project_data).await.unwrap();
-        assert_eq!(project.name, "Test Project");
-        assert_eq!(project.description, Some("A test project".to_string()));
-    }
-    
-    #[tokio::test]
-    async fn test_project_retrieval() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let project_service = ProjectService::new(test_db.pool.get().unwrap());
-        
-        // Create a project first
-        let project_data = crate::models::NewProject {
-            name: "Test Project".to_string(),
-            description: Some("A test project".to_string()),
-            owner_id: Uuid::new_v4(),
-            settings: Some(serde_json::json!({"key": "value"})),
-        };
-        
-        let created_project = project_service.create_project(project_data).await.unwrap();
-        
-        // Retrieve the project
-        let retrieved_project = project_service.get_project_by_id(created_project.id).await.unwrap();
-        assert_eq!(retrieved_project.name, "Test Project");
-        
-        // Get projects by owner
-        let owner_projects = project_service.get_projects_by_owner(created_project.owner_id).await.unwrap();
-        assert!(owner_projects.len() > 0);
-        assert!(owner_projects.iter().any(|p| p.id == created_project.id));
-    }
-    
-    #[tokio::test]
-    async fn test_project_update() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let project_service = ProjectService::new(test_db.pool.get().unwrap());
-        
-        // Create a project first
-        let project_data = crate::models::NewProject {
-            name: "Test Project".to_string(),
-            description: Some("A test project".to_string()),
-            owner_id: Uuid::new_v4(),
-            settings: Some(serde_json::json!({"key": "value"})),
-        };
-        
-        let created_project = project_service.create_project(project_data).await.unwrap();
-        
-        // Update the project
-        let update_data = crate::models::UpdateProject {
-            name: Some("Updated Project".to_string()),
-            description: Some("An updated test project".to_string()),
-            settings: Some(serde_json::json!({"key": "updated_value"})),
-        };
-        
-        let updated_project = project_service.update_project(created_project.id, update_data).await.unwrap();
-        assert_eq!(updated_project.name, "Updated Project");
-        assert_eq!(updated_project.description, Some("An updated test project".to_string()));
-    }
-    
-    #[tokio::test]
-    async fn test_project_deletion() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let project_service = ProjectService::new(test_db.pool.get().unwrap());
-        
-        // Create a project first
-        let project_data = crate::models::NewProject {
-            name: "Test Project".to_string(),
-            description: Some("A test project".to_string()),
-            owner_id: Uuid::new_v4(),
-            settings: Some(serde_json::json!({"key": "value"})),
-        };
-        
-        let created_project = project_service.create_project(project_data).await.unwrap();
-        
-        // Delete the project
-        project_service.delete_project(created_project.id).await.unwrap();
-        
-        // Verify project is deleted
-        assert!(project_service.get_project_by_id(created_project.id).await.is_err());
-    }
-}
-
-/// Test suite for ReconciliationService
-#[cfg(test)]
-mod reconciliation_service_tests {
-    use super::*;
-    
-    #[tokio::test]
-    async fn test_reconciliation_job_creation() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let reconciliation_service = ReconciliationService::new(test_db.pool.get().unwrap());
-        
-        let job_data = crate::models::NewReconciliationJob {
-            name: "Test Reconciliation Job".to_string(),
-            description: Some("A test reconciliation job".to_string()),
-            project_id: Uuid::new_v4(),
-            status: "pending".to_string(),
-            settings: Some(serde_json::json!({"threshold": 0.8})),
-        };
-        
-        let job = reconciliation_service.create_reconciliation_job(job_data).await.unwrap();
-        assert_eq!(job.name, "Test Reconciliation Job");
-        assert_eq!(job.status, "pending");
-    }
-    
-    #[tokio::test]
-    async fn test_reconciliation_job_execution() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let reconciliation_service = ReconciliationService::new(test_db.pool.get().unwrap());
-        
-        // Create a reconciliation job
-        let job_data = crate::models::NewReconciliationJob {
-            name: "Test Reconciliation Job".to_string(),
-            description: Some("A test reconciliation job".to_string()),
-            project_id: Uuid::new_v4(),
-            status: "pending".to_string(),
-            settings: Some(serde_json::json!({"threshold": 0.8})),
-        };
-        
-        let job = reconciliation_service.create_reconciliation_job(job_data).await.unwrap();
-        
-        // Start the job
-        reconciliation_service.start_reconciliation_job(job.id).await.unwrap();
-        
-        // Check job status
-        let updated_job = reconciliation_service.get_reconciliation_job_status(job.id).await.unwrap();
-        assert_eq!(updated_job.status, "running");
-    }
-    
-    #[tokio::test]
-    async fn test_reconciliation_results() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let reconciliation_service = ReconciliationService::new(test_db.pool.get().unwrap());
-        
-        // Create a reconciliation job
-        let job_data = crate::models::NewReconciliationJob {
-            name: "Test Reconciliation Job".to_string(),
-            description: Some("A test reconciliation job".to_string()),
-            project_id: Uuid::new_v4(),
-            status: "pending".to_string(),
-            settings: Some(serde_json::json!({"threshold": 0.8})),
-        };
-        
-        let job = reconciliation_service.create_reconciliation_job(job_data).await.unwrap();
-        
-        // Get results (should be empty initially)
-        let results = reconciliation_service.get_reconciliation_results(job.id, 0, 10).await.unwrap();
-        assert_eq!(results.len(), 0);
-    }
-}
-
-/// Test suite for FileService
-#[cfg(test)]
-mod file_service_tests {
-    use super::*;
-    
-    #[tokio::test]
-    async fn test_file_upload() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let file_service = FileService::new(test_db.pool.get().unwrap(), "./test_uploads".to_string());
-        
-        // Create test file content
-        let file_content = "test,data,here\n1,2,3\n4,5,6";
-        let test_file_path = "./test_uploads/test_file.csv";
-        
-        // Create test file
-        test_utils::create_test_file(test_file_path, file_content).await.unwrap();
-        
-        // Upload file
-        let file_info = file_service.upload_file(
-            test_file_path,
-            Uuid::new_v4(),
-            Uuid::new_v4(),
-        ).await.unwrap();
-        
-        assert_eq!(file_info.file_name, "test_file.csv");
-        assert!(file_info.file_size > 0);
-        
-        // Clean up
-        test_utils::clean_test_files("./test_uploads").await.unwrap();
-    }
-    
-    #[tokio::test]
-    async fn test_file_processing() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let file_service = FileService::new(test_db.pool.get().unwrap(), "./test_uploads".to_string());
-        
-        // Create test file content
-        let file_content = "test,data,here\n1,2,3\n4,5,6";
-        let test_file_path = "./test_uploads/test_file.csv";
-        
-        // Create test file
-        test_utils::create_test_file(test_file_path, file_content).await.unwrap();
-        
-        // Upload file
-        let file_info = file_service.upload_file(
-            test_file_path,
-            Uuid::new_v4(),
-            Uuid::new_v4(),
-        ).await.unwrap();
-        
-        // Process file
-        let processing_result = file_service.process_file(file_info.id).await.unwrap();
-        assert_eq!(processing_result.status, "processed");
-        
-        // Clean up
-        test_utils::clean_test_files("./test_uploads").await.unwrap();
-    }
-}
-
-/// Test suite for AnalyticsService
-#[cfg(test)]
-mod analytics_service_tests {
-    use super::*;
-    
-    #[tokio::test]
-    async fn test_dashboard_data() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let analytics_service = AnalyticsService::new(test_db.pool.get().unwrap());
-        
-        let dashboard_data = analytics_service.get_dashboard_data().await.unwrap();
-        
-        assert!(dashboard_data.total_users >= 0);
-        assert!(dashboard_data.total_projects >= 0);
-        assert!(dashboard_data.total_reconciliation_jobs >= 0);
-        assert!(dashboard_data.total_data_sources >= 0);
-    }
-    
-    #[tokio::test]
-    async fn test_project_statistics() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let analytics_service = AnalyticsService::new(test_db.pool.get().unwrap());
-        
-        let project_id = Uuid::new_v4();
-        let project_stats = analytics_service.get_project_stats(project_id).await.unwrap();
-        
-        assert_eq!(project_stats.project_id, project_id);
-        assert!(project_stats.total_jobs >= 0);
-        assert!(project_stats.completed_jobs >= 0);
-        assert!(project_stats.failed_jobs >= 0);
-    }
-    
-    #[tokio::test]
-    async fn test_user_activity_stats() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let analytics_service = AnalyticsService::new(test_db.pool.get().unwrap());
-        
+    async fn test_shard_key_generation() {
+        let service = DatabaseShardingService::new(4);
         let user_id = Uuid::new_v4();
-        let user_activity = analytics_service.get_user_activity_stats(user_id).await.unwrap();
-        
-        assert_eq!(user_activity.user_id, user_id);
-        assert!(user_activity.total_actions >= 0);
-        assert!(user_activity.projects_created >= 0);
-        assert!(user_activity.jobs_created >= 0);
+
+        let shard_key = service.generate_shard_key(&user_id.to_string());
+        assert!(shard_key.shard_id < 4);
+        assert!(!shard_key.key.is_empty());
     }
-    
+
     #[tokio::test]
-    async fn test_reconciliation_statistics() {
-        let test_db = TestDatabaseManager::new("postgresql://test_user:test_pass@localhost:5432/test_db");
-        let analytics_service = AnalyticsService::new(test_db.pool.get().unwrap());
-        
-        let reconciliation_stats = analytics_service.get_reconciliation_stats().await.unwrap();
-        
-        assert!(reconciliation_stats.total_jobs >= 0);
-        assert!(reconciliation_stats.completed_jobs >= 0);
-        assert!(reconciliation_stats.failed_jobs >= 0);
-        assert!(reconciliation_stats.pending_jobs >= 0);
-        assert!(reconciliation_stats.running_jobs >= 0);
+    async fn test_shard_routing() {
+        let service = DatabaseShardingService::new(4);
+        let key = "test_key";
+
+        let shard_id = service.route_to_shard(key);
+        assert!(shard_id < 4);
+
+        // Same key should always route to same shard
+        let shard_id2 = service.route_to_shard(key);
+        assert_eq!(shard_id, shard_id2);
+    }
+
+    #[tokio::test]
+    async fn test_cross_shard_query_handling() {
+        let service = DatabaseShardingService::new(4);
+
+        let query = service.handle_cross_shard_query("SELECT * FROM users WHERE created_at > ?", &[&"2024-01-01"]);
+        assert!(query.is_ok());
+    }
+}
+
+/// Test suite for Real-time Service
+#[cfg(test)]
+mod realtime_service_tests {
+    use super::*;
+    use reconciliation_backend::services::realtime::{RealtimeService, RealtimeEvent};
+
+    #[tokio::test]
+    async fn test_realtime_service_creation() {
+        let service = RealtimeService::new();
+        assert!(service.is_enabled());
+    }
+
+    #[tokio::test]
+    async fn test_event_broadcasting() {
+        let service = RealtimeService::new();
+        let event = RealtimeEvent::DataUpdated {
+            entity_type: "project".to_string(),
+            entity_id: Uuid::new_v4().to_string(),
+            user_id: Uuid::new_v4().to_string(),
+        };
+
+        let result = service.broadcast_event(event).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_client_subscription() {
+        let service = RealtimeService::new();
+        let client_id = Uuid::new_v4().to_string();
+        let channel = "projects";
+
+        let result = service.subscribe_client(&client_id, channel).await;
+        assert!(result.is_ok());
+
+        let is_subscribed = service.is_client_subscribed(&client_id, channel).await;
+        assert!(is_subscribed);
+    }
+}
+
+/// Test suite for Backup Recovery Service
+#[cfg(test)]
+mod backup_recovery_service_tests {
+    use super::*;
+    use reconciliation_backend::services::backup_recovery::{BackupRecoveryService, BackupType};
+
+    #[tokio::test]
+    async fn test_backup_recovery_creation() {
+        let service = BackupRecoveryService::new();
+        assert!(service.is_backup_enabled());
+    }
+
+    #[tokio::test]
+    async fn test_backup_creation() {
+        let service = BackupRecoveryService::new();
+
+        let result = service.create_backup(BackupType::Full).await;
+        assert!(result.is_ok());
+
+        let backup_id = result.unwrap();
+        assert!(!backup_id.is_empty());
+    }
+
+    #[tokio::test]
+    async fn test_backup_restoration() {
+        let service = BackupRecoveryService::new();
+
+        // Create a backup first
+        let backup_id = service.create_backup(BackupType::Incremental).await.unwrap();
+
+        // Test restoration
+        let result = service.restore_backup(&backup_id).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_backup_verification() {
+        let service = BackupRecoveryService::new();
+        let backup_id = "test_backup_123";
+
+        let is_valid = service.verify_backup(&backup_id).await;
+        assert!(is_valid.is_ok());
+    }
+}
+
+/// Test suite for Email Service
+#[cfg(test)]
+mod email_service_tests {
+    use super::*;
+    use reconciliation_backend::services::email::{EmailService, EmailMessage};
+
+    #[tokio::test]
+    async fn test_email_service_creation() {
+        let service = EmailService::new();
+        assert!(service.is_enabled());
+    }
+
+    #[tokio::test]
+    async fn test_email_sending() {
+        let service = EmailService::new();
+        let message = EmailMessage {
+            to: "test@example.com".to_string(),
+            subject: "Test Subject".to_string(),
+            body: "Test body content".to_string(),
+            html_body: Some("<p>Test body content</p>".to_string()),
+        };
+
+        let result = service.send_email(message).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_bulk_email_sending() {
+        let service = EmailService::new();
+        let messages = vec![
+            EmailMessage {
+                to: "user1@example.com".to_string(),
+                subject: "Bulk Test 1".to_string(),
+                body: "Content 1".to_string(),
+                html_body: None,
+            },
+            EmailMessage {
+                to: "user2@example.com".to_string(),
+                subject: "Bulk Test 2".to_string(),
+                body: "Content 2".to_string(),
+                html_body: None,
+            },
+        ];
+
+        let result = service.send_bulk_emails(messages).await;
+        assert!(result.is_ok());
+    }
+}
+
+/// Test suite for Monitoring Service
+#[cfg(test)]
+mod monitoring_service_tests {
+    use super::*;
+    use reconciliation_backend::services::monitoring::{MonitoringService, MetricType};
+
+    #[tokio::test]
+    async fn test_monitoring_service_creation() {
+        let service = MonitoringService::new();
+        assert!(service.is_monitoring_enabled());
+    }
+
+    #[tokio::test]
+    async fn test_metric_collection() {
+        let service = MonitoringService::new();
+
+        let result = service.record_metric("api_response_time", 150.5, MetricType::Gauge).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_health_check() {
+        let service = MonitoringService::new();
+
+        let health = service.perform_health_check().await;
+        assert!(health.is_ok());
+        assert!(health.unwrap().is_healthy);
+    }
+
+    #[tokio::test]
+    async fn test_alert_generation() {
+        let service = MonitoringService::new();
+
+        // Record a high error rate
+        let _ = service.record_metric("error_rate", 95.0, MetricType::Gauge).await;
+
+        let alerts = service.check_alerts().await;
+        assert!(!alerts.is_empty());
+    }
+}
+
+/// Test suite for Secrets Management Service
+#[cfg(test)]
+mod secrets_service_tests {
+    use super::*;
+    use reconciliation_backend::services::secrets::{SecretsService, SecretType};
+
+    #[tokio::test]
+    async fn test_secrets_service_creation() {
+        let service = SecretsService::new();
+        assert!(service.is_encryption_enabled());
+    }
+
+    #[tokio::test]
+    async fn test_secret_storage() {
+        let service = SecretsService::new();
+        let secret_value = "super_secret_api_key";
+
+        let result = service.store_secret("api_key", secret_value, SecretType::ApiKey).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_secret_retrieval() {
+        let service = SecretsService::new();
+        let secret_value = "my_secret_value";
+
+        // Store first
+        let _ = service.store_secret("test_secret", secret_value, SecretType::Generic).await;
+
+        // Retrieve
+        let retrieved = service.retrieve_secret("test_secret").await;
+        assert!(retrieved.is_ok());
+        assert_eq!(retrieved.unwrap(), secret_value);
+    }
+
+    #[tokio::test]
+    async fn test_secret_rotation() {
+        let service = SecretsService::new();
+        let old_secret = "old_secret";
+        let new_secret = "new_secret";
+
+        // Store initial secret
+        let _ = service.store_secret("rotating_secret", old_secret, SecretType::DatabasePassword).await;
+
+        // Rotate
+        let result = service.rotate_secret("rotating_secret", new_secret).await;
+        assert!(result.is_ok());
+
+        // Verify new secret
+        let retrieved = service.retrieve_secret("rotating_secret").await;
+        assert!(retrieved.is_ok());
+        assert_eq!(retrieved.unwrap(), new_secret);
     }
 }

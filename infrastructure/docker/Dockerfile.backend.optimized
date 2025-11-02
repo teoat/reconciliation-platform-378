@@ -6,11 +6,23 @@ RUN cargo build --release
 
 FROM debian:bookworm-slim
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates libpq5 wget \
+    && apt-get install -y --no-install-recommends ca-certificates libpq5 wget curl \
     && rm -rf /var/lib/apt/lists/*
+
+# Install Filebeat
+RUN curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-8.11.0-amd64.deb \
+    && dpkg -i filebeat-8.11.0-amd64.deb \
+    && rm filebeat-8.11.0-amd64.deb
+
 WORKDIR /app
 COPY --from=builder /app/backend/target/release/reconciliation-backend /app/reconciliation-backend
+
+# Copy Filebeat configuration
+COPY infrastructure/filebeat/filebeat.yml /etc/filebeat/filebeat.yml
+
 EXPOSE 2000
 ENV RUST_LOG=info
-CMD ["/app/reconciliation-backend"]
+
+# Start both backend and filebeat
+CMD ["/bin/bash", "-c", "/app/reconciliation-backend & filebeat -e -c /etc/filebeat/filebeat.yml"]
 

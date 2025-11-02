@@ -1,4 +1,5 @@
 // ============================================================================
+import { logger } from '@/services/logger'
 // MONITORING SERVICE
 // ============================================================================
 
@@ -23,7 +24,7 @@ interface ErrorReport {
 
 interface AnalyticsEvent {
   event: string
-  properties: Record<string, any>
+  properties: Record<string, unknown>
   timestamp: number
   userId?: string
   sessionId?: string
@@ -178,7 +179,7 @@ class MonitoringService {
     // Check thresholds
     const threshold = monitoringConfig.performance.metrics[name]?.threshold
     if (threshold && value > threshold) {
-      console.warn(`Performance metric ${name} exceeded threshold: ${value} > ${threshold}`)
+      logger.warn(`Performance metric ${name} exceeded threshold: ${value} > ${threshold}`)
     }
   }
 
@@ -195,7 +196,7 @@ class MonitoringService {
     }
   }
 
-  trackEvent(event: string, properties: Record<string, any>) {
+  trackEvent(event: string, properties: Record<string, unknown>) {
     if (!this.isEnabled || !monitoringConfig.analytics.trackCustomEvents) return
 
     const analyticsEvent: AnalyticsEvent = {
@@ -318,7 +319,7 @@ class MonitoringService {
         }),
       })
     } catch (error) {
-      console.error('Failed to report metrics:', error)
+      logger.error('Failed to report metrics:', error)
       // Re-add metrics to queue for retry
       this.metrics.unshift(...batch)
     }
@@ -343,7 +344,7 @@ class MonitoringService {
         }),
       })
     } catch (error) {
-      console.error('Failed to report errors:', error)
+      logger.error('Failed to report errors:', error)
       // Re-add errors to queue for retry
       this.errors.unshift(...batch)
     }
@@ -368,7 +369,7 @@ class MonitoringService {
         }),
       })
     } catch (error) {
-      console.error('Failed to report events:', error)
+      logger.error('Failed to report events:', error)
       // Re-add events to queue for retry
       this.events.unshift(...batch)
     }

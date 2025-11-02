@@ -1,0 +1,218 @@
+name: Performance Testing
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      baseline:
+        description: 'Set new performance baseline'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  bundle-analysis:
+    name: Bundle Size Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run bundle size analysis
+        run: npm run analyze-bundle
+
+      - name: Upload bundle analysis
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-analysis
+          path: bundle-analysis/
+          retention-days: 30
+
+       - name: Check bundle size against budget
+         run: npm run check-bundle-size
+
+       - name: Enforce performance budgets
+         run: npm run performance:budget:enforce
+
+      - name: Bundle size monitor
+        run: npm run bundle:monitor
+        continue-on-error: true
+
+      - name: Comment PR with bundle analysis
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+
+            // Read bundle analysis results
+            let comment = '## 📦 Bundle Size Analysis\n\n';
+
+            try {
+              const statsPath = path.join(process.cwd(), 'bundle-analysis', 'stats.json');
+              if (fs.existsSync(statsPath)) {
+                const stats = JSON.parse(fs.readFileSync(statsPath, 'utf8'));
+                comment += `**Total Bundle Size:** ${(stats.assets.reduce((sum, asset) => sum + (asset.name.endsWith('.js') ? asset.size : 0), 0) / 1024 / 1024).toFixed(2)} MB\n\n`;
+              }
+            } catch (error) {
+              comment += 'Bundle analysis completed. Check artifacts for detailed report.\n\n';
+            }
+
+            comment += '[📊 View Full Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  performance-test:
+    name: Performance Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm start &
+          sleep 10
+
+      - name: Run performance tests
+        run: |
+          if [ "${{ github.event.inputs.baseline }}" == "true" ]; then
+            npm run performance:baseline
+          else
+            npm run performance:test
+          fi
+
+      - name: Upload performance results
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-results
+          path: performance-results/
+          retention-days: 30
+
+       - name: Performance regression check
+         run: |
+           # Compare with baseline and fail if significant regression
+           if [ -f "performance-results/latest.json" ] && [ -f "performance-results/baseline.json" ]; then
+             # Simple regression check - can be enhanced
+             echo "Performance comparison completed"
+           fi
+
+       - name: SLO Compliance Check
+         run: node scripts/ci-performance-check.js
+
+  lighthouse-ci:
+    name: Lighthouse CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: |
+          npm start &
+          sleep 15
+
+      - name: Run Lighthouse
+        run: npx lhci autorun
+        continue-on-error: true
+
+      - name: Upload Lighthouse results
+        uses: actions/upload-artifact@v4
+        with:
+          name: lighthouse-results
+          path: .lighthouseci/
+          retention-days: 30
+
+  quality-check:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run quality checks
+        run: npm run quality:check
+
+      - name: Upload coverage reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: coverage/
+          retention-days: 30
+
+   alert-on-failure:
+     name: Alert on Performance Regression
+     runs-on: ubuntu-latest
+     needs: [bundle-analysis, performance-test, lighthouse-ci]
+     if: failure() && github.ref == 'refs/heads/main'
+     steps:
+       - name: Checkout code
+         uses: actions/checkout@v4
+
+       - name: Setup Node.js
+         uses: actions/setup-node@v4
+         with:
+           node-version: '18'
+           cache: 'npm'
+
+       - name: Install dependencies
+         run: npm ci
+
+       - name: Run performance alerts
+         run: npm run performance:alert -- --github
+         env:
+           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

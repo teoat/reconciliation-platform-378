@@ -471,10 +471,11 @@ impl SecurityService {
         }
         
         let token = Uuid::new_v4().to_string();
-        let expires_at = SystemTime::now()
+        let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
-            .as_secs() + self.config.session_timeout.as_secs();
+            .map_err(|_| "System time is before UNIX epoch".to_string())?
+            .as_secs();
+        let expires_at = now + self.config.session_timeout.as_secs();
         
         let mut csrf_tokens = self.csrf_tokens.write().await;
         csrf_tokens.insert(token.clone(), CsrfToken {
@@ -496,7 +497,7 @@ impl SecurityService {
         if let Some(csrf_token) = csrf_tokens.get(token) {
             let now = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .unwrap()
+                .map_err(|_| "System time is before UNIX epoch".to_string())?
                 .as_secs();
             
             if csrf_token.user_id == user_id && csrf_token.expires_at > now {
@@ -572,7 +573,7 @@ impl SecurityService {
     pub async fn cleanup_expired_csrf_tokens(&self) {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .unwrap()
+            .unwrap_or(Duration::from_secs(0))
             .as_secs();
         
         let mut csrf_tokens = self.csrf_tokens.write().await;

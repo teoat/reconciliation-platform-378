@@ -11,6 +11,7 @@ use crate::handlers::helpers::extract_user_id;
 use actix::Addr;
 use crate::websocket::WsServer;
 use crate::handlers::types::{UpdateReconciliationJobRequest, ApiResponse, ReconciliationResultsQuery};
+use crate::services::reconciliation::service::MatchResolve;
 use actix_files::NamedFile;
 use std::path::PathBuf;
 
@@ -28,6 +29,7 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .route("/jobs/{job_id}/results", web::get().to(get_reconciliation_results))
         .route("/jobs/{job_id}/export", web::post().to(start_export_job))
         .route("/jobs/{job_id}/export/status", web::get().to(get_export_status))
+        .route("/matches/{match_id}", web::put().to(update_reconciliation_match))
         .route("/jobs/{job_id}/export/download", web::get().to(download_export_file))
         .route("/jobs/{job_id}/progress", web::get().to(get_reconciliation_progress))
         .route("/active", web::get().to(get_active_reconciliation_jobs))
@@ -39,12 +41,7 @@ pub struct BatchResolveRequest {
     pub resolves: Vec<MatchResolve>,
 }
 
-#[derive(serde::Deserialize, Clone)]
-pub struct MatchResolve {
-    pub match_id: Uuid,
-    pub action: String, // "approve" | "reject"
-    pub notes: Option<String>,
-}
+
 
 /// Batch resolve reconciliation conflicts
 pub async fn batch_resolve_conflicts(
@@ -105,7 +102,8 @@ pub async fn create_reconciliation_job(
     
     let matching_rules = if let Some(settings) = &req.settings {
         if let Some(rules) = settings.get("matching_rules") {
-            serde_json::from_value(rules.clone()).unwrap_or_default()
+            serde_json::from_value(rules.clone())
+                .map_err(|e| AppError::Validation(format!("Invalid matching_rules format: {}", e)))?
         } else {
             vec![]
         }
@@ -121,7 +119,6 @@ pub async fn create_reconciliation_job(
         source_b_id: req.target_data_source_id,
         confidence_threshold: req.confidence_threshold,
         matching_rules,
-        created_by: user_id,
     };
     
     let new_job = reconciliation_service.create_reconciliation_job(user_id, request).await?;
@@ -156,6 +153,39 @@ pub async fn get_reconciliation_job(
         success: true,
         data: Some(job_status),
         message: None,
+        error: None,
+    }))
+}
+
+/// Update reconciliation match
+pub async fn update_reconciliation_match(
+    match_id: web::Path<Uuid>,
+    req: web::Json<serde_json::Value>,
+    http_req: HttpRequest,
+    data: web::Data<Database>,
+    reconciliation_service: web::Data<crate::services::reconciliation::ReconciliationService>,
+) -> Result<HttpResponse, AppError> {
+    let user_id = extract_user_id(&http_req)?;
+    let match_id_val = match_id.into_inner();
+
+    // Extract update data
+    let status = req.get("status").and_then(|s| s.as_str());
+    let confidence_score = req.get("confidence_score").and_then(|c| c.as_f64());
+    let reviewed_by = req.get("reviewed_by").and_then(|r| r.as_str());
+
+    // Update the match
+    let updated_match = reconciliation_service.update_match(
+        user_id,
+        match_id_val,
+        status,
+        confidence_score,
+        reviewed_by,
+    ).await?;
+
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(updated_match),
+        message: Some("Match updated successfully".to_string()),
         error: None,
     }))
 }
@@ -299,6 +329,7 @@ pub async fn get_reconciliation_results(
         job_id_val,
         query.page,
         query.per_page,
+        query.lean,
     ).await?;
 
     // Support lean payloads: return minimal fields if requested
@@ -363,7 +394,7 @@ pub async fn start_export_job(
     let cache_clone = cache.clone();
     let path_for_task = export_path.clone();
     tokio::spawn(async move {
-        let res = crate::services::reconciliation::export_job_results(db_clone, job_id_val, &path_for_task, &format).await;
+        let res = crate::services::reconciliation::export_job_results(&db_clone, job_id_val, &path_for_task, &format).await;
         if res.is_ok() {
             let link_info = serde_json::json!({
                 "ready": true,
@@ -401,7 +432,7 @@ pub async fn get_export_status(
         return Ok(HttpResponse::Ok().json(ApiResponse {
             success: true,
             data: Some(serde_json::json!({
-                "ready": info.get("ready").and_then(|v| v.as_bool()).unwrap_or(false),
+                "ready": info.get("ready").and_then(|v| v.as_bool()).unwrap_or(false), // Safe default for boolean
                 "download": format!("/api/v1/reconciliation/jobs/{}/export/download", job_id_val),
                 "file_name": info.get("file_name"),
             })),
@@ -433,7 +464,10 @@ pub async fn download_export_file(
     while let Some(e) = entries.next_entry().await.map_err(|e| AppError::Internal(e.to_string()))? {
         let path = e.path();
         if path.is_file() {
-            if latest.as_ref().map(|p| p.file_name() < path.file_name()).unwrap_or(true) {
+            if latest.as_ref()
+                .map(|p| p.file_name() < path.file_name())
+                .unwrap_or(true) // Safe default: if can't compare, treat as older
+            {
                 latest = Some(path);
             }
         }
@@ -467,7 +501,10 @@ pub async fn start_sample_onboarding(
     let file_b = sample_dir.join("test_data.json");
 
     // If JSON not present, fallback to CSV for both
-    let file_b_path = if tokio::fs::try_exists(&file_b).await.unwrap_or(false) { file_b } else { file_a.clone() };
+    let file_b_path = match tokio::fs::try_exists(&file_b).await {
+        Ok(true) => file_b,
+        Ok(false) | Err(_) => file_a.clone(),
+    };
 
     let ds_a = ds_service.create_data_source(
         req.project_id,
@@ -502,7 +539,6 @@ pub async fn start_sample_onboarding(
         source_b_id: ds_b.id,
         confidence_threshold: req.confidence_threshold.unwrap_or(0.8),
         matching_rules: vec![],
-        created_by: user_id,
     };
     let job_status = recon_service.create_reconciliation_job(user_id, job_req).await?;
 

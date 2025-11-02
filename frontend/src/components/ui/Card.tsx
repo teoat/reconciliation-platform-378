@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { memo, useMemo } from 'react'
 
 export interface CardProps {
   children: React.ReactNode
@@ -11,7 +11,7 @@ export interface CardProps {
   border?: boolean
 }
 
-const Card: React.FC<CardProps> = ({
+const Card: React.FC<CardProps> = memo(({
   children,
   title,
   subtitle,
@@ -21,27 +21,34 @@ const Card: React.FC<CardProps> = ({
   shadow = 'sm',
   border = true
 }) => {
-  const paddingClasses = {
+  // Memoize padding classes
+  const paddingClasses = useMemo(() => ({
     none: '',
     sm: 'p-4',
     md: 'p-6',
     lg: 'p-8'
-  }
+  }), [])
   
-  const shadowClasses = {
+  // Memoize shadow classes
+  const shadowClasses = useMemo(() => ({
     none: '',
     sm: 'shadow-sm',
     md: 'shadow-md',
     lg: 'shadow-lg'
-  }
+  }), [])
   
-  const borderClasses = border ? 'border border-gray-200' : ''
+  // Memoize class calculations
+  const classes = useMemo(() => {
+    const borderClasses = border ? 'border border-gray-200' : ''
+    return `bg-white rounded-lg ${paddingClasses[padding]} ${shadowClasses[shadow]} ${borderClasses} ${className}`.trim()
+  }, [padding, shadow, border, className, paddingClasses, shadowClasses])
   
-  const classes = `bg-white rounded-lg ${paddingClasses[padding]} ${shadowClasses[shadow]} ${borderClasses} ${className}`.trim()
+  // Memoize header visibility
+  const showHeader = useMemo(() => !!(title || subtitle || actions), [title, subtitle, actions])
   
   return (
     <div className={classes}>
-      {(title || subtitle || actions) && (
+      {showHeader && (
         <div className="mb-4">
           <div className="flex items-center justify-between">
             <div>
@@ -70,7 +77,9 @@ const Card: React.FC<CardProps> = ({
       </div>
     </div>
   )
-}
+})
+
+Card.displayName = 'Card'
 
 export { Card };
 export default Card

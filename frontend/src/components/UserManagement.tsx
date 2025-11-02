@@ -1,16 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, memo } from 'react'
+import { logger } from '@/services/logger'
 import { useLoading } from '../hooks/useLoading'
-import { 
-  Users, 
-  UserPlus, 
-  Edit, 
-  Trash2, 
-  Shield, 
-  Search,
-  CheckCircle,
-  XCircle,
-  AlertCircle
-} from 'lucide-react'
+import { Users } from 'lucide-react'
+import { UserPlus } from 'lucide-react'
+import { Edit } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
+import { Shield } from 'lucide-react'
+import { Search } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { XCircle } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import Card from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
@@ -147,7 +146,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       setShowCreateModal(false)
       reset()
     } catch (error) {
-      console.error('Failed to create user:', error)
+      logger.error('Failed to create user:', error)
     }
   }
 
@@ -170,7 +169,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       setSelectedUser(null)
       reset()
     } catch (error) {
-      console.error('Failed to update user:', error)
+      logger.error('Failed to update user:', error)
     }
   }
 
@@ -184,7 +183,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       setShowDeleteModal(false)
       setSelectedUser(null)
     } catch (error) {
-      console.error('Failed to delete user:', error)
+      logger.error('Failed to delete user:', error)
     }
   }
 
@@ -679,4 +678,4 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
   )
 }
 
-export default UserManagement
+export default memo(UserManagement)

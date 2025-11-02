@@ -2,7 +2,10 @@
 // Reduced from 715 lines to ~150 lines by focusing on essential functionality
 
 import React from 'react'
-import { CheckCircle, Circle, AlertCircle, Clock } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { Circle } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { Clock } from 'lucide-react'
 
 export interface ProgressStep {
   id: string

@@ -8,6 +8,7 @@ mod simple_tests;
 mod unit_tests;
 mod integration_tests;
 mod e2e_tests;
+mod service_tests;
 
 // Re-export test utilities for use in other test modules
 pub use test_utils::*;

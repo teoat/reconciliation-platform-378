@@ -1,4 +1,5 @@
 // ============================================================================
+import { logger } from '@/services/logger'
 // PERFORMANCE HOOKS - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
@@ -24,8 +25,8 @@ export const useRenderCount = () => {
   return renderCount.current
 }
 
-export const useWhyDidYouUpdate = (name: string, props: Record<string, any>) => {
-  const previous = useRef<Record<string, any>>()
+export const useWhyDidYouUpdate = (name: string, props: Record<string, unknown>) => {
+  const previous = useRef<Record<string, unknown>>()
   
   useEffect(() => {
     if (previous.current) {
@@ -42,7 +43,7 @@ export const useWhyDidYouUpdate = (name: string, props: Record<string, any>) => 
       })
       
       if (Object.keys(changedProps).length) {
-        console.log('[why-did-you-update]', name, changedProps)
+        logger.log('[why-did-you-update]', name, changedProps)
       }
     }
     

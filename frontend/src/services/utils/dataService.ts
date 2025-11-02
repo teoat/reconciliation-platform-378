@@ -1,4 +1,5 @@
 // Unified Data Management Service
+import { logger } from '@/services/logger'
 import { PersistenceService } from '../BaseService'
 
 export interface DataItem {
@@ -72,7 +73,7 @@ export class DataService extends PersistenceService<DataItem> {
       this.save()
       this.emit('imported', data)
     } catch (error) {
-      console.error('Failed to import data:', error)
+      logger.error('Failed to import data:', error)
     }
   }
 }

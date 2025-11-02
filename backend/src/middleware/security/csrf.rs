@@ -103,13 +103,8 @@ impl<S> CsrfProtectionService<S> {
         // Skip CSRF for Bearer token API requests (no cookies used)
         // If an Authorization header is present, we assume token-based auth and skip CSRF.
         // CSRF defenses are relevant when cookies are used for auth.
-        if let Some(_) = {
-            // Authorization presence check
-            use actix_web::http::header::AUTHORIZATION;
-            // NOTE: We cannot access the request here; header check is done in call() prior to validation.
-            // This guard remains as a structural placeholder. Real skip logic is performed earlier.
-            None::<()>
-        } { return true; }
+        // NOTE: Authorization header check is done in call() method, not here.
+        // This is a placeholder - actual skip logic happens earlier in the middleware chain.
 
         // Skip CSRF for health checks and public endpoints
         path.starts_with("/health") ||

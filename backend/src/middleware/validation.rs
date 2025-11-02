@@ -110,6 +110,9 @@ async fn validate_endpoint(
         ("POST", "/api/files/upload") => {
             validate_file_upload_request(validation_service, req).await
         }
+        ("POST", path) if path.starts_with("/api/projects/") && path.ends_with("/files/upload") => {
+            validate_file_upload_request(validation_service, req).await
+        }
         ("POST", "/api/reconciliation/jobs") => {
             validate_create_job_request(validation_service, req).await
         }

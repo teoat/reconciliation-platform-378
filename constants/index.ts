@@ -46,7 +46,7 @@ export const APP_CONFIG = {
   UPLOAD_TIMEOUT: 300000, // 5 minutes
   EXPORT_TIMEOUT: 600000, // 10 minutes
   ANALYSIS_TIMEOUT: 1800000, // 30 minutes
-} as const
+} as const;
 
 // ============================================================================
 // API ENDPOINTS
@@ -65,7 +65,7 @@ export const API_ENDPOINTS = {
     CHANGE_PASSWORD: '/api/auth/change-password',
     PROFILE: '/api/auth/profile',
   },
-  
+
   // Projects
   PROJECTS: {
     BASE: '/api/projects',
@@ -80,7 +80,7 @@ export const API_ENDPOINTS = {
     SETTINGS: (id: string) => `/api/projects/${id}/settings`,
     ANALYTICS: (id: string) => `/api/projects/${id}/analytics`,
   },
-  
+
   // Data Ingestion
   INGESTION: {
     BASE: '/api/ingestion',
@@ -93,7 +93,7 @@ export const API_ENDPOINTS = {
     ERRORS: (id: string) => `/api/ingestion/${id}/errors`,
     DOWNLOAD: (id: string) => `/api/ingestion/${id}/download`,
   },
-  
+
   // Reconciliation
   RECONCILIATION: {
     BASE: '/api/reconciliation',
@@ -119,7 +119,7 @@ export const API_ENDPOINTS = {
     METRICS: '/api/reconciliation/metrics',
     EXPORT: '/api/reconciliation/export',
   },
-  
+
   // Cashflow Evaluation
   CASHFLOW: {
     BASE: '/api/cashflow',
@@ -142,7 +142,7 @@ export const API_ENDPOINTS = {
     METRICS: '/api/cashflow/metrics',
     EXPORT: '/api/cashflow/export',
   },
-  
+
   // Adjudication
   ADJUDICATION: {
     BASE: '/api/adjudication',
@@ -166,7 +166,7 @@ export const API_ENDPOINTS = {
     METRICS: '/api/adjudication/metrics',
     EXPORT: '/api/adjudication/export',
   },
-  
+
   // Visualization
   VISUALIZATION: {
     BASE: '/api/visualization',
@@ -189,18 +189,18 @@ export const API_ENDPOINTS = {
     SCHEDULE_REPORT: (id: string) => `/api/visualization/reports/${id}/schedule`,
     EXPORT: '/api/visualization/export',
   },
-  
+
   // File Management
   FILES: {
     BASE: '/api/files',
-    UPLOAD: '/api/files/upload',
+    UPLOAD: (projectId: string) => `/api/projects/${projectId}/files/upload`,
     GET: (id: string) => `/api/files/${id}`,
     DOWNLOAD: (id: string) => `/api/files/${id}/download`,
     DELETE: (id: string) => `/api/files/${id}`,
     METADATA: (id: string) => `/api/files/${id}/metadata`,
     PREVIEW: (id: string) => `/api/files/${id}/preview`,
   },
-  
+
   // User Management
   USERS: {
     BASE: '/api/users',
@@ -214,7 +214,7 @@ export const API_ENDPOINTS = {
     PREFERENCES: (id: string) => `/api/users/${id}/preferences`,
     ACTIVITY: (id: string) => `/api/users/${id}/activity`,
   },
-  
+
   // Teams & Workspaces
   TEAMS: {
     BASE: '/api/teams',
@@ -228,7 +228,7 @@ export const API_ENDPOINTS = {
     REMOVE_MEMBER: (id: string, userId: string) => `/api/teams/${id}/members/${userId}`,
     PERMISSIONS: (id: string) => `/api/teams/${id}/permissions`,
   },
-  
+
   // Workflows
   WORKFLOWS: {
     BASE: '/api/workflows',
@@ -249,7 +249,7 @@ export const API_ENDPOINTS = {
     DELETE_RULE: (id: string) => `/api/workflows/rules/${id}`,
     TEST_RULE: '/api/workflows/rules/test',
   },
-  
+
   // Notifications
   NOTIFICATIONS: {
     BASE: '/api/notifications',
@@ -264,7 +264,7 @@ export const API_ENDPOINTS = {
     SUBSCRIBE: '/api/notifications/subscribe',
     UNSUBSCRIBE: '/api/notifications/unsubscribe',
   },
-  
+
   // Analytics
   ANALYTICS: {
     BASE: '/api/analytics',
@@ -275,7 +275,7 @@ export const API_ENDPOINTS = {
     RECOMMENDATIONS: '/api/analytics/recommendations',
     EXPORT: '/api/analytics/export',
   },
-  
+
   // Security
   SECURITY: {
     BASE: '/api/security',
@@ -286,7 +286,7 @@ export const API_ENDPOINTS = {
     ACCESS_CONTROL: '/api/security/access-control',
     ENCRYPTION: '/api/security/encryption',
   },
-  
+
   // System
   SYSTEM: {
     BASE: '/api/system',
@@ -298,7 +298,7 @@ export const API_ENDPOINTS = {
     BACKUP: '/api/system/backup',
     RESTORE: '/api/system/restore',
   },
-} as const
+} as const;
 
 // ============================================================================
 // ROUTES
@@ -338,7 +338,7 @@ export const ROUTES = {
   ERROR_404: '/404',
   ERROR_500: '/500',
   MAINTENANCE: '/maintenance',
-} as const
+} as const;
 
 // ============================================================================
 // STATUS CODES
@@ -361,7 +361,7 @@ export const HTTP_STATUS = {
   BAD_GATEWAY: 502,
   SERVICE_UNAVAILABLE: 503,
   GATEWAY_TIMEOUT: 504,
-} as const
+} as const;
 
 // ============================================================================
 // ERROR CODES
@@ -379,7 +379,7 @@ export const ERROR_CODES = {
   AUTH_EMAIL_NOT_VERIFIED: 'AUTH_EMAIL_NOT_VERIFIED',
   AUTH_PASSWORD_TOO_WEAK: 'AUTH_PASSWORD_TOO_WEAK',
   AUTH_PASSWORD_MISMATCH: 'AUTH_PASSWORD_MISMATCH',
-  
+
   // Validation Errors
   VALIDATION_REQUIRED_FIELD: 'VALIDATION_REQUIRED_FIELD',
   VALIDATION_INVALID_FORMAT: 'VALIDATION_INVALID_FORMAT',
@@ -391,7 +391,7 @@ export const ERROR_CODES = {
   VALIDATION_INVALID_DATE: 'VALIDATION_INVALID_DATE',
   VALIDATION_INVALID_NUMBER: 'VALIDATION_INVALID_NUMBER',
   VALIDATION_INVALID_BOOLEAN: 'VALIDATION_INVALID_BOOLEAN',
-  
+
   // File Errors
   FILE_TOO_LARGE: 'FILE_TOO_LARGE',
   FILE_INVALID_TYPE: 'FILE_INVALID_TYPE',
@@ -400,7 +400,7 @@ export const ERROR_CODES = {
   FILE_UPLOAD_FAILED: 'FILE_UPLOAD_FAILED',
   FILE_PROCESSING_FAILED: 'FILE_PROCESSING_FAILED',
   FILE_DOWNLOAD_FAILED: 'FILE_DOWNLOAD_FAILED',
-  
+
   // Data Errors
   DATA_NOT_FOUND: 'DATA_NOT_FOUND',
   DATA_ALREADY_EXISTS: 'DATA_ALREADY_EXISTS',
@@ -410,7 +410,7 @@ export const ERROR_CODES = {
   DATA_VALIDATION_FAILED: 'DATA_VALIDATION_FAILED',
   DATA_IMPORT_FAILED: 'DATA_IMPORT_FAILED',
   DATA_EXPORT_FAILED: 'DATA_EXPORT_FAILED',
-  
+
   // Business Logic Errors
   BUSINESS_RULE_VIOLATION: 'BUSINESS_RULE_VIOLATION',
   WORKFLOW_INVALID_STATE: 'WORKFLOW_INVALID_STATE',
@@ -419,7 +419,7 @@ export const ERROR_CODES = {
   APPROVAL_REQUIRED: 'APPROVAL_REQUIRED',
   APPROVAL_DENIED: 'APPROVAL_DENIED',
   CONCURRENT_MODIFICATION: 'CONCURRENT_MODIFICATION',
-  
+
   // System Errors
   SYSTEM_ERROR: 'SYSTEM_ERROR',
   DATABASE_ERROR: 'DATABASE_ERROR',
@@ -429,14 +429,14 @@ export const ERROR_CODES = {
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
   MAINTENANCE_MODE: 'MAINTENANCE_MODE',
   UPGRADE_REQUIRED: 'UPGRADE_REQUIRED',
-  
+
   // External Service Errors
   EXTERNAL_SERVICE_ERROR: 'EXTERNAL_SERVICE_ERROR',
   EXTERNAL_SERVICE_TIMEOUT: 'EXTERNAL_SERVICE_TIMEOUT',
   EXTERNAL_SERVICE_UNAVAILABLE: 'EXTERNAL_SERVICE_UNAVAILABLE',
   EXTERNAL_API_ERROR: 'EXTERNAL_API_ERROR',
   EXTERNAL_AUTH_ERROR: 'EXTERNAL_AUTH_ERROR',
-} as const
+} as const;
 
 // ============================================================================
 // UI CONSTANTS
@@ -453,7 +453,7 @@ export const UI_CONFIG = {
   BORDER_RADIUS: 8,
   SHADOW: '0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)',
   SHADOW_HOVER: '0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23)',
-  
+
   // Breakpoints
   BREAKPOINTS: {
     XS: 0,
@@ -463,7 +463,7 @@ export const UI_CONFIG = {
     XL: 1200,
     XXL: 1400,
   },
-  
+
   // Z-Index
   Z_INDEX: {
     DROPDOWN: 1000,
@@ -475,11 +475,11 @@ export const UI_CONFIG = {
     TOOLTIP: 1070,
     TOAST: 1080,
   },
-  
+
   // Animation
   TRANSITION_DURATION: 300,
   TRANSITION_EASING: 'cubic-bezier(0.4, 0, 0.2, 1)',
-  
+
   // Colors
   COLORS: {
     PRIMARY: '#3B82F6',
@@ -505,7 +505,7 @@ export const UI_CONFIG = {
       900: '#0F172A',
     },
   },
-  
+
   // Typography
   FONT_SIZES: {
     XS: '0.75rem',
@@ -519,7 +519,7 @@ export const UI_CONFIG = {
     '5XL': '3rem',
     '6XL': '3.75rem',
   },
-  
+
   FONT_WEIGHTS: {
     THIN: 100,
     EXTRALIGHT: 200,
@@ -531,7 +531,7 @@ export const UI_CONFIG = {
     EXTRABOLD: 800,
     BLACK: 900,
   },
-  
+
   LINE_HEIGHTS: {
     NONE: 1,
     TIGHT: 1.25,
@@ -540,7 +540,7 @@ export const UI_CONFIG = {
     RELAXED: 1.625,
     LOOSE: 2,
   },
-  
+
   // Spacing
   SPACING: {
     0: '0',
@@ -562,7 +562,7 @@ export const UI_CONFIG = {
     56: '14rem',
     64: '16rem',
   },
-} as const
+} as const;
 
 // ============================================================================
 // CHART CONFIGURATION
@@ -582,7 +582,7 @@ export const CHART_CONFIG = {
     GAUGE: 'gauge',
     FUNNEL: 'funnel',
   },
-  
+
   // Default Colors
   COLORS: [
     '#3B82F6', // Blue
@@ -596,18 +596,18 @@ export const CHART_CONFIG = {
     '#EC4899', // Pink
     '#6B7280', // Gray
   ],
-  
+
   // Animation
   ANIMATION: {
     DURATION: 1000,
     EASING: 'easeInOutQuart',
     DELAY: 0,
   },
-  
+
   // Responsive
   RESPONSIVE: true,
   MAINTAIN_ASPECT_RATIO: false,
-  
+
   // Plugins
   PLUGINS: {
     LEGEND: {
@@ -625,7 +625,7 @@ export const CHART_CONFIG = {
       FONT_WEIGHT: 'bold',
     },
   },
-  
+
   // Scales
   SCALES: {
     X: {
@@ -651,7 +651,7 @@ export const CHART_CONFIG = {
       },
     },
   },
-} as const
+} as const;
 
 // ============================================================================
 // VALIDATION RULES
@@ -674,7 +674,7 @@ export const VALIDATION_RULES = {
   UUID: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
   HEX_COLOR: /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/,
   BASE64: /^[A-Za-z0-9+/]*={0,2}$/,
-} as const
+} as const;
 
 // ============================================================================
 // FILE TYPES
@@ -693,7 +693,7 @@ export const FILE_TYPES = {
     TXT: 'text/plain',
     RTF: 'application/rtf',
   },
-  
+
   // Image Types
   IMAGES: {
     JPEG: 'image/jpeg',
@@ -705,7 +705,7 @@ export const FILE_TYPES = {
     WEBP: 'image/webp',
     TIFF: 'image/tiff',
   },
-  
+
   // Data Types
   DATA: {
     CSV: 'text/csv',
@@ -716,7 +716,7 @@ export const FILE_TYPES = {
     RAR: 'application/x-rar-compressed',
     '7Z': 'application/x-7z-compressed',
   },
-  
+
   // Video Types
   VIDEOS: {
     MP4: 'video/mp4',
@@ -726,7 +726,7 @@ export const FILE_TYPES = {
     FLV: 'video/x-flv',
     WEBM: 'video/webm',
   },
-  
+
   // Audio Types
   AUDIO: {
     MP3: 'audio/mpeg',
@@ -735,7 +735,7 @@ export const FILE_TYPES = {
     AAC: 'audio/aac',
     FLAC: 'audio/flac',
   },
-} as const
+} as const;
 
 // ============================================================================
 // REGEX PATTERNS
@@ -748,24 +748,24 @@ export const REGEX_PATTERNS = {
   URL: VALIDATION_RULES.URL,
   PASSWORD: VALIDATION_RULES.PASSWORD,
   USERNAME: VALIDATION_RULES.USERNAME,
-  
+
   // Indonesian Specific
   NIK: /^[0-9]{16}$/,
   NPWP: /^[0-9]{15}$/,
   BANK_ACCOUNT: /^[0-9]{10,16}$/,
   CURRENCY_IDR: /^Rp\s?[0-9]{1,3}(\.[0-9]{3})*(,[0-9]{2})?$/,
-  
+
   // International
   CREDIT_CARD: /^[0-9]{4}[\s-]?[0-9]{4}[\s-]?[0-9]{4}[\s-]?[0-9]{4}$/,
   IBAN: /^[A-Z]{2}[0-9]{2}[A-Z0-9]{4}[0-9]{7}([A-Z0-9]?){0,16}$/,
   SWIFT: /^[A-Z]{6}[A-Z0-9]{2}([A-Z0-9]{3})?$/,
-  
+
   // Technical
   IPV4: /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/,
   IPV6: /^(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}$/,
   MAC_ADDRESS: /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/,
   PORT: /^([1-9][0-9]{0,3}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$/,
-} as const
+} as const;
 
 // ============================================================================
 // DATE FORMATS
@@ -783,7 +783,7 @@ export const DATE_FORMATS = {
     ISO_DATETIME: 'YYYY-MM-DDTHH:mm:ss',
     ISO_DATETIME_Z: 'YYYY-MM-DDTHH:mm:ssZ',
   },
-  
+
   // Input Formats
   INPUT: {
     DATE: 'YYYY-MM-DD',
@@ -791,14 +791,14 @@ export const DATE_FORMATS = {
     DATETIME: 'YYYY-MM-DDTHH:mm',
     DATETIME_LOCAL: 'YYYY-MM-DDTHH:mm',
   },
-  
+
   // File Formats
   FILE: {
     TIMESTAMP: 'YYYYMMDD_HHmmss',
     DATE: 'YYYY-MM-DD',
     DATETIME: 'YYYY-MM-DD_HH-mm-ss',
   },
-  
+
   // Locale Specific
   LOCALE: {
     ID: 'DD/MM/YYYY',
@@ -806,7 +806,7 @@ export const DATE_FORMATS = {
     EU: 'DD/MM/YYYY',
     ISO: 'YYYY-MM-DD',
   },
-} as const
+} as const;
 
 // ============================================================================
 // CURRENCY FORMATS
@@ -849,7 +849,7 @@ export const CURRENCY_FORMATS = {
     FORMAT: '£#,##0.00',
     NEGATIVE_FORMAT: '-£#,##0.00',
   },
-} as const
+} as const;
 
 // ============================================================================
 // EXPORT ALL CONSTANTS

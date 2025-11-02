@@ -1,11 +1,11 @@
-import '@testing-library/jest-dom'
-import { cleanup } from '@testing-library/react'
-import { afterEach, beforeAll, afterAll, vi } from 'vitest'
+import '@testing-library/jest-dom';
+import { cleanup } from '@testing-library/react';
+import { afterEach, beforeAll, afterAll, vi } from 'vitest';
 
 // Cleanup after each test case
 afterEach(() => {
-  cleanup()
-})
+  cleanup();
+});
 
 // Mock IntersectionObserver
 beforeAll(() => {
@@ -14,8 +14,8 @@ beforeAll(() => {
     disconnect() {}
     observe() {}
     unobserve() {}
-  }
-})
+  };
+});
 
 // Mock ResizeObserver
 beforeAll(() => {
@@ -24,14 +24,14 @@ beforeAll(() => {
     disconnect() {}
     observe() {}
     unobserve() {}
-  }
-})
+  };
+});
 
 // Mock matchMedia
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
-    value: vi.fn().mockImplementation(query => ({
+    value: vi.fn().mockImplementation((query) => ({
       matches: false,
       media: query,
       onchange: null,
@@ -41,8 +41,8 @@ beforeAll(() => {
       removeEventListener: vi.fn(),
       dispatchEvent: vi.fn(),
     })),
-  })
-})
+  });
+});
 
 // Mock localStorage
 beforeAll(() => {
@@ -51,9 +51,9 @@ beforeAll(() => {
     setItem: vi.fn(),
     removeItem: vi.fn(),
     clear: vi.fn(),
-  }
-  global.localStorage = localStorageMock as any
-})
+  };
+  global.localStorage = localStorageMock as any;
+});
 
 // Mock sessionStorage
 beforeAll(() => {
@@ -62,14 +62,24 @@ beforeAll(() => {
     setItem: vi.fn(),
     removeItem: vi.fn(),
     clear: vi.fn(),
-  }
-  global.sessionStorage = sessionStorageMock as any
-})
+  };
+  global.sessionStorage = sessionStorageMock as any;
+});
 
 // Mock fetch
 beforeAll(() => {
-  global.fetch = vi.fn()
-})
+  global.fetch = vi.fn();
+});
+
+// Mock secure storage for tests
+vi.mock('../services/secureStorage', () => ({
+  SecureStorageService: class {
+    get = vi.fn();
+    set = vi.fn();
+    remove = vi.fn();
+    clear = vi.fn();
+  },
+}));
 
 // Mock WebSocket
 beforeAll(() => {
@@ -79,9 +89,9 @@ beforeAll(() => {
     send() {}
     addEventListener() {}
     removeEventListener() {}
-  } as any
-})
+  } as any;
+});
 
 afterAll(() => {
-  vi.clearAllMocks()
-})
+  vi.clearAllMocks();
+});

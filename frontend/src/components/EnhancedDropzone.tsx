@@ -2,7 +2,11 @@
 // Reduced from 467 lines to ~100 lines by using the consolidated fileService
 
 import React, { useCallback, useState } from 'react'
-import { Upload, File, X, CheckCircle, AlertCircle } from 'lucide-react'
+import { Upload } from 'lucide-react'
+import { File } from 'lucide-react'
+import { X } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import { fileService } from '../services/fileService'
 import { progressiveValidateCsv, ProgressiveValidationIssue } from '../utils/fileValidation'
 

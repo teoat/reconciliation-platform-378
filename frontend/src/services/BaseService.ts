@@ -1,4 +1,5 @@
 // Unified Base Service Architecture
+import { logger } from '@/services/logger'
 export interface ServiceConfig {
   persistence?: boolean
   caching?: boolean
@@ -75,7 +76,7 @@ export abstract class PersistenceService<T> extends BaseService<T> {
       const data = Array.from(this.data.entries())
       localStorage.setItem(this.storageKey, JSON.stringify(data))
     } catch (error) {
-      console.error(`Failed to save ${this.storageKey}:`, error)
+      logger.error(`Failed to save ${this.storageKey}:`, error)
     }
   }
 
@@ -87,7 +88,7 @@ export abstract class PersistenceService<T> extends BaseService<T> {
         this.data = new Map(data)
       }
     } catch (error) {
-      console.error(`Failed to load ${this.storageKey}:`, error)
+      logger.error(`Failed to load ${this.storageKey}:`, error)
     }
   }
 }

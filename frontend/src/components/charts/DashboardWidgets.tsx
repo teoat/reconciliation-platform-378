@@ -1,5 +1,10 @@
 import React, { memo, useMemo } from 'react'
-import { TrendingUp, TrendingDown, Activity, Users, DollarSign, Clock } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
+import { TrendingDown } from 'lucide-react'
+import { Activity } from 'lucide-react'
+import { Users } from 'lucide-react'
+import { DollarSign } from 'lucide-react'
+import { Clock } from 'lucide-react'
 
 export interface MetricWidgetProps {
   title: string

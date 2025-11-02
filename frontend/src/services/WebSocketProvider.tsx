@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { logger } from '@/services/logger'
 import WebSocketClient, { WebSocketConfig, WebSocketStatus, WebSocketMessage } from './websocket'
 
 interface WebSocketContextType {
@@ -6,8 +7,8 @@ interface WebSocketContextType {
   status: WebSocketStatus
   connect: () => Promise<void>
   disconnect: () => void
-  emit: (event: string, data?: any) => void
-  subscribe: (event: string, handler: (data: any) => void) => string
+  emit: (event: string, data?: unknown) => void
+  subscribe: (event: string, handler: (data: unknown) => void) => string
   unsubscribe: (event: string, subscriptionId: string) => void
   isConnected: () => boolean
   waitForConnection: (timeout?: number) => Promise<void>
@@ -53,18 +54,18 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
     })
 
     // Subscribe to common events
-    const messageSubscriptionId = wsClient.subscribe('message', (data: any) => {
+    const messageSubscriptionId = wsClient.subscribe('message', (data: unknown) => {
       // Handle incoming messages
     })
 
     // Subscribe to errors
-    const errorSubscriptionId = wsClient.subscribe('error', (error: any) => {
-      console.error('WebSocket error:', error)
+    const errorSubscriptionId = wsClient.subscribe('error', (error: Error | unknown) => {
+      logger.error('WebSocket error:', error)
     })
 
     // Subscribe to auth errors
-    const authErrorSubscriptionId = wsClient.subscribe('auth-error', (error: any) => {
-      console.error('WebSocket auth error:', error)
+    const authErrorSubscriptionId = wsClient.subscribe('auth-error', (error: Error | unknown) => {
+      logger.error('WebSocket auth error:', error)
       // Handle authentication errors (e.g., redirect to login)
     })
 
@@ -89,13 +90,13 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
     }
   }
 
-  const emit = (event: string, data?: any) => {
+  const emit = (event: string, data?: unknown) => {
     if (client) {
       client.emit(event, data)
     }
   }
 
-  const subscribe = (event: string, handler: (data: any) => void) => {
+  const subscribe = (event: string, handler: (data: unknown) => void) => {
     if (client) {
       return client.subscribe(event, handler)
     }
@@ -169,7 +170,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
 // Hook for real-time reconciliation updates
 export const useReconciliationUpdates = () => {
   const { subscribe, unsubscribe, isConnected } = useWebSocketContext()
-  const [updates, setUpdates] = useState<any[]>([])
+  const [updates, setUpdates] = useState<Array<Record<string, unknown> & { timestamp: Date }>>([])
 
   useEffect(() => {
     if (!isConnected()) return
@@ -189,7 +190,7 @@ export const useReconciliationUpdates = () => {
 // Hook for real-time notifications
 export const useRealtimeNotifications = () => {
   const { subscribe, unsubscribe, isConnected } = useWebSocketContext()
-  const [notifications, setNotifications] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<Array<Record<string, unknown> & { timestamp: Date }>>([])
 
   useEffect(() => {
     if (!isConnected()) return
@@ -209,8 +210,8 @@ export const useRealtimeNotifications = () => {
 // Hook for real-time collaboration
 export const useCollaboration = (roomId: string) => {
   const { joinRoom, leaveRoom, subscribe, unsubscribe, emit, isConnected } = useWebSocketContext()
-  const [collaborators, setCollaborators] = useState<any[]>([])
-  const [activities, setActivities] = useState<any[]>([])
+  const [collaborators, setCollaborators] = useState<Array<Record<string, unknown>>>([])
+  const [activities, setActivities] = useState<Array<Record<string, unknown> & { timestamp: Date }>>([])
 
   useEffect(() => {
     if (!isConnected() || !roomId) return
@@ -234,11 +235,11 @@ export const useCollaboration = (roomId: string) => {
     }
   }, [roomId, joinRoom, leaveRoom, subscribe, unsubscribe, isConnected])
 
-  const sendActivity = (activity: any) => {
+  const sendActivity = (activity: Record<string, unknown>) => {
     emit('activity', { roomId, activity })
   }
 
-  const updateCursor = (position: any) => {
+  const updateCursor = (position: { x: number; y: number }) => {
     emit('cursor-update', { roomId, position })
   }
 

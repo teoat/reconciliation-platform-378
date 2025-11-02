@@ -1,4 +1,5 @@
 // Reconnection State Validation Service
+import { logger } from '@/services/logger'
 // Handles inconsistent state after reconnection and data refresh
 
 import React from 'react'
@@ -86,7 +87,7 @@ class ReconnectionValidationService {
         this.config = { ...this.config, ...JSON.parse(saved) }
       }
     } catch (error) {
-      console.warn('Failed to load reconnection validation config:', error)
+      logger.warn('Failed to load reconnection validation config:', error)
     }
   }
 
@@ -95,7 +96,7 @@ class ReconnectionValidationService {
     try {
       localStorage.setItem('reconnectionValidationConfig', JSON.stringify(this.config))
     } catch (error) {
-      console.warn('Failed to save reconnection validation config:', error)
+      logger.warn('Failed to save reconnection validation config:', error)
     }
   }
 
@@ -117,7 +118,7 @@ class ReconnectionValidationService {
     this.connectionState.lastConnected = Date.now()
     this.connectionState.reconnectionAttempts = 0
 
-    console.log('Network reconnected, starting validation...')
+    logger.info('Network reconnected, starting validation...')
     
     // Start validation for all cached data
     this.validateAllCachedData()
@@ -127,7 +128,7 @@ class ReconnectionValidationService {
     this.connectionState.isOnline = false
     this.connectionState.lastDisconnected = Date.now()
 
-    console.log('Network disconnected, pausing validation...')
+    logger.info('Network disconnected, pausing validation...')
     
     // Clear validation timers
     this.clearAllValidationTimers()
@@ -162,7 +163,7 @@ class ReconnectionValidationService {
       try {
         await this.validateData(key, getCurrentData, getServerData, metadata)
       } catch (error) {
-        console.warn(`Validation failed for ${key}:`, error)
+        logger.warn(`Validation failed for ${key}:`, error)
       }
     }, this.config.checkInterval)
 
@@ -286,7 +287,7 @@ class ReconnectionValidationService {
 
       return result
     } catch (error) {
-      console.warn(`Validation failed for ${key}:`, error)
+      logger.warn(`Validation failed for ${key}:`, error)
       
       const result: DataValidationResult = {
         isValid: false,
@@ -382,16 +383,16 @@ class ReconnectionValidationService {
       try {
         // This would need to be implemented by the calling code
         // as we don't have access to the original validation functions
-        console.log(`Validating cached data for ${key}`)
+        logger.debug(`Validating cached data for ${key}`)
       } catch (error) {
-        console.warn(`Failed to validate cached data for ${key}:`, error)
+        logger.warning(`Failed to validate cached data for ${key}`, { key, error })
       }
     }
   }
 
   private handleAutoRefresh(key: string, result: DataValidationResult): void {
     if (result.requiresRefresh) {
-      console.log(`Auto-refreshing data for ${key}`)
+        logger.debug(`Auto-refreshing data for ${key}`)
       // This would trigger a data refresh in the calling component
       this.notifyListeners(key, { ...result, requiresRefresh: true })
     }

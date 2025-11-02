@@ -1,4 +1,5 @@
 // Last-Write-Wins with Timestamp Validation Service
+import { logger } from '@/services/logger'
 // Resolves concurrent record modifications with timestamp-based conflict resolution
 
 export interface TimestampedRecord {
@@ -112,7 +113,7 @@ class LastWriteWinsService {
         })
       }
     } catch (error) {
-      console.error('Failed to load persisted records:', error)
+      logger.error('Failed to load persisted records:', error)
     }
   }
 
@@ -123,7 +124,7 @@ class LastWriteWinsService {
       }
       localStorage.setItem('timestamped_records', JSON.stringify(data))
     } catch (error) {
-      console.error('Failed to save records:', error)
+      logger.error('Failed to save records:', error)
     }
   }
 

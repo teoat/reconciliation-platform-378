@@ -66,14 +66,16 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     try {
       const hostname = window.location.hostname;
       const subdomain = hostname.split('.')[0];
-      
+
       // Skip if it's localhost or main domain
       if (hostname === 'localhost' || hostname === 'yourdomain.com') {
         return null;
       }
 
       // Try to get tenant by subdomain
-      const response = await apiClient.makeRequest<{ tenant: Tenant }>(`/api/tenants/by-subdomain/${subdomain}`);
+      const response = await apiClient.makeRequest<{ tenant: Tenant }>(
+        `/api/tenants/by-subdomain/${subdomain}`
+      );
       if (response.data) {
         return response.data.tenant;
       }
@@ -102,7 +104,9 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       // Fallback to stored tenant or default
       const storedTenantId = localStorage.getItem('currentTenantId');
       if (storedTenantId) {
-        const response = await apiClient.makeRequest<{ tenant: Tenant }>(`/api/tenants/${storedTenantId}`);
+        const response = await apiClient.makeRequest<{ tenant: Tenant }>(
+          `/api/tenants/${storedTenantId}`
+        );
         if (response.data) {
           setCurrentTenant(response.data.tenant);
         }
@@ -143,23 +147,31 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   // Update tenant settings
-  const updateTenantSettings = useCallback(async (settings: Partial<TenantSettings>) => {
-    if (!currentTenant) return;
+  const updateTenantSettings = useCallback(
+    async (settings: Partial<TenantSettings>) => {
+      if (!currentTenant) return;
 
-    try {
-      const response = await apiClient.makeRequest<TenantSettings>(`/api/tenants/${currentTenant.id}/settings`, {
-        method: 'PUT',
-        body: JSON.stringify(settings),
-      });
+      try {
+        const response = await apiClient.makeRequest<TenantSettings>(
+          `/api/tenants/${currentTenant.id}/settings`,
+          {
+            method: 'PUT',
+            body: JSON.stringify(settings),
+          }
+        );
 
-      if (response.data) {
-        setCurrentTenant(prev => prev ? { ...prev, settings: { ...prev.settings, ...settings } } : null);
+        if (response.data) {
+          setCurrentTenant((prev) =>
+            prev ? { ...prev, settings: { ...prev.settings, ...settings } } : null
+          );
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to update tenant settings');
+        throw err;
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update tenant settings');
-      throw err;
-    }
-  }, [currentTenant]);
+    },
+    [currentTenant]
+  );
 
   // Create tenant
   const createTenant = useCallback(async (tenantData: Partial<Tenant>): Promise<Tenant> => {
@@ -171,7 +183,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
       if (response.data) {
         const newTenant = response.data.tenant;
-        setTenants(prev => [...prev, newTenant]);
+        setTenants((prev) => [...prev, newTenant]);
         return newTenant;
       }
       throw new Error('Failed to create tenant');
@@ -182,23 +194,26 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   // Delete tenant
-  const deleteTenant = useCallback(async (tenantId: string) => {
-    try {
-      await apiClient.makeRequest(`/api/tenants/${tenantId}`, {
-        method: 'DELETE',
-      });
+  const deleteTenant = useCallback(
+    async (tenantId: string) => {
+      try {
+        await apiClient.makeRequest(`/api/tenants/${tenantId}`, {
+          method: 'DELETE',
+        });
 
-      setTenants(prev => prev.filter(t => t.id !== tenantId));
-      
-      if (currentTenant?.id === tenantId) {
-        setCurrentTenant(null);
-        localStorage.removeItem('currentTenantId');
+        setTenants((prev) => prev.filter((t) => t.id !== tenantId));
+
+        if (currentTenant?.id === tenantId) {
+          setCurrentTenant(null);
+          localStorage.removeItem('currentTenantId');
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to delete tenant');
+        throw err;
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete tenant');
-      throw err;
-    }
-  }, [currentTenant]);
+    },
+    [currentTenant]
+  );
 
   // Get tenant usage
   const getTenantUsage = useCallback(async (tenantId: string) => {
@@ -228,11 +243,7 @@ export const TenantProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     getTenantUsage,
   };
 
-  return (
-    <TenantContext.Provider value={value}>
-      {children}
-    </TenantContext.Provider>
-  );
+  return <TenantContext.Provider value={value}>{children}</TenantContext.Provider>;
 };
 
 // Hook to use tenant context
@@ -268,11 +279,24 @@ export class TenantAwareApiClient {
 }
 
 // Multi-tenant middleware for backend
-export const tenantMiddleware = (req: any, res: any, next: any) => {
+interface Request {
+  headers: Record<string, string>;
+  subdomain?: string;
+  user?: { tenantId: string };
+  tenantId?: string;
+}
+
+interface Response {
+  // Add response methods as needed
+}
+
+interface NextFunction {
+  (): void;
+}
+
+export const tenantMiddleware = (req: Request, res: Response, next: NextFunction) => {
   // Extract tenant ID from header, subdomain, or JWT token
-  const tenantId = req.headers['x-tenant-id'] || 
-                   req.subdomain || 
-                   req.user?.tenantId;
+  const tenantId = req.headers['x-tenant-id'] || req.subdomain || req.user?.tenantId;
 
   if (tenantId) {
     req.tenantId = tenantId;
@@ -338,7 +362,7 @@ export const TenantSettings: React.FC = () => {
   return (
     <div className="tenant-settings">
       <h2>Tenant Settings</h2>
-      
+
       <div className="settings-section">
         <h3>Theme</h3>
         <div className="form-group">
@@ -346,22 +370,26 @@ export const TenantSettings: React.FC = () => {
           <input
             type="color"
             value={settings.theme.primaryColor}
-            onChange={(e) => setSettings({
-              ...settings,
-              theme: { ...settings.theme, primaryColor: e.target.value }
-            })}
+            onChange={(e) =>
+              setSettings({
+                ...settings,
+                theme: { ...settings.theme, primaryColor: e.target.value },
+              })
+            }
           />
         </div>
-        
+
         <div className="form-group">
           <label>Secondary Color</label>
           <input
             type="color"
             value={settings.theme.secondaryColor}
-            onChange={(e) => setSettings({
-              ...settings,
-              theme: { ...settings.theme, secondaryColor: e.target.value }
-            })}
+            onChange={(e) =>
+              setSettings({
+                ...settings,
+                theme: { ...settings.theme, secondaryColor: e.target.value },
+              })
+            }
           />
         </div>
       </div>
@@ -373,22 +401,26 @@ export const TenantSettings: React.FC = () => {
           <input
             type="text"
             value={settings.branding.companyName}
-            onChange={(e) => setSettings({
-              ...settings,
-              branding: { ...settings.branding, companyName: e.target.value }
-            })}
+            onChange={(e) =>
+              setSettings({
+                ...settings,
+                branding: { ...settings.branding, companyName: e.target.value },
+              })
+            }
           />
         </div>
-        
+
         <div className="form-group">
           <label>Support Email</label>
           <input
             type="email"
             value={settings.branding.supportEmail}
-            onChange={(e) => setSettings({
-              ...settings,
-              branding: { ...settings.branding, supportEmail: e.target.value }
-            })}
+            onChange={(e) =>
+              setSettings({
+                ...settings,
+                branding: { ...settings.branding, supportEmail: e.target.value },
+              })
+            }
           />
         </div>
       </div>
@@ -400,22 +432,26 @@ export const TenantSettings: React.FC = () => {
           <input
             type="number"
             value={settings.limits.maxUsers}
-            onChange={(e) => setSettings({
-              ...settings,
-              limits: { ...settings.limits, maxUsers: parseInt(e.target.value) }
-            })}
+            onChange={(e) =>
+              setSettings({
+                ...settings,
+                limits: { ...settings.limits, maxUsers: parseInt(e.target.value) },
+              })
+            }
           />
         </div>
-        
+
         <div className="form-group">
           <label>Max Projects</label>
           <input
             type="number"
             value={settings.limits.maxProjects}
-            onChange={(e) => setSettings({
-              ...settings,
-              limits: { ...settings.limits, maxProjects: parseInt(e.target.value) }
-            })}
+            onChange={(e) =>
+              setSettings({
+                ...settings,
+                limits: { ...settings.limits, maxProjects: parseInt(e.target.value) },
+              })
+            }
           />
         </div>
       </div>
@@ -443,10 +479,8 @@ export const TenantSwitcher: React.FC = () => {
 
   return (
     <div className="tenant-switcher">
-      <button onClick={() => setIsOpen(!isOpen)}>
-        {currentTenant?.name || 'Select Tenant'}
-      </button>
-      
+      <button onClick={() => setIsOpen(!isOpen)}>{currentTenant?.name || 'Select Tenant'}</button>
+
       {isOpen && (
         <div className="tenant-dropdown">
           {tenants.map((tenant) => (

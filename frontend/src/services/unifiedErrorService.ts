@@ -1,4 +1,5 @@
 // ============================================================================
+import { logger } from '@/services/logger'
 // UNIFIED ERROR SERVICE - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
@@ -72,7 +73,7 @@ export class UnifiedErrorService {
     const parsed = this.parseError(error)
     
     // Log error
-    console.error('Error:', parsed, 'Context:', context)
+    logger.error('Error:', parsed, 'Context:', context)
     
     // Report to monitoring service (if available)
     if (typeof window !== 'undefined') {

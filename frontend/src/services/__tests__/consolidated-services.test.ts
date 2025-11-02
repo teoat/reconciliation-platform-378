@@ -1,4 +1,5 @@
 // Comprehensive Test Suite for Consolidated Services
+import { logger } from '@/services/logger'
 // Tests all consolidated services and components
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
@@ -229,13 +230,13 @@ describe('UI Service Tests', () => {
   })
 
   it('should announce to screen reader', () => {
-    // Mock console.log to verify announcement
+    // Mock logger.log to verify announcement
     const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
     
     uiService.announceToScreenReader('Test announcement', 'polite')
     
     // Verify announcement was made (in real implementation, this would create DOM elements)
-    expect(consoleSpy).not.toHaveBeenCalled() // No console.log in this implementation
+    expect(consoleSpy).not.toHaveBeenCalled() // No logger.log in this implementation
     
     consoleSpy.mockRestore()
   })

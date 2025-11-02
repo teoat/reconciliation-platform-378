@@ -19,7 +19,9 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .route("/statistics", web::get().to(get_user_statistics))
         .route("/{user_id}", web::get().to(get_user))
         .route("/{user_id}", web::put().to(update_user))
-        .route("/{user_id}", web::delete().to(delete_user));
+        .route("/{user_id}", web::delete().to(delete_user))
+        .route("/{user_id}/preferences", web::get().to(get_user_preferences))
+        .route("/{user_id}/preferences", web::put().to(update_user_preferences));
 }
 
 /// Get users endpoint
@@ -114,11 +116,43 @@ pub async fn get_user_statistics(
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
     let stats = user_service.as_ref().get_user_statistics().await?;
-    
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(stats),
         message: None,
+        error: None,
+    }))
+}
+
+/// Get user preferences endpoint
+pub async fn get_user_preferences(
+    user_id: web::Path<Uuid>,
+    user_service: web::Data<Arc<UserService>>,
+) -> Result<HttpResponse, AppError> {
+    let preferences = user_service.as_ref().get_user_preferences(user_id.into_inner()).await?;
+
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(preferences),
+        message: None,
+        error: None,
+    }))
+}
+
+/// Update user preferences endpoint
+pub async fn update_user_preferences(
+    user_id: web::Path<Uuid>,
+    req: web::Json<crate::services::user::preferences::UserPreferences>,
+    user_service: web::Data<Arc<UserService>>,
+) -> Result<HttpResponse, AppError> {
+    let user_id_val = user_id.into_inner();
+    let preferences = user_service.as_ref().update_user_preferences(user_id_val, req.into_inner()).await?;
+
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(preferences),
+        message: Some("Preferences updated successfully".to_string()),
         error: None,
     }))
 }

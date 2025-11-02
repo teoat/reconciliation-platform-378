@@ -1,4 +1,5 @@
 // Real-time Data Synchronization Hook
+import { logger } from '@/services/logger'
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -160,7 +161,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
       // Schedule reconnect attempt
       reconnectTimeoutRef.current = setTimeout(() => {
         // This would trigger a reconnection in the WebSocket hook
-        console.log('Attempting to reconnect...');
+        logger.log('Attempting to reconnect...');
       }, 5000);
     }
   }, []);
@@ -271,7 +272,7 @@ export const useRealtimeMetrics = (page: string) => {
       setIsLoading(false);
     },
     onSyncError: (error) => {
-      console.error('Metrics sync error:', error);
+      logger.error('Metrics sync error:', error);
       setIsLoading(false);
     }
   });

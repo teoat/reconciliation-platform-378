@@ -1,4 +1,5 @@
 // API Client with Retry Logic
+import { logger } from '@/services/logger'
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 
 // Retry configuration
@@ -56,7 +57,7 @@ class ApiClient {
           this.retryConfig.maxDelay
         );
 
-        console.warn(`Request failed, retrying in ${delay}ms (attempt ${config._retryCount}/${this.retryConfig.maxRetries})`);
+        logger.warn(`Request failed, retrying in ${delay}ms (attempt ${config._retryCount}/${this.retryConfig.maxRetries})`);
 
         // Wait before retrying
         await this.sleep(delay);

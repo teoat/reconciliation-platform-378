@@ -8,6 +8,7 @@ use diesel_migrations::MigrationHarness;
 use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
+use crate::database_migrations;
 
 /// Database migration service
 pub struct DatabaseMigrationService {
@@ -56,16 +57,31 @@ impl DatabaseMigrationService {
     /// Run all pending migrations
     pub async fn run_migrations(&mut self) -> Result<MigrationResult, MigrationError> {
         let start_time = std::time::Instant::now();
-        let applied = Vec::new();
-        let failed = Vec::new();
-        let warnings = Vec::new();
-        
-        log::info!("Database migrations skipped - using embedded migrations");
-        
+        let mut applied = Vec::new();
+        let mut failed = Vec::new();
+        let mut warnings = Vec::new();
+
+        log::info!("Running database migrations...");
+
+        // Use embedded migrations
+        match self.connection.run_pending_migrations(crate::database_migrations::MIGRATIONS) {
+            Ok(_) => {
+                log::info!("All embedded migrations applied successfully");
+                // For embedded migrations, we don't know which specific ones were applied
+                applied.push("Embedded migrations applied".to_string());
+            }
+            Err(e) => {
+                let error_msg = format!("Failed to run embedded migrations: {}", e);
+                log::error!("{}", error_msg);
+                failed.push("Embedded migrations".to_string());
+                warnings.push(error_msg);
+            }
+        }
+
         let duration_ms = start_time.elapsed().as_millis() as u64;
-        
+
         Ok(MigrationResult {
-            success: true,
+            success: failed.is_empty(),
             applied_migrations: applied,
             failed_migrations: failed,
             warnings,
@@ -77,24 +93,18 @@ impl DatabaseMigrationService {
     pub async fn rollback_last_migration(&mut self) -> Result<MigrationResult, MigrationError> {
         let start_time = std::time::Instant::now();
         let mut applied = Vec::new();
-        let failed = Vec::new();
+        let mut failed = Vec::new();
         let mut warnings = Vec::new();
-        
+
         log::info!("Rolling back last migration...");
-        
-        // Get current version
-        let current_version = self.get_current_version().await?;
-        
-        if let Some(version) = current_version {
-            // Rollback the migration - skipped
-            applied.push(format!("Rolled back migration: {}", version));
-            log::info!("Successfully rolled back migration: {}", version);
-        } else {
-            warnings.push("No migrations to rollback".to_string());
-        }
-        
+
+        // For embedded migrations, rollback is not directly supported
+        // We would need to implement custom rollback logic
+        warnings.push("Rollback not implemented for embedded migrations".to_string());
+        log::warn!("Rollback not implemented for embedded migrations");
+
         let duration = start_time.elapsed();
-        
+
         Ok(MigrationResult {
             success: failed.is_empty(),
             applied_migrations: applied,

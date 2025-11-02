@@ -1,530 +1,31 @@
-'use client'
+'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react'
-import DataManagementService, { ProjectData, UploadedFile, ReconciliationRecord } from '../services/dataManagement'
-import { useSecurity } from '../hooks/useSecurity'
-
-// ============================================================================
-// CONSOLIDATED DATA PROVIDER - SINGLE SOURCE OF TRUTH
-// ============================================================================
-
-// Enhanced interfaces for unified data management
-interface WorkflowState {
-  id: string
-  currentStage: WorkflowStage<any>
-  progress: number
-  status: 'active' | 'paused' | 'completed' | 'error'
-  lastUpdated: Date
-  nextStage?: WorkflowStage<any>
-  previousStage?: WorkflowStage<any>
-}
-
-interface WorkflowStage<T = Record<string, unknown>> {
-  id: string
-  name: string
-  page: string
-  order: number
-  isCompleted: boolean
-  isActive: boolean
-  data: T
-  validation: ValidationResult
-}
-
-interface ValidationResult {
-  isValid: boolean
-  errors: ValidationError[]
-  warnings: ValidationWarning[]
-  suggestions: CorrectionSuggestion[]
-}
-
-interface ValidationError {
-  field: string
-  message: string
-  severity: 'error' | 'warning' | 'info'
-  page: string
-}
-
-interface ValidationWarning {
-  field: string
-  message: string
-  page: string
-}
-
-interface CorrectionSuggestion {
-  field: string
-  currentValue: unknown
-  suggestedValue: unknown
-  reason: string
-  confidence: number
-}
-
-interface SyncStatus {
-  isOnline: boolean
-  lastSyncTime: Date
-  pendingChanges: PendingChange[]
-  syncErrors: SyncError[]
-}
-
-interface PendingChange {
-  id: string
-  page: keyof CrossPageData
-  action: 'create' | 'update' | 'delete'
-  data: IngestionData | ReconciliationData | AdjudicationData | AnalyticsData | SecurityData | ApiData
-  timestamp: Date
-  retryCount: number
-}
-
-interface SyncError {
-  id: string
-  message: string
-  page: string
-  timestamp: Date
-  retryCount: number
-}
-
-interface WorkflowProgress {
-  currentStage: number
-  totalStages: number
-  percentage: number
-  estimatedTimeRemaining: number
-  completedStages: string[]
-  upcomingStages: string[]
-}
-
-interface Notification {
-  id: string
-  type: 'info' | 'success' | 'warning' | 'error'
-  title: string
-  message: string
-  page: string
-  timestamp: Date
-  isRead: boolean
-  actions?: NotificationAction[]
-}
-
-interface NotificationAction {
-  label: string
-  action: () => void
-  type: 'primary' | 'secondary'
-}
-
-interface Alert {
-  id: string
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  title: string
-  message: string
-  pages: string[]
-  timestamp: Date
-  isDismissed: boolean
-  autoResolve?: boolean
-}
-
-interface CrossPageData {
-  ingestion: IngestionData
-  reconciliation: ReconciliationData
-  adjudication: AdjudicationData
-  analytics: AnalyticsData
-  security: SecurityData
-  api: ApiData
-}
-
-interface IngestionData {
-  files: UploadedFile[]
-  processedData: ReconciliationRecord[]
-  qualityMetrics: DataQualityMetrics
-  validationResults: ValidationResult
-  lastUpdated: Date
-}
-
-interface ReconciliationData {
-  records: ReconciliationRecord[]
-  matchingResults: MatchingResult[]
-  discrepancies: DiscrepancyRecord[]
-  qualityMetrics: ReconciliationMetrics
-  lastUpdated: Date
-}
-
-interface AdjudicationData {
-  workflows: WorkflowInstance[]
-  discrepancies: EnhancedDiscrepancyRecord[]
-  users: UserProfile[]
-  notifications: Notification[]
-  lastUpdated: Date
-}
-
-interface AnalyticsData {
-  dashboards: DashboardData[]
-  reports: ReportInstance[]
-  predictions: PredictionResult[]
-  anomalies: AnomalyDetection[]
-  lastUpdated: Date
-}
-
-interface SecurityData {
-  policies: SecurityPolicy[]
-  auditLogs: AuditLog[]
-  complianceStatus: ComplianceStatus
-  encryptionConfigs: EncryptionConfig[]
-  lastUpdated: Date
-}
-
-interface ApiData {
-  endpoints: ApiEndpoint[]
-  webhooks: WebhookEvent[]
-  keys: ApiKey[]
-  integrations: Integration[]
-  lastUpdated: Date
-}
-
-interface DataQualityMetrics {
-  completeness: number
-  accuracy: number
-  consistency: number
-  validity: number
-  overall: number
-}
-
-interface ReconciliationMetrics {
-  matchRate: number
-  processingTime: number
-  discrepancyRate: number
-  autoMatchRate: number
-}
-
-interface WorkflowInstance {
-  id: string
-  name: string
-  status: 'active' | 'completed' | 'paused' | 'error'
-  currentStep: string
-  progress: number
-  assignedTo: string
-  createdAt: Date
-  updatedAt: Date
-}
-
-interface EnhancedDiscrepancyRecord {
-  id: string
-  priority: 'high' | 'medium' | 'low'
-  status: 'pending' | 'in_review' | 'resolved' | 'escalated'
-  systems: SystemData[]
-  discrepancyType: string
-  severity: 'low' | 'medium' | 'high'
-  metadata: Record<string, unknown>
-  sla: {
-    deadline: Date
-    priority: 'high' | 'medium' | 'low'
-    assignedTo?: string
-  }
-  resolution: {
-    type: 'automatic' | 'manual' | 'escalated'
-    resolvedAt?: Date
-    resolvedBy?: string
-    notes?: string
-  } | null
-}
-
-interface SystemData {
-  id: string
-  name: string
-  systemName: string
-  recordId: string
-  description: string
-  amount: number
-  date: string
-  confidence: number
-  quality: {
-    completeness: number
-    accuracy: number
-    timeliness: number
-  }
-}
-
-interface UserProfile {
-  id: string
-  name: string
-  email: string
-  role: string
-  avatar?: string
-  lastSeen?: string
-  currentWorkload: number
-  maxWorkload: number
-}
-
-interface DashboardData {
-  id: string
-  name: string
-  type: string
-  data: Record<string, unknown>
-  lastUpdated: Date
-}
-
-interface ReportInstance {
-  id: string
-  name: string
-  templateId: string
-  status: 'draft' | 'published' | 'scheduled' | 'archived'
-  data: Record<string, unknown>
-  generatedAt?: Date
-  generatedBy: string
-}
-
-interface PredictionResult {
-  id: string
-  type: string
-  prediction: Record<string, unknown>
-  confidence: number
-  timestamp: Date
-}
-
-interface AnomalyDetection {
-  id: string
-  type: string
-  severity: 'low' | 'medium' | 'high'
-  description: string
-  impact: number
-  timestamp: Date
-}
-
-interface SecurityPolicy {
-  id: string
-  name: string
-  description: string
-  category: 'access' | 'data' | 'network' | 'compliance'
-  rules: SecurityRule[]
-  isActive: boolean
-  lastUpdated: Date
-}
-
-interface SecurityRule {
-  id: string
-  name: string
-  description: string
-  type: 'allow' | 'deny' | 'require'
-  conditions: string[]
-  actions: string[]
-}
-
-interface AuditLog {
-  id: string
-  timestamp: Date
-  userId: string
-  action: string
-  resource: string
-  result: 'success' | 'failure' | 'denied'
-  ipAddress: string
-  userAgent: string
-  details: Record<string, unknown>
-}
-
-interface ComplianceStatus {
-  sox: ComplianceFramework
-  gdpr: ComplianceFramework
-  lastAudit: Date
-  nextAudit: Date
-}
-
-interface ComplianceFramework {
-  id: string
-  name: string
-  status: 'compliant' | 'non-compliant' | 'partial'
-  requirements: ComplianceRequirement[]
-  lastAudit: Date
-  nextAudit: Date
-}
-
-interface ComplianceRequirement {
-  id: string
-  title: string
-  description: string
-  status: 'met' | 'not_met' | 'partial'
-  evidence: string[]
-  lastChecked: Date
-}
-
-interface EncryptionConfig {
-  id: string
-  name: string
-  algorithm: string
-  keySize: number
-  status: 'active' | 'inactive'
-  lastRotated: Date
-  nextRotation: Date
-}
-
-interface ApiEndpoint {
-  id: string
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
-  path: string
-  description: string
-  parameters: ApiParameter[]
-  responses: ApiResponse[]
-  rateLimit: number
-  authentication: 'none' | 'api_key' | 'oauth' | 'jwt'
-  tags: string[]
-  isActive: boolean
-}
-
-interface ApiParameter {
-  name: string
-  type: string
-  required: boolean
-  description: string
-  example?: unknown
-}
-
-interface ApiResponse {
-  status: number
-  description: string
-  schema: Record<string, unknown>
-  example?: unknown
-}
-
-interface WebhookEvent {
-  id: string
-  name: string
-  description: string
-  eventType: string
-  payload: Record<string, unknown>
-  isActive: boolean
-  subscribers: number
-}
-
-interface ApiKey {
-  id: string
-  name: string
-  key: string
-  permissions: string[]
-  rateLimit: number
-  expiresAt?: Date
-  lastUsed?: Date
-  isActive: boolean
-}
-
-interface Integration {
-  id: string
-  name: string
-  type: 'erp' | 'banking' | 'accounting' | 'custom'
-  status: 'active' | 'inactive' | 'error'
-  lastSync: Date
-  syncFrequency: string
-  dataFlow: 'inbound' | 'outbound' | 'bidirectional'
-  endpoints: string[]
-}
-
-interface MatchingResult {
-  id: string
-  recordA: Record<string, unknown>
-  recordB: Record<string, unknown>
-  confidence: number
-  matchType: string
-  status: 'matched' | 'unmatched' | 'discrepancy'
-}
-
-interface DiscrepancyRecord {
-  id: string
-  priority: 'high' | 'medium' | 'low'
-  status: 'pending' | 'in_review' | 'resolved' | 'escalated'
-  systemA: Record<string, unknown>
-  systemB: Record<string, unknown>
-  difference: number
-  differenceType: string
-}
-
-// Consolidated Data Context Interface
-interface DataContextType {
-  // Current project data
-  currentProject: ProjectData | null
-  setCurrentProject: (project: ProjectData | null) => void
-  
-  // Workflow state
-  workflowState: WorkflowState | null
-  setWorkflowState: (state: WorkflowState | null) => void
-  
-  // Cross-page data synchronization
-  crossPageData: CrossPageData
-  updateCrossPageData: (page: keyof CrossPageData, data: IngestionData | ReconciliationData | AdjudicationData | AnalyticsData | SecurityData | ApiData) => void
-  
-  // Real-time synchronization
-  syncStatus: SyncStatus
-  syncData: () => Promise<void>
-  
-  // Workflow orchestration
-  workflowProgress: WorkflowProgress
-  advanceWorkflow: (toStage: WorkflowStage<any>) => Promise<void>
-  
-  // Cross-page notifications
-  notifications: Notification[]
-  alerts: Alert[]
-  addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => void
-  addAlert: (alert: Omit<Alert, 'id' | 'timestamp'>) => void
-  dismissAlert: (alertId: string) => void
-  
-  // Data validation
-  validateCrossPageData: (fromPage: string, toPage: string) => ValidationResult
-  validateWorkflowConsistency: () => ValidationResult
-  
-  // WebSocket integration
-  isConnected: boolean
-  activeUsers: Array<{ id: string; name: string; page: string; lastSeen: string }>
-  liveComments: Array<{ id: string; userId: string; userName: string; message: string; timestamp: string; page: string }>
-  sendComment: (userId: string, userName: string, message: string) => void
-  updatePresence: (userId: string, userName: string) => void
-  
-  // Security integration
-  securityPolicies: any[]
-  auditLogs: any[]
-  isSecurityEnabled: boolean
-  checkPermission: (userId: string, resource: string, action: string) => boolean
-  logAuditEvent: (userId: string, action: string, resource: string, result: 'success' | 'failure', details?: any) => void
-  encryptData: (data: any, dataType: string) => any
-  decryptData: (encryptedData: any, dataType: string) => any
-  checkCompliance: (framework: string) => any[]
-  createSecurityPolicy: (policy: any) => any
-  updateSecurityPolicy: (policyId: string, updates: any) => void
-  deleteSecurityPolicy: (policyId: string) => void
-  exportAuditLogs: (format?: 'csv' | 'json') => string
-  
-  // Legacy compatibility methods
-  createProject: (project: Partial<ProjectData>) => ProjectData
-  updateProject: (projectId: string, updates: Partial<ProjectData>) => ProjectData | null
-  addIngestionData: (projectId: string, ingestionData: any) => ProjectData | null
-  getIngestionData: () => any
-  addReconciliationData: (projectId: string, reconciliationData: any) => ProjectData | null
-  getReconciliationData: () => any
-  addCashflowData: (projectId: string, cashflowData: any) => ProjectData | null
-  getCashflowData: () => any
-  transformIngestionToReconciliation: (projectId: string) => ProjectData | null
-  transformReconciliationToCashflow: (projectId: string) => ProjectData | null
-  subscribeToProject: (projectId: string, callback: (data: ProjectData) => void) => () => void
-
-  // Real-time updates
-  subscribeToUpdates: (callback: (data: any) => void) => () => void
-  
-  // Loading states
-  isLoading: boolean
-  error: string | null
-  
-  // Utility methods
-  exportProject: (projectId: string) => string
-  importProject: (data: string) => ProjectData | null
-  resetWorkflow: () => void
-}
-
-const DataContext = createContext<DataContextType | undefined>(undefined)
+import React, { useState, useEffect, memo, useRef } from 'react';
+import { useSecurity } from '../hooks/useSecurity';
+import { useComprehensiveCleanup, LRUMap } from '../utils/memoryOptimization';
+import { DataContext, DataContextType } from './data/context';
+import { useDataStorage } from './data/storage';
+import { useWorkflowProgress, useWorkflowValidation, createInitialWorkflowState } from './data/workflow';
+import { useSyncStatus, useDataValidation } from './data/sync';
+import { useNotifications, useAlerts } from './data/notifications';
+import { useCrossPageDataUpdates } from './data/updates';
+import { createInitialCrossPageData } from './data/initialData';
+import { WorkflowState, WorkflowStage } from './data/types';
+import type { ReactNode } from 'react';
 
 interface DataProviderProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   // WebSocket integration - placeholder until DataProvider is refactored
-  const collaborationConnected = true
-  const activeUsers: any[] = []
-  const liveComments: any[] = []
-  const sendComment = () => {}
-  const updatePresence = () => {}
-  const syncConnected = true
-  const wsSyncData = () => {}
+  const collaborationConnected = true;
+  const activeUsers: Array<{ id: string; name: string; page: string; lastSeen: string }> = [];
+  const liveComments: Array<{ id: string; userId: string; userName: string; message: string; timestamp: string; page: string }> = [];
+  const sendComment = () => {};
+  const updatePresence = () => {};
+  const syncConnected = true;
+  const wsSyncData = () => {};
   
   // Security integration
   const {
@@ -539,290 +40,96 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     createSecurityPolicy,
     updateSecurityPolicy,
     deleteSecurityPolicy,
-    exportAuditLogs
-  } = useSecurity()
+    exportAuditLogs,
+  } = useSecurity();
   
   // Core state
-  const [currentProject, setCurrentProject] = useState<ProjectData | null>(null)
-  const [workflowState, setWorkflowState] = useState<WorkflowState | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [workflowState, setWorkflowState] = useState<WorkflowState | null>(null);
   
   // Cross-page data
-  const [crossPageData, setCrossPageData] = useState<CrossPageData>({
-    ingestion: {
-      files: [],
-      processedData: [],
-      qualityMetrics: { completeness: 0, accuracy: 0, consistency: 0, validity: 0, overall: 0 },
-      validationResults: { isValid: false, errors: [], warnings: [], suggestions: [] },
-      lastUpdated: new Date()
-    },
-    reconciliation: {
-      records: [],
-      matchingResults: [],
-      discrepancies: [],
-      qualityMetrics: { matchRate: 0, processingTime: 0, discrepancyRate: 0, autoMatchRate: 0 },
-      lastUpdated: new Date()
-    },
-    adjudication: {
-      workflows: [],
-      discrepancies: [],
-      users: [],
-      notifications: [],
-      lastUpdated: new Date()
-    },
-    analytics: {
-      dashboards: [],
-      reports: [],
-      predictions: [],
-      anomalies: [],
-      lastUpdated: new Date()
-    },
-    security: {
-      policies: [],
-      auditLogs: [],
-      complianceStatus: {
-        sox: { id: '', name: '', status: 'partial', requirements: [], lastAudit: new Date(), nextAudit: new Date() },
-        gdpr: { id: '', name: '', status: 'partial', requirements: [], lastAudit: new Date(), nextAudit: new Date() },
-        lastAudit: new Date(),
-        nextAudit: new Date()
-      },
-      encryptionConfigs: [],
-      lastUpdated: new Date()
-    },
-    api: {
-      endpoints: [],
-      webhooks: [],
-      keys: [],
-      integrations: [],
-      lastUpdated: new Date()
-    }
-  })
+  const [crossPageData, setCrossPageData] = useState(createInitialCrossPageData());
   
-  // Sync status
-  const [syncStatus, setSyncStatus] = useState<SyncStatus>({
-    isOnline: navigator.onLine,
-    lastSyncTime: new Date(),
-    pendingChanges: [],
-    syncErrors: []
-  })
+  // Memory optimization
+  const cleanup = useComprehensiveCleanup();
+  const cacheRef = useRef(new LRUMap<string, unknown>(100));
   
-  // Notifications and alerts
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [alerts, setAlerts] = useState<Alert[]>([])
+  // Data storage hooks
+  const {
+    currentProject,
+    setCurrentProject,
+    createProject,
+    updateProject,
+    addIngestionData,
+    getIngestionData,
+    addReconciliationData,
+    getReconciliationData,
+    addCashflowData,
+    getCashflowData,
+    transformIngestionToReconciliation,
+    transformReconciliationToCashflow,
+    subscribeToProject,
+    exportProject,
+    importProject,
+  } = useDataStorage(setCurrentProject, setIsLoading, setError);
   
-  const dataService = DataManagementService.getInstance()
-
-  // Initialize with sample project if none exists
+  // Workflow hooks
+  const workflowProgress = useWorkflowProgress(workflowState);
+  const { validateCrossPageData } = useDataValidation(crossPageData);
+  const { validateWorkflowConsistency, validateAdvancement } = useWorkflowValidation(
+    workflowState,
+    crossPageData,
+    validateCrossPageData
+  );
+  
+  // Sync hooks
+  const { syncStatus, performDataSync, updateOnlineStatus } = useSyncStatus();
+  
+  // Notifications hooks
+  const { notifications, addNotification } = useNotifications();
+  const { alerts, addAlert, dismissAlert } = useAlerts();
+  
+  // Cross-page updates
+  const { updateCrossPageData: updateCrossPageDataInternal, subscribeToUpdates } = useCrossPageDataUpdates(
+    crossPageData,
+    setCrossPageData,
+    checkPermission,
+    logAuditEvent,
+    encryptData,
+    isSecurityEnabled,
+    syncConnected,
+    wsSyncData
+  );
+  
+  // Initialize workflow state
   useEffect(() => {
-    if (!currentProject) {
-      const sampleProject = dataService.createProject({
-        id: 'sample-project',
-        name: 'Sample Reconciliation Project',
-        description: 'A sample project for testing the reconciliation workflow',
-        status: 'active'
-      })
-      setCurrentProject(sampleProject)
-    }
-  }, [currentProject, dataService])
-
-  // Subscribe to project updates
-  useEffect(() => {
-    if (currentProject) {
-      const unsubscribe = dataService.subscribe(currentProject.id, (updatedProject) => {
-        setCurrentProject(updatedProject)
-      })
-      return unsubscribe
-    }
-  }, [currentProject, dataService])
-  
-  // Workflow progress
-  const workflowProgress = useMemo((): WorkflowProgress => {
     if (!workflowState) {
-      return {
-        currentStage: 0,
-        totalStages: 6,
-        percentage: 0,
-        estimatedTimeRemaining: 0,
-        completedStages: [],
-        upcomingStages: ['ingestion', 'reconciliation', 'adjudication', 'analytics', 'security', 'api']
-      }
+      setWorkflowState(createInitialWorkflowState());
     }
-    
-    const stages = ['ingestion', 'reconciliation', 'adjudication', 'analytics', 'security', 'api']
-    const currentIndex = stages.indexOf(workflowState.currentStage.name)
-    
-    return {
-      currentStage: currentIndex + 1,
-      totalStages: stages.length,
-      percentage: Math.round(((currentIndex + 1) / stages.length) * 100),
-      estimatedTimeRemaining: (stages.length - currentIndex - 1) * 30, // 30 minutes per stage
-      completedStages: stages.slice(0, currentIndex),
-      upcomingStages: stages.slice(currentIndex + 1)
-    }
-  }, [workflowState])
-  
-  // Update cross-page data with WebSocket sync and security
-  const updateCrossPageData = useCallback((page: keyof CrossPageData, data: IngestionData | ReconciliationData | AdjudicationData | AnalyticsData | SecurityData | ApiData) => {
-    // Check permission before updating data
-    const hasPermission = checkPermission('current-user', page, 'update')
-    if (!hasPermission) {
-      logAuditEvent('current-user', 'unauthorized_update_attempt', page, 'failure', {
-        page,
-        data: typeof data === 'object' ? Object.keys(data) : 'unknown'
-      })
-      return
-    }
-
-    // Encrypt sensitive data if security is enabled
-    const processedData = isSecurityEnabled ? encryptData(data, page) : data
-
-    setCrossPageData(prev => ({
-      ...prev,
-      [page]: {
-        ...prev[page],
-        ...processedData,
-        lastUpdated: new Date()
-      }
-    }))
-    
-    // Sync data via WebSocket if connected
-    if (syncConnected) {
-      wsSyncData()
-    }
-
-    // Log successful update
-    logAuditEvent('current-user', 'update_cross_page_data', page, 'success', {
-      page,
-      dataKeys: typeof data === 'object' ? Object.keys(data) : 'unknown',
-      encrypted: isSecurityEnabled
-    })
-  }, [syncConnected, wsSyncData, checkPermission, logAuditEvent, encryptData, isSecurityEnabled])
-  
-  // Add notification
-  const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
-    const newNotification: Notification = {
-      ...notification,
-      id: `notification-${Date.now()}`,
-      timestamp: new Date()
-    }
-    
-    setNotifications(prev => [newNotification, ...prev.slice(0, 49)]) // Keep last 50
-  }, [])
-  
-  // Sync data
-  const performDataSync = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      // Simulate sync process
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      setSyncStatus(prev => ({
-        ...prev,
-        lastSyncTime: new Date(),
-        pendingChanges: [],
-        syncErrors: []
-      }))
-      
-      addNotification({
-        type: 'success',
-        title: 'Data Synchronized',
-        message: 'All data has been synchronized successfully',
-        page: 'system',
-        isRead: false
-      })
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sync failed')
-      addNotification({
-        type: 'error',
-        title: 'Sync Failed',
-        message: 'Failed to synchronize data',
-        page: 'system',
-        isRead: false
-      })
-     } finally {
-       setIsLoading(false)
-     }
-   }, [addNotification])
-  
-  // Validate cross-page data
-  const validateCrossPageData = useCallback((fromPage: string, toPage: string): ValidationResult => {
-    const errors: ValidationError[] = []
-    const warnings: ValidationWarning[] = []
-    const suggestions: CorrectionSuggestion[] = []
-    
-    // Add validation logic based on page transitions
-    if (fromPage === 'ingestion' && toPage === 'reconciliation') {
-      const ingestionData = crossPageData.ingestion
-      if (ingestionData.files.length === 0) {
-        errors.push({
-          field: 'files',
-          message: 'No files uploaded for processing',
-          severity: 'error',
-          page: 'ingestion'
-        })
-      }
-      
-      if (ingestionData.qualityMetrics.overall < 0.8) {
-        warnings.push({
-          field: 'quality',
-          message: 'Data quality is below recommended threshold',
-          page: 'ingestion'
-        })
-      }
-    }
-    
-    if (fromPage === 'reconciliation' && toPage === 'review') {
-      const reconciliationData = crossPageData.reconciliation
-      if (reconciliationData.discrepancies.length > 0) {
-        warnings.push({
-          field: 'discrepancies',
-          message: `${reconciliationData.discrepancies.length} discrepancies remain unresolved`,
-          page: 'reconciliation'
-        })
-      }
-    }
-    
-    return {
-      isValid: errors.length === 0,
-      errors,
-      warnings,
-      suggestions
-    }
-  }, [crossPageData])
-  
-  // Add alert
-  const addAlert = useCallback((alert: Omit<Alert, 'id' | 'timestamp'>) => {
-    const newAlert: Alert = {
-      ...alert,
-      id: `alert-${Date.now()}`,
-      timestamp: new Date()
-    }
-    
-    setAlerts(prev => [newAlert, ...prev.slice(0, 19)]) // Keep last 20
-  }, [])
+  }, [workflowState]);
   
   // Advance workflow
-  const advanceWorkflow = useCallback(async (toStage: WorkflowStage<any>) => {
-    if (!workflowState) return
+  const advanceWorkflow = React.useCallback(async (toStage: WorkflowStage<Record<string, unknown>>) => {
+    if (!workflowState) return;
     
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       // Validate transition
-      const validation = validateCrossPageData(workflowState.currentStage.page, toStage.page)
+      const validation = validateAdvancement(toStage);
       if (!validation.isValid) {
-        throw new Error(`Cannot advance to ${toStage.name}: ${validation.errors.map(e => e.message).join(', ')}`)
+        throw new Error(`Cannot advance to ${toStage.name}: ${validation.errors.map((e) => e.message).join(', ')}`);
       }
       
       // Update workflow state
-      setWorkflowState(prev => prev ? {
+      setWorkflowState((prev) => prev ? {
         ...prev,
         currentStage: toStage,
         progress: (toStage.order / 6) * 100,
         lastUpdated: new Date(),
         previousStage: prev.currentStage,
-        nextStage: undefined
-      } : null)
+        nextStage: undefined,
+      } : null);
       
       // Notify users
       addNotification({
@@ -830,308 +137,54 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
         title: 'Workflow Advanced',
         message: `Advanced to ${toStage.name}`,
         page: toStage.page,
-        isRead: false
-      })
+        isRead: false,
+      });
       
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Workflow advance failed')
+      const errorMessage = err instanceof Error ? err.message : 'Workflow advance failed';
+      setError(errorMessage);
       addAlert({
         severity: 'high',
         title: 'Workflow Error',
         message: err instanceof Error ? err.message : 'Failed to advance workflow',
         pages: [workflowState.currentStage.page, toStage.page],
-        isDismissed: false
-      })
-     } finally {
-       setIsLoading(false)
-     }
-   }, [workflowState, addAlert, addNotification, validateCrossPageData])
-  
-  // Dismiss alert
-  const dismissAlert = useCallback((alertId: string) => {
-    setAlerts(prev => prev.map(alert => 
-      alert.id === alertId ? { ...alert, isDismissed: true } : alert
-    ))
-  }, [])
-  
-  // Validate workflow consistency
-  const validateWorkflowConsistency = useCallback((): ValidationResult => {
-    const errors: ValidationError[] = []
-    const warnings: ValidationWarning[] = []
-    const suggestions: CorrectionSuggestion[] = []
-    
-    // Check data consistency across pages
-    const ingestionData = crossPageData.ingestion
-    const reconciliationData = crossPageData.reconciliation
-    
-    if (ingestionData.processedData.length !== reconciliationData.records.length) {
-      errors.push({
-        field: 'recordCount',
-        message: 'Record count mismatch between ingestion and reconciliation',
-        severity: 'error',
-        page: 'system'
-      })
+        isDismissed: false,
+      });
+    } finally {
+      setIsLoading(false);
     }
-    
-    return {
-      isValid: errors.length === 0,
-      errors,
-      warnings,
-      suggestions
-    }
-  }, [crossPageData])
-  
-  // Subscribe to updates
-  const subscribeToUpdates = useCallback((callback: (data: any) => void) => {
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      callback({
-        timestamp: new Date(),
-        data: crossPageData
-      })
-    }, 5000) // Update every 5 seconds
-    
-    return () => clearInterval(interval)
-  }, [crossPageData])
+  }, [workflowState, addAlert, addNotification, validateAdvancement]);
   
   // Reset workflow
-  const resetWorkflow = useCallback(() => {
-    setWorkflowState(null)
-    setCrossPageData({
-      ingestion: {
-        files: [],
-        processedData: [],
-        qualityMetrics: { completeness: 0, accuracy: 0, consistency: 0, validity: 0, overall: 0 },
-        validationResults: { isValid: false, errors: [], warnings: [], suggestions: [] },
-        lastUpdated: new Date()
-      },
-      reconciliation: {
-        records: [],
-        matchingResults: [],
-        discrepancies: [],
-        qualityMetrics: { matchRate: 0, processingTime: 0, discrepancyRate: 0, autoMatchRate: 0 },
-        lastUpdated: new Date()
-      },
-      adjudication: {
-        workflows: [],
-        discrepancies: [],
-        users: [],
-        notifications: [],
-        lastUpdated: new Date()
-      },
-      analytics: {
-        dashboards: [],
-        reports: [],
-        predictions: [],
-        anomalies: [],
-        lastUpdated: new Date()
-      },
-      security: {
-        policies: [],
-        auditLogs: [],
-        complianceStatus: {
-          sox: { id: '', name: '', status: 'partial', requirements: [], lastAudit: new Date(), nextAudit: new Date() },
-          gdpr: { id: '', name: '', status: 'partial', requirements: [], lastAudit: new Date(), nextAudit: new Date() },
-          lastAudit: new Date(),
-          nextAudit: new Date()
-        },
-        encryptionConfigs: [],
-        lastUpdated: new Date()
-      },
-      api: {
-        endpoints: [],
-        webhooks: [],
-        keys: [],
-        integrations: [],
-        lastUpdated: new Date()
-      }
-    })
-    setNotifications([])
-    setAlerts([])
-  }, [])
-
-  // Legacy compatibility methods
-  const createProject = (project: Partial<ProjectData>): ProjectData => {
-    setIsLoading(true)
-    setError(null)
-    
-    try {
-      const newProject = dataService.createProject(project)
-      setCurrentProject(newProject)
-      return newProject
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create project')
-      throw err
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const updateProject = (projectId: string, updates: Partial<ProjectData>): ProjectData | null => {
-    setIsLoading(true)
-    setError(null)
-    
-    try {
-      const updatedProject = dataService.updateProject(projectId, updates)
-      if (updatedProject && currentProject?.id === projectId) {
-        setCurrentProject(updatedProject)
-      }
-      return updatedProject
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update project')
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const addIngestionData = (projectId: string, ingestionData: any): ProjectData | null => {
-    setIsLoading(true)
-    setError(null)
-    
-    try {
-      const updatedProject = dataService.addIngestionData(projectId, ingestionData)
-      if (updatedProject && currentProject?.id === projectId) {
-        setCurrentProject(updatedProject)
-      }
-      return updatedProject
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add ingestion data')
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const getIngestionData = () => {
-    return currentProject?.ingestionData || null
-  }
-
-  const addReconciliationData = (projectId: string, reconciliationData: any): ProjectData | null => {
-    setIsLoading(true)
-    setError(null)
-    
-    try {
-      const updatedProject = dataService.addReconciliationData(projectId, reconciliationData)
-      if (updatedProject && currentProject?.id === projectId) {
-        setCurrentProject(updatedProject)
-      }
-      return updatedProject
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add reconciliation data')
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const getReconciliationData = () => {
-    return currentProject?.reconciliationData || null
-  }
-
-  const addCashflowData = (projectId: string, cashflowData: any): ProjectData | null => {
-    setIsLoading(true)
-    setError(null)
-    
-    try {
-      const updatedProject = dataService.addCashflowData(projectId, cashflowData)
-      if (updatedProject && currentProject?.id === projectId) {
-        setCurrentProject(updatedProject)
-      }
-      return updatedProject
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add cashflow data')
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const getCashflowData = () => {
-    return currentProject?.cashflowData || null
-  }
-
-  const transformIngestionToReconciliation = (projectId: string): ProjectData | null => {
-    setIsLoading(true)
-    setError(null)
-    
-    try {
-      const updatedProject = dataService.transformIngestionToReconciliation(projectId)
-      if (updatedProject && currentProject?.id === projectId) {
-        setCurrentProject(updatedProject)
-      }
-      return updatedProject
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to transform data')
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const transformReconciliationToCashflow = (projectId: string): ProjectData | null => {
-    setIsLoading(true)
-    setError(null)
-    
-    try {
-      const updatedProject = dataService.transformReconciliationToCashflow(projectId)
-      if (updatedProject && currentProject?.id === projectId) {
-        setCurrentProject(updatedProject)
-      }
-      return updatedProject
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to transform data')
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const subscribeToProject = (projectId: string, callback: (data: ProjectData) => void) => {
-    return dataService.subscribe(projectId, callback)
-  }
-
-  const exportProject = (projectId: string): string => {
-    return dataService.exportProject(projectId)
-  }
-
-  const importProject = (data: string): ProjectData | null => {
-    setIsLoading(true)
-    setError(null)
-    
-    try {
-      const project = dataService.importProject(data)
-      if (project) {
-        setCurrentProject(project)
-      }
-      return project
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import project')
-      return null
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  const resetWorkflow = React.useCallback(() => {
+    setWorkflowState(null);
+    setCrossPageData(createInitialCrossPageData());
+  }, []);
+  
+  // Sync with notifications
+  const syncData = React.useCallback(async () => {
+    await performDataSync(addNotification);
+  }, [performDataSync, addNotification]);
   
   // Monitor online status
   useEffect(() => {
     const handleOnline = () => {
-      setSyncStatus(prev => ({ ...prev, isOnline: true }))
-      performDataSync()
-    }
+      updateOnlineStatus(true);
+      syncData();
+    };
     
     const handleOffline = () => {
-      setSyncStatus(prev => ({ ...prev, isOnline: false }))
-    }
+      updateOnlineStatus(false);
+    };
     
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
+    cleanup.addEventListener(window, 'online', handleOnline);
+    cleanup.addEventListener(window, 'offline', handleOffline);
     
     return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [performDataSync])
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [syncData, cleanup, updateOnlineStatus]);
   
   const contextValue: DataContextType = {
     currentProject,
@@ -1139,9 +192,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     workflowState,
     setWorkflowState,
     crossPageData,
-    updateCrossPageData,
+    updateCrossPageData: updateCrossPageDataInternal,
     syncStatus,
-    syncData: performDataSync,
+    syncData,
     workflowProgress,
     advanceWorkflow,
     notifications,
@@ -1187,26 +240,77 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     subscribeToProject,
     exportProject,
     importProject,
-    resetWorkflow
-  }
+    resetWorkflow,
+  };
   
+  // Accessibility: Announce loading and error states to screen readers
+  useEffect(() => {
+    if (isLoading) {
+      const statusRegion = document.getElementById('data-provider-status');
+      if (statusRegion) {
+        statusRegion.setAttribute('aria-live', 'polite');
+        statusRegion.setAttribute('aria-busy', 'true');
+        statusRegion.textContent = 'Loading data...';
+      }
+    } else {
+      const statusRegion = document.getElementById('data-provider-status');
+      if (statusRegion) {
+        statusRegion.setAttribute('aria-busy', 'false');
+      }
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (error) {
+      const errorRegion = document.getElementById('data-provider-error');
+      if (errorRegion) {
+        errorRegion.setAttribute('aria-live', 'assertive');
+        errorRegion.setAttribute('role', 'alert');
+        errorRegion.textContent = `Error: ${error}`;
+      }
+    } else {
+      const errorRegion = document.getElementById('data-provider-error');
+      if (errorRegion) {
+        errorRegion.textContent = '';
+      }
+    }
+  }, [error]);
+
   return (
     <DataContext.Provider value={contextValue}>
+      {/* Screen reader status regions */}
+      <div
+        id="data-provider-status"
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        {...(isLoading ? { 'aria-busy': 'true' } : {})}
+      >
+        {isLoading && 'Loading data...'}
+      </div>
+      <div
+        id="data-provider-error"
+        className="sr-only"
+        role="alert"
+        aria-live="assertive"
+      >
+        {error && `Error: ${error}`}
+      </div>
       {children}
     </DataContext.Provider>
-  )
-}
+  );
+};
 
 export const useData = (): DataContextType => {
-  const context = useContext(DataContext)
+  const context = React.useContext(DataContext);
   if (context === undefined) {
-    throw new Error('useData must be used within a DataProvider')
+    throw new Error('useData must be used within a DataProvider');
   }
-  return context
-}
+  return context;
+};
 
 // Legacy compatibility exports
-export const useUnifiedData = useData
-export const UnifiedDataProvider = DataProvider
+export const useUnifiedData = useData;
+export const UnifiedDataProvider = DataProvider;
 
-export default DataProvider
+export default memo(DataProvider);

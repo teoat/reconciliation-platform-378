@@ -1,4 +1,5 @@
 // ============================================================================
+import { logger } from '@/services/logger'
 // BUNDLE OPTIMIZATION CONFIGURATION - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
@@ -269,7 +270,7 @@ export const analyzeBundleSize = async () => {
       const { BundleAnalyzerPlugin } = await import('webpack-bundle-analyzer')
       return BundleAnalyzerPlugin
     } catch (error) {
-      console.warn('Bundle analyzer not available:', error)
+      logger.warn('Bundle analyzer not available:', error)
       return null
     }
   }
@@ -279,7 +280,7 @@ export const analyzeBundleSize = async () => {
 // Tree shaking analyzer
 export const analyzeTreeShaking = () => {
   if (process.env.NODE_ENV === 'development') {
-    console.log('Tree shaking analysis enabled')
+    logger.log('Tree shaking analysis enabled')
     return {
       usedExports: true,
       sideEffects: false,
@@ -291,7 +292,7 @@ export const analyzeTreeShaking = () => {
 // Code splitting analyzer
 export const analyzeCodeSplitting = () => {
   if (process.env.NODE_ENV === 'development') {
-    console.log('Code splitting analysis enabled')
+    logger.log('Code splitting analysis enabled')
     return {
       chunks: 'all',
       cacheGroups: webpackOptimizationConfig.splitChunks.cacheGroups,

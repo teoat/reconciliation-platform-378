@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { MessageCircle, X, Minimize2, Lightbulb, AlertTriangle, PartyPopper, Star, Smile } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
+import { X } from 'lucide-react'
+import { Minimize2 } from 'lucide-react'
+import { Lightbulb } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { PartyPopper } from 'lucide-react'
+import { Star } from 'lucide-react'
+import { Smile } from 'lucide-react'
 
 // Frenly AI Types
 export interface FrenlyMessage {

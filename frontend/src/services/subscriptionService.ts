@@ -1,4 +1,5 @@
 // Subscription Service - Frontend interface for billing
+import { logger } from '@/services/logger'
 // Manages subscription tiers and payment flows
 
 import { apiClient } from './apiClient'
@@ -116,7 +117,7 @@ export class SubscriptionService {
         return this.subscription
       }
     } catch (error) {
-      console.error('Failed to load subscription:', error)
+      logger.error('Failed to load subscription:', error)
     }
     return null
   }
@@ -223,7 +224,7 @@ export class SubscriptionService {
       try {
         listener(this.subscription)
       } catch (error) {
-        console.error('Error notifying listener:', error)
+        logger.error('Error notifying listener:', error)
       }
     })
   }

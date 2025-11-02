@@ -1,5 +1,8 @@
 // Progress Persistence + Automatic Resume Service
+import { logger } from '@/services/logger'
 // Handles browser refresh during long-running reconciliation with automatic resume
+
+import { CheckpointData, ResumeData } from '../types/progress';
 
 export interface ProgressSnapshot {
   id: string
@@ -23,17 +26,8 @@ export interface ProgressSnapshot {
     sessionId: string
     userAgent: string
   }
-  checkpoint: {
-    stage: string
-    data: any
-    metadata: Record<string, any>
-  }
-  resumeData: {
-    canResume: boolean
-    resumePoint: string
-    dependencies: string[]
-    state: any
-  }
+  checkpoint: CheckpointData;
+  resumeData: ResumeData;
 }
 
 export interface ResumeConfig {
@@ -50,7 +44,7 @@ export interface OperationContext {
   operationType: ProgressSnapshot['operationType']
   userId: string
   projectId: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 class ProgressPersistenceService {
@@ -88,7 +82,7 @@ class ProgressPersistenceService {
       const stored = localStorage.getItem('progress_snapshots')
       if (stored) {
         const data = JSON.parse(stored)
-        data.snapshots.forEach((snapshotData: any) => {
+        data.snapshots.forEach((snapshotData: ProgressSnapshot) => {
           const snapshot: ProgressSnapshot = {
             ...snapshotData,
             startTime: new Date(snapshotData.startTime),
@@ -98,7 +92,7 @@ class ProgressPersistenceService {
         })
       }
     } catch (error) {
-      console.error('Failed to load persisted snapshots:', error)
+      logger.error('Failed to load persisted snapshots:', error)
     }
   }
 
@@ -109,7 +103,7 @@ class ProgressPersistenceService {
       }
       localStorage.setItem('progress_snapshots', JSON.stringify(data))
     } catch (error) {
-      console.error('Failed to save snapshots:', error)
+      logger.error('Failed to save snapshots:', error)
     }
   }
 
@@ -216,7 +210,7 @@ class ProgressPersistenceService {
     return true
   }
 
-  public completeOperation(operationId: string, finalData?: any): boolean {
+  public completeOperation(operationId: string, finalData?: unknown): boolean {
     const snapshot = this.activeOperations.get(operationId)
     if (!snapshot) return false
 
@@ -323,7 +317,7 @@ class ProgressPersistenceService {
     this.emit('checkpointCreated', snapshot)
   }
 
-  private captureOperationState(snapshot: ProgressSnapshot): any {
+  private captureOperationState(snapshot: ProgressSnapshot): Record<string, unknown> {
     // Capture current operation state for resume
     return {
       stage: snapshot.stage,
@@ -433,7 +427,7 @@ class ProgressPersistenceService {
     try {
       const imported = JSON.parse(data)
       if (imported.operationId && imported.snapshots) {
-        imported.snapshots.forEach((snapshotData: any) => {
+        imported.snapshots.forEach((snapshotData: ProgressSnapshot) => {
           const snapshot: ProgressSnapshot = {
             ...snapshotData,
             startTime: new Date(snapshotData.startTime),
@@ -446,7 +440,7 @@ class ProgressPersistenceService {
         return true
       }
     } catch (error) {
-      console.error('Failed to import operation data:', error)
+      logger.error('Failed to import operation data:', error)
     }
     return false
   }
@@ -491,7 +485,7 @@ class ProgressPersistenceService {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: unknown): void {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
       callbacks.forEach(callback => callback(data))
@@ -516,11 +510,11 @@ export const useProgressPersistence = () => {
     return service.startOperation(context)
   }
 
-  const updateProgress = (operationId: string, updates: any) => {
+  const updateProgress = (operationId: string, updates: Partial<ProgressSnapshot>) => {
     return service.updateProgress(operationId, updates)
   }
 
-  const completeOperation = (operationId: string, finalData?: any) => {
+  const completeOperation = (operationId: string, finalData?: unknown) => {
     return service.completeOperation(operationId, finalData)
   }
 

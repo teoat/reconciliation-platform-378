@@ -1,22 +1,21 @@
 'use client'
+import { logger } from '@/services/logger'
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
-import { 
-  Workflow, 
-  CheckCircle, 
-  XCircle, 
-  Clock, 
-  ArrowRight, 
-  ArrowLeft,
-  Play,
-  Pause,
-  RotateCcw,
-  AlertTriangle,
-  Info,
-  Zap,
-  Target,
-  Activity
-} from 'lucide-react'
+import { Workflow } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { XCircle } from 'lucide-react'
+import { Clock } from 'lucide-react'
+import { ArrowRight } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import { Play } from 'lucide-react'
+import { Pause } from 'lucide-react'
+import { RotateCcw } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { Info } from 'lucide-react'
+import { Zap } from 'lucide-react'
+import { Target } from 'lucide-react'
+import { Activity } from 'lucide-react'
 
 interface WorkflowStage {
   id: string
@@ -81,19 +80,21 @@ const WorkflowOrchestrator = ({
   onValidation, 
   onDataSync 
 }: WorkflowOrchestratorProps) => {
+  // Simplified 3-step reconciliation workflow (down from 6 steps)
   const [workflowStages, setWorkflowStages] = useState<WorkflowStage[]>([
     {
-      id: 'ingestion',
-      name: 'Data Ingestion',
+      id: 'data_setup',
+      name: 'Data Setup',
       page: 'ingestion',
       order: 1,
       isCompleted: false,
-      isActive: currentStage === 'ingestion',
+      isActive: currentStage === 'ingestion' || currentStage === 'data_setup',
       isRequired: true,
-      estimatedTime: 30,
+      estimatedTime: 25,
       dependencies: [],
       validationRules: [
         { field: 'files', condition: 'exists', message: 'Files must be uploaded', severity: 'error' },
+        { field: 'mappedFields', condition: 'exists', message: 'All required fields must be mapped', severity: 'error' },
         { field: 'quality', condition: 'greater_than', message: 'Data quality must be above 80%', severity: 'warning' }
       ]
     },
@@ -105,98 +106,48 @@ const WorkflowOrchestrator = ({
       isCompleted: false,
       isActive: currentStage === 'reconciliation',
       isRequired: true,
-      estimatedTime: 45,
-      dependencies: ['ingestion'],
+      estimatedTime: 30,
+      dependencies: ['data_setup'],
       validationRules: [
         { field: 'records', condition: 'exists', message: 'Reconciliation records must exist', severity: 'error' },
         { field: 'matchRate', condition: 'greater_than', message: 'Match rate should be above 70%', severity: 'warning' }
       ]
     },
     {
-      id: 'adjudication',
-      name: 'Discrepancy Adjudication',
-      page: 'adjudication',
+      id: 'review_and_export',
+      name: 'Review & Export',
+      page: 'results',
       order: 3,
       isCompleted: false,
-      isActive: currentStage === 'adjudication',
+      isActive: currentStage === 'results' || currentStage === 'review_and_export',
       isRequired: true,
-      estimatedTime: 60,
+      estimatedTime: 25,
       dependencies: ['reconciliation'],
       validationRules: [
-        { field: 'discrepancies', condition: 'exists', message: 'Discrepancies must be identified', severity: 'error' },
-        { field: 'workflows', condition: 'exists', message: 'Adjudication workflows must be created', severity: 'error' }
-      ]
-    },
-    {
-      id: 'analytics',
-      name: 'Analytics & Reporting',
-      page: 'visualization',
-      order: 4,
-      isCompleted: false,
-      isActive: currentStage === 'visualization',
-      isRequired: false,
-      estimatedTime: 20,
-      dependencies: ['adjudication'],
-      validationRules: [
-        { field: 'reports', condition: 'exists', message: 'Reports should be generated', severity: 'warning' }
-      ]
-    },
-    {
-      id: 'security',
-      name: 'Security & Compliance',
-      page: 'security',
-      order: 5,
-      isCompleted: false,
-      isActive: currentStage === 'security',
-      isRequired: false,
-      estimatedTime: 15,
-      dependencies: ['analytics'],
-      validationRules: [
-        { field: 'auditLogs', condition: 'exists', message: 'Audit logs must be maintained', severity: 'error' },
-        { field: 'compliance', condition: 'equals', message: 'Compliance status must be verified', severity: 'error' }
-      ]
-    },
-    {
-      id: 'api',
-      name: 'API & Integration',
-      page: 'api',
-      order: 6,
-      isCompleted: false,
-      isActive: currentStage === 'api',
-      isRequired: false,
-      estimatedTime: 25,
-      dependencies: ['security'],
-      validationRules: [
-        { field: 'endpoints', condition: 'exists', message: 'API endpoints must be configured', severity: 'warning' }
+        { field: 'matches', condition: 'exists', message: 'Matches must be reviewed', severity: 'error' },
+        { field: 'report', condition: 'exists', message: 'Final report must be exported', severity: 'warning' }
       ]
     }
   ])
 
   const [workflowTransitions, setWorkflowTransitions] = useState<WorkflowTransition[]>([
     {
-      from: 'ingestion',
+      from: 'data_setup',
       to: 'reconciliation',
       conditions: [
         { field: 'files', operator: 'exists', value: true },
+        { field: 'mappedFields', operator: 'exists', value: true },
         { field: 'quality', operator: 'greater_than', value: 0.7 }
       ],
-      autoAdvance: true
+      autoAdvance: false // Manual advance for better control
     },
     {
       from: 'reconciliation',
-      to: 'adjudication',
+      to: 'review_and_export',
       conditions: [
-        { field: 'discrepancies', operator: 'exists', value: true }
+        { field: 'matches', operator: 'exists', value: true }
       ],
       autoAdvance: false
-    },
-    {
-      from: 'adjudication',
-      to: 'analytics',
-      conditions: [
-        { field: 'resolvedDiscrepancies', operator: 'greater_than', value: 0 }
-      ],
-      autoAdvance: true
     }
   ])
 
@@ -282,7 +233,7 @@ const WorkflowOrchestrator = ({
       onStageChange(nextStageData.page)
 
     } catch (error) {
-      console.error('Failed to advance workflow:', error)
+      logger.error('Failed to advance workflow:', error)
     } finally {
       setIsAutoAdvancing(false)
     }
@@ -310,7 +261,7 @@ const WorkflowOrchestrator = ({
       onStageChange(previousStageData.page)
 
     } catch (error) {
-      console.error('Failed to go back:', error)
+      logger.error('Failed to go back:', error)
     } finally {
       setIsAutoAdvancing(false)
     }
@@ -340,30 +291,67 @@ const WorkflowOrchestrator = ({
   }, [workflowStages, workflowTransitions, advanceToNextStage])
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <div 
+      className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
+      role="region"
+      aria-label="Workflow orchestration"
+    >
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
-          <Workflow className="w-6 h-6 text-blue-600" />
-          <h3 className="text-lg font-semibold text-gray-900">Workflow Orchestration</h3>
+          <Workflow className="w-6 h-6 text-blue-600" aria-hidden="true" />
+          <h3 className="text-lg font-semibold text-gray-900" id="workflow-title">Workflow Orchestration</h3>
         </div>
         <div className="flex items-center space-x-2">
-          <div className="text-sm text-gray-600">
+          <div className="text-sm text-gray-600" aria-live="polite" aria-atomic="true">
+            <span className="sr-only">Progress:</span>
             {workflowProgress.completed}/{workflowProgress.total} stages completed
           </div>
-          <div className="w-24 bg-gray-200 rounded-full h-2">
+          <div 
+            className="w-24 bg-gray-200 rounded-full h-2"
+            role="progressbar"
+            aria-valuenow={String(workflowProgress.percentage)}
+            aria-valuemin="0"
+            aria-valuemax="100"
+            aria-label={`Workflow progress: ${workflowProgress.percentage}%`}
+          >
             <div 
-              className="progress-bar progress-bar-blue h-2 rounded-full"
+              className="progress-bar progress-bar-blue h-2 rounded-full transition-all duration-300"
               style={{ width: `${workflowProgress.percentage}%` }}
+              aria-hidden="true"
             />
           </div>
         </div>
       </div>
+      
+      {/* Breadcrumbs */}
+      <nav aria-label="Workflow steps" className="mb-6">
+        <ol className="flex items-center space-x-2 text-sm">
+          {workflowStages.map((stage, index) => (
+            <li key={stage.id} className="flex items-center">
+              {index > 0 && <span className="mx-2 text-gray-400" aria-hidden="true">/</span>}
+              <span
+                className={`${
+                  stage.isActive
+                    ? 'font-semibold text-blue-600'
+                    : stage.isCompleted
+                    ? 'text-green-600'
+                    : 'text-gray-500'
+                }`}
+                aria-current={stage.isActive ? 'step' : undefined}
+              >
+                Step {stage.order} of {workflowStages.length}: {stage.name}
+              </span>
+            </li>
+          ))}
+        </ol>
+      </nav>
 
       {/* Workflow Stages */}
-      <div className="space-y-4">
+      <div className="space-y-4" role="list">
         {workflowStages.map((stage, index) => (
           <div 
             key={stage.id}
+            role="listitem"
             className={`flex items-center space-x-4 p-4 rounded-lg border transition-all duration-200 ${
               stage.isActive 
                 ? 'border-blue-500 bg-blue-50' 
@@ -371,28 +359,37 @@ const WorkflowOrchestrator = ({
                   ? 'border-green-500 bg-green-50' 
                   : 'border-gray-200 bg-gray-50'
             }`}
+            aria-current={stage.isActive ? 'step' : undefined}
           >
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0" aria-hidden="true">
               {stage.isCompleted ? (
-                <CheckCircle className="w-6 h-6 text-green-600" />
+                <CheckCircle className="w-6 h-6 text-green-600" aria-label="Completed" />
               ) : stage.isActive ? (
-                <Activity className="w-6 h-6 text-blue-600" />
+                <Activity className="w-6 h-6 text-blue-600" aria-label="Active" />
               ) : (
-                <Clock className="w-6 h-6 text-gray-400" />
+                <Clock className="w-6 h-6 text-gray-400" aria-label="Pending" />
               )}
             </div>
             
             <div className="flex-1">
               <div className="flex items-center justify-between">
-                <h4 className={`font-medium ${
-                  stage.isActive ? 'text-blue-900' : stage.isCompleted ? 'text-green-900' : 'text-gray-700'
-                }`}>
+                <h4 
+                  className={`font-medium ${
+                    stage.isActive ? 'text-blue-900' : stage.isCompleted ? 'text-green-900' : 'text-gray-700'
+                  }`}
+                  id={`stage-${stage.id}-title`}
+                >
                   {stage.name}
                 </h4>
                 <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-500">{stage.estimatedTime}m</span>
+                  <span className="text-sm text-gray-500" aria-label={`Estimated time: ${stage.estimatedTime} minutes`}>
+                    {stage.estimatedTime}m
+                  </span>
                   {stage.isRequired && (
-                    <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full">
+                    <span 
+                      className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full"
+                      aria-label="Required step"
+                    >
                       Required
                     </span>
                   )}
@@ -437,8 +434,15 @@ const WorkflowOrchestrator = ({
             onClick={goToPreviousStage}
             disabled={workflowStages.findIndex(stage => stage.isActive) <= 0}
             className="btn-secondary flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Go to previous workflow stage"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                goToPreviousStage();
+              }
+            }}
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
             <span>Previous</span>
           </button>
           
@@ -446,15 +450,25 @@ const WorkflowOrchestrator = ({
             onClick={advanceToNextStage}
             disabled={isAutoAdvancing || workflowStages.findIndex(stage => stage.isActive) >= workflowStages.length - 1}
             className="btn-primary flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Advance to next workflow stage"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                advanceToNextStage();
+              }
+            }}
           >
             {isAutoAdvancing ? (
               <>
-                <RotateCcw className="w-4 h-4 animate-spin" />
-                <span>Advancing...</span>
+                <RotateCcw className="w-4 h-4 animate-spin" aria-hidden="true" />
+                <span>
+                  <span className="sr-only">Status:</span>
+                  Advancing...
+                </span>
               </>
             ) : (
               <>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
                 <span>Next</span>
               </>
             )}

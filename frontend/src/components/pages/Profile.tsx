@@ -1,137 +1,149 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { apiClient } from '../../services/apiClient'
-import { useAuth } from '../../hooks/useAuth'
-import { Button } from '../ui/Button'
-import { useToast } from '../../hooks/useToast'
-import { ArrowLeft, Save, User, Mail, Lock, Edit2 } from 'lucide-react'
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../../services/apiClient';
+import { useAuth } from '../../hooks/useAuth';
+import { Button } from '../ui/Button';
+import { useToast } from '../../hooks/useToast';
+import { ArrowLeft } from 'lucide-react';
+import { Save } from 'lucide-react';
+import { User } from 'lucide-react';
+import { Mail } from 'lucide-react';
+import { Lock } from 'lucide-react';
+import { Edit2 } from 'lucide-react';
 
 const Profile: React.FC = () => {
-  const navigate = useNavigate()
-  const { user, refreshUser } = useAuth()
-  const toast = useToast()
-  const [isLoading, setIsLoading] = useState(true)
-  const [isSaving, setIsSaving] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const navigate = useNavigate();
+  const { user, refreshUser } = useAuth();
+  const toast = useToast();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [profileData, setProfileData] = useState({
     first_name: '',
     last_name: '',
     email: '',
-  })
+  });
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
-  })
+  });
 
   useEffect(() => {
-    loadProfile()
-  }, [user])
+    loadProfile();
+  }, [user]);
 
   const loadProfile = async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       if (user) {
         setProfileData({
           first_name: user.first_name || '',
           last_name: user.last_name || '',
           email: user.email || '',
-        })
+        });
       } else {
-        const response = await apiClient.getCurrentUser()
+        const response = await apiClient.getCurrentUser();
         if (response.data) {
           setProfileData({
             first_name: response.data.first_name || '',
             last_name: response.data.last_name || '',
             email: response.data.email || '',
-          })
+          });
         }
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : 'Failed to load profile')
+      setError(error instanceof Error ? error.message : 'Failed to load profile');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleProfileUpdate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setIsSaving(true)
+    e.preventDefault();
+    setError(null);
+    setIsSaving(true);
 
     try {
       const response = await apiClient.updateUser(user?.id || '', {
         first_name: profileData.first_name,
         last_name: profileData.last_name,
         email: profileData.email,
-      })
+      });
 
-      if (response.error) {
-        setError(response.error.message)
-        toast.error(response.error.message)
+      if (!response.success) {
+        const errorMsg = response.error || response.message || 'Failed to update profile';
+        setError(errorMsg);
+        toast.error(errorMsg);
       } else {
-        toast.success('Profile updated successfully')
-        setIsEditing(false)
-        await refreshUser()
+        toast.success('Profile updated successfully');
+        setIsEditing(false);
+        await refreshUser();
       }
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Failed to update profile'
-      setError(errorMsg)
-      toast.error(errorMsg)
+      const errorMsg = error instanceof Error ? error.message : 'Failed to update profile';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError('New passwords do not match')
-      toast.error('New passwords do not match')
-      return
+      setError('New passwords do not match');
+      toast.error('New passwords do not match');
+      return;
     }
 
     if (passwordData.newPassword.length < 8) {
-      setError('New password must be at least 8 characters long')
-      toast.error('New password must be at least 8 characters long')
-      return
+      setError('New password must be at least 8 characters long');
+      toast.error('New password must be at least 8 characters long');
+      return;
     }
 
-    setIsSaving(true)
+    setIsSaving(true);
 
     try {
-      // TODO: Implement change password API endpoint
-      // await apiClient.changePassword({
-      //   currentPassword: passwordData.currentPassword,
-      //   newPassword: passwordData.newPassword,
-      // })
-      toast.success('Password changed successfully')
+      const response = await apiClient.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      });
+
+      if (!response.success) {
+        throw new Error(response.error || response.message || 'Failed to change password');
+      }
+      toast.success('Password changed successfully');
       setPasswordData({
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-      })
+      });
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Failed to change password'
-      setError(errorMsg)
-      toast.error(errorMsg)
+      const errorMsg = error instanceof Error ? error.message : 'Failed to change password';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
-      setIsSaving(false)
+      setIsSaving(false);
     }
-  }
+  };
 
   if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto p-6">
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" aria-label="Loading profile"></div>
+          <div
+            className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"
+            aria-label="Loading profile"
+          ></div>
           <span className="ml-4">Loading profile...</span>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -240,7 +252,10 @@ const Profile: React.FC = () => {
               <Button type="submit" disabled={isSaving}>
                 {isSaving ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" aria-hidden="true"></div>
+                    <div
+                      className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                      aria-hidden="true"
+                    ></div>
                     Saving...
                   </>
                 ) : (
@@ -296,7 +311,10 @@ const Profile: React.FC = () => {
 
         <form onSubmit={handlePasswordChange} className="space-y-6">
           <div>
-            <label htmlFor="current-password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="current-password"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Current Password
             </label>
             <input
@@ -331,7 +349,10 @@ const Profile: React.FC = () => {
           </div>
 
           <div>
-            <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="confirm-password"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Confirm New Password
             </label>
             <input
@@ -348,10 +369,16 @@ const Profile: React.FC = () => {
           </div>
 
           <div className="flex items-center justify-end space-x-4 pt-4">
-            <Button type="submit" disabled={isSaving || !passwordData.currentPassword || !passwordData.newPassword}>
+            <Button
+              type="submit"
+              disabled={isSaving || !passwordData.currentPassword || !passwordData.newPassword}
+            >
               {isSaving ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" aria-hidden="true"></div>
+                  <div
+                    className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                    aria-hidden="true"
+                  ></div>
                   Changing...
                 </>
               ) : (
@@ -365,8 +392,7 @@ const Profile: React.FC = () => {
         </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Profile
-
+export default Profile;

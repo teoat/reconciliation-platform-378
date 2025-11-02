@@ -14,8 +14,8 @@ interface UseAutoSaveFormOptions {
     workflowStage?: string
   }
   enabled?: boolean
-  onDataRestore?: (data: Record<string, any>) => void
-  onDataCompare?: (data: Record<string, any>) => void
+  onDataRestore?: (data: Record<string, unknown>) => void
+  onDataCompare?: (data: Record<string, unknown>) => void
 }
 
 export const useAutoSaveForm = ({
@@ -25,9 +25,9 @@ export const useAutoSaveForm = ({
   onDataRestore,
   onDataCompare
 }: UseAutoSaveFormOptions) => {
-  const [formData, setFormData] = React.useState<Record<string, any>>({})
+  const [formData, setFormData] = React.useState<Record<string, unknown>>({})
   const [showComparison, setShowComparison] = React.useState(false)
-  const [comparisonData, setComparisonData] = React.useState<Record<string, any> | null>(null)
+  const [comparisonData, setComparisonData] = React.useState<Record<string, unknown> | null>(null)
 
   const getData = React.useCallback(() => formData, [formData])
 
@@ -71,7 +71,7 @@ export const useAutoSaveForm = ({
   }, [comparisonData, onDataRestore, clearRecovery])
 
   // Update form data
-  const updateFormData = React.useCallback((updates: Record<string, any>) => {
+  const updateFormData = React.useCallback((updates: Record<string, unknown>) => {
     setFormData(prev => ({ ...prev, ...updates }))
   }, [])
 
@@ -91,7 +91,7 @@ export const useAutoSaveForm = ({
   }, [])
 
   // Reset form data
-  const resetFormData = React.useCallback((initialData: Record<string, any> = {}) => {
+  const resetFormData = React.useCallback((initialData: Record<string, unknown> = {}) => {
     setFormData(initialData)
   }, [])
 
@@ -134,19 +134,19 @@ interface AutoSaveFormProps {
     workflowStage?: string
   }
   children: (props: {
-    formData: Record<string, any>
-    updateFormData: (updates: Record<string, any>) => void
+    formData: Record<string, unknown>
+    updateFormData: (updates: Record<string, unknown>) => void
     setField: (field: string, value: any) => void
     getField: (field: string) => any
     clearFormData: () => void
-    resetFormData: (initialData?: Record<string, any>) => void
+    resetFormData: (initialData?: Record<string, unknown>) => void
     isAutoSaving: boolean
     lastSaved: Date | null
     manualSave: () => void
   }) => React.ReactNode
   enabled?: boolean
-  onDataRestore?: (data: Record<string, any>) => void
-  onDataCompare?: (data: Record<string, any>) => void
+  onDataRestore?: (data: Record<string, unknown>) => void
+  onDataCompare?: (data: Record<string, unknown>) => void
 }
 
 export const AutoSaveForm: React.FC<AutoSaveFormProps> = ({

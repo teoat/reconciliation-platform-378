@@ -60,7 +60,7 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
     }
   }
 
-  const handleUpdateIntegration = (id: string, settings: Record<string, any>) => {
+  const handleUpdateIntegration = (id: string, settings: Record<string, unknown>) => {
     const success = IntegrationService.updateIntegration(id, settings)
     if (success) {
       setIntegrations(IntegrationService.getIntegrations())

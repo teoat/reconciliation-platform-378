@@ -1,391 +1,317 @@
-import { useCallback } from 'react'
-import { useAppDispatch, useAppSelector } from './store'
+// ============================================================================
+// UNIFIED STORE HOOKS
+// ============================================================================
+
+import { useCallback } from 'react';
+import { useAppDispatch, useAppSelector, selectUI } from './unifiedStore';
 import {
+  loginUser,
+  registerUser,
+  getCurrentUser,
+  logoutUser,
+  fetchProjects,
+  createProject,
+  updateProject,
+  deleteProject,
+  uploadFile,
+  fetchUploadedFiles,
+  fetchReconciliationRecords,
+  runMatching,
+  fetchDashboardData,
   authActions,
   projectsActions,
   dataSourcesActions,
   reconciliationRecordsActions,
-  reconciliationMatchesActions,
-  reconciliationJobsActions,
   notificationsActions,
   uiActions,
-  fetchProjects,
-  createProject
-} from './store'
-import type { User, Project, DataSource, ReconciliationRecord, ReconciliationMatch, ReconciliationJob, Notification } from './store'
+} from './unifiedStore';
+import type { User } from '../types/backend-aligned';
+import type { Project } from '../types/backend-aligned';
+import type { Notification } from '../types/backend-aligned';
 
 // ============================================================================
 // AUTH HOOKS
 // ============================================================================
 
-export const useAuthActions = () => {
-  const dispatch = useAppDispatch()
-
-  return {
-    loginStart: useCallback(() => dispatch(authActions.loginStart()), [dispatch]),
-    loginSuccess: useCallback((user: User) => dispatch(authActions.loginSuccess(user)), [dispatch]),
-    loginFailure: useCallback((error: string) => dispatch(authActions.loginFailure(error)), [dispatch]),
-    logout: useCallback(() => dispatch(authActions.logout()), [dispatch]),
-    updateUser: useCallback((userData: Partial<User>) => dispatch(authActions.updateUser(userData)), [dispatch]),
-    clearError: useCallback(() => dispatch(authActions.clearError()), [dispatch])
-  }
-}
-
 export const useAuth = () => {
-  const auth = useAppSelector(state => state.auth)
-  const actions = useAuthActions()
-  
+  const auth = useAppSelector((state) => state.auth);
+  const dispatch = useAppDispatch();
+
   return {
     ...auth,
-    ...actions
-  }
-}
+    login: useCallback(
+      (credentials: { email: string; password: string }) => dispatch(loginUser(credentials)),
+      [dispatch]
+    ),
+    register: useCallback(
+      (userData: { email: string; password: string; name: string }) =>
+        dispatch(registerUser(userData)),
+      [dispatch]
+    ),
+    logout: useCallback(() => dispatch(logoutUser()), [dispatch]),
+    getCurrentUser: useCallback(() => dispatch(getCurrentUser()), [dispatch]),
+    setUser: useCallback((user: User | null) => dispatch(authActions.setUser(user)), [dispatch]),
+    clearError: useCallback(() => dispatch(authActions.clearError()), [dispatch]),
+  };
+};
 
 // ============================================================================
 // PROJECTS HOOKS
 // ============================================================================
 
-export const useProjectsActions = () => {
-  const dispatch = useAppDispatch()
-
-  return {
-    fetchProjectsStart: useCallback(() => dispatch(projectsActions.fetchProjectsStart()), [dispatch]),
-    fetchProjectsSuccess: useCallback((data: { projects: Project[]; pagination: any }) => 
-      dispatch(projectsActions.fetchProjectsSuccess(data)), [dispatch]),
-    fetchProjectsFailure: useCallback((error: string) => 
-      dispatch(projectsActions.fetchProjectsFailure(error)), [dispatch]),
-    createProject: useCallback((project: Project) => 
-      dispatch(projectsActions.createProject(project)), [dispatch]),
-    updateProject: useCallback((project: Project) => 
-      dispatch(projectsActions.updateProject(project)), [dispatch]),
-    deleteProject: useCallback((projectId: string) => 
-      dispatch(projectsActions.deleteProject(projectId)), [dispatch]),
-    fetchProjectsAsync: useCallback((params?: any) => 
-      dispatch(fetchProjects(params)), [dispatch]),
-    createProjectAsync: useCallback((projectData: any) => 
-      dispatch(createProject(projectData)), [dispatch])
-  }
-}
-
 export const useProjects = () => {
-  const projects = useAppSelector(state => state.projects)
-  const actions = useProjectsActions()
-  
+  const projects = useAppSelector((state) => state.projects);
+  const dispatch = useAppDispatch();
+
   return {
     ...projects,
-    ...actions
-  }
-}
+    fetchProjects: useCallback((params?: { page?: number; per_page?: number; search?: string; status?: string }) => dispatch(fetchProjects(params)), [dispatch]),
+    createProject: useCallback(
+      (projectData: { name: string; description?: string; settings?: Record<string, unknown>; status?: string }) => dispatch(createProject(projectData)),
+      [dispatch]
+    ),
+    updateProject: useCallback(
+      (params: { id: string; data: Partial<{ name?: string; description?: string; settings?: Record<string, unknown>; status?: string; is_active?: boolean }> }) => dispatch(updateProject(params)),
+      [dispatch]
+    ),
+    deleteProject: useCallback((id: string) => dispatch(deleteProject(id)), [dispatch]),
+    setSelectedProject: useCallback(
+      (project: Project | null) => dispatch(projectsActions.setSelectedProject(project)),
+      [dispatch]
+    ),
+    setSearchQuery: useCallback(
+      (query: string) => dispatch(projectsActions.setSearchQuery(query)),
+      [dispatch]
+    ),
+    setFilterStatus: useCallback(
+      (status: string | null) => dispatch(projectsActions.setFilterStatus(status)),
+      [dispatch]
+    ),
+  };
+};
 
 // ============================================================================
-// DATA SOURCES HOOKS
+// DATA INGESTION HOOKS
 // ============================================================================
 
-export const useDataSourcesActions = () => {
-  const dispatch = useAppDispatch()
+export const useDataIngestion = () => {
+  const dataIngestion = useAppSelector((state) => state.dataIngestion);
+  const dispatch = useAppDispatch();
 
   return {
-    fetchDataSourcesStart: useCallback(() => 
-      dispatch(dataSourcesActions.fetchDataSourcesStart()), [dispatch]),
-    fetchDataSourcesSuccess: useCallback((dataSources: DataSource[]) => 
-      dispatch(dataSourcesActions.fetchDataSourcesSuccess(dataSources)), [dispatch]),
-    fetchDataSourcesFailure: useCallback((error: string) => 
-      dispatch(dataSourcesActions.fetchDataSourcesFailure(error)), [dispatch]),
-    uploadFileStart: useCallback((data: { fileId: string; fileName: string }) => 
-      dispatch(dataSourcesActions.uploadFileStart(data)), [dispatch]),
-    uploadFileProgress: useCallback((data: { fileId: string; progress: number }) => 
-      dispatch(dataSourcesActions.uploadFileProgress(data)), [dispatch]),
-    uploadFileSuccess: useCallback((dataSource: DataSource) => 
-      dispatch(dataSourcesActions.uploadFileSuccess(dataSource)), [dispatch]),
-    uploadFileFailure: useCallback((data: { fileId: string; error: string }) => 
-      dispatch(dataSourcesActions.uploadFileFailure(data)), [dispatch]),
-    processFileStart: useCallback((dataSourceId: string) => 
-      dispatch(dataSourcesActions.processFileStart(dataSourceId)), [dispatch]),
-    processFileSuccess: useCallback((dataSource: DataSource) => 
-      dispatch(dataSourcesActions.processFileSuccess(dataSource)), [dispatch]),
-    processFileFailure: useCallback((data: { dataSourceId: string; error: string }) => 
-      dispatch(dataSourcesActions.processFileFailure(data)), [dispatch])
-  }
-}
-
-export const useDataSources = () => {
-  const dataSources = useAppSelector(state => state.dataSources)
-  const actions = useDataSourcesActions()
-  
-  return {
-    ...dataSources,
-    ...actions
-  }
-}
+    ...dataIngestion,
+    uploadFile: useCallback(
+      (params: { projectId: string; file: File; metadata?: { name: string; source_type: string } }) => dispatch(uploadFile(params)),
+      [dispatch]
+    ),
+    fetchUploadedFiles: useCallback(
+      (projectId: string) => dispatch(fetchUploadedFiles(projectId)),
+      [dispatch]
+    ),
+    setUploadProgress: useCallback(
+      (progress: number) => dispatch(dataSourcesActions.setUploadProgress(progress)),
+      [dispatch]
+    ),
+  };
+};
 
 // ============================================================================
-// RECONCILIATION RECORDS HOOKS
+// RECONCILIATION HOOKS
 // ============================================================================
 
-export const useReconciliationRecordsActions = () => {
-  const dispatch = useAppDispatch()
+export const useReconciliation = () => {
+  const reconciliation = useAppSelector((state) => state.reconciliation);
+  const dispatch = useAppDispatch();
 
   return {
-    fetchRecordsStart: useCallback(() => 
-      dispatch(reconciliationRecordsActions.fetchRecordsStart()), [dispatch]),
-    fetchRecordsSuccess: useCallback((data: { records: ReconciliationRecord[]; pagination: any }) => 
-      dispatch(reconciliationRecordsActions.fetchRecordsSuccess(data)), [dispatch]),
-    fetchRecordsFailure: useCallback((error: string) => 
-      dispatch(reconciliationRecordsActions.fetchRecordsFailure(error)), [dispatch]),
-    updateRecord: useCallback((record: ReconciliationRecord) => 
-      dispatch(reconciliationRecordsActions.updateRecord(record)), [dispatch])
-  }
-}
-
-export const useReconciliationRecords = () => {
-  const records = useAppSelector(state => state.reconciliationRecords)
-  const actions = useReconciliationRecordsActions()
-  
-  return {
-    ...records,
-    ...actions
-  }
-}
+    ...reconciliation,
+    fetchRecords: useCallback(
+      (projectId: string) => dispatch(fetchReconciliationRecords(projectId)),
+      [dispatch]
+    ),
+    runMatching: useCallback(
+      (params: { projectId: string; rules: Array<{ field_a: string; field_b: string; rule_type: string; weight: number }> }) => dispatch(runMatching(params)),
+      [dispatch]
+    ),
+    setConfig: useCallback(
+      (config: Partial<{ matchingRules: string[]; tolerance: number; autoMatch: boolean; priority: 'high' | 'medium' | 'low'; batchSize: number; timeout: number }>) => dispatch(reconciliationRecordsActions.setConfig(config)),
+      [dispatch]
+    ),
+    setMatchingProgress: useCallback(
+      (progress: number) => dispatch(reconciliationRecordsActions.setMatchingProgress(progress)),
+      [dispatch]
+    ),
+  };
+};
 
 // ============================================================================
-// RECONCILIATION MATCHES HOOKS
+// ANALYTICS HOOKS
 // ============================================================================
 
-export const useReconciliationMatchesActions = () => {
-  const dispatch = useAppDispatch()
+export const useAnalytics = () => {
+  const analytics = useAppSelector((state) => state.analytics);
+  const dispatch = useAppDispatch();
 
   return {
-    fetchMatchesStart: useCallback(() => 
-      dispatch(reconciliationMatchesActions.fetchMatchesStart()), [dispatch]),
-    fetchMatchesSuccess: useCallback((data: { matches: ReconciliationMatch[]; pagination: any }) => 
-      dispatch(reconciliationMatchesActions.fetchMatchesSuccess(data)), [dispatch]),
-    fetchMatchesFailure: useCallback((error: string) => 
-      dispatch(reconciliationMatchesActions.fetchMatchesFailure(error)), [dispatch]),
-    createMatch: useCallback((match: ReconciliationMatch) => 
-      dispatch(reconciliationMatchesActions.createMatch(match)), [dispatch]),
-    updateMatch: useCallback((match: ReconciliationMatch) => 
-      dispatch(reconciliationMatchesActions.updateMatch(match)), [dispatch]),
-    approveMatch: useCallback((matchId: string) => 
-      dispatch(reconciliationMatchesActions.approveMatch(matchId)), [dispatch]),
-    rejectMatch: useCallback((matchId: string) => 
-      dispatch(reconciliationMatchesActions.rejectMatch(matchId)), [dispatch])
-  }
-}
-
-export const useReconciliationMatches = () => {
-  const matches = useAppSelector(state => state.reconciliationMatches)
-  const actions = useReconciliationMatchesActions()
-  
-  return {
-    ...matches,
-    ...actions
-  }
-}
-
-// ============================================================================
-// RECONCILIATION JOBS HOOKS
-// ============================================================================
-
-export const useReconciliationJobsActions = () => {
-  const dispatch = useAppDispatch()
-
-  return {
-    fetchJobsStart: useCallback(() => 
-      dispatch(reconciliationJobsActions.fetchJobsStart()), [dispatch]),
-    fetchJobsSuccess: useCallback((jobs: ReconciliationJob[]) => 
-      dispatch(reconciliationJobsActions.fetchJobsSuccess(jobs)), [dispatch]),
-    fetchJobsFailure: useCallback((error: string) => 
-      dispatch(reconciliationJobsActions.fetchJobsFailure(error)), [dispatch]),
-    createJob: useCallback((job: ReconciliationJob) => 
-      dispatch(reconciliationJobsActions.createJob(job)), [dispatch]),
-    updateJob: useCallback((job: ReconciliationJob) => 
-      dispatch(reconciliationJobsActions.updateJob(job)), [dispatch]),
-    startJob: useCallback((jobId: string) => 
-      dispatch(reconciliationJobsActions.startJob(jobId)), [dispatch]),
-    completeJob: useCallback((jobId: string) => 
-      dispatch(reconciliationJobsActions.completeJob(jobId)), [dispatch]),
-    failJob: useCallback((data: { jobId: string; error: string }) => 
-      dispatch(reconciliationJobsActions.failJob(data)), [dispatch])
-  }
-}
-
-export const useReconciliationJobs = () => {
-  const jobs = useAppSelector(state => state.reconciliationJobs)
-  const actions = useReconciliationJobsActions()
-  
-  return {
-    ...jobs,
-    ...actions
-  }
-}
-
-// ============================================================================
-// NOTIFICATIONS HOOKS
-// ============================================================================
-
-export const useNotificationsActions = () => {
-  const dispatch = useAppDispatch()
-
-  return {
-    addNotification: useCallback((notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => 
-      dispatch(notificationsActions.addNotification(notification)), [dispatch]),
-    markAsRead: useCallback((notificationId: string) => 
-      dispatch(notificationsActions.markAsRead(notificationId)), [dispatch]),
-    markAllAsRead: useCallback(() => 
-      dispatch(notificationsActions.markAllAsRead()), [dispatch]),
-    removeNotification: useCallback((notificationId: string) => 
-      dispatch(notificationsActions.removeNotification(notificationId)), [dispatch]),
-    clearAllNotifications: useCallback(() => 
-      dispatch(notificationsActions.clearAllNotifications()), [dispatch])
-  }
-}
-
-export const useNotifications = () => {
-  const notifications = useAppSelector(state => state.notifications)
-  const actions = useNotificationsActions()
-  
-  return {
-    ...notifications,
-    ...actions
-  }
-}
+    ...analytics,
+    fetchDashboardData: useCallback(() => dispatch(fetchDashboardData()), [dispatch]),
+  };
+};
 
 // ============================================================================
 // UI HOOKS
 // ============================================================================
 
-export const useUIActions = () => {
-  const dispatch = useAppDispatch()
-
-  return {
-    toggleSidebar: useCallback(() => dispatch(uiActions.toggleSidebar()), [dispatch]),
-    setSidebarOpen: useCallback((open: boolean) => dispatch(uiActions.setSidebarOpen(open)), [dispatch]),
-    setTheme: useCallback((theme: 'light' | 'dark') => dispatch(uiActions.setTheme(theme)), [dispatch]),
-    setGlobalLoading: useCallback((loading: boolean) => dispatch(uiActions.setGlobalLoading(loading)), [dispatch]),
-    setComponentLoading: useCallback((data: { component: string; loading: boolean }) => 
-      dispatch(uiActions.setComponentLoading(data)), [dispatch]),
-    openModal: useCallback((modalId: string) => dispatch(uiActions.openModal(modalId)), [dispatch]),
-    closeModal: useCallback((modalId: string) => dispatch(uiActions.closeModal(modalId)), [dispatch]),
-    setFilter: useCallback((data: { key: string; value: any }) => 
-      dispatch(uiActions.setFilter(data)), [dispatch]),
-    clearFilter: useCallback((key: string) => dispatch(uiActions.clearFilter(key)), [dispatch]),
-    clearAllFilters: useCallback(() => dispatch(uiActions.clearAllFilters()), [dispatch])
-  }
-}
-
 export const useUI = () => {
-  const ui = useAppSelector(state => state.ui)
-  const actions = useUIActions()
-  
+  const ui = useAppSelector((state) => state.ui);
+  const dispatch = useAppDispatch();
+
   return {
     ...ui,
-    ...actions
-  }
-}
+    toggleSidebar: useCallback(() => dispatch(uiActions.toggleSidebar()), [dispatch]),
+    setSidebarOpen: useCallback(
+      (open: boolean) => dispatch(uiActions.setSidebarOpen(open)),
+      [dispatch]
+    ),
+    setTheme: useCallback(
+      (theme: 'light' | 'dark' | 'system') => dispatch(uiActions.setTheme(theme)),
+      [dispatch]
+    ),
+    addNotification: useCallback(
+      (notification: Notification) => dispatch(uiActions.addNotification(notification)),
+      [dispatch]
+    ),
+    removeNotification: useCallback(
+      (id: string) => dispatch(uiActions.removeNotification(id)),
+      [dispatch]
+    ),
+    clearAllNotifications: useCallback(
+      () => dispatch(uiActions.clearAllNotifications()),
+      [dispatch]
+    ),
+    openModal: useCallback(
+      (modal: 'createProject' | 'exportData' | 'settings' | 'deleteConfirmation' | 'batchOperation') => dispatch(uiActions.openModal(modal)),
+      [dispatch]
+    ),
+    closeModal: useCallback(
+      (modal: 'createProject' | 'exportData' | 'settings' | 'deleteConfirmation' | 'batchOperation') => dispatch(uiActions.closeModal(modal)),
+      [dispatch]
+    ),
+    setLoadingState: useCallback(
+      (params: { key: 'global' | 'projects' | 'reconciliation' | 'ingestion' | 'analytics'; loading: boolean }) =>
+        dispatch(uiActions.setLoadingState(params)),
+      [dispatch]
+    ),
+  };
+};
 
 // ============================================================================
 // COMBINED HOOKS
 // ============================================================================
 
 export const useApp = () => {
-  const auth = useAuth()
-  const projects = useProjects()
-  const dataSources = useDataSources()
-  const reconciliationRecords = useReconciliationRecords()
-  const reconciliationMatches = useReconciliationMatches()
-  const reconciliationJobs = useReconciliationJobs()
-  const notifications = useNotifications()
-  const ui = useUI()
+  const auth = useAuth();
+  const projects = useProjects();
+  const dataIngestion = useDataIngestion();
+  const reconciliation = useReconciliation();
+  const analytics = useAnalytics();
+  const ui = useUI();
 
   return {
     auth,
     projects,
-    dataSources,
-    reconciliationRecords,
-    reconciliationMatches,
-    reconciliationJobs,
-    notifications,
-    ui
-  }
-}
-
-// ============================================================================
-// UTILITY HOOKS
-// ============================================================================
-
-export const useLoading = (component?: string) => {
-  const globalLoading = useAppSelector(state => state.ui.loading.global)
-  const componentLoading = useAppSelector(state => 
-    component ? state.ui.loading.components[component] || false : false
-  )
-  
-  return component ? componentLoading : globalLoading
-}
-
-export const useModal = (modalId: string) => {
-  const isOpen = useAppSelector(state => state.ui.modals[modalId] || false)
-  const { openModal, closeModal } = useUIActions()
-  
-  return {
-    isOpen,
-    open: () => openModal(modalId),
-    close: () => closeModal(modalId)
-  }
-}
-
-export const useFilter = (key: string) => {
-  const value = useAppSelector(state => state.ui.filters[key])
-  const { setFilter, clearFilter } = useUIActions()
-  
-  return {
-    value,
-    set: (newValue: any) => setFilter({ key, value: newValue }),
-    clear: () => clearFilter(key)
-  }
-}
+    dataIngestion,
+    reconciliation,
+    analytics,
+    ui,
+  };
+};
 
 // ============================================================================
 // NOTIFICATION HELPERS
 // ============================================================================
 
-export const useNotificationHelpers = () => {
-  const { addNotification } = useNotificationsActions()
-  
+export const useNotifications = () => {
+  const dispatch = useAppDispatch();
+  const uiState = useAppSelector(selectUI);
+  const notifications = uiState.notifications || [];
+
+  const markAsRead = useCallback(
+    (id: string) => {
+      const notification = notifications.find((n: Notification) => n.id === id);
+      if (notification) {
+        dispatch(
+          notificationsActions.addNotification({
+            ...notification,
+            read: true,
+          })
+        );
+      }
+    },
+    [dispatch, notifications]
+  );
+
+  const markAllAsRead = useCallback(() => {
+    notifications.forEach((notification: Notification) => {
+      if (!notification.read) {
+        dispatch(
+          notificationsActions.addNotification({
+            ...notification,
+            read: true,
+          })
+        );
+      }
+    });
+  }, [dispatch, notifications]);
+
+  const removeNotification = useCallback(
+    (id: string) => {
+      dispatch(notificationsActions.removeNotification(id));
+    },
+    [dispatch]
+  );
+
   return {
-    showSuccess: useCallback((title: string, message: string, action?: { label: string; url: string }) => {
-      addNotification({
-        type: 'success',
-        title,
-        message,
-        action
-      })
-    }, [addNotification]),
-    
-    showError: useCallback((title: string, message: string, action?: { label: string; url: string }) => {
-      addNotification({
-        type: 'error',
-        title,
-        message,
-        action
-      })
-    }, [addNotification]),
-    
-    showWarning: useCallback((title: string, message: string, action?: { label: string; url: string }) => {
-      addNotification({
-        type: 'warning',
-        title,
-        message,
-        action
-      })
-    }, [addNotification]),
-    
-    showInfo: useCallback((title: string, message: string, action?: { label: string; url: string }) => {
-      addNotification({
-        type: 'info',
-        title,
-        message,
-        action
-      })
-    }, [addNotification])
-  }
-}
+    items: notifications,
+    unreadCount: notifications.filter((n: Notification) => !n.read).length,
+    markAsRead,
+    markAllAsRead,
+    removeNotification,
+  };
+};
+
+export const useNotificationHelpers = () => {
+  const dispatch = useAppDispatch();
+
+  const addNotification = useCallback(
+    (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
+      const id = Math.random().toString(36).substr(2, 9);
+      dispatch(
+        notificationsActions.addNotification({
+          ...notification,
+          id,
+          timestamp: new Date(),
+          read: false,
+        })
+      );
+    },
+    [dispatch]
+  );
+
+  const removeNotification = useCallback(
+    (id: string) => {
+      dispatch(notificationsActions.removeNotification(id));
+    },
+    [dispatch]
+  );
+
+  const clearAllNotifications = useCallback(() => {
+    dispatch(notificationsActions.clearAllNotifications());
+  }, [dispatch]);
+
+  return {
+    addNotification,
+    removeNotification,
+    clearAllNotifications,
+  };
+};

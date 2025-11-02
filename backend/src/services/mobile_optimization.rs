@@ -609,39 +609,39 @@ mod tests {
         let service = MobileOptimizationService::new().await;
         
         // Test PWA manifest generation
-        let manifest = service.generate_pwa_manifest().await.unwrap();
+        let manifest = service.generate_pwa_manifest().await.expect("Failed to generate PWA manifest");
         assert!(manifest.contains("378 Reconciliation Platform"));
         
         // Test service worker generation
-        let sw_script = service.generate_service_worker().await.unwrap();
+        let sw_script = service.generate_service_worker().await.expect("Failed to generate service worker");
         assert!(sw_script.contains("Service Worker"));
         
         // Test mobile CSS generation
-        let mobile_css = service.generate_mobile_css().await.unwrap();
+        let mobile_css = service.generate_mobile_css().await.expect("Failed to generate mobile CSS");
         assert!(mobile_css.contains("@media (max-width: 768px)"));
         
         // Test mobile JS generation
-        let mobile_js = service.generate_mobile_js().await.unwrap();
+        let mobile_js = service.generate_mobile_js().await.expect("Failed to generate mobile JS");
         assert!(mobile_js.contains("Mobile-specific JavaScript"));
         
         // Test configuration updates
-        let mut pwa_config = service.get_pwa_config().await.unwrap();
+        let mut pwa_config = service.get_pwa_config().await.expect("Failed to get PWA config");
         pwa_config.name = "Updated Name".to_string();
-        service.update_pwa_config(pwa_config).await.unwrap();
+        service.update_pwa_config(pwa_config).await.expect("Failed to update PWA config");
         
-        let updated_config = service.get_pwa_config().await.unwrap();
+        let updated_config = service.get_pwa_config().await.expect("Failed to get updated PWA config");
         assert_eq!(updated_config.name, "Updated Name");
         
         // Test usage tracking
-        service.track_mobile_usage(Uuid::new_v4(), "mobile".to_string(), true).await.unwrap();
+        service.track_mobile_usage(Uuid::new_v4(), "mobile".to_string(), true).await.expect("Failed to track mobile usage");
         
-        let stats = service.get_optimization_stats().await.unwrap();
+        let stats = service.get_optimization_stats().await.expect("Failed to get optimization stats");
         assert!(stats.total_users > 0);
         assert!(stats.mobile_users > 0);
         assert!(stats.pwa_installs > 0);
         
         // Test report generation
-        let report = service.generate_optimization_report().await.unwrap();
+        let report = service.generate_optimization_report().await.expect("Failed to generate optimization report");
         assert!(report.contains("Mobile Optimization Report"));
     }
 }

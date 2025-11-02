@@ -75,7 +75,7 @@ describe('apiClient', () => {
   })
 
   it('handles errors gracefully', async () => {
-    ;(global.fetch as any).mockRejectedValueOnce(
+    (global.fetch as any).mockRejectedValueOnce(
       new Error('Network error')
     )
 

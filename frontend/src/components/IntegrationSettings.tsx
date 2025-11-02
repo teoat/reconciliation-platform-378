@@ -1,32 +1,30 @@
 'use client'
 
 import { useState } from 'react'
-import { 
-  Settings, 
-  X, 
-  Check, 
-  AlertCircle, 
-  Calendar, 
-  Mail, 
-  MessageSquare, 
-  Users, 
-  Download, 
-  Upload, 
-  RefreshCw, 
-  ExternalLink,
-  Key,
-  Globe,
-  Lock,
-  Unlock,
-  Bell,
-  BellOff,
-  Zap,
-  Database,
-  Cloud,
-  Server,
-  Wifi,
-  WifiOff
-} from 'lucide-react'
+import { Settings } from 'lucide-react'
+import { X } from 'lucide-react'
+import { Check } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { Calendar } from 'lucide-react'
+import { Mail } from 'lucide-react'
+import { MessageSquare } from 'lucide-react'
+import { Users } from 'lucide-react'
+import { Download } from 'lucide-react'
+import { Upload } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
+import { ExternalLink } from 'lucide-react'
+import { Key } from 'lucide-react'
+import { Globe } from 'lucide-react'
+import { Lock } from 'lucide-react'
+import { Unlock } from 'lucide-react'
+import { Bell } from 'lucide-react'
+import { BellOff } from 'lucide-react'
+import { Zap } from 'lucide-react'
+import { Database } from 'lucide-react'
+import { Cloud } from 'lucide-react'
+import { Server } from 'lucide-react'
+import { Wifi } from 'lucide-react'
+import { WifiOff } from 'lucide-react'
 import { IntegrationConfig, IntegrationService, ProjectExportService, ExportOptions } from '../services/integration'
 
 interface IntegrationSettingsProps {
@@ -60,7 +58,7 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
     }
   }
 
-  const handleUpdateIntegration = (id: string, settings: Record<string, any>) => {
+  const handleUpdateIntegration = (id: string, settings: Record<string, unknown>) => {
     const success = IntegrationService.updateIntegration(id, settings)
     if (success) {
       setIntegrations(IntegrationService.getIntegrations())

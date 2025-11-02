@@ -1,8 +1,14 @@
 // Team Challenge Sharing - Viral Mechanism
+import { logger } from '@/services/logger'
 // Social sharing to increase user acquisition
 
 import React, { useState } from 'react'
-import { Share2, Copy, Check, Users, Trophy, Target } from 'lucide-react'
+import { Share2 } from 'lucide-react'
+import { Copy } from 'lucide-react'
+import { Check } from 'lucide-react'
+import { Users } from 'lucide-react'
+import { Trophy } from 'lucide-react'
+import { Target } from 'lucide-react'
 import Button from '../ui/Button'
 import Card from '../ui/Card'
 
@@ -40,7 +46,7 @@ export const TeamChallengeShare: React.FC<TeamChallengeShareProps> = ({ userId, 
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      console.error('Failed to copy:', error)
+      logger.error('Failed to copy:', error)
     }
   }
 

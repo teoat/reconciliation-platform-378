@@ -22,10 +22,14 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .route("/upload/resumable/complete", web::post().to(complete_resumable_upload))
         .route("/{file_id}", web::get().to(get_file))
         .route("/{file_id}", web::delete().to(delete_file))
+        .route("/{file_id}/preview", web::get().to(get_file_preview))
         .route("/{file_id}/process", web::post().to(process_file));
 }
 
-/// Upload file endpoint (REST compliant - returns 201 with Location header)
+/// Upload file endpoint (DEPRECATED - Use /api/v1/projects/{project_id}/files/upload instead)
+/// This endpoint uses query parameters and is kept for backwards compatibility
+/// It will be removed in a future version
+#[deprecated(note = "Use /api/v1/projects/{project_id}/files/upload instead")]
 pub async fn upload_file(
     payload: Multipart,
     req: HttpRequest,
@@ -214,6 +218,42 @@ pub async fn get_file(
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(file_info),
+        message: None,
+        error: None,
+    }))
+}
+
+/// Get file preview (safe content preview)
+pub async fn get_file_preview(
+    file_id: web::Path<Uuid>,
+    http_req: HttpRequest,
+    data: web::Data<Database>,
+    config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let file_service = crate::services::file::FileService::new(
+        data.get_ref().clone(),
+        config.upload_path.clone(),
+    );
+
+    let file_info = file_service.get_file(file_id.into_inner()).await?;
+
+    // ✅ SECURITY FIX: Check authorization before accessing file
+    let user_id = extract_user_id(&http_req)?;
+    check_project_permission(data.get_ref(), user_id, file_info.project_id)?;
+
+    // Get file preview (first 10 lines or 1KB, whichever is smaller)
+    let preview_content = file_service.get_file_preview(&file_info.file_path).await?;
+
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(serde_json::json!({
+            "file_id": file_info.id,
+            "filename": file_info.filename,
+            "content_type": file_info.content_type,
+            "size": file_info.file_size,
+            "preview": preview_content,
+            "truncated": preview_content.lines().count() >= 10 || preview_content.len() >= 1024,
+        })),
         message: None,
         error: None,
     }))

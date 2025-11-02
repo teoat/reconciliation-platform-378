@@ -1,87 +1,94 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { useProjects } from '../../hooks/useApi'
-import { apiClient } from '../../services/apiClient'
-import { Button } from '../ui/Button'
-import { useToast } from '../../hooks/useToast'
-import { ArrowLeft, Upload, File } from 'lucide-react'
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useProjects } from '../../hooks/useApi';
+import { apiClient } from '../../services/apiClient';
+import { Button } from '../ui/Button';
+import { useToast } from '../../hooks/useToast';
+import { ArrowLeft } from 'lucide-react';
+import { Upload } from 'lucide-react';
+import { File } from 'lucide-react';
 
 const FileUpload: React.FC = () => {
-  const navigate = useNavigate()
-  const location = useLocation()
-  const { projects, fetchProjects } = useProjects()
-  const toast = useToast()
-  const [selectedProject, setSelectedProject] = useState<string>('')
-  
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { projects, fetchProjects } = useProjects();
+  const toast = useToast();
+  const [selectedProject, setSelectedProject] = useState<string>('');
+
   // Check if projectId was passed via location state
   useEffect(() => {
-    const state = location.state as { projectId?: string } | null
+    const state = location.state as { projectId?: string } | null;
     if (state?.projectId) {
-      setSelectedProject(state.projectId)
+      setSelectedProject(state.projectId);
     }
-  }, [location.state])
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [uploadProgress, setUploadProgress] = useState(0)
-  const [isUploading, setIsUploading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState<string | null>(null)
+  }, [location.state]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   React.useEffect(() => {
-    fetchProjects()
-  }, [fetchProjects])
+    fetchProjects();
+  }, [fetchProjects]);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+    const file = e.target.files?.[0];
     if (file) {
-      setSelectedFile(file)
-      setError(null)
-      setSuccess(null)
+      setSelectedFile(file);
+      setError(null);
+      setSuccess(null);
     }
-  }
+  };
 
   const handleUpload = async () => {
     if (!selectedFile || !selectedProject) {
-      setError('Please select a project and file')
-      return
+      setError('Please select a project and file');
+      return;
     }
 
-    setError(null)
-    setSuccess(null)
-    setIsUploading(true)
-    setUploadProgress(0)
+    setError(null);
+    setSuccess(null);
+    setIsUploading(true);
+    setUploadProgress(0);
 
     try {
       const response = await apiClient.uploadFile(selectedProject, selectedFile, {
+        project_id: selectedProject,
         name: selectedFile.name,
         source_type: 'file',
-      })
+      });
 
       if (response.error) {
-        const errorMsg = response.error.message || 'Upload failed'
-        setError(errorMsg)
-        toast.error(errorMsg)
+        // Backend error format: { error: "title", message: "user-friendly message", code: "ERROR_CODE" }
+        const errorTitle = response.error;
+        const errorMessage = response.message || 'Upload failed';
+        const fullErrorMsg =
+          errorTitle !== errorMessage ? `${errorTitle}: ${errorMessage}` : errorMessage;
+        setError(fullErrorMsg);
+        toast.error(fullErrorMsg);
       } else if (response.data) {
-        setSuccess('File uploaded successfully!')
-        toast.success('File uploaded successfully!')
-        setSelectedFile(null)
-        setUploadProgress(100)
+        setSuccess('File uploaded successfully!');
+        toast.success('File uploaded successfully!');
+        setSelectedFile(null);
+        setUploadProgress(100);
         setTimeout(() => {
           // Redirect to project detail if project selected, otherwise dashboard
           if (selectedProject) {
-            navigate(`/projects/${selectedProject}`)
+            navigate(`/projects/${selectedProject}`);
           } else {
-            navigate('/')
+            navigate('/');
           }
-        }, 1000)
+        }, 1000);
       }
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Upload failed'
-      setError(errorMsg)
-      toast.error(errorMsg)
+      const errorMsg = err instanceof Error ? err.message : 'Upload failed';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
-      setIsUploading(false)
+      setIsUploading(false);
     }
-  }
+  };
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -130,7 +137,13 @@ const FileUpload: React.FC = () => {
           </select>
           {projects.length === 0 && (
             <p className="mt-2 text-sm text-gray-500">
-              No projects found. <button onClick={() => navigate('/projects/new')} className="text-blue-600 hover:underline">Create one</button>
+              No projects found.{' '}
+              <button
+                onClick={() => navigate('/projects/new')}
+                className="text-blue-600 hover:underline"
+              >
+                Create one
+              </button>
             </p>
           )}
         </div>
@@ -153,7 +166,10 @@ const FileUpload: React.FC = () => {
                 <>
                   <Upload className="mx-auto h-12 w-12 text-gray-400" />
                   <div className="flex text-sm text-gray-600">
-                    <label htmlFor="file" className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500">
+                    <label
+                      htmlFor="file"
+                      className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                    >
                       <span>Upload a file</span>
                       <input
                         id="file"
@@ -175,8 +191,8 @@ const FileUpload: React.FC = () => {
             <button
               type="button"
               onClick={() => {
-                setSelectedFile(null)
-                setUploadProgress(0)
+                setSelectedFile(null);
+                setUploadProgress(0);
               }}
               className="mt-2 text-sm text-red-600 hover:text-red-700"
             >
@@ -225,8 +241,7 @@ const FileUpload: React.FC = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default FileUpload
-
+export default FileUpload;

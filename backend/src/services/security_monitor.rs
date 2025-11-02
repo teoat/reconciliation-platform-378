@@ -8,6 +8,8 @@ use std::time::{Duration, Instant, SystemTime};
 use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
 use crate::errors::AppResult;
+use crate::services::email::EmailService;
+use reqwest::Client;
 
 /// Security event types
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -79,6 +81,8 @@ pub struct SecurityMonitor {
     events: Arc<RwLock<Vec<SecurityEvent>>>,
     anomaly_scores: Arc<RwLock<HashMap<String, f64>>>,
     alert_rules: Arc<RwLock<HashMap<String, AlertRule>>>,
+    email_service: Option<Arc<EmailService>>,
+    http_client: Arc<Client>,
 }
 
 #[derive(Debug, Clone)]
@@ -110,7 +114,33 @@ impl SecurityMonitor {
             events: Arc::new(RwLock::new(Vec::new())),
             anomaly_scores: Arc::new(RwLock::new(HashMap::new())),
             alert_rules: Arc::new(RwLock::new(HashMap::new())),
+            email_service: None,
+            http_client: Arc::new(Client::new()),
         }
+    }
+
+    /// Create a new security monitor with email service
+    pub fn with_email_service(config: AnomalyDetectionConfig, email_service: Arc<EmailService>) -> Self {
+        Self {
+            config,
+            events: Arc::new(RwLock::new(Vec::new())),
+            anomaly_scores: Arc::new(RwLock::new(HashMap::new())),
+            alert_rules: Arc::new(RwLock::new(HashMap::new())),
+            email_service: Some(email_service),
+            http_client: Arc::new(Client::new()),
+        }
+    }
+
+    /// Add an alert rule
+    pub async fn add_alert_rule(&self, rule: AlertRule) {
+        let mut rules = self.alert_rules.write().await;
+        let rule_id = format!("rule_{}", uuid::Uuid::new_v4());
+        let mut rule_copy = rule.clone();
+        // Set a name if not already set
+        if rule_copy.name.is_empty() {
+            rule_copy.name = format!("Alert Rule {}", rules.len() + 1);
+        }
+        rules.insert(rule_id, rule_copy);
     }
 
     pub async fn record_event(&self, event: SecurityEvent) -> AppResult<()> {
@@ -235,12 +265,125 @@ impl SecurityMonitor {
 
     /// Send email alert
     async fn send_email_alert(&self, email: &str, event: &SecurityEvent, score: f64) {
-        log::info!("Would send email alert to {}: {} (score: {:.1})", email, event.description, score);
+        if let Some(email_service) = &self.email_service {
+            let subject = format!("🚨 Security Alert: {} (Score: {:.1})", 
+                match event.severity {
+                    SecuritySeverity::Critical => "CRITICAL",
+                    SecuritySeverity::High => "HIGH",
+                    SecuritySeverity::Medium => "MEDIUM",
+                    SecuritySeverity::Low => "LOW",
+                },
+                score
+            );
+
+            let body = format!(
+                r#"
+Security Event Detected
+
+Event Type: {:?}
+Severity: {:?}
+Anomaly Score: {:.1}/100
+Description: {}
+
+Timestamp: {}
+Source IP: {}
+User ID: {}
+
+Metadata:
+{}
+
+If you believe this is a false positive, please review the security logs.
+
+Best regards,
+Security Monitoring System
+"#,
+                event.event_type,
+                event.severity,
+                score,
+                event.description,
+                event.timestamp,
+                event.source_ip.as_ref().unwrap_or(&"N/A".to_string()),
+                event.user_id.as_ref().unwrap_or(&"N/A".to_string()),
+                serde_json::to_string_pretty(&event.metadata).unwrap_or_else(|_| "{}".to_string())
+            );
+
+            if let Err(e) = email_service.send_email(email, &subject, &body).await {
+                log::error!("Failed to send security email alert: {}", e);
+            } else {
+                log::info!("Security email alert sent to {}", email);
+            }
+        } else {
+            log::warn!("Email service not configured, cannot send email alert to {}", email);
+        }
     }
 
     /// Send Slack alert
     async fn send_slack_alert(&self, webhook: &str, event: &SecurityEvent, score: f64) {
-        log::info!("Would send Slack alert to {}: {} (score: {:.1})", webhook, event.description, score);
+        let severity_emoji = match event.severity {
+            SecuritySeverity::Critical => "🔴",
+            SecuritySeverity::High => "🟠",
+            SecuritySeverity::Medium => "🟡",
+            SecuritySeverity::Low => "⚪",
+        };
+
+        let payload = serde_json::json!({
+            "text": format!("{} Security Alert", severity_emoji),
+            "username": "Security Monitor",
+            "icon_emoji": ":warning:",
+            "attachments": [{
+                "color": match event.severity {
+                    SecuritySeverity::Critical => "danger",
+                    SecuritySeverity::High => "warning",
+                    SecuritySeverity::Medium => "good",
+                    SecuritySeverity::Low => "#cccccc",
+                },
+                "fields": [
+                    {
+                        "title": "Event Type",
+                        "value": format!("{:?}", event.event_type),
+                        "short": true
+                    },
+                    {
+                        "title": "Severity",
+                        "value": format!("{:?}", event.severity),
+                        "short": true
+                    },
+                    {
+                        "title": "Anomaly Score",
+                        "value": format!("{:.1}/100", score),
+                        "short": true
+                    },
+                    {
+                        "title": "Source IP",
+                        "value": event.source_ip.as_ref().unwrap_or(&"N/A".to_string()),
+                        "short": true
+                    },
+                    {
+                        "title": "Description",
+                        "value": event.description,
+                        "short": false
+                    },
+                    {
+                        "title": "Timestamp",
+                        "value": event.timestamp,
+                        "short": false
+                    }
+                ]
+            }]
+        });
+
+        match self.http_client.post(webhook).json(&payload).send().await {
+            Ok(response) => {
+                if response.status().is_success() {
+                    log::info!("Security Slack alert sent successfully");
+                } else {
+                    log::error!("Slack webhook returned error: {}", response.status());
+                }
+            }
+            Err(e) => {
+                log::error!("Failed to send Slack alert: {}", e);
+            }
+        }
     }
 
     /// Block IP address
@@ -270,35 +413,37 @@ mod tests {
     use uuid::Uuid;
 
     #[tokio::test]
-    async fn test_brute_force_detection() {
+    async fn test_brute_force_detection() -> Result<(), Box<dyn std::error::Error>> {
         let monitor = SecurityMonitor::new(AnomalyDetectionConfig::default());
-        
+
         // Simulate 5 failed attempts
         for _ in 0..5 {
-            monitor.detect_brute_force("127.0.0.1", false).await.unwrap();
+            monitor.detect_brute_force("127.0.0.1", false).await?;
         }
-        
-        let detected = monitor.detect_brute_force("127.0.0.1", false).await.unwrap();
+
+        let detected = monitor.detect_brute_force("127.0.0.1", false).await?;
         assert!(detected);
+        Ok(())
     }
 
     #[tokio::test]
-    async fn test_anomaly_score_calculation() {
+    async fn test_anomaly_score_calculation() -> Result<(), Box<dyn std::error::Error>> {
         let monitor = SecurityMonitor::new(AnomalyDetectionConfig::default());
-        
+
         let event = SecurityEvent {
             id: Uuid::new_v4().to_string(),
             event_type: SecurityEventType::BruteForceAttack,
             severity: SecuritySeverity::Critical,
-            timestamp: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs().to_string(),
+            timestamp: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?.as_secs().to_string(),
             source_ip: Some("127.0.0.1".to_string()),
             user_id: None,
             description: "Test event".to_string(),
             metadata: HashMap::new(),
         };
-        
+
         let score = monitor.calculate_anomaly_score(&event).await;
         assert!(score > 80.0);
+        Ok(())
     }
 }
 

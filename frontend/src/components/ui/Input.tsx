@@ -50,17 +50,28 @@ const Input: React.FC<InputProps> = memo(({
     return rightIcon
   }, [error, props.value, rightIcon])
   
+  // Generate IDs for ARIA attributes
+  const errorId = useMemo(() => error ? `${inputId}-error` : undefined, [inputId, error])
+  const helperTextId = useMemo(() => helperText ? `${inputId}-helper` : undefined, [inputId, helperText])
+  const describedBy = useMemo(() => {
+    const ids = [errorId, helperTextId].filter(Boolean)
+    return ids.length > 0 ? ids.join(' ') : undefined
+  }, [errorId, helperTextId])
+  
   return (
     <div className={containerClasses}>
       {label && (
         <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 mb-1">
           {label}
+          {props.required && (
+            <span className="text-red-500 ml-1" aria-label="required">*</span>
+          )}
         </label>
       )}
       
       <div className="relative">
         {leftIcon && (
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none" aria-hidden="true">
             <span className="text-gray-400">{leftIcon}</span>
           </div>
         )}
@@ -68,24 +79,28 @@ const Input: React.FC<InputProps> = memo(({
         <input
           id={inputId}
           className={inputClasses}
+          aria-invalid={error ? 'true' : 'false'}
+          aria-describedby={describedBy}
+          aria-required={props.required ? 'true' : undefined}
+          aria-label={props['aria-label'] || (label ? undefined : 'Input')}
           {...props}
         />
         
         {rightIconElement && (
-          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+          <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none" aria-hidden="true">
             <span className="text-gray-400">{rightIconElement}</span>
           </div>
         )}
       </div>
       
-      {error && (
-        <p className="mt-1 text-sm text-red-600" role="alert">
+      {error && errorId && (
+        <p id={errorId} className="mt-1 text-sm text-red-600" role="alert" aria-live="assertive">
           {error}
         </p>
       )}
       
-      {helperText && !error && (
-        <p className="mt-1 text-sm text-gray-500">
+      {helperText && !error && helperTextId && (
+        <p id={helperTextId} className="mt-1 text-sm text-gray-500">
           {helperText}
         </p>
       )}

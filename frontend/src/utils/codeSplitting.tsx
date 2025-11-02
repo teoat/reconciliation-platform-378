@@ -1,4 +1,5 @@
 // ============================================================================
+import { logger } from '@/services/logger'
 // CODE SPLITTING UTILITIES - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
@@ -46,7 +47,7 @@ export const defaultCodeSplittingConfig: CodeSplittingConfig = {
 // ============================================================================
 
 // Create lazy component with retry logic
-export const createLazyComponent = <T extends ComponentType<any>>(
+export const createLazyComponent = <T extends ComponentType<Record<string, unknown>>>(
   importFunc: () => Promise<{ default: T }>,
   config: Partial<CodeSplittingConfig> = {}
 ): React.LazyExoticComponent<T> => {
@@ -57,10 +58,10 @@ export const createLazyComponent = <T extends ComponentType<any>>(
 
 // Retry import with exponential backoff
 const retryImport = async (
-  importFunc: () => Promise<any>,
+  importFunc: () => Promise<{ default: ComponentType<Record<string, unknown>> }>,
   attempts: number,
   delay: number
-): Promise<any> => {
+): Promise<{ default: ComponentType<Record<string, unknown>> }> => {
   try {
     return await importFunc()
   } catch (error) {
@@ -73,14 +74,14 @@ const retryImport = async (
 }
 
 // Preload component
-export const preloadComponent = <T extends ComponentType<any>>(
+export const preloadComponent = <T extends ComponentType<Record<string, unknown>>>(
   importFunc: () => Promise<{ default: T }>
 ): Promise<{ default: T }> => {
   return importFunc()
 }
 
 // Preload component on hover
-export const preloadOnHover = <T extends ComponentType<any>>(
+export const preloadOnHover = <T extends ComponentType<Record<string, unknown>>>(
   importFunc: () => Promise<{ default: T }>
 ) => {
   let hasPreloaded = false
@@ -94,7 +95,7 @@ export const preloadOnHover = <T extends ComponentType<any>>(
 }
 
 // Preload component on focus
-export const preloadOnFocus = <T extends ComponentType<any>>(
+export const preloadOnFocus = <T extends ComponentType<Record<string, unknown>>>(
   importFunc: () => Promise<{ default: T }>
 ) => {
   let hasPreloaded = false
@@ -164,13 +165,13 @@ export const LazyComponent: React.FC<LazyComponentProps & { children: React.Reac
 // ROUTE-BASED CODE SPLITTING
 // ============================================================================
 
-export const createRouteComponent = <T extends ComponentType<any>>(
+export const createRouteComponent = <T extends ComponentType<Record<string, unknown>>>(
   importFunc: () => Promise<{ default: T }>,
   config: Partial<CodeSplittingConfig> = {}
 ) => {
   const LazyComponent = createLazyComponent(importFunc, config)
   
-  return (props: any) => (
+  return (props: Record<string, unknown>) => (
     <LazyComponent
       fallback={
         <div className="flex items-center justify-center min-h-screen">
@@ -189,13 +190,13 @@ export const createRouteComponent = <T extends ComponentType<any>>(
 // FEATURE-BASED CODE SPLITTING
 // ============================================================================
 
-export const createFeatureComponent = <T extends ComponentType<any>>(
+export const createFeatureComponent = <T extends ComponentType<Record<string, unknown>>>(
   importFunc: () => Promise<{ default: T }>,
   config: Partial<CodeSplittingConfig> = {}
 ) => {
   const LazyComponent = createLazyComponent(importFunc, config)
   
-  return (props: any) => (
+  return (props: Record<string, unknown>) => (
     <LazyComponent
       fallback={
         <div className="flex items-center justify-center p-8">
@@ -214,14 +215,14 @@ export const createFeatureComponent = <T extends ComponentType<any>>(
 // CONDITIONAL CODE SPLITTING
 // ============================================================================
 
-export const createConditionalComponent = <T extends ComponentType<any>>(
+export const createConditionalComponent = <T extends ComponentType<Record<string, unknown>>>(
   importFunc: () => Promise<{ default: T }>,
   condition: boolean,
   config: Partial<CodeSplittingConfig> = {}
 ) => {
   const LazyComponent = createLazyComponent(importFunc, config)
   
-  return (props: any) => {
+  return (props: Record<string, unknown>) => {
     if (!condition) {
       return null
     }
@@ -250,22 +251,22 @@ export const analyzeBundleSize = async () => {
       const { BundleAnalyzerPlugin } = await import('webpack-bundle-analyzer')
       return BundleAnalyzerPlugin
     } catch (error) {
-      console.warn('Bundle analyzer not available:', error)
+      logger.warn('Bundle analyzer not available:', error)
       return null
     }
   }
   return null
 }
 
-export const getChunkSize = (chunk: any): number => {
+export const getChunkSize = (chunk: { size?: number }): number => {
   return chunk.size || 0
 }
 
-export const getChunkName = (chunk: any): string => {
+export const getChunkName = (chunk: { name?: string }): string => {
   return chunk.name || 'unknown'
 }
 
-export const getChunkModules = (chunk: any): any[] => {
+export const getChunkModules = (chunk: { modules?: Array<Record<string, unknown>> }): Array<Record<string, unknown>> => {
   return chunk.modules || []
 }
 

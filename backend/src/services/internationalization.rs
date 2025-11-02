@@ -1,35 +1,20 @@
 // backend/src/services/internationalization.rs
 use crate::errors::{AppError, AppResult};
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use log::info;
+use serde::{Serialize, Deserialize};
 
-/// Supported language
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct Language {
-    pub code: String, // ISO 639-1 code (e.g., "en", "es", "fr")
-    pub name: String, // Display name (e.g., "English", "Spanish", "French")
-    pub native_name: String, // Native name (e.g., "English", "Español", "Français")
-    pub is_rtl: bool, // Right-to-left language
-    pub is_default: bool,
-}
+// Re-export types from models for backward compatibility
+pub use crate::services::internationalization_models::*;
+use crate::services::internationalization_data::{
+    get_default_languages, get_default_locales, get_default_timezones, get_default_translations
+};
 
-/// Supported locale
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub struct Locale {
-    pub code: String, // ISO 639-1 + ISO 3166-1 (e.g., "en-US", "es-ES", "fr-FR")
-    pub language_code: String,
-    pub country_code: String,
-    pub name: String,
-    pub date_format: String,
-    pub time_format: String,
-    pub number_format: NumberFormat,
-    pub currency_format: CurrencyFormat,
-}
+
 
 /// Number format configuration
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -128,429 +113,38 @@ impl InternationalizationService {
             translation_cache: Arc::new(RwLock::new(HashMap::new())),
         };
         
-        // Initialize with default languages and locales
-        service.initialize_default_languages().await;
-        service.initialize_default_locales().await;
-        service.initialize_default_timezones().await;
-        service.initialize_default_translations().await;
+        // Initialize with default data
+        service.initialize_defaults().await;
         
         service
     }
 
-    /// Initialize default languages
-    async fn initialize_default_languages(&mut self) {
-        let languages = vec![
-            Language {
-                code: "en".to_string(),
-                name: "English".to_string(),
-                native_name: "English".to_string(),
-                is_rtl: false,
-                is_default: true,
-            },
-            Language {
-                code: "es".to_string(),
-                name: "Spanish".to_string(),
-                native_name: "Español".to_string(),
-                is_rtl: false,
-                is_default: false,
-            },
-            Language {
-                code: "fr".to_string(),
-                name: "French".to_string(),
-                native_name: "Français".to_string(),
-                is_rtl: false,
-                is_default: false,
-            },
-            Language {
-                code: "de".to_string(),
-                name: "German".to_string(),
-                native_name: "Deutsch".to_string(),
-                is_rtl: false,
-                is_default: false,
-            },
-            Language {
-                code: "ar".to_string(),
-                name: "Arabic".to_string(),
-                native_name: "العربية".to_string(),
-                is_rtl: true,
-                is_default: false,
-            },
-            Language {
-                code: "zh".to_string(),
-                name: "Chinese".to_string(),
-                native_name: "中文".to_string(),
-                is_rtl: false,
-                is_default: false,
-            },
-            Language {
-                code: "ja".to_string(),
-                name: "Japanese".to_string(),
-                native_name: "日本語".to_string(),
-                is_rtl: false,
-                is_default: false,
-            },
-        ];
-
-        for language in languages {
+    /// Initialize all default data
+    async fn initialize_defaults(&mut self) {
+        // Initialize languages
+        for language in get_default_languages() {
             self.languages.write().await.insert(language.code.clone(), language);
         }
-    }
 
-    /// Initialize default locales
-    async fn initialize_default_locales(&mut self) {
-        let locales = vec![
-            Locale {
-                code: "en-US".to_string(),
-                language_code: "en".to_string(),
-                country_code: "US".to_string(),
-                name: "English (United States)".to_string(),
-                date_format: "%m/%d/%Y".to_string(),
-                time_format: "%I:%M %p".to_string(),
-                number_format: NumberFormat {
-                    decimal_separator: ".".to_string(),
-                    thousands_separator: ",".to_string(),
-                    grouping: vec![3],
-                    precision: 2,
-                },
-                currency_format: CurrencyFormat {
-                    symbol: "$".to_string(),
-                    position: CurrencyPosition::Before,
-                    decimal_places: 2,
-                    symbol_spacing: false,
-                },
-            },
-            Locale {
-                code: "en-GB".to_string(),
-                language_code: "en".to_string(),
-                country_code: "GB".to_string(),
-                name: "English (United Kingdom)".to_string(),
-                date_format: "%d/%m/%Y".to_string(),
-                time_format: "%H:%M".to_string(),
-                number_format: NumberFormat {
-                    decimal_separator: ".".to_string(),
-                    thousands_separator: ",".to_string(),
-                    grouping: vec![3],
-                    precision: 2,
-                },
-                currency_format: CurrencyFormat {
-                    symbol: "£".to_string(),
-                    position: CurrencyPosition::Before,
-                    decimal_places: 2,
-                    symbol_spacing: false,
-                },
-            },
-            Locale {
-                code: "es-ES".to_string(),
-                language_code: "es".to_string(),
-                country_code: "ES".to_string(),
-                name: "Español (España)".to_string(),
-                date_format: "%d/%m/%Y".to_string(),
-                time_format: "%H:%M".to_string(),
-                number_format: NumberFormat {
-                    decimal_separator: ",".to_string(),
-                    thousands_separator: ".".to_string(),
-                    grouping: vec![3],
-                    precision: 2,
-                },
-                currency_format: CurrencyFormat {
-                    symbol: "€".to_string(),
-                    position: CurrencyPosition::After,
-                    decimal_places: 2,
-                    symbol_spacing: true,
-                },
-            },
-            Locale {
-                code: "fr-FR".to_string(),
-                language_code: "fr".to_string(),
-                country_code: "FR".to_string(),
-                name: "Français (France)".to_string(),
-                date_format: "%d/%m/%Y".to_string(),
-                time_format: "%H:%M".to_string(),
-                number_format: NumberFormat {
-                    decimal_separator: ",".to_string(),
-                    thousands_separator: " ".to_string(),
-                    grouping: vec![3],
-                    precision: 2,
-                },
-                currency_format: CurrencyFormat {
-                    symbol: "€".to_string(),
-                    position: CurrencyPosition::After,
-                    decimal_places: 2,
-                    symbol_spacing: true,
-                },
-            },
-        ];
-
-        for locale in locales {
+        // Initialize locales
+        for locale in get_default_locales() {
             self.locales.write().await.insert(locale.code.clone(), locale);
         }
-    }
 
-    /// Initialize default timezones
-    async fn initialize_default_timezones(&mut self) {
-        let timezones = vec![
-            TimezoneInfo {
-                code: "UTC".to_string(),
-                name: "Coordinated Universal Time".to_string(),
-                offset_seconds: 0,
-                is_dst: false,
-                dst_offset_seconds: None,
-            },
-            TimezoneInfo {
-                code: "America/New_York".to_string(),
-                name: "Eastern Time".to_string(),
-                offset_seconds: -18000, // EST
-                is_dst: false,
-                dst_offset_seconds: Some(-14400), // EDT
-            },
-            TimezoneInfo {
-                code: "America/Chicago".to_string(),
-                name: "Central Time".to_string(),
-                offset_seconds: -21600, // CST
-                is_dst: false,
-                dst_offset_seconds: Some(-18000), // CDT
-            },
-            TimezoneInfo {
-                code: "America/Denver".to_string(),
-                name: "Mountain Time".to_string(),
-                offset_seconds: -25200, // MST
-                is_dst: false,
-                dst_offset_seconds: Some(-21600), // MDT
-            },
-            TimezoneInfo {
-                code: "America/Los_Angeles".to_string(),
-                name: "Pacific Time".to_string(),
-                offset_seconds: -28800, // PST
-                is_dst: false,
-                dst_offset_seconds: Some(-25200), // PDT
-            },
-            TimezoneInfo {
-                code: "Europe/London".to_string(),
-                name: "Greenwich Mean Time".to_string(),
-                offset_seconds: 0, // GMT
-                is_dst: false,
-                dst_offset_seconds: Some(3600), // BST
-            },
-            TimezoneInfo {
-                code: "Europe/Paris".to_string(),
-                name: "Central European Time".to_string(),
-                offset_seconds: 3600, // CET
-                is_dst: false,
-                dst_offset_seconds: Some(7200), // CEST
-            },
-            TimezoneInfo {
-                code: "Asia/Tokyo".to_string(),
-                name: "Japan Standard Time".to_string(),
-                offset_seconds: 32400,
-                is_dst: false,
-                dst_offset_seconds: None,
-            },
-            TimezoneInfo {
-                code: "Asia/Shanghai".to_string(),
-                name: "China Standard Time".to_string(),
-                offset_seconds: 28800,
-                is_dst: false,
-                dst_offset_seconds: None,
-            },
-        ];
-
-        for timezone in timezones {
+        // Initialize timezones
+        for timezone in get_default_timezones() {
             self.timezones.write().await.insert(timezone.code.clone(), timezone);
         }
-    }
 
-    /// Initialize default translations
-    async fn initialize_default_translations(&mut self) {
-        let translations = vec![
-            // English translations
-            Translation {
-                key: "welcome".to_string(),
-                language_code: "en".to_string(),
-                value: "Welcome".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "login".to_string(),
-                language_code: "en".to_string(),
-                value: "Login".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "logout".to_string(),
-                language_code: "en".to_string(),
-                value: "Logout".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "dashboard".to_string(),
-                language_code: "en".to_string(),
-                value: "Dashboard".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "projects".to_string(),
-                language_code: "en".to_string(),
-                value: "Projects".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "reconciliation".to_string(),
-                language_code: "en".to_string(),
-                value: "Reconciliation".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "analytics".to_string(),
-                language_code: "en".to_string(),
-                value: "Analytics".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "settings".to_string(),
-                language_code: "en".to_string(),
-                value: "Settings".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "profile".to_string(),
-                language_code: "en".to_string(),
-                value: "Profile".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "help".to_string(),
-                language_code: "en".to_string(),
-                value: "Help".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            // Spanish translations
-            Translation {
-                key: "welcome".to_string(),
-                language_code: "es".to_string(),
-                value: "Bienvenido".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "login".to_string(),
-                language_code: "es".to_string(),
-                value: "Iniciar sesión".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "logout".to_string(),
-                language_code: "es".to_string(),
-                value: "Cerrar sesión".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "dashboard".to_string(),
-                language_code: "es".to_string(),
-                value: "Panel de control".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "projects".to_string(),
-                language_code: "es".to_string(),
-                value: "Proyectos".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "reconciliation".to_string(),
-                language_code: "es".to_string(),
-                value: "Reconciliación".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "analytics".to_string(),
-                language_code: "es".to_string(),
-                value: "Análisis".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "settings".to_string(),
-                language_code: "es".to_string(),
-                value: "Configuración".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "profile".to_string(),
-                language_code: "es".to_string(),
-                value: "Perfil".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-            Translation {
-                key: "help".to_string(),
-                language_code: "es".to_string(),
-                value: "Ayuda".to_string(),
-                context: None,
-                plural_forms: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
-            },
-        ];
-
-        for translation in translations {
-            let key = format!("{}:{}", translation.language_code, translation.key);
+        // Initialize translations
+        for translation in get_default_translations() {
+            let key = format!("{}:{}", translation.key, translation.language_code);
             self.translations.write().await.insert(key, translation);
         }
     }
+
+
+
 
     /// Add language
     pub async fn add_language(&self, language: Language) -> AppResult<()> {
@@ -915,25 +509,25 @@ mod tests {
         let service = InternationalizationService::new().await;
         
         // Test getting language
-        let language = service.get_language("en").await.unwrap();
+        let language = service.get_language("en").await.expect("Failed to get language");
         assert!(language.is_some());
-        assert_eq!(language.unwrap().code, "en");
+        assert_eq!(language.expect("Expected language").code, "en");
         
         // Test listing languages
-        let languages = service.list_languages().await.unwrap();
+        let languages = service.list_languages().await.expect("Failed to list languages");
         assert!(!languages.is_empty());
         
         // Test getting locale
-        let locale = service.get_locale("en-US").await.unwrap();
+        let locale = service.get_locale("en-US").await.expect("Failed to get locale");
         assert!(locale.is_some());
-        assert_eq!(locale.unwrap().code, "en-US");
+        assert_eq!(locale.expect("Expected locale").code, "en-US");
         
         // Test getting translation
-        let translation = service.get_translation("welcome", "en").await.unwrap();
+        let translation = service.get_translation("welcome", "en").await.expect("Failed to get translation");
         assert_eq!(translation, Some("Welcome".to_string()));
         
         // Test translation fallback
-        let translation = service.get_translation("welcome", "es").await.unwrap();
+        let translation = service.get_translation("welcome", "es").await.expect("Failed to get translation");
         assert_eq!(translation, Some("Bienvenido".to_string()));
         
         // Test text translation
@@ -945,29 +539,29 @@ mod tests {
             domain: None,
         };
         
-        let response = service.translate_text(request).await.unwrap();
+        let response = service.translate_text(request).await.expect("Failed to translate text");
         assert_eq!(response.translated_text, "Bienvenido");
         
         // Test date formatting
         let date = Utc::now();
-        let formatted_date = service.format_date(date, "en-US").await.unwrap();
+        let formatted_date = service.format_date(date, "en-US").await.expect("Failed to format date");
         assert!(!formatted_date.is_empty());
         
         // Test number formatting
-        let formatted_number = service.format_number(1234.56, "en-US").await.unwrap();
+        let formatted_number = service.format_number(1234.56, "en-US").await.expect("Failed to format number");
         assert!(formatted_number.contains("1,234"));
         
         // Test currency formatting
-        let formatted_currency = service.format_currency(1234.56, "en-US").await.unwrap();
+        let formatted_currency = service.format_currency(1234.56, "en-US").await.expect("Failed to format currency");
         assert!(formatted_currency.contains("$"));
         
         // Test language detection
-        let detected_language = service.detect_language("Hello world").await.unwrap();
+        let detected_language = service.detect_language("Hello world").await.expect("Failed to detect language");
         assert_eq!(detected_language, "en");
         
         // Test timezone conversion
         let datetime = Utc::now();
-        let converted = service.convert_timezone(datetime, "UTC", "America/New_York").await.unwrap();
+        let converted = service.convert_timezone(datetime, "UTC", "America/New_York").await.expect("Failed to convert timezone");
         assert!(converted != datetime);
     }
 
@@ -986,17 +580,17 @@ mod tests {
             updated_at: Utc::now(),
         };
         
-        service.add_translation(translation).await.unwrap();
+        service.add_translation(translation).await.expect("Failed to add translation");
         
         // Test getting added translation
-        let retrieved = service.get_translation("test_key", "en").await.unwrap();
+        let retrieved = service.get_translation("test_key", "en").await.expect("Failed to get translation");
         assert_eq!(retrieved, Some("Test Value".to_string()));
         
         // Test clearing cache
-        service.clear_translation_cache().await.unwrap();
+        service.clear_translation_cache().await.expect("Failed to clear cache");
         
         // Test getting translation stats
-        let stats = service.get_translation_stats().await.unwrap();
+        let stats = service.get_translation_stats().await.expect("Failed to get stats");
         assert!(stats.total_translations > 0);
     }
 
@@ -1007,16 +601,16 @@ mod tests {
         // Test different locale formatting
         let number = 1234.56;
         
-        let us_format = service.format_number(number, "en-US").await.unwrap();
+        let us_format = service.format_number(number, "en-US").await.expect("Failed to format number");
         assert!(us_format.contains("1,234"));
         
-        let es_format = service.format_number(number, "es-ES").await.unwrap();
+        let es_format = service.format_number(number, "es-ES").await.expect("Failed to format number");
         assert!(es_format.contains("1.234"));
         
-        let us_currency = service.format_currency(number, "en-US").await.unwrap();
+        let us_currency = service.format_currency(number, "en-US").await.expect("Failed to format currency");
         assert!(us_currency.contains("$"));
         
-        let es_currency = service.format_currency(number, "es-ES").await.unwrap();
+        let es_currency = service.format_currency(number, "es-ES").await.expect("Failed to format currency");
         assert!(es_currency.contains("€"));
     }
 }

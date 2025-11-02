@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import { logger } from '@/services/logger'
 import { FrenlyGuidance, FrenlyTips } from './FrenlyGuidance'
 import { FrenlyProvider as OriginalFrenlyProvider } from './FrenlyProvider'
 
@@ -70,7 +71,7 @@ export const FrenlyAIProvider: React.FC<FrenlyAIProviderProps> = ({
       try {
         setUserProgress(JSON.parse(savedProgress))
       } catch (error) {
-        console.error('Failed to load Frenly progress:', error)
+        logger.error('Failed to load Frenly progress:', error)
       }
     }
   }, [])

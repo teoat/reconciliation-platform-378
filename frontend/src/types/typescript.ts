@@ -13,26 +13,26 @@ export const typescriptConfig = {
     lib: ['ES2020', 'DOM', 'DOM.Iterable'],
     module: 'ESNext',
     moduleResolution: 'node',
-    
+
     // Modules
     esModuleInterop: true,
     allowSyntheticDefaultImports: true,
     forceConsistentCasingInFileNames: true,
     resolveJsonModule: true,
     isolatedModules: true,
-    
+
     // Emit
     declaration: true,
     declarationMap: true,
     sourceMap: true,
     removeComments: false,
     importHelpers: true,
-    
+
     // Interop Constraints
     allowJs: true,
     checkJs: false,
     skipLibCheck: true,
-    
+
     // Type Checking
     strict: true,
     noImplicitAny: true,
@@ -45,24 +45,18 @@ export const typescriptConfig = {
     noUncheckedIndexedAccess: true,
     noImplicitOverride: true,
     noPropertyAccessFromIndexSignature: true,
-    
+
     // Completeness
     skipDefaultLibCheck: true,
-    
+
     // Advanced
     exactOptionalPropertyTypes: true,
     noImplicitThis: true,
     useUnknownInCatchVariables: true,
   },
-  
-  include: [
-    'src/**/*',
-    'src/**/*.ts',
-    'src/**/*.tsx',
-    'src/**/*.js',
-    'src/**/*.jsx',
-  ],
-  
+
+  include: ['src/**/*', 'src/**/*.ts', 'src/**/*.tsx', 'src/**/*.js', 'src/**/*.jsx'],
+
   exclude: [
     'node_modules',
     'dist',
@@ -73,12 +67,12 @@ export const typescriptConfig = {
     '**/*.spec.ts',
     '**/*.spec.tsx',
   ],
-  
+
   'ts-node': {
     esm: true,
     experimentalSpecifierResolution: 'node',
   },
-}
+};
 
 // ============================================================================
 // TYPE DEFINITION OPTIMIZATION
@@ -98,19 +92,13 @@ export const typeOptimizationConfig = {
     '@/assets/*': ['src/assets/*'],
     '@/styles/*': ['src/styles/*'],
   },
-  
+
   // Base URL for module resolution
   baseUrl: '.',
-  
+
   // Type definitions to include
-  types: [
-    'node',
-    'react',
-    'react-dom',
-    'jest',
-    '@testing-library/jest-dom',
-  ],
-}
+  types: ['node', 'react', 'react-dom', 'jest', '@testing-library/jest-dom'],
+};
 
 // ============================================================================
 // TYPE GENERATION CONFIGURATION
@@ -124,7 +112,7 @@ export const typeGenerationConfig = {
     output: 'src/types/api.ts',
     format: 'typescript',
   },
-  
+
   // GraphQL types generation
   graphqlTypes: {
     enabled: false,
@@ -132,7 +120,7 @@ export const typeGenerationConfig = {
     output: 'src/types/graphql.ts',
     plugins: ['typescript', 'typescript-operations'],
   },
-  
+
   // OpenAPI types generation
   openApiTypes: {
     enabled: false,
@@ -140,7 +128,7 @@ export const typeGenerationConfig = {
     output: 'src/types/openapi.ts',
     format: 'typescript',
   },
-}
+};
 
 // ============================================================================
 // TYPE VALIDATION RULES
@@ -154,104 +142,67 @@ export const typeValidationRules = {
     requireReadonlyProps: true,
     requireOptionalProps: true,
   },
-  
+
   // Hook return types
   hookReturns: {
     requireExplicitReturnTypes: true,
     forbidImplicitAny: true,
     requireReadonlyReturns: true,
   },
-  
+
   // API response types
   apiResponses: {
     requireGenericTypes: true,
     forbidAny: true,
     requireErrorHandling: true,
   },
-  
+
   // State management types
   stateTypes: {
     requireImmutableTypes: true,
     forbidMutableState: true,
     requireActionTypes: true,
   },
-}
+};
 
 // ============================================================================
 // TYPE UTILITIES
 // ============================================================================
 
 // Utility types for common patterns
-export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>
-export type Required<T, K extends keyof T> = T & { [P in K]-?: T[P] }
+export type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+export type Required<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 export type DeepPartial<T> = {
-  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P]
-}
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
 export type DeepReadonly<T> = {
-  readonly [P in keyof T]: T[P] extends object ? DeepReadonly<T[P]> : T[P]
-}
-export type NonNullable<T> = T extends null | undefined ? never : T
-export type ValueOf<T> = T[keyof T]
+  readonly [P in keyof T]: T[P] extends object ? DeepReadonly<T[P]> : T[P];
+};
+export type NonNullable<T> = T extends null | undefined ? never : T;
+export type ValueOf<T> = T[keyof T];
 export type KeysOfType<T, U> = {
-  [K in keyof T]: T[K] extends U ? K : never
-}[keyof T]
+  [K in keyof T]: T[K] extends U ? K : never;
+}[keyof T];
 
 // Component prop utilities
-export type ComponentProps<T> = T extends React.ComponentType<infer P> ? P : never
-export type ComponentRef<T> = T extends React.ComponentType<any> 
-  ? React.ComponentRef<T> 
-  : never
+export type ComponentProps<T> = T extends React.ComponentType<infer P> ? P : never;
+export type ComponentRef<T> = T extends React.ComponentType<any> ? React.ComponentRef<T> : never;
 
 // API utilities
-export type ApiEndpoint<T = any> = {
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
-  path: string
-  params?: Record<string, any>
-  body?: T
-  response: any
-}
+export type ApiEndpoint<TRequest = unknown, TResponse = unknown> = {
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  path: string;
+  params?: Record<string, string | number | boolean>;
+  body?: TRequest;
+  response: TResponse;
+};
 
 export type ApiError = {
-  code: string
-  message: string
-  details?: any
-  timestamp: string
-}
-
-// Form utilities
-export type FormField<T = any> = {
-  name: keyof T
-  label: string
-  type: 'text' | 'email' | 'password' | 'number' | 'select' | 'textarea' | 'checkbox' | 'radio' | 'file' | 'date'
-  required?: boolean
-  placeholder?: string
-  options?: Array<{ value: any; label: string }>
-  validation?: (value: any) => string | null
-  defaultValue?: any
-}
-
-export type FormState<T = any> = {
-  values: T
-  errors: Partial<Record<keyof T, string>>
-  touched: Partial<Record<keyof T, boolean>>
-  isValid: boolean
-  isSubmitting: boolean
-  isDirty: boolean
-}
-
-// Redux utilities
-export type ReduxAction<T = any> = {
-  type: string
-  payload?: T
-  meta?: any
-  error?: boolean
-}
-
-export type ReduxState = {
-  [key: string]: any
-}
-
-export type ReduxSelector<T = unknown> = (state: ReduxState) => T
+  code: string;
+  message: string;
+  details?: Record<string, unknown>;
+  timestamp: string;
+};
 
 // ============================================================================
 // TYPE GUARDS
@@ -260,28 +211,28 @@ export type ReduxSelector<T = unknown> = (state: ReduxState) => T
 export const typeGuards = {
   // Check if value is a string
   isString: <T>(value: T | string): value is string => typeof value === 'string',
-  
+
   // Check if value is a number
   isNumber: <T>(value: T | number): value is number => typeof value === 'number' && !isNaN(value),
-  
+
   // Check if value is a boolean
   isBoolean: <T>(value: T | boolean): value is boolean => typeof value === 'boolean',
-  
+
   // Check if value is an object
   isObject: <T>(value: T | object): value is object => typeof value === 'object' && value !== null,
-  
+
   // Check if value is an array
-  isArray: <T>(value: T | any[]): value is any[] => Array.isArray(value),
-  
+  isArray: <T>(value: T | unknown[]): value is unknown[] => Array.isArray(value),
+
   // Check if value is a function
   isFunction: <T>(value: T | Function): value is Function => typeof value === 'function',
-  
+
   // Check if value is null or undefined
   isNullish: <T>(value: T | null | undefined): value is null | undefined => value == null,
-  
+
   // Check if value is not null or undefined
   isNotNullish: <T>(value: T | null | undefined): value is T => value != null,
-}
+};
 
 // ============================================================================
 // TYPE ASSERTIONS
@@ -291,43 +242,43 @@ export const typeAssertions = {
   // Assert that value is not null or undefined
   assertNotNull: <T>(value: T | null | undefined, message?: string): T => {
     if (value == null) {
-      throw new Error(message || 'Value is null or undefined')
+      throw new Error(message || 'Value is null or undefined');
     }
-    return value
+    return value;
   },
-  
+
   // Assert that value is a string
-  assertString: (value: any, message?: string): string => {
+  assertString: (value: unknown, message?: string): string => {
     if (typeof value !== 'string') {
-      throw new Error(message || 'Value is not a string')
+      throw new Error(message || 'Value is not a string');
     }
-    return value
+    return value;
   },
-  
+
   // Assert that value is a number
-  assertNumber: (value: any, message?: string): number => {
+  assertNumber: (value: unknown, message?: string): number => {
     if (typeof value !== 'number' || isNaN(value)) {
-      throw new Error(message || 'Value is not a number')
+      throw new Error(message || 'Value is not a number');
     }
-    return value
+    return value;
   },
-  
+
   // Assert that value is an object
-  assertObject: (value: any, message?: string): object => {
+  assertObject: (value: unknown, message?: string): object => {
     if (typeof value !== 'object' || value === null) {
-      throw new Error(message || 'Value is not an object')
+      throw new Error(message || 'Value is not an object');
     }
-    return value
+    return value;
   },
-  
+
   // Assert that value is an array
-  assertArray: (value: any, message?: string): any[] => {
+  assertArray: (value: unknown, message?: string): unknown[] => {
     if (!Array.isArray(value)) {
-      throw new Error(message || 'Value is not an array')
+      throw new Error(message || 'Value is not an array');
     }
-    return value
+    return value;
   },
-}
+};
 
 // ============================================================================
 // EXPORT CONFIGURATION
@@ -340,4 +291,4 @@ export default {
   typeValidationRules,
   typeGuards,
   typeAssertions,
-}
+};

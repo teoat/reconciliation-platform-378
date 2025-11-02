@@ -308,7 +308,7 @@ export const useHealthCheck = () => {
     setIsChecking(true)
     try {
       const response = await fileReconciliationService.healthCheck()
-      setIsHealthy(!response.error)
+      setIsHealthy(response.success && !response.error)
       setLastChecked(new Date())
     } catch (error) {
       setIsHealthy(false)

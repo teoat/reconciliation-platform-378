@@ -1,15 +1,16 @@
-import React, { useEffect, useRef, useMemo } from 'react'
-import { X } from 'lucide-react'
+import React, { useEffect, useRef, useMemo } from 'react';
+import { X } from 'lucide-react';
+import { memo } from 'react';
 
 export interface ModalProps {
-  isOpen: boolean
-  onClose: () => void
-  title?: string
-  children: React.ReactNode
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
-  showCloseButton?: boolean
-  closeOnOverlayClick?: boolean
-  closeOnEscape?: boolean
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  children: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full';
+  showCloseButton?: boolean;
+  closeOnOverlayClick?: boolean;
+  closeOnEscape?: boolean;
 }
 
 const Modal: React.FC<ModalProps> = ({
@@ -20,84 +21,88 @@ const Modal: React.FC<ModalProps> = ({
   size = 'md',
   showCloseButton = true,
   closeOnOverlayClick = true,
-  closeOnEscape = true
+  closeOnEscape = true,
 }) => {
-  const modalRef = useRef<HTMLDivElement>(null)
-  const previousFocusRef = useRef<HTMLElement | null>(null)
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Focus trap
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) return;
 
     // Save currently focused element
-    previousFocusRef.current = document.activeElement as HTMLElement
+    previousFocusRef.current = document.activeElement as HTMLElement;
 
     // Focus modal
     const focusableElements = modalRef.current?.querySelectorAll<HTMLElement>(
       'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-    )
-    
+    );
+
     if (focusableElements && focusableElements.length > 0) {
-      focusableElements[0].focus()
+      focusableElements[0].focus();
     }
 
     return () => {
-      previousFocusRef.current?.focus()
-    }
-  }, [isOpen])
+      previousFocusRef.current?.focus();
+    };
+  }, [isOpen]);
 
   // Keyboard navigation
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const focusableElements = modalRef.current?.querySelectorAll<HTMLElement>(
         'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-      )
+      );
 
-      if (!focusableElements || focusableElements.length === 0) return
+      if (!focusableElements || focusableElements.length === 0) return;
 
-      const firstElement = focusableElements[0]
-      const lastElement = focusableElements[focusableElements.length - 1]
+      const firstElement = focusableElements[0];
+      const lastElement = focusableElements[focusableElements.length - 1];
 
       if (e.key === 'Tab') {
         if (e.shiftKey && document.activeElement === firstElement) {
-          e.preventDefault()
-          lastElement?.focus()
+          e.preventDefault();
+          lastElement?.focus();
         } else if (!e.shiftKey && document.activeElement === lastElement) {
-          e.preventDefault()
-          firstElement?.focus()
+          e.preventDefault();
+          firstElement?.focus();
         }
       }
 
-      if (e.key === 'Escape') {
-        onClose()
+      if (e.key === 'Escape' && closeOnEscape) {
+        onClose();
       }
-    }
+    };
 
-    document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-      previousFocusRef.current?.focus()
-    }
-  }, [isOpen, onClose])
+      document.removeEventListener('keydown', handleKeyDown);
+      previousFocusRef.current?.focus();
+    };
+  }, [isOpen, onClose]);
 
   // Memoize size classes
-  const sizeClasses = useMemo(() => ({
-    sm: 'max-w-md',
-    md: 'max-w-lg',
-    lg: 'max-w-2xl',
-    xl: 'max-w-4xl',
-    full: 'max-w-full mx-4'
-  }), [])
-  
-  const modalClasses = useMemo(() => 
-    `inline-block w-full ${sizeClasses[size]} p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg`,
-    [size, sizeClasses]
-  )
+  const sizeClasses = useMemo(
+    () => ({
+      sm: 'max-w-md',
+      md: 'max-w-lg',
+      lg: 'max-w-2xl',
+      xl: 'max-w-4xl',
+      full: 'max-w-full mx-4',
+    }),
+    []
+  );
 
-  if (!isOpen) return null
+  const modalClasses = useMemo(
+    () =>
+      `inline-block w-full ${sizeClasses[size]} p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg`,
+    [size, sizeClasses]
+  );
+
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -116,7 +121,15 @@ const Modal: React.FC<ModalProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby={title ? 'modal-title' : undefined}
+          aria-describedby={children ? 'modal-description' : undefined}
           onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
+            // Enhanced keyboard navigation
+            if (e.key === 'Escape' && closeOnEscape) {
+              onClose();
+            }
+            // Tab trapping is handled in useEffect above
+          }}
         >
           {/* Header */}
           {(title || showCloseButton) && (
@@ -140,12 +153,14 @@ const Modal: React.FC<ModalProps> = ({
           )}
 
           {/* Content */}
-          <div className="mt-2">{children}</div>
+          <div id="modal-description" className="mt-2">
+            {children}
+          </div>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 export { Modal };
-export default Modal
+export default memo(Modal);

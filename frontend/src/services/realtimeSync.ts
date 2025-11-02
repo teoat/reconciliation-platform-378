@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { logger } from '@/services/logger'
 import { useWebSocketContext } from './WebSocketProvider'
 
 export interface SyncConfig {
@@ -315,7 +316,7 @@ export const useRealtimeCollaboration = (roomId: string) => {
 
     const cursorSubscriptionId = subscribe('cursor-update', (data) => {
       // Handle cursor updates
-      console.log('Cursor update:', data)
+      logger.log('Cursor update:', data)
     })
 
     return () => {

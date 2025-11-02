@@ -84,6 +84,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? 'sidebar-title' : undefined}
+        aria-describedby={children ? 'sidebar-description' : undefined}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -96,14 +97,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 onClick={onClose}
                 className="p-2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md"
                 aria-label="Close sidebar"
+                aria-expanded={isOpen}
               >
-                <X className="h-5 w-5" />
+                <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
           )}
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div id="sidebar-description" className="flex-1 overflow-y-auto p-4">
             {children}
           </div>
         </div>
@@ -129,7 +131,7 @@ export const SidebarTrigger: React.FC<SidebarTriggerProps> = ({
       className={`p-2 text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-md ${className}`}
       aria-label="Open sidebar"
     >
-      {children || <Menu className="h-5 w-5" />}
+      {children || <Menu className="h-5 w-5" aria-hidden="true" />}
     </button>
   )
 }

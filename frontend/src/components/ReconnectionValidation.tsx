@@ -2,7 +2,12 @@
 // Displays validation results and handles reconnection issues
 
 import React from 'react'
-import { AlertTriangle, RefreshCw, CheckCircle, XCircle, Wifi, WifiOff } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { XCircle } from 'lucide-react'
+import { Wifi } from 'lucide-react'
+import { WifiOff } from 'lucide-react'
 import { DataValidationResult, DataInconsistency } from '../services/reconnectionValidationService'
 
 interface ReconnectionValidationProps {

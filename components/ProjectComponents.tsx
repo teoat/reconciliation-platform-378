@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { 
-  FolderOpen, 
-  Calendar, 
-  User, 
-  ArrowRight, 
-  Trash2, 
-  Edit, 
+import { useState } from 'react';
+import {
+  FolderOpen,
+  Calendar,
+  User,
+  ArrowRight,
+  Trash2,
+  Edit,
   Archive,
   Copy,
   Share2,
@@ -110,24 +110,29 @@ import {
   SortDesc,
   Grid,
   List,
-  Table
-} from 'lucide-react'
-import { EnhancedProject, ProjectTemplate, ProjectAnalytics, ProjectFilters } from '../types/project'
+  Table,
+} from 'lucide-react';
+import {
+  EnhancedProject,
+  ProjectTemplate,
+  ProjectAnalytics,
+  ProjectFilters,
+} from '../types/project';
 
 // Enhanced Project Card Component
 interface ProjectCardProps {
-  project: EnhancedProject
-  isSelected: boolean
-  onSelect: () => void
-  onToggleSelection: () => void
-  onEdit: () => void
-  onDelete: () => void
-  onArchive: () => void
-  onClone: () => void
-  getStatusColor: (status: string) => string
-  getPriorityColor: (priority: string) => string
-  getCategoryIcon: (category: string) => string
-  getAlertIcon: (type: string) => React.ReactNode
+  project: EnhancedProject;
+  isSelected: boolean;
+  onSelect: () => void;
+  onToggleSelection: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onArchive: () => void;
+  onClone: () => void;
+  getStatusColor: (status: string) => string;
+  getPriorityColor: (priority: string) => string;
+  getCategoryIcon: (category: string) => string;
+  getAlertIcon: (type: string) => React.ReactNode;
 }
 
 export const ProjectCard: React.FC<ProjectCardProps> = ({
@@ -142,9 +147,9 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
   getStatusColor,
   getPriorityColor,
   getCategoryIcon,
-  getAlertIcon
+  getAlertIcon,
 }) => {
-  const [showActions, setShowActions] = useState(false)
+  const [showActions, setShowActions] = useState(false);
 
   return (
     <div
@@ -165,20 +170,22 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
             <span className="text-lg">{getCategoryIcon(project.category)}</span>
           </div>
           <div>
-            <h3 className="font-semibold text-secondary-900 mb-1 line-clamp-1">
-              {project.name}
-            </h3>
+            <h3 className="font-semibold text-secondary-900 mb-1 line-clamp-1">{project.name}</h3>
             <div className="flex items-center space-x-2">
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+              <span
+                className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}
+              >
                 {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
               </span>
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(project.priority)}`}>
+              <span
+                className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(project.priority)}`}
+              >
                 {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
               </span>
             </div>
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-1">
           {project.alerts.length > 0 && (
             <div className="flex items-center space-x-1">
@@ -189,7 +196,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
               ))}
             </div>
           )}
-          
+
           <div className="relative">
             <button
               onClick={() => setShowActions(!showActions)}
@@ -197,14 +204,14 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
             >
               <MoreVertical className="w-4 h-4" />
             </button>
-            
+
             {showActions && (
               <div className="absolute right-0 top-8 bg-white border border-secondary-200 rounded-lg shadow-lg z-10 min-w-48">
                 <div className="py-1">
                   <button
                     onClick={() => {
-                      onEdit()
-                      setShowActions(false)
+                      onEdit();
+                      setShowActions(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-secondary-700 hover:bg-secondary-50 flex items-center space-x-2"
                   >
@@ -213,8 +220,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                   </button>
                   <button
                     onClick={() => {
-                      onClone()
-                      setShowActions(false)
+                      onClone();
+                      setShowActions(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-secondary-700 hover:bg-secondary-50 flex items-center space-x-2"
                   >
@@ -223,8 +230,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                   </button>
                   <button
                     onClick={() => {
-                      onArchive()
-                      setShowActions(false)
+                      onArchive();
+                      setShowActions(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-secondary-700 hover:bg-secondary-50 flex items-center space-x-2"
                   >
@@ -233,8 +240,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
                   </button>
                   <button
                     onClick={() => {
-                      onDelete()
-                      setShowActions(false)
+                      onDelete();
+                      setShowActions(false);
                     }}
                     className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
                   >
@@ -249,15 +256,15 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
       </div>
 
       {/* Description */}
-      <p className="text-secondary-600 text-sm mb-4 line-clamp-2">
-        {project.description}
-      </p>
+      <p className="text-secondary-600 text-sm mb-4 line-clamp-2">{project.description}</p>
 
       {/* Progress Bar */}
       <div className="mb-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-secondary-700">Progress</span>
-          <span className="text-sm text-secondary-600">{project.progress.completionPercentage}%</span>
+          <span className="text-sm text-secondary-600">
+            {project.progress.completionPercentage}%
+          </span>
         </div>
         <div className="w-full bg-secondary-200 rounded-full h-2">
           <div
@@ -266,7 +273,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           />
         </div>
         <div className="mt-1 text-xs text-secondary-500">
-          {project.progress.currentStep.charAt(0).toUpperCase() + project.progress.currentStep.slice(1)}
+          {project.progress.currentStep.charAt(0).toUpperCase() +
+            project.progress.currentStep.slice(1)}
         </div>
       </div>
 
@@ -328,22 +336,16 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
 
       {/* Actions */}
       <div className="flex space-x-2">
-        <button
-          onClick={onSelect}
-          className="flex-1 btn-primary text-sm"
-        >
+        <button onClick={onSelect} className="flex-1 btn-primary text-sm">
           Open Project
         </button>
-        <button
-          onClick={() => setShowActions(!showActions)}
-          className="btn-secondary p-2"
-        >
+        <button onClick={() => setShowActions(!showActions)} className="btn-secondary p-2">
           <MoreVertical className="w-4 h-4" />
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
 // Project List Item Component
 interface ProjectListItemProps extends ProjectCardProps {}
@@ -360,7 +362,7 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
   getStatusColor,
   getPriorityColor,
   getCategoryIcon,
-  getAlertIcon
+  getAlertIcon,
 }) => {
   return (
     <div
@@ -376,50 +378,48 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
             onChange={onToggleSelection}
             className="rounded border-secondary-300"
           />
-          
+
           <div className="p-2 bg-primary-100 rounded-lg">
             <span className="text-lg">{getCategoryIcon(project.category)}</span>
           </div>
-          
+
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-3 mb-2">
-              <h3 className="font-semibold text-secondary-900 truncate">
-                {project.name}
-              </h3>
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+              <h3 className="font-semibold text-secondary-900 truncate">{project.name}</h3>
+              <span
+                className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}
+              >
                 {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
               </span>
-              <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(project.priority)}`}>
+              <span
+                className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(project.priority)}`}
+              >
                 {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
               </span>
             </div>
-            <p className="text-secondary-600 text-sm mb-2 line-clamp-1">
-              {project.description}
-            </p>
+            <p className="text-secondary-600 text-sm mb-2 line-clamp-1">{project.description}</p>
             <div className="flex items-center space-x-4 text-sm text-secondary-500">
               <span>{project.recordCount.toLocaleString()} records</span>
               <span>{project.matchRate.toFixed(1)}% match rate</span>
               <span>{project.department || 'No department'}</span>
             </div>
           </div>
-          
+
           <div className="flex items-center space-x-4">
             <div className="text-right">
               <div className="text-sm font-medium text-secondary-900">
                 {project.progress.completionPercentage}%
               </div>
-              <div className="text-xs text-secondary-500">
-                {project.progress.currentStep}
-              </div>
+              <div className="text-xs text-secondary-500">{project.progress.currentStep}</div>
             </div>
-            
+
             <div className="w-16 bg-secondary-200 rounded-full h-2">
               <div
                 className="bg-primary-600 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${project.progress.completionPercentage}%` }}
               />
             </div>
-            
+
             {project.alerts.length > 0 && (
               <div className="flex items-center space-x-1">
                 {project.alerts.map((alert, index) => (
@@ -431,43 +431,28 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
             )}
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2 ml-4">
-          <button
-            onClick={onSelect}
-            className="btn-primary text-sm"
-          >
+          <button onClick={onSelect} className="btn-primary text-sm">
             Open
           </button>
-          <button
-            onClick={onEdit}
-            className="btn-secondary p-2"
-          >
+          <button onClick={onEdit} className="btn-secondary p-2">
             <Edit className="w-4 h-4" />
           </button>
-          <button
-            onClick={onClone}
-            className="btn-secondary p-2"
-          >
+          <button onClick={onClone} className="btn-secondary p-2">
             <Copy className="w-4 h-4" />
           </button>
-          <button
-            onClick={onArchive}
-            className="btn-secondary p-2"
-          >
+          <button onClick={onArchive} className="btn-secondary p-2">
             <Archive className="w-4 h-4" />
           </button>
-          <button
-            onClick={onDelete}
-            className="btn-secondary p-2 text-red-600 hover:text-red-700"
-          >
+          <button onClick={onDelete} className="btn-secondary p-2 text-red-600 hover:text-red-700">
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 // Project Table Row Component
 interface ProjectTableRowProps extends ProjectCardProps {}
@@ -484,7 +469,7 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
   getStatusColor,
   getPriorityColor,
   getCategoryIcon,
-  getAlertIcon
+  getAlertIcon,
 }) => {
   return (
     <tr className="border-b border-secondary-100 hover:bg-secondary-50">
@@ -496,7 +481,7 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
           className="rounded border-secondary-300"
         />
       </td>
-      
+
       <td className="py-4 px-4">
         <div className="flex items-center space-x-3">
           <span className="text-lg">{getCategoryIcon(project.category)}</span>
@@ -506,13 +491,15 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
           </div>
         </div>
       </td>
-      
+
       <td className="py-4 px-4">
-        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}>
+        <span
+          className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(project.status)}`}
+        >
           {project.status.charAt(0).toUpperCase() + project.status.slice(1)}
         </span>
       </td>
-      
+
       <td className="py-4 px-4">
         <div className="flex items-center space-x-2">
           <div className="w-16 bg-secondary-200 rounded-full h-2">
@@ -521,20 +508,24 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
               style={{ width: `${project.progress.completionPercentage}%` }}
             />
           </div>
-          <span className="text-sm text-secondary-600">{project.progress.completionPercentage}%</span>
+          <span className="text-sm text-secondary-600">
+            {project.progress.completionPercentage}%
+          </span>
         </div>
       </td>
-      
+
       <td className="py-4 px-4">
-        <span className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(project.priority)}`}>
+        <span
+          className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(project.priority)}`}
+        >
           {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
         </span>
       </td>
-      
+
       <td className="py-4 px-4">
         <span className="text-sm text-secondary-600">{project.department || 'N/A'}</span>
       </td>
-      
+
       <td className="py-4 px-4">
         <div className="text-sm">
           <div className="text-secondary-900">{project.lastActivity.user}</div>
@@ -544,7 +535,7 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
           </div>
         </div>
       </td>
-      
+
       <td className="py-4 px-4">
         <div className="flex items-center space-x-1">
           <button
@@ -580,22 +571,22 @@ export const ProjectTableRow: React.FC<ProjectTableRowProps> = ({
         </div>
       </td>
     </tr>
-  )
-}
+  );
+};
 
 // Project Form Modal Component
 interface ProjectFormModalProps {
-  project?: EnhancedProject | null
-  templates: ProjectTemplate[]
-  onSave: () => void
-  onClose: () => void
+  project?: EnhancedProject | null;
+  templates: ProjectTemplate[];
+  onSave: () => void;
+  onClose: () => void;
 }
 
 export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
   project,
   templates,
   onSave,
-  onClose
+  onClose,
 }) => {
   const [formData, setFormData] = useState({
     name: project?.name || '',
@@ -609,27 +600,27 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
     complianceRequirements: project?.complianceRequirements || [],
     template: project?.template || null,
     estimatedDuration: project?.estimatedDuration || '',
-    budget: project?.budget || 0
-  })
+    budget: project?.budget || 0,
+  });
 
-  const [newTag, setNewTag] = useState('')
+  const [newTag, setNewTag] = useState('');
 
   const addTag = () => {
     if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        tags: [...prev.tags, newTag.trim()]
-      }))
-      setNewTag('')
+        tags: [...prev.tags, newTag.trim()],
+      }));
+      setNewTag('');
     }
-  }
+  };
 
   const removeTag = (tagToRemove: string) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      tags: prev.tags.filter(tag => tag !== tagToRemove)
-    }))
-  }
+      tags: prev.tags.filter((tag) => tag !== tagToRemove),
+    }));
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -638,14 +629,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           <h2 className="text-xl font-semibold text-secondary-900">
             {project ? 'Edit Project' : 'Create New Project'}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-secondary-400 hover:text-secondary-600"
-          >
+          <button onClick={onClose} className="text-secondary-400 hover:text-secondary-600">
             <X className="w-6 h-6" />
           </button>
         </div>
-        
+
         <div className="p-6 space-y-6">
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -656,19 +644,19 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               <input
                 type="text"
                 value={formData.name}
-                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                 placeholder="Enter project name"
                 className="input-field"
               />
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
-                Category
-              </label>
+              <label className="block text-sm font-medium text-secondary-700 mb-2">Category</label>
               <select
                 value={formData.category}
-                onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, category: e.target.value as any }))
+                }
                 className="input-field"
               >
                 <option value="financial">Financial</option>
@@ -680,29 +668,27 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               </select>
             </div>
           </div>
-          
+
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
-              Description
-            </label>
+            <label className="block text-sm font-medium text-secondary-700 mb-2">Description</label>
             <textarea
               value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+              onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
               placeholder="Enter project description"
               className="input-field"
               rows={3}
             />
           </div>
-          
+
           {/* Status and Priority */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
-                Status
-              </label>
+              <label className="block text-sm font-medium text-secondary-700 mb-2">Status</label>
               <select
                 value={formData.status}
-                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value as any }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, status: e.target.value as any }))
+                }
                 className="input-field"
               >
                 <option value="draft">Draft</option>
@@ -710,14 +696,14 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 <option value="completed">Completed</option>
               </select>
             </div>
-            
+
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
-                Priority
-              </label>
+              <label className="block text-sm font-medium text-secondary-700 mb-2">Priority</label>
               <select
                 value={formData.priority}
-                onChange={(e) => setFormData(prev => ({ ...prev, priority: e.target.value as any }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, priority: e.target.value as any }))
+                }
                 className="input-field"
               >
                 <option value="low">Low</option>
@@ -727,7 +713,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               </select>
             </div>
           </div>
-          
+
           {/* Department and Fiscal Period */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -737,12 +723,12 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               <input
                 type="text"
                 value={formData.department}
-                onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, department: e.target.value }))}
                 placeholder="Enter department"
                 className="input-field"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-secondary-700 mb-2">
                 Fiscal Period
@@ -750,18 +736,16 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               <input
                 type="text"
                 value={formData.fiscalPeriod}
-                onChange={(e) => setFormData(prev => ({ ...prev, fiscalPeriod: e.target.value }))}
+                onChange={(e) => setFormData((prev) => ({ ...prev, fiscalPeriod: e.target.value }))}
                 placeholder="e.g., Q4 2023"
                 className="input-field"
               />
             </div>
           </div>
-          
+
           {/* Tags */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
-              Tags
-            </label>
+            <label className="block text-sm font-medium text-secondary-700 mb-2">Tags</label>
             <div className="flex flex-wrap gap-2 mb-2">
               {formData.tags.map((tag, index) => (
                 <span
@@ -787,15 +771,12 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 className="input-field flex-1"
                 onKeyPress={(e) => e.key === 'Enter' && addTag()}
               />
-              <button
-                onClick={addTag}
-                className="btn-secondary"
-              >
+              <button onClick={addTag} className="btn-secondary">
                 Add
               </button>
             </div>
           </div>
-          
+
           {/* Template Selection */}
           <div>
             <label className="block text-sm font-medium text-secondary-700 mb-2">
@@ -804,20 +785,20 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             <select
               value={formData.template?.id || ''}
               onChange={(e) => {
-                const template = templates.find(t => t.id === e.target.value)
-                setFormData(prev => ({ ...prev, template: template || null }))
+                const template = templates.find((t) => t.id === e.target.value);
+                setFormData((prev) => ({ ...prev, template: template || null }));
               }}
               className="input-field"
             >
               <option value="">No Template</option>
-              {templates.map(template => (
+              {templates.map((template) => (
                 <option key={template.id} value={template.id}>
                   {template.name} - {template.description}
                 </option>
               ))}
             </select>
           </div>
-          
+
           {/* Budget and Duration */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -827,12 +808,14 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               <input
                 type="text"
                 value={formData.estimatedDuration}
-                onChange={(e) => setFormData(prev => ({ ...prev, estimatedDuration: e.target.value }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, estimatedDuration: e.target.value }))
+                }
                 placeholder="e.g., 3 days"
                 className="input-field"
               />
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium text-secondary-700 mb-2">
                 Budget ($)
@@ -840,19 +823,18 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               <input
                 type="number"
                 value={formData.budget}
-                onChange={(e) => setFormData(prev => ({ ...prev, budget: parseFloat(e.target.value) || 0 }))}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, budget: parseFloat(e.target.value) || 0 }))
+                }
                 placeholder="0"
                 className="input-field"
               />
             </div>
           </div>
         </div>
-        
+
         <div className="flex justify-end space-x-2 p-6 border-t border-secondary-200">
-          <button
-            onClick={onClose}
-            className="btn-secondary"
-          >
+          <button onClick={onClose} className="btn-secondary">
             Cancel
           </button>
           <button
@@ -865,39 +847,30 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 // Template Modal Component
 interface TemplateModalProps {
-  templates: ProjectTemplate[]
-  onSelect: (template: ProjectTemplate) => void
-  onClose: () => void
+  templates: ProjectTemplate[];
+  onSelect: (template: ProjectTemplate) => void;
+  onClose: () => void;
 }
 
-export const TemplateModal: React.FC<TemplateModalProps> = ({
-  templates,
-  onSelect,
-  onClose
-}) => {
+export const TemplateModal: React.FC<TemplateModalProps> = ({ templates, onSelect, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-secondary-200">
-          <h2 className="text-xl font-semibold text-secondary-900">
-            Choose Project Template
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-secondary-400 hover:text-secondary-600"
-          >
+          <h2 className="text-xl font-semibold text-secondary-900">Choose Project Template</h2>
+          <button onClick={onClose} className="text-secondary-400 hover:text-secondary-600">
             <X className="w-6 h-6" />
           </button>
         </div>
-        
+
         <div className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {templates.map(template => (
+            {templates.map((template) => (
               <div
                 key={template.id}
                 className="card hover:shadow-lg transition-shadow cursor-pointer"
@@ -909,14 +882,16 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
                   </div>
                   <div>
                     <h3 className="font-semibold text-secondary-900">{template.name}</h3>
-                    <span className={`px-2 py-1 text-xs font-medium rounded-full bg-${template.color}-100 text-${template.color}-800`}>
+                    <span
+                      className={`px-2 py-1 text-xs font-medium rounded-full bg-${template.color}-100 text-${template.color}-800`}
+                    >
                       {template.complexity}
                     </span>
                   </div>
                 </div>
-                
+
                 <p className="text-secondary-600 text-sm mb-4">{template.description}</p>
-                
+
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center space-x-2">
                     <Clock className="w-4 h-4 text-secondary-400" />
@@ -933,36 +908,27 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 // Analytics Modal Component
 interface AnalyticsModalProps {
-  analytics: ProjectAnalytics
-  projects: EnhancedProject[]
-  onClose: () => void
+  analytics: ProjectAnalytics;
+  projects: EnhancedProject[];
+  onClose: () => void;
 }
 
-export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
-  analytics,
-  projects,
-  onClose
-}) => {
+export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ analytics, projects, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-secondary-200">
-          <h2 className="text-xl font-semibold text-secondary-900">
-            Project Analytics Dashboard
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-secondary-400 hover:text-secondary-600"
-          >
+          <h2 className="text-xl font-semibold text-secondary-900">Project Analytics Dashboard</h2>
+          <button onClick={onClose} className="text-secondary-400 hover:text-secondary-600">
             <X className="w-6 h-6" />
           </button>
         </div>
-        
+
         <div className="p-6 space-y-6">
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -975,7 +941,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
                 <FolderOpen className="w-8 h-8 text-primary-600" />
               </div>
             </div>
-            
+
             <div className="card">
               <div className="flex items-center justify-between">
                 <div>
@@ -985,7 +951,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
                 <Activity className="w-8 h-8 text-green-500" />
               </div>
             </div>
-            
+
             <div className="card">
               <div className="flex items-center justify-between">
                 <div>
@@ -995,7 +961,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
                 <CheckCircle className="w-8 h-8 text-blue-500" />
               </div>
             </div>
-            
+
             <div className="card">
               <div className="flex items-center justify-between">
                 <div>
@@ -1006,7 +972,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
               </div>
             </div>
           </div>
-          
+
           {/* Category Distribution */}
           <div className="card">
             <h3 className="text-lg font-semibold text-secondary-900 mb-4">Projects by Category</h3>
@@ -1027,13 +993,16 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
               ))}
             </div>
           </div>
-          
+
           {/* Team Performance */}
           <div className="card">
             <h3 className="text-lg font-semibold text-secondary-900 mb-4">Team Performance</h3>
             <div className="space-y-4">
               {analytics.teamPerformance.map((member, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-secondary-50 rounded-lg">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-secondary-50 rounded-lg"
+                >
                   <div>
                     <div className="font-medium text-secondary-900">{member.user}</div>
                     <div className="text-sm text-secondary-600">
@@ -1053,56 +1022,49 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 // Filters Modal Component
 interface FiltersModalProps {
-  filters: ProjectFilters
-  onFiltersChange: (filters: ProjectFilters) => void
-  onClose: () => void
+  filters: ProjectFilters;
+  onFiltersChange: (filters: ProjectFilters) => void;
+  onClose: () => void;
 }
 
 export const FiltersModal: React.FC<FiltersModalProps> = ({
   filters,
   onFiltersChange,
-  onClose
+  onClose,
 }) => {
-  const updateFilter = (key: keyof ProjectFilters, value: any) => {
-    onFiltersChange({ ...filters, [key]: value })
-  }
+  const updateFilter = (key: keyof ProjectFilters, value: unknown) => {
+    onFiltersChange({ ...filters, [key]: value });
+  };
 
   const toggleArrayFilter = (key: keyof ProjectFilters, value: string) => {
-    const currentArray = filters[key] as string[]
+    const currentArray = filters[key] as string[];
     const newArray = currentArray.includes(value)
-      ? currentArray.filter(item => item !== value)
-      : [...currentArray, value]
-    updateFilter(key, newArray)
-  }
+      ? currentArray.filter((item) => item !== value)
+      : [...currentArray, value];
+    updateFilter(key, newArray);
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-secondary-200">
-          <h2 className="text-xl font-semibold text-secondary-900">
-            Advanced Filters
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-secondary-400 hover:text-secondary-600"
-          >
+          <h2 className="text-xl font-semibold text-secondary-900">Advanced Filters</h2>
+          <button onClick={onClose} className="text-secondary-400 hover:text-secondary-600">
             <X className="w-6 h-6" />
           </button>
         </div>
-        
+
         <div className="p-6 space-y-6">
           {/* Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-3">
-              Status
-            </label>
+            <label className="block text-sm font-medium text-secondary-700 mb-3">Status</label>
             <div className="space-y-2">
-              {(['draft', 'active', 'completed', 'archived'] as const).map(status => (
+              {(['draft', 'active', 'completed', 'archived'] as const).map((status) => (
                 <label key={status} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -1115,14 +1077,12 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
               ))}
             </div>
           </div>
-          
+
           {/* Category Filter */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-3">
-              Category
-            </label>
+            <label className="block text-sm font-medium text-secondary-700 mb-3">Category</label>
             <div className="space-y-2">
-              {['financial', 'inventory', 'customer', 'payment', 'hr', 'custom'].map(category => (
+              {['financial', 'inventory', 'customer', 'payment', 'hr', 'custom'].map((category) => (
                 <label key={category} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -1135,14 +1095,12 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
               ))}
             </div>
           </div>
-          
+
           {/* Priority Filter */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-3">
-              Priority
-            </label>
+            <label className="block text-sm font-medium text-secondary-700 mb-3">Priority</label>
             <div className="space-y-2">
-              {['low', 'medium', 'high', 'urgent'].map(priority => (
+              {['low', 'medium', 'high', 'urgent'].map((priority) => (
                 <label key={priority} className="flex items-center space-x-2">
                   <input
                     type="checkbox"
@@ -1155,19 +1113,19 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
               ))}
             </div>
           </div>
-          
+
           {/* Date Range Filter */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-3">
-              Date Range
-            </label>
+            <label className="block text-sm font-medium text-secondary-700 mb-3">Date Range</label>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs text-secondary-600 mb-1">Start Date</label>
                 <input
                   type="date"
                   value={filters.dateRange.start}
-                  onChange={(e) => updateFilter('dateRange', { ...filters.dateRange, start: e.target.value })}
+                  onChange={(e) =>
+                    updateFilter('dateRange', { ...filters.dateRange, start: e.target.value })
+                  }
                   className="input-field"
                 />
               </div>
@@ -1176,38 +1134,39 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
                 <input
                   type="date"
                   value={filters.dateRange.end}
-                  onChange={(e) => updateFilter('dateRange', { ...filters.dateRange, end: e.target.value })}
+                  onChange={(e) =>
+                    updateFilter('dateRange', { ...filters.dateRange, end: e.target.value })
+                  }
                   className="input-field"
                 />
               </div>
             </div>
           </div>
         </div>
-        
+
         <div className="flex justify-end space-x-2 p-6 border-t border-secondary-200">
           <button
-            onClick={() => onFiltersChange({
-              searchTerm: '',
-              status: [],
-              category: [],
-              tags: [],
-              createdBy: [],
-              dateRange: { start: '', end: '' },
-              priority: [],
-              department: []
-            })}
+            onClick={() =>
+              onFiltersChange({
+                searchTerm: '',
+                status: [],
+                category: [],
+                tags: [],
+                createdBy: [],
+                dateRange: { start: '', end: '' },
+                priority: [],
+                department: [],
+              })
+            }
             className="btn-secondary"
           >
             Clear All
           </button>
-          <button
-            onClick={onClose}
-            className="btn-primary"
-          >
+          <button onClick={onClose} className="btn-primary">
             Apply Filters
           </button>
         </div>
       </div>
     </div>
-  )
-}
+  );
+};

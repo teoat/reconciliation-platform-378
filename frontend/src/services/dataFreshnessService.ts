@@ -1,4 +1,5 @@
 // Data Freshness Indicators + Automatic Refresh Service
+import { logger } from '@/services/logger'
 // Handles stale data display after reconnection with freshness indicators
 
 export interface DataFreshness {
@@ -50,7 +51,7 @@ export interface DataSource {
   endpoint: string
   method: 'GET' | 'POST' | 'PUT' | 'DELETE'
   headers?: Record<string, string>
-  params?: Record<string, any>
+  params?: Record<string, unknown>
   ttl: number
   refreshStrategy: RefreshStrategy
 }
@@ -116,7 +117,7 @@ class DataFreshnessService {
         })
       }
     } catch (error) {
-      console.error('Failed to load persisted freshness data:', error)
+      logger.error('Failed to load persisted freshness data:', error)
     }
   }
 
@@ -127,7 +128,7 @@ class DataFreshnessService {
       }
       localStorage.setItem('data_freshness', JSON.stringify(data))
     } catch (error) {
-      console.error('Failed to save freshness data:', error)
+      logger.error('Failed to save freshness data:', error)
     }
   }
 
@@ -158,7 +159,7 @@ class DataFreshnessService {
       source?: DataFreshness['source']
       userId?: string
       projectId?: string
-      metadata?: Record<string, any>
+      metadata?: Record<string, unknown>
     } = {}
   ): DataFreshness {
     const freshnessId = this.generateFreshnessId(dataType, dataId)
@@ -196,7 +197,7 @@ class DataFreshnessService {
     options: {
       source?: DataFreshness['source']
       userId?: string
-      metadata?: Record<string, any>
+      metadata?: Record<string, unknown>
     } = {}
   ): DataFreshness | null {
     const freshnessId = this.generateFreshnessId(dataType, dataId)

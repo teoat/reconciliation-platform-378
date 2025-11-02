@@ -2,7 +2,11 @@
 // UNIFIED STATE MANAGEMENT - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
-import { configureStore, createSlice, createAsyncThunk, PayloadAction, combineReducers } from '@reduxjs/toolkit'
+import { configureStore } from '@reduxjs/toolkit'
+import { createSlice } from '@reduxjs/toolkit'
+import { createAsyncThunk } from '@reduxjs/toolkit'
+import { PayloadAction } from '@reduxjs/toolkit'
+import { combineReducers } from '@reduxjs/toolkit'
 // Removed redux-persist for now - not in dependencies
 // import { persistStore, persistReducer } from 'redux-persist'
 // import storage from 'redux-persist/lib/storage'

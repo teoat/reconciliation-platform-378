@@ -5,11 +5,10 @@ use diesel::{RunQueryDsl, QueryDsl, ExpressionMethods, OptionalExtension};
 use uuid::Uuid;
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
+use crate::utils::string::levenshtein_distance;
 
-use crate::models::{
-    DataSource,
-    schema::data_sources,
-};
+use crate::models::DataSource;
+use crate::models::schema::projects::data_sources;
 
 /// Extract records from data sources
 /// Single responsibility: Data extraction only
@@ -31,9 +30,11 @@ impl RecordExtractor {
         match data_source {
             Some(ds) => {
                 // Parse data from file or database
-                let records: Vec<serde_json::Value> = serde_json::from_str(
-                    &ds.file_path.clone().unwrap_or_default()
-                ).unwrap_or_default();
+                let file_path = ds.file_path.clone()
+                    .ok_or_else(|| AppError::Validation("Data source file path is missing".to_string()))?;
+                
+                let records: Vec<serde_json::Value> = serde_json::from_str(&file_path)
+                    .map_err(|e| AppError::Validation(format!("Failed to parse data source file: {}", e)))?;
                 
                 Ok(records)
             }
@@ -88,7 +89,7 @@ impl ConfidenceCalculator {
         }
         
         // Simple Levenshtein-based similarity
-        let distance = crate::utils::levenshtein_distance(a, b);
+        let distance = levenshtein_distance(a, b);
         1.0 - (distance as f64 / longer as f64)
     }
 }

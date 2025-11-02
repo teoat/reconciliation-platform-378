@@ -1,4 +1,5 @@
 // Atomic Workflow State Updates Service
+import { logger } from '@/services/logger'
 // Handles multiple users advancing workflow simultaneously with atomic operations
 
 export interface WorkflowState {
@@ -27,7 +28,7 @@ export interface WorkflowTransition {
   triggeredBy: string
   triggeredAt: Date
   data: any
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 }
 
 export interface WorkflowLock {
@@ -37,7 +38,7 @@ export interface WorkflowLock {
   lockedAt: Date
   expiresAt: Date
   lockType: 'exclusive' | 'shared' | 'read_only'
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 }
 
 export interface AtomicOperation {
@@ -155,7 +156,7 @@ class AtomicWorkflowService {
         })
       }
     } catch (error) {
-      console.error('Failed to load persisted data:', error)
+      logger.error('Failed to load persisted data:', error)
     }
   }
 
@@ -173,7 +174,7 @@ class AtomicWorkflowService {
       }
       localStorage.setItem('atomic_operations', JSON.stringify(operationsData))
     } catch (error) {
-      console.error('Failed to save persisted data:', error)
+      logger.error('Failed to save persisted data:', error)
     }
   }
 
@@ -396,7 +397,7 @@ class AtomicWorkflowService {
       this.emit('operationRolledBack', operation)
 
     } catch (error) {
-      console.error('Rollback failed:', error)
+      logger.error('Rollback failed:', error)
     }
   }
 

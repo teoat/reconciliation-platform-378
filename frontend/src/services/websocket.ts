@@ -1,5 +1,6 @@
 import { io, Socket } from 'socket.io-client'
 import React from 'react'
+import { logger } from './logger'
 
 export interface WebSocketConfig {
   url: string
@@ -17,14 +18,14 @@ export interface WebSocketConfig {
 
 export interface WebSocketEvent {
   type: string
-  data: any
+  data: unknown
   timestamp: Date
   id: string
 }
 
 export interface WebSocketMessage {
   event: string
-  data: any
+  data: unknown
   id?: string
   timestamp?: Date
 }
@@ -40,16 +41,16 @@ export interface WebSocketStatus {
 
 export interface WebSocketSubscription {
   event: string
-  handler: (data: any) => void
+  handler: (data: unknown) => void
   id: string
 }
 
-class WebSocketClient {
+export class WebSocketClient {
   private socket: Socket | null = null
   private config: WebSocketConfig
   private status: WebSocketStatus
   private subscriptions: Map<string, WebSocketSubscription[]> = new Map()
-  private eventHandlers: Map<string, (data: any) => void> = new Map()
+  private eventHandlers: Map<string, (data: unknown) => void> = new Map()
   private reconnectTimer: NodeJS.Timeout | null = null
   private heartbeatInterval: NodeJS.Timeout | null = null
   private isDestroyed = false
@@ -82,7 +83,14 @@ class WebSocketClient {
   }
 
   // Connection management
-  connect(): Promise<void> {
+  connect(token?: string): Promise<void> {
+    if (token) {
+      this.updateAuthToken(token)
+    }
+    return this._connect()
+  }
+
+  private _connect(): Promise<void> {
     return new Promise((resolve, reject) => {
       if (this.socket?.connected) {
         resolve()
@@ -163,7 +171,7 @@ class WebSocketClient {
   }
 
   // Event subscription
-  subscribe(event: string, handler: (data: any) => void): string {
+  subscribe(event: string, handler: (data: unknown) => void): string {
     const subscriptionId = Math.random().toString(36).substr(2, 9)
     
     if (!this.subscriptions.has(event)) {
@@ -201,21 +209,46 @@ class WebSocketClient {
   }
 
   // Event emission
-  emit(event: string, data?: any): void {
+  emit(event: string, data?: unknown): void {
     if (this.socket?.connected) {
       this.socket.emit(event, data)
     } else {
-      console.warn(`Cannot emit event '${event}': WebSocket not connected`)
+      logger.warn(`Cannot emit event '${event}': WebSocket not connected`)
     }
   }
 
   // Message handling
-  send(message: WebSocketMessage): void {
+  send(type: string, data: unknown): void {
+    if (this.socket?.connected) {
+      this.socket.emit(type, data)
+    } else {
+      logger.warn(`Cannot send message '${type}': WebSocket not connected`)
+    }
+  }
+
+  sendMessage(message: WebSocketMessage): void {
     if (this.socket?.connected) {
       this.socket.emit('message', {
         ...message,
         timestamp: new Date()
       })
+    }
+  }
+
+  // Event listeners
+  on(eventType: string, handler: (...args: unknown[]) => void): void {
+    if (this.socket) {
+      this.socket.on(eventType, handler)
+    }
+  }
+
+  off(eventType: string, handler?: (...args: unknown[]) => void): void {
+    if (this.socket) {
+      if (handler) {
+        this.socket.off(eventType, handler)
+      } else {
+        this.socket.off(eventType)
+      }
     }
   }
 
@@ -362,7 +395,7 @@ class WebSocketClient {
   }
 
   // Batch operations
-  batchEmit(events: Array<{ event: string; data?: any }>): void {
+  batchEmit(events: Array<{ event: string; data?: unknown }>): void {
     if (this.isConnected()) {
       this.emit('batch', events)
     }
@@ -406,8 +439,8 @@ export const useWebSocket = (config: WebSocketConfig) => {
     status,
     connect: () => client.connect(),
     disconnect: () => client.disconnect(),
-    emit: (event: string, data?: any) => client.emit(event, data),
-    subscribe: (event: string, handler: (data: any) => void) => client.subscribe(event, handler),
+    emit: (event: string, data?: unknown) => client.emit(event, data),
+    subscribe: (event: string, handler: (data: unknown) => void) => client.subscribe(event, handler),
     unsubscribe: (event: string, subscriptionId: string) => client.unsubscribe(event, subscriptionId),
     isConnected: () => client.isConnected(),
     waitForConnection: (timeout?: number) => client.waitForConnection(timeout)

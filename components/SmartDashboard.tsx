@@ -1,61 +1,78 @@
-'use client'
+'use client';
 
-import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Clock, Users, Target, AlertCircle, CheckCircle, BarChart3, PieChart } from 'lucide-react'
-import { apiClient } from '../services/apiClient'
+import { useState, useEffect } from 'react';
+import {
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  Users,
+  Target,
+  AlertCircle,
+  CheckCircle,
+  BarChart3,
+  PieChart,
+} from 'lucide-react';
+import { apiClient } from '../services/apiClient';
+
+interface Project {
+  id: string;
+  name: string;
+  description?: string;
+  status: string;
+}
 
 interface SmartDashboardProps {
-  project?: any
+  project?: Project;
 }
 
 interface DashboardData {
   user_metrics: {
-    user_id: string
-    overall_score: number
-    project_completion_rate: number
-    average_task_time: number
-    productivity_trend: string
-    recommendations: string[]
-  }
+    user_id: string;
+    overall_score: number;
+    project_completion_rate: number;
+    average_task_time: number;
+    productivity_trend: string;
+    recommendations: string[];
+  };
   prioritized_projects: Array<{
-    id: string
-    name: string
-    description?: string
-    status: string
-    priority_score: number
-    productivity_impact: number
-    estimated_completion?: string
-    smart_recommendations: string[]
-  }>
-  smart_insights: string[]
-  next_actions: string[]
+    id: string;
+    name: string;
+    description?: string;
+    status: string;
+    priority_score: number;
+    productivity_impact: number;
+    estimated_completion?: string;
+    smart_recommendations: string[];
+  }>;
+  smart_insights: string[];
+  next_actions: string[];
 }
 
 const SmartDashboard = ({ project }: SmartDashboardProps) => {
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchDashboardData()
-  }, [])
+    fetchDashboardData();
+  }, []);
 
   const fetchDashboardData = async () => {
     try {
-      setLoading(true)
-      const response = await apiClient.makeRequest<DashboardData>('/dashboard/smart')
-      
+      setLoading(true);
+      const response = await apiClient.makeRequest<DashboardData>('/dashboard/smart');
+
       if (response.error) {
-        setError(response.error.message)
+        setError(response.error.message);
       } else if (response.data) {
-        setDashboardData(response.data)
+        setDashboardData(response.data);
       }
     } catch (err) {
-      setError('Failed to load dashboard data')
+      setError('Failed to load dashboard data');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (loading) {
     return (
@@ -73,7 +90,7 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -84,12 +101,12 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
           <span className="text-red-700">{error}</span>
         </div>
       </div>
-    )
+    );
   }
 
-  if (!dashboardData) return null
+  if (!dashboardData) return null;
 
-  const { user_metrics, prioritized_projects, smart_insights, next_actions } = dashboardData
+  const { user_metrics, prioritized_projects, smart_insights, next_actions } = dashboardData;
 
   return (
     <div className="p-6 space-y-6">
@@ -145,8 +162,8 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
           </div>
           <div className="mt-4">
             <div className="w-full bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-green-500 h-2 rounded-full" 
+              <div
+                className="bg-green-500 h-2 rounded-full"
                 style={{ width: `${user_metrics.project_completion_rate * 100}%` }}
               ></div>
             </div>
@@ -174,9 +191,7 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Active Projects</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {prioritized_projects.length}
-              </p>
+              <p className="text-2xl font-bold text-gray-900">{prioritized_projects.length}</p>
             </div>
             <div className="p-3 bg-purple-100 rounded-full">
               <Users className="w-6 h-6 text-purple-600" />
@@ -201,7 +216,10 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
           <div className="p-6">
             <div className="space-y-4">
               {prioritized_projects.map((project, index) => (
-                <div key={project.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                <div
+                  key={project.id}
+                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                >
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <h3 className="font-medium text-gray-900">{project.name}</h3>
@@ -210,11 +228,15 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
                       )}
                     </div>
                     <div className="flex items-center space-x-2">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        project.status === 'active' ? 'bg-green-100 text-green-800' :
-                        project.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
+                      <span
+                        className={`px-2 py-1 text-xs rounded-full ${
+                          project.status === 'active'
+                            ? 'bg-green-100 text-green-800'
+                            : project.status === 'pending'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-gray-100 text-gray-800'
+                        }`}
+                      >
                         {project.status}
                       </span>
                       <span className="text-sm font-medium text-blue-600">
@@ -222,15 +244,15 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="mt-3">
                     <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
                       <span>Priority Score</span>
                       <span>{Math.round(project.priority_score * 100)}%</span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-blue-500 h-2 rounded-full" 
+                      <div
+                        className="bg-blue-500 h-2 rounded-full"
                         style={{ width: `${project.priority_score * 100}%` }}
                       ></div>
                     </div>
@@ -323,7 +345,7 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default SmartDashboard
+export default SmartDashboard;

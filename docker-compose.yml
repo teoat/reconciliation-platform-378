@@ -15,8 +15,6 @@
 # Status: Production Ready ✅
 # ============================================================================
 
-version: '3.8'
-
 services:
   # ==========================================================================
   # POSTGRESQL DATABASE
@@ -58,57 +56,61 @@ services:
       - reconciliation-network
     restart: unless-stopped
 
-  # ==========================================================================
-  # REDIS CACHE
-  # ==========================================================================
-  redis:
-    image: redis:7-alpine
-    container_name: reconciliation-redis
-    volumes:
-      - redis_data:/data
-      - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    networks:
-      - reconciliation-network
-    restart: unless-stopped
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass}
-    command:
-      - sh
-      - -c
-      - "redis-server /usr/local/etc/redis/redis.conf --requirepass \"$${REDIS_PASSWORD}\""
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
+   # ==========================================================================
+   # REDIS CACHE
+   # ==========================================================================
+   redis:
+     image: redis:7-alpine
+     container_name: reconciliation-redis
+     volumes:
+       - redis_data:/data
+       - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+     ports:
+       - "${REDIS_PORT:-6379}:6379"
+     networks:
+       - reconciliation-network
+     restart: unless-stopped
+     environment:
+       REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass}
+     command:
+       - sh
+       - -c
+       - "redis-server /usr/local/etc/redis/redis.conf --requirepass \"$${REDIS_PASSWORD}\""
+     healthcheck:
+       test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping"]
+       interval: 10s
+       timeout: 3s
+       retries: 5
 
-  # ==========================================================================
-  # BACKEND API (Rust)
-  # ==========================================================================
-  backend:
-    build:
-      context: .
-      dockerfile: infrastructure/docker/Dockerfile.backend.optimized
+   # ==========================================================================
+   # BACKEND API (Rust)
+   # ==========================================================================
+   backend:
+     build:
+       context: .
+       dockerfile: infrastructure/docker/Dockerfile.backend.optimized
     container_name: reconciliation-backend
     environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
-      HOST: 0.0.0.0
-      PORT: 2000
-      BACKEND_PORT: 2000
-      LOG_FORMAT: json
-      CUSTOM_CSP: "default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:2000 ws://localhost:2000 http://localhost:1000 ws://localhost:1000; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
-      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:1000}
-      RUST_LOG: ${RUST_LOG:-info}
-      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
-      UPLOAD_PATH: /app/uploads
+       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
+       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
+       HOST: 0.0.0.0
+       PORT: 2000
+       BACKEND_PORT: 2000
+       LOG_FORMAT: json
+       CUSTOM_CSP: "default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:2000 ws://localhost:2000 http://localhost:1000 ws://localhost:1000; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:1000}
+       RUST_LOG: ${RUST_LOG:-info}
+       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+       UPLOAD_PATH: /app/uploads
+       ELASTIC_APM_SERVER_URL: http://apm-server:8200
+       ELASTIC_APM_SERVICE_NAME: reconciliation-backend
+       ELASTIC_APM_ENVIRONMENT: ${ENVIRONMENT:-development}
     volumes:
       - uploads_data:/app/uploads
       - logs_data:/app/logs
+      - filebeat_data:/var/log/filebeat
     ports:
       - "${BACKEND_PORT:-2000}:2000"
     networks:
@@ -118,6 +120,10 @@ services:
         condition: service_started
       redis:
         condition: service_healthy
+      logstash:
+        condition: service_started
+      apm-server:
+        condition: service_started
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://localhost:2000/ready >/dev/null 2>&1 || exit 1"]
@@ -138,8 +144,13 @@ services:
         VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:2000}
     container_name: reconciliation-frontend
     environment:
-      - NODE_ENV=${NODE_ENV:-production}
-      - DOCKER_BUILDKIT=1
+       - NODE_ENV=${NODE_ENV:-production}
+       - DOCKER_BUILDKIT=1
+       - ELASTIC_APM_SERVER_URL=http://apm-server:8200
+       - ELASTIC_APM_SERVICE_NAME=reconciliation-frontend
+       - ELASTIC_APM_ENVIRONMENT=${ENVIRONMENT:-development}
+    volumes:
+      - filebeat_frontend_data:/var/log/filebeat
     ports:
       - "${FRONTEND_PORT:-1000}:80"
     networks:
@@ -147,6 +158,10 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+      logstash:
+        condition: service_started
+      apm-server:
+        condition: service_started
     restart: unless-stopped
     deploy:
       resources:
@@ -195,6 +210,87 @@ services:
       - prometheus
     restart: unless-stopped
 
+  # ==========================================================================
+  # LOG AGGREGATION: ELASTICSEARCH
+  # ==========================================================================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: reconciliation-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    networks:
+      - reconciliation-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ==========================================================================
+  # LOG AGGREGATION: LOGSTASH
+  # ==========================================================================
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: reconciliation-logstash
+    volumes:
+      - ./logging/logstash/pipeline.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./logging/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    ports:
+      - "${LOGSTASH_PORT:-5044}:5044"
+      - "${LOGSTASH_HTTP_PORT:-9600}:9600"
+    networks:
+      - reconciliation-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+       - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+
+  # ==========================================================================
+  # LOG AGGREGATION: KIBANA
+  # ==========================================================================
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: reconciliation-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_HOST=0.0.0.0
+    ports:
+      - "${KIBANA_PORT:-5601}:5601"
+    networks:
+      - reconciliation-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ==========================================================================
+  # APPLICATION PERFORMANCE MONITORING: ELASTIC APM
+  # ==========================================================================
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:8.11.0
+    container_name: reconciliation-apm-server
+    volumes:
+      - ./infrastructure/apm/apm-server.yml:/usr/share/apm-server/apm-server.yml:ro
+    ports:
+      - "${APM_PORT:-8200}:8200"
+    networks:
+      - reconciliation-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana:
+        condition: service_started
+    restart: unless-stopped
+
 # ============================================================================
 # NETWORKS
 # ============================================================================
@@ -212,3 +308,6 @@ volumes:
   logs_data:
   prometheus_data:
   grafana_data:
+  elasticsearch_data:
+  filebeat_data:
+  filebeat_frontend_data:

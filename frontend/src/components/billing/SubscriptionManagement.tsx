@@ -1,69 +1,83 @@
 // Subscription Management Component
+import { logger } from '@/services/logger';
 // UI for managing subscriptions and viewing usage
 
-import React, { useState, useEffect } from 'react'
-import { Check, CreditCard, AlertTriangle, TrendingUp, Calendar } from 'lucide-react'
-import Card from '../ui/Card'
-import Button from '../ui/Button'
-import StatusBadge from '../ui/StatusBadge'
-import { subscriptionService, Subscription, SubscriptionTier, UsageMetrics } from '../../services/subscriptionService'
-import ProgressBar from '../ui/ProgressBar'
+import React, { useState, useEffect } from 'react';
+import { Check } from 'lucide-react';
+import { CreditCard } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
+import { Calendar } from 'lucide-react';
+import Card from '../ui/Card';
+import Button from '../ui/Button';
+import StatusBadge from '../ui/StatusBadge';
+import {
+  subscriptionService,
+  Subscription,
+  SubscriptionTier,
+  UsageMetrics,
+} from '../../services/subscriptionService';
+import ProgressBar from '../ui/ProgressBar';
 
 export const SubscriptionManagement: React.FC = () => {
-  const [subscription, setSubscription] = useState<Subscription | null>(null)
-  const [usage, setUsage] = useState<UsageMetrics | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [usage, setUsage] = useState<UsageMetrics | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadData()
-  }, [])
+    loadData();
+  }, []);
 
   const loadData = async () => {
-    setLoading(true)
+    setLoading(true);
     try {
       const [sub, usageData] = await Promise.all([
         subscriptionService.loadSubscription(),
-        subscriptionService.loadUsageMetrics()
-      ])
-      setSubscription(sub)
-      setUsage(usageData)
+        subscriptionService.loadUsageMetrics(),
+      ]);
+      setSubscription(sub);
+      setUsage(usageData);
     } catch (error) {
-      console.error('Failed to load subscription data:', error)
+      logger.error('Failed to load subscription data:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const handleUpgrade = async (tier: SubscriptionTier, billingCycle: 'monthly' | 'yearly') => {
     try {
-      const checkoutUrl = await subscriptionService.createCheckoutSession(tier, billingCycle)
-      window.location.href = checkoutUrl
+      const checkoutUrl = await subscriptionService.createCheckoutSession(tier, billingCycle);
+      window.location.href = checkoutUrl;
     } catch (error) {
-      console.error('Failed to create checkout session:', error)
+      logger.error('Failed to create checkout session:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
     }
-  }
+  };
 
   const handleCancel = async () => {
-    if (!subscription) return
-    
+    if (!subscription) return;
+
     const confirmed = window.confirm(
       subscription.cancelAtPeriodEnd
         ? 'Your subscription will remain active until the end of the billing period.'
         : 'Are you sure you want to cancel your subscription immediately?'
-    )
-    
+    );
+
     if (confirmed) {
-      await subscriptionService.cancelSubscription(false)
-      await loadData()
+      await subscriptionService.cancelSubscription(false);
+      await loadData();
     }
-  }
+  };
 
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
-    )
+    );
   }
 
   return (
@@ -82,7 +96,7 @@ export const SubscriptionManagement: React.FC = () => {
         {subscription ? (
           <div className="space-y-4">
             <div className="flex items-center space-x-3">
-              <StatusBadge status={subscription.status} />
+              <StatusBadge status={subscription.status}>{subscription.status}</StatusBadge>
               <span className="text-2xl font-bold text-gray-900">
                 {subscriptionService.getTierFeatures(subscription.tier).name}
               </span>
@@ -95,8 +109,7 @@ export const SubscriptionManagement: React.FC = () => {
                 <span>
                   {subscription.cancelAtPeriodEnd
                     ? `Renews on ${new Date(subscription.endsAt).toLocaleDateString()}`
-                    : `Valid until ${new Date(subscription.endsAt).toLocaleDateString()}`
-                  }
+                    : `Valid until ${new Date(subscription.endsAt).toLocaleDateString()}`}
                 </span>
               </div>
             )}
@@ -111,7 +124,10 @@ export const SubscriptionManagement: React.FC = () => {
         ) : (
           <div className="text-center py-8">
             <p className="text-gray-600 mb-4">No active subscription</p>
-            <Button variant="primary" onClick={() => handleUpgrade(SubscriptionTier.STARTER, 'monthly')}>
+            <Button
+              variant="primary"
+              onClick={() => handleUpgrade(SubscriptionTier.STARTER, 'monthly')}
+            >
               Start Subscription
             </Button>
           </div>
@@ -122,7 +138,7 @@ export const SubscriptionManagement: React.FC = () => {
       {usage && (
         <Card className="p-6">
           <h2 className="text-xl font-bold text-gray-900 mb-6">Usage</h2>
-          
+
           <div className="space-y-6">
             {/* Reconciliations */}
             {usage.reconciliationLimit && (
@@ -136,7 +152,11 @@ export const SubscriptionManagement: React.FC = () => {
                 <ProgressBar
                   value={usage.reconciliationCount}
                   max={usage.reconciliationLimit}
-                  variant={usage.reconciliationCount >= usage.reconciliationLimit * 0.9 ? 'warning' : 'default'}
+                  variant={
+                    usage.reconciliationCount >= usage.reconciliationLimit * 0.9
+                      ? 'warning'
+                      : 'default'
+                  }
                 />
               </div>
             )}
@@ -146,13 +166,16 @@ export const SubscriptionManagement: React.FC = () => {
               <div className="flex justify-between text-sm mb-2">
                 <span className="text-gray-700">Storage</span>
                 <span className="font-medium text-gray-900">
-                  {(usage.storageBytes / 1_000_000_000).toFixed(2)} GB / {(usage.storageLimitBytes / 1_000_000_000).toFixed(1)} GB
+                  {(usage.storageBytes / 1_000_000_000).toFixed(2)} GB /{' '}
+                  {(usage.storageLimitBytes / 1_000_000_000).toFixed(1)} GB
                 </span>
               </div>
               <ProgressBar
                 value={usage.storageBytes}
                 max={usage.storageLimitBytes}
-                variant={usage.storageBytes >= usage.storageLimitBytes * 0.9 ? 'warning' : 'default'}
+                variant={
+                  usage.storageBytes >= usage.storageLimitBytes * 0.9 ? 'warning' : 'default'
+                }
               />
             </div>
 
@@ -179,25 +202,25 @@ export const SubscriptionManagement: React.FC = () => {
       {/* Tier Comparison */}
       <Card className="p-6">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Available Plans</h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Object.values(SubscriptionTier).map(tier => {
-            const features = subscriptionService.getTierFeatures(tier)
-            const isCurrent = subscription?.tier === tier
-            
+          {Object.values(SubscriptionTier).map((tier) => {
+            const features = subscriptionService.getTierFeatures(tier);
+            const isCurrent = subscription?.tier === tier;
+
             return (
               <div
                 key={tier}
                 className={`p-6 rounded-lg border-2 ${
-                  isCurrent
-                    ? 'border-blue-500 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                  isCurrent ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <div className="mb-4">
                   <h3 className="text-xl font-bold text-gray-900">{features.name}</h3>
                   <div className="mt-2">
-                    <span className="text-3xl font-bold text-gray-900">${features.price.monthly}</span>
+                    <span className="text-3xl font-bold text-gray-900">
+                      ${features.price.monthly}
+                    </span>
                     <span className="text-gray-600">/month</span>
                   </div>
                   <div className="text-sm text-gray-500">
@@ -223,13 +246,12 @@ export const SubscriptionManagement: React.FC = () => {
                   {isCurrent ? 'Current Plan' : `Upgrade to ${features.name}`}
                 </Button>
               </div>
-            )
+            );
           })}
         </div>
       </Card>
     </div>
-  )
-}
+  );
+};
 
-export default SubscriptionManagement
-
+export default SubscriptionManagement;

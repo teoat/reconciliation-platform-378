@@ -1,7 +1,15 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { TrendingUp, TrendingDown, Clock, Users, Target, AlertCircle, CheckCircle, BarChart3, PieChart } from 'lucide-react'
+import { TrendingUp } from 'lucide-react'
+import { TrendingDown } from 'lucide-react'
+import { Clock } from 'lucide-react'
+import { Users } from 'lucide-react'
+import { Target } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { BarChart3 } from 'lucide-react'
+import { PieChart } from 'lucide-react'
 import { apiClient } from '../services/apiClient'
 
 interface SmartDashboardProps {

@@ -19,7 +19,7 @@ const measurePerformance = async (fn: () => Promise<any> | any) => {
 }
 
 const createLargeFormData = (size: number) => {
-  const data: Record<string, any> = {}
+  const data: Record<string, unknown> = {}
   for (let i = 0; i < size; i++) {
     data[`field_${i}`] = `value_${i}`.repeat(10)
   }

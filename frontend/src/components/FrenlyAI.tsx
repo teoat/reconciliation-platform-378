@@ -1,36 +1,34 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { 
-  MessageCircle, 
-  X, 
-  Minimize2, 
-  Maximize2, 
-  Volume2, 
-  VolumeX,
-  Settings,
-  Lightbulb,
-  AlertTriangle,
-  PartyPopper,
-  HelpCircle,
-  Play,
-  ChevronDown,
-  ChevronUp,
-  Sparkles,
-  Heart,
-  Zap,
-  Star,
-  Target,
-  CheckCircle,
-  Clock,
-  Users,
-  BookOpen,
-  Wand2,
-  Smile,
-  Frown,
-  Meh,
-  Laugh
-} from 'lucide-react'
+import React, { useState, useEffect, useRef, useCallback, memo } from 'react'
+import { MessageCircle } from 'lucide-react'
+import { X } from 'lucide-react'
+import { Minimize2 } from 'lucide-react'
+import { Maximize2 } from 'lucide-react'
+import { Volume2 } from 'lucide-react'
+import { VolumeX } from 'lucide-react'
+import { Settings } from 'lucide-react'
+import { Lightbulb } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { PartyPopper } from 'lucide-react'
+import { HelpCircle } from 'lucide-react'
+import { Play } from 'lucide-react'
+import { ChevronDown } from 'lucide-react'
+import { ChevronUp } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
+import { Heart } from 'lucide-react'
+import { Zap } from 'lucide-react'
+import { Star } from 'lucide-react'
+import { Target } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { Clock } from 'lucide-react'
+import { Users } from 'lucide-react'
+import { BookOpen } from 'lucide-react'
+import { Wand2 } from 'lucide-react'
+import { Smile } from 'lucide-react'
+import { Frown } from 'lucide-react'
+import { Meh } from 'lucide-react'
+import { Laugh } from 'lucide-react'
 import { FrenlyState, FrenlyMessage, FrenlyAnimation, FrenlyExpression } from '../types/frenly'
 
 interface FrenlyAIProps {
@@ -414,4 +412,4 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
   )
 }
 
-export default FrenlyAI
+export default memo(FrenlyAI)

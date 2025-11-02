@@ -1,4 +1,5 @@
 // ============================================================================
+import { logger } from '@/services/logger'
 // CONTENT SECURITY POLICY CONFIGURATION
 // ============================================================================
 
@@ -332,7 +333,7 @@ export class SecurityMonitor {
 
     // Log critical events immediately
     if (severity === 'critical') {
-      console.error(`[SECURITY CRITICAL] ${type}: ${message}`)
+      logger.error(`[SECURITY CRITICAL] ${type}: ${message}`)
     }
   }
 

@@ -321,8 +321,7 @@ export const OptimizedImage: React.FC<ImageOptimizationProps> = ({
 
 export interface ResponsiveImageProps extends ImageOptimizationProps {
   sizes: string
-  srcSet: string[]
-  breakpoints: number[]
+  srcSet: string[];
 }
 
 export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({

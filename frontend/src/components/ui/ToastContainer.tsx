@@ -4,7 +4,11 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
+import { X } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { Info } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react';
 import { Toast, useToast } from '../../hooks/useToast';
 
 export const ToastContainer: React.FC = () => {

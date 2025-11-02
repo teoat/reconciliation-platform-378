@@ -87,10 +87,10 @@ impl Default for ValidationServiceDelegate {
             // Fallback if initialization fails - create with empty validators
             log::error!("Failed to initialize ValidationServiceDelegate: {:?}", e);
             Self {
-                email_validator: email::EmailValidator::new().unwrap(),
-                password_validator: password::PasswordValidator::new().unwrap(),
+                email_validator: email::EmailValidator::new().expect("Failed to create email validator"),
+                password_validator: password::PasswordValidator::new().expect("Failed to create password validator"),
                 uuid_validator: uuid::UuidValidator {},
-                file_validator: file::FileValidator::new().unwrap(),
+                file_validator: file::FileValidator::new().expect("Failed to create file validator"),
                 json_schema_validator: json_schema::JsonSchemaValidator {},
                 business_rules_validator: business_rules::BusinessRulesValidator {},
             }

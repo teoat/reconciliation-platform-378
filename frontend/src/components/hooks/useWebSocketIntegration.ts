@@ -1,4 +1,5 @@
 // WebSocket Integration Hook for Real-time Progress Tracking
+import { logger } from '@/services/logger'
 import { useState, useEffect, useCallback } from 'react'
 import { useWebSocket } from '../../services/webSocketService'
 
@@ -70,7 +71,7 @@ export const useWebSocketIntegration = (): UseWebSocketIntegrationReturn => {
             break
         }
       } catch (error) {
-        console.error('Error parsing WebSocket message:', error)
+        logger.error('Error parsing WebSocket message:', error)
       }
     }
   }, [lastMessage, subscribedJobs])

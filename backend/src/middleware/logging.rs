@@ -5,6 +5,7 @@
 
 use actix_web::{dev::ServiceRequest, Error, HttpMessage, Result};
 use actix_web::dev::{Service, ServiceResponse, Transform};
+use actix_web::http::header::HeaderMap;
 use futures::future::{ok, Ready};
 use futures::Future;
 use std::rc::Rc;
@@ -15,6 +16,7 @@ use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use uuid::Uuid;
+use regex;
 
 
 /// Logging configuration
@@ -30,6 +32,7 @@ pub struct LoggingConfig {
     pub max_body_size: usize,
     pub sensitive_headers: Vec<String>,
     pub sensitive_fields: Vec<String>,
+    pub pii_patterns: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -170,9 +173,17 @@ where
                 .get::<crate::services::auth::Claims>()
                 .map(|claims| claims.sub.clone());
 
+            // Extract request body if configured
+            let request_body = if state.config.include_body && state.config.enable_request_logging {
+                // Try to peek at request body for logging (non-consuming)
+                None // Request body extraction would require consuming the request
+            } else {
+                None
+            };
+
             // Log request
             if state.config.enable_request_logging {
-                log_request(&state, &request_id, &method, &path, &ip_address, &user_agent, &user_id).await;
+                log_request(&state, &request_id, &method, &path, &ip_address, &user_agent, &user_id, Some(req.headers()), request_body.as_deref()).await;
             }
 
             // Call the next service
@@ -185,9 +196,17 @@ where
                 Ok(res) => {
                     let status_code = res.status().as_u16();
                     
+                    // Extract response body if configured (note: this is a simplified approach)
+                    // In production, you'd want to buffer and log response bodies more carefully
+                    let response_body: Option<String> = if state.config.include_body && state.config.enable_response_logging {
+                        None // Response body extraction would require consuming the response
+                    } else {
+                        None
+                    };
+                    
                     // Log response
                     if state.config.enable_response_logging {
-                        log_response(&state, &request_id, &method, &path, status_code, response_time_ms).await;
+                        log_response(&state, &request_id, &method, &path, status_code, response_time_ms, response_body.as_deref()).await;
                     }
                     
                     Ok(res)
@@ -205,6 +224,27 @@ where
     }
 }
 
+/// Mask sensitive data in strings
+fn mask_sensitive_data(data: &str, sensitive_patterns: &[String]) -> String {
+    let mut masked = data.to_string();
+
+    // Mask common PII patterns
+    let pii_patterns = vec![
+        r"\b\d{3}-\d{2}-\d{4}\b", // SSN
+        r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b", // Credit card
+        r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", // Email
+        r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b", // Phone
+    ];
+
+    for pattern in pii_patterns.iter().chain(sensitive_patterns) {
+        if let Ok(regex) = regex::Regex::new(pattern) {
+            masked = regex.replace_all(&masked, "***MASKED***").to_string();
+        }
+    }
+
+    masked
+}
+
 /// Log request
 async fn log_request(
     state: &LoggingMiddlewareState,
@@ -214,10 +254,44 @@ async fn log_request(
     ip_address: &str,
     user_agent: &Option<String>,
     user_id: &Option<String>,
+    headers: Option<&HeaderMap>,
+    body: Option<&str>,
 ) {
+    let mut metadata = HashMap::new();
+
+    // Include headers if configured and mask sensitive ones
+    if state.config.include_headers {
+        if let Some(headers) = headers {
+            let mut header_map = HashMap::new();
+            for (name, value) in headers {
+                let header_name = name.as_str().to_lowercase();
+                let header_value = value.to_str().unwrap_or("[invalid utf8]");
+
+                if state.config.sensitive_headers.contains(&header_name) {
+                    header_map.insert(name.as_str().to_string(), "***MASKED***".to_string());
+                } else {
+                    header_map.insert(name.as_str().to_string(), mask_sensitive_data(header_value, &state.config.pii_patterns));
+                }
+            }
+            metadata.insert("headers".to_string(), serde_json::to_value(header_map).unwrap_or_default());
+        }
+    }
+
+    // Include request body if configured (with PII masking)
+    if let Some(body_data) = body {
+        let masked_body = if state.config.include_body && body_data.len() <= state.config.max_body_size {
+            mask_sensitive_data(body_data, &state.config.sensitive_fields)
+        } else {
+            "[body too large or not included]".to_string()
+        };
+        metadata.insert("request_body".to_string(), serde_json::Value::String(masked_body));
+    }
+
     let log_entry = LogEntry {
         id: Uuid::new_v4().to_string(),
-        timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+        timestamp: SystemTime::now().duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0),
         level: "info".to_string(),
         message: format!("Request: {} {}", method, path),
         request_id: Some(request_id.to_string()),
@@ -229,12 +303,12 @@ async fn log_request(
         status_code: None,
         response_time_ms: None,
         error: None,
-        metadata: HashMap::new(),
+        metadata,
     };
 
     let mut logs = state.logs.write().await;
     logs.push(log_entry);
-    
+
     // Keep only last 10000 logs
     if logs.len() > 10000 {
         let len = logs.len();
@@ -250,12 +324,27 @@ async fn log_response(
     path: &str,
     status_code: u16,
     response_time_ms: u64,
+    body: Option<&str>,
 ) {
     let level = if status_code >= 400 { "error" } else { "info" };
     
+    let mut metadata = HashMap::new();
+    
+    // Include response body if configured (with PII masking)
+    if let Some(body_data) = body {
+        let masked_body = if state.config.include_body && body_data.len() <= state.config.max_body_size {
+            mask_sensitive_data(body_data, &state.config.sensitive_fields)
+        } else {
+            "[body too large or not included]".to_string()
+        };
+        metadata.insert("response_body".to_string(), serde_json::Value::String(masked_body));
+    }
+    
     let log_entry = LogEntry {
         id: Uuid::new_v4().to_string(),
-        timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+        timestamp: SystemTime::now().duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0),
         level: level.to_string(),
         message: format!("Response: {} {} - Status: {} - Time: {}ms", method, path, status_code, response_time_ms),
         request_id: Some(request_id.to_string()),
@@ -267,7 +356,7 @@ async fn log_response(
         status_code: Some(status_code),
         response_time_ms: Some(response_time_ms),
         error: None,
-        metadata: HashMap::new(),
+        metadata,
     };
 
     let mut logs = state.logs.write().await;
@@ -285,7 +374,9 @@ async fn log_error(
 ) {
     let log_entry = LogEntry {
         id: Uuid::new_v4().to_string(),
-        timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+        timestamp: SystemTime::now().duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0),
         level: "error".to_string(),
         message: format!("Error: {} {} - {}", method, path, error),
         request_id: Some(request_id.to_string()),
@@ -327,7 +418,9 @@ impl StructuredLogger {
         if self.should_log(&level) {
             let log_entry = LogEntry {
                 id: Uuid::new_v4().to_string(),
-                timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+        timestamp: SystemTime::now().duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0),
                 level: level.to_string(),
                 message: message.to_string(),
                 request_id: None,
@@ -484,7 +577,9 @@ impl ErrorTrackingService {
     ) {
         let error_entry = ErrorEntry {
             id: Uuid::new_v4().to_string(),
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now().duration_since(UNIX_EPOCH)
+            .map(|d| d.as_secs())
+            .unwrap_or(0),
             error_type: error_type.to_string(),
             error_message: error_message.to_string(),
             stack_trace: stack_trace.map(|s| s.to_string()),

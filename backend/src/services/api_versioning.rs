@@ -611,27 +611,27 @@ mod tests {
         let service = ApiVersioningService::new().await;
         
         // Test getting version
-        let version = service.get_version("1.0.0").await.unwrap();
+        let version = service.get_version("1.0.0").await.expect("Failed to get version");
         assert!(version.is_some());
         
         // Test listing versions
-        let versions = service.list_versions().await.unwrap();
+        let versions = service.list_versions().await.expect("Failed to list versions");
         assert!(!versions.is_empty());
         
         // Test getting latest stable version
-        let latest = service.get_latest_stable_version().await.unwrap();
+        let latest = service.get_latest_stable_version().await.expect("Failed to get latest version");
         assert!(latest.is_some());
         
         // Test client compatibility
-        let compatibility = service.check_client_compatibility("1.0.0", "1.0.0").await.unwrap();
+        let compatibility = service.check_client_compatibility("1.0.0", "1.0.0").await.expect("Failed to check compatibility");
         assert!(compatibility.is_compatible);
         
         // Test endpoint version
-        let endpoint_version = service.get_endpoint_version("GET", "/api/users").await.unwrap();
+        let endpoint_version = service.get_endpoint_version("GET", "/api/users").await.expect("Failed to get endpoint version");
         assert!(endpoint_version.is_some());
         
         // Test supported versions
-        let supported = service.get_supported_versions("GET", "/api/users").await.unwrap();
+        let supported = service.get_supported_versions("GET", "/api/users").await.expect("Failed to get supported versions");
         assert!(!supported.is_empty());
         
         // Test version format validation
@@ -639,12 +639,12 @@ mod tests {
         assert!(service.validate_version_format("invalid").is_err());
         
         // Test version comparison
-        let ordering = service.compare_versions("1.0.0", "1.1.0").unwrap();
+        let ordering = service.compare_versions("1.0.0", "1.1.0").expect("Failed to compare versions");
         assert_eq!(ordering, std::cmp::Ordering::Less);
         
         // Test version satisfaction
-        assert!(service.version_satisfies("1.0.0", ">=1.0.0").unwrap());
-        assert!(!service.version_satisfies("1.0.0", ">=2.0.0").unwrap());
+        assert!(service.version_satisfies("1.0.0", ">=1.0.0").expect("Failed to check version satisfies"));
+        assert!(!service.version_satisfies("1.0.0", ">=2.0.0").expect("Failed to check version satisfies"));
     }
 
     #[tokio::test]
@@ -667,12 +667,12 @@ mod tests {
             rollback_plan: Some("Revert to previous version".to_string()),
         };
         
-        service.add_migration_strategy(strategy).await.unwrap();
+        service.add_migration_strategy(strategy).await.expect("Failed to add migration strategy");
         
-        let retrieved = service.get_migration_strategy("1.0.0", "2.0.0").await.unwrap();
+        let retrieved = service.get_migration_strategy("1.0.0", "2.0.0").await.expect("Failed to get migration strategy");
         assert!(retrieved.is_some());
         
-        let strategies = service.list_migration_strategies().await.unwrap();
+        let strategies = service.list_migration_strategies().await.expect("Failed to list migration strategies");
         assert!(!strategies.is_empty());
     }
 
@@ -681,19 +681,19 @@ mod tests {
         let service = ApiVersioningService::new().await;
         
         // Test deprecating version
-        service.deprecate_version("1.0.0", Utc::now(), Some(Utc::now() + chrono::Duration::days(90))).await.unwrap();
-        
-        let version = service.get_version("1.0.0").await.unwrap().unwrap();
+        service.deprecate_version("1.0.0", Utc::now(), Some(Utc::now() + chrono::Duration::days(90))).await.expect("Failed to deprecate version");
+
+        let version = service.get_version("1.0.0").await.expect("Failed to get version").expect("Version not found");
         assert!(matches!(version.status, VersionStatus::Deprecated));
         
         // Test sunsetting version
-        service.sunset_version("1.0.0").await.unwrap();
+        service.sunset_version("1.0.0").await.expect("Failed to sunset version");
         
-        let version = service.get_version("1.0.0").await.unwrap().unwrap();
+        let version = service.get_version("1.0.0").await.expect("Failed to get version").expect("Version not found");
         assert!(matches!(version.status, VersionStatus::Sunset));
         
         // Test version stats
-        let stats = service.get_version_stats().await.unwrap();
+        let stats = service.get_version_stats().await.expect("Failed to get version stats");
         assert!(stats.total_versions > 0);
     }
 }

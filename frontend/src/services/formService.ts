@@ -6,7 +6,7 @@ import { BaseService, PersistenceService } from './BaseService'
 export interface FormData {
   id: string
   formId: string
-  data: Record<string, any>
+  data: Record<string, unknown>
   timestamp: number
   version: number
   metadata: {
@@ -91,7 +91,7 @@ export class FormService extends PersistenceService<FormData> {
   }
 
   // Form Data Management
-  public saveFormData(formId: string, data: Record<string, any>, metadata: FormData['metadata']): string {
+  public saveFormData(formId: string, data: Record<string, unknown>, metadata: FormData['metadata']): string {
     const id = this.generateId()
     const formData: FormData = {
       id,
@@ -140,7 +140,7 @@ export class FormService extends PersistenceService<FormData> {
   }
 
   // Auto-Save Functionality
-  public startAutoSave(formId: string, data: Record<string, any>, metadata: FormData['metadata']): void {
+  public startAutoSave(formId: string, data: Record<string, unknown>, metadata: FormData['metadata']): void {
     if (!this.config.autoSave.enabled) return
 
     this.setTimer(`autosave_${formId}`, () => {

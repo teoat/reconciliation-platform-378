@@ -1,4 +1,5 @@
 // Error Logging Testing
+import { logger } from '@/services/logger'
 // Comprehensive testing suite for verifying error logging and monitoring
 
 import React from 'react'
@@ -897,7 +898,7 @@ export class ErrorLoggingTester {
     }
     
     this.logEntries.push(logEntry)
-    console.log(`[${level.toUpperCase()}] ${message}`)
+    logger.log(`[${level.toUpperCase()}] ${message}`)
     
     return logEntry
   }
@@ -915,7 +916,7 @@ export class ErrorLoggingTester {
     }
     
     this.logEntries.push(logEntry)
-    console.log(`[${level.toUpperCase()}] ${message}`, context)
+    logger.log(`[${level.toUpperCase()}] ${message}`, context)
     
     return logEntry
   }
@@ -931,7 +932,7 @@ export class ErrorLoggingTester {
     }
     
     this.logEntries.push(logEntry)
-    console.log(`[${level.toUpperCase()}] ${message}`, error.stack)
+    logger.log(`[${level.toUpperCase()}] ${message}`, error.stack)
     
     return logEntry
   }

@@ -1,10 +1,17 @@
 import React, { useState, useEffect } from 'react'
+import { logger } from '@/services/logger'
 import { useParams, useNavigate } from 'react-router-dom'
 import { apiClient } from '../../services/apiClient'
 import { useProjects } from '../../hooks/useApi'
 import { Button } from '../ui/Button'
 import { useToast } from '../../hooks/useToast'
-import { ArrowLeft, Edit, Trash2, Upload, Play, Folder, Settings } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react'
+import { Edit } from 'lucide-react'
+import { Trash2 } from 'lucide-react'
+import { Upload } from 'lucide-react'
+import { Play } from 'lucide-react'
+import { Folder } from 'lucide-react'
+import { Settings } from 'lucide-react'
 
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -47,7 +54,7 @@ const ProjectDetail: React.FC = () => {
           setDataSources(sourcesResponse.data)
         }
       } catch (err) {
-        console.warn('Failed to load data sources:', err)
+        logger.warn('Failed to load data sources:', err)
         // Non-critical, continue loading
       }
 
@@ -58,7 +65,7 @@ const ProjectDetail: React.FC = () => {
           setJobs(jobsResponse.data)
         }
       } catch (err) {
-        console.warn('Failed to load reconciliation jobs:', err)
+        logger.warn('Failed to load reconciliation jobs:', err)
         // Non-critical, continue loading
       }
     } catch (err) {

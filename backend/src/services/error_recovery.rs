@@ -134,12 +134,14 @@ impl ErrorRecoveryService {
                     attempt += 1;
                     
                     // Record the error
-                    self.record_error(
-                        operation_id,
-                        "retry_error",
-                        &last_error.as_ref().unwrap().to_string(),
-                        attempt,
-                    ).await;
+                    if let Some(ref err) = last_error {
+                        self.record_error(
+                            operation_id,
+                            "retry_error",
+                            &err.to_string(),
+                            attempt,
+                        ).await;
+                    }
                     
                     // Check if we should retry
                     if attempt < self.config.max_retry_attempts {
@@ -151,11 +153,15 @@ impl ErrorRecoveryService {
         }
         
         // All retries failed
+        let error_message = last_error
+            .as_ref()
+            .map(|e| e.to_string())
+            .unwrap_or_else(|| "Unknown error".to_string());
         Err(AppError::Internal(format!(
             "Operation {} failed after {} attempts: {}",
             operation_id,
             self.config.max_retry_attempts,
-            last_error.unwrap().to_string()
+            error_message
         )))
     }
     
@@ -164,7 +170,10 @@ impl ErrorRecoveryService {
         let mut circuit_breakers = self.circuit_breakers.write().await;
         
         if let Some(circuit_breaker) = circuit_breakers.get_mut(service_name) {
-            let now = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() * 1000;
+            let now = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map_err(|_| AppError::Internal("System time is before UNIX epoch".to_string()))?
+                .as_secs() * 1000;
             
             match circuit_breaker.state {
                 CircuitBreakerState::Open => {
@@ -225,7 +234,10 @@ impl ErrorRecoveryService {
         
         if let Some(circuit_breaker) = circuit_breakers.get_mut(service_name) {
             circuit_breaker.failure_count += 1;
-            circuit_breaker.last_failure = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs() * 1000;
+            circuit_breaker.last_failure = SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map_err(|_| AppError::Internal("System time is before UNIX epoch".to_string()))?
+                .as_secs() * 1000;
             
             if circuit_breaker.failure_count >= circuit_breaker.threshold {
                 circuit_breaker.state = CircuitBreakerState::Open;
@@ -259,7 +271,10 @@ impl ErrorRecoveryService {
     ) {
         let error_record = ErrorRecord {
             id: Uuid::new_v4().to_string(),
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map_err(|_| AppError::Internal("System time is before UNIX epoch".to_string()))?
+                .as_secs(),
             error_type: error_type.to_string(),
             error_message: error_message.to_string(),
             stack_trace: None,
