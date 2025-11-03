@@ -116,7 +116,7 @@ pull_code() {
         print_step "Pulling latest code..."
 
         if [ -d .git ]; then
-            # Support repositories that may use either 'master' or 'main' as the default branch
+            # Pull from master branch (repository has migrated from main to master)
             git pull origin master || { echo -e "${RED}❌ Failed to pull from master branch. Exiting.${NC}"; exit 1; }
         else
             echo -e "${YELLOW}⚠️  Not a git repository, skipping pull${NC}"
