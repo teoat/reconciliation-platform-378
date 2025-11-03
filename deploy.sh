@@ -117,7 +117,7 @@ pull_code() {
 
         if [ -d .git ]; then
             # Support repositories that may use either 'master' or 'main' as the default branch
-            git pull origin master || echo -e "${YELLOW}⚠️  Could not pull from git${NC}"
+            git pull origin master || { echo -e "${RED}❌ Failed to pull from master branch. Exiting.${NC}"; exit 1; }
         else
             echo -e "${YELLOW}⚠️  Not a git repository, skipping pull${NC}"
         fi
