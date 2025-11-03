@@ -108,8 +108,12 @@ pull_code() {
     
     cd ${DEPLOY_DIR}
     git fetch origin
-    git checkout main
-    git pull origin main
+    git checkout master
+    git pull origin master
+    
+    if [ $? -ne 0 ]; then
+        error "Failed to pull from master branch. Please ensure the master branch exists."
+    fi
     
     log "Code updated"
 }
