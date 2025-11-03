@@ -116,7 +116,7 @@ pull_code() {
         print_step "Pulling latest code..."
 
         if [ -d .git ]; then
-            git pull origin master || git pull origin main || echo -e "${YELLOW}⚠️  Could not pull from git${NC}"
+            git pull origin master || echo -e "${YELLOW}⚠️  Could not pull from git${NC}"
         else
             echo -e "${YELLOW}⚠️  Not a git repository, skipping pull${NC}"
         fi
