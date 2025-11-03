@@ -340,9 +340,9 @@ name: Test Coverage
 
 on:
   pull_request:
-    branches: [main, develop]
+    branches: [master, develop]
   push:
-    branches: [main, develop]
+    branches: [master, develop]
 
 jobs:
   frontend-coverage:
