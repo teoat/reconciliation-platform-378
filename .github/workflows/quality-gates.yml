@@ -1,0 +1,59 @@
+name: Quality Gates
+
+on: [push, pull_request]
+
+jobs:
+  quality-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Rust setup
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Find Cargo directory
+        id: find_cargo
+        run: |
+          CARGO_FILE=$(git ls-files -- "**/Cargo.toml" | head -n1 || true)
+          if [ -z "$CARGO_FILE" ]; then
+            echo "cargo_found=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          CARGO_DIR=$(dirname "$CARGO_FILE")
+          echo "cargo_found=true" >> $GITHUB_OUTPUT
+          echo "cargo_dir=$CARGO_DIR" >> $GITHUB_OUTPUT
+
+      - name: Clippy
+        if: steps.find_cargo.outputs.cargo_found == 'true'
+        run: |
+          cd "$([[ -n "${{ steps.find_cargo.outputs.cargo_dir }}" ]] && echo ${{ steps.find_cargo.outputs.cargo_dir }} || echo .)"
+          cargo clippy -- -D warnings
+
+      - name: Coverage
+        if: steps.find_cargo.outputs.cargo_found == 'true'
+        run: |
+          cd "$([[ -n "${{ steps.find_cargo.outputs.cargo_dir }}" ]] && echo ${{ steps.find_cargo.outputs.cargo_dir }} || echo .)"
+          cargo install -q cargo-tarpaulin || true
+          cargo tarpaulin --out Html
+
+      - name: Security audit
+        if: steps.find_cargo.outputs.cargo_found == 'true'
+        run: |
+          cd "$([[ -n "${{ steps.find_cargo.outputs.cargo_dir }}" ]] && echo ${{ steps.find_cargo.outputs.cargo_dir }} || echo .)"
+          cargo install -q cargo-audit || true
+          cargo audit
+
+      - name: Benchmarks
+        if: steps.find_cargo.outputs.cargo_found == 'true'
+        run: |
+          cd "$([[ -n "${{ steps.find_cargo.outputs.cargo_dir }}" ]] && echo ${{ steps.find_cargo.outputs.cargo_dir }} || echo .)"
+          cargo bench
+
+      - name: Fail when no Cargo.toml
+        if: steps.find_cargo.outputs.cargo_found != 'true'
+        run: |
+          echo "No Cargo.toml found in repository; skipping Rust checks and failing workflow." >&2
+          exit 1
