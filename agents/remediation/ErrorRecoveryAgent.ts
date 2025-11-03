@@ -1,14 +1,25 @@
 /**
  * Error Recovery Agent - Autonomous Error Recovery System
- * 
+ *
  * Extracts and enhances ErrorRecoveryService.execute_with_retry() functionality
  * into a meta-agent with learning and adaptation capabilities.
- * 
+ *
  * Source: backend/src/services/error_recovery.rs:113-156
  * Priority: MEDIUM-HIGH
  */
 
-import { MetaAgent, AgentType, AutonomyLevel, ExecutionContext, AgentResult, AgentMetrics, AgentStatus, HILContext, HILResponse } from '../core/types';
+import {
+  MetaAgent,
+  AgentType,
+  AutonomyLevel,
+  ExecutionContext,
+  AgentResult,
+  AgentMetrics,
+  AgentStatus,
+  AgentStatusInfo,
+  HILContext,
+  HILResponse,
+} from '../core/types';
 
 interface RetryConfig {
   maxRetries: number;
@@ -36,7 +47,7 @@ export class ErrorRecoveryAgent implements MetaAgent {
     exponentialBackoff: true,
     maxBackoff: 30000,
   };
-  
+
   private status: AgentStatus = 'idle';
   private agentMetrics: AgentMetrics = {
     totalExecutions: 0,
@@ -87,9 +98,9 @@ export class ErrorRecoveryAgent implements MetaAgent {
   }
 
   async execute(context?: ExecutionContext): Promise<AgentResult> {
-    const operationId = context?.operationId as string || 'unknown';
+    const operationId = (context?.operationId as string) || 'unknown';
     const operation = context?.operation as () => Promise<unknown>;
-    
+
     if (!operation) {
       return {
         success: false,
@@ -145,7 +156,7 @@ export class ErrorRecoveryAgent implements MetaAgent {
           };
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
-          
+
           // Record error
           this.errorHistory.push({
             operationId,
@@ -167,7 +178,7 @@ export class ErrorRecoveryAgent implements MetaAgent {
           if (this.retryConfig.exponentialBackoff) {
             delay = Math.min(delay * 2, this.retryConfig.maxBackoff);
           }
-          
+
           await this.sleep(delay);
         }
       }
@@ -247,13 +258,14 @@ export class ErrorRecoveryAgent implements MetaAgent {
     this.agentMetrics.lastExecutionTime = new Date();
   }
 
-  getStatus(): AgentStatus {
+  getStatus(): AgentStatusInfo {
     return {
       name: this.name,
       status: this.status,
       lastExecution: this.agentMetrics.lastExecutionTime,
       metrics: this.agentMetrics,
-      health: this.status === 'error' ? 'unhealthy' : this.status === 'running' ? 'healthy' : 'degraded',
+      health:
+        this.status === 'error' ? 'unhealthy' : this.status === 'running' ? 'healthy' : 'degraded',
     };
   }
 
@@ -292,4 +304,3 @@ export class ErrorRecoveryAgent implements MetaAgent {
     this.retryConfig = { ...this.retryConfig, ...config };
   }
 }
-

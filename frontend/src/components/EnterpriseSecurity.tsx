@@ -1,100 +1,26 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Shield } from 'lucide-react'
-import { Lock } from 'lucide-react'
-import { Key } from 'lucide-react'
-import { Eye } from 'lucide-react'
-import { EyeOff } from 'lucide-react'
-import { User } from 'lucide-react'
-import { Users } from 'lucide-react'
-import { Settings } from 'lucide-react'
-import { AlertTriangle } from 'lucide-react'
-import { CheckCircle } from 'lucide-react'
-import { XCircle } from 'lucide-react'
-import { Info } from 'lucide-react'
-import { Activity } from 'lucide-react'
-import { BarChart3 } from 'lucide-react'
-import { PieChart } from 'lucide-react'
-import { LineChart } from 'lucide-react'
-import { Target } from 'lucide-react'
-import { Zap } from 'lucide-react'
-import { TrendingUp } from 'lucide-react'
-import { TrendingDown } from 'lucide-react'
-import { Minus } from 'lucide-react'
-import { Plus } from 'lucide-react'
-import { Equal } from 'lucide-react'
-import { Divide } from 'lucide-react'
-import { Percent } from 'lucide-react'
-import { Calculator } from 'lucide-react'
-import { File } from 'lucide-react'
-import { FileCheck } from 'lucide-react'
-import { FileX } from 'lucide-react'
-import { FilePlus } from 'lucide-react'
-import { FileMinus } from 'lucide-react'
-import { FileEdit } from 'lucide-react'
-import { FileSearch } from 'lucide-react'
-import { Folder } from 'lucide-react'
-import { FolderOpen } from 'lucide-react'
-import { FolderPlus } from 'lucide-react'
-import { FolderMinus } from 'lucide-react'
-import { FolderCheck } from 'lucide-react'
-import { FolderX } from 'lucide-react'
-import { Database } from 'lucide-react'
-import { Server } from 'lucide-react'
-import { Cloud } from 'lucide-react'
-import { Wifi } from 'lucide-react'
-import { Unlock } from 'lucide-react'
-import { Hash } from 'lucide-react'
-import { Type } from 'lucide-react'
-import { Layers } from 'lucide-react'
-import { ArrowRight } from 'lucide-react'
-import { ArrowLeft } from 'lucide-react'
-import { ArrowUp } from 'lucide-react'
-import { ArrowDown } from 'lucide-react'
-import { ChevronRight } from 'lucide-react'
-import { ChevronLeft } from 'lucide-react'
-import { ChevronUp } from 'lucide-react'
-import { ChevronDown } from 'lucide-react'
-import { MoreHorizontal } from 'lucide-react'
-import { MoreVertical } from 'lucide-react'
-import { Star } from 'lucide-react'
-import { Award } from 'lucide-react'
-import { Trophy } from 'lucide-react'
-import { Medal } from 'lucide-react'
-import { Flag } from 'lucide-react'
-import { Tag } from 'lucide-react'
-import { Bookmark } from 'lucide-react'
-import { Share2 } from 'lucide-react'
-import { Copy } from 'lucide-react'
-import { ExternalLink } from 'lucide-react'
-import { Mail } from 'lucide-react'
-import { Phone } from 'lucide-react'
-import { Crown } from 'lucide-react'
-import { Building } from 'lucide-react'
-import { Home } from 'lucide-react'
-import { Building2 } from 'lucide-react'
-import { Factory } from 'lucide-react'
-import { Store } from 'lucide-react'
-import { CreditCard } from 'lucide-react'
-import { DollarSign } from 'lucide-react'
-import { Euro } from 'lucide-react'
-import { PoundSterling } from 'lucide-react'
-import { Bitcoin } from 'lucide-react'
-import { Bell } from 'lucide-react'
-import { MessageSquare } from 'lucide-react'
-import { Calendar } from 'lucide-react'
-import { Clock } from 'lucide-react'
-import { MapPin } from 'lucide-react'
-import { Settings as SettingsIcon } from 'lucide-react'
-import { X } from 'lucide-react'
-import { RefreshCw } from 'lucide-react'
-import { Download } from 'lucide-react'
-import { Upload } from 'lucide-react'
-import { Edit } from 'lucide-react'
-import { Trash2 } from 'lucide-react'
-import { Plus as PlusIcon } from 'lucide-react'
+import { 
+  Shield, 
+  Lock, 
+  Eye, 
+  User, 
+  Users, 
+  Settings, 
+  CheckCircle, 
+  XCircle, 
+  Activity,
+  X,
+  RefreshCw,
+  Download,
+  Upload,
+  Edit,
+  Trash2,
+  Plus as PlusIcon
+} from 'lucide-react'
 import { useData } from '../components/DataProvider'
+import type { BackendProject } from '../services/apiClient/types'
 
 // Enterprise Security Interfaces
 interface SecurityPolicy {
@@ -178,7 +104,7 @@ interface ComplianceFinding {
 }
 
 interface EnterpriseSecurityProps {
-  project: any
+  project: BackendProject
   onProgressUpdate?: (step: string) => void
 }
 
@@ -614,26 +540,30 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
       {/* Tabs */}
       <div className="card mb-6">
         <div className="border-b border-secondary-200">
-          <nav className="flex space-x-8">
-            {[
+          <nav className="flex space-x-8" role="tablist" aria-label="Security tabs">
+            {([
               { id: 'policies', label: 'Security Policies', icon: Shield },
               { id: 'access', label: 'Access Control', icon: User },
               { id: 'audit', label: 'Audit Logs', icon: Activity },
               { id: 'compliance', label: 'Compliance', icon: CheckCircle }
-            ].map((tab) => {
-              const Icon = tab.icon
+            ] as const).map((tabItem) => {
+              const TabIcon = tabItem.icon
               return (
                 <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  key={tabItem.id}
+                  onClick={() => setActiveTab(tabItem.id)}
                   className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
+                    activeTab === tabItem.id
                       ? 'border-primary-500 text-primary-600'
                       : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300'
                   }`}
+                  role="tab"
+                  aria-selected={activeTab === tabItem.id ? 'true' : 'false'}
+                  aria-label={tabItem.label}
+                  type="button"
                 >
-                  <Icon className="w-4 h-4" />
-                  <span>{tab.label}</span>
+                  <TabIcon className="w-4 h-4" aria-hidden="true" />
+                  <span>{tabItem.label}</span>
                 </button>
               )
             })}

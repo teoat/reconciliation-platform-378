@@ -502,6 +502,7 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
                   setShowChartModal(true);
                 }}
                 className="text-secondary-400 hover:text-secondary-600"
+                aria-label="View chart details"
               >
                 <Eye className="w-4 h-4" />
               </button>
@@ -536,7 +537,10 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
             <div className="mt-4 pt-4 border-t border-secondary-200">
               <div className="flex items-center justify-between text-xs text-secondary-500">
                 <span>Updated: {new Date(chart.lastUpdated).toLocaleDateString()}</span>
-                <button className="text-primary-600 hover:text-primary-700">
+                <button
+                  className="text-primary-600 hover:text-primary-700"
+                  aria-label="Download chart"
+                >
                   <Download className="w-3 h-3" />
                 </button>
               </div>

@@ -236,15 +236,15 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
         {/* Tabs */}
         <div className="border-b border-secondary-200">
           <nav className="flex space-x-8 px-6">
-            {[
+            {([
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'matching', label: 'Matching Results', icon: Target },
               { id: 'categories', label: 'Categories', icon: Tag },
               { id: 'timeline', label: 'Timeline', icon: Calendar }
-            ].map(tab => (
+            ] as const).map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? 'border-primary-500 text-primary-600'

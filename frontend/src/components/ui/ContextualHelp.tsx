@@ -7,9 +7,9 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { HelpCircle, X, ChevronRight, Lightbulb, BookOpen } from 'lucide-react';
 // Import ariaLiveRegionsService with fallback
-import ariaLiveRegionsServiceModule from '../services/ariaLiveRegionsService';
-const ariaLiveRegionsService = 
-  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService || 
+import ariaLiveRegionsServiceModule from '../../services/ariaLiveRegionsService';
+const ariaLiveRegionsService =
+  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService ||
   (ariaLiveRegionsServiceModule as any).default?.getInstance?.() ||
   ariaLiveRegionsServiceModule;
 
@@ -51,7 +51,8 @@ export const ContextualHelp: React.FC<ContextualHelpProps> = ({
   const [isHovered, setIsHovered] = useState(false);
   const ariaExpandedValue = isOpen ? 'true' : 'false';
 
-  const shouldShow = trigger === 'always' || (trigger === 'hover' && isHovered) || (trigger === 'click' && isOpen);
+  const shouldShow =
+    trigger === 'always' || (trigger === 'hover' && isHovered) || (trigger === 'click' && isOpen);
 
   const handleToggle = useCallback(() => {
     setIsOpen((prev) => !prev);
@@ -144,7 +145,10 @@ export const ContextualHelp: React.FC<ContextualHelpProps> = ({
               <ul className="space-y-1">
                 {helpContent.tips.map((tip) => (
                   <li key={tip.id} className="flex items-start text-xs">
-                    <ChevronRight className="h-3 w-3 mr-1 text-gray-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                    <ChevronRight
+                      className="h-3 w-3 mr-1 text-gray-400 mt-0.5 flex-shrink-0"
+                      aria-hidden="true"
+                    />
                     <span>{tip.content}</span>
                   </li>
                 ))}
@@ -182,4 +186,3 @@ export const ContextualHelp: React.FC<ContextualHelpProps> = ({
 };
 
 export default ContextualHelp;
-

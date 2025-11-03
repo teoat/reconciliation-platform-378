@@ -1,14 +1,26 @@
 /**
  * Security Monitoring Agent - Autonomous Security Threat Detection
- * 
+ *
  * Extracts and enhances SecurityMonitor.check_alert_rules() functionality
  * into a meta-agent with learning and adaptation capabilities.
- * 
+ *
  * Source: backend/src/services/security_monitor.rs:235-264
  * Priority: HIGH
  */
 
-import { MetaAgent, AgentType, AutonomyLevel, ExecutionContext, AgentResult, AgentMetrics, AgentStatus, HILContext, HILResponse, HILOption } from '../core/types';
+import {
+  MetaAgent,
+  AgentType,
+  AutonomyLevel,
+  ExecutionContext,
+  AgentResult,
+  AgentMetrics,
+  AgentStatus,
+  AgentStatusInfo,
+  HILContext,
+  HILResponse,
+  HILOption,
+} from '../core/types';
 
 interface SecurityEvent {
   id: string;
@@ -36,7 +48,7 @@ export class SecurityMonitoringAgent implements MetaAgent {
   private alertRules: Map<string, AlertRule> = new Map();
   private securityEvents: Map<string, SecurityEvent> = new Map();
   private blockedIPs: Set<string> = new Set();
-  
+
   private status: AgentStatus = 'idle';
   private agentMetrics: AgentMetrics = {
     totalExecutions: 0,
@@ -102,7 +114,7 @@ export class SecurityMonitoringAgent implements MetaAgent {
 
   async start(): Promise<void> {
     if (this.status === 'running') return;
-    
+
     this.status = 'running';
 
     // Start security monitoring loop - processes events continuously
@@ -165,12 +177,12 @@ export class SecurityMonitoringAgent implements MetaAgent {
 
         processed++;
         const score = await this.calculateAnomalyScore(event);
-        
+
         // Check alert rules
         for (const [ruleId, rule] of this.alertRules) {
           if (rule.condition(event, score)) {
             alertsTriggered++;
-            
+
             // Execute rule action
             const actionResult = await this.executeRuleAction(rule, event, score);
             if (actionResult.success) {
@@ -216,17 +228,17 @@ export class SecurityMonitoringAgent implements MetaAgent {
     // TODO: Implement actual anomaly detection
     // For now, base score on event type and severity
     const baseScores: Record<string, number> = {
-      'failed_login': 5.0,
-      'suspicious_activity': 7.0,
-      'unauthorized_access': 9.0,
+      failed_login: 5.0,
+      suspicious_activity: 7.0,
+      unauthorized_access: 9.0,
     };
 
     const baseScore = baseScores[event.type] || 3.0;
     const severityMultiplier: Record<string, number> = {
-      'low': 1.0,
-      'medium': 1.2,
-      'high': 1.5,
-      'critical': 2.0,
+      low: 1.0,
+      medium: 1.2,
+      high: 1.5,
+      critical: 2.0,
     };
 
     return baseScore * (severityMultiplier[event.severity] || 1.0);
@@ -235,10 +247,16 @@ export class SecurityMonitoringAgent implements MetaAgent {
   /**
    * Execute rule action
    */
-  private async executeRuleAction(rule: AlertRule, event: SecurityEvent, score: number): Promise<{ success: boolean; requiresHIL?: boolean }> {
+  private async executeRuleAction(
+    rule: AlertRule,
+    event: SecurityEvent,
+    score: number
+  ): Promise<{ success: boolean; requiresHIL?: boolean }> {
     switch (rule.action) {
       case 'log':
-        console.warn(`Security alert: ${rule.name} - ${event.description} (Score: ${score.toFixed(1)})`);
+        console.warn(
+          `Security alert: ${rule.name} - ${event.description} (Score: ${score.toFixed(1)})`
+        );
         return { success: true };
 
       case 'notify':
@@ -252,7 +270,7 @@ export class SecurityMonitoringAgent implements MetaAgent {
           this.agentMetrics.hilRequests++;
           return { success: false, requiresHIL: true };
         }
-        
+
         // Auto-block if IP is known bad
         const ip = event.metadata?.ip as string;
         if (ip && this.canAutoBlock(ip)) {
@@ -286,9 +304,10 @@ export class SecurityMonitoringAgent implements MetaAgent {
    */
   private canAutoBlock(ip: string): boolean {
     // Auto-block if IP has multiple violations
-    const violations = Array.from(this.securityEvents.values())
-      .filter((e) => e.metadata?.ip === ip && e.severity === 'critical').length;
-    
+    const violations = Array.from(this.securityEvents.values()).filter(
+      (e) => e.metadata?.ip === ip && e.severity === 'critical'
+    ).length;
+
     return violations >= 3;
   }
 
@@ -302,9 +321,13 @@ export class SecurityMonitoringAgent implements MetaAgent {
   /**
    * Request HIL for blocking decision
    */
-  private async requestHILForBlock(event: SecurityEvent, rule: AlertRule, score: number): Promise<HILResponse> {
+  private async requestHILForBlock(
+    event: SecurityEvent,
+    rule: AlertRule,
+    score: number
+  ): Promise<HILResponse> {
     const ip = event.metadata?.ip as string;
-    
+
     const options: HILOption[] = [
       {
         id: 'block',
@@ -375,13 +398,14 @@ export class SecurityMonitoringAgent implements MetaAgent {
     this.agentMetrics.lastExecutionTime = new Date();
   }
 
-  getStatus(): AgentStatus {
+  getStatus(): AgentStatusInfo {
     return {
       name: this.name,
       status: this.status,
       lastExecution: this.agentMetrics.lastExecutionTime,
       metrics: this.agentMetrics,
-      health: this.status === 'error' ? 'unhealthy' : this.status === 'running' ? 'healthy' : 'degraded',
+      health:
+        this.status === 'error' ? 'unhealthy' : this.status === 'running' ? 'healthy' : 'degraded',
     };
   }
 
@@ -396,9 +420,9 @@ export class SecurityMonitoringAgent implements MetaAgent {
   requiresHIL(context: ExecutionContext): boolean {
     const rule = context.rule as AlertRule;
     const event = context.event as SecurityEvent;
-    
+
     if (!rule || !event) return false;
-    
+
     // Require HIL for blocking and escalation actions
     return rule.action === 'block' || rule.action === 'escalate';
   }
@@ -419,4 +443,3 @@ export class SecurityMonitoringAgent implements MetaAgent {
     // TODO: Adapt alert rules based on false positives
   }
 }
-

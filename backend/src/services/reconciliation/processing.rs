@@ -10,9 +10,9 @@ use std::collections::HashMap;
 
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
-use crate::models::{DataSource, ReconciliationResult, NewReconciliationResult, MatchType};
-use crate::models::schema::projects::{reconciliation_results, data_sources};
-use diesel::{RunQueryDsl, QueryDsl, ExpressionMethods};
+use crate::models::{DataSource, ReconciliationResult, NewReconciliationResult, MatchType, ReconciliationRecord};
+use crate::models::schema::{reconciliation_results, data_sources, reconciliation_records};
+use diesel::{RunQueryDsl, QueryDsl, ExpressionMethods, BelongingToDsl};
 
 use super::types::MatchingRule;
 use crate::models::ReconciliationResult as ReconciliationResultType;
@@ -33,14 +33,14 @@ pub async fn process_data_sources_chunked(
 ) -> AppResult<Vec<ReconciliationResultType>> {
     let mut results = Vec::new();
     
-    // Simulate processing large datasets in chunks
-    let total_records = 1000; // This would be determined from actual data
+    // Load actual records from data sources
+    let records_a = load_records_from_data_source(db, source_a).await?;
+    let records_b = load_records_from_data_source(db, source_b).await?;
+
+    let total_records = records_a.len().max(records_b.len());
     let total_chunks = (total_records + chunk_size - 1) / chunk_size;
-    
-    // Build an example index (using a mock structure here); in real code, load records
-    let mock_records: Vec<(Uuid, HashMap<String, serde_json::Value>)> = Vec::new();
-    
-    // Update total records
+
+    // Update total records in job status
     {
         let mut status_guard = status.write().await;
         status_guard.total_records = Some(total_records as i32);
@@ -238,5 +238,17 @@ pub async fn send_progress(
     };
     
     let _ = sender.send(progress_update).await;
+}
+
+/// Load reconciliation records from a data source
+pub async fn load_records_from_data_source(
+    db: &Database,
+    data_source: &DataSource,
+) -> AppResult<Vec<ReconciliationRecord>> {
+    let mut conn = db.get_connection()?;
+    let records = ReconciliationRecord::belonging_to(data_source)
+        .load::<ReconciliationRecord>(&mut conn)
+        .map_err(AppError::Database)?;
+    Ok(records)
 }
 

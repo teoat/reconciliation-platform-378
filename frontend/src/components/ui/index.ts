@@ -49,6 +49,52 @@ export { default as ServiceDegradedBanner } from './ServiceDegradedBanner';
 export { default as FallbackContent } from './FallbackContent';
 export { default as CircuitBreakerStatus } from './CircuitBreakerStatus';
 
+// Feature Components
+export { 
+  FeatureGate, 
+  FeatureBadge,
+  useFeatureGate,
+  type FeatureGateProps,
+  type FeatureBadgeProps,
+  type FeatureGateConfig,
+  type UserRole as FeatureUserRole,
+  type FeaturePermission
+} from './FeatureGate';
+
+export { 
+  FeatureTour,
+  type FeatureTourProps,
+  type TourStep
+} from './FeatureTour';
+
+export { 
+  EnhancedFeatureTour,
+  type EnhancedFeatureTourProps,
+  type TourStep as EnhancedTourStep
+} from './EnhancedFeatureTour';
+
+// Onboarding Components
+export { 
+  EnhancedContextualHelp,
+  type EnhancedContextualHelpProps
+} from '../onboarding/EnhancedContextualHelp';
+
+export { 
+  OnboardingAnalyticsDashboard,
+  type OnboardingAnalyticsDashboardProps
+} from '../onboarding/OnboardingAnalyticsDashboard';
+
+export { 
+  EmptyStateGuidance,
+  type EmptyStateGuidanceProps,
+  type EmptyStateType
+} from '../onboarding/EmptyStateGuidance';
+
+export { 
+  EnhancedFrenlyOnboarding,
+  type EnhancedFrenlyOnboardingProps
+} from '../onboarding/EnhancedFrenlyOnboarding';
+
 // Component Props Types
 export type { ButtonProps } from './Button';
 export type { InputProps } from './Input';

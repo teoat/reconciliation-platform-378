@@ -14,7 +14,7 @@ use crate::models::{
     ReconciliationJob, NewReconciliationJob, UpdateReconciliationJob,
     ReconciliationResult,
 };
-use crate::models::schema::projects::{reconciliation_jobs, reconciliation_results};
+use crate::models::schema::{reconciliation_jobs, reconciliation_results};
 
 use super::job_management::{JobProcessor, JobStatus, JobProgress};
 use super::types::{
@@ -70,7 +70,7 @@ pub async fn get_reconciliation_progress(
         // Lookup project_id for this job
         let project_id: Uuid = {
             let mut conn = service.db.get_connection()?;
-            use crate::models::schema::projects::reconciliation_jobs::dsl as rj;
+            use crate::models::schema::reconciliation_jobs::dsl as rj;
             rj::reconciliation_jobs
                 .filter(rj::id.eq(job_id))
                 .select(rj::project_id)
@@ -485,7 +485,7 @@ pub async fn create_reconciliation_job_impl(
 ) -> AppResult<ReconciliationJobStatus> {
     let job_id = Uuid::new_v4();
     crate::database::transaction::with_transaction(db.get_pool(), |tx| {
-        use crate::models::schema::projects::data_sources;
+        use crate::models::schema::data_sources;
         
         // 1) Verify data sources belong to the same project and exist
         let source_a_exists = data_sources::table

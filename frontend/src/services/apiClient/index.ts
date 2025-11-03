@@ -401,12 +401,17 @@ export class ApiClient {
   async createReconciliationJob(
     projectId: string,
     jobData: {
-      project_id: string;
-      status: string;
-      progress: number;
-      settings?: Record<string, unknown>;
-      priority?: string;
+      name: string;
       description?: string;
+      source_a_id: string;
+      source_b_id: string;
+      confidence_threshold: number;
+      matching_rules?: Array<{
+        field: string;
+        algorithm: string;
+        weight?: number;
+      }>;
+      settings?: Record<string, unknown>;
     }
   ): Promise<ApiResponse<BackendReconciliationJob>> {
     const config = this.requestBuilder.method('POST').body(jobData).build();
@@ -443,6 +448,72 @@ export class ApiClient {
     return this.makeRequest<{ message: string }>(`/projects/${projectId}/jobs/${jobId}`, config);
   }
 
+  async getReconciliationJobProgress(
+    jobId: string
+  ): Promise<ApiResponse<{
+    job_id: string;
+    status: string;
+    progress: number;
+    total_records?: number;
+    processed_records: number;
+    matched_records: number;
+    unmatched_records: number;
+    current_phase: string;
+    estimated_completion?: string;
+  }>> {
+    const config = this.requestBuilder.method('GET').build();
+    return this.makeRequest<{
+      job_id: string;
+      status: string;
+      progress: number;
+      total_records?: number;
+      processed_records: number;
+      matched_records: number;
+      unmatched_records: number;
+      current_phase: string;
+      estimated_completion?: string;
+    }>(`/jobs/${jobId}/progress`, config);
+  }
+
+  async getReconciliationJobResults(
+    jobId: string,
+    page = 1,
+    perPage = 20
+  ): Promise<ApiResponse<{
+    data?: Array<{
+      id: string;
+      job_id: string;
+      source_record_id: string;
+      target_record_id: string;
+      match_type: 'exact' | 'fuzzy' | 'manual' | 'unmatched';
+      confidence_score: number;
+      status: 'matched' | 'unmatched' | 'discrepancy' | 'resolved';
+      created_at: string;
+      updated_at: string;
+    }>;
+    page?: number;
+    per_page?: number;
+    total?: number;
+  }>> {
+    const config = this.requestBuilder.method('GET').build();
+    return this.makeRequest<{
+      data?: Array<{
+        id: string;
+        job_id: string;
+        source_record_id: string;
+        target_record_id: string;
+        match_type: 'exact' | 'fuzzy' | 'manual' | 'unmatched';
+        confidence_score: number;
+        status: 'matched' | 'unmatched' | 'discrepancy' | 'resolved';
+        created_at: string;
+        updated_at: string;
+      }>;
+      page?: number;
+      per_page?: number;
+      total?: number;
+    }>(`/jobs/${jobId}/results?page=${page}&per_page=${perPage}`, config);
+  }
+
   // ============================================================================
   // CORE REQUEST HANDLING
   // ============================================================================
@@ -470,7 +541,13 @@ export class ApiClient {
       }
 
       // Execute request
-      const response = await this.requestExecutor.execute(endpoint, processedConfig);
+      const responseData = await this.requestExecutor.execute<T>(endpoint, processedConfig);
+
+      // Wrap raw response data into ApiResponse format before interceptors
+      const response: ApiResponse<T> = {
+        success: true,
+        data: responseData,
+      };
 
       // Apply response interceptors
       const processedResponse = await this.interceptorManager.applyResponseInterceptors(
@@ -478,7 +555,7 @@ export class ApiClient {
         processedConfig
       );
 
-      // Handle response
+      // Handle response (interceptors may have modified it)
       const apiResponse = this.responseHandler.handleResponse<T>(processedResponse);
 
       // Validate response
@@ -620,4 +697,11 @@ export type {
   ReconciliationResultsQuery,
   ProjectQueryParams,
   UserQueryParams,
+  // Backend types
+  BackendUser,
+  BackendProject,
+  BackendDataSource,
+  BackendReconciliationRecord,
+  BackendReconciliationMatch,
+  BackendReconciliationJob,
 };

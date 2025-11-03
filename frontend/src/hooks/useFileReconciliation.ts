@@ -7,6 +7,7 @@ import {
   ProjectAnalytics 
 } from '../services/fileReconciliationService'
 import { ApiResponse } from '../services/apiClient'
+import { getErrorMessageFromApiError } from '../utils/errorExtraction'
 
 // File Upload Hook
 export const useFileUpload = () => {
@@ -34,8 +35,9 @@ export const useFileUpload = () => {
       )
 
       if (response.error) {
-        setError(response.error.message)
-        return { success: false, error: response.error.message }
+        const errorMsg = getErrorMessageFromApiError(response.error)
+        setError(errorMsg)
+        return { success: false, error: errorMsg }
       }
 
       return { success: true, dataSource: response.data }
@@ -74,7 +76,7 @@ export const useProjectFiles = (projectId: string | null) => {
       const response = await fileReconciliationService.getFilesForProject(projectId)
       
       if (response.error) {
-        setError(response.error.message)
+        setError(getErrorMessageFromApiError(response.error))
       } else {
         setFiles(response.data || [])
       }
@@ -95,8 +97,9 @@ export const useProjectFiles = (projectId: string | null) => {
       const response = await fileReconciliationService.deleteFile(projectId, fileId)
       
       if (response.error) {
-        setError(response.error.message)
-        return { success: false, error: response.error.message }
+        const errorMsg = getErrorMessageFromApiError(response.error)
+        setError(errorMsg)
+        return { success: false, error: errorMsg }
       }
 
       setFiles(prev => prev.filter(file => file.id !== fileId))
@@ -143,8 +146,9 @@ export const useReconciliation = (projectId: string | null) => {
       )
 
       if (response.error) {
-        setError(response.error.message)
-        return { success: false, error: response.error.message }
+        const errorMsg = getErrorMessageFromApiError(response.error)
+        setError(errorMsg)
+        return { success: false, error: errorMsg }
       }
 
       setResults(response.data || [])
@@ -168,7 +172,7 @@ export const useReconciliation = (projectId: string | null) => {
       const response = await fileReconciliationService.getReconciliationResults(projectId)
       
       if (response.error) {
-        setError(response.error.message)
+        setError(getErrorMessageFromApiError(response.error))
       } else {
         setResults(response.data || [])
       }
@@ -205,7 +209,7 @@ export const useProjectAnalytics = (projectId: string | null) => {
       const response = await fileReconciliationService.getProjectAnalytics(projectId)
       
       if (response.error) {
-        setError(response.error.message)
+        setError(getErrorMessageFromApiError(response.error))
       } else {
         setAnalytics(response.data || null)
       }
@@ -239,7 +243,7 @@ export const useDashboard = () => {
       const response = await fileReconciliationService.getDashboardData()
       
       if (response.error) {
-        setError(response.error.message)
+        setError(getErrorMessageFromApiError(response.error))
       } else {
         setDashboardData(response.data)
       }
@@ -278,7 +282,7 @@ export const useSystemStatus = () => {
       const response = await fileReconciliationService.getSystemStatus()
       
       if (response.error) {
-        setError(response.error.message)
+        setError(getErrorMessageFromApiError(response.error))
       } else {
         setStatus(response.data || null)
       }

@@ -36,3 +36,12 @@ pub use request_tracing::{RequestIdMiddleware, RequestIdExt};
 // Correlation ID middleware
 pub mod correlation_id;
 pub use correlation_id::{CorrelationIdMiddleware, CorrelationIdExt};
+
+// Error handler middleware
+pub mod error_handler;
+pub use error_handler::{
+    ErrorHandlerMiddleware,
+    extract_correlation_id_from_request,
+    add_correlation_id_to_response,
+    create_error_response_with_correlation_id,
+};

@@ -7,6 +7,7 @@ import { rateLimiter } from '../services/authSecurity'
 import { SessionTimeoutManager, TokenRefreshManager } from '../services/authSecurity'
 import { validatePasswordStrength } from '../utils/security'
 import { secureStorage } from '../services/secureStorage'
+import { getErrorMessageFromApiError } from '../utils/errorExtraction'
 
 interface AuthContextType {
   user: UserResponse | null
@@ -175,7 +176,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiClient.login({ email, password })
       
       if (response.error) {
-        return { success: false, error: response.error.message }
+        return { success: false, error: getErrorMessageFromApiError(response.error) }
       }
       
       if (response.data) {
@@ -227,7 +228,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiClient.register(userData)
       
       if (response.error) {
-        return { success: false, error: response.error.message }
+        return { success: false, error: getErrorMessageFromApiError(response.error) }
       }
       
       if (response.data) {
@@ -249,7 +250,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await apiClient.googleOAuth(idToken)
       
       if (response.error) {
-        return { success: false, error: response.error.message }
+        return { success: false, error: getErrorMessageFromApiError(response.error) }
       }
       
       if (response.data) {

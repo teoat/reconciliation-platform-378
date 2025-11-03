@@ -8,7 +8,7 @@ use uuid::Uuid;
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::models::schema::{projects, users};
-use crate::models::schema::projects::{reconciliation_jobs, data_sources};
+use crate::models::schema::{reconciliation_jobs, data_sources};
 use crate::services::auth::ValidationUtils;
 use crate::services::project_models::{
     ProjectListResponse, ProjectInfo, ProjectQueryResult, ProjectStats,

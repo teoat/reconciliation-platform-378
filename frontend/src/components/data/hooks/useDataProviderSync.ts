@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { useSyncStatus } from './sync';
 
-export const useDataProviderSync = (updateOnlineStatus: any) => {
+export const useDataProviderSync = (updateOnlineStatus: (isOnline: boolean) => void) => {
   const { syncStatus, performDataSync, updateOnlineStatus: updateStatus } = useSyncStatus();
 
   // Sync with notifications

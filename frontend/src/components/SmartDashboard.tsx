@@ -11,9 +11,11 @@ import { CheckCircle } from 'lucide-react'
 import { BarChart3 } from 'lucide-react'
 import { PieChart } from 'lucide-react'
 import { apiClient } from '../services/apiClient'
+import type { BackendProject } from '../services/apiClient/types'
+import { getErrorMessageFromApiError } from '../utils/errorExtraction'
 
 interface SmartDashboardProps {
-  project?: any
+  project?: BackendProject
 }
 
 interface DashboardData {
@@ -51,10 +53,10 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true)
-      const response = await apiClient.makeRequest<DashboardData>('/dashboard/smart')
+      const response = await apiClient.get('/dashboard/smart')
       
       if (response.error) {
-        setError(response.error.message)
+        setError(getErrorMessageFromApiError(response.error))
       } else if (response.data) {
         setDashboardData(response.data)
       }

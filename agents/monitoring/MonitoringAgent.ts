@@ -1,14 +1,25 @@
 /**
  * Monitoring Agent - Autonomous System Monitoring
- * 
+ *
  * Extracts and enhances the ContinuousMonitoringSystem.startMonitoringLoop() functionality
  * into a meta-agent with learning and adaptation capabilities.
- * 
+ *
  * Source: monitoring/continuous-monitoring.js:170-193
  * Priority: CRITICAL
  */
 
-import { MetaAgent, AgentType, AutonomyLevel, ExecutionContext, AgentResult, AgentMetrics, AgentStatus, HILContext, HILResponse } from '../core/types';
+import {
+  MetaAgent,
+  AgentType,
+  AutonomyLevel,
+  ExecutionContext,
+  AgentResult,
+  AgentMetrics,
+  AgentStatus,
+  AgentStatusInfo,
+  HILContext,
+  HILResponse,
+} from '../core/types';
 import { logger } from '../../frontend/src/services/logger';
 
 interface MonitorAdapter {
@@ -86,7 +97,11 @@ export class MonitoringAgent implements MetaAgent {
           memory_usage: Math.random() * 100,
           cpu_usage: Math.random() * 100,
         };
-        return this.evaluateMetrics('performance', metrics, this.monitors.get('performance')!.thresholds);
+        return this.evaluateMetrics(
+          'performance',
+          metrics,
+          this.monitors.get('performance')!.thresholds
+        );
       },
     });
 
@@ -326,7 +341,9 @@ export class MonitoringAgent implements MetaAgent {
    * Process detected issue
    */
   private async processIssue(issue: Issue): Promise<void> {
-    logger.info(`MonitoringAgent detected ${issue.severity} issue: ${issue.monitor}:${issue.metric}`);
+    logger.info(
+      `MonitoringAgent detected ${issue.severity} issue: ${issue.monitor}:${issue.metric}`
+    );
 
     // Create or update alert
     const alertId = `alert_${issue.monitor}_${issue.metric}_${issue.timestamp}`;
@@ -389,19 +406,23 @@ export class MonitoringAgent implements MetaAgent {
   private generateSolution(issue: Issue): string {
     const solutions: Record<string, Record<string, string>> = {
       performance: {
-        response_time: 'Implement response caching, optimize database queries, consider CDN integration',
+        response_time:
+          'Implement response caching, optimize database queries, consider CDN integration',
         throughput: 'Scale horizontally, implement load balancing, optimize resource usage',
-        memory_usage: 'Implement memory leak detection, optimize data structures, add garbage collection',
+        memory_usage:
+          'Implement memory leak detection, optimize data structures, add garbage collection',
         cpu_usage: 'Profile code performance, optimize algorithms, consider async processing',
       },
       error: {
         error_rate: 'Implement circuit breaker pattern, add retry logic, improve error handling',
         exception_count: 'Add comprehensive error logging, implement graceful degradation',
-        timeout_count: 'Increase timeout thresholds, optimize slow operations, implement async processing',
+        timeout_count:
+          'Increase timeout thresholds, optimize slow operations, implement async processing',
       },
       security: {
         failed_logins: 'Implement rate limiting, add CAPTCHA, enhance authentication',
-        suspicious_activity: 'Strengthen monitoring, implement anomaly detection, add security alerts',
+        suspicious_activity:
+          'Strengthen monitoring, implement anomaly detection, add security alerts',
         unauthorized_access: 'Review permissions, implement RBAC, add audit logging',
       },
       business: {
@@ -411,14 +432,19 @@ export class MonitoringAgent implements MetaAgent {
       },
     };
 
-    return solutions[issue.monitor]?.[issue.metric] || 'General system optimization and monitoring enhancement';
+    return (
+      solutions[issue.monitor]?.[issue.metric] ||
+      'General system optimization and monitoring enhancement'
+    );
   }
 
   /**
    * Trigger critical response actions
    */
   private async triggerCriticalResponse(issue: Issue): Promise<void> {
-    logger.warn(`MonitoringAgent triggering critical response for ${issue.monitor}:${issue.metric}`);
+    logger.warn(
+      `MonitoringAgent triggering critical response for ${issue.monitor}:${issue.metric}`
+    );
 
     switch (issue.monitor) {
       case 'performance':
@@ -471,13 +497,14 @@ export class MonitoringAgent implements MetaAgent {
   /**
    * Get agent status
    */
-  getStatus(): AgentStatus {
+  getStatus(): AgentStatusInfo {
     return {
       name: this.name,
       status: this.status,
       lastExecution: this.agentMetrics.lastExecutionTime,
       metrics: this.agentMetrics,
-      health: this.status === 'error' ? 'unhealthy' : this.status === 'running' ? 'healthy' : 'degraded',
+      health:
+        this.status === 'error' ? 'unhealthy' : this.status === 'running' ? 'healthy' : 'degraded',
     };
   }
 
@@ -540,4 +567,3 @@ export class MonitoringAgent implements MetaAgent {
     this.hilApprovalSystem = hilSystem;
   }
 }
-

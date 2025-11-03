@@ -86,7 +86,7 @@ pub fn get_project_id_from_job(
     db: &Database,
     job_id: Uuid,
 ) -> AppResult<Uuid> {
-    use crate::models::schema::projects::reconciliation_jobs;
+    use crate::models::schema::reconciliation_jobs;
     use diesel::QueryDsl;
     
     let mut conn = db.get_connection()?;

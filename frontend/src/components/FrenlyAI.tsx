@@ -30,6 +30,7 @@ import { Frown } from 'lucide-react'
 import { Meh } from 'lucide-react'
 import { Laugh } from 'lucide-react'
 import { FrenlyState, FrenlyMessage, FrenlyAnimation, FrenlyExpression } from '../types/frenly'
+import { frenlyAgentService } from '@/services/frenlyAgentService'
 
 interface FrenlyAIProps {
   currentPage: string
@@ -76,7 +77,7 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
   const [currentAnimation, setCurrentAnimation] = useState<FrenlyAnimation | null>(null)
   const messageTimeoutRef = useRef<NodeJS.Timeout>()
 
-  // Generate contextual messages based on current page and progress
+  // Generate contextual messages using FrenlyAgentService
   const createDefaultMessage = useCallback((): FrenlyMessage => ({
     id: Math.random().toString(36).substr(2, 9),
     type: 'greeting',
@@ -88,7 +89,57 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
     autoHide: 5000
   }), [currentPage])
 
-  const generateContextualMessage = useCallback((): FrenlyMessage => {
+  const generateContextualMessage = useCallback(async (): Promise<FrenlyMessage> => {
+    try {
+      // Get user ID from localStorage or generate one
+      const userId = localStorage.getItem('userId') || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      if (!localStorage.getItem('userId')) {
+        localStorage.setItem('userId', userId);
+      }
+
+      // Track interaction
+      await frenlyAgentService.trackInteraction(userId, 'page_view');
+
+      // Generate intelligent message using agent
+      const agentMessage = await frenlyAgentService.generateMessage({
+        userId,
+        page: currentPage,
+        progress: {
+          completedSteps: userProgress.completedSteps,
+          totalSteps: userProgress.totalSteps,
+          currentStep: userProgress.currentStep,
+        },
+        preferences: {
+          communicationStyle: 'conversational',
+          messageFrequency: 'medium',
+        },
+        behavior: {
+          sessionDuration: Date.now() - (localStorage.getItem('sessionStart') ? parseInt(localStorage.getItem('sessionStart')!) : Date.now()),
+        },
+      });
+
+      // Track message shown
+      await frenlyAgentService.trackInteraction(userId, 'message_shown', agentMessage.id);
+
+      // Convert agent message to FrenlyMessage format
+      return {
+        id: agentMessage.id,
+        type: agentMessage.type === 'help' ? 'tip' : agentMessage.type,
+        content: agentMessage.content,
+        timestamp: agentMessage.timestamp,
+        page: currentPage,
+        priority: agentMessage.priority,
+        dismissible: true,
+        autoHide: agentMessage.type === 'greeting' ? 5000 : undefined,
+      };
+    } catch (error) {
+      console.error('Error generating contextual message:', error);
+      // Fallback to default message
+      return createDefaultMessage();
+    }
+  }, [currentPage, userProgress, createDefaultMessage])
+
+  const generateContextualMessageSync = useCallback((): FrenlyMessage => {
     const pageGuidance = {
     '/projects': {
       greeting: "Hey there! 👋 Ready to start your reconciliation journey? Let's create some amazing projects together!",
@@ -234,10 +285,18 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
     setState(prev => ({ ...prev, isMinimized: !prev.isMinimized }))
   }
 
+  // Track session start
+  useEffect(() => {
+    if (!localStorage.getItem('sessionStart')) {
+      localStorage.setItem('sessionStart', Date.now().toString());
+    }
+  }, []);
+
   // Initialize with contextual message
   useEffect(() => {
-    const message = generateContextualMessage()
-    showMessage(message)
+    generateContextualMessage().then(message => {
+      showMessage(message);
+    });
    }, [currentPage, userProgress, generateContextualMessage, showMessage])
 
   // Cleanup timeout on unmount
@@ -318,7 +377,20 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
                 <span className="text-sm font-medium text-purple-600">Frenly AI</span>
               </div>
               <button
-                onClick={hideMessage}
+                onClick={async () => {
+                  // Record feedback when user dismisses
+                  if (state.activeMessage) {
+                    const userId = localStorage.getItem('userId');
+                    if (userId) {
+                      try {
+                        await frenlyAgentService.recordFeedback(userId, state.activeMessage.id, 'dismissed');
+                      } catch (error) {
+                        console.error('Error recording feedback:', error);
+                      }
+                    }
+                  }
+                  hideMessage();
+                }}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <X className="w-4 h-4" />
@@ -381,9 +453,9 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
           {/* Quick Actions */}
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => {
-                const message = generateContextualMessage()
-                showMessage(message)
+              onClick={async () => {
+                const message = await generateContextualMessage();
+                showMessage(message);
               }}
               className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs py-2 px-3 rounded-lg hover:shadow-md transition-all duration-200"
             >

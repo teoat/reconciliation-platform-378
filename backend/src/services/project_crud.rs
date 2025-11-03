@@ -12,7 +12,7 @@ use crate::models::{
     Project, NewProject, UpdateProject, ProjectStatus,
     schema::{projects, users},
 };
-use crate::models::schema::projects::{reconciliation_jobs, data_sources};
+use crate::models::schema::{reconciliation_jobs, data_sources};
 use crate::services::auth::ValidationUtils;
 use crate::services::project_models::{
     CreateProjectRequest, UpdateProjectRequest, ProjectInfo, ProjectQueryResult,

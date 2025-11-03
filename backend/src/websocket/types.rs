@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::DateTime;
 use chrono::Utc;
-use crate::websocket::session::WsSession;
 
 /// WebSocket message types
 #[derive(Debug, Clone, Serialize, Deserialize, Message)]
@@ -70,7 +69,7 @@ pub enum WsMessage {
 #[rtype(result = "()")]
 pub struct RegisterSession {
     pub user_id: String,
-    pub session: Addr<WsSession>,
+    pub session: Addr<crate::websocket::session::WsSession>,
 }
 
 /// Unregister session message
@@ -86,7 +85,7 @@ pub struct UnregisterSession {
 pub struct JoinProjectRoom {
     pub user_id: String,
     pub project_id: Uuid,
-    pub session: Addr<WsSession>,
+    pub session: Addr<crate::websocket::session::WsSession>,
 }
 
 /// Leave project room message
@@ -103,7 +102,7 @@ pub struct LeaveProjectRoom {
 pub struct BroadcastToProject {
     pub project_id: Uuid,
     pub message: WsMessage,
-    pub exclude_session: Option<Addr<WsSession>>,
+    pub exclude_session: Option<Addr<crate::websocket::session::WsSession>>,
 }
 
 /// Broadcast job progress message

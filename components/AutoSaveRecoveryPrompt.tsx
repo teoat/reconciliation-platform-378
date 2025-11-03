@@ -53,6 +53,7 @@ export const AutoSaveRecoveryPrompt: React.FC<RecoveryPromptProps> = ({
           <button
             onClick={onDismiss}
             className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close recovery prompt"
           >
             <X className="h-5 w-5" />
           </button>
@@ -226,7 +227,11 @@ export const DataComparisonModal: React.FC<DataComparisonProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold text-gray-900">Data Comparison</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Close recovery prompt"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>

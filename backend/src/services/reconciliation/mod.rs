@@ -33,7 +33,7 @@ use crate::models::{
     ReconciliationResult, NewReconciliationResult,
     DataSource, MatchType,
 };
-use crate::models::schema::projects::{reconciliation_jobs, reconciliation_results, data_sources};
+use crate::models::schema::{reconciliation_jobs, reconciliation_results, data_sources};
 
 /// Reconciliation service - Main entry point
 pub struct ReconciliationService {

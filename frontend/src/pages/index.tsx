@@ -1,5 +1,4 @@
 // ============================================================================
-import { logger } from '@/services/logger';
 // UNIFIED PAGE SYSTEM - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
@@ -11,29 +10,10 @@ import ReconciliationPage from './ReconciliationPage';
 import { AdjudicationPage } from './AdjudicationPage';
 import { SummaryPage } from './SummaryPage';
 import { VisualizationPage } from './VisualizationPage';
-import { FolderOpen } from 'lucide-react';
-import { Upload } from 'lucide-react';
-import { GitCompare } from 'lucide-react';
-import { CheckCircle } from 'lucide-react';
-import { BarChart3 } from 'lucide-react';
-import { FileText } from 'lucide-react';
 import { TrendingUp } from 'lucide-react';
 import { TrendingDown } from 'lucide-react';
-import { Clock } from 'lucide-react';
-import { Users } from 'lucide-react';
-import { Target } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
-import { Play } from 'lucide-react';
 import { Filter } from 'lucide-react';
-import { Download } from 'lucide-react';
-import { Eye } from 'lucide-react';
-import { Trash2 } from 'lucide-react';
-import { RefreshCw } from 'lucide-react';
-import { Plus } from 'lucide-react';
-import { Search } from 'lucide-react';
-import { Calendar } from 'lucide-react';
-import { PieChart } from 'lucide-react';
-import { Printer } from 'lucide-react';
 import { useFrenly } from '../components/frenly/FrenlyProvider';
 import { LoadingButton } from '../components/ui/LoadingSpinner';
 import { Button, Input, Card, StatusBadge } from '../components/ui';
@@ -309,156 +289,6 @@ export const BasePage: React.FC<BasePageProps> = ({
 // Ingestion Page - moved to separate file
 
 // Reconciliation Page - moved to separate file
-
-  const stats: StatsCard[] = [
-    {
-      title: 'Total Records',
-      value: records.length,
-      icon: GitCompare,
-      color: 'bg-blue-100 text-blue-600',
-    },
-    {
-      title: 'Matched',
-      value: records.filter((r) => r.status === 'matched').length,
-      icon: CheckCircle,
-      color: 'bg-green-100 text-green-600',
-    },
-    {
-      title: 'Unmatched',
-      value: records.filter((r) => r.status === 'unmatched').length,
-      icon: AlertCircle,
-      color: 'bg-red-100 text-red-600',
-    },
-    {
-      title: 'Discrepancies',
-      value: records.filter((r) => r.status === 'discrepancy').length,
-      icon: AlertCircle,
-      color: 'bg-yellow-100 text-yellow-600',
-    },
-  ];
-
-  const filters: FilterConfig[] = [
-    {
-      key: 'status',
-      label: 'Status',
-      type: 'select',
-      options: [
-        { value: 'matched', label: 'Matched' },
-        { value: 'unmatched', label: 'Unmatched' },
-        { value: 'discrepancy', label: 'Discrepancy' },
-        { value: 'pending', label: 'Pending' },
-      ],
-    },
-    {
-      key: 'system',
-      label: 'System',
-      type: 'select',
-      options: [
-        { value: 'bank', label: 'Bank System' },
-        { value: 'erp', label: 'ERP System' },
-        { value: 'pos', label: 'POS System' },
-      ],
-    },
-  ];
-
-  const actions: ActionConfig[] = [
-    {
-      label: 'Start Reconciliation',
-      icon: Play,
-      onClick: () => {
-        /* Start reconciliation */
-      },
-      variant: 'primary',
-      loading: processing,
-    },
-    {
-      label: 'Export Results',
-      icon: Download,
-      onClick: () => {
-        /* Export results */
-      },
-      variant: 'secondary',
-    },
-  ];
-
-  return (
-    <BasePage config={config} stats={stats} filters={filters} actions={actions} loading={loading}>
-      {/* Records Table */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900">
-            Reconciliation Records ({records.length})
-          </h2>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  System
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Date
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {records.map((record) => (
-                <tr key={record.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {record.sourceSystem} → {record.targetSystem}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${record.amount?.toLocaleString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {new Date(record.date).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={record.status}>{record.status}</StatusBadge>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          /* View details */
-                        }}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      {record.status === 'unmatched' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            /* Manual match */
-                          }}
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </BasePage>
-  );
-};
 
 // Adjudication Page - moved to separate file
 

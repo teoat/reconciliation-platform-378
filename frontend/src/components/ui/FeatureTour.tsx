@@ -7,9 +7,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronRight, ChevronLeft, CheckCircle } from 'lucide-react';
 // Import ariaLiveRegionsService with fallback
-import ariaLiveRegionsServiceModule from '../services/ariaLiveRegionsService';
-const ariaLiveRegionsService = 
-  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService || 
+import ariaLiveRegionsServiceModule from '../../services/ariaLiveRegionsService';
+const ariaLiveRegionsService =
+  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService ||
   (ariaLiveRegionsServiceModule as any).default?.getInstance?.() ||
   ariaLiveRegionsServiceModule;
 
@@ -57,10 +57,10 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({
     const targetElement = document.querySelector(currentStepData.target) as HTMLElement;
     if (targetElement) {
       setHighlightedElement(targetElement);
-      
+
       // Scroll into view
       targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      
+
       // Focus for accessibility
       setTimeout(() => {
         if (targetElement.tabIndex >= 0) {
@@ -282,4 +282,3 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({
 };
 
 export default FeatureTour;
-

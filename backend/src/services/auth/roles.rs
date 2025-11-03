@@ -1,6 +1,7 @@
 //! User roles and role-based access control
 
 use crate::errors::AppError;
+use serde::{Deserialize, Serialize};
 
 /// User role enumeration
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

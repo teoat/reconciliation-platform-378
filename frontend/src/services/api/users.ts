@@ -3,6 +3,7 @@
 // ============================================================================
 
 import { apiClient } from '../apiClient';
+import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
 
 export class UsersApiService {
   static async getUsers(
@@ -25,28 +26,49 @@ export class UsersApiService {
       }
 
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
 
       // Filter by role and status if provided
-      let users = response.data?.data || [];
+      let users = response.data?.items || [];
       if (role) {
-        users = users.filter((user: { role: string }) => user.role === role);
+        users = users.filter((user: { role?: string }) => user.role === role);
       }
       if (status) {
         users = users.filter(
-          (user: { is_active: boolean }) => user.is_active === (status === 'active')
+          (user: { is_active?: boolean }) => user.is_active === (status === 'active')
         );
       }
 
+      const pagination = response.data ? {
+        page: response.data.page,
+        per_page: response.data.per_page,
+        total: response.data.total,
+        total_pages: response.data.total_pages,
+      } : {
+        page,
+        per_page,
+        total: users.length,
+        total_pages: Math.ceil(users.length / per_page),
+      };
+
       return {
         users,
-        pagination: response.data?.pagination || {
+<<<<<<< Current (Your changes)
+        pagination,
+=======
+        pagination: response.data ? {
+          page: response.data.page,
+          per_page: response.data.per_page,
+          total: response.data.total,
+          total_pages: response.data.total_pages,
+        } : {
           page,
           per_page,
           total: users.length,
           total_pages: Math.ceil(users.length / per_page),
         },
+>>>>>>> Incoming (Background Agent changes)
       };
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : 'Failed to fetch users');
@@ -57,7 +79,7 @@ export class UsersApiService {
     try {
       const response = await apiClient.getUserById(userId);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -75,7 +97,7 @@ export class UsersApiService {
     try {
       const response = await apiClient.createUser(userData);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -96,7 +118,7 @@ export class UsersApiService {
     try {
       const response = await apiClient.updateUser(userId, userData);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -108,7 +130,7 @@ export class UsersApiService {
     try {
       const response = await apiClient.deleteUser(userId);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return true;
     } catch (error) {

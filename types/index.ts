@@ -299,6 +299,27 @@ export interface UploadedFile {
   metadata: FileMetadata;
 }
 
+export interface IngestionJob {
+  id: string;
+  projectId: string;
+  projectName: string;
+  dataSourceId: string;
+  dataSourceName: string;
+  filename: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  metadata: Record<string, any>;
+  qualityMetrics: any;
+  recordCount: number;
+  errorMessage: string;
+  createdBy: string;
+  createdByFirstName: string;
+  createdByLastName: string;
+  startedAt: string;
+  completedAt: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export type FileStatus = 'uploading' | 'processing' | 'completed' | 'failed' | 'archived';
 
 export interface FileMetadata {
@@ -1292,6 +1313,11 @@ export interface VisualizationPerformance {
 // ============================================================================
 // API TYPES
 // ============================================================================
+
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken: string;
+}
 
 export interface ApiResponse<T = any> {
   success: boolean;

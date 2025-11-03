@@ -22,7 +22,7 @@ interface OnboardingProgress {
   role?: UserRole;
 }
 
-interface OnboardingAnalytics {
+export interface OnboardingAnalytics {
   stepId: string;
   stepName: string;
   duration: number;
@@ -228,7 +228,25 @@ class OnboardingService {
       this.analytics.shift();
     }
 
-    // TODO: Send to analytics service
+    // Send to analytics service
+    try {
+      // Import monitoring service dynamically to avoid circular dependencies
+      import('../services/monitoring').then(({ monitoringService }) => {
+        monitoringService.trackEvent('onboarding_step', {
+          stepId: event.stepId,
+          stepName: event.stepName,
+          duration: event.duration,
+          completed: event.completed,
+          action: event.action,
+          timestamp: event.timestamp.toISOString(),
+        });
+      }).catch((err) => {
+        logger.debug('Failed to send onboarding analytics to monitoring service', err);
+      });
+    } catch (err) {
+      logger.debug('Onboarding analytics event (monitoring service unavailable)', event);
+    }
+
     logger.debug('Onboarding analytics event', event);
   }
 

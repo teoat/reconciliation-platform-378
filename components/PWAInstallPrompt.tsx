@@ -65,12 +65,13 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onClose }) =
           <button
             onClick={handleClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+            aria-label="Close install prompt"
           >
             <X className="w-4 h-4 text-gray-400" />
           </button>
         </div>
 
-        <p className="text-sm text-gray-700 mb-4">
+        <p id="install-description" className="text-sm text-gray-700 mb-4">
           Install our app for a better experience with offline access, faster loading, and push
           notifications.
         </p>
@@ -80,6 +81,7 @@ export const PWAInstallPrompt: React.FC<PWAInstallPromptProps> = ({ onClose }) =
             onClick={handleInstall}
             disabled={isInstalling}
             className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center space-x-2"
+            aria-describedby="install-description"
           >
             {isInstalling ? (
               <>

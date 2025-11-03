@@ -18,7 +18,12 @@ interface State {
   hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
-  translatedError?: any;
+  translatedError?: {
+    title: string;
+    message: string;
+    code?: string;
+    suggestion?: string;
+  };
 }
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -220,7 +225,7 @@ export interface AppError {
   type: ErrorType;
   message: string;
   code?: string;
-  details?: any;
+  details?: Record<string, unknown>;
   timestamp: Date;
 }
 
@@ -228,7 +233,7 @@ export const createError = (
   type: ErrorType,
   message: string,
   code?: string,
-  details?: any
+  details?: Record<string, unknown>
 ): AppError => ({
   type,
   message,

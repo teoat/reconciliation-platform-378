@@ -7,12 +7,8 @@
 import React, { useState } from 'react';
 import { AlertCircle, X, RefreshCw, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { ErrorCodeDisplay } from './ErrorCodeDisplay';
-// Import ariaLiveRegionsService with fallback
-import ariaLiveRegionsServiceModule from '../services/ariaLiveRegionsService';
-const ariaLiveRegionsService = 
-  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService || 
-  (ariaLiveRegionsServiceModule as any).default?.getInstance?.() ||
-  ariaLiveRegionsServiceModule;
+// Import ariaLiveRegionsService - service exists and provides announcement functionality
+import { ariaLiveRegionsService } from '../../services/ariaLiveRegionsService';
 
 export interface ErrorRecoveryAction {
   label: string;

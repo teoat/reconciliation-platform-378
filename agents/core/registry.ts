@@ -1,10 +1,10 @@
 /**
  * Agent Registry - Registration and Discovery System
- * 
+ *
  * Manages agent registration, discovery, and lifecycle tracking.
  */
 
-import { MetaAgent, AgentConfig, AgentRegistryEntry, AgentStatus } from './types';
+import { MetaAgent, AgentConfig, AgentRegistryEntry, AgentStatus, AgentStatusInfo } from './types';
 
 export class AgentRegistry {
   private agents: Map<string, AgentRegistryEntry> = new Map();
@@ -123,8 +123,8 @@ export class AgentRegistry {
   /**
    * Perform health check on all agents
    */
-  async healthCheck(): Promise<Map<string, AgentStatus>> {
-    const healthStatuses = new Map<string, AgentStatus>();
+  async healthCheck(): Promise<Map<string, AgentStatusInfo>> {
+    const healthStatuses = new Map<string, AgentStatusInfo>();
 
     for (const [name, entry] of this.agents) {
       try {
@@ -193,4 +193,3 @@ export class AgentRegistry {
 
 // Singleton instance
 export const agentRegistry = new AgentRegistry();
-

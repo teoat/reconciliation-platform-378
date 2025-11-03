@@ -18,11 +18,14 @@ export type Priority = 'low' | 'medium' | 'high' | 'critical';
 export interface User {
   id: ID;
   email: string;
-  first_name: string;
-  last_name: string;
-  role: 'admin' | 'user' | 'analyst' | 'viewer';
-  is_active: boolean;
-  last_login?: Timestamp;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  status: string;
+  email_verified: boolean;
+  email_verified_at?: Timestamp;
+  last_login_at?: Timestamp;
+  last_active_at?: Timestamp;
   created_at: Timestamp;
   updated_at: Timestamp;
 }
@@ -30,28 +33,34 @@ export interface User {
 export interface UserResponse {
   id: ID;
   email: string;
-  first_name: string;
-  last_name: string;
-  role: string;
-  is_active: boolean;
-  last_login?: Timestamp;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  status: string;
+  email_verified: boolean;
+  email_verified_at?: Timestamp;
+  last_login_at?: Timestamp;
+  last_active_at?: Timestamp;
   created_at: Timestamp;
+  updated_at: Timestamp;
 }
 
 export interface CreateUserRequest {
   email: string;
   password: string;
-  first_name: string;
-  last_name: string;
-  role?: string;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+  status?: string;
 }
 
 export interface UpdateUserRequest {
   email?: string;
+  username?: string;
   first_name?: string;
   last_name?: string;
-  role?: string;
-  is_active?: boolean;
+  status?: string;
+  email_verified?: boolean;
 }
 
 export interface LoginRequest {

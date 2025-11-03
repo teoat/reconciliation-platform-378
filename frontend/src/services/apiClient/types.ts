@@ -128,12 +128,16 @@ export interface FileUploadResponse {
   processed_at?: string;
 }
 
+// Error can be either a string (simple error message) or an object with message property
+export type ApiErrorValue = string | { message: string; code?: string; details?: unknown };
+
 export interface ApiResponse<T = unknown> {
   success?: boolean;
   data?: T;
   message?: string;
-  error?: string; // Error title from backend
+  error?: ApiErrorValue; // Error can be string or object with message property
   code?: string; // Error code from backend
+  correlationId?: string; // Correlation ID from response headers (Agent 1 Task 1.19)
 }
 
 export interface PaginatedResponse<T> {

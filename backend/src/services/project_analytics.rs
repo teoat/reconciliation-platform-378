@@ -7,7 +7,7 @@ use diesel::prelude::*;
 use uuid::Uuid;
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
-use crate::models::schema::projects::{projects, reconciliation_jobs, data_sources, uploaded_files, reconciliation_records};
+use crate::models::schema::{projects, reconciliation_jobs, data_sources, uploaded_files, reconciliation_records};
 use crate::services::project_models::{
     ProjectAnalytics, JobStatistics, FileStatistics, RecordStatistics, RecentActivity,
     MonthlyTrend, ProjectPerformance, JobPerformance, FilePerformance, ProjectCollaborator,

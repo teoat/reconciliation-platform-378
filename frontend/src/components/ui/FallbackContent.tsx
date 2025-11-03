@@ -16,7 +16,7 @@ const ariaLiveRegionsService =
 
 export interface FallbackContentProps {
   service: string;
-  fallbackData?: any;
+  fallbackData?: Record<string, unknown> | unknown[] | string | number | null;
   cacheTimestamp?: Date;
   message?: string;
   showRefreshOption?: boolean;

@@ -639,7 +639,12 @@ class AtomicWorkflowService {
 export const useAtomicWorkflow = () => {
   const service = AtomicWorkflowService.getInstance();
 
-  const createWorkflow = (workflowId: string, initialStage: string, userId: string, data?: any) => {
+  const createWorkflow = (
+    workflowId: string,
+    initialStage: string,
+    userId: string,
+    data?: Record<string, unknown>
+  ) => {
     return service.createWorkflow(workflowId, initialStage, userId, data);
   };
 
@@ -647,8 +652,12 @@ export const useAtomicWorkflow = () => {
     workflowId: string,
     toStage: string,
     userId: string,
-    data?: any,
-    options?: any
+    data?: Record<string, unknown>,
+    options?: {
+      forceAdvance?: boolean;
+      lockType?: WorkflowLock['lockType'];
+      timeout?: number;
+    }
   ) => {
     return service.advanceWorkflow(workflowId, toStage, userId, data, options);
   };

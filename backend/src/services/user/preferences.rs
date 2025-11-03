@@ -15,7 +15,7 @@ use crate::services::user::PreferencesServiceTrait;
 use crate::database::{Database, transaction::with_transaction};
 use crate::errors::{AppError, AppResult};
 use crate::models::UserPreference;
-use crate::models::schema::users::user_preferences;
+use crate::models::schema::user_preferences;
 
 /// Preferences service for managing user preferences
 pub struct PreferencesService {

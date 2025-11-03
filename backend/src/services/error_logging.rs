@@ -144,9 +144,11 @@ impl ErrorLoggingService {
         mut context: ErrorContext,
     ) {
         // Try to get correlation ID from context first, generate if not available
-        let correlation_id = context.request_id
-            .clone()
-            .unwrap_or_else(|| self.generate_correlation_id().await);
+        let correlation_id = if let Some(id) = context.request_id.clone() {
+            id
+        } else {
+            self.generate_correlation_id().await
+        };
         
         // Ensure correlation ID is set in context
         context.request_id = Some(correlation_id.clone());

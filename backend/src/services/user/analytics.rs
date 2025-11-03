@@ -27,7 +27,7 @@ impl UserAnalyticsService {
         let mut conn = self.db.get_connection()?;
 
         let count = users::table
-            .filter(users::is_active.eq(true))
+            .filter(users::email_verified.eq(true))
             .count()
             .get_result::<i64>(&mut conn)
             .map_err(AppError::Database)?;
@@ -47,15 +47,15 @@ impl UserAnalyticsService {
 
         // Get active users
         let active_users = users::table
-            .filter(users::is_active.eq(true))
+            .filter(users::email_verified.eq(true))
             .count()
             .get_result::<i64>(&mut conn)
             .map_err(AppError::Database)?;
 
         // Get users by role
         let users_by_role = users::table
-            .group_by(users::role)
-            .select((users::role, diesel::dsl::count(users::id)))
+            .group_by(users::status)
+            .select((users::status, diesel::dsl::count(users::id)))
             .load::<(String, i64)>(&mut conn)
             .map_err(AppError::Database)?;
 

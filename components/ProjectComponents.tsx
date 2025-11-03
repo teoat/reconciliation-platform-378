@@ -339,7 +339,11 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
         <button onClick={onSelect} className="flex-1 btn-primary text-sm">
           Open Project
         </button>
-        <button onClick={() => setShowActions(!showActions)} className="btn-secondary p-2">
+        <button
+          onClick={() => setShowActions(!showActions)}
+          className="btn-secondary p-2"
+          aria-label="Show actions"
+        >
           <MoreVertical className="w-4 h-4" />
         </button>
       </div>
@@ -436,7 +440,7 @@ export const ProjectListItem: React.FC<ProjectListItemProps> = ({
           <button onClick={onSelect} className="btn-primary text-sm">
             Open
           </button>
-          <button onClick={onEdit} className="btn-secondary p-2">
+          <button onClick={onEdit} className="btn-secondary p-2" aria-label="Edit project">
             <Edit className="w-4 h-4" />
           </button>
           <button onClick={onClone} className="btn-secondary p-2">

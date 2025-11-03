@@ -1,7 +1,10 @@
 // Data Provider Storage Hook
 import { useDataStorage } from './storage';
 
-export const useDataProviderStorage = (setIsLoading: any, setError: any) => {
+export const useDataProviderStorage = (
+  setIsLoading: (loading: boolean) => void,
+  setError: (error: string | null) => void
+) => {
   const {
     currentProject,
     setCurrentProject,

@@ -147,7 +147,7 @@ impl EnhancedAuthService {
         db: &crate::database::Database,
     ) -> AppResult<String> {
         use diesel::prelude::*;
-        use crate::models::schema::auth::password_reset_tokens;
+        use crate::models::schema::password_reset_tokens;
         use crate::models::NewPasswordResetToken;
         use sha2::{Sha256, Digest};
 
@@ -202,7 +202,7 @@ impl EnhancedAuthService {
         db: &crate::database::Database,
     ) -> AppResult<()> {
         use diesel::prelude::*;
-        use crate::models::schema::auth::password_reset_tokens;
+        use crate::models::schema::password_reset_tokens;
         use crate::models::schema::users;
         use crate::models::{PasswordResetToken, UpdatePasswordResetToken};
         use sha2::{Sha256, Digest};
@@ -303,7 +303,7 @@ impl EnhancedAuthService {
         db: &crate::database::Database,
     ) -> AppResult<String> {
         use diesel::prelude::*;
-        use crate::models::schema::auth::email_verification_tokens;
+        use crate::models::schema::email_verification_tokens;
         use crate::models::NewEmailVerificationToken;
         use sha2::{Sha256, Digest};
 
@@ -345,7 +345,7 @@ impl EnhancedAuthService {
         db: &crate::database::Database,
     ) -> AppResult<()> {
         use diesel::prelude::*;
-        use crate::models::schema::auth::email_verification_tokens;
+        use crate::models::schema::email_verification_tokens;
         use crate::models::schema::users;
         use crate::models::{EmailVerificationToken, UpdateEmailVerificationToken};
         use sha2::{Sha256, Digest};

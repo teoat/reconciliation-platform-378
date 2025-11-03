@@ -322,6 +322,14 @@ class Logger {
     this.log('warn', message, 'warning', context, metadata);
   }
 
+  public warn(
+    message: string,
+    context?: Record<string, unknown>,
+    metadata?: Record<string, unknown>
+  ): void {
+    this.log('warn', message, 'warning', context, metadata);
+  }
+
   public error(
     message: string,
     context?: Record<string, unknown>,

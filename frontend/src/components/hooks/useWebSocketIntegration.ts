@@ -20,7 +20,7 @@ interface UseWebSocketIntegrationReturn {
   progress: ReconciliationProgress | null
   subscribeToJob: (jobId: string) => void
   unsubscribeFromJob: (jobId: string) => void
-  sendMessage: (message: any) => void
+  sendMessage: (message: { type: string; [key: string]: unknown }) => void
 }
 
 export const useWebSocketIntegration = (): UseWebSocketIntegrationReturn => {
@@ -100,7 +100,7 @@ export const useWebSocketIntegration = (): UseWebSocketIntegrationReturn => {
     }
   }, [isConnected, wsSendMessage])
 
-  const sendMessage = useCallback((message: any) => {
+  const sendMessage = useCallback((message: { type: string; [key: string]: unknown }) => {
     if (isConnected) {
       wsSendMessage(message)
     }

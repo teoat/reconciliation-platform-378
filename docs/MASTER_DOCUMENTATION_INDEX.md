@@ -13,12 +13,15 @@
 
 ### Project Status & Tracking
 - **docs/PROJECT_STATUS.md** - Current project status (consolidated)
-- **CONSOLIDATED_MASTER_TODO.md** - Single source of truth for todos
+- **MASTER_TODO_CONSOLIDATED.md** - Single source of truth for todos
 - **docs/COMPLETION_HISTORY.md** - Consolidated completion history
+- **docs/DOCUMENTATION_DIAGNOSTICS.md** - Documentation analysis & consolidation plan ⭐ **NEW**
+- **docs/NEXT_STEPS_COMPLETION_SUMMARY.md** - Completion summary for next steps ⭐ **NEW**
 
 ### Comprehensive Reports
 - **OMEGA_7_VECTOR_AUDIT_REPORT.md** - Complete 7-vector audit (945 lines)
 - **docs/DIAGNOSTIC_RESULTS.md** - Consolidated diagnostic results
+- **docs/DOCUMENTATION_DIAGNOSTICS.md** - Documentation analysis & consolidation ⭐ **NEW**
 - **MASTER_IMPROVEMENT_ORCHESTRATION.md** - Improvement orchestration plan
 
 ### Agent Plans
@@ -114,9 +117,20 @@
 - All completion files → `docs/COMPLETION_HISTORY.md`
 - All diagnostic files → `docs/DIAGNOSTIC_RESULTS.md`
 - All status/summary files → `docs/PROJECT_STATUS.md`
+- Documentation diagnostics → `docs/DOCUMENTATION_DIAGNOSTICS.md` ⭐ **NEW**
 
 **Archived Files:**
 - All duplicate files moved to `docs/archive/consolidated/`
+- 150+ duplicate documentation files archived
+- 23% reduction in total documentation files (164 → 126)
+
+**Recent Updates (January 2025):**
+- ✅ Created comprehensive documentation diagnostics report
+- ✅ Completed critical frontend TODOs (onboarding API integration)
+- ✅ Completed all P1 TODOs (EmptyStateGuidance + Onboarding Analytics)
+- ✅ Updated master documentation index
+- ✅ Consolidated duplicate documentation files
+- ✅ Created next steps completion summary
 
 ---
 

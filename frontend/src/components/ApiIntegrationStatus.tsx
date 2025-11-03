@@ -33,9 +33,8 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
   // Get real-time data from Redux store
   const auth = useAppSelector((state) => state.auth);
   const projects = useAppSelector((state) => state.projects);
-  const dataSources = useAppSelector((state) => state.dataSources);
-  const reconciliationJobs = useAppSelector((state) => state.reconciliationJobs);
-  const notifications = useAppSelector((state) => state.notifications);
+  const reconciliation = useAppSelector((state) => state.reconciliation);
+  const ui = useAppSelector((state) => state.ui);
 
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
@@ -226,7 +225,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
               <div className="p-2 bg-blue-100 rounded-lg mx-auto w-fit mb-2">
                 <Database className="h-5 w-5 text-blue-600" />
               </div>
-              <p className="text-sm font-medium text-gray-900">{projects.items.length}</p>
+              <p className="text-sm font-medium text-gray-900">{projects.projects.length}</p>
               <p className="text-xs text-gray-500">Projects</p>
             </div>
 
@@ -234,23 +233,23 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
               <div className="p-2 bg-green-100 rounded-lg mx-auto w-fit mb-2">
                 <Activity className="h-5 w-5 text-green-600" />
               </div>
-              <p className="text-sm font-medium text-gray-900">{dataSources.items.length}</p>
-              <p className="text-xs text-gray-500">Data Sources</p>
+              <p className="text-sm font-medium text-gray-900">{projects.projects.length}</p>
+              <p className="text-xs text-gray-500">Projects</p>
             </div>
 
             <div className="text-center">
               <div className="p-2 bg-purple-100 rounded-lg mx-auto w-fit mb-2">
                 <BarChart3 className="h-5 w-5 text-purple-600" />
               </div>
-              <p className="text-sm font-medium text-gray-900">{reconciliationJobs.items.length}</p>
-              <p className="text-xs text-gray-500">Jobs</p>
+              <p className="text-sm font-medium text-gray-900">{reconciliation.records.length}</p>
+              <p className="text-xs text-gray-500">Records</p>
             </div>
 
             <div className="text-center">
               <div className="p-2 bg-orange-100 rounded-lg mx-auto w-fit mb-2">
                 <Users className="h-5 w-5 text-orange-600" />
               </div>
-              <p className="text-sm font-medium text-gray-900">{notifications.unreadCount}</p>
+              <p className="text-sm font-medium text-gray-900">{ui.notifications.length}</p>
               <p className="text-xs text-gray-500">Notifications</p>
             </div>
           </div>
@@ -285,14 +284,13 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
                   </div>
                 )}
 
-                {reconciliationJobs.items.some((job) => job.status === 'running') && (
+                {reconciliation.isLoading && (
                   <div className="flex items-center space-x-3 p-3 bg-yellow-50 rounded-lg">
                     <RefreshCw className="h-4 w-4 text-yellow-600 animate-spin" />
                     <div>
                       <p className="text-sm font-medium text-yellow-800">Reconciliation Running</p>
                       <p className="text-xs text-yellow-600">
-                        {reconciliationJobs.items.filter((job) => job.status === 'running').length}{' '}
-                        active jobs
+                        Processing {reconciliation.records.length} records
                       </p>
                     </div>
                   </div>

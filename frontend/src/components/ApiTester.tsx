@@ -26,7 +26,7 @@ interface ApiTestResult {
   endpoint: string
   method: string
   status: 'success' | 'error' | 'pending'
-  response?: any
+  response?: Record<string, unknown> | unknown[]
   error?: string
   duration?: number
   timestamp: Date
@@ -50,7 +50,11 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
     { value: 'custom', label: 'Custom Endpoint', method: 'GET', endpoint: '' }
   ]
 
-  const runApiTest = useCallback(async (endpoint: string, method: string, body?: any) => {
+  const runApiTest = useCallback(async (
+    endpoint: string,
+    method: string,
+    body?: Record<string, unknown> | unknown[]
+  ) => {
     const startTime = Date.now()
     const timestamp = new Date()
     
@@ -65,7 +69,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
     setTestResults(prev => [pendingResult, ...prev])
     
     try {
-      let response: any
+      let response: Record<string, unknown> | unknown[] | undefined
       
       // Execute the appropriate API call based on endpoint
       switch (endpoint) {

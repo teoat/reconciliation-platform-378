@@ -4,6 +4,7 @@
 
 import { apiClient } from '../apiClient';
 import { FileUploadResponse } from '../apiClient/types';
+import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
 
 export class FilesApiService {
   static async uploadFile(
@@ -18,7 +19,7 @@ export class FilesApiService {
 
       const response = await apiClient.uploadFile(formData, onProgress);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data as FileUploadResponse;
     } catch (error) {
@@ -38,7 +39,7 @@ export class FilesApiService {
       });
 
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
 
       return {
@@ -59,7 +60,7 @@ export class FilesApiService {
     try {
       const response = await apiClient.get(`/api/files/${fileId}`);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -71,7 +72,7 @@ export class FilesApiService {
     try {
       const response = await apiClient.delete(`/api/files/${fileId}`);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return true;
     } catch (error) {
@@ -83,7 +84,7 @@ export class FilesApiService {
     try {
       const response = await apiClient.get(`/api/files/${fileId}/preview`);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -97,7 +98,7 @@ export class FilesApiService {
         responseType: 'blob',
       });
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {

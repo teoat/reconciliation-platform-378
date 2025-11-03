@@ -5,6 +5,7 @@
 import { apiClient } from '../apiClient';
 import type { Project } from '../../types/backend-aligned';
 import type { ProjectSettings } from '../../types/index';
+import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
 
 export class ProjectsApiService {
   static async getProjects(
@@ -26,7 +27,7 @@ export class ProjectsApiService {
       }
 
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
 
       let projects = response.data?.data || [];
@@ -52,7 +53,7 @@ export class ProjectsApiService {
     try {
       const response = await apiClient.getProjectById(projectId);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -68,7 +69,7 @@ export class ProjectsApiService {
     try {
       const response = await apiClient.createProject(projectData);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -88,7 +89,7 @@ export class ProjectsApiService {
     try {
       const response = await apiClient.updateProject(projectId, projectData);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -100,7 +101,7 @@ export class ProjectsApiService {
     try {
       const response = await apiClient.deleteProject(projectId);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return true;
     } catch (error) {
@@ -112,7 +113,7 @@ export class ProjectsApiService {
     try {
       const response = await apiClient.get(`/api/projects/${projectId}/settings`);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -124,7 +125,7 @@ export class ProjectsApiService {
     try {
       const response = await apiClient.post(`/api/projects/${projectId}/settings`, settings);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -136,7 +137,7 @@ export class ProjectsApiService {
     try {
       const response = await apiClient.getDataSources(projectId);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -155,7 +156,7 @@ export class ProjectsApiService {
     try {
       const response = await apiClient.createDataSource(projectId, dataSourceData);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -167,7 +168,7 @@ export class ProjectsApiService {
     try {
       const response = await apiClient.deleteDataSource(projectId, dataSourceId);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return true;
     } catch (error) {
@@ -179,7 +180,7 @@ export class ProjectsApiService {
     try {
       const response = await apiClient.getProjectStats(projectId);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {

@@ -144,6 +144,8 @@ impl From<actix_web::Error> for AppError {
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
         // ✅ ERROR TRANSLATION: Use translation service for user-friendly messages
+        // Note: Correlation ID will be added by ErrorHandlerMiddleware
+        // This ensures correlation IDs flow through all error paths
         match self {
             AppError::Database(err) => {
                 let translator = get_error_translator();
@@ -160,6 +162,7 @@ impl ResponseError for AppError {
                     error: friendly.title,
                     message: friendly.message,
                     code: friendly.code,
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Connection(_) => {
@@ -168,6 +171,7 @@ impl ResponseError for AppError {
                     error: title,
                     message,
                     code: "CONNECTION_ERROR".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Authentication(msg) => {
@@ -176,6 +180,7 @@ impl ResponseError for AppError {
                     error: title,
                     message: msg.clone(),
                     code: "AUTHENTICATION_ERROR".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Authorization(msg) => {
@@ -184,6 +189,7 @@ impl ResponseError for AppError {
                     error: title,
                     message: msg.clone(),
                     code: "AUTHORIZATION_ERROR".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Validation(msg) | AppError::ValidationError(msg) => {
@@ -192,6 +198,7 @@ impl ResponseError for AppError {
                     error: title,
                     message: msg.clone(),
                     code: "VALIDATION_ERROR".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::File(msg) => {
@@ -200,6 +207,7 @@ impl ResponseError for AppError {
                     error: title,
                     message: msg.clone(),
                     code: "FILE_ERROR".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Config(msg) => {
@@ -208,6 +216,7 @@ impl ResponseError for AppError {
                     error: title,
                     message,
                     code: "CONFIG_ERROR".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Redis(_) => {
@@ -216,6 +225,7 @@ impl ResponseError for AppError {
                     error: title,
                     message,
                     code: "REDIS_ERROR".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Jwt(_) => {
@@ -224,6 +234,7 @@ impl ResponseError for AppError {
                     error: title,
                     message,
                     code: "JWT_ERROR".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Io(_) => {
@@ -232,6 +243,7 @@ impl ResponseError for AppError {
                     error: title,
                     message,
                     code: "IO_ERROR".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Serialization(_) => {
@@ -240,6 +252,7 @@ impl ResponseError for AppError {
                     error: title,
                     message,
                     code: "SERIALIZATION_ERROR".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Internal(msg) | AppError::InternalServerError(msg) => {
@@ -248,6 +261,7 @@ impl ResponseError for AppError {
                     error: title,
                     message: msg.clone(),
                     code: "INTERNAL_ERROR".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::NotFound(msg) => {
@@ -256,6 +270,7 @@ impl ResponseError for AppError {
                     error: title,
                     message: msg.clone(),
                     code: "NOT_FOUND".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Conflict(msg) => {
@@ -264,6 +279,7 @@ impl ResponseError for AppError {
                     error: title,
                     message: msg.clone(),
                     code: "CONFLICT".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::BadRequest(msg) => {
@@ -272,6 +288,7 @@ impl ResponseError for AppError {
                     error: title,
                     message: msg.clone(),
                     code: "BAD_REQUEST".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Unauthorized(msg) => {
@@ -280,6 +297,7 @@ impl ResponseError for AppError {
                     error: title,
                     message: msg.clone(),
                     code: "UNAUTHORIZED".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Forbidden(msg) => {
@@ -288,6 +306,7 @@ impl ResponseError for AppError {
                     error: title,
                     message: msg.clone(),
                     code: "FORBIDDEN".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::ServiceUnavailable(msg) => {
@@ -296,6 +315,7 @@ impl ResponseError for AppError {
                     error: title,
                     message: msg.clone(),
                     code: "SERVICE_UNAVAILABLE".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::RateLimitExceeded => {
@@ -304,6 +324,7 @@ impl ResponseError for AppError {
                     error: title,
                     message,
                     code: "RATE_LIMIT_EXCEEDED".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::CsrfTokenMissing => {
@@ -312,6 +333,7 @@ impl ResponseError for AppError {
                     error: title,
                     message,
                     code: "CSRF_TOKEN_MISSING".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::CsrfTokenInvalid => {
@@ -320,6 +342,7 @@ impl ResponseError for AppError {
                     error: title,
                     message,
                     code: "CSRF_TOKEN_INVALID".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Timeout => {
@@ -328,6 +351,7 @@ impl ResponseError for AppError {
                     error: title,
                     message,
                     code: "TIMEOUT".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Alert(msg) => {
@@ -336,6 +360,7 @@ impl ResponseError for AppError {
                     error: title,
                     message,
                     code: "ALERT".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::Offline(msg) => {
@@ -344,6 +369,7 @@ impl ResponseError for AppError {
                     error: title,
                     message,
                     code: "OFFLINE".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
             AppError::OptimisticUpdate(msg) => {
@@ -352,6 +378,7 @@ impl ResponseError for AppError {
                     error: title,
                     message,
                     code: "OPTIMISTIC_UPDATE".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
             },
         }
@@ -364,6 +391,8 @@ pub struct ErrorResponse {
     pub error: String,
     pub message: String,
     pub code: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub correlation_id: Option<String>,
 }
 
 /// Result type alias for convenience

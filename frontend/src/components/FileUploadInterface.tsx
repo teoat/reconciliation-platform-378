@@ -391,7 +391,16 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
     if (!isConnected) return
 
     // Subscribe to file processing updates
-    const unsubscribeFileUpdate = subscribe('file_update', (data: any) => {
+    const unsubscribeFileUpdate = subscribe('file_update', (data: {
+      project_id: string;
+      file_id: string;
+      updates: Partial<{
+        status: string;
+        progress: number;
+        error?: string;
+        processed_records?: number;
+      }>;
+    }) => {
       if (data.project_id === projectId) {
         setFiles(prev => prev.map(file => 
           file.id === data.file_id 

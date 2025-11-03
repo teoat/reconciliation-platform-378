@@ -12,6 +12,8 @@ import { Upload } from 'lucide-react'
 import { Play } from 'lucide-react'
 import { Folder } from 'lucide-react'
 import { Settings } from 'lucide-react'
+import type { BackendProject, BackendDataSource, BackendReconciliationJob } from '../../services/apiClient/types'
+import { getErrorMessageFromApiError } from '../../utils/errorExtraction'
 
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -19,9 +21,9 @@ const ProjectDetail: React.FC = () => {
   const { deleteProject } = useProjects()
   const toast = useToast()
   
-  const [project, setProject] = useState<any>(null)
-  const [dataSources, setDataSources] = useState<any[]>([])
-  const [jobs, setJobs] = useState<any[]>([])
+  const [project, setProject] = useState<BackendProject | null>(null)
+  const [dataSources, setDataSources] = useState<BackendDataSource[]>([])
+  const [jobs, setJobs] = useState<BackendReconciliationJob[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'sources' | 'jobs'>('overview')
@@ -42,7 +44,7 @@ const ProjectDetail: React.FC = () => {
       // Load project
       const projectResponse = await apiClient.getProjectById(id)
       if (projectResponse.error) {
-        setError(projectResponse.error.message)
+        setError(getErrorMessageFromApiError(projectResponse.error))
         return
       }
       setProject(projectResponse.data)
@@ -54,7 +56,7 @@ const ProjectDetail: React.FC = () => {
           setDataSources(sourcesResponse.data)
         }
       } catch (err) {
-        logger.warn('Failed to load data sources:', err)
+        logger.error('Failed to load data sources:', err)
         // Non-critical, continue loading
       }
 
@@ -65,7 +67,7 @@ const ProjectDetail: React.FC = () => {
           setJobs(jobsResponse.data)
         }
       } catch (err) {
-        logger.warn('Failed to load reconciliation jobs:', err)
+        logger.error('Failed to load reconciliation jobs:', err)
         // Non-critical, continue loading
       }
     } catch (err) {
@@ -147,9 +149,6 @@ const ProjectDetail: React.FC = () => {
             )}
             <div className="flex items-center space-x-4 text-sm text-gray-500">
               <span>Created: {new Date(project.created_at).toLocaleDateString()}</span>
-              {project.updated_at && (
-                <span>Updated: {new Date(project.updated_at).toLocaleDateString()}</span>
-              )}
               <span className={`px-2 py-1 rounded-full text-xs ${
                 project.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
               }`}>
@@ -192,10 +191,10 @@ const ProjectDetail: React.FC = () => {
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="flex space-x-8">
-          {['overview', 'sources', 'jobs'].map((tab) => (
+          {(['overview', 'sources', 'jobs'] as const).map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab as any)}
+              onClick={() => setActiveTab(tab)}
               className={`py-4 px-1 border-b-2 font-medium text-sm capitalize ${
                 activeTab === tab
                   ? 'border-blue-500 text-blue-600'
@@ -290,20 +289,17 @@ const ProjectDetail: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {dataSources.map((source) => (
                   <div key={source.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <h4 className="font-semibold mb-2">{source.name || 'Unnamed Source'}</h4>
+                    <h4 className="font-semibold mb-2">{source.filename || source.original_filename || 'Unnamed Source'}</h4>
                     <div className="space-y-1 text-sm text-gray-600">
-                      <p>Type: {source.source_type || 'Unknown'}</p>
+                      <p>Type: {source.content_type || 'Unknown'}</p>
                       {source.file_size && (
                         <p>Size: {(source.file_size / 1024).toFixed(2)} KB</p>
                       )}
-                      {source.record_count && (
-                        <p>Records: {source.record_count}</p>
+                      {source.created_at && (
+                        <p>Uploaded: {new Date(source.created_at).toLocaleDateString()}</p>
                       )}
-                      {source.uploaded_at && (
-                        <p>Uploaded: {new Date(source.uploaded_at).toLocaleDateString()}</p>
-                      )}
-                      {source.processed_at && (
-                        <p>Processed: {new Date(source.processed_at).toLocaleDateString()}</p>
+                      {source.updated_at && (
+                        <p>Updated: {new Date(source.updated_at).toLocaleDateString()}</p>
                       )}
                       <span className={`inline-block px-2 py-1 rounded text-xs mt-2 ${
                         source.status === 'processed' || source.status === 'completed' ? 'bg-green-100 text-green-800' :

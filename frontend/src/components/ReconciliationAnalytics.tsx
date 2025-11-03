@@ -136,7 +136,7 @@ const ReconciliationAnalytics: React.FC<ReconciliationAnalyticsProps> = ({
           <div className="flex items-center space-x-2">
             <select
               value={timeRange}
-              onChange={(e) => setTimeRange(e.target.value as any)}
+              onChange={(e) => setTimeRange(e.target.value as '7d' | '30d' | '90d' | '1y')}
               className="input-field w-32"
             >
               <option value="7d">Last 7 days</option>
@@ -156,15 +156,15 @@ const ReconciliationAnalytics: React.FC<ReconciliationAnalyticsProps> = ({
         {/* Tabs */}
         <div className="border-b border-secondary-200">
           <nav className="flex space-x-8 px-6">
-            {[
+            {([
               { id: 'overview', label: 'Overview', icon: BarChart3 },
               { id: 'trends', label: 'Trends', icon: TrendingUp },
               { id: 'systems', label: 'Systems', icon: Database },
               { id: 'performance', label: 'Performance', icon: Activity }
-            ].map(tab => (
+            ] as const).map(tab => (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id as any)}
+                onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
                   activeTab === tab.id
                     ? 'border-primary-500 text-primary-600'

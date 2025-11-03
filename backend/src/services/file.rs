@@ -1,7 +1,9 @@
 //! File service for handling file uploads and processing
 
+use std::sync::Arc;
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
+use crate::services::resilience::ResilienceManager;
 use crate::models::{NewUploadedFile, UploadedFile};
 use crate::models::schema;
 use actix_multipart::Multipart;
@@ -36,12 +38,36 @@ pub struct ProcessingResult {
 pub struct FileService {
     db: Database,
     upload_path: String,
+    resilience: Option<Arc<ResilienceManager>>,
 }
 
 impl FileService {
     /// Create a new file service
     pub fn new(db: Database, upload_path: String) -> Self {
-        Self { db, upload_path }
+        Self { 
+            db, 
+            upload_path,
+            resilience: None,
+        }
+    }
+    
+    /// Create file service with resilience manager
+    pub fn new_with_resilience(
+        db: Database,
+        upload_path: String,
+        resilience: Arc<ResilienceManager>,
+    ) -> Self {
+        Self {
+            db,
+            upload_path,
+            resilience: Some(resilience),
+        }
+    }
+    
+    /// Set resilience manager
+    pub fn with_resilience(mut self, resilience: Arc<ResilienceManager>) -> Self {
+        self.resilience = Some(resilience);
+        self
     }
 
     /// Initialize a resumable upload and return an upload_id and target info
@@ -244,12 +270,27 @@ impl FileService {
             uploaded_by: _user_id,
         };
 
+        // Use resilience manager for database operations if available
         let uploaded_file: UploadedFile = {
-            use crate::models::schema::projects::uploaded_files::dsl::*;
-            diesel::insert_into(uploaded_files)
-                .values(&new_file)
-                .get_result(&mut self.db.get_connection()?)
-                .map_err(|e| AppError::Internal(format!("Failed to save file record: {}", e)))?
+            use crate::models::schema::uploaded_files::dsl::*;
+            
+            if let Some(ref resilience) = self.resilience {
+                // Use async database connection with circuit breaker
+                let conn = resilience.execute_database(async {
+                    self.db.get_connection_async().await
+                }).await?;
+                
+                diesel::insert_into(uploaded_files)
+                    .values(&new_file)
+                    .get_result(&mut *conn)
+                    .map_err(|e| AppError::Internal(format!("Failed to save file record: {}", e)))?
+            } else {
+                // Fallback to direct connection
+                diesel::insert_into(uploaded_files)
+                    .values(&new_file)
+                    .get_result(&mut self.db.get_connection()?)
+                    .map_err(|e| AppError::Internal(format!("Failed to save file record: {}", e)))?
+            }
         };
 
         Ok(FileUploadResult {
@@ -269,13 +310,27 @@ impl FileService {
 
     /// Delete a file
     pub async fn delete_file(&self, file_id: Uuid) -> AppResult<()> {
-        let mut conn = self.db.get_connection()?;
-
-        // Get file info first
-        let file_info: UploadedFile = schema::uploaded_files::table
-            .find(file_id)
-            .first(&mut conn)
-            .map_err(AppError::Database)?;
+        // Use resilience manager for database operations if available
+        let file_info: UploadedFile = {
+            if let Some(ref resilience) = self.resilience {
+                // Use async database connection with circuit breaker
+                let conn = resilience.execute_database(async {
+                    self.db.get_connection_async().await
+                }).await?;
+                
+                schema::uploaded_files::table
+                    .find(file_id)
+                    .first(&mut *conn)
+                    .map_err(AppError::Database)?
+            } else {
+                // Fallback to direct connection
+                let mut conn = self.db.get_connection()?;
+                schema::uploaded_files::table
+                    .find(file_id)
+                    .first(&mut conn)
+                    .map_err(AppError::Database)?
+            }
+        };
 
         // Delete the physical file
         let file_path = PathBuf::from(&self.upload_path).join(&file_info.file_path);
@@ -284,10 +339,23 @@ impl FileService {
                 .map_err(|e| AppError::Internal(format!("Failed to delete file: {}", e)))?;
         }
 
-        // Delete the database record
-        diesel::delete(schema::uploaded_files::table.find(file_id))
-            .execute(&mut conn)
-            .map_err(AppError::Database)?;
+        // Delete the database record with resilience if available
+        if let Some(ref resilience) = self.resilience {
+            // Use async database connection with circuit breaker
+            let conn = resilience.execute_database(async {
+                self.db.get_connection_async().await
+            }).await?;
+            
+            diesel::delete(schema::uploaded_files::table.find(file_id))
+                .execute(&mut *conn)
+                .map_err(AppError::Database)?;
+        } else {
+            // Fallback to direct connection
+            let mut conn = self.db.get_connection()?;
+            diesel::delete(schema::uploaded_files::table.find(file_id))
+                .execute(&mut conn)
+                .map_err(AppError::Database)?;
+        }
 
         Ok(())
     }

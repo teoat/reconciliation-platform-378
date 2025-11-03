@@ -1,5 +1,5 @@
 // API Client with Retry Logic
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosError } from 'axios';
 
 // Retry configuration
@@ -7,6 +7,11 @@ interface RetryConfig {
   maxRetries?: number;
   baseDelay?: number;
   maxDelay?: number;
+}
+
+// Extended Axios config with retry information
+interface AxiosRequestConfigWithRetry extends AxiosRequestConfig {
+  _retryCount?: number;
 }
 
 class ApiClient {
@@ -36,10 +41,10 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       async (error: AxiosError) => {
-        const config = error.config as any;
+        const config = error.config as AxiosRequestConfigWithRetry;
 
         // Don't retry if already retried max times
-        if (config._retryCount >= this.retryConfig.maxRetries) {
+        if ((config._retryCount || 0) >= this.retryConfig.maxRetries) {
           return Promise.reject(error);
         }
 
@@ -57,7 +62,9 @@ class ApiClient {
           this.retryConfig.maxDelay
         );
 
-        logger.warn(`Request failed, retrying in ${delay}ms (attempt ${config._retryCount}/${this.retryConfig.maxRetries})`);
+        logger.warning(
+          `Request failed, retrying in ${delay}ms (attempt ${config._retryCount}/${this.retryConfig.maxRetries})`
+        );
 
         // Wait before retrying
         await this.sleep(delay);
@@ -69,7 +76,7 @@ class ApiClient {
   }
 
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   async get<T>(url: string, config?: AxiosRequestConfig) {
@@ -94,4 +101,3 @@ class ApiClient {
 }
 
 export default ApiClient;
-

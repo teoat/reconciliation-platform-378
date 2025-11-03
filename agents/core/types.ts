@@ -1,11 +1,18 @@
 /**
  * Meta-Agent Framework - Core Types and Interfaces
- * 
+ *
  * This module defines the core interfaces and types for the meta-agent framework.
  * All agents must implement the MetaAgent interface to participate in the framework.
  */
 
-export type AgentType = 'monitoring' | 'decision' | 'remediation' | 'processing' | 'optimization' | 'security';
+export type AgentType =
+  | 'monitoring'
+  | 'decision'
+  | 'remediation'
+  | 'processing'
+  | 'optimization'
+  | 'security'
+  | 'guidance';
 
 export type AutonomyLevel = 'full' | 'partial' | 'hil-required';
 
@@ -39,7 +46,7 @@ export interface AgentMetrics {
   autoDecisions: number;
 }
 
-export interface AgentStatus {
+export interface AgentStatusInfo {
   name: string;
   status: AgentStatus;
   lastExecution?: Date;
@@ -98,7 +105,7 @@ export interface MetaAgent {
   /**
    * Current status of the agent
    */
-  getStatus(): AgentStatus;
+  getStatus(): AgentStatusInfo;
 
   /**
    * Execute the agent's primary function
@@ -220,7 +227,7 @@ export interface AgentRegistryEntry {
 /**
  * Agent event types
  */
-export type AgentEventType = 
+export type AgentEventType =
   | 'agent.started'
   | 'agent.stopped'
   | 'agent.error'
@@ -238,4 +245,3 @@ export interface AgentEvent {
   data?: unknown;
   error?: Error;
 }
-

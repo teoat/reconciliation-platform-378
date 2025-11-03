@@ -44,16 +44,16 @@ impl UserQueryService {
                 users::email,
                 users::first_name,
                 users::last_name,
-                users::role,
-                users::is_active,
+                users::status,
+                users::email_verified,
                 users::created_at,
                 users::updated_at,
-                users::last_login,
+                users::last_login_at,
             ))
             .order(users::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
+            .load::<(Uuid, String, Option<String>, Option<String>, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
             .map_err(AppError::Database)?;
 
         // Get project counts for all users in one query
@@ -99,16 +99,16 @@ impl UserQueryService {
                 users::email,
                 users::first_name,
                 users::last_name,
-                users::role,
-                users::is_active,
+                users::status,
+                users::email_verified,
                 users::created_at,
                 users::updated_at,
-                users::last_login,
+                users::last_login_at,
             ))
             .order(users::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
+            .load::<(Uuid, String, Option<String>, Option<String>, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
             .map_err(AppError::Database)?;
 
         // Get project counts for all users in one query
@@ -136,29 +136,29 @@ impl UserQueryService {
 
         // Get total count
         let total = users::table
-            .filter(users::role.eq(role))
+            .filter(users::status.eq(role))
             .count()
             .get_result::<i64>(&mut conn)
             .map_err(AppError::Database)?;
 
         // Get users
         let users = users::table
-            .filter(users::role.eq(role))
+            .filter(users::status.eq(role))
             .select((
                 users::id,
                 users::email,
                 users::first_name,
                 users::last_name,
-                users::role,
-                users::is_active,
+                users::status,
+                users::email_verified,
                 users::created_at,
                 users::updated_at,
-                users::last_login,
+                users::last_login_at,
             ))
             .order(users::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
+            .load::<(Uuid, String, Option<String>, Option<String>, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
             .map_err(AppError::Database)?;
 
         // Get project counts for all users in one query
@@ -202,16 +202,16 @@ impl UserQueryService {
                 users::email,
                 users::first_name,
                 users::last_name,
-                users::role,
-                users::is_active,
+                users::status,
+                users::email_verified,
                 users::created_at,
                 users::updated_at,
-                users::last_login,
+                users::last_login_at,
             ))
             .order(users::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
+            .load::<(Uuid, String, Option<String>, Option<String>, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
             .map_err(AppError::Database)?;
 
         // Get project counts for all users in one query
@@ -228,7 +228,7 @@ impl UserQueryService {
     /// Helper: Build user infos with project counts
     fn build_user_infos_with_project_counts(
         &self,
-        users: Vec<(Uuid, String, String, String, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>,
+        users: Vec<(Uuid, String, Option<String>, Option<String>, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>,
         conn: &mut diesel::r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,
     ) -> AppResult<Vec<UserInfo>> {
         use diesel::dsl::count_star;
@@ -253,7 +253,7 @@ impl UserQueryService {
 
         // Build user infos with counts from map
         let mut user_infos = Vec::new();
-        for (id, email, first_name, last_name, role, is_active, created_at, updated_at, last_login) in users {
+        for (id, email, first_name, last_name, status, email_verified, created_at, updated_at, last_login_at) in users {
             let project_count = project_count_map.get(&id).copied().unwrap_or(0);
 
             user_infos.push(UserInfo {
@@ -261,11 +261,11 @@ impl UserQueryService {
                 email,
                 first_name,
                 last_name,
-                role,
-                is_active,
+                role: status,
+                is_active: email_verified,
                 created_at,
                 updated_at,
-                last_login,
+                last_login: last_login_at,
                 project_count,
             });
         }

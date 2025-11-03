@@ -1,24 +1,24 @@
-import React, { useState, useMemo } from 'react'
-import { BarChart3 } from 'lucide-react'
-import { PieChart } from 'lucide-react'
-import { TrendingUp } from 'lucide-react'
-import { Download } from 'lucide-react'
-import { Filter } from 'lucide-react'
-import { DataTable } from '../ui/DataTable'
-import Button from '../ui/Button'
-import Select from '../ui/Select'
-import { BarChart, LineChart, PieChart as PieChartComponent } from './Charts'
+import React, { useState, useMemo } from 'react';
+import { BarChart3 } from 'lucide-react';
+import { PieChart } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { Filter } from 'lucide-react';
+import { DataTable } from '../ui/DataTable';
+import Button from '../ui/Button';
+import Select from '../ui/Select';
+import { BarChart, LineChart, PieChart as PieChartComponent } from './Charts';
 
 export interface VisualizableData {
-  [key: string]: any
+  [key: string]: string | number | boolean | null | undefined;
 }
 
 export interface DataVisualizationProps {
-  data: VisualizableData[]
-  title?: string
-  className?: string
-  exportable?: boolean
-  chartTypes?: ('bar' | 'line' | 'pie')[]
+  data: VisualizableData[];
+  title?: string;
+  className?: string;
+  exportable?: boolean;
+  chartTypes?: ('bar' | 'line' | 'pie')[];
 }
 
 export const DataVisualization: React.FC<DataVisualizationProps> = ({
@@ -26,96 +26,110 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
   title = 'Data Visualization',
   className = '',
   exportable = true,
-  chartTypes = ['bar', 'line', 'pie']
+  chartTypes = ['bar', 'line', 'pie'],
 }) => {
-  const [selectedChartType, setSelectedChartType] = useState<'bar' | 'line' | 'pie'>('bar')
-  const [selectedColumn, setSelectedColumn] = useState<string>('')
-  const [showTable, setShowTable] = useState(false)
+  const [selectedChartType, setSelectedChartType] = useState<'bar' | 'line' | 'pie'>('bar');
+  const [selectedColumn, setSelectedColumn] = useState<string>('');
+  const [showTable, setShowTable] = useState(false);
 
   const numericColumns = useMemo(() => {
-    if (data.length === 0) return []
-    
-    return Object.keys(data[0]).filter(key => {
-      const values = data.map(row => row[key])
-      return values.every(value => typeof value === 'number' || !isNaN(Number(value)))
-    })
-  }, [data])
+    if (data.length === 0) return [];
+
+    return Object.keys(data[0]).filter((key) => {
+      const values = data.map((row) => row[key]);
+      return values.every((value) => typeof value === 'number' || !isNaN(Number(value)));
+    });
+  }, [data]);
 
   const categoricalColumns = useMemo(() => {
-    if (data.length === 0) return []
-    
-    return Object.keys(data[0]).filter(key => {
-      const values = data.map(row => row[key])
-      return values.every(value => typeof value === 'string' || typeof value === 'number')
-    })
-  }, [data])
+    if (data.length === 0) return [];
+
+    return Object.keys(data[0]).filter((key) => {
+      const values = data.map((row) => row[key]);
+      return values.every((value) => typeof value === 'string' || typeof value === 'number');
+    });
+  }, [data]);
 
   const chartData = useMemo(() => {
-    if (!selectedColumn || data.length === 0) return []
+    if (!selectedColumn || data.length === 0) return [];
 
     if (selectedChartType === 'pie') {
       // Group data by selected column and count occurrences
-      const grouped = data.reduce((acc, row) => {
-        const value = row[selectedColumn]
-        acc[value] = (acc[value] || 0) + 1
-        return acc
-      }, {} as Record<string, number>)
+      const grouped = data.reduce(
+        (acc, row) => {
+          const value = row[selectedColumn];
+          acc[value] = (acc[value] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
 
       return Object.entries(grouped).map(([label, value]) => ({
         label,
         value,
-        color: getColorForLabel(label)
-      }))
+        color: getColorForLabel(label),
+      }));
     } else {
       // For bar and line charts, use numeric columns
-      const numericCol = numericColumns[0]
-      if (!numericCol) return []
+      const numericCol = numericColumns[0];
+      if (!numericCol) return [];
 
-      const grouped = data.reduce((acc, row) => {
-        const category = row[selectedColumn]
-        const value = Number(row[numericCol])
-        if (!isNaN(value)) {
-          acc[category] = (acc[category] || 0) + value
-        }
-        return acc
-      }, {} as Record<string, number>)
+      const grouped = data.reduce(
+        (acc, row) => {
+          const category = row[selectedColumn];
+          const value = Number(row[numericCol]);
+          if (!isNaN(value)) {
+            acc[category] = (acc[category] || 0) + value;
+          }
+          return acc;
+        },
+        {} as Record<string, number>
+      );
 
       return Object.entries(grouped).map(([label, value]) => ({
         label,
         value,
-        color: getColorForLabel(label)
-      }))
+        color: getColorForLabel(label),
+      }));
     }
-  }, [selectedColumn, selectedChartType, data, numericColumns])
+  }, [selectedColumn, selectedChartType, data, numericColumns]);
 
   const getColorForLabel = (label: string): string => {
     const colors = [
-      '#3B82F6', '#8B5CF6', '#EF4444', '#10B981', '#F59E0B',
-      '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
-    ]
+      '#3B82F6',
+      '#8B5CF6',
+      '#EF4444',
+      '#10B981',
+      '#F59E0B',
+      '#EC4899',
+      '#06B6D4',
+      '#84CC16',
+      '#F97316',
+      '#6366F1',
+    ];
     const hash = label.split('').reduce((a, b) => {
-      a = ((a << 5) - a) + b.charCodeAt(0)
-      return a & a
-    }, 0)
-    return colors[Math.abs(hash) % colors.length]
-  }
+      a = (a << 5) - a + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    return colors[Math.abs(hash) % colors.length];
+  };
 
   const handleExport = () => {
     const csvContent = [
       Object.keys(data[0]).join(','),
-      ...data.map(row => Object.values(row).join(','))
-    ].join('\n')
+      ...data.map((row) => Object.values(row).join(',')),
+    ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv' })
-    const url = window.URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${title.replace(/\s+/g, '_').toLowerCase()}.csv`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    window.URL.revokeObjectURL(url)
-  }
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title.replace(/\s+/g, '_').toLowerCase()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  };
 
   const renderChart = () => {
     if (chartData.length === 0) {
@@ -126,27 +140,30 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
             <p>Select a column to visualize data</p>
           </div>
         </div>
-      )
+      );
     }
 
     switch (selectedChartType) {
       case 'bar':
-        return <BarChart data={chartData} title={title} />
+        return <BarChart data={chartData} title={title} />;
       case 'line':
-        return <LineChart data={chartData} title={title} />
+        return <LineChart data={chartData} title={title} />;
       case 'pie':
-        return <PieChartComponent data={chartData} title={title} />
+        return <PieChartComponent data={chartData} title={title} />;
       default:
-        return null
+        return null;
     }
-  }
+  };
 
-  const columns = data.length > 0 ? Object.keys(data[0]).map(key => ({
-    key,
-    label: key.charAt(0).toUpperCase() + key.slice(1),
-    sortable: true,
-    filterable: true
-  })) : []
+  const columns =
+    data.length > 0
+      ? Object.keys(data[0]).map((key) => ({
+          key: key as keyof VisualizableData,
+          header: key.charAt(0).toUpperCase() + key.slice(1),
+          sortable: true,
+          filterable: true,
+        }))
+      : [];
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border ${className}`}>
@@ -186,14 +203,14 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
             <Select
               value={selectedChartType}
               onChange={(e) => setSelectedChartType(e.target.value as 'bar' | 'line' | 'pie')}
-              options={chartTypes.map(type => ({
+              options={chartTypes.map((type) => ({
                 value: type,
-                label: type.charAt(0).toUpperCase() + type.slice(1)
+                label: type.charAt(0).toUpperCase() + type.slice(1),
               }))}
               className="min-w-32"
             />
           </div>
-          
+
           <div className="flex items-center space-x-2">
             <label className="text-sm font-medium text-gray-700">Column:</label>
             <Select
@@ -201,10 +218,12 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
               onChange={(e) => setSelectedColumn(e.target.value)}
               options={[
                 { value: '', label: 'Select column...' },
-                ...(selectedChartType === 'pie' ? categoricalColumns : categoricalColumns).map(col => ({
-                  value: col,
-                  label: col.charAt(0).toUpperCase() + col.slice(1)
-                }))
+                ...(selectedChartType === 'pie' ? categoricalColumns : categoricalColumns).map(
+                  (col) => ({
+                    value: col,
+                    label: col.charAt(0).toUpperCase() + col.slice(1),
+                  })
+                ),
               ]}
               className="min-w-40"
             />
@@ -212,9 +231,7 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
         </div>
 
         {/* Chart */}
-        <div className="mb-6">
-          {renderChart()}
-        </div>
+        <div className="mb-6">{renderChart()}</div>
 
         {/* Data Table */}
         {showTable && (
@@ -232,16 +249,16 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
 export interface KPIWidgetProps {
-  title: string
-  value: number
-  target?: number
-  unit?: string
-  trend?: 'up' | 'down' | 'stable'
-  className?: string
+  title: string;
+  value: number;
+  target?: number;
+  unit?: string;
+  trend?: 'up' | 'down' | 'stable';
+  className?: string;
 }
 
 export const KPIWidget: React.FC<KPIWidgetProps> = ({
@@ -250,48 +267,48 @@ export const KPIWidget: React.FC<KPIWidgetProps> = ({
   target,
   unit = '',
   trend = 'stable',
-  className = ''
+  className = '',
 }) => {
   const getTrendColor = () => {
     switch (trend) {
       case 'up':
-        return 'text-green-600'
+        return 'text-green-600';
       case 'down':
-        return 'text-red-600'
+        return 'text-red-600';
       default:
-        return 'text-gray-600'
+        return 'text-gray-600';
     }
-  }
+  };
 
   const getTrendIcon = () => {
     switch (trend) {
       case 'up':
-        return <TrendingUp className="h-4 w-4" />
+        return <TrendingUp className="h-4 w-4" />;
       case 'down':
-        return <TrendingUp className="h-4 w-4 rotate-180" />
+        return <TrendingUp className="h-4 w-4 rotate-180" />;
       default:
-        return <div className="h-4 w-4 bg-gray-400 rounded-full" />
+        return <div className="h-4 w-4 bg-gray-400 rounded-full" />;
     }
-  }
+  };
 
-  const progressPercentage = target ? Math.min((value / target) * 100, 100) : 0
+  const progressPercentage = target ? Math.min((value / target) * 100, 100) : 0;
 
   return (
     <div className={`bg-white rounded-lg shadow-sm border p-6 ${className}`}>
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-medium text-gray-600">{title}</h3>
-        <div className={`flex items-center space-x-1 ${getTrendColor()}`}>
-          {getTrendIcon()}
-        </div>
+        <div className={`flex items-center space-x-1 ${getTrendColor()}`}>{getTrendIcon()}</div>
       </div>
-      
+
       <div className="mb-4">
         <p className="text-3xl font-bold text-gray-900">
-          {value.toLocaleString()}{unit}
+          {value.toLocaleString()}
+          {unit}
         </p>
         {target && (
           <p className="text-sm text-gray-500 mt-1">
-            Target: {target.toLocaleString()}{unit}
+            Target: {target.toLocaleString()}
+            {unit}
           </p>
         )}
       </div>
@@ -307,5 +324,5 @@ export const KPIWidget: React.FC<KPIWidgetProps> = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};

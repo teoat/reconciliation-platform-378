@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "es6"
-    ],
+    "target": "es2015",
+    "lib": ["dom", "dom.iterable", "es6"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -35,21 +31,19 @@
       }
     ],
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./frontend/src/*"]
     }
   },
-  "include": [
-    "frontend/**/*.ts",
-    "frontend/**/*.tsx"
-  ],
+  "include": ["frontend/**/*.ts", "frontend/**/*.tsx"],
   "exclude": [
     "node_modules",
     "frontend/dist",
     "frontend-simple",
     "reconciliation-rust",
     "backend",
-    "backup_*"
+    "backup_*",
+    "**/__tests__/**",
+    "**/*.test.*",
+    "**/*.spec.*"
   ]
 }

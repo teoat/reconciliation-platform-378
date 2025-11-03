@@ -61,7 +61,7 @@ impl PermissionService {
         
         let role = users::table
             .filter(users::id.eq(user_id))
-            .select(users::role)
+            .select(users::status)
             .first::<String>(&mut conn)
             .map_err(AppError::Database)?;
         
@@ -92,7 +92,7 @@ impl PermissionService {
         
         // Update role
         diesel::update(users::table.filter(users::id.eq(user_id)))
-            .set(users::role.eq(role))
+            .set(users::status.eq(role))
             .execute(&mut conn)
             .map_err(AppError::Database)?;
         

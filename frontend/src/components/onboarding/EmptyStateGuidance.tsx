@@ -6,7 +6,8 @@
  */
 
 import React, { useState } from 'react';
-import { Upload, FileText, Database, Plus, Play, BookOpen, Video, Sparkles } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Upload, FileText, Database, Plus, Play, BookOpen, Video, Sparkles, CheckCircle } from 'lucide-react';
 
 export type EmptyStateType = 
   | 'projects' 
@@ -35,24 +36,34 @@ interface EmptyStateGuidanceProps {
   videoUrl?: string;
   onActionComplete?: (actionId: string) => void;
   className?: string;
+  projectId?: string; // Optional project ID for project-scoped actions
+  onCreateProject?: () => void | Promise<void>; // Optional callback for project creation
+  onUploadFile?: () => void | Promise<void>; // Optional callback for file upload
+  onCreateJob?: () => void | Promise<void>; // Optional callback for job creation
 }
 
 const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
   title: string;
   description: string;
-  defaultActions: QuickAction[];
+  getDefaultActions: (
+    navigate: ReturnType<typeof useNavigate>,
+    props: EmptyStateGuidanceProps
+  ) => QuickAction[];
 }> = {
   projects: {
     title: 'No Projects Yet',
     description: 'Create your first reconciliation project to get started. Projects help you organize and manage your reconciliation workflows.',
-    defaultActions: [
+    getDefaultActions: (navigate, props) => [
       {
         id: 'create-project',
         label: 'Create New Project',
         icon: <Plus className="w-5 h-5" />,
-        onClick: () => {
-          // TODO: Trigger project creation
-          console.log('Create project triggered');
+        onClick: async () => {
+          if (props.onCreateProject) {
+            await props.onCreateProject();
+          } else {
+            navigate('/projects/new');
+          }
         },
         description: 'Set up a new reconciliation project from scratch',
         primary: true,
@@ -62,34 +73,26 @@ const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
         label: 'Use Template',
         icon: <FileText className="w-5 h-5" />,
         onClick: () => {
-          // TODO: Open template selector
-          console.log('Template selector triggered');
+          navigate('/projects/new?template=true');
         },
         description: 'Start with a pre-configured project template',
-      },
-      {
-        id: 'import-sample',
-        label: 'Try Sample Data',
-        icon: <Database className="w-5 h-5" />,
-        onClick: () => {
-          // TODO: Import sample data
-          console.log('Sample data import triggered');
-        },
-        description: 'Explore with sample reconciliation data',
       },
     ],
   },
   data_sources: {
     title: 'No Data Sources',
     description: 'Upload or connect your data sources to begin reconciliation. You can upload files or connect to external systems.',
-    defaultActions: [
+    getDefaultActions: (navigate, props) => [
       {
         id: 'upload-file',
         label: 'Upload File',
         icon: <Upload className="w-5 h-5" />,
-        onClick: () => {
-          // TODO: Trigger file upload
-          console.log('File upload triggered');
+        onClick: async () => {
+          if (props.onUploadFile) {
+            await props.onUploadFile();
+          } else {
+            navigate(props.projectId ? `/upload?projectId=${props.projectId}` : '/upload');
+          }
         },
         description: 'Upload CSV, Excel, or JSON files',
         primary: true,
@@ -99,34 +102,28 @@ const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
         label: 'Connect API',
         icon: <Database className="w-5 h-5" />,
         onClick: () => {
-          // TODO: Open API connection dialog
-          console.log('API connection triggered');
+          navigate(props.projectId ? `/projects/${props.projectId}/data-sources/new?type=api` : '/data-sources/new?type=api');
         },
         description: 'Connect to external data sources via API',
-      },
-      {
-        id: 'use-sample',
-        label: 'Use Sample Data',
-        icon: <Sparkles className="w-5 h-5" />,
-        onClick: () => {
-          // TODO: Use sample data
-          console.log('Sample data triggered');
-        },
-        description: 'Try with sample reconciliation data',
       },
     ],
   },
   reconciliation_jobs: {
     title: 'No Reconciliation Jobs',
     description: 'Start your first reconciliation job to match and compare data from different sources.',
-    defaultActions: [
+    getDefaultActions: (navigate, props) => [
       {
         id: 'create-job',
         label: 'Create Job',
         icon: <Plus className="w-5 h-5" />,
-        onClick: () => {
-          // TODO: Create reconciliation job
-          console.log('Job creation triggered');
+        onClick: async () => {
+          if (props.onCreateJob) {
+            await props.onCreateJob();
+          } else if (props.projectId) {
+            navigate(`/projects/${props.projectId}/jobs/new`);
+          } else {
+            navigate('/reconciliation/new');
+          }
         },
         description: 'Set up a new reconciliation job',
         primary: true,
@@ -136,8 +133,7 @@ const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
         label: 'Quick Start',
         icon: <Play className="w-5 h-5" />,
         onClick: () => {
-          // TODO: Quick start wizard
-          console.log('Quick start triggered');
+          navigate('/quick-reconciliation');
         },
         description: 'Use the guided quick start wizard',
       },
@@ -146,14 +142,17 @@ const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
   results: {
     title: 'No Results Yet',
     description: 'Run a reconciliation job to see results here. Results will show matched and unmatched records.',
-    defaultActions: [
+    getDefaultActions: (navigate, props) => [
       {
         id: 'run-reconciliation',
         label: 'Run Reconciliation',
         icon: <Play className="w-5 h-5" />,
         onClick: () => {
-          // TODO: Run reconciliation
-          console.log('Reconciliation triggered');
+          if (props.projectId) {
+            navigate(`/projects/${props.projectId}/jobs`);
+          } else {
+            navigate('/reconciliation');
+          }
         },
         description: 'Execute a reconciliation job',
         primary: true,
@@ -163,14 +162,17 @@ const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
   matches: {
     title: 'No Matches Found',
     description: 'Matches will appear here after running a reconciliation job. Check your matching rules if no matches are found.',
-    defaultActions: [
+    getDefaultActions: (navigate, props) => [
       {
         id: 'configure-rules',
         label: 'Configure Rules',
         icon: <FileText className="w-5 h-5" />,
         onClick: () => {
-          // TODO: Configure matching rules
-          console.log('Rule configuration triggered');
+          if (props.projectId) {
+            navigate(`/projects/${props.projectId}/settings/rules`);
+          } else {
+            navigate('/settings/rules');
+          }
         },
         description: 'Adjust matching rules and thresholds',
         primary: true,
@@ -180,8 +182,11 @@ const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
         label: 'Review Data',
         icon: <Database className="w-5 h-5" />,
         onClick: () => {
-          // TODO: Review data sources
-          console.log('Data review triggered');
+          if (props.projectId) {
+            navigate(`/projects/${props.projectId}/data-sources`);
+          } else {
+            navigate('/data-sources');
+          }
         },
         description: 'Check data quality and format',
       },
@@ -190,19 +195,23 @@ const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
   discrepancies: {
     title: 'No Discrepancies',
     description: 'Great job! All records matched successfully. Discrepancies will appear here when records don\'t match perfectly.',
-    defaultActions: [],
+    getDefaultActions: () => [],
   },
   exports: {
     title: 'No Exports',
     description: 'Export your reconciliation results to CSV, Excel, or PDF. Exports will be listed here for download.',
-    defaultActions: [
+    getDefaultActions: (navigate, props) => [
       {
         id: 'export-results',
         label: 'Export Results',
         icon: <FileText className="w-5 h-5" />,
         onClick: () => {
-          // TODO: Trigger export
-          console.log('Export triggered');
+          // Export functionality would be triggered from the results page
+          if (props.projectId) {
+            navigate(`/projects/${props.projectId}/exports/new`);
+          } else {
+            navigate('/exports/new');
+          }
         },
         description: 'Export current reconciliation results',
         primary: true,
@@ -220,13 +229,24 @@ export const EmptyStateGuidance: React.FC<EmptyStateGuidanceProps> = ({
   videoUrl,
   onActionComplete,
   className = '',
+  projectId,
+  onCreateProject,
+  onUploadFile,
+  onCreateJob,
 }) => {
+  const navigate = useNavigate();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const emptyStateConfig = DEFAULT_EMPTY_STATES[type];
   const finalTitle = title || emptyStateConfig.title;
   const finalDescription = description || emptyStateConfig.description;
-  const actions = quickActions || emptyStateConfig.defaultActions;
+  const actions = quickActions || emptyStateConfig.getDefaultActions(navigate, {
+    type,
+    projectId,
+    onCreateProject,
+    onUploadFile,
+    onCreateJob,
+  });
 
   const handleAction = async (action: QuickAction) => {
     setActionLoading(action.id);

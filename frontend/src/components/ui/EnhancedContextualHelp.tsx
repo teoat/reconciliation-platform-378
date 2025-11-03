@@ -1,6 +1,6 @@
 /**
  * Enhanced Contextual Help Component
- * 
+ *
  * Enhanced version of ContextualHelp integrated with HelpContentService.
  */
 
@@ -8,10 +8,10 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { HelpCircle, X, ChevronRight, Lightbulb, BookOpen, Video, Search } from 'lucide-react';
 import { helpContentService, HelpContent } from '../../services/helpContentService';
 import { HelpSearch } from './HelpSearch';
-import ariaLiveRegionsServiceModule from '../services/ariaLiveRegionsService';
+import ariaLiveRegionsServiceModule from '../../services/ariaLiveRegionsService';
 
-const ariaLiveRegionsService = 
-  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService || 
+const ariaLiveRegionsService =
+  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService ||
   (ariaLiveRegionsServiceModule as any).default?.getInstance?.() ||
   ariaLiveRegionsServiceModule;
 
@@ -54,18 +54,27 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
 
     if (content) {
       setHelpContent(content);
-      
-      // Track view
-      helpContentService.trackView(content.id);
-      
-      // Load related content
-      const related = helpContentService.getRelated(content.id, 3);
-      setRelatedContent(related);
+
+      // Track view (if method exists)
+      if ('trackView' in helpContentService && typeof helpContentService.trackView === 'function') {
+        (helpContentService as any).trackView(content.id);
+      }
+
+      // Load related content (if method exists)
+      if ('getRelated' in helpContentService && typeof helpContentService.getRelated === 'function') {
+        const related = (helpContentService as any).getRelated(content.id, 3);
+        setRelatedContent(related || []);
+      } else {
+        // Fallback: get content by category
+        const categoryContent = helpContentService.getContentByCategory(content.category);
+        setRelatedContent(categoryContent.filter((c) => c.id !== content.id).slice(0, 3));
+      }
     }
   }, [contentId, feature]);
 
   const ariaExpandedValue = isOpen ? 'true' : 'false';
-  const shouldShow = trigger === 'always' || (trigger === 'hover' && isHovered) || (trigger === 'click' && isOpen);
+  const shouldShow =
+    trigger === 'always' || (trigger === 'hover' && isHovered) || (trigger === 'click' && isOpen);
 
   const handleToggle = useCallback(() => {
     setIsOpen((prev) => !prev);
@@ -86,11 +95,14 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
     [isOpen, handleToggle]
   );
 
-  const handleFeedback = useCallback((helpful: boolean) => {
-    if (helpContent) {
-      helpContentService.trackFeedback(helpContent.id, helpful);
-    }
-  }, [helpContent]);
+  const handleFeedback = useCallback(
+    (helpful: boolean) => {
+      if (helpContent) {
+        helpContentService.trackFeedback(helpContent.id, helpful);
+      }
+    },
+    [helpContent]
+  );
 
   useEffect(() => {
     if (isOpen && helpContent && ariaLiveRegionsService?.announceStatus) {
@@ -175,7 +187,10 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
                 <ul className="space-y-1">
                   {helpContent.tips.map((tip) => (
                     <li key={tip.id} className="flex items-start text-xs">
-                      <ChevronRight className="h-3 w-3 mr-1 text-gray-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                      <ChevronRight
+                        className="h-3 w-3 mr-1 text-gray-400 mt-0.5 flex-shrink-0"
+                        aria-hidden="true"
+                      />
                       <span>{tip.content}</span>
                     </li>
                   ))}
@@ -237,9 +252,7 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
                         className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center"
                       >
                         {link.title}
-                        {link.type === 'external' && (
-                          <ExternalLink className="h-3 w-3 ml-1" />
-                        )}
+                        {link.type === 'external' && <ExternalLink className="h-3 w-3 ml-1" />}
                       </a>
                     </li>
                   ))}
@@ -288,4 +301,3 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
 };
 
 export default EnhancedContextualHelp;
-

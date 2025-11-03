@@ -399,7 +399,7 @@ impl UserService {
         let mut conn = self.db.get_connection()?;
 
         let count = diesel::update(users::table.filter(users::id.eq_any(user_ids)))
-            .set(users::is_active.eq(is_active))
+            .set(users::email_verified.eq(is_active))
             .execute(&mut conn)
             .map_err(AppError::Database)?;
 

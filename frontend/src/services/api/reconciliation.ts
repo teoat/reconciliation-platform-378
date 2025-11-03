@@ -5,6 +5,7 @@
 import { apiClient } from '../apiClient';
 import type { ReconciliationRecord, ReconciliationStats } from '../../types/index';
 import type { ReconciliationMatch } from '../../store/store';
+import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
 
 export class ReconciliationApiService {
   static async getReconciliationJobs(projectId: string, params: {
@@ -19,7 +20,7 @@ export class ReconciliationApiService {
       });
 
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
 
       return {
@@ -40,7 +41,7 @@ export class ReconciliationApiService {
     try {
       const response = await apiClient.get(`/api/reconciliation/jobs/${jobId}`);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -66,7 +67,7 @@ export class ReconciliationApiService {
     try {
       const response = await apiClient.post(`/api/projects/${projectId}/reconciliation/jobs`, jobData);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -78,7 +79,7 @@ export class ReconciliationApiService {
     try {
       const response = await apiClient.post(`/api/reconciliation/jobs/${jobId}/stop`);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -98,7 +99,7 @@ export class ReconciliationApiService {
       });
 
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
 
       return {
@@ -119,7 +120,7 @@ export class ReconciliationApiService {
     try {
       const response = await apiClient.get(`/api/projects/${projectId}/reconciliation/stats`);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data as ReconciliationStats;
     } catch (error) {
@@ -131,7 +132,7 @@ export class ReconciliationApiService {
     try {
       const response = await apiClient.post(`/api/reconciliation/records/${recordId}/approve`);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -143,7 +144,7 @@ export class ReconciliationApiService {
     try {
       const response = await apiClient.post(`/api/reconciliation/records/${recordId}/reject`, { reason });
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {

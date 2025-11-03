@@ -954,27 +954,80 @@ export class WorkflowSyncTester {
     logger.debug('Data changed', { dataChange });
   }
 
-  private async simulateProgressIndicatorUpdate(indicator: any): Promise<void> {
-    // Mock implementation
-    logger.info('Progress indicator updated:', indicator);
+  // Type definitions for workflow state objects
+  interface ProgressIndicator {
+    progress: number;
+    label: string;
+    color: string;
   }
 
-  private async simulateErrorState(errorState: any): Promise<void> {
-    // Mock implementation
-    logger.info('Error state:', errorState);
+  interface ErrorState {
+    hasError: boolean;
+    errorType?: string;
+    message?: string;
+    details?: Record<string, unknown>;
   }
 
-  private async simulateRecoveryState(recoveryState: any): Promise<void> {
-    // Mock implementation
-    logger.info('Recovery state:', recoveryState);
+  interface RecoveryState {
+    isRecovering: boolean;
+    recoveryStep?: string;
+    progress?: number;
+    details?: Record<string, unknown>;
   }
 
-  private async simulateRollbackState(rollbackState: any): Promise<void> {
-    // Mock implementation
-    logger.info('Rollback state:', rollbackState);
+  interface RollbackState {
+    isRollingBack: boolean;
+    rollbackStep?: string;
+    progress?: number;
+    details?: Record<string, unknown>;
   }
 
-  private async getBrowserWorkflowState(browser: string): Promise<any> {
+  interface WorkflowState {
+    step: string;
+    progress: number;
+    data?: Record<string, unknown>;
+  }
+
+  interface DataState {
+    records: number;
+    matches: number;
+    discrepancies: number;
+    [key: string]: unknown;
+  }
+
+  interface StepValidation {
+    valid: boolean;
+    errors: string[];
+    warnings: string[];
+  }
+
+  interface StepPermissions {
+    canEdit: boolean;
+    canDelete: boolean;
+    canAdvance: boolean;
+  }
+
+  private async simulateProgressIndicatorUpdate(indicator: ProgressIndicator): Promise<void> {
+    // Mock implementation
+    logger.info('Progress indicator updated', { indicator });
+  }
+
+  private async simulateErrorState(errorState: ErrorState): Promise<void> {
+    // Mock implementation
+    logger.info('Error state', { errorState });
+  }
+
+  private async simulateRecoveryState(recoveryState: RecoveryState): Promise<void> {
+    // Mock implementation
+    logger.info('Recovery state', { recoveryState });
+  }
+
+  private async simulateRollbackState(rollbackState: RollbackState): Promise<void> {
+    // Mock implementation
+    logger.info('Rollback state', { rollbackState });
+  }
+
+  private async getBrowserWorkflowState(browser: string): Promise<WorkflowState> {
     // Mock implementation
     return { step: 'reconciliation', progress: 50, data: { records: 1000 } };
   }
@@ -984,17 +1037,17 @@ export class WorkflowSyncTester {
     return 'reconciliation';
   }
 
-  private async getBrowserDataState(browser: string): Promise<any> {
+  private async getBrowserDataState(browser: string): Promise<DataState> {
     // Mock implementation
     return { records: 1000, matches: 950, discrepancies: 50 };
   }
 
-  private async getBrowserStepValidation(browser: string): Promise<any> {
+  private async getBrowserStepValidation(browser: string): Promise<StepValidation> {
     // Mock implementation
     return { valid: true, errors: [], warnings: [] };
   }
 
-  private async getBrowserStepPermissions(browser: string): Promise<any> {
+  private async getBrowserStepPermissions(browser: string): Promise<StepPermissions> {
     // Mock implementation
     return { canEdit: true, canDelete: false, canAdvance: true };
   }
@@ -1004,68 +1057,96 @@ export class WorkflowSyncTester {
     return 75;
   }
 
-  private async getBrowserProgressIndicator(browser: string): Promise<any> {
+  private async getBrowserProgressIndicator(browser: string): Promise<ProgressIndicator> {
     // Mock implementation
     return { progress: 75, label: 'Almost complete', color: 'orange' };
   }
 
-  private async getBrowserErrorState(browser: string): Promise<any> {
+  private async getBrowserErrorState(browser: string): Promise<ErrorState> {
     // Mock implementation
     return { hasError: true, errorType: 'validation', message: 'Data validation failed' };
   }
 
-  private async getBrowserRecoveryState(browser: string): Promise<any> {
+  private async getBrowserRecoveryState(browser: string): Promise<RecoveryState> {
     // Mock implementation
     return { isRecovering: true, recoveryStep: 'rollback', progress: 50 };
   }
 
-  private async getBrowserRollbackState(browser: string): Promise<any> {
+  private async getBrowserRollbackState(browser: string): Promise<RollbackState> {
     // Mock implementation
     return { isRollingBack: true, rollbackStep: 'ingestion', progress: 75 };
   }
 
   // Comparison Methods
-  private compareWorkflowStates(state1: any, state2: any): boolean {
+  private compareWorkflowStates(state1: WorkflowState, state2: WorkflowState): boolean {
     // Mock comparison logic
-    return JSON.stringify(state1) === JSON.stringify(state2);
+    return state1.step === state2.step && state1.progress === state2.progress;
   }
 
-  private compareDataStates(data1: any, data2: any): boolean {
+  private compareDataStates(data1: DataState, data2: DataState): boolean {
     // Mock comparison logic
-    return JSON.stringify(data1) === JSON.stringify(data2);
+    return (
+      data1.records === data2.records &&
+      data1.matches === data2.matches &&
+      data1.discrepancies === data2.discrepancies
+    );
   }
 
-  private compareValidationResults(validation1: any, validation2: any): boolean {
+  private compareValidationResults(validation1: StepValidation, validation2: StepValidation): boolean {
     // Mock comparison logic
-    return JSON.stringify(validation1) === JSON.stringify(validation2);
+    return (
+      validation1.valid === validation2.valid &&
+      validation1.errors.length === validation2.errors.length &&
+      validation1.warnings.length === validation2.warnings.length
+    );
   }
 
-  private comparePermissions(permissions1: any, permissions2: any): boolean {
+  private comparePermissions(permissions1: StepPermissions, permissions2: StepPermissions): boolean {
     // Mock comparison logic
-    return JSON.stringify(permissions1) === JSON.stringify(permissions2);
+    return (
+      permissions1.canEdit === permissions2.canEdit &&
+      permissions1.canDelete === permissions2.canDelete &&
+      permissions1.canAdvance === permissions2.canAdvance
+    );
   }
 
-  private compareProgressIndicators(indicator1: any, indicator2: any): boolean {
+  private compareProgressIndicators(indicator1: ProgressIndicator, indicator2: ProgressIndicator): boolean {
     // Mock comparison logic
-    return JSON.stringify(indicator1) === JSON.stringify(indicator2);
+    return (
+      indicator1.progress === indicator2.progress &&
+      indicator1.label === indicator2.label &&
+      indicator1.color === indicator2.color
+    );
   }
 
-  private compareErrorStates(error1: any, error2: any): boolean {
+  private compareErrorStates(error1: ErrorState, error2: ErrorState): boolean {
     // Mock comparison logic
-    return JSON.stringify(error1) === JSON.stringify(error2);
+    return (
+      error1.hasError === error2.hasError &&
+      error1.errorType === error2.errorType &&
+      error1.message === error2.message
+    );
   }
 
-  private compareRecoveryStates(recovery1: any, recovery2: any): boolean {
+  private compareRecoveryStates(recovery1: RecoveryState, recovery2: RecoveryState): boolean {
     // Mock comparison logic
-    return JSON.stringify(recovery1) === JSON.stringify(recovery2);
+    return (
+      recovery1.isRecovering === recovery2.isRecovering &&
+      recovery1.recoveryStep === recovery2.recoveryStep &&
+      recovery1.progress === recovery2.progress
+    );
   }
 
-  private compareRollbackStates(rollback1: any, rollback2: any): boolean {
+  private compareRollbackStates(rollback1: RollbackState, rollback2: RollbackState): boolean {
     // Mock comparison logic
-    return JSON.stringify(rollback1) === JSON.stringify(rollback2);
+    return (
+      rollback1.isRollingBack === rollback2.isRollingBack &&
+      rollback1.rollbackStep === rollback2.rollbackStep &&
+      rollback1.progress === rollback2.progress
+    );
   }
 
-  private calculateProgress(data: any): number {
+  private calculateProgress(data: DataState): number {
     // Mock progress calculation
     if (data.records === 0) return 0;
     return Math.round((data.matches / data.records) * 100);

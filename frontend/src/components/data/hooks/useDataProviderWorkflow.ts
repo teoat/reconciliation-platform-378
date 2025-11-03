@@ -2,12 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { useWorkflowProgress, useWorkflowValidation, createInitialWorkflowState } from './workflow';
 import { WorkflowState, WorkflowStage } from './types';
+import type { CrossPageData, ValidationResult, Notification, Alert } from '../types';
 
 export const useDataProviderWorkflow = (
-  crossPageData: any,
-  validateCrossPageData: any,
-  addAlert: any,
-  addNotification: any
+  crossPageData: CrossPageData,
+  validateCrossPageData: (fromPage: string, toPage: string) => ValidationResult,
+  addAlert: (alert: Omit<Alert, 'id' | 'timestamp'>) => void,
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => void
 ) => {
   const [workflowState, setWorkflowState] = useState<WorkflowState | null>(null);
 

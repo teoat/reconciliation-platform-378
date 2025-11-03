@@ -1,14 +1,26 @@
 /**
  * Approval Agent - Autonomous Ticket Approval System
- * 
+ *
  * Extracts and enhances HILApprovalSystem.processTicketApproval() functionality
  * into a meta-agent with learning and adaptation capabilities.
- * 
+ *
  * Source: monitoring/hil-approval.js:326-352
  * Priority: HIGH
  */
 
-import { MetaAgent, AgentType, AutonomyLevel, ExecutionContext, AgentResult, AgentMetrics, AgentStatus, HILContext, HILResponse, HILOption } from '../core/types';
+import {
+  MetaAgent,
+  AgentType,
+  AutonomyLevel,
+  ExecutionContext,
+  AgentResult,
+  AgentMetrics,
+  AgentStatus,
+  AgentStatusInfo,
+  HILContext,
+  HILResponse,
+  HILOption,
+} from '../core/types';
 
 interface Ticket {
   id: string;
@@ -42,7 +54,7 @@ export class ApprovalAgent implements MetaAgent {
   private approvedTickets: Map<string, Ticket> = new Map();
   private rejectedTickets: Map<string, Ticket> = new Map();
   private autoApprovalRules: Map<string, AutoApprovalRule> = new Map();
-  
+
   private status: AgentStatus = 'idle';
   private agentMetrics: AgentMetrics = {
     totalExecutions: 0,
@@ -122,9 +134,24 @@ export class ApprovalAgent implements MetaAgent {
    * Check if change is low risk
    */
   private isLowRiskChange(solution: string): boolean {
-    const lowRiskIndicators = ['caching', 'optimization', 'monitoring', 'logging', 'timeout', 'retry', 'circuit breaker'];
-    const highRiskIndicators = ['database schema', 'authentication', 'authorization', 'encryption', 'security policy', 'user data'];
-    
+    const lowRiskIndicators = [
+      'caching',
+      'optimization',
+      'monitoring',
+      'logging',
+      'timeout',
+      'retry',
+      'circuit breaker',
+    ];
+    const highRiskIndicators = [
+      'database schema',
+      'authentication',
+      'authorization',
+      'encryption',
+      'security policy',
+      'user data',
+    ];
+
     const solutionText = solution.toLowerCase();
     return (
       lowRiskIndicators.some((indicator) => solutionText.includes(indicator)) &&
@@ -150,7 +177,7 @@ export class ApprovalAgent implements MetaAgent {
 
   async start(): Promise<void> {
     if (this.status === 'running') return;
-    
+
     this.status = 'running';
 
     // Start approval processing loop - runs every 10 seconds
@@ -209,7 +236,7 @@ export class ApprovalAgent implements MetaAgent {
       for (const ticket of this.pendingTickets.values()) {
         if (ticket.status === 'PENDING_HIL_APPROVAL') {
           const result = await this.processTicket(ticket);
-          
+
           if (result.autoApproved) {
             autoApproved++;
           } else if (result.hilRequested) {
@@ -249,10 +276,12 @@ export class ApprovalAgent implements MetaAgent {
   /**
    * Process individual ticket
    */
-  private async processTicket(ticket: Ticket): Promise<{ autoApproved: boolean; hilRequested: boolean }> {
+  private async processTicket(
+    ticket: Ticket
+  ): Promise<{ autoApproved: boolean; hilRequested: boolean }> {
     // Check for auto-approval
     const autoApproval = this.checkAutoApproval(ticket);
-    
+
     if (autoApproval) {
       await this.approveTicket(ticket, {
         approved: true,
@@ -269,7 +298,7 @@ export class ApprovalAgent implements MetaAgent {
       const hilContext = await this.createHILContext(ticket);
       if (this.hilHandler) {
         const response = await this.hilHandler(hilContext);
-        
+
         if (response.decision === 'approve') {
           await this.approveTicket(ticket, response);
         } else {
@@ -289,7 +318,7 @@ export class ApprovalAgent implements MetaAgent {
     ticket.status = 'APPROVED';
     this.pendingTickets.delete(ticket.id);
     this.approvedTickets.set(ticket.id, ticket);
-    
+
     // TODO: Execute approved ticket
     console.log(`✅ Approved ticket: ${ticket.id}`);
   }
@@ -301,7 +330,7 @@ export class ApprovalAgent implements MetaAgent {
     ticket.status = 'REJECTED';
     this.pendingTickets.delete(ticket.id);
     this.rejectedTickets.set(ticket.id, ticket);
-    
+
     console.log(`❌ Rejected ticket: ${ticket.id}: ${decision.reason}`);
   }
 
@@ -385,13 +414,14 @@ export class ApprovalAgent implements MetaAgent {
     this.agentMetrics.lastExecutionTime = new Date();
   }
 
-  getStatus(): AgentStatus {
+  getStatus(): AgentStatusInfo {
     return {
       name: this.name,
       status: this.status,
       lastExecution: this.agentMetrics.lastExecutionTime,
       metrics: this.agentMetrics,
-      health: this.status === 'error' ? 'unhealthy' : this.status === 'running' ? 'healthy' : 'degraded',
+      health:
+        this.status === 'error' ? 'unhealthy' : this.status === 'running' ? 'healthy' : 'degraded',
     };
   }
 
@@ -406,7 +436,7 @@ export class ApprovalAgent implements MetaAgent {
   requiresHIL(context: ExecutionContext): boolean {
     const ticket = context.ticket as Ticket;
     if (!ticket) return false;
-    
+
     // Require HIL if not auto-approvable
     return !this.checkAutoApproval(ticket);
   }
@@ -426,4 +456,3 @@ export class ApprovalAgent implements MetaAgent {
     // TODO: Adapt auto-approval rules based on outcomes
   }
 }
-

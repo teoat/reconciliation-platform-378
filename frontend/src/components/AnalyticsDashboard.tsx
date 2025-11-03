@@ -129,7 +129,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       // Load dashboard metrics
       const dashboardResponse = await apiClient.get<any>('/analytics/dashboard');
       if (dashboardResponse.error) {
-        throw new Error(dashboardResponse.error.message);
+        throw new Error(String(dashboardResponse.error));
       }
       if (dashboardResponse.data) {
         // Adapt API response to component types
@@ -155,7 +155,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       // Load reconciliation stats
       const reconciliationResponse = await apiClient.get<any>('/analytics/reconciliation-stats');
       if (reconciliationResponse.error) {
-        throw new Error(reconciliationResponse.error.message);
+        throw new Error(String(reconciliationResponse.error));
       }
       if (reconciliationResponse.data) {
         const data = reconciliationResponse.data as any;
@@ -181,7 +181,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       if (projectId) {
         const projectResponse = await apiClient.get<any>(`/projects/${projectId}/stats`);
         if (projectResponse.error) {
-          throw new Error(projectResponse.error.message);
+          throw new Error(String(projectResponse.error));
         }
         if (projectResponse.data) {
           // Placeholder - project stats API may return different structure
@@ -282,6 +282,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       return () => clearInterval(interval);
     }
+    return undefined;
   }, [loadDashboardData, refreshInterval]);
 
   // Calculate derived metrics

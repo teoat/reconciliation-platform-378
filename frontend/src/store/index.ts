@@ -10,7 +10,9 @@ import { combineReducers } from '@reduxjs/toolkit'
 // Removed redux-persist for now - not in dependencies
 // import { persistStore, persistReducer } from 'redux-persist'
 // import storage from 'redux-persist/lib/storage'
-import { apiClient, BackendUser, BackendProject, BackendReconciliationJob, BackendReconciliationRecord } from '../services/apiClient'
+import { apiClient } from '../services/apiClient'
+import type { BackendUser, BackendProject, BackendReconciliationJob, BackendReconciliationRecord } from '../services/apiClient/types'
+import { getErrorMessageFromApiError } from '../utils/errorExtraction'
 
 // Removed unused type imports
 
@@ -143,9 +145,9 @@ export interface DashboardData {
     matchRate: number
   }
   charts: {
-    reconciliationTrends: any[]
-    projectPerformance: any[]
-    errorRates: any[]
+    reconciliationTrends: Array<Record<string, unknown>>
+    projectPerformance: Array<Record<string, unknown>>
+    errorRates: Array<Record<string, unknown>>
   }
   recentActivity: ActivityItem[]
 }
@@ -268,7 +270,7 @@ export interface DataSourceConfig {
   name: string
   type: 'database' | 'api' | 'file'
   connectionString?: string
-  credentials?: any
+  credentials?: Record<string, unknown>
   active: boolean
 }
 
@@ -440,13 +442,13 @@ export const projectsSlice = createSlice({
       state.projects.push(action.payload)
     },
     updateProject: (state, action: PayloadAction<BackendProject>) => {
-      const index = state.projects.findIndex(p => p.id === action.payload.id)
+      const index = state.projects.findIndex((p: BackendProject) => p.id === action.payload.id)
       if (index !== -1) {
         state.projects[index] = action.payload
       }
     },
     removeProject: (state, action: PayloadAction<string>) => {
-      state.projects = state.projects.filter(p => p.id !== action.payload)
+      state.projects = state.projects.filter((p: BackendProject) => p.id !== action.payload)
       if (state.selectedProject?.id === action.payload) {
         state.selectedProject = null
       }
@@ -490,7 +492,7 @@ export const reconciliationSlice = createSlice({
       }
     },
     updateRecord: (state, action: PayloadAction<BackendReconciliationRecord>) => {
-      const index = state.records.findIndex(r => r.id === action.payload.id)
+      const index = state.records.findIndex((r: BackendReconciliationRecord) => r.id === action.payload.id)
       if (index !== -1) {
         state.records[index] = action.payload
         // Update stats - BackendReconciliationRecord doesn't have status
@@ -537,19 +539,19 @@ export const ingestionSlice = createSlice({
   name: 'ingestion',
   initialState: initialIngestionState,
   reducers: {
-    setJobs: (state, action: PayloadAction<any[]>) => {
+    setJobs: (state, action: PayloadAction<BackendReconciliationJob[]>) => {
       state.jobs = action.payload
     },
-    addJob: (state, action: PayloadAction<any>) => {
+    addJob: (state, action: PayloadAction<BackendReconciliationJob>) => {
       state.jobs.push(action.payload)
     },
-    updateJob: (state, action: PayloadAction<any>) => {
-      const index = state.jobs.findIndex(j => j.id === action.payload.id)
+    updateJob: (state, action: PayloadAction<BackendReconciliationJob>) => {
+      const index = state.jobs.findIndex((j: BackendReconciliationJob) => j.id === action.payload.id)
       if (index !== -1) {
         state.jobs[index] = action.payload
       }
     },
-    setCurrentJob: (state, action: PayloadAction<any | null>) => {
+    setCurrentJob: (state, action: PayloadAction<BackendReconciliationJob | null>) => {
       state.currentJob = action.payload
     },
     addUploadedFile: (state, action: PayloadAction<UploadedFile>) => {
@@ -590,13 +592,13 @@ export const analyticsSlice = createSlice({
       state.reports.push(action.payload)
     },
     updateReport: (state, action: PayloadAction<Report>) => {
-      const index = state.reports.findIndex(r => r.id === action.payload.id)
+      const index = state.reports.findIndex((r: Report) => r.id === action.payload.id)
       if (index !== -1) {
         state.reports[index] = action.payload
       }
     },
     removeReport: (state, action: PayloadAction<string>) => {
-      state.reports = state.reports.filter(r => r.id !== action.payload)
+      state.reports = state.reports.filter((r: Report) => r.id !== action.payload)
     },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.isLoading = action.payload
@@ -750,7 +752,7 @@ export const loginUser = createAsyncThunk(
     try {
       const response = await apiClient.login(credentials)
       if (response.error) {
-        return rejectWithValue(response.error.message)
+        return rejectWithValue(getErrorMessageFromApiError(response.error))
       }
       return response.data as any
     } catch (error) {
@@ -765,7 +767,7 @@ export const getCurrentUser = createAsyncThunk(
     try {
       const response = await apiClient.getCurrentUser()
       if (response.error) {
-        return rejectWithValue(response.error.message)
+        return rejectWithValue(getErrorMessageFromApiError(response.error))
       }
       return response.data as any
     } catch (error) {
@@ -792,7 +794,7 @@ export const fetchProjects = createAsyncThunk(
     try {
       const response = await apiClient.getProjects()
       if (response.error) {
-        return rejectWithValue(response.error.message)
+        return rejectWithValue(getErrorMessageFromApiError(response.error))
       }
       return (response.data as any)?.projects || []
     } catch (error) {
@@ -807,7 +809,7 @@ export const createProject = createAsyncThunk(
     try {
       const response = await apiClient.createProject(projectData)
       if (response.error) {
-        return rejectWithValue(response.error.message)
+        return rejectWithValue(getErrorMessageFromApiError(response.error))
       }
       return response.data as any
     } catch (error) {
@@ -822,7 +824,7 @@ export const deleteProject = createAsyncThunk(
     try {
       const response = await apiClient.deleteProject(projectId)
       if (response.error) {
-        return rejectWithValue(response.error.message)
+        return rejectWithValue(getErrorMessageFromApiError(response.error))
       }
       return projectId
     } catch (error) {
@@ -838,7 +840,7 @@ export const fetchReconciliationRecords = createAsyncThunk(
     try {
       const response = await apiClient.getReconciliationRecords(projectId, 1, 20)
       if (response.error) {
-        return rejectWithValue(response.error.message)
+        return rejectWithValue(getErrorMessageFromApiError(response.error))
       }
       return (response.data as any) || []
     } catch (error) {
@@ -856,7 +858,7 @@ export const startReconciliation = createAsyncThunk(
     try {
       const response = await apiClient.startReconciliation(config)
       if (response.error) {
-        return rejectWithValue(response.error.message)
+        return rejectWithValue(getErrorMessageFromApiError(response.error))
       }
       return response.data as any?.records || []
     } catch (error) {
@@ -871,7 +873,7 @@ export const createManualMatch = createAsyncThunk(
     try {
       const response = await apiClient.createManualMatch(recordId, matchId)
       if (response.error) {
-        return rejectWithValue(response.error.message)
+        return rejectWithValue(getErrorMessageFromApiError(response.error))
       }
       return { recordId, matchId }
     } catch (error) {
@@ -888,7 +890,7 @@ export const fetchDashboardData = createAsyncThunk(
     try {
       const response = await apiClient.getDashboardData()
       if (response.error) {
-        return rejectWithValue(response.error.message)
+        return rejectWithValue(getErrorMessageFromApiError(response.error))
       }
       return response.data as any
     } catch (error) {

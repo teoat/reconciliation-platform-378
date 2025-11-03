@@ -6,14 +6,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   apiClient,
   wsClient,
-  ApiResponse,
-  BackendUser,
-  BackendProject,
-  BackendDataSource,
-  BackendReconciliationRecord,
-  BackendReconciliationMatch,
-  BackendReconciliationJob
 } from '../services/apiClient';
+import type { BackendProject, BackendDataSource, BackendReconciliationRecord, BackendReconciliationMatch, BackendReconciliationJob } from '../services/apiClient/types';
+import { getErrorMessageFromApiError } from '../utils/errorExtraction';
 import { PaginatedResponse } from '../types/backend-aligned';
 import { ProjectInfo, FileInfo } from '../types/backend-aligned';
 
@@ -44,15 +39,37 @@ export const useProjects = () => {
     try {
       const response = await apiClient.getProjects(params?.page || 1, params?.per_page || 10);
       if (response.data) {
-        setProjects(response.data.projects);
-        setPagination({
-          page: response.data.page,
-          per_page: response.data.per_page,
-          total: response.data.total,
-          total_pages: Math.ceil(response.data.total / response.data.per_page)
-        });
+        if ('items' in response.data && 'page' in response.data && Array.isArray((response.data as PaginatedResponse<unknown>).items)) {
+          const paginated = response.data as PaginatedResponse<unknown>;
+          const items = paginated.items as ProjectInfo[];
+          setProjects(items);
+          setPagination({
+            page: paginated.page,
+            per_page: paginated.per_page,
+            total: paginated.total,
+            total_pages: paginated.total_pages
+          });
+        } else if ('projects' in response.data && Array.isArray((response.data as { projects: unknown }).projects)) {
+          const data = response.data as { projects: ProjectInfo[]; page?: number; per_page?: number; total?: number };
+          setProjects(data.projects);
+          setPagination({
+            page: data.page || 1,
+            per_page: data.per_page || data.projects.length,
+            total: data.total || data.projects.length,
+            total_pages: data.total && data.per_page ? Math.ceil(data.total / data.per_page) : 1
+          });
+        } else if (Array.isArray(response.data)) {
+          const projects = response.data as ProjectInfo[];
+          setProjects(projects);
+          setPagination({
+            page: 1,
+            per_page: projects.length,
+            total: projects.length,
+            total_pages: 1
+          });
+        }
       } else {
-        setError(response.error?.message || 'Failed to fetch projects');
+        setError(response.error ? getErrorMessageFromApiError(response.error) : 'Failed to fetch projects');
       }
     } catch (err) {
       setError('Failed to fetch projects');
@@ -85,8 +102,9 @@ export const useProjects = () => {
         setProjects(prev => [projectInfo, ...prev]);
         return { success: true, project: projectInfo };
       } else {
-        setError(response.error?.message || 'Failed to create project');
-        return { success: false, error: response.error?.message };
+        const errorMsg = response.error ? getErrorMessageFromApiError(response.error) : 'Failed to create project';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
     } catch (err) {
       setError('Failed to create project');
@@ -120,8 +138,9 @@ export const useProjects = () => {
         );
         return { success: true, project: projectInfo };
       } else {
-        setError(response.error?.message || 'Failed to update project');
-        return { success: false, error: response.error?.message };
+        const errorMsg = response.error ? getErrorMessageFromApiError(response.error) : 'Failed to update project';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
     } catch (err) {
       setError('Failed to update project');
@@ -141,8 +160,10 @@ export const useProjects = () => {
         setProjects(prev => prev.filter(project => project.id !== id));
         return { success: true };
       } else {
-        setError(response.error.message || 'Failed to delete project');
-        return { success: false, error: response.error.message };
+        const { getErrorMessageFromApiError } = await import('../utils/errorExtraction');
+        const errorMsg = getErrorMessageFromApiError(response.error) || 'Failed to delete project';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
     } catch (err) {
       setError('Failed to delete project');
@@ -184,7 +205,7 @@ export const useProject = (id: string | null) => {
       if (response.data) {
         setProject(response.data);
       } else {
-        setError(response.error?.message || 'Failed to fetch project');
+        setError(response.error ? getErrorMessageFromApiError(response.error) : 'Failed to fetch project');
       }
     } catch (err) {
       setError('Failed to fetch project');
@@ -225,7 +246,7 @@ export const useDataSources = (projectId: string | null) => {
       if (response.data) {
         setDataSources(response.data);
       } else {
-        setError(response.error?.message || 'Failed to fetch data sources');
+        setError(response.error ? getErrorMessageFromApiError(response.error) : 'Failed to fetch data sources');
       }
     } catch (err) {
       setError('Failed to fetch data sources');
@@ -267,8 +288,9 @@ export const useDataSources = (projectId: string | null) => {
         setDataSources(prev => [fileInfo, ...prev]);
         return { success: true, dataSource: fileInfo };
       } else {
-        setError(response.error?.message || 'Failed to upload file');
-        return { success: false, error: response.error?.message };
+        const errorMsg = response.error ? getErrorMessageFromApiError(response.error) : 'Failed to upload file';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
     } catch (err) {
       setError('Failed to upload file');
@@ -289,8 +311,9 @@ export const useDataSources = (projectId: string | null) => {
       if (response.data) {
         return { success: true, result: response.data };
       } else {
-        setError(response.error?.message || 'Failed to process file');
-        return { success: false, error: response.error?.message };
+        const errorMsg = response.error ? getErrorMessageFromApiError(response.error) : 'Failed to process file';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
     } catch (err) {
       setError('Failed to process file');
@@ -354,7 +377,7 @@ export const useReconciliationRecords = (projectId: string | null) => {
           total_pages: data.total_pages
         });
       } else {
-        setError(response.error?.message || 'Failed to fetch reconciliation records');
+        setError(response.error ? getErrorMessageFromApiError(response.error) : 'Failed to fetch reconciliation records');
       }
     } catch (err) {
       setError('Failed to fetch reconciliation records');
@@ -406,16 +429,23 @@ export const useReconciliationMatches = (projectId: string | null) => {
         params?.page || 1,
         params?.per_page || 10
       );
-      if (response.data && 'items' in response.data) {
-        setMatches((response.data as any).items || []);
-        setPagination({
-          page: (response.data as any).page,
-          per_page: (response.data as any).per_page,
-          total: (response.data as any).total,
-          total_pages: (response.data as any).total_pages
-        });
+      if (response.data) {
+        if ('items' in response.data && 'page' in response.data) {
+          const paginated = response.data as PaginatedResponse<BackendReconciliationMatch>;
+          setMatches(paginated.items || []);
+          setPagination({
+            page: paginated.page,
+            per_page: paginated.per_page,
+            total: paginated.total,
+            total_pages: paginated.total_pages
+          });
+        } else if (Array.isArray(response.data)) {
+          const matches = response.data as BackendReconciliationMatch[];
+          setMatches(matches);
+          setPagination({ page: 1, per_page: matches.length, total: matches.length, total_pages: 1 });
+        }
       } else {
-        setError(response.error?.message || 'Failed to fetch reconciliation matches');
+        setError(response.error ? getErrorMessageFromApiError(response.error) : 'Failed to fetch reconciliation matches');
       }
     } catch (err) {
       setError('Failed to fetch reconciliation matches');
@@ -424,7 +454,7 @@ export const useReconciliationMatches = (projectId: string | null) => {
     }
   }, [projectId]);
 
-  const createMatch = useCallback(async (matchData: Partial<BackendReconciliationMatch>) => {
+  const createMatch = useCallback(async (matchData: { record_a_id: string; record_b_id: string; confidence_score: number; status?: string }) => {
     if (!projectId) return { success: false, error: 'No project ID' };
     
     setIsLoading(true);
@@ -436,8 +466,9 @@ export const useReconciliationMatches = (projectId: string | null) => {
         setMatches(prev => [response.data!, ...prev]);
         return { success: true, match: response.data };
       } else {
-        setError(response.error?.message || 'Failed to create match');
-        return { success: false, error: response.error?.message };
+        const errorMsg = response.error ? getErrorMessageFromApiError(response.error) : 'Failed to create match';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
     } catch (err) {
       setError('Failed to create match');
@@ -463,8 +494,9 @@ export const useReconciliationMatches = (projectId: string | null) => {
         );
         return { success: true, match: response.data };
       } else {
-        setError(response.error?.message || 'Failed to update match');
-        return { success: false, error: response.error?.message };
+        const errorMsg = response.error ? getErrorMessageFromApiError(response.error) : 'Failed to update match';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
     } catch (err) {
       setError('Failed to update match');
@@ -509,7 +541,7 @@ export const useReconciliationJobs = (projectId: string | null) => {
       if (response.data) {
         setJobs(response.data);
       } else {
-        setError(response.error?.message || 'Failed to fetch reconciliation jobs');
+        setError(response.error ? getErrorMessageFromApiError(response.error) : 'Failed to fetch reconciliation jobs');
       }
     } catch (err) {
       setError('Failed to fetch reconciliation jobs');
@@ -530,8 +562,9 @@ export const useReconciliationJobs = (projectId: string | null) => {
         setJobs(prev => [response.data!, ...prev]);
         return { success: true, job: response.data };
       } else {
-        setError(response.error?.message || 'Failed to create reconciliation job');
-        return { success: false, error: response.error?.message };
+        const errorMsg = response.error ? getErrorMessageFromApiError(response.error) : 'Failed to create reconciliation job';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
     } catch (err) {
       setError('Failed to create reconciliation job');
@@ -557,8 +590,9 @@ export const useReconciliationJobs = (projectId: string | null) => {
         );
         return { success: true, job: response.data };
       } else {
-        setError(response.error?.message || 'Failed to start reconciliation job');
-        return { success: false, error: response.error?.message };
+        const errorMsg = response.error ? getErrorMessageFromApiError(response.error) : 'Failed to start reconciliation job';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
     } catch (err) {
       setError('Failed to start reconciliation job');
@@ -599,7 +633,7 @@ export const useWebSocket = () => {
       setConnectionStatus('connected');
       wsRef.current = wsClient;
     } catch (error) {
-      logger.error('WebSocket connection failed:', error);
+      logger.error('WebSocket connection failed:', error as Error | unknown);
       setIsConnected(false);
       setConnectionStatus('error');
     }
@@ -618,13 +652,13 @@ export const useWebSocket = () => {
     }
   }, []);
 
-  const onMessage = useCallback((eventType: string, handler: Function) => {
+  const onMessage = useCallback((eventType: string, handler: (...args: unknown[]) => void) => {
     if (wsRef.current) {
       wsRef.current.on(eventType, handler);
     }
   }, []);
 
-  const offMessage = useCallback((eventType: string, handler: Function) => {
+  const offMessage = useCallback((eventType: string, handler: (...args: unknown[]) => void) => {
     if (wsRef.current) {
       wsRef.current.off(eventType, handler);
     }
@@ -772,7 +806,7 @@ export const useHealthCheck = () => {
     setIsChecking(true);
     try {
       const response = await apiClient.healthCheck();
-      setIsHealthy(response.success && !response.error);
+      setIsHealthy(response.success && !response.error ? true : false);
       setLastChecked(new Date());
     } catch (error) {
       setIsHealthy(false);

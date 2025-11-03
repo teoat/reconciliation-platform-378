@@ -8,6 +8,7 @@ use crate::errors::AppError;
 use crate::database::Database;
 use crate::config::Config;
 use crate::services::cache::MultiLevelCache;
+use crate::services::resilience::ResilienceManager;
 use crate::handlers::types::ApiResponse;
 use crate::handlers::helpers::extract_user_id;
 
@@ -23,9 +24,15 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 /// Get dashboard data
 pub async fn get_dashboard_data(
     data: web::Data<Database>,
+    cache: web::Data<MultiLevelCache>,
+    resilience: web::Data<ResilienceManager>,
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
-    let analytics_service = crate::services::analytics::AnalyticsService::new(data.get_ref().clone());
+    let analytics_service = crate::services::analytics::AnalyticsService::new_with_resilience(
+        data.get_ref().clone(),
+        cache.get_ref().clone(),
+        resilience.get_ref().clone(),
+    );
     
     let dashboard_data = analytics_service.get_dashboard_data().await?;
     
@@ -43,6 +50,7 @@ pub async fn get_project_stats(
     http_req: HttpRequest,
     data: web::Data<Database>,
     cache: web::Data<MultiLevelCache>,
+    resilience: web::Data<ResilienceManager>,
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
@@ -62,7 +70,11 @@ pub async fn get_project_stats(
         }));
     }
     
-    let analytics_service = crate::services::analytics::AnalyticsService::new(data.get_ref().clone());
+    let analytics_service = crate::services::analytics::AnalyticsService::new_with_resilience(
+        data.get_ref().clone(),
+        cache.get_ref().clone(),
+        resilience.get_ref().clone(),
+    );
     
     let project_stats = analytics_service.get_project_stats(project_id_val).await?;
     
@@ -82,9 +94,15 @@ pub async fn get_project_stats(
 pub async fn get_user_activity(
     user_id: web::Path<Uuid>,
     data: web::Data<Database>,
+    cache: web::Data<MultiLevelCache>,
+    resilience: web::Data<ResilienceManager>,
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
-    let analytics_service = crate::services::analytics::AnalyticsService::new(data.get_ref().clone());
+    let analytics_service = crate::services::analytics::AnalyticsService::new_with_resilience(
+        data.get_ref().clone(),
+        cache.get_ref().clone(),
+        resilience.get_ref().clone(),
+    );
     
     let user_activity = analytics_service.get_user_activity_stats(user_id.into_inner()).await?;
     
@@ -99,9 +117,15 @@ pub async fn get_user_activity(
 /// Get reconciliation statistics
 pub async fn get_reconciliation_stats(
     data: web::Data<Database>,
+    cache: web::Data<MultiLevelCache>,
+    resilience: web::Data<ResilienceManager>,
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
-    let analytics_service = crate::services::analytics::AnalyticsService::new(data.get_ref().clone());
+    let analytics_service = crate::services::analytics::AnalyticsService::new_with_resilience(
+        data.get_ref().clone(),
+        cache.get_ref().clone(),
+        resilience.get_ref().clone(),
+    );
     
     let reconciliation_stats = analytics_service.get_reconciliation_stats().await?;
     

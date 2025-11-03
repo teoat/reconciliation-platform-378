@@ -6,7 +6,9 @@ import { Button } from '../ui/Button'
 import { useToast } from '../../hooks/useToast'
 import { logger } from '../../services/logger'
 import { SkipLink, ARIALiveRegion } from '../ui/Accessibility'
-import { ArrowLeft, Save, Bell, Shield, Palette } from 'lucide-react'
+import { OnboardingAnalyticsDashboard } from '../onboarding/OnboardingAnalyticsDashboard'
+import { FeatureGate } from '../ui/FeatureGate'
+import { ArrowLeft, Save, Bell, Shield, Palette, CheckCircle } from 'lucide-react'
 
 interface SettingsData {
   notifications: {
@@ -27,11 +29,11 @@ interface SettingsData {
 
 const Settings: React.FC = () => {
   const navigate = useNavigate()
-  const { refreshUser } = useAuth()
+  const { refreshUser, user } = useAuth()
   const toast = useToast()
   const [isSaving, setIsSaving] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'notifications' | 'preferences' | 'security'>('preferences')
+  const [activeTab, setActiveTab] = useState<'notifications' | 'preferences' | 'security' | 'analytics'>('preferences')
   const [liveMessage, setLiveMessage] = useState('')
   const [settings, setSettings] = useState<SettingsData>({
     notifications: {
@@ -113,26 +115,35 @@ const Settings: React.FC = () => {
   }, [settings, toast, refreshUser, activeTab])
 
   // Memoize tab change handlers
-  const handleTabChange = useCallback((tab: 'notifications' | 'preferences' | 'security') => {
+  const handleTabChange = useCallback((tab: 'notifications' | 'preferences' | 'security' | 'analytics') => {
     setActiveTab(tab)
   }, [])
 
   // Memoize settings update handlers
-  const updatePreferences = useCallback((key: keyof SettingsData['preferences'], value: any) => {
+  const updatePreferences = useCallback(<K extends keyof SettingsData['preferences']>(
+    key: K,
+    value: SettingsData['preferences'][K]
+  ) => {
     setSettings(prev => ({
       ...prev,
       preferences: { ...prev.preferences, [key]: value }
     }))
   }, [])
 
-  const updateNotifications = useCallback((key: keyof SettingsData['notifications'], value: any) => {
+  const updateNotifications = useCallback(<K extends keyof SettingsData['notifications']>(
+    key: K,
+    value: SettingsData['notifications'][K]
+  ) => {
     setSettings(prev => ({
       ...prev,
       notifications: { ...prev.notifications, [key]: value }
     }))
   }, [])
 
-  const updateSecurity = useCallback((key: keyof SettingsData['security'], value: any) => {
+  const updateSecurity = useCallback(<K extends keyof SettingsData['security']>(
+    key: K,
+    value: SettingsData['security'][K]
+  ) => {
     setSettings(prev => ({
       ...prev,
       security: { ...prev.security, [key]: value }
@@ -225,7 +236,7 @@ const Settings: React.FC = () => {
               }`}
               aria-label="Preferences"
               role="tab"
-                    aria-selected={activeTab === 'preferences' ? 'true' : 'false'}
+              aria-selected={activeTab === 'preferences' ? 'true' : 'false'}
               type="button"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -248,7 +259,7 @@ const Settings: React.FC = () => {
               }`}
               aria-label="Notifications"
               role="tab"
-                    aria-selected={activeTab === 'notifications' ? 'true' : 'false'}
+              aria-selected={activeTab === 'notifications' ? 'true' : 'false'}
               type="button"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -271,7 +282,7 @@ const Settings: React.FC = () => {
               }`}
               aria-label="Security"
               role="tab"
-                    aria-selected={activeTab === 'security' ? 'true' : 'false'}
+              aria-selected={activeTab === 'security' ? 'true' : 'false'}
               type="button"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
@@ -285,6 +296,36 @@ const Settings: React.FC = () => {
                 <span>Security</span>
               </div>
             </button>
+            <FeatureGate
+              featureId="onboarding-analytics"
+              requiredRole={['admin']}
+              userRole={(user as { role?: string })?.role || 'user'}
+              showUnavailable={false}
+            >
+              <button
+                onClick={() => handleTabChange('analytics')}
+                className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === 'analytics'
+                    ? tabClasses.active
+                    : tabClasses.inactive
+                }`}
+                aria-label="Onboarding Analytics"
+                role="tab"
+                aria-selected={activeTab === 'analytics' ? 'true' : 'false'}
+                type="button"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleTabChange('analytics')
+                  }
+                }}
+              >
+                <div className="flex items-center justify-center space-x-2">
+                  <CheckCircle className="w-4 h-4" aria-hidden="true" />
+                  <span>Analytics</span>
+                </div>
+              </button>
+            </FeatureGate>
           </nav>
         </div>
 
@@ -443,6 +484,21 @@ const Settings: React.FC = () => {
                 </p>
               </div>
             </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <FeatureGate
+              featureId="onboarding-analytics-dashboard"
+              requiredRole={['admin']}
+              userRole={(user as { role?: string })?.role || 'user'}
+              fallback={
+                <div className="text-center py-8 text-gray-500">
+                  <p>Analytics dashboard is only available to administrators.</p>
+                </div>
+              }
+            >
+              <OnboardingAnalyticsDashboard showRealTime={true} />
+            </FeatureGate>
           )}
         </div>
 

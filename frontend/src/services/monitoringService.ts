@@ -1,6 +1,6 @@
 // Comprehensive Monitoring Service
-import { logger } from '@/services/logger';
-import { apiClient } from '../apiClient';
+import { logger } from './logger';
+import { apiClient } from './apiClient';
 
 export interface SystemMetrics {
   timestamp: string;
@@ -49,19 +49,18 @@ export interface PerformanceMetrics {
   pageLoadTime: number;
   domContentLoaded: number;
   firstContentfulPaint: number;
+  largestContentfulPaint?: number;
+  firstInputDelay?: number;
+  cumulativeLayoutShift?: number;
+  totalBlockingTime?: number;
+  memoryUsage?: number;
+  jsHeapSizeUsed?: number;
+  jsHeapSizeLimit?: number;
 }
 
 export interface Metric {
   timestamp: string;
   [key: string]: string | number | boolean | undefined;
-}
-  largestContentfulPaint: number;
-  firstInputDelay: number;
-  cumulativeLayoutShift: number;
-  totalBlockingTime: number;
-  memoryUsage: number;
-  jsHeapSizeUsed: number;
-  jsHeapSizeLimit: number;
 }
 
 export interface ErrorMetrics {
@@ -205,7 +204,7 @@ export class MonitoringService {
       this.isInitialized = true;
       logger.info('Monitoring service initialized successfully');
     } catch (error) {
-      logger.error('Failed to initialize monitoring service:', error);
+      logger.error('Failed to initialize monitoring service:', { error: String(error) });
       throw error;
     }
   }
@@ -219,6 +218,7 @@ export class MonitoringService {
         )[0] as PerformanceNavigationTiming;
         const paintEntries = performance.getEntriesByType('paint');
 
+        const perfMemory = (performance as any).memory;
         const metrics: PerformanceMetrics = {
           timestamp: new Date().toISOString(),
           pageLoadTime: navigation.loadEventEnd - navigation.loadEventStart,
@@ -230,9 +230,9 @@ export class MonitoringService {
           firstInputDelay: 0, // Will be updated by FID observer
           cumulativeLayoutShift: 0, // Will be updated by CLS observer
           totalBlockingTime: 0, // Will be calculated from long tasks
-          memoryUsage: (performance as any).memory?.usedJSHeapSize || 0,
-          jsHeapSizeUsed: (performance as any).memory?.usedJSHeapSize || 0,
-          jsHeapSizeLimit: (performance as any).memory?.jsHeapSizeLimit || 0,
+          memoryUsage: perfMemory?.usedJSHeapSize || 0,
+          jsHeapSizeUsed: perfMemory?.usedJSHeapSize || 0,
+          jsHeapSizeLimit: perfMemory?.jsHeapSizeLimit || 0,
         };
 
         this.collectMetric('performance', metrics);
@@ -276,7 +276,7 @@ export class MonitoringService {
         entries.forEach((entry: PerformanceEntry) => {
           const layoutShiftEntry = entry as any; // Type assertion for CLS-specific properties
           if (!layoutShiftEntry.hadRecentInput) {
-            clsValue += entry.value;
+            clsValue += layoutShiftEntry.value;
           }
         });
         this.collectMetric('performance', {
@@ -444,7 +444,10 @@ export class MonitoringService {
     };
   }
 
-  private collectMetric(type: string, metric: Metric): void {
+  private collectMetric(
+    type: string,
+    metric: Metric | PerformanceMetrics | ErrorMetrics | UserMetrics | ApiMetrics
+  ): void {
     if (Math.random() > this.config.samplingRate) return;
 
     if (!this.metricsBuffer.has(type)) {
@@ -476,7 +479,7 @@ export class MonitoringService {
     try {
       await this.sendMetrics(type, metrics);
     } catch (error) {
-      logger.error(`Failed to send ${type} metrics:`, error);
+      logger.error(`Failed to send ${type} metrics:`, { error: String(error) });
       // Re-add metrics to buffer for retry
       buffer.unshift(...metrics);
     }
@@ -501,12 +504,12 @@ export class MonitoringService {
   // Public API methods
   async getSystemMetrics(): Promise<SystemMetrics> {
     const response = await apiClient.get('/api/monitoring/metrics/system');
-    return response.data;
+    return response.data as SystemMetrics;
   }
 
   async getAlerts(): Promise<Alert[]> {
     const response = await apiClient.get('/api/monitoring/alerts');
-    return response.data;
+    return response.data as Alert[];
   }
 
   async getLogs(level?: string, limit = 100): Promise<LogEntry[]> {
@@ -515,46 +518,46 @@ export class MonitoringService {
     params.append('limit', limit.toString());
 
     const response = await apiClient.get(`/api/monitoring/logs?${params}`);
-    return response.data;
+    return response.data as LogEntry[];
   }
 
   async getPerformanceMetrics(timeRange = '1h'): Promise<PerformanceMetrics[]> {
     const response = await apiClient.get(
       `/api/monitoring/metrics/performance?timeRange=${timeRange}`
     );
-    return response.data;
+    return response.data as PerformanceMetrics[];
   }
 
   async getErrorMetrics(timeRange = '1h'): Promise<ErrorMetrics[]> {
     const response = await apiClient.get(`/api/monitoring/metrics/errors?timeRange=${timeRange}`);
-    return response.data;
+    return response.data as ErrorMetrics[];
   }
 
   async getUserMetrics(timeRange = '1h'): Promise<UserMetrics[]> {
     const response = await apiClient.get(`/api/monitoring/metrics/users?timeRange=${timeRange}`);
-    return response.data;
+    return response.data as UserMetrics[];
   }
 
   async getApiMetrics(timeRange = '1h'): Promise<ApiMetrics[]> {
     const response = await apiClient.get(`/api/monitoring/metrics/api?timeRange=${timeRange}`);
-    return response.data;
+    return response.data as ApiMetrics[];
   }
 
   async getDatabaseMetrics(timeRange = '1h'): Promise<DatabaseMetrics[]> {
     const response = await apiClient.get(`/api/monitoring/metrics/database?timeRange=${timeRange}`);
-    return response.data;
+    return response.data as DatabaseMetrics[];
   }
 
   async getCacheMetrics(timeRange = '1h'): Promise<CacheMetrics[]> {
     const response = await apiClient.get(`/api/monitoring/metrics/cache?timeRange=${timeRange}`);
-    return response.data;
+    return response.data as CacheMetrics[];
   }
 
   async getWebSocketMetrics(timeRange = '1h'): Promise<WebSocketMetrics[]> {
     const response = await apiClient.get(
       `/api/monitoring/metrics/websocket?timeRange=${timeRange}`
     );
-    return response.data;
+    return response.data as WebSocketMetrics[];
   }
 
   async resolveAlert(alertId: string): Promise<void> {
@@ -567,12 +570,12 @@ export class MonitoringService {
 
   async createAlert(alert: Partial<Alert>): Promise<Alert> {
     const response = await apiClient.post('/api/monitoring/alerts', alert);
-    return response.data;
+    return response.data as Alert;
   }
 
   async updateAlert(alertId: string, alert: Partial<Alert>): Promise<Alert> {
     const response = await apiClient.put(`/api/monitoring/alerts/${alertId}`, alert);
-    return response.data;
+    return response.data as Alert;
   }
 
   async deleteAlert(alertId: string): Promise<void> {
@@ -580,8 +583,8 @@ export class MonitoringService {
   }
 
   // Utility methods
-  private getCurrentUserId(): string | null {
-    return localStorage.getItem('userId');
+  private getCurrentUserId(): string | undefined {
+    return localStorage.getItem('userId') || undefined;
   }
 
   private getCurrentSessionId(): string {

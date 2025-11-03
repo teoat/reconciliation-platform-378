@@ -64,9 +64,9 @@ interface FilterConfig {
   label: string
   type: 'text' | 'number' | 'date' | 'select' | 'multiselect' | 'boolean' | 'range'
   operator: 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'greaterThan' | 'lessThan' | 'between' | 'in' | 'notIn'
-  value: any
-  value2?: any
-  options?: Array<{ label: string; value: any }>
+  value: string | number | boolean | string[] | null | undefined
+  value2?: string | number | boolean | string[] | null | undefined
+  options?: Array<{ label: string; value: string | number | boolean }>
   active: boolean
   required: boolean
 }
@@ -80,7 +80,7 @@ interface AdvancedFiltersProps {
     id: string
     label: string
     type: 'text' | 'number' | 'date' | 'select' | 'boolean'
-    options?: Array<{ label: string; value: any }>
+    options?: Array<{ label: string; value: string | number | boolean }>
   }>
 }
 
@@ -361,7 +361,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                     </label>
                     <select
                       value={filter.operator}
-                      onChange={(e) => handleFilterChange(filter.id, { operator: e.target.value as any })}
+                      onChange={(e) => handleFilterChange(filter.id, { operator: e.target.value as FilterConfig['operator'] })}
                       className="input-field"
                     >
                       {getOperatorOptions(filter.type).map(option => (

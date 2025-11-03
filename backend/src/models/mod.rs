@@ -12,55 +12,55 @@ pub mod schema;
 pub mod subscription;
 
 // Import table DSLs for use in table_name attributes
-use crate::models::schema::auth::users::dsl::users;
-use crate::models::schema::projects::projects::dsl::projects;
-use crate::models::schema::projects::reconciliation_records::dsl::reconciliation_records;
-use crate::models::schema::projects::reconciliation_jobs::dsl::reconciliation_jobs;
-use crate::models::schema::projects::data_sources::dsl::data_sources;
-use crate::models::schema::projects::reconciliation_results::dsl::reconciliation_results;
-use crate::models::schema::auth::audit_logs::dsl::audit_logs;
-use crate::models::schema::projects::uploaded_files::dsl::uploaded_files;
-use crate::models::schema::auth::password_reset_tokens::dsl::password_reset_tokens;
-use crate::models::schema::auth::email_verification_tokens::dsl::email_verification_tokens;
-use crate::models::schema::auth::api_keys::dsl::api_keys;
-use crate::models::schema::auth::roles::dsl::roles;
-use crate::models::schema::auth::user_roles::dsl::user_roles;
-use crate::models::schema::auth::user_sessions::dsl::user_sessions;
-use crate::models::schema::auth::account_lockouts::dsl::account_lockouts;
-use crate::models::schema::auth::failed_login_attempts::dsl::failed_login_attempts;
-use crate::models::schema::auth::ip_access_control::dsl::ip_access_control;
-use crate::models::schema::auth::security_events::dsl::security_events;
-use crate::models::schema::auth::two_factor_auth::dsl::two_factor_auth;
-use crate::models::schema::users::user_activities::dsl::user_activities;
-use crate::models::schema::users::user_dashboards::dsl::user_dashboards;
-use crate::models::schema::users::user_devices::dsl::user_devices;
-use crate::models::schema::users::user_feature_usage::dsl::user_feature_usage;
-use crate::models::schema::users::user_feedback::dsl::user_feedback;
-use crate::models::schema::users::user_learning_progress::dsl::user_learning_progress;
-use crate::models::schema::users::user_preferences::dsl::user_preferences;
-use crate::models::schema::users::user_presence::dsl::user_presence;
-use crate::models::schema::users::user_teams::dsl::user_teams;
-use crate::models::schema::users::user_workspaces::dsl::user_workspaces;
-use crate::models::schema::projects::project_members::dsl::project_members;
-use crate::models::schema::projects::collaboration_comments::dsl::collaboration_comments;
-use crate::models::schema::projects::collaboration_participants::dsl::collaboration_participants;
-use crate::models::schema::projects::collaboration_sessions::dsl::collaboration_sessions;
-use crate::models::schema::projects::field_locks::dsl::field_locks;
-use crate::models::schema::projects::ingestion_jobs::dsl::ingestion_jobs;
-use crate::models::schema::analytics::realtime_events::dsl::realtime_events;
-use crate::models::schema::analytics::user_analytics_summary::dsl::user_analytics_summary;
-use crate::models::schema::analytics::user_notification_history::dsl::user_notification_history;
-use crate::models::schema::performance::performance_alerts::dsl::performance_alerts;
-use crate::models::schema::performance::performance_metrics::dsl::performance_metrics;
-use crate::models::schema::performance::reconciliation_performance::dsl::reconciliation_performance;
-use crate::models::schema::system::application_errors::dsl::application_errors;
-use crate::models::schema::system::cache_invalidations::dsl::cache_invalidations;
-use crate::models::schema::system::cache_statistics::dsl::cache_statistics;
-use crate::models::schema::system::file_processing_metrics::dsl::file_processing_metrics;
-use crate::models::schema::system::query_performance::dsl::query_performance;
-use crate::models::schema::system::request_metrics::dsl::request_metrics;
-use crate::models::schema::system::system_metrics::dsl::system_metrics;
-use crate::models::schema::system::system_resources::dsl::system_resources;
+use crate::models::schema::users::dsl::users;
+use crate::models::schema::projects::dsl::projects;
+use crate::models::schema::reconciliation_records::dsl::reconciliation_records;
+use crate::models::schema::reconciliation_jobs::dsl::reconciliation_jobs;
+use crate::models::schema::data_sources::dsl::data_sources;
+use crate::models::schema::reconciliation_results::dsl::reconciliation_results;
+use crate::models::schema::audit_logs::dsl::audit_logs;
+use crate::models::schema::uploaded_files::dsl::uploaded_files;
+use crate::models::schema::password_reset_tokens::dsl::password_reset_tokens;
+use crate::models::schema::email_verification_tokens::dsl::email_verification_tokens;
+use crate::models::schema::api_keys::dsl::api_keys;
+use crate::models::schema::roles::dsl::roles;
+use crate::models::schema::user_roles::dsl::user_roles;
+use crate::models::schema::user_sessions::dsl::user_sessions;
+use crate::models::schema::account_lockouts::dsl::account_lockouts;
+use crate::models::schema::failed_login_attempts::dsl::failed_login_attempts;
+use crate::models::schema::ip_access_control::dsl::ip_access_control;
+use crate::models::schema::security_events::dsl::security_events;
+use crate::models::schema::two_factor_auth::dsl::two_factor_auth;
+use crate::models::schema::user_activities::dsl::user_activities;
+use crate::models::schema::user_dashboards::dsl::user_dashboards;
+use crate::models::schema::user_devices::dsl::user_devices;
+use crate::models::schema::user_feature_usage::dsl::user_feature_usage;
+use crate::models::schema::user_feedback::dsl::user_feedback;
+use crate::models::schema::user_learning_progress::dsl::user_learning_progress;
+use crate::models::schema::user_preferences::dsl::user_preferences;
+use crate::models::schema::user_presence::dsl::user_presence;
+use crate::models::schema::user_teams::dsl::user_teams;
+use crate::models::schema::user_workspaces::dsl::user_workspaces;
+use crate::models::schema::project_members::dsl::project_members;
+use crate::models::schema::collaboration_comments::dsl::collaboration_comments;
+use crate::models::schema::collaboration_participants::dsl::collaboration_participants;
+use crate::models::schema::collaboration_sessions::dsl::collaboration_sessions;
+use crate::models::schema::field_locks::dsl::field_locks;
+use crate::models::schema::ingestion_jobs::dsl::ingestion_jobs;
+use crate::models::schema::realtime_events::dsl::realtime_events;
+use crate::models::schema::user_analytics_summary::dsl::user_analytics_summary;
+use crate::models::schema::user_notification_history::dsl::user_notification_history;
+use crate::models::schema::performance_alerts::dsl::performance_alerts;
+use crate::models::schema::performance_metrics::dsl::performance_metrics;
+use crate::models::schema::reconciliation_performance::dsl::reconciliation_performance;
+use crate::models::schema::application_errors::dsl::application_errors;
+use crate::models::schema::cache_invalidations::dsl::cache_invalidations;
+use crate::models::schema::cache_statistics::dsl::cache_statistics;
+use crate::models::schema::file_processing_metrics::dsl::file_processing_metrics;
+use crate::models::schema::query_performance::dsl::query_performance;
+use crate::models::schema::request_metrics::dsl::request_metrics;
+use crate::models::schema::system_metrics::dsl::system_metrics;
+use crate::models::schema::system_resources::dsl::system_resources;
 
 pub use schema::types::JsonValue;
 
@@ -157,57 +157,54 @@ impl std::fmt::Display for ProjectStatus {
 pub use crate::services::auth::UserRole;
 
 /// User model
-#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = users)]
+#[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
+#[diesel(table_name = crate::models::schema::users)]
 pub struct User {
     pub id: Uuid,
     pub email: String,
-    pub password_hash: String,
-    pub name: String,
+    pub username: Option<String>,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
-    pub role: Option<String>,
-    pub permissions: Option<serde_json::Value>,
-    pub preferences: Option<serde_json::Value>,
-    pub is_active: bool,
-    pub last_login: Option<DateTime<Utc>>,
-    pub created_at: Option<DateTime<Utc>>,
-    pub updated_at: Option<DateTime<Utc>>,
+    pub password_hash: String,
+    pub status: String,
+    pub email_verified: bool,
+    pub email_verified_at: Option<DateTime<Utc>>,
+    pub last_login_at: Option<DateTime<Utc>>,
+    pub last_active_at: Option<DateTime<Utc>>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 /// New user model for inserts
 #[derive(Insertable, Deserialize)]
-#[diesel(table_name = users)]
+#[diesel(table_name = crate::models::schema::users)]
 pub struct NewUser {
     pub email: String,
-    pub password_hash: String,
-    pub name: String,
+    pub username: Option<String>,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
-    pub role: Option<String>,
-    pub permissions: Option<serde_json::Value>,
-    pub preferences: Option<serde_json::Value>,
-    pub is_active: bool,
+    pub password_hash: String,
+    pub status: String,
+    pub email_verified: bool,
 }
 
 /// Update user model
 #[derive(Deserialize, Debug, AsChangeset)]
-#[diesel(table_name = users)]
+#[diesel(table_name = crate::models::schema::users)]
 pub struct UpdateUser {
     pub email: Option<String>,
-    pub name: Option<String>,
+    pub username: Option<String>,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
-    pub role: Option<String>,
-    pub permissions: Option<serde_json::Value>,
-    pub preferences: Option<serde_json::Value>,
-    pub is_active: Option<bool>,
-    pub last_login: Option<DateTime<Utc>>,
+    pub status: Option<String>,
+    pub email_verified: Option<bool>,
+    pub last_login_at: Option<DateTime<Utc>>,
+    pub last_active_at: Option<DateTime<Utc>>,
 }
 
 /// User preference model
-#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = crate::models::schema::users::user_preferences)]
+#[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
+#[diesel(table_name = crate::models::schema::user_preferences)]
 pub struct UserPreference {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -219,7 +216,7 @@ pub struct UserPreference {
 
 /// New user preference model for inserts
 #[derive(Insertable, Deserialize)]
-#[diesel(table_name = crate::models::schema::users::user_preferences)]
+#[diesel(table_name = crate::models::schema::user_preferences)]
 pub struct NewUserPreference {
     pub user_id: Uuid,
     pub preference_key: String,
@@ -228,7 +225,7 @@ pub struct NewUserPreference {
 
 /// Update user preference model
 #[derive(Deserialize, Debug, AsChangeset)]
-#[diesel(table_name = crate::models::schema::users::user_preferences)]
+#[diesel(table_name = crate::models::schema::user_preferences)]
 pub struct UpdateUserPreference {
     pub preference_value: Option<String>,
     pub updated_at: Option<DateTime<Utc>>,
@@ -238,38 +235,34 @@ pub struct UpdateUserPreference {
 
 /// Project model
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = projects)]
+#[diesel(table_name = crate::models::schema::projects)]
 pub struct Project {
     pub id: Uuid,
     pub name: String,
     pub description: Option<String>,
-    pub status: Option<String>,
-    pub type_: Option<String>,
-    pub owner_id: Option<Uuid>,
-    pub settings: Option<JsonValue>,
-    pub data: Option<JsonValue>,
-    pub analytics: Option<JsonValue>,
-    pub created_at: Option<DateTime<Utc>>,
-    pub updated_at: Option<DateTime<Utc>>,
+    pub owner_id: Uuid,
+    pub status: String,
+    pub settings: JsonValue,
+    pub metadata: Option<JsonValue>,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 /// New project model for inserts
 #[derive(Insertable, Deserialize)]
-#[diesel(table_name = projects)]
+#[diesel(table_name = crate::models::schema::projects)]
 pub struct NewProject {
     pub name: String,
     pub description: Option<String>,
-    pub status: Option<String>,
-    pub type_: Option<String>,
-    pub owner_id: Option<Uuid>,
-    pub settings: Option<JsonValue>,
-    pub data: Option<JsonValue>,
-    pub analytics: Option<JsonValue>,
+    pub owner_id: Uuid,
+    pub status: String,
+    pub settings: JsonValue,
+    pub metadata: Option<JsonValue>,
 }
 
 /// Reconciliation record model
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = reconciliation_records)]
+#[diesel(table_name = crate::models::schema::reconciliation_records)]
 pub struct ReconciliationRecord {
     pub id: Uuid,
     pub project_id: Uuid,
@@ -288,7 +281,7 @@ pub struct ReconciliationRecord {
 
 /// New reconciliation record model for inserts
 #[derive(Insertable, Deserialize)]
-#[diesel(table_name = reconciliation_records)]
+#[diesel(table_name = crate::models::schema::reconciliation_records)]
 pub struct NewReconciliationRecord {
     pub project_id: Uuid,
     pub ingestion_job_id: Uuid,
@@ -544,11 +537,12 @@ pub struct NewUploadedFile {
 pub struct UserResponse {
     pub id: Uuid,
     pub email: String,
-    pub first_name: String,
-    pub last_name: String,
-    pub role: String,
-    pub is_active: bool,
-    pub last_login: Option<DateTime<Utc>>,
+    pub username: Option<String>,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
+    pub status: String,
+    pub email_verified: bool,
+    pub last_login_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -557,11 +551,12 @@ impl From<User> for UserResponse {
         UserResponse {
             id: user.id,
             email: user.email,
+            username: user.username,
             first_name: user.first_name,
             last_name: user.last_name,
-            role: user.role,
-            is_active: user.is_active,
-            last_login: user.last_login,
+            status: user.status,
+            email_verified: user.email_verified,
+            last_login_at: user.last_login_at,
             created_at: user.created_at,
         }
     }

@@ -3,8 +3,34 @@
 
 import { APP_CONFIG } from '../constants';
 
+// Types and interfaces
+export interface LogEntry {
+  id: string;
+  timestamp: Date;
+  level: LogLevel;
+  message: string;
+  category?: string;
+  context?: Record<string, any>;
+  userId?: string;
+  sessionId?: string;
+  component?: string;
+  action?: string;
+  duration?: number;
+  metadata?: Record<string, any>;
+}
+
+export interface LogDestination {
+  name: string;
+  enabled: boolean;
+  write: (entry: LogEntry) => Promise<void>;
+  flush?: () => Promise<void>;
+  close?: () => Promise<void>;
+}
+
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'trace';
+
 // Factory functions for creating objects
-export const createLogEntry = (config = {}) => ({
+export const createLogEntry = (config: Partial<LogEntry> = {}): LogEntry => ({
   id: '',
   timestamp: new Date(),
   level: 'info',
@@ -20,61 +46,29 @@ export const createLogEntry = (config = {}) => ({
   ...config,
 });
 
-export const createLogDestination = (config = {}) => ({
+export const createLogDestination = (config: Partial<LogDestination> = {}): LogDestination => ({
   name: '',
   enabled: true,
-  write: async (entry) => {},
+  write: async (entry: LogEntry) => {},
   flush: async () => {},
   close: async () => {},
   ...config,
 });
 
-export const LogLevel = {
-  DEBUG: 'debug',
-  INFO: 'info',
-  WARN: 'warn',
-  ERROR: 'error',
-  TRACE: 'trace',
-};
-
 // Console destination
-class ConsoleDestination {
-  constructor() {
-    this.name = 'console'
-    this.enabled = true
-  }
+export class ConsoleDestination implements LogDestination {
+  name = 'console';
+  enabled = true;
 
-  async write(entry) {
-    const logMethod = this.getLogMethod(entry.level)
-    const formattedMessage = this.formatMessage(entry)
-    
-    if (entry.context) {
-      logMethod(formattedMessage, entry.context)
+  async write(entry: LogEntry): Promise<void> {
+    const logMethod = this.getLogMethod(entry.level);
+    const formattedMessage = this.formatMessage(entry);
+
+    if (entry.context && Object.keys(entry.context).length > 0) {
+      logMethod(formattedMessage, entry.context);
     } else {
-      logMethod(formattedMessage)
+      logMethod(formattedMessage);
     }
-  }
-
-  getLogMethod(level) {
-    switch (level) {
-      case 'debug': return console.debug
-      case 'info': return console.info
-      case 'warn': return console.warn
-      case 'error': return console.error
-      case 'trace': return console.trace
-      default: return console.log
-    }
-  }
-
-  formatMessage(entry) {
-    const timestamp = entry.timestamp.toISOString()
-    const level = entry.level.toUpperCase().padEnd(8)
-    const category = entry.category ? `[${entry.category}]` : ''
-    const component = entry.component ? `[${entry.component}]` : ''
-    
-    return `${timestamp} ${level} ${category}${component} ${entry.message}`
-  }
-}
   }
 
   private getLogMethod(level: LogLevel): (...args: any[]) => void {
@@ -105,60 +99,41 @@ class ConsoleDestination {
 }
 
 // Local storage destination
-class LocalStorageDestination {
-  constructor() {
-    this.name = 'localStorage'
-    this.enabled = true
-    this.maxEntries = 1000
-    this.storageKey = 'app_logs'
-  }
+export class LocalStorageDestination implements LogDestination {
+  name = 'localStorage';
+  enabled = true;
+  maxEntries = 1000;
+  storageKey = 'app_logs';
 
-  async write(entry) {
+  async write(entry: LogEntry): Promise<void> {
     try {
-      const logs = this.getLogs()
-      logs.push(entry)
-      
+      const logs = this.getLogs();
+      logs.push(entry);
+
       // Keep only recent logs
       if (logs.length > this.maxEntries) {
-        logs.splice(0, logs.length - this.maxEntries)
+        logs.splice(0, logs.length - this.maxEntries);
       }
-      
-      localStorage.setItem(this.storageKey, JSON.stringify(logs))
-    } catch (error) {
-      console.error('Failed to write to localStorage:', error)
-    }
-  }
-
-  getLogs() {
-    try {
-      const logs = localStorage.getItem(this.storageKey)
-      return logs ? JSON.parse(logs) : []
-    } catch {
-      return []
-    }
-  }
-
-  getRecentLogs(count = 100) {
-    const logs = this.getLogs()
-    return logs.slice(-count)
-  }
-
-  clearLogs() {
-    localStorage.removeItem(this.storageKey)
-  }
-}
 
       localStorage.setItem(this.storageKey, JSON.stringify(logs));
     } catch (error) {
-      console.error('Failed to write to localStorage:', error);
+      console.error('Failed to write log to localStorage:', error);
     }
   }
 
   private getLogs(): LogEntry[] {
     try {
-      const logs = localStorage.getItem(this.storageKey);
-      return logs ? JSON.parse(logs) : [];
-    } catch {
+      const stored = localStorage.getItem(this.storageKey);
+      if (!stored) return [];
+
+      const parsed = JSON.parse(stored);
+      // Convert timestamp strings back to Date objects
+      return parsed.map((entry: any) => ({
+        ...entry,
+        timestamp: new Date(entry.timestamp),
+      }));
+    } catch (error) {
+      console.error('Failed to parse logs from localStorage:', error);
       return [];
     }
   }
@@ -173,680 +148,177 @@ class LocalStorageDestination {
   }
 }
 
-// API destination
-class ApiDestination {
-  constructor() {
-    this.name = 'api'
-    this.enabled = true
-    this.endpoint = '/api/logs'
-    this.batchSize = 10
-    this.batchTimeout = 5000
-    this.batch = []
-    this.batchTimer = null
+// Main logger class
+export class Logger {
+  private destinations: LogDestination[] = [];
+  private batch: LogEntry[] = [];
+  private batchSize = 10;
+  private batchTimer: NodeJS.Timeout | null = null;
+  private batchInterval = 5000; // 5 seconds
+
+  constructor(destinations: LogDestination[] = []) {
+    this.destinations = destinations;
+
+    // Add console destination by default if none provided
+    if (this.destinations.length === 0) {
+      this.destinations.push(new ConsoleDestination());
+    }
+
+    // Start batch processing
+    this.startBatchProcessing();
   }
 
-  async write(entry) {
-    this.batch.push(entry)
-    
+  log(level: LogLevel, message: string, context?: Record<string, any>): void {
+    const entry: LogEntry = createLogEntry({
+      level,
+      message,
+      context,
+      id: this.generateId(),
+    });
+
+    this.addToBatch(entry);
+  }
+
+  debug(message: string, context?: Record<string, any>): void {
+    this.log('debug', message, context);
+  }
+
+  info(message: string, context?: Record<string, any>): void {
+    this.log('info', message, context);
+  }
+
+  warn(message: string, context?: Record<string, any>): void {
+    this.log('warn', message, context);
+  }
+
+  error(message: string, context?: Record<string, any>): void {
+    this.log('error', message, context);
+  }
+
+  trace(message: string, context?: Record<string, any>): void {
+    this.log('trace', message, context);
+  }
+
+  private addToBatch(entry: LogEntry): void {
+    this.batch.push(entry);
+
+    // Flush if batch is full
     if (this.batch.length >= this.batchSize) {
-      await this.flush()
-    } else if (!this.batchTimer) {
-      this.batchTimer = setTimeout(() => this.flush(), this.batchTimeout)
+      this.flush();
     }
   }
 
-  async flush() {
-    if (this.batch.length === 0) return
-
-    const batchToSend = [...this.batch]
-    this.batch = []
-    
-    if (this.batchTimer) {
-      clearTimeout(this.batchTimer)
-      this.batchTimer = null
-    }
-
-    try {
-      await fetch(this.endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          logs: batchToSend,
-          timestamp: new Date().toISOString(),
-        }),
-      })
-    } catch (error) {
-      console.error('Failed to send logs to API:', error)
-      // Re-add failed logs to batch
-      this.batch.unshift(...batchToSend)
-    }
-  }
-}
-  }
-
-  async flush(): Promise<void> {
+  private async flush(): Promise<void> {
     if (this.batch.length === 0) return;
 
     const batchToSend = [...this.batch];
     this.batch = [];
 
+    // Clear batch timer
     if (this.batchTimer) {
       clearTimeout(this.batchTimer);
-      this.batchTimer = undefined;
+      this.batchTimer = null;
     }
+
+    // Send to all destinations
+    const promises = this.destinations
+      .filter((dest) => dest.enabled)
+      .map((dest) => {
+        return Promise.all(batchToSend.map((entry) => dest.write(entry)));
+      });
 
     try {
-      await fetch(this.endpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          logs: batchToSend,
-          timestamp: new Date().toISOString(),
-        }),
-      });
+      await Promise.all(promises);
     } catch (error) {
-      console.error('Failed to send logs to API:', error);
-      // Re-add failed logs to batch
-      this.batch.unshift(...batchToSend);
+      console.error('Failed to flush logs:', error);
     }
   }
-}
 
-// File download destination
-class FileDownloadDestination {
-  constructor() {
-    this.name = 'fileDownload'
-    this.enabled = false
+  private startBatchProcessing(): void {
+    this.batchTimer = setInterval(() => {
+      this.flush();
+    }, this.batchInterval);
   }
 
-  async write(entry) {
-    // This destination is used for exporting logs
-    // Individual writes are not supported
+  private generateId(): string {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
   }
 
-  async exportLogs(logs, format = 'json') {
-    let content
-    let filename
-    let mimeType
-
-    if (format === 'json') {
-      content = JSON.stringify(logs, null, 2)
-      filename = `logs_${new Date().toISOString().split('T')[0]}.json`
-      mimeType = 'application/json'
-    } else {
-      const headers = ['timestamp', 'level', 'category', 'message', 'component', 'action']
-      const csvContent = [
-        headers.join(','),
-        ...logs.map(log => [
-          log.timestamp.toISOString(),
-          log.level,
-          log.category,
-          `"${log.message.replace(/"/g, '""')}"`,
-          log.component || '',
-          log.action || '',
-        ].join(','))
-      ].join('\n')
-      
-      content = csvContent
-      filename = `logs_${new Date().toISOString().split('T')[0]}.csv`
-      mimeType = 'text/csv'
-    }
-
-    const blob = new Blob([content], { type: mimeType })
-    const url = URL.createObjectURL(blob)
-    
-    const a = document.createElement('a')
-    a.href = url
-    a.download = filename
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    
-    URL.revokeObjectURL(url)
+  // Public methods for management
+  addDestination(destination: LogDestination): void {
+    this.destinations.push(destination);
   }
-}
+
+  removeDestination(name: string): void {
+    this.destinations = this.destinations.filter((dest) => dest.name !== name);
+  }
 
   async exportLogs(logs: LogEntry[], format: 'json' | 'csv' = 'json'): Promise<void> {
-    let content: string;
-    let filename: string;
-    let mimeType: string;
+    const timestamp = new Date().toISOString().split('T')[0];
 
     if (format === 'json') {
-      content = JSON.stringify(logs, null, 2);
-      filename = `logs_${new Date().toISOString().split('T')[0]}.json`;
-      mimeType = 'application/json';
+      const dataStr = JSON.stringify(logs, null, 2);
+      const dataBlob = new Blob([dataStr], { type: 'application/json' });
+      this.downloadBlob(dataBlob, `logs-${timestamp}.json`);
     } else {
-      const headers = ['timestamp', 'level', 'category', 'message', 'component', 'action'];
-      const csvContent = [
-        headers.join(','),
-        ...logs.map((log) =>
-          [
-            log.timestamp.toISOString(),
-            log.level,
-            log.category,
-            `"${log.message.replace(/"/g, '""')}"`,
-            log.component || '',
-            log.action || '',
-          ].join(',')
-        ),
-      ].join('\n');
-
-      content = csvContent;
-      filename = `logs_${new Date().toISOString().split('T')[0]}.csv`;
-      mimeType = 'text/csv';
+      const csvContent = this.convertToCSV(logs);
+      const dataBlob = new Blob([csvContent], { type: 'text/csv' });
+      this.downloadBlob(dataBlob, `logs-${timestamp}.csv`);
     }
+  }
 
-    const blob = new Blob([content], { type: mimeType });
+  private convertToCSV(logs: LogEntry[]): string {
+    if (logs.length === 0) return '';
+
+    const headers = Object.keys(logs[0]);
+    const csvRows = [
+      headers.join(','),
+      ...logs.map((log) =>
+        headers
+          .map((header) => {
+            const value = (log as any)[header];
+            return typeof value === 'object' ? JSON.stringify(value) : value;
+          })
+          .join(',')
+      ),
+    ];
+
+    return csvRows.join('\n');
+  }
+
+  private downloadBlob(blob: Blob, filename: string): void {
     const url = URL.createObjectURL(blob);
-
     const a = document.createElement('a');
     a.href = url;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
-
     URL.revokeObjectURL(url);
   }
 }
 
-// Main Logger class
-class Logger {
-  static instance = null
-  destinations = new Map()
-  isInitialized = false
-  sessionId
+// Create default logger instance
+export const logger = new Logger([new ConsoleDestination(), new LocalStorageDestination()]);
 
-  static getInstance() {
-    if (!Logger.instance) {
-      Logger.instance = new Logger()
-    }
-    return Logger.instance
-  }
+// Utility functions
+export const createChildLogger = (category: string, component?: string): Logger => {
+  const childLogger = new Logger();
 
-  constructor() {
-    this.sessionId = this.generateSessionId()
-    this.initializeDestinations()
-  }
-
-  initializeDestinations() {
-    // Add default destinations
-    this.addDestination(new ConsoleDestination())
-    this.addDestination(new LocalStorageDestination())
-    this.addDestination(new ApiDestination())
-    this.addDestination(new FileDownloadDestination())
-    
-    this.isInitialized = true
-  }
-
-  addDestination(destination) {
-    this.destinations.set(destination.name, destination)
-  }
-
-  removeDestination(name) {
-    this.destinations.delete(name)
-  }
-
-  enableDestination(name) {
-    const destination = this.destinations.get(name)
-    if (destination) {
-      destination.enabled = true
-    }
-  }
-
-  disableDestination(name) {
-    const destination = this.destinations.get(name)
-    if (destination) {
-      destination.enabled = false
-    }
-  }
-    return Logger.instance;
-  }
-
-  constructor() {
-    this.sessionId = this.generateSessionId();
-    this.initializeDestinations();
-  }
-
-  private initializeDestinations(): void {
-    // Add default destinations
-    this.addDestination(new ConsoleDestination());
-    this.addDestination(new LocalStorageDestination());
-    this.addDestination(new ApiDestination());
-    this.addDestination(new FileDownloadDestination());
-
-    this.isInitialized = true;
-  }
-
-  public addDestination(destination: LogDestination): void {
-    this.destinations.set(destination.name, destination);
-  }
-
-  public removeDestination(name: string): void {
-    this.destinations.delete(name);
-  }
-
-  public enableDestination(name: string): void {
-    const destination = this.destinations.get(name);
-    if (destination) {
-      destination.enabled = true;
-    }
-  }
-
-  public disableDestination(name: string): void {
-    const destination = this.destinations.get(name);
-    if (destination) {
-      destination.enabled = false;
-    }
-  }
-
-  // Public logging methods
-  debug(message, context, metadata) {
-    this.log('debug', message, 'debug', context, metadata)
-  }
-
-  info(message, context, metadata) {
-    this.log('info', message, 'info', context, metadata)
-  }
-
-  warning(message, context, metadata) {
-    this.log('warn', message, 'warning', context, metadata)
-  }
-
-  error(message, context, metadata) {
-    this.log('error', message, 'error', context, metadata)
-  }
-
-  critical(message, context, metadata) {
-    this.log('error', message, 'critical', context, metadata)
-  }
-
-  // Structured logging methods
-  logUserAction(action, component, context) {
-    this.log('info', `User action: ${action}`, 'user_action', {
-      ...context,
-      action,
-      component,
-    })
-  }
-
-  logApiCall(method, url, status, duration, context) {
-    const level = status >= 400 ? 'error' : 'info'
-    this.log(level, `API ${method} ${url} - ${status}`, 'api_call', {
-      ...context,
-      method,
-      url,
-      status,
-      duration,
-    })
-  }
-
-  logPerformance(operation, duration, context) {
-    const level = duration > 1000 ? 'warn' : 'info'
-    this.log(level, `Performance: ${operation} took ${duration}ms`, 'performance', {
-      ...context,
-      operation,
-      duration,
-    })
-  }
-
-  logSecurity(event, context) {
-    this.log('warn', `Security event: ${event}`, 'security', context)
-  }
-
-  logAudit(event, context) {
-    this.log('info', `Audit event: ${event}`, 'audit', context)
-  }
-
-  logAuthFailure(reason, context) {
-    this.logAudit(`Authentication denied: ${reason}`, {
-      ...context,
-      event_type: 'auth_denied',
-      timestamp: new Date().toISOString(),
-    })
-  }
-
-  logBusinessEvent(event, context) {
-    this.log('info', `Business event: ${event}`, 'business', context)
-  }
-
-
-
-  // Core logging method
-  log(
-    level,
-    message,
-    category,
-    context,
-    metadata
-  ) {
+  // Override log method to add category/component
+  const originalLog = childLogger.log.bind(childLogger);
+  childLogger.log = (level: LogLevel, message: string, context?: Record<string, any>) => {
     const entry = createLogEntry({
-      id: this.generateLogId(),
-      timestamp: new Date(),
       level,
       message,
       category,
-      context: this.sanitizeContext(context),
-      userId: this.getCurrentUserId(),
-      sessionId: this.sessionId,
-      metadata: this.sanitizeContext(metadata),
-    })
-
-    // Write to all enabled destinations
-    this.destinations.forEach(destination => {
-      if (destination.enabled) {
-        destination.write(entry).catch(error => {
-          console.error(`Failed to write to destination ${destination.name}:`, error)
-        })
-      }
-    })
-  }
-    });
-  }
-
-  // Utility methods
-  generateLogId() {
-    return `log_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  }
-
-  generateSessionId() {
-    let sessionId = sessionStorage.getItem('logger_session_id')
-    if (!sessionId) {
-      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-      sessionStorage.setItem('logger_session_id', sessionId)
-    }
-    return sessionId
-  }
-
-  getCurrentUserId() {
-    try {
-      const userData = localStorage.getItem('user')
-      const user = userData ? JSON.parse(userData) : null
-      return user?.id
-    } catch {
-      return undefined
-    }
-  }
-
-  sanitizeContext(context) {
-    if (!context) return undefined
-
-    const sanitized = { ...context }
-    const sensitiveKeys = [
-      'password', 'token', 'secret', 'key', 'authorization', 'cookie',
-      'email', 'phone', 'ssn', 'social_security', 'credit_card', 'card_number',
-      'bank_account', 'account_number', 'personal_data', 'pii', 'sensitive'
-    ]
-
-    const maskValue = (value) => {
-      if (typeof value === 'string') {
-        // Mask emails
-        if (value.includes('@') && value.includes('.')) {
-          const [local, domain] = value.split('@')
-          return `${local.substring(0, 2)}***@${domain}`
-        }
-        // Mask phone numbers (basic pattern)
-        if (/^\+?[\d\s\-\(\)]{10,}$/.test(value.replace(/\s/g, ''))) {
-          return value.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2')
-        }
-        // Mask SSNs
-        if (/^\d{3}-\d{2}-\d{4}$/.test(value)) {
-          return '***-**-****'
-        }
-        // Mask credit cards
-        if (/^\d{4}[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}$/.test(value)) {
-          return value.replace(/(\d{4})[\s\-]?(\d{4})[\s\-]?(\d{4})[\s\-]?(\d{4})/, '$1-****-****-$4')
-        }
-        // For other sensitive strings, show first 2 and last 2 chars
-        if (value.length > 4) {
-          return `${value.substring(0, 2)}***${value.substring(value.length - 2)}`
-        }
-        return '***'
-      }
-      return value
-    }
-
-    Object.keys(sanitized).forEach(key => {
-      const lowerKey = key.toLowerCase()
-      if (sensitiveKeys.some(sensitive => lowerKey.includes(sensitive))) {
-        sanitized[key] = maskValue(sanitized[key])
-      }
-    })
-
-    return sanitized
-  }
-
-  private generateSessionId(): string {
-    let sessionId = sessionStorage.getItem('logger_session_id');
-    if (!sessionId) {
-      sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      sessionStorage.setItem('logger_session_id', sessionId);
-    }
-    return sessionId;
-  }
-
-  private getCurrentUserId(): string | undefined {
-    try {
-      const userData = localStorage.getItem('user');
-      const user = userData ? JSON.parse(userData) : null;
-      return user?.id;
-    } catch {
-      return undefined;
-    }
-  }
-
-  private sanitizeContext(context?: Record<string, any>): Record<string, any> | undefined {
-    if (!context) return undefined;
-
-    const sanitized = { ...context };
-    const sensitiveKeys = [
-      'password',
-      'token',
-      'secret',
-      'key',
-      'authorization',
-      'cookie',
-      'email',
-      'phone',
-      'ssn',
-      'social_security',
-      'credit_card',
-      'card_number',
-      'bank_account',
-      'account_number',
-      'personal_data',
-      'pii',
-      'sensitive',
-    ];
-
-    const maskValue = (value: any): any => {
-      if (typeof value === 'string') {
-        // Mask emails
-        if (value.includes('@') && value.includes('.')) {
-          const [local, domain] = value.split('@');
-          return `${local.substring(0, 2)}***@${domain}`;
-        }
-        // Mask phone numbers (basic pattern)
-        if (/^\+?[\d\s\-\(\)]{10,}$/.test(value.replace(/\s/g, ''))) {
-          return value.replace(/(\d{3})\d{4}(\d{3})/, '$1****$2');
-        }
-        // Mask SSNs
-        if (/^\d{3}-\d{2}-\d{4}$/.test(value)) {
-          return '***-**-****';
-        }
-        // Mask credit cards
-        if (/^\d{4}[\s\-]?\d{4}[\s\-]?\d{4}[\s\-]?\d{4}$/.test(value)) {
-          return value.replace(
-            /(\d{4})[\s\-]?(\d{4})[\s\-]?(\d{4})[\s\-]?(\d{4})/,
-            '$1-****-****-$4'
-          );
-        }
-        // For other sensitive strings, show first 2 and last 2 chars
-        if (value.length > 4) {
-          return `${value.substring(0, 2)}***${value.substring(value.length - 2)}`;
-        }
-        return '***';
-      }
-      return value;
-    };
-
-    Object.keys(sanitized).forEach((key) => {
-      const lowerKey = key.toLowerCase();
-      if (sensitiveKeys.some((sensitive) => lowerKey.includes(sensitive))) {
-        sanitized[key] = maskValue(sanitized[key]);
-      }
+      component,
+      context,
+      id: childLogger['generateId'](),
     });
 
-    return sanitized;
-  }
-
-  // Export methods
-  async exportLogs(format = 'json') {
-    const localStorageDestination = this.destinations.get('localStorage')
-    if (localStorageDestination) {
-      const logs = localStorageDestination.getRecentLogs()
-      const fileDestination = this.destinations.get('fileDownload')
-      if (fileDestination) {
-        await fileDestination.exportLogs(logs, format)
-      }
-    }
-  }
-
-  getRecentLogs(count = 100) {
-    const localStorageDestination = this.destinations.get('localStorage')
-    if (localStorageDestination) {
-      return localStorageDestination.getRecentLogs(count)
-    }
-    return []
-  }
-
-  clearLogs() {
-    const localStorageDestination = this.destinations.get('localStorage')
-    if (localStorageDestination) {
-      localStorageDestination.clearLogs()
-    }
-  }
-
-  async flush() {
-    const promises = Array.from(this.destinations.values())
-      .filter(dest => dest.flush)
-      .map(dest => dest.flush())
-    
-    await Promise.all(promises)
-  }
-
-  // Performance monitoring
-  measurePerformance(operation, fn) {
-    const start = performance.now()
-    const result = fn()
-    const duration = performance.now() - start
-    
-    this.logPerformance(operation, duration)
-    return result
-  }
-
-  async measureAsyncPerformance(operation, fn) {
-    const start = performance.now()
-    const result = await fn()
-    const duration = performance.now() - start
-    
-    this.logPerformance(operation, duration)
-    return result
-  }
-    }
-  }
-
-  public getRecentLogs(count: number = 100): LogEntry[] {
-    const localStorageDestination = this.destinations.get(
-      'localStorage'
-    ) as LocalStorageDestination;
-    if (localStorageDestination) {
-      return localStorageDestination.getRecentLogs(count);
-    }
-    return [];
-  }
-
-  public clearLogs(): void {
-    const localStorageDestination = this.destinations.get(
-      'localStorage'
-    ) as LocalStorageDestination;
-    if (localStorageDestination) {
-      localStorageDestination.clearLogs();
-    }
-  }
-
-  public async flush(): Promise<void> {
-    const promises = Array.from(this.destinations.values())
-      .filter((dest) => dest.flush)
-      .map((dest) => dest.flush!());
-
-    await Promise.all(promises);
-  }
-
-  // Performance monitoring
-  public measurePerformance<T>(operation: string, fn: () => T): T {
-    const start = performance.now();
-    const result = fn();
-    const duration = performance.now() - start;
-
-    this.logPerformance(operation, duration);
-    return result;
-  }
-
-  public async measureAsyncPerformance<T>(operation: string, fn: () => Promise<T>): Promise<T> {
-    const start = performance.now();
-    const result = await fn();
-    const duration = performance.now() - start;
-
-    this.logPerformance(operation, duration);
-    return result;
-  }
-}
-
-// React hooks for logging
-export const useLogger = () => {
-  const logger = Logger.getInstance();
-
-  return {
-    debug: logger.debug.bind(logger),
-    info: logger.info.bind(logger),
-    warning: logger.warning.bind(logger),
-    error: logger.error.bind(logger),
-    critical: logger.critical.bind(logger),
-    logUserAction: logger.logUserAction.bind(logger),
-    logApiCall: logger.logApiCall.bind(logger),
-    logPerformance: logger.logPerformance.bind(logger),
-    logSecurity: logger.logSecurity.bind(logger),
-    logAudit: logger.logAudit.bind(logger),
-    logAuthFailure: logger.logAuthFailure.bind(logger),
-    logBusinessEvent: logger.logBusinessEvent.bind(logger),
-    measurePerformance: logger.measurePerformance.bind(logger),
-    measureAsyncPerformance: logger.measureAsyncPerformance.bind(logger),
-    exportLogs: logger.exportLogs.bind(logger),
-    getRecentLogs: logger.getRecentLogs.bind(logger),
-    clearLogs: logger.clearLogs.bind(logger),
+    childLogger['addToBatch'](entry);
   };
+
+  return childLogger;
 };
-
-// Performance logging decorator
-export const logPerformance = (operation: string) => {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
-    const method = descriptor.value;
-    const logger = Logger.getInstance();
-
-    descriptor.value = function (...args: any[]) {
-      return logger.measureAsyncPerformance(operation, () => method.apply(this, args));
-    };
-
-    return descriptor;
-  };
-};
-
-// Export singleton instance
-export const logger = Logger.getInstance();
-
-export default logger;

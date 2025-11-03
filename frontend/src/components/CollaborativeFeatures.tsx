@@ -121,8 +121,10 @@ interface Notification {
   metadata?: Record<string, unknown>;
 }
 
+import type { BackendProject } from '../services/apiClient/types';
+
 interface CollaborativeFeaturesProps {
-  project: any;
+  project: BackendProject;
   onProgressUpdate?: (step: string) => void;
 }
 
@@ -634,12 +636,12 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
               { id: 'activities', label: 'Activities', icon: Activity },
               { id: 'assignments', label: 'Assignments', icon: UserCheck },
               { id: 'notifications', label: 'Notifications', icon: Bell },
-            ].map((tab) => {
+            ] as const).map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === tab.id
                       ? 'border-primary-500 text-primary-600'

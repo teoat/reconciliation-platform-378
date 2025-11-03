@@ -1,37 +1,38 @@
-import React, { useState, useEffect } from 'react'
-import { BarChart3, Target, CheckCircle, Clock, Users, PieChart } from 'lucide-react'
-import { apiClient } from '../services/apiClient'
+import React, { useState, useEffect } from 'react';
+import { BarChart3, Target, CheckCircle, Clock, Users, PieChart } from 'lucide-react';
+import { apiClient } from '../services/apiClient';
+import { getErrorMessageFromApiError } from '../utils/errorExtraction';
 
 // Interfaces (shared with main index.tsx)
 export interface PageConfig {
-  title: string
-  description: string
-  icon: React.ComponentType<any>
-  path: string
-  showStats?: boolean
-  showFilters?: boolean
-  showActions?: boolean
+  title: string;
+  description: string;
+  icon: React.ComponentType<any>;
+  path: string;
+  showStats?: boolean;
+  showFilters?: boolean;
+  showActions?: boolean;
 }
 
 export interface StatsCard {
-  title: string
-  value: string | number
-  icon: React.ComponentType<any>
-  color: string
+  title: string;
+  value: string | number;
+  icon: React.ComponentType<any>;
+  color: string;
   trend?: {
-    direction: 'up' | 'down' | 'neutral'
-    value: string
-  }
-  progress?: number
+    direction: 'up' | 'down' | 'neutral';
+    value: string;
+  };
+  progress?: number;
 }
 
 // BasePage component (simplified for this extraction)
 interface BasePageProps {
-  config: PageConfig
-  stats?: StatsCard[]
-  loading?: boolean
-  error?: string | null
-  children: React.ReactNode
+  config: PageConfig;
+  stats?: StatsCard[];
+  loading?: boolean;
+  error?: string | null;
+  children: React.ReactNode;
 }
 
 const BasePage: React.FC<BasePageProps> = ({ config, stats, loading, error, children }) => {
@@ -94,74 +95,100 @@ const BasePage: React.FC<BasePageProps> = ({ config, stats, loading, error, chil
         {!loading && !error && children}
       </div>
     </div>
-  )
+  );
+};
+
+interface DashboardData {
+  user_metrics?: {
+    user_id: string;
+    overall_score: number;
+    project_completion_rate: number;
+    average_task_time: number;
+    productivity_trend: string;
+    recommendations: string[];
+  };
+  prioritized_projects?: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    status: string;
+    priority_score: number;
+    productivity_impact: number;
+    estimated_completion?: string;
+    smart_recommendations?: string[];
+  }>;
+  smart_insights?: string[];
+  next_actions?: string[];
 }
 
 export const DashboardPage: React.FC = () => {
-  const [dashboardData, setDashboardData] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchDashboardData()
-  }, [])
+    fetchDashboardData();
+  }, []);
 
   const fetchDashboardData = async () => {
     try {
-      setLoading(true)
-      const response = await apiClient.getDashboardData()
+      setLoading(true);
+      const response = await apiClient.getDashboardData();
 
       if (response.error) {
-        setError(response.error.message)
+        setError(getErrorMessageFromApiError(response.error));
       } else if (response.data) {
-        setDashboardData(response.data)
+        setDashboardData(response.data);
       }
     } catch (err) {
-      setError('Failed to load dashboard data')
+      setError('Failed to load dashboard data');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   const config: PageConfig = {
     title: 'Smart Dashboard',
     description: 'AI-powered insights and project prioritization',
     icon: BarChart3,
     path: '/dashboard',
-    showStats: true
-  }
+    showStats: true,
+  };
 
-  const stats: StatsCard[] = dashboardData ? [
-    {
-      title: 'Productivity Score',
-      value: `${Math.round(dashboardData.user_metrics?.overall_score * 100 || 0)}%`,
-      icon: Target,
-      color: 'bg-blue-100 text-blue-600',
-      trend: {
-        direction: dashboardData.user_metrics?.productivity_trend === 'increasing' ? 'up' : 'down',
-        value: dashboardData.user_metrics?.productivity_trend || 'stable'
-      }
-    },
-    {
-      title: 'Completion Rate',
-      value: `${Math.round(dashboardData.user_metrics?.project_completion_rate * 100 || 0)}%`,
-      icon: CheckCircle,
-      color: 'bg-green-100 text-green-600',
-      progress: dashboardData.user_metrics?.project_completion_rate * 100 || 0
-    },
-    {
-      title: 'Avg Task Time',
-      value: `${dashboardData.user_metrics?.average_task_time?.toFixed(1) || 0}h`,
-      icon: Clock,
-      color: 'bg-yellow-100 text-yellow-600'
-    },
-    {
-      title: 'Active Projects',
-      value: dashboardData.prioritized_projects?.length || 0,
-      icon: Users,
-      color: 'bg-purple-100 text-purple-600'
-    }
-  ] : []
+  const stats: StatsCard[] = dashboardData
+    ? [
+        {
+          title: 'Productivity Score',
+          value: `${Math.round(dashboardData.user_metrics?.overall_score * 100 || 0)}%`,
+          icon: Target,
+          color: 'bg-blue-100 text-blue-600',
+          trend: {
+            direction:
+              dashboardData.user_metrics?.productivity_trend === 'increasing' ? 'up' : 'down',
+            value: dashboardData.user_metrics?.productivity_trend || 'stable',
+          },
+        },
+        {
+          title: 'Completion Rate',
+          value: `${Math.round(dashboardData.user_metrics?.project_completion_rate * 100 || 0)}%`,
+          icon: CheckCircle,
+          color: 'bg-green-100 text-green-600',
+          progress: dashboardData.user_metrics?.project_completion_rate * 100 || 0,
+        },
+        {
+          title: 'Avg Task Time',
+          value: `${dashboardData.user_metrics?.average_task_time?.toFixed(1) || 0}h`,
+          icon: Clock,
+          color: 'bg-yellow-100 text-yellow-600',
+        },
+        {
+          title: 'Active Projects',
+          value: dashboardData.prioritized_projects?.length || 0,
+          icon: Users,
+          color: 'bg-purple-100 text-purple-600',
+        },
+      ]
+    : [];
 
   return (
     <BasePage config={config} stats={stats} loading={loading} error={error}>
@@ -177,25 +204,32 @@ export const DashboardPage: React.FC = () => {
             </div>
             <div className="p-6">
               <div className="space-y-4">
-                {dashboardData.prioritized_projects?.map((project: any) => (
-                  <div key={project.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                {dashboardData.prioritized_projects?.map((project) => (
+                  <div
+                    key={project.id as string}
+                    className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                  >
                     <div className="flex items-start justify-between mb-2">
                       <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{project.name}</h3>
+                        <h3 className="font-medium text-gray-900">{String(project.name)}</h3>
                         {project.description && (
-                          <p className="text-sm text-gray-600 mt-1">{project.description}</p>
+                          <p className="text-sm text-gray-600 mt-1">{String(project.description)}</p>
                         )}
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 text-xs rounded-full ${
-                          project.status === 'active' ? 'bg-green-100 text-green-800' :
-                          project.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-gray-100 text-gray-800'
-                        }`}>
-                          {project.status}
+                        <span
+                          className={`px-2 py-1 text-xs rounded-full ${
+                            project.status === 'active'
+                              ? 'bg-green-100 text-green-800'
+                              : project.status === 'pending'
+                                ? 'bg-yellow-100 text-yellow-800'
+                                : 'bg-gray-100 text-gray-800'
+                          }`}
+                        >
+                          {String(project.status)}
                         </span>
                         <span className="text-sm font-medium text-blue-600">
-                          {Math.round(project.priority_score * 100)}%
+                          {typeof project.priority_score === 'number' ? Math.round(project.priority_score * 100) : 0}%
                         </span>
                       </div>
                     </div>
@@ -203,26 +237,28 @@ export const DashboardPage: React.FC = () => {
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
                         <span>Priority Score</span>
-                        <span>{Math.round(project.priority_score * 100)}%</span>
+                        <span>{typeof project.priority_score === 'number' ? Math.round(project.priority_score * 100) : 0}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-blue-500 h-2 rounded-full"
-                          style={{ width: `${project.priority_score * 100}%` }}
+                          style={{ width: `${typeof project.priority_score === 'number' ? project.priority_score * 100 : 0}%` }}
                         ></div>
                       </div>
                     </div>
 
-                    {project.smart_recommendations?.length > 0 && (
+                    {project.smart_recommendations && project.smart_recommendations.length > 0 && (
                       <div className="mt-3">
                         <p className="text-sm font-medium text-gray-700 mb-1">Recommendations:</p>
                         <ul className="text-sm text-gray-600 space-y-1">
-                          {project.smart_recommendations.slice(0, 2).map((rec: string, i: number) => (
-                            <li key={i} className="flex items-start">
-                              <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
-                              {rec}
-                            </li>
-                          ))}
+                          {project.smart_recommendations
+                            .slice(0, 2)
+                            .map((rec: string, i: number) => (
+                              <li key={i} className="flex items-start">
+                                <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
+                                {rec}
+                              </li>
+                            ))}
                         </ul>
                       </div>
                     )}
@@ -244,7 +280,7 @@ export const DashboardPage: React.FC = () => {
               </div>
               <div className="p-6">
                 <div className="space-y-4">
-                  {dashboardData.smart_insights?.map((insight: string, index: number) => (
+                  {dashboardData.smart_insights?.map((insight, index) => (
                     <div key={index} className="flex items-start space-x-3">
                       <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
                       <p className="text-sm text-gray-700">{insight}</p>
@@ -264,7 +300,7 @@ export const DashboardPage: React.FC = () => {
               </div>
               <div className="p-6">
                 <div className="space-y-3">
-                  {dashboardData.next_actions?.map((action: string, index: number) => (
+                  {dashboardData.next_actions?.map((action, index) => (
                     <div key={index} className="flex items-start space-x-3">
                       <div className="w-6 h-6 bg-purple-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                         <span className="text-xs font-medium text-purple-600">{index + 1}</span>
@@ -279,6 +315,7 @@ export const DashboardPage: React.FC = () => {
         </div>
       )}
     </BasePage>
-  )
-}</content>
-</xai:function_call:Write file to frontend/src/pages/DashboardPage.tsx
+  );
+};
+
+export default DashboardPage;

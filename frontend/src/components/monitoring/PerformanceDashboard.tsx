@@ -7,9 +7,11 @@ import {
   CheckCircle,
   Clock,
   Zap,
+  Activity,
 } from 'lucide-react';
 import { LazyLineChart, LazyPieChart } from '../../utils/dynamicImports';
 import { logger } from '../../services/logger';
+import type { CircuitBreakerMetrics } from '../../types/circuitBreaker';
 
 interface PerformanceMetrics {
   timestamp: string;
@@ -44,6 +46,32 @@ const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
   const [metrics, setMetrics] = useState<PerformanceMetrics[]>(initialMetrics || []);
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1h' | '24h' | '7d' | '30d'>('7d');
   const [loading, setLoading] = useState(false);
+  const [circuitBreakers, setCircuitBreakers] = useState<CircuitBreakerMetrics[]>([]);
+  const [circuitBreakerLoading, setCircuitBreakerLoading] = useState(false);
+
+  // Load circuit breaker metrics
+  const loadCircuitBreakers = async () => {
+    setCircuitBreakerLoading(true);
+    try {
+      const response = await fetch('/api/health/resilience');
+      if (!response.ok) {
+        throw new Error('Failed to fetch circuit breaker metrics');
+      }
+      const data = await response.json();
+      if (data.success && data.data) {
+        const metrics: CircuitBreakerMetrics[] = [
+          { ...data.data.database, service: 'database' },
+          { ...data.data.cache, service: 'cache' },
+          { ...data.data.api, service: 'api' },
+        ];
+        setCircuitBreakers(metrics);
+      }
+    } catch (error) {
+      logger.error('Failed to load circuit breaker metrics', { error });
+    } finally {
+      setCircuitBreakerLoading(false);
+    }
+  };
 
   // Load metrics data
   useEffect(() => {
@@ -52,9 +80,15 @@ const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
     }
 
     if (realtime) {
-      const interval = setInterval(loadMetrics, 30000); // Update every 30 seconds
+      const interval = setInterval(() => {
+        loadMetrics();
+        loadCircuitBreakers();
+      }, 30000); // Update every 30 seconds
       return () => clearInterval(interval);
     }
+
+    // Load circuit breakers on mount
+    loadCircuitBreakers();
   }, [selectedTimeframe, realtime]);
 
   const loadMetrics = async () => {
@@ -258,7 +292,7 @@ const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
         <div className="flex items-center space-x-2">
           <select
             value={selectedTimeframe}
-            onChange={(e) => setSelectedTimeframe(e.target.value as any)}
+            onChange={(e) => setSelectedTimeframe(e.target.value as '1h' | '24h' | '7d' | '30d')}
             className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
             <option value="1h">Last Hour</option>
@@ -350,6 +384,65 @@ const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
           </div>
         )}
       </div>
+
+      {/* Circuit Breaker Metrics */}
+      {circuitBreakers.length > 0 && (
+        <div className="bg-white p-6 rounded-lg shadow">
+          <h2 className="text-lg font-semibold mb-4 flex items-center">
+            <Activity className="w-5 h-5 mr-2" />
+            Circuit Breaker Status
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {circuitBreakers.map((cb) => {
+              const stateColor =
+                cb.state === 'Closed'
+                  ? 'border-green-200 bg-green-50'
+                  : cb.state === 'Open'
+                    ? 'border-red-200 bg-red-50'
+                    : 'border-yellow-200 bg-yellow-50';
+              const stateTextColor =
+                cb.state === 'Closed'
+                  ? 'text-green-800'
+                  : cb.state === 'Open'
+                    ? 'text-red-800'
+                    : 'text-yellow-800';
+
+              return (
+                <div key={cb.service} className={`p-4 rounded-lg border ${stateColor}`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-medium capitalize">{cb.service}</h3>
+                    <span className={`text-xs font-medium px-2 py-1 rounded ${stateTextColor}`}>
+                      {cb.state}
+                    </span>
+                  </div>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Success Rate:</span>
+                      <span className="font-medium">{cb.success_rate.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Total Requests:</span>
+                      <span className="font-medium">{cb.total_requests.toLocaleString()}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Successes:</span>
+                      <span className="font-medium text-green-600">
+                        {cb.successes.toLocaleString()}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-600">Failures:</span>
+                      <span className="font-medium text-red-600">
+                        {cb.failures.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Alerts */}
       {summary && (

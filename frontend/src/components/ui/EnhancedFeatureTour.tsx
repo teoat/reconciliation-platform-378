@@ -1,6 +1,6 @@
 /**
  * Enhanced Feature Tour Component
- * 
+ *
  * Enhanced version of FeatureTour with:
  * - Step validation
  * - Conditional navigation
@@ -12,10 +12,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronRight, ChevronLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { onboardingService } from '../../services/onboardingService';
-import ariaLiveRegionsServiceModule from '../services/ariaLiveRegionsService';
+import ariaLiveRegionsServiceModule from '../../services/ariaLiveRegionsService';
 
-const ariaLiveRegionsService = 
-  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService || 
+const ariaLiveRegionsService =
+  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService ||
   (ariaLiveRegionsServiceModule as any).default?.getInstance?.() ||
   ariaLiveRegionsServiceModule;
 
@@ -87,7 +87,7 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
     if (autoTrigger && tourId) {
       const hasCompleted = localStorage.getItem(`tour_completed_${tourId}`);
       const hasShown = localStorage.getItem(`tour_shown_${tourId}`);
-      
+
       if (!hasCompleted && !hasShown && isOpen === false) {
         // Check if element exists before auto-triggering
         const firstStep = steps[0];
@@ -110,9 +110,7 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
       // Check dependencies
       if (step.dependsOn && step.dependsOn.length > 0) {
         const completedSteps = getCompletedSteps();
-        const allDependenciesMet = step.dependsOn.every((depId) =>
-          completedSteps.includes(depId)
-        );
+        const allDependenciesMet = step.dependsOn.every((depId) => completedSteps.includes(depId));
         if (!allDependenciesMet) {
           return false;
         }
@@ -168,10 +166,10 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
     const targetElement = document.querySelector(currentStepData.target) as HTMLElement;
     if (targetElement) {
       setHighlightedElement(targetElement);
-      
+
       // Scroll into view
       targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      
+
       // Focus for accessibility
       setTimeout(() => {
         if (targetElement.tabIndex >= 0) {
@@ -278,14 +276,9 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
       if (onStepComplete) {
         onStepComplete(currentStepData.id);
       }
-      
+
       // Track analytics
-      onboardingService.completeStep(
-        currentStepData.id,
-        currentStepData.title,
-        0,
-        'feature_tour'
-      );
+      onboardingService.completeStep(currentStepData.id, currentStepData.title, 0, 'feature_tour');
     }
 
     // Move to next step
@@ -305,7 +298,7 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
     // Save completion
     if (persistProgress && tourId) {
       localStorage.setItem(`tour_completed_${tourId}`, 'true');
-      
+
       const completedSteps = getCompletedSteps();
       if (currentStepData && !completedSteps.includes(currentStepData.id)) {
         completedSteps.push(currentStepData.id);
@@ -327,9 +320,9 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
     if (onComplete) {
       onComplete();
     }
-    
+
     onClose();
-    
+
     // Announce completion
     ariaLiveRegionsService?.announceSuccess?.('Feature tour completed', {
       componentId: tourId,
@@ -501,4 +494,3 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
 };
 
 export default EnhancedFeatureTour;
-

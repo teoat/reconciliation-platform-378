@@ -104,7 +104,13 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
         logger.logUserAction('join_collaboration_session', 'CollaborationDashboard', { sessionId });
 
         // Subscribe to session updates
-        const subId = subscribe(`collaboration:session:${sessionId}`, (data) => {
+        const subId = subscribe(`collaboration:session:${sessionId}`, (data: {
+          type: 'user_joined' | 'user_left' | 'activity' | 'comment' | 'cursor_move' | 'selection_change';
+          user?: { id: string; name: string; email: string };
+          userId?: string;
+          activity?: { id: string; userId: string; action: string; timestamp: string };
+          comment?: { id: string; userId: string; message: string; timestamp: string };
+        }) => {
           if (data.type === 'user_joined') {
             setActiveUsers((prev) => [...prev, data.user]);
           } else if (data.type === 'user_left') {
@@ -184,7 +190,7 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
       () => [
         {
           key: 'userName' as const,
-          label: 'User',
+          header: 'User',
           render: (value: string, row: CollaborationActivity) => (
             <div className="flex items-center space-x-2">
               <Users className="w-4 h-4 text-gray-400" aria-hidden="true" />
@@ -194,7 +200,7 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
         },
         {
           key: 'action' as const,
-          label: 'Action',
+          header: 'Action',
           render: (value: string) => (
             <StatusBadge status={value === 'edited' ? 'warning' : 'info'}>{value}</StatusBadge>
           ),
@@ -227,14 +233,20 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
       setIsLoading(true);
 
       // Subscribe to collaboration updates
-      const usersSubId = subscribe('collaboration:users', (data) => {
+      const usersSubId = subscribe('collaboration:users', (data: {
+        type: 'users_update';
+        users: Array<{ id: string; name: string; email: string; lastSeen: string }>;
+      }) => {
         if (data.type === 'users_update') {
           setActiveUsers(data.users);
         }
       });
       setUsersSubscriptionId(usersSubId);
 
-      const activitiesSubId = subscribe('collaboration:activities', (data) => {
+      const activitiesSubId = subscribe('collaboration:activities', (data: {
+        type: 'activity';
+        activity: { id: string; userId: string; action: string; timestamp: string; details?: Record<string, unknown> };
+      }) => {
         if (data.type === 'activity') {
           setActivities((prev) => [data.activity, ...prev].slice(0, 100));
         }
@@ -337,8 +349,8 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
           <Card title="Recent Activities" className="lg:col-span-2">
             {recentActivities.length > 0 ? (
               <DataTable
-                data={recentActivities}
-                columns={activityColumns}
+                data={recentActivities as unknown as Record<string, unknown>[]}
+                columns={activityColumns as any}
                 searchable={false}
                 pagination={false}
                 emptyMessage="No recent activities"

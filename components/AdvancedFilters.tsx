@@ -177,32 +177,40 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
       case 'text':
         return (
           <input
+            id={`text-input-${filter.id}`}
             type="text"
             value={filter.value || ''}
             onChange={(e) => handleFilterChange(filter.id, { value: e.target.value })}
             className="input-field"
             placeholder="Enter value..."
+            aria-describedby={`text-help-${filter.id}`}
           />
         );
       case 'number':
         return (
           <div className="flex items-center space-x-2">
             <input
+              id={`number-input-${filter.id}`}
               type="number"
               value={filter.value || ''}
               onChange={(e) => handleFilterChange(filter.id, { value: e.target.value })}
               className="input-field w-32"
               placeholder="Value"
+              aria-describedby={`number-help-${filter.id}`}
             />
             {filter.operator === 'between' && (
               <>
-                <span className="text-secondary-500">and</span>
+                <span className="text-secondary-500" aria-hidden="true">
+                  and
+                </span>
                 <input
+                  id={`number-input2-${filter.id}`}
                   type="number"
                   value={filter.value2 || ''}
                   onChange={(e) => handleFilterChange(filter.id, { value2: e.target.value })}
                   className="input-field w-32"
                   placeholder="Value 2"
+                  aria-describedby={`number-help-${filter.id}`}
                 />
               </>
             )}
@@ -212,19 +220,25 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
         return (
           <div className="flex items-center space-x-2">
             <input
+              id={`date-input-${filter.id}`}
               type="date"
               value={filter.value || ''}
               onChange={(e) => handleFilterChange(filter.id, { value: e.target.value })}
               className="input-field w-40"
+              aria-describedby={`date-help-${filter.id}`}
             />
             {filter.operator === 'between' && (
               <>
-                <span className="text-secondary-500">and</span>
+                <span className="text-secondary-500" aria-hidden="true">
+                  and
+                </span>
                 <input
+                  id={`date-input2-${filter.id}`}
                   type="date"
                   value={filter.value2 || ''}
                   onChange={(e) => handleFilterChange(filter.id, { value2: e.target.value })}
                   className="input-field w-40"
+                  aria-describedby={`date-help-${filter.id}`}
                 />
               </>
             )}
@@ -233,9 +247,11 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
       case 'select':
         return (
           <select
+            id={`select-input-${filter.id}`}
             value={filter.value || ''}
             onChange={(e) => handleFilterChange(filter.id, { value: e.target.value })}
             className="input-field"
+            aria-describedby={`select-help-${filter.id}`}
           >
             <option value="">Select value...</option>
             {filter.options?.map((option) => (
@@ -247,10 +263,18 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
         );
       case 'multiselect':
         return (
-          <div className="space-y-2">
+          <div
+            className="space-y-2"
+            role="group"
+            aria-labelledby={`multiselect-label-${filter.id}`}
+          >
+            <div id={`multiselect-label-${filter.id}`} className="sr-only">
+              Select multiple values for {filter.label}
+            </div>
             {filter.options?.map((option) => (
               <label key={option.value} className="flex items-center space-x-2">
                 <input
+                  id={`multiselect-${filter.id}-${option.value}`}
                   type="checkbox"
                   checked={Array.isArray(filter.value) && filter.value.includes(option.value)}
                   onChange={(e) => {
@@ -261,6 +285,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                     handleFilterChange(filter.id, { value: newValues });
                   }}
                   className="rounded border-secondary-300"
+                  aria-describedby={`multiselect-help-${filter.id}`}
                 />
                 <span className="text-sm text-secondary-700">{option.label}</span>
               </label>
@@ -270,9 +295,11 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
       case 'boolean':
         return (
           <select
+            id={`boolean-input-${filter.id}`}
             value={filter.value || ''}
             onChange={(e) => handleFilterChange(filter.id, { value: e.target.value === 'true' })}
             className="input-field"
+            aria-describedby={`boolean-help-${filter.id}`}
           >
             <option value="">Select...</option>
             <option value="true">True</option>
@@ -288,14 +315,25 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+      <div
+        className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="advanced-filters-title"
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-secondary-200">
           <div className="flex items-center space-x-3">
             <Filter className="w-6 h-6 text-primary-600" />
-            <h2 className="text-xl font-semibold text-secondary-900">Advanced Filters</h2>
+            <h2 id="advanced-filters-title" className="text-xl font-semibold text-secondary-900">
+              Advanced Filters
+            </h2>
           </div>
-          <button onClick={onClose} className="text-secondary-400 hover:text-secondary-600">
+          <button
+            onClick={onClose}
+            className="text-secondary-400 hover:text-secondary-600"
+            aria-label="Close advanced filters"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -310,6 +348,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                   <div className="flex items-center space-x-2">
                     <label className="flex items-center space-x-2">
                       <input
+                        id={`active-checkbox-${filter.id}`}
                         type="checkbox"
                         checked={filter.active}
                         onChange={(e) =>
@@ -331,10 +370,14 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Field Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label
+                      htmlFor={`field-select-${filter.id}`}
+                      className="block text-sm font-medium text-secondary-700 mb-2"
+                    >
                       Field
                     </label>
                     <select
+                      id={`field-select-${filter.id}`}
                       value={filter.field}
                       onChange={(e) => {
                         const selectedField = availableFields.find((f) => f.id === e.target.value);
@@ -346,6 +389,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                         });
                       }}
                       className="input-field"
+                      aria-describedby={`field-help-${filter.id}`}
                     >
                       <option value="">Select field...</option>
                       {availableFields.map((field) => (
@@ -354,19 +398,27 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                         </option>
                       ))}
                     </select>
+                    <div id={`field-help-${filter.id}`} className="sr-only">
+                      Select the field you want to filter by
+                    </div>
                   </div>
 
                   {/* Operator Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label
+                      htmlFor={`operator-select-${filter.id}`}
+                      className="block text-sm font-medium text-secondary-700 mb-2"
+                    >
                       Operator
                     </label>
                     <select
+                      id={`operator-select-${filter.id}`}
                       value={filter.operator}
                       onChange={(e) =>
                         handleFilterChange(filter.id, { operator: e.target.value as any })
                       }
                       className="input-field"
+                      aria-describedby={`operator-help-${filter.id}`}
                     >
                       {getOperatorOptions(filter.type).map((option) => (
                         <option key={option.value} value={option.value}>
@@ -374,14 +426,20 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                         </option>
                       ))}
                     </select>
+                    <div id={`operator-help-${filter.id}`} className="sr-only">
+                      Select the comparison operator for this filter
+                    </div>
                   </div>
 
                   {/* Value Input */}
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label
+                      htmlFor={`value-input-${filter.id}`}
+                      className="block text-sm font-medium text-secondary-700 mb-2"
+                    >
                       Value
                     </label>
-                    {renderFilterInput(filter)}
+                    <div id={`value-input-${filter.id}`}>{renderFilterInput(filter)}</div>
                   </div>
                 </div>
               </div>

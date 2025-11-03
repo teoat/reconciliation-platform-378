@@ -8,7 +8,7 @@ use crate::errors::{AppError, AppResult};
 use crate::utils::string::levenshtein_distance;
 
 use crate::models::DataSource;
-use crate::models::schema::projects::data_sources;
+use crate::models::schema::data_sources;
 
 /// Extract records from data sources
 /// Single responsibility: Data extraction only
@@ -26,6 +26,38 @@ impl RecordExtractor {
             .first::<DataSource>(&mut conn)
             .optional()
             .map_err(AppError::Database)?;
+        
+        match data_source {
+            Some(ds) => {
+                // Parse data from file or database
+                let file_path = ds.file_path.clone()
+                    .ok_or_else(|| AppError::Validation("Data source file path is missing".to_string()))?;
+                
+                let records: Vec<serde_json::Value> = serde_json::from_str(&file_path)
+                    .map_err(|e| AppError::Validation(format!("Failed to parse data source file: {}", e)))?;
+                
+                Ok(records)
+            }
+            None => Err(AppError::NotFound("Data source not found".to_string()))
+        }
+    }
+    
+    /// Extract records with resilience protection (async version)
+    pub async fn extract_records_with_resilience(
+        db: &Database,
+        data_source_id: Uuid,
+        resilience: &Arc<ResilienceManager>,
+    ) -> AppResult<Vec<serde_json::Value>> {
+        // Use resilience manager for database operations
+        let data_source = resilience.execute_database(async {
+            let conn = db.get_connection_async().await?;
+            
+            Ok::<_, AppError>(data_sources::table
+                .filter(data_sources::id.eq(data_source_id))
+                .first::<DataSource>(&mut *conn)
+                .optional()
+                .map_err(AppError::Database)?)
+        }).await?;
         
         match data_source {
             Some(ds) => {
@@ -174,6 +206,38 @@ impl ResultStorage {
                 })
                 .execute(&mut conn)
                 .map_err(AppError::Database)?;
+        }
+        
+        Ok(())
+    }
+    
+    /// Store results with resilience protection (async version)
+    pub async fn store_results_with_resilience(
+        db: &Database,
+        job_id: Uuid,
+        results: Vec<MatchResult>,
+        resilience: &Arc<ResilienceManager>,
+    ) -> AppResult<()> {
+        // Use resilience manager for database operations
+        for result in results {
+            resilience.execute_database(async {
+                let conn = db.get_connection_async().await?;
+                
+                diesel::insert_into(crate::models::schema::reconciliation_results::table)
+                    .values(crate::models::NewReconciliationResult {
+                        job_id,
+                        record_a_id: Uuid::new_v4(), // Would map to actual record ID
+                        record_b_id: Some(Uuid::new_v4()),
+                        match_type: result.match_type.clone(),
+                        confidence_score: Some(result.confidence),
+                        status: "matched".to_string(),
+                        notes: Some("".to_string()),
+                    })
+                    .execute(&mut *conn)
+                    .map_err(AppError::Database)?;
+                
+                Ok::<_, AppError>(())
+            }).await?;
         }
         
         Ok(())

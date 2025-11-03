@@ -155,8 +155,8 @@ export const DataComparisonModal: React.FC<DataComparisonProps> = ({
   const getDifferences = () => {
     const differences: Array<{
       field: string;
-      saved: any;
-      current: any;
+      saved: unknown;
+      current: unknown;
       type: 'added' | 'removed' | 'changed';
     }> = [];
 
@@ -198,7 +198,7 @@ export const DataComparisonModal: React.FC<DataComparisonProps> = ({
 
   const differences = getDifferences();
 
-  const formatValue = (value: any): string => {
+  const formatValue = (value: unknown): string => {
     if (value === undefined) return 'Not set';
     if (value === null) return 'null';
     if (typeof value === 'string') return `"${value}"`;

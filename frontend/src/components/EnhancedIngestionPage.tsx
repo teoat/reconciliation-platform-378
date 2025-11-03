@@ -150,7 +150,7 @@ interface IndonesianProcessedData extends ProcessedData {
 interface SynchronizationTask {
   id: string
   type: 'ingestion_to_reconciliation' | 'reconciliation_to_ingestion' | 'indonesian_processing'
-  data: any
+  data: Record<string, unknown> | unknown[]
   timestamp: number
   status: 'pending' | 'processing' | 'completed' | 'error'
   source: string
@@ -502,15 +502,15 @@ const EnhancedIngestionPage = () => {
       {/* Tabs */}
       <div className="border-b border-secondary-200 mb-6">
         <nav className="flex space-x-8">
-          {[
+          {([
             { id: 'upload', label: 'Upload', icon: Upload },
             { id: 'process', label: 'Processing', icon: Settings },
             { id: 'analyze', label: 'Analysis', icon: BarChart3 },
             { id: 'sync', label: 'Synchronization', icon: RefreshCw }
-          ].map(tab => (
+          ] as const).map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
                 activeTab === tab.id
                   ? 'border-primary-500 text-primary-600'

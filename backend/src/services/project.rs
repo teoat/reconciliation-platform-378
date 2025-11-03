@@ -16,7 +16,7 @@ use uuid::Uuid;
 use crate::services::auth::ValidationUtils;
 use diesel::prelude::*;
 use crate::models::schema::{projects, users};
-use crate::models::schema::projects::{reconciliation_jobs, data_sources};
+use crate::models::schema::{reconciliation_jobs, data_sources};
 
 // Re-export types from models for backward compatibility
 pub use crate::services::project_models::*;

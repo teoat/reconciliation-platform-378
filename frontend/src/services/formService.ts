@@ -1,160 +1,197 @@
 // Consolidated Form Service
 // Combines auto-save, validation, debouncing, and form management functionality
 
-import { BaseService, PersistenceService } from './BaseService'
+import { PersistenceService } from './BaseService';
 
 export interface FormData {
-  id: string
-  formId: string
-  data: Record<string, unknown>
-  timestamp: number
-  version: number
+  id: string;
+  formId: string;
+  data: Record<string, unknown>;
+  timestamp: number;
+  version: number;
   metadata: {
-    page: string
-    userId?: string
-    projectId?: string
-    workflowStage?: string
-  }
+    page: string;
+    userId?: string;
+    projectId?: string;
+    workflowStage?: string;
+  };
 }
 
 export interface FormValidation {
-  fieldId: string
-  fieldType: 'text' | 'textarea' | 'email' | 'number' | 'date' | 'select'
-  currentLength: number
-  maxLength: number
-  minLength: number
-  isRequired: boolean
-  isValid: boolean
-  errors: string[]
-  warnings: string[]
+  fieldId: string;
+  fieldType: 'text' | 'textarea' | 'email' | 'number' | 'date' | 'select';
+  currentLength: number;
+  maxLength: number;
+  minLength: number;
+  isRequired: boolean;
+  isValid: boolean;
+  errors: string[];
+  warnings: string[];
 }
 
 export interface ButtonState {
-  id: string
-  isEnabled: boolean
-  isLoading: boolean
-  isDebounced: boolean
-  lastClickTime: number
-  clickCount: number
-  debounceDelay: number
+  id: string;
+  isEnabled: boolean;
+  isLoading: boolean;
+  isDebounced: boolean;
+  lastClickTime: number;
+  clickCount: number;
+  debounceDelay: number;
 }
 
 export interface FormConfig {
   autoSave: {
-    enabled: boolean
-    interval: number // milliseconds
-    maxVersions: number
-  }
+    enabled: boolean;
+    interval: number; // milliseconds
+    maxVersions: number;
+  };
   validation: {
-    enabled: boolean
-    realTime: boolean
-    debounceDelay: number
-  }
+    enabled: boolean;
+    realTime: boolean;
+    debounceDelay: number;
+  };
   debouncing: {
-    enabled: boolean
-    delay: number
-    maxClicksPerSecond: number
-  }
+    enabled: boolean;
+    delay: number;
+    maxClicksPerSecond: number;
+  };
 }
 
-export class FormService extends PersistenceService<FormData> {
-  private validations: Map<string, FormValidation> = new Map()
-  private buttonStates: Map<string, ButtonState> = new Map()
-  private config: FormConfig
-  private validationTimers: Map<string, NodeJS.Timeout> = new Map()
+export class FormService extends PersistenceService {
+  private validations: Map<string, FormValidation> = new Map();
+  private buttonStates: Map<string, ButtonState> = new Map();
+  private formConfig: FormConfig;
+  private validationTimers: Map<string, NodeJS.Timeout> = new Map();
+  private autoSaveTimers: Map<string, NodeJS.Timeout> = new Map();
 
   constructor() {
     super('form_data', {
-      enabled: true,
       persistence: true,
-      events: true,
-      caching: true
-    })
+      caching: true,
+    });
 
-    this.config = {
+    this.formConfig = {
       autoSave: {
         enabled: true,
         interval: 30000, // 30 seconds
-        maxVersions: 5
+        maxVersions: 5,
       },
       validation: {
         enabled: true,
         realTime: true,
-        debounceDelay: 500
+        debounceDelay: 500,
       },
       debouncing: {
         enabled: true,
         delay: 300,
-        maxClicksPerSecond: 3
-      }
+        maxClicksPerSecond: 3,
+      },
+    };
+  }
+
+  // Utility Methods
+  private generateId(): string {
+    return `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  }
+
+  private getAll(): FormData[] {
+    return Array.from(this.data.values());
+  }
+
+  private setTimer(key: string, callback: () => void, delay: number): void {
+    if (this.autoSaveTimers.has(key)) {
+      clearTimeout(this.autoSaveTimers.get(key));
+    }
+    this.autoSaveTimers.set(key, setTimeout(callback, delay));
+  }
+
+  private clearTimer(key: string): void {
+    if (this.autoSaveTimers.has(key)) {
+      clearTimeout(this.autoSaveTimers.get(key));
+      this.autoSaveTimers.delete(key);
     }
   }
 
   // Form Data Management
-  public saveFormData(formId: string, data: Record<string, unknown>, metadata: FormData['metadata']): string {
-    const id = this.generateId()
+  public saveFormData(
+    formId: string,
+    data: Record<string, unknown>,
+    metadata: FormData['metadata']
+  ): string {
+    const id = this.generateId();
     const formData: FormData = {
       id,
       formId,
       data,
       timestamp: Date.now(),
       version: this.getNextVersion(formId),
-      metadata
-    }
+      metadata,
+    };
 
-    this.set(id, formData)
-    this.cleanupOldVersions(formId)
-    
-    this.emit('formDataSaved', { formId, data: formData })
-    return id
+    this.set(id, formData);
+    this.cleanupOldVersions(formId);
+
+    this.emit('formDataSaved', { formId, data: formData });
+    return id;
   }
 
   public getFormData(formId: string): FormData[] {
-    return this.getAll().filter(item => item.formId === formId)
+    return this.getAll().filter((item) => item.formId === formId);
   }
 
   public getLatestFormData(formId: string): FormData | undefined {
-    const formData = this.getFormData(formId)
-    return formData.sort((a, b) => b.version - a.version)[0]
+    const formData = this.getFormData(formId);
+    return formData.sort((a, b) => b.version - a.version)[0];
   }
 
   public restoreFormData(formId: string, version?: number): FormData | undefined {
-    const formData = this.getFormData(formId)
+    const formData = this.getFormData(formId);
     if (version) {
-      return formData.find(item => item.version === version)
+      return formData.find((item) => item.version === version);
     }
-    return this.getLatestFormData(formId)
+    return this.getLatestFormData(formId);
   }
 
   public deleteFormData(formId: string): boolean {
-    const formData = this.getFormData(formId)
-    let deleted = false
-    
+    const formData = this.getFormData(formId);
+    let deleted = false;
+
     for (const item of formData) {
-      if (this.delete(item.id)) {
-        deleted = true
-      }
+      this.delete(item.id);
+      deleted = true;
     }
-    
-    return deleted
+
+    return deleted;
   }
 
   // Auto-Save Functionality
-  public startAutoSave(formId: string, data: Record<string, unknown>, metadata: FormData['metadata']): void {
-    if (!this.config.autoSave.enabled) return
+  public startAutoSave(
+    formId: string,
+    data: Record<string, unknown>,
+    metadata: FormData['metadata']
+  ): void {
+    if (!this.formConfig.autoSave.enabled) return;
 
-    this.setTimer(`autosave_${formId}`, () => {
-      this.saveFormData(formId, data, metadata)
-      this.startAutoSave(formId, data, metadata) // Restart timer
-    }, this.config.autoSave.interval)
+    this.setTimer(
+      `autosave_${formId}`,
+      () => {
+        this.saveFormData(formId, data, metadata);
+        this.startAutoSave(formId, data, metadata); // Restart timer
+      },
+      this.formConfig.autoSave.interval
+    );
   }
 
   public stopAutoSave(formId: string): void {
-    this.clearTimer(`autosave_${formId}`)
+    this.clearTimer(`autosave_${formId}`);
   }
 
   // Validation Management
-  public validateField(fieldId: string, value: any, rules: Partial<FormValidation>): FormValidation {
+  public validateField(
+    fieldId: string,
+    value: any,
+    rules: Partial<FormValidation>
+  ): FormValidation {
     const validation: FormValidation = {
       fieldId,
       fieldType: rules.fieldType || 'text',
@@ -164,72 +201,72 @@ export class FormService extends PersistenceService<FormData> {
       isRequired: rules.isRequired || false,
       isValid: true,
       errors: [],
-      warnings: []
-    }
+      warnings: [],
+    };
 
     // Length validation
     if (validation.currentLength < validation.minLength) {
-      validation.errors.push(`Minimum length is ${validation.minLength} characters`)
-      validation.isValid = false
+      validation.errors.push(`Minimum length is ${validation.minLength} characters`);
+      validation.isValid = false;
     }
 
     if (validation.currentLength > validation.maxLength) {
-      validation.errors.push(`Maximum length is ${validation.maxLength} characters`)
-      validation.isValid = false
+      validation.errors.push(`Maximum length is ${validation.maxLength} characters`);
+      validation.isValid = false;
     }
 
     // Required field validation
     if (validation.isRequired && (!value || String(value).trim() === '')) {
-      validation.errors.push('This field is required')
-      validation.isValid = false
+      validation.errors.push('This field is required');
+      validation.isValid = false;
     }
 
     // Warning thresholds
-    const usagePercent = (validation.currentLength / validation.maxLength) * 100
+    const usagePercent = (validation.currentLength / validation.maxLength) * 100;
     if (usagePercent > 90) {
-      validation.warnings.push('Approaching character limit')
+      validation.warnings.push('Approaching character limit');
     } else if (usagePercent > 75) {
-      validation.warnings.push('75% of character limit reached')
+      validation.warnings.push('75% of character limit reached');
     }
 
-    this.validations.set(fieldId, validation)
-    this.emit('fieldValidated', { fieldId, validation })
-    
-    return validation
+    this.validations.set(fieldId, validation);
+    this.emit('fieldValidated', { fieldId, validation });
+
+    return validation;
   }
 
   public getFieldValidation(fieldId: string): FormValidation | undefined {
-    return this.validations.get(fieldId)
+    return this.validations.get(fieldId);
   }
 
   public validateForm(formId: string): boolean {
-    const formData = this.getLatestFormData(formId)
-    if (!formData) return false
+    const formData = this.getLatestFormData(formId);
+    if (!formData) return false;
 
-    let isValid = true
-    const formValidations: FormValidation[] = []
+    let isValid = true;
+    const formValidations: FormValidation[] = [];
 
-    for (const [fieldId, validation] of this.validations.entries()) {
+    for (const [, validation] of this.validations.entries()) {
       if (validation.fieldId.startsWith(formId)) {
-        formValidations.push(validation)
+        formValidations.push(validation);
         if (!validation.isValid) {
-          isValid = false
+          isValid = false;
         }
       }
     }
 
-    this.emit('formValidated', { formId, isValid, validations: formValidations })
-    return isValid
+    this.emit('formValidated', { formId, isValid, validations: formValidations });
+    return isValid;
   }
 
   // Debouncing Management
   public handleButtonClick(buttonId: string, callback: () => void): boolean {
-    if (!this.config.debouncing.enabled) {
-      callback()
-      return true
+    if (!this.formConfig.debouncing.enabled) {
+      callback();
+      return true;
     }
 
-    const now = Date.now()
+    const now = Date.now();
     const buttonState = this.buttonStates.get(buttonId) || {
       id: buttonId,
       isEnabled: true,
@@ -237,103 +274,105 @@ export class FormService extends PersistenceService<FormData> {
       isDebounced: false,
       lastClickTime: 0,
       clickCount: 0,
-      debounceDelay: this.config.debouncing.delay
-    }
+      debounceDelay: this.formConfig.debouncing.delay,
+    };
 
     // Check if button is debounced
     if (now - buttonState.lastClickTime < buttonState.debounceDelay) {
-      buttonState.isDebounced = true
-      this.buttonStates.set(buttonId, buttonState)
-      this.emit('buttonDebounced', { buttonId, buttonState })
-      return false
+      buttonState.isDebounced = true;
+      this.buttonStates.set(buttonId, buttonState);
+      this.emit('buttonDebounced', { buttonId, buttonState });
+      return false;
     }
 
     // Check click rate
-    const clicksPerSecond = buttonState.clickCount / ((now - buttonState.lastClickTime) / 1000)
-    if (clicksPerSecond > this.config.debouncing.maxClicksPerSecond) {
-      buttonState.isDebounced = true
-      this.buttonStates.set(buttonId, buttonState)
-      this.emit('buttonRateLimited', { buttonId, buttonState })
-      return false
+    const clicksPerSecond = buttonState.clickCount / ((now - buttonState.lastClickTime) / 1000);
+    if (clicksPerSecond > this.formConfig.debouncing.maxClicksPerSecond) {
+      buttonState.isDebounced = true;
+      this.buttonStates.set(buttonId, buttonState);
+      this.emit('buttonRateLimited', { buttonId, buttonState });
+      return false;
     }
 
     // Allow click
-    buttonState.lastClickTime = now
-    buttonState.clickCount++
-    buttonState.isDebounced = false
-    this.buttonStates.set(buttonId, buttonState)
+    buttonState.lastClickTime = now;
+    buttonState.clickCount++;
+    buttonState.isDebounced = false;
+    this.buttonStates.set(buttonId, buttonState);
 
-    callback()
-    this.emit('buttonClicked', { buttonId, buttonState })
-    return true
+    callback();
+    this.emit('buttonClicked', { buttonId, buttonState });
+    return true;
   }
 
   public setButtonLoading(buttonId: string, isLoading: boolean): void {
-    const buttonState = this.buttonStates.get(buttonId)
+    const buttonState = this.buttonStates.get(buttonId);
     if (buttonState) {
-      buttonState.isLoading = isLoading
-      this.buttonStates.set(buttonId, buttonState)
-      this.emit('buttonLoadingChanged', { buttonId, isLoading })
+      buttonState.isLoading = isLoading;
+      this.buttonStates.set(buttonId, buttonState);
+      this.emit('buttonLoadingChanged', { buttonId, isLoading });
     }
   }
 
   public getButtonState(buttonId: string): ButtonState | undefined {
-    return this.buttonStates.get(buttonId)
+    return this.buttonStates.get(buttonId);
   }
 
   // Configuration Management
   public updateConfig(newConfig: Partial<FormConfig>): void {
-    this.config = { ...this.config, ...newConfig }
-    this.emit('configUpdated', { config: this.config })
+    this.formConfig = { ...this.formConfig, ...newConfig };
+    this.emit('configUpdated', { config: this.formConfig });
   }
 
   public getConfig(): FormConfig {
-    return { ...this.config }
+    return { ...this.formConfig };
   }
 
   // Utility Methods
   private getNextVersion(formId: string): number {
-    const formData = this.getFormData(formId)
-    return formData.length > 0 ? Math.max(...formData.map(item => item.version)) + 1 : 1
+    const formData = this.getFormData(formId);
+    return formData.length > 0 ? Math.max(...formData.map((item) => item.version)) + 1 : 1;
   }
 
   private cleanupOldVersions(formId: string): void {
-    const formData = this.getFormData(formId)
-    if (formData.length > this.config.autoSave.maxVersions) {
-      const sortedData = formData.sort((a, b) => b.version - a.version)
-      const toDelete = sortedData.slice(this.config.autoSave.maxVersions)
-      
+    const formData = this.getFormData(formId);
+    if (formData.length > this.formConfig.autoSave.maxVersions) {
+      const sortedData = formData.sort((a, b) => b.version - a.version);
+      const toDelete = sortedData.slice(this.formConfig.autoSave.maxVersions);
+
       for (const item of toDelete) {
-        this.delete(item.id)
+        this.delete(item.id);
       }
     }
   }
 
   // Validation methods required by BaseService
   public validate(data: FormData): boolean {
-    return data && 
-           typeof data.formId === 'string' && 
-           typeof data.data === 'object' && 
-           typeof data.timestamp === 'number'
+    return (
+      data &&
+      typeof data.formId === 'string' &&
+      typeof data.data === 'object' &&
+      typeof data.timestamp === 'number'
+    );
   }
 
   // Cleanup
   public cleanup(): void {
-    super.cleanup()
-    
+    super.cleanup();
+
     // Clear validation timers
     for (const timer of this.validationTimers.values()) {
-      clearTimeout(timer)
+      clearTimeout(timer);
     }
-    this.validationTimers.clear()
+    this.validationTimers.clear();
 
     // Clear validations
-    this.validations.clear()
-    
+    this.validations.clear();
+
     // Clear button states
-    this.buttonStates.clear()
+    this.buttonStates.clear();
   }
 }
 
 // Export singleton instance
-export const formService = new FormService()
+export const formService = new FormService();

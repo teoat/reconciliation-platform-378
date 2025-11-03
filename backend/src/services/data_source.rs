@@ -14,7 +14,7 @@ use crate::errors::{AppError, AppResult};
 use crate::models::{
     DataSource, NewDataSource, UpdateDataSource,
 };
-use crate::models::schema::projects::data_sources;
+use crate::models::schema::data_sources;
 
 /// Data source service
 pub struct DataSourceService {

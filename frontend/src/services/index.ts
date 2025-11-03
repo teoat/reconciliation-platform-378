@@ -52,6 +52,7 @@ export {
 // Specialized Services
 export { default as DataManagementService } from './dataManagement'
 export { securityService as SecurityService, default as securityService } from './security/index'
+export { businessIntelligenceService as BusinessIntelligenceService, default as businessIntelligenceService, useBusinessIntelligence } from './businessIntelligence/index'
 export { default as CacheService } from './cacheService'
 export { default as FileService } from './fileService'
 export { default as FormService } from './formService'
@@ -61,6 +62,35 @@ export { default as LoggerService } from './logger'
 export { default as RealtimeSyncService } from './realtimeSync'
 export { default as RetryService } from './retryService'
 export { default as WebSocketService } from './webSocketService'
+
+// Onboarding Services
+export { 
+  onboardingService,
+  type OnboardingType,
+  type OnboardingProgress,
+  type OnboardingAnalytics
+} from './onboardingService'
+
+// Tip Engine Service
+export { 
+  tipEngine,
+  default as tipEngineService,
+  type Tip,
+  type TipPriority,
+  type TipContext,
+  type UserBehavior,
+  type TipEngineConfig
+} from './tipEngine'
+
+// Help Content Service
+export { 
+  helpContentService,
+  default as helpContentServiceInstance,
+  type HelpContent,
+  type HelpContentType,
+  type HelpContentCategory,
+  type HelpSearchResult
+} from './helpContentService'
 
 // Constants
 // Constants moved to config/AppConfig.ts

@@ -1,152 +1,23 @@
 // API Service Layer for Frontend-Backend Integration
-import { appConfig } from '../config';
+import type {
+  ApiResponse,
+  User,
+  AuthTokens,
+  PaginationInfo,
+  Project,
+  IngestionJob,
+  ReconciliationRecord,
+} from '../types';
 
 // API Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:2000/api';
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:2000';
 
-// Factory functions for creating objects
-export const createApiResponse = (data = null, message = '', error = null) => ({
-  data,
-  message,
-  error,
-});
-
-export const createPaginationInfo = (page = 1, limit = 10, total = 0, pages = 0) => ({
-  page,
-  limit,
-  total,
-  pages,
-});
-
-export const createAuthTokens = (accessToken = '', refreshToken = '') => ({
-  accessToken,
-  refreshToken,
-});
-
-export const createUser = (
-  id = '',
-  email = '',
-  firstName = '',
-  lastName = '',
-  role = '',
-  organizationId = '',
-  organizationName = ''
-) => ({
-  id,
-  email,
-  firstName,
-  lastName,
-  role,
-  organizationId,
-  organizationName,
-});
-
-export const createProject = (
-  id = '',
-  name = '',
-  description = '',
-  status = 'active',
-  settings = {},
-  organizationId = '',
-  organizationName = '',
-  createdBy = '',
-  createdByFirstName = '',
-  createdByLastName = '',
-  createdAt = '',
-  updatedAt = ''
-) => ({
-  id,
-  name,
-  description,
-  status,
-  settings,
-  organizationId,
-  organizationName,
-  createdBy,
-  createdByFirstName,
-  createdByLastName,
-  createdAt,
-  updatedAt,
-});
-
-export const createIngestionJob = (
-  id = '',
-  projectId = '',
-  projectName = '',
-  dataSourceId = '',
-  dataSourceName = '',
-  filename = '',
-  status = 'pending',
-  metadata = {},
-  qualityMetrics = null,
-  recordCount = 0,
-  errorMessage = '',
-  createdBy = '',
-  createdByFirstName = '',
-  createdByLastName = '',
-  startedAt = '',
-  completedAt = '',
-  createdAt = '',
-  updatedAt = ''
-) => ({
-  id,
-  projectId,
-  projectName,
-  dataSourceId,
-  dataSourceName,
-  filename,
-  status,
-  metadata,
-  qualityMetrics,
-  recordCount,
-  errorMessage,
-  createdBy,
-  createdByFirstName,
-  createdByLastName,
-  startedAt,
-  completedAt,
-  createdAt,
-  updatedAt,
-});
-
-export const createReconciliationRecord = (
-  id = '',
-  projectId = '',
-  ingestionJobId = '',
-  externalId = '',
-  status = 'pending',
-  amount = 0,
-  transactionDate = '',
-  description = '',
-  sourceData = {},
-  matchingResults = null,
-  confidence = 0,
-  auditTrail = null,
-  createdAt = '',
-  updatedAt = ''
-) => ({
-  id,
-  projectId,
-  ingestionJobId,
-  externalId,
-  status,
-  amount,
-  transactionDate,
-  description,
-  sourceData,
-  matchingResults,
-  confidence,
-  auditTrail,
-  createdAt,
-  updatedAt,
-});
-
 // API Client Class
 class ApiClient {
-  baseURL;
-  accessToken = null;
-  refreshToken = null;
+  baseURL: string;
+  accessToken: string | null = null;
+  refreshToken: string | null = null;
 
   constructor(baseURL = API_BASE_URL) {
     this.baseURL = baseURL;
@@ -161,7 +32,7 @@ class ApiClient {
     }
   }
 
-  saveTokensToStorage(tokens) {
+  saveTokensToStorage(tokens: AuthTokens) {
     if (typeof window !== 'undefined') {
       localStorage.setItem('accessToken', tokens.accessToken);
       localStorage.setItem('refreshToken', tokens.refreshToken);
@@ -180,12 +51,12 @@ class ApiClient {
   }
 
   // HTTP Request Helper
-  async makeRequest(endpoint, options = {}) {
+  async makeRequest<T = any>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     const url = `${this.baseURL}${endpoint}`;
 
-    const headers = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string>),
     };
 
     if (this.accessToken) {
@@ -206,159 +77,50 @@ class ApiClient {
           const refreshed = await this.refreshAccessToken();
           if (refreshed) {
             // Retry the original request
-            return this.makeRequest(endpoint, options);
+            return this.makeRequest<T>(endpoint, options);
           }
         }
 
         return {
+          success: false,
           error: {
+            code: 'REQUEST_FAILED',
             message: data.error?.message || 'Request failed',
-            statusCode: response.status,
-            timestamp: data.error?.timestamp || new Date().toISOString(),
-            path: data.error?.path || endpoint,
-            method: options.method || 'GET',
+            details: data.error?.details,
+            field: data.error?.field,
+            timestamp: new Date(),
           },
         };
       }
 
-      return { data };
+      return { success: true, data };
     } catch (error) {
       return {
+        success: false,
         error: {
+          code: 'NETWORK_ERROR',
           message: error instanceof Error ? error.message : 'Network error',
-          statusCode: 0,
-          timestamp: new Date().toISOString(),
-          path: endpoint,
-          method: options.method || 'GET',
+          timestamp: new Date(),
         },
       };
     }
   }
 
   // Authentication Methods
-  async register(userData) {
-    const response = await this.makeRequest(
-      '/auth/register',
-      {
-        method: 'POST',
-        body: JSON.stringify(userData),
-      }
-    );
-
-    if (response.data) {
-      this.saveTokensToStorage(response.data.tokens);
-    }
-
-    return response;
-  }
-
-  async login(credentials) {
-    const response = await this.makeRequest(
-      '/auth/login',
-      {
-        method: 'POST',
-        body: JSON.stringify(credentials),
-      }
-    );
-
-    if (response.data) {
-      this.saveTokensToStorage(response.data.tokens);
-    }
-
-    return response;
-  }
-
-  async logout() {
-    const response = await this.makeRequest('/auth/logout', {
+  async register(userData: {
+    email: string;
+    password: string;
+    firstName: string;
+    lastName: string;
+  }): Promise<ApiResponse<{ user: User; tokens: AuthTokens }>> {
+    const response = await this.makeRequest<{ user: User; tokens: AuthTokens }>('/auth/register', {
       method: 'POST',
+      body: JSON.stringify(userData),
     });
 
-    this.clearTokensFromStorage();
-    return response;
-  }
-
-  async refreshAccessToken() {
-    if (!this.refreshToken) return false;
-
-    const response = await this.makeRequest(
-      '/auth/refresh',
-      {
-        method: 'POST',
-        body: JSON.stringify({ refreshToken: this.refreshToken }),
-      }
-    );
-
-    if (response.data) {
+    if (response.success && response.data) {
       this.saveTokensToStorage(response.data.tokens);
-      return true;
     }
-
-    this.clearTokensFromStorage();
-    return false;
-  }
-
-  async getCurrentUser() {
-    return this.makeRequest('/auth/me');
-  }
-
-  // Project Methods
-  async getProjects(params) {
-    const queryParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value.toString());
-        }
-      });
-    }
-
-    const endpoint = queryParams.toString() 
-      ? `/projects?${queryParams.toString()}`
-      : '/projects';
-
-    return this.makeRequest(endpoint);
-  }
-
-  async getProject(id) {
-    return this.makeRequest(`/projects/${id}`);
-  }
-
-  async createProject(projectData) {
-    return this.makeRequest('/projects', {
-      method: 'POST',
-      body: JSON.stringify(projectData),
-    });
-  }
-
-  async updateProject(id, updates) {
-    return this.makeRequest(`/projects/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(updates),
-    });
-  }
-
-  async deleteProject(id) {
-    return this.makeRequest(`/projects/${id}`, {
-      method: 'DELETE',
-    });
-  }
-
-  async getProjectAnalytics(id, params) {
-    const queryParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value);
-        }
-      });
-    }
-
-    const endpoint = queryParams.toString()
-      ? `/projects/${id}/analytics?${queryParams.toString()}`
-      : `/projects/${id}/analytics`;
-
-    return this.makeRequest(endpoint);
-  }
 
     return response;
   }
@@ -372,7 +134,7 @@ class ApiClient {
       body: JSON.stringify(credentials),
     });
 
-    if (response.data) {
+    if (response.success && response.data) {
       this.saveTokensToStorage(response.data.tokens);
     }
 
@@ -396,7 +158,7 @@ class ApiClient {
       body: JSON.stringify({ refreshToken: this.refreshToken }),
     });
 
-    if (response.data) {
+    if (response.success && response.data) {
       this.saveTokensToStorage(response.data.tokens);
       return true;
     }
@@ -478,7 +240,7 @@ class ApiClient {
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined) {
-          queryParams.append(key, value);
+          queryParams.append(key, value.toString());
         }
       });
     }
@@ -487,11 +249,19 @@ class ApiClient {
       ? `/projects/${id}/analytics?${queryParams.toString()}`
       : `/projects/${id}/analytics`;
 
-    return this.makeRequest(endpoint);
+    return this.makeRequest<{
+      stats: any;
+      dailyStats: any[];
+      ingestionStats: any;
+    }>(endpoint);
   }
 
   // Ingestion Methods
-  async uploadFile(file, projectId, dataSourceId) {
+  async uploadFile(
+    file: File,
+    projectId: string,
+    dataSourceId?: string
+  ): Promise<ApiResponse<{ job: IngestionJob }>> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('projectId', projectId);
@@ -500,7 +270,7 @@ class ApiClient {
     }
 
     const url = `${this.baseURL}/ingestion/upload`;
-    const headers = {};
+    const headers: Record<string, string> = {};
 
     if (this.accessToken) {
       headers.Authorization = `Bearer ${this.accessToken}`;
@@ -517,129 +287,23 @@ class ApiClient {
 
       if (!response.ok) {
         return {
+          success: false,
           error: {
+            code: 'UPLOAD_FAILED',
             message: data.error?.message || 'Upload failed',
-            statusCode: response.status,
-            timestamp: data.error?.timestamp || new Date().toISOString(),
-            path: '/ingestion/upload',
-            method: 'POST',
+            timestamp: new Date(),
           },
         };
       }
 
-      return { data };
+      return { success: true, data };
     } catch (error) {
       return {
+        success: false,
         error: {
+          code: 'UPLOAD_ERROR',
           message: error instanceof Error ? error.message : 'Upload failed',
-          statusCode: 0,
-          timestamp: new Date().toISOString(),
-          path: '/ingestion/upload',
-          method: 'POST',
-        },
-      };
-    }
-  }
-
-  async processData(jobId, options) {
-    return this.makeRequest('/ingestion/process', {
-      method: 'POST',
-      body: JSON.stringify({ jobId, options }),
-    });
-  }
-
-  async getIngestionJobs(params) {
-    const queryParams = new URLSearchParams();
-    if (params) {
-      Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
-          queryParams.append(key, value.toString());
-        }
-      });
-    }
-
-    const endpoint = queryParams.toString()
-      ? `/ingestion/jobs?${queryParams.toString()}`
-      : '/ingestion/jobs';
-
-    return this.makeRequest(endpoint);
-  }
-
-  async getIngestionJob(id) {
-    return this.makeRequest(`/ingestion/jobs/${id}`);
-  }
-
-  // Health Check
-  async healthCheck() {
-    const url = `${this.baseURL.replace('/api', '')}/health`;
-    
-    try {
-      const response = await fetch(url);
-      const data = await response.json();
-
-      if (!response.ok) {
-        return {
-          error: {
-            message: 'Health check failed',
-            statusCode: response.status,
-            timestamp: new Date().toISOString(),
-            path: '/health',
-            method: 'GET',
-          },
-        };
-      }
-
-      return { data };
-    } catch (error) {
-      return {
-        error: {
-          message: error instanceof Error ? error.message : 'Health check failed',
-          statusCode: 0,
-          timestamp: new Date().toISOString(),
-          path: '/health',
-          method: 'GET',
-        },
-      };
-    }
-  }
-
-    const url = `${this.baseURL}/ingestion/upload`;
-    const headers: HeadersInit = {};
-
-    if (this.accessToken) {
-      headers.Authorization = `Bearer ${this.accessToken}`;
-    }
-
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: formData,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        return {
-          error: {
-            message: data.error?.message || 'Upload failed',
-            statusCode: response.status,
-            timestamp: data.error?.timestamp || new Date().toISOString(),
-            path: '/ingestion/upload',
-            method: 'POST',
-          },
-        };
-      }
-
-      return { data };
-    } catch (error) {
-      return {
-        error: {
-          message: error instanceof Error ? error.message : 'Upload failed',
-          statusCode: 0,
-          timestamp: new Date().toISOString(),
-          path: '/ingestion/upload',
-          method: 'POST',
+          timestamp: new Date(),
         },
       };
     }
@@ -706,25 +370,23 @@ class ApiClient {
 
       if (!response.ok) {
         return {
+          success: false,
           error: {
+            code: 'HEALTH_CHECK_FAILED',
             message: 'Health check failed',
-            statusCode: response.status,
-            timestamp: new Date().toISOString(),
-            path: '/health',
-            method: 'GET',
+            timestamp: new Date(),
           },
         };
       }
 
-      return { data };
+      return { success: true, data };
     } catch (error) {
       return {
+        success: false,
         error: {
+          code: 'HEALTH_CHECK_ERROR',
           message: error instanceof Error ? error.message : 'Health check failed',
-          statusCode: 0,
-          timestamp: new Date().toISOString(),
-          path: '/health',
-          method: 'GET',
+          timestamp: new Date(),
         },
       };
     }
@@ -733,102 +395,16 @@ class ApiClient {
 
 // WebSocket Client
 export class WebSocketClient {
-  ws = null;
-  url;
+  ws: WebSocket | null = null;
+  url: string;
   reconnectAttempts = 0;
   maxReconnectAttempts = 5;
-  reconnectTimeout = null;
-  eventHandlers = new Map();
+  reconnectTimeout: NodeJS.Timeout | null = null;
+  eventHandlers = new Map<string, Function[]>();
 
   constructor(url = WS_URL) {
     this.url = url;
   }
-
-  connect(token) {
-    return new Promise((resolve, reject) => {
-      try {
-        const wsUrl = token ? `${this.url}?token=${token}` : this.url;
-        this.ws = new WebSocket(wsUrl);
-
-        this.ws.onopen = () => {
-          console.log('WebSocket connected');
-          this.reconnectAttempts = 0;
-          resolve();
-        };
-
-        this.ws.onmessage = (event) => {
-          try {
-            const message = JSON.parse(event.data);
-            this.handleMessage(message);
-          } catch (error) {
-            console.error('Failed to parse WebSocket message:', error);
-          }
-        };
-
-        this.ws.onclose = (event) => {
-          console.log('WebSocket disconnected:', event.code, event.reason);
-          this.handleReconnect();
-        };
-
-        this.ws.onerror = (error) => {
-          console.error('WebSocket error:', error);
-          reject(error);
-        };
-      } catch (error) {
-        reject(error);
-      }
-    });
-  }
-
-  handleReconnect() {
-    if (this.reconnectAttempts < this.maxReconnectAttempts) {
-      this.reconnectAttempts++;
-      const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-      
-      console.log(`Attempting to reconnect in ${delay}ms (attempt ${this.reconnectAttempts})`);
-      
-      this.reconnectTimeout = setTimeout(() => {
-        this.connect();
-      }, delay);
-    }
-  }
-
-  handleMessage(message) {
-    const { type, data } = message;
-    const handlers = this.eventHandlers.get(type) || [];
-    handlers.forEach(handler => handler(data));
-  }
-
-  send(type, data) {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type, data }));
-    }
-  }
-
-  on(eventType, handler) {
-    if (!this.eventHandlers.has(eventType)) {
-      this.eventHandlers.set(eventType, []);
-    }
-    this.eventHandlers.get(eventType).push(handler);
-  }
-
-  off(eventType, handler) {
-    const handlers = this.eventHandlers.get(eventType) || [];
-    const index = handlers.indexOf(handler);
-    if (index > -1) {
-      handlers.splice(index, 1);
-    }
-  }
-
-  disconnect() {
-    if (this.reconnectTimeout) {
-      clearTimeout(this.reconnectTimeout);
-    }
-    if (this.ws) {
-      this.ws.close(1000, 'Client disconnect');
-    }
-  }
-}
 
   connect(token?: string): Promise<void> {
     return new Promise((resolve, reject) => {
@@ -919,5 +495,3 @@ export class WebSocketClient {
 // Create singleton instances
 export const apiClient = new ApiClient();
 export const wsClient = new WebSocketClient();
-
-// Types are exported above with their declarations

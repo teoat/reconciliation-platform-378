@@ -1,14 +1,25 @@
 /**
  * Health Check Agent - Autonomous System Health Monitoring
- * 
+ *
  * Extracts and enhances MonitoringService.perform_health_checks() functionality
  * into a meta-agent with learning and adaptation capabilities.
- * 
+ *
  * Source: backend/src/services/monitoring.rs:501-523
  * Priority: CRITICAL
  */
 
-import { MetaAgent, AgentType, AutonomyLevel, ExecutionContext, AgentResult, AgentMetrics, AgentStatus, HILContext, HILResponse } from '../core/types';
+import {
+  MetaAgent,
+  AgentType,
+  AutonomyLevel,
+  ExecutionContext,
+  AgentResult,
+  AgentMetrics,
+  AgentStatus,
+  AgentStatusInfo,
+  HILContext,
+  HILResponse,
+} from '../core/types';
 
 interface HealthChecker {
   name: string;
@@ -69,8 +80,8 @@ export class HealthCheckAgent implements MetaAgent {
         const start = Date.now();
         // TODO: Implement actual database health check
         // For now, simulate a health check
-        await new Promise(resolve => setTimeout(resolve, 10));
-        
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
         return {
           name: 'database',
           status: 'healthy',
@@ -88,8 +99,8 @@ export class HealthCheckAgent implements MetaAgent {
       check: async () => {
         const start = Date.now();
         // TODO: Implement actual Redis health check
-        await new Promise(resolve => setTimeout(resolve, 10));
-        
+        await new Promise((resolve) => setTimeout(resolve, 10));
+
         return {
           name: 'redis',
           status: 'healthy',
@@ -110,10 +121,14 @@ export class HealthCheckAgent implements MetaAgent {
         // Check CPU, memory, disk usage
         const memoryUsage = Math.random() * 100;
         const cpuUsage = Math.random() * 100;
-        
-        const status = cpuUsage > 90 || memoryUsage > 90 ? 'degraded' : 
-                      cpuUsage > 95 || memoryUsage > 95 ? 'unhealthy' : 'healthy';
-        
+
+        const status =
+          cpuUsage > 90 || memoryUsage > 90
+            ? 'degraded'
+            : cpuUsage > 95 || memoryUsage > 95
+              ? 'unhealthy'
+              : 'healthy';
+
         return {
           name: 'system',
           status,
@@ -140,7 +155,7 @@ export class HealthCheckAgent implements MetaAgent {
 
   async start(): Promise<void> {
     if (this.status === 'running') return;
-    
+
     this.status = 'running';
 
     // Start health check loop - runs every 60 seconds
@@ -207,7 +222,7 @@ export class HealthCheckAgent implements MetaAgent {
         } catch (error) {
           console.error(`Error in health checker ${name}:`, error);
           this.agentMetrics.errors++;
-          
+
           checks.push({
             name,
             status: 'unhealthy',
@@ -261,7 +276,7 @@ export class HealthCheckAgent implements MetaAgent {
    */
   private async handleUnhealthyStatus(report: HealthReport): Promise<void> {
     console.warn('HealthCheckAgent detected unhealthy status:', report.overallStatus);
-    
+
     // TODO: Generate alert or ticket
     // TODO: Trigger remediation actions
   }
@@ -288,13 +303,14 @@ export class HealthCheckAgent implements MetaAgent {
     this.agentMetrics.lastExecutionTime = new Date();
   }
 
-  getStatus(): AgentStatus {
+  getStatus(): AgentStatusInfo {
     return {
       name: this.name,
       status: this.status,
       lastExecution: this.agentMetrics.lastExecutionTime,
       metrics: this.agentMetrics,
-      health: this.status === 'error' ? 'unhealthy' : this.status === 'running' ? 'healthy' : 'degraded',
+      health:
+        this.status === 'error' ? 'unhealthy' : this.status === 'running' ? 'healthy' : 'degraded',
     };
   }
 
@@ -322,4 +338,3 @@ export class HealthCheckAgent implements MetaAgent {
     // TODO: Implement strategy adaptation
   }
 }
-

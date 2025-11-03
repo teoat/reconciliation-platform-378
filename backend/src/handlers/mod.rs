@@ -30,16 +30,8 @@ mod sync {
     pub fn configure_routes(_cfg: &mut actix_web::web::ServiceConfig) {}
 }
 
-// Health check handlers - defined inline for now
-mod health {
-    use actix_web::{web, HttpResponse};
-    use crate::errors::AppError;
-    use crate::database::Database;
-    
-    pub fn configure_health_routes(cfg: &mut web::ServiceConfig) {
-        // Health routes are configured at the top level in main.rs
-    }
-}
+// Health check handlers
+pub mod health;
 
 // Re-export types for backward compatibility
 pub use types::{ApiResponse, PaginatedResponse, SearchQueryParams, UserQueryParams};

@@ -4,13 +4,14 @@
 
 import { apiClient } from '../apiClient';
 import { logger } from '../logger';
+import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
 
 export class AuthApiService {
   static async authenticate(email: string, password: string) {
     try {
       const response = await apiClient.login({ email, password });
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -28,7 +29,7 @@ export class AuthApiService {
     try {
       const response = await apiClient.register(userData);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -48,7 +49,7 @@ export class AuthApiService {
     try {
       const response = await apiClient.getCurrentUser();
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
@@ -60,7 +61,7 @@ export class AuthApiService {
     try {
       const response = await apiClient.post('/api/auth/change-password', passwordData);
       if (response.error) {
-        throw new Error(response.error.message);
+        throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {

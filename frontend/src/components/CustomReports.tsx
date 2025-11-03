@@ -2,28 +2,31 @@
 import { logger } from '@/services/logger';
 
 import { useState, useEffect, useCallback } from 'react';
-import { FileText } from 'lucide-react';
-import { Plus } from 'lucide-react';
-import { Edit } from 'lucide-react';
-import { Trash2 } from 'lucide-react';
-import { Download } from 'lucide-react';
-import { Share } from 'lucide-react';
-import { Filter } from 'lucide-react';
-import { Calendar } from 'lucide-react';
-import { BarChart3 } from 'lucide-react';
-import { PieChart } from 'lucide-react';
-import { TrendingUp } from 'lucide-react';
-import { Save } from 'lucide-react';
-import { Eye } from 'lucide-react';
-import { Settings } from 'lucide-react';
-import { X } from 'lucide-react';
+import { 
+  FileText, 
+  Plus, 
+  Trash2, 
+  Download, 
+  Share, 
+  Filter, 
+  BarChart3, 
+  PieChart, 
+  TrendingUp, 
+  Save, 
+  Eye, 
+  Settings, 
+  X 
+} from 'lucide-react';
 import { useData } from './DataProvider';
+import type { BackendProject } from '../services/apiClient/types';
+import type { ReconciliationData } from './data/types';
+import type { ReconciliationRecord } from '@/types/index';
 
 // Custom Report Interfaces
 interface ReportFilter {
   field: string;
   operator: 'equals' | 'contains' | 'greater_than' | 'less_than' | 'between' | 'in';
-  value: any;
+  value: string | number | boolean | string[] | null;
   label: string;
 }
 
@@ -64,7 +67,7 @@ interface CustomReport {
 }
 
 interface CustomReportsProps {
-  project: any;
+  project: BackendProject;
   onProgressUpdate?: (step: string) => void;
 }
 
@@ -285,13 +288,13 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       const cashflowData = getCashflowData();
 
       // Apply filters
-      let data = [];
+      let data: ReconciliationRecord[] = [];
       switch (report.dataSource) {
         case 'reconciliation':
-          data = reconciliationData.records || [];
+          data = reconciliationData?.records || [];
           break;
         case 'cashflow':
-          data = cashflowData.records || [];
+          data = cashflowData?.records || [];
           break;
         case 'projects':
           data = []; // Would fetch project data
@@ -304,22 +307,34 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       // Apply filters
       data = data.filter((record) => {
         return report.filters.every((filter) => {
-          const value = record[filter.field];
+          const recordValue = (record as unknown as Record<string, unknown>)[filter.field];
+          const filterValue = filter.value;
+          
           switch (filter.operator) {
             case 'equals':
-              return value === filter.value;
+              return recordValue === filterValue;
             case 'contains':
-              return String(value).toLowerCase().includes(String(filter.value).toLowerCase());
+              return String(recordValue).toLowerCase().includes(String(filterValue).toLowerCase());
             case 'greater_than':
-              return Number(value) > Number(filter.value);
+              return Number(recordValue) > Number(filterValue);
             case 'less_than':
-              return Number(value) < Number(filter.value);
+              return Number(recordValue) < Number(filterValue);
             case 'between':
-              return (
-                Number(value) >= Number(filter.value[0]) && Number(value) <= Number(filter.value[1])
-              );
+              if (Array.isArray(filterValue) && filterValue.length >= 2) {
+                return (
+                  Number(recordValue) >= Number(filterValue[0]) && 
+                  Number(recordValue) <= Number(filterValue[1])
+                );
+              }
+              return false;
             case 'in':
-              return Array.isArray(filter.value) ? filter.value.includes(value) : false;
+              return Array.isArray(filterValue) && typeof recordValue !== 'undefined' 
+                ? filterValue.some(val => {
+                    const valStr = String(val);
+                    const recordStr = String(recordValue);
+                    return val === recordValue || valStr === recordStr;
+                  })
+                : false;
             default:
               return true;
           }
@@ -327,24 +342,34 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       });
 
       // Calculate metrics
-      const metricsData = {};
+      const metricsData: Record<string, number> = {};
       report.metrics.forEach((metric) => {
         switch (metric.type) {
           case 'count':
             metricsData[metric.id] = data.length;
             break;
           case 'sum':
-            metricsData[metric.id] = data.reduce(
-              (sum, record) => sum + (Number(record[metric.field]) || 0),
-              0
-            );
+            if (metric.field) {
+              metricsData[metric.id] = data.reduce(
+                (sum, record) => {
+                  const fieldValue = (record as unknown as Record<string, unknown>)[metric.field!];
+                  return sum + (Number(fieldValue) || 0);
+                },
+                0
+              );
+            }
             break;
           case 'average': {
-            const values = data
-              .map((record) => Number(record[metric.field]) || 0)
-              .filter((v) => v > 0);
-            metricsData[metric.id] =
-              values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
+            if (metric.field) {
+              const values = data
+                .map((record) => {
+                  const fieldValue = (record as unknown as Record<string, unknown>)[metric.field!];
+                  return Number(fieldValue) || 0;
+                })
+                .filter((v) => v > 0);
+              metricsData[metric.id] =
+                values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
+            }
             break;
           }
           case 'percentage':

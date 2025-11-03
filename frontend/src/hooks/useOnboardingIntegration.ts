@@ -47,27 +47,47 @@ export const useOnboardingIntegration = (): {
    */
   const detectUserRole = useCallback(async (): Promise<UserRole | null> => {
     try {
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/user/profile');
-      // const data = await response.json();
-      // return data.role as UserRole;
+      // Use actual API call to get current user
+      const { apiClient } = await import('../services/apiClient');
+      const response = await apiClient.getCurrentUser();
+      
+      if (response.error || !response.data) {
+        // Fallback to localStorage if API fails
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          try {
+            const user = JSON.parse(userStr);
+            return (user.role || 'analyst') as UserRole;
+          } catch {
+            return 'analyst';
+          }
+        }
+        return 'analyst';
+      }
 
-      // For now, check localStorage for demo
+      // Map backend role to UserRole
+      const user = response.data;
+      const roleMap: Record<string, UserRole> = {
+        'admin': 'admin',
+        'administrator': 'admin',
+        'analyst': 'analyst',
+        'viewer': 'viewer',
+        'user': 'analyst', // Default user to analyst
+      };
+      
+      return roleMap[user.role?.toLowerCase() || 'analyst'] || 'analyst';
+    } catch (error) {
+      // Fallback to localStorage on error
       const userStr = localStorage.getItem('user');
       if (userStr) {
         try {
           const user = JSON.parse(userStr);
           return (user.role || 'analyst') as UserRole;
-        } catch (error) {
-          console.error('Failed to parse user data:', error);
+        } catch {
+          return 'analyst';
         }
       }
-
-      // Default role
       return 'analyst';
-    } catch (error) {
-      console.error('Failed to detect user role:', error);
-      return null;
     }
   }, []);
 
@@ -78,56 +98,86 @@ export const useOnboardingIntegration = (): {
     try {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-      // TODO: Replace with actual API call
-      // const response = await fetch('/api/user/profile');
-      // if (!response.ok) throw new Error('Failed to fetch user profile');
-      // const data = await response.json();
+      // Use actual API call to get current user
+      const { apiClient } = await import('../services/apiClient');
+      const response = await apiClient.getCurrentUser();
 
-      // For now, use localStorage for demo
-      const userStr = localStorage.getItem('user');
-      if (userStr) {
-        try {
-          const user = JSON.parse(userStr);
-          const profile: UserProfile = {
-            id: user.id || 'demo-user',
-            email: user.email || 'user@example.com',
-            role: (user.role || 'analyst') as UserRole,
-            experience: user.experience || 'new',
-            permissions: user.permissions || [],
-          };
+      if (response.error || !response.data) {
+        // Fallback to localStorage if API fails
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+          try {
+            const user = JSON.parse(userStr);
+            const profile: UserProfile = {
+              id: user.id || 'demo-user',
+              email: user.email || 'user@example.com',
+              role: (user.role || 'analyst') as UserRole,
+              experience: user.experience || 'new',
+              permissions: user.permissions || [],
+            };
 
-          setState((prev) => ({
-            ...prev,
-            userProfile: profile,
-            isLoading: false,
-            shouldShowOnboarding: onboardingService.shouldShowOnboarding('initial'),
-            onboardingCompleted: onboardingService.hasCompletedOnboarding('initial'),
-          }));
+            setState((prev) => ({
+              ...prev,
+              userProfile: profile,
+              isLoading: false,
+              shouldShowOnboarding: onboardingService.shouldShowOnboarding('initial'),
+              onboardingCompleted: onboardingService.hasCompletedOnboarding('initial'),
+            }));
 
-          return profile;
-        } catch (error) {
-          throw new Error('Failed to parse user data');
+            return profile;
+          } catch {
+            throw new Error('Failed to parse user data');
+          }
         }
+
+        // Default profile if no API and no localStorage
+        const defaultProfile: UserProfile = {
+          id: 'demo-user',
+          email: 'demo@example.com',
+          role: 'analyst',
+          experience: 'new',
+          permissions: [],
+        };
+
+        setState((prev) => ({
+          ...prev,
+          userProfile: defaultProfile,
+          isLoading: false,
+          shouldShowOnboarding: true,
+          onboardingCompleted: false,
+        }));
+
+        return defaultProfile;
       }
 
-      // Default profile for demo
-      const defaultProfile: UserProfile = {
-        id: 'demo-user',
-        email: 'demo@example.com',
-        role: 'analyst',
-        experience: 'new',
-        permissions: [],
+      // Map backend user to UserProfile
+      const user = response.data;
+      const roleMap: Record<string, UserRole> = {
+        'admin': 'admin',
+        'administrator': 'admin',
+        'analyst': 'analyst',
+        'viewer': 'viewer',
+        'user': 'analyst',
+      };
+
+      const profile: UserProfile = {
+        id: user.id,
+        email: user.email,
+        role: roleMap[user.role?.toLowerCase() || 'analyst'] || 'analyst',
+        experience: user.last_login ? 'experienced' : 'new',
+        permissions: user.permissions || [], // Permissions from backend user object (if available)
+        // Note: Full permissions API endpoint may be added in future if granular permission management is needed
       };
 
       setState((prev) => ({
         ...prev,
-        userProfile: defaultProfile,
+        userProfile: profile,
         isLoading: false,
-        shouldShowOnboarding: true,
-        onboardingCompleted: false,
+        shouldShowOnboarding: onboardingService.shouldShowOnboarding('initial'),
+        onboardingCompleted: onboardingService.hasCompletedOnboarding('initial'),
       }));
 
-      return defaultProfile;
+      return profile;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch user profile';
       setState((prev) => ({

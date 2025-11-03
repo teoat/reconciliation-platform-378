@@ -1,496 +1,532 @@
-'use client'
+'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react'
-import DataManagementService, { ProjectData, UploadedFile, ReconciliationRecord, ExpenseCategory } from '../services/dataManagement'
-import { useRealtimeCollaboration, useRealtimeDataSync } from '../hooks/useWebSocket'
-import { useSecurity } from '../hooks/useSecurity'
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+  useCallback,
+  useMemo,
+} from 'react';
+import DataManagementService, {
+  ProjectData,
+  UploadedFile,
+  ReconciliationRecord,
+  ExpenseCategory,
+} from '../frontend/src/services/dataManagement';
+import { useRealtimeCollaboration, useRealtimeDataSync } from '../hooks/useWebSocket';
+import { useSecurity } from '../hooks/useSecurity';
 
 // Enhanced interfaces for unified data management
 interface WorkflowState {
-  id: string
-  currentStage: WorkflowStage
-  progress: number
-  status: 'active' | 'paused' | 'completed' | 'error'
-  lastUpdated: Date
-  nextStage?: WorkflowStage
-  previousStage?: WorkflowStage
+  id: string;
+  currentStage: WorkflowStage;
+  progress: number;
+  status: 'active' | 'paused' | 'completed' | 'error';
+  lastUpdated: Date;
+  nextStage?: WorkflowStage;
+  previousStage?: WorkflowStage;
 }
 
 interface WorkflowStage {
-  id: string
-  name: string
-  page: string
-  order: number
-  isCompleted: boolean
-  isActive: boolean
-  data: any
-  validation: ValidationResult
+  id: string;
+  name: string;
+  page: string;
+  order: number;
+  isCompleted: boolean;
+  isActive: boolean;
+  data: any;
+  validation: ValidationResult;
 }
 
 interface ValidationResult {
-  isValid: boolean
-  errors: ValidationError[]
-  warnings: ValidationWarning[]
-  suggestions: CorrectionSuggestion[]
+  isValid: boolean;
+  errors: ValidationError[];
+  warnings: ValidationWarning[];
+  suggestions: CorrectionSuggestion[];
 }
 
 interface ValidationError {
-  field: string
-  message: string
-  severity: 'error' | 'warning' | 'info'
-  page: string
+  field: string;
+  message: string;
+  severity: 'error' | 'warning' | 'info';
+  page: string;
 }
 
 interface ValidationWarning {
-  field: string
-  message: string
-  page: string
+  field: string;
+  message: string;
+  page: string;
 }
 
 interface CorrectionSuggestion {
-  field: string
-  currentValue: any
-  suggestedValue: any
-  reason: string
-  confidence: number
+  field: string;
+  currentValue: any;
+  suggestedValue: any;
+  reason: string;
+  confidence: number;
 }
 
 interface SyncStatus {
-  isOnline: boolean
-  lastSyncTime: Date
-  pendingChanges: PendingChange[]
-  syncErrors: SyncError[]
+  isOnline: boolean;
+  lastSyncTime: Date;
+  pendingChanges: PendingChange[];
+  syncErrors: SyncError[];
 }
 
 interface PendingChange {
-  id: string
-  page: string
-  action: 'create' | 'update' | 'delete'
-  data: any
-  timestamp: Date
-  retryCount: number
+  id: string;
+  page: string;
+  action: 'create' | 'update' | 'delete';
+  data: any;
+  timestamp: Date;
+  retryCount: number;
 }
 
 interface SyncError {
-  id: string
-  message: string
-  page: string
-  timestamp: Date
-  retryCount: number
+  id: string;
+  message: string;
+  page: string;
+  timestamp: Date;
+  retryCount: number;
 }
 
 interface WorkflowProgress {
-  currentStage: number
-  totalStages: number
-  percentage: number
-  estimatedTimeRemaining: number
-  completedStages: string[]
-  upcomingStages: string[]
+  currentStage: number;
+  totalStages: number;
+  percentage: number;
+  estimatedTimeRemaining: number;
+  completedStages: string[];
+  upcomingStages: string[];
 }
 
 interface Notification {
-  id: string
-  type: 'info' | 'success' | 'warning' | 'error'
-  title: string
-  message: string
-  page: string
-  timestamp: Date
-  isRead: boolean
-  actions?: NotificationAction[]
+  id: string;
+  type: 'info' | 'success' | 'warning' | 'error';
+  title: string;
+  message: string;
+  page: string;
+  timestamp: Date;
+  isRead: boolean;
+  actions?: NotificationAction[];
 }
 
 interface NotificationAction {
-  label: string
-  action: () => void
-  type: 'primary' | 'secondary'
+  label: string;
+  action: () => void;
+  type: 'primary' | 'secondary';
 }
 
 interface Alert {
-  id: string
-  severity: 'low' | 'medium' | 'high' | 'critical'
-  title: string
-  message: string
-  pages: string[]
-  timestamp: Date
-  isDismissed: boolean
-  autoResolve?: boolean
+  id: string;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  title: string;
+  message: string;
+  pages: string[];
+  timestamp: Date;
+  isDismissed: boolean;
+  autoResolve?: boolean;
 }
 
 interface CrossPageData {
-  ingestion: IngestionData
-  reconciliation: ReconciliationData
-  adjudication: AdjudicationData
-  analytics: AnalyticsData
-  security: SecurityData
-  api: ApiData
+  ingestion: IngestionData;
+  reconciliation: ReconciliationData;
+  adjudication: AdjudicationData;
+  analytics: AnalyticsData;
+  security: SecurityData;
+  api: ApiData;
 }
 
 interface IngestionData {
-  files: UploadedFile[]
-  processedData: any[]
-  qualityMetrics: DataQualityMetrics
-  validationResults: ValidationResult
-  lastUpdated: Date
+  files: UploadedFile[];
+  processedData: any[];
+  qualityMetrics: DataQualityMetrics;
+  validationResults: ValidationResult;
+  lastUpdated: Date;
 }
 
 interface ReconciliationData {
-  records: ReconciliationRecord[]
-  matchingResults: MatchingResult[]
-  discrepancies: DiscrepancyRecord[]
-  qualityMetrics: ReconciliationMetrics
-  lastUpdated: Date
+  records: ReconciliationRecord[];
+  matchingResults: MatchingResult[];
+  discrepancies: DiscrepancyRecord[];
+  qualityMetrics: ReconciliationMetrics;
+  lastUpdated: Date;
 }
 
 interface AdjudicationData {
-  workflows: WorkflowInstance[]
-  discrepancies: EnhancedDiscrepancyRecord[]
-  users: UserProfile[]
-  notifications: Notification[]
-  lastUpdated: Date
+  workflows: WorkflowInstance[];
+  discrepancies: EnhancedDiscrepancyRecord[];
+  users: UserProfile[];
+  notifications: Notification[];
+  lastUpdated: Date;
 }
 
 interface AnalyticsData {
-  dashboards: DashboardData[]
-  reports: ReportInstance[]
-  predictions: PredictionResult[]
-  anomalies: AnomalyDetection[]
-  lastUpdated: Date
+  dashboards: DashboardData[];
+  reports: ReportInstance[];
+  predictions: PredictionResult[];
+  anomalies: AnomalyDetection[];
+  lastUpdated: Date;
 }
 
 interface SecurityData {
-  policies: SecurityPolicy[]
-  auditLogs: AuditLog[]
-  complianceStatus: ComplianceStatus
-  encryptionConfigs: EncryptionConfig[]
-  lastUpdated: Date
+  policies: SecurityPolicy[];
+  auditLogs: AuditLog[];
+  complianceStatus: ComplianceStatus;
+  encryptionConfigs: EncryptionConfig[];
+  lastUpdated: Date;
 }
 
 interface ApiData {
-  endpoints: ApiEndpoint[]
-  webhooks: WebhookEvent[]
-  keys: ApiKey[]
-  integrations: Integration[]
-  lastUpdated: Date
+  endpoints: ApiEndpoint[];
+  webhooks: WebhookEvent[];
+  keys: ApiKey[];
+  integrations: Integration[];
+  lastUpdated: Date;
 }
 
 interface DataQualityMetrics {
-  completeness: number
-  accuracy: number
-  consistency: number
-  validity: number
-  overall: number
+  completeness: number;
+  accuracy: number;
+  consistency: number;
+  validity: number;
+  overall: number;
 }
 
 interface ReconciliationMetrics {
-  matchRate: number
-  processingTime: number
-  discrepancyRate: number
-  autoMatchRate: number
+  matchRate: number;
+  processingTime: number;
+  discrepancyRate: number;
+  autoMatchRate: number;
 }
 
 interface WorkflowInstance {
-  id: string
-  name: string
-  status: 'active' | 'completed' | 'paused' | 'error'
-  currentStep: string
-  progress: number
-  assignedTo: string
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  name: string;
+  status: 'active' | 'completed' | 'paused' | 'error';
+  currentStep: string;
+  progress: number;
+  assignedTo: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface EnhancedDiscrepancyRecord {
-  id: string
-  priority: 'high' | 'medium' | 'low'
-  status: 'pending' | 'in_review' | 'resolved' | 'escalated'
-  systems: SystemData[]
-  discrepancyType: string
-  severity: 'low' | 'medium' | 'high'
-  metadata: any
-  sla: any
-  resolution: any
+  id: string;
+  priority: 'high' | 'medium' | 'low';
+  status: 'pending' | 'in_review' | 'resolved' | 'escalated';
+  systems: SystemData[];
+  discrepancyType: string;
+  severity: 'low' | 'medium' | 'high';
+  metadata: any;
+  sla: any;
+  resolution: any;
 }
 
 interface SystemData {
-  id: string
-  name: string
-  systemName: string
-  recordId: string
-  description: string
-  amount: number
-  date: string
-  confidence: number
-  quality: any
+  id: string;
+  name: string;
+  systemName: string;
+  recordId: string;
+  description: string;
+  amount: number;
+  date: string;
+  confidence: number;
+  quality: any;
 }
 
 interface UserProfile {
-  id: string
-  name: string
-  email: string
-  role: string
-  avatar?: string
-  lastSeen?: string
-  currentWorkload: number
-  maxWorkload: number
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatar?: string;
+  lastSeen?: string;
+  currentWorkload: number;
+  maxWorkload: number;
 }
 
 interface DashboardData {
-  id: string
-  name: string
-  type: string
-  data: any
-  lastUpdated: Date
+  id: string;
+  name: string;
+  type: string;
+  data: any;
+  lastUpdated: Date;
 }
 
 interface ReportInstance {
-  id: string
-  name: string
-  templateId: string
-  status: 'draft' | 'published' | 'scheduled' | 'archived'
-  data: any
-  generatedAt?: Date
-  generatedBy: string
+  id: string;
+  name: string;
+  templateId: string;
+  status: 'draft' | 'published' | 'scheduled' | 'archived';
+  data: any;
+  generatedAt?: Date;
+  generatedBy: string;
 }
 
 interface PredictionResult {
-  id: string
-  type: string
-  prediction: any
-  confidence: number
-  timestamp: Date
+  id: string;
+  type: string;
+  prediction: any;
+  confidence: number;
+  timestamp: Date;
 }
 
 interface AnomalyDetection {
-  id: string
-  type: string
-  severity: 'low' | 'medium' | 'high'
-  description: string
-  impact: number
-  timestamp: Date
+  id: string;
+  type: string;
+  severity: 'low' | 'medium' | 'high';
+  description: string;
+  impact: number;
+  timestamp: Date;
 }
 
 interface SecurityPolicy {
-  id: string
-  name: string
-  description: string
-  category: 'access' | 'data' | 'network' | 'compliance'
-  rules: SecurityRule[]
-  isActive: boolean
-  lastUpdated: Date
+  id: string;
+  name: string;
+  description: string;
+  category: 'access' | 'data' | 'network' | 'compliance';
+  rules: SecurityRule[];
+  isActive: boolean;
+  lastUpdated: Date;
 }
 
 interface SecurityRule {
-  id: string
-  name: string
-  description: string
-  type: 'allow' | 'deny' | 'require'
-  conditions: string[]
-  actions: string[]
+  id: string;
+  name: string;
+  description: string;
+  type: 'allow' | 'deny' | 'require';
+  conditions: string[];
+  actions: string[];
 }
 
 interface AuditLog {
-  id: string
-  timestamp: Date
-  userId: string
-  action: string
-  resource: string
-  result: 'success' | 'failure' | 'denied'
-  ipAddress: string
-  userAgent: string
-  details: any
+  id: string;
+  timestamp: Date;
+  userId: string;
+  action: string;
+  resource: string;
+  result: 'success' | 'failure' | 'denied';
+  ipAddress: string;
+  userAgent: string;
+  details: any;
 }
 
 interface ComplianceStatus {
-  sox: ComplianceFramework
-  gdpr: ComplianceFramework
-  lastAudit: Date
-  nextAudit: Date
+  sox: ComplianceFramework;
+  gdpr: ComplianceFramework;
+  lastAudit: Date;
+  nextAudit: Date;
 }
 
 interface ComplianceFramework {
-  id: string
-  name: string
-  status: 'compliant' | 'non-compliant' | 'partial'
-  requirements: ComplianceRequirement[]
-  lastAudit: Date
-  nextAudit: Date
+  id: string;
+  name: string;
+  status: 'compliant' | 'non-compliant' | 'partial';
+  requirements: ComplianceRequirement[];
+  lastAudit: Date;
+  nextAudit: Date;
 }
 
 interface ComplianceRequirement {
-  id: string
-  title: string
-  description: string
-  status: 'met' | 'not_met' | 'partial'
-  evidence: string[]
-  lastChecked: Date
+  id: string;
+  title: string;
+  description: string;
+  status: 'met' | 'not_met' | 'partial';
+  evidence: string[];
+  lastChecked: Date;
 }
 
 interface EncryptionConfig {
-  id: string
-  name: string
-  algorithm: string
-  keySize: number
-  status: 'active' | 'inactive'
-  lastRotated: Date
-  nextRotation: Date
+  id: string;
+  name: string;
+  algorithm: string;
+  keySize: number;
+  status: 'active' | 'inactive';
+  lastRotated: Date;
+  nextRotation: Date;
 }
 
 interface ApiEndpoint {
-  id: string
-  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
-  path: string
-  description: string
-  parameters: ApiParameter[]
-  responses: ApiResponse[]
-  rateLimit: number
-  authentication: 'none' | 'api_key' | 'oauth' | 'jwt'
-  tags: string[]
-  isActive: boolean
+  id: string;
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
+  path: string;
+  description: string;
+  parameters: ApiParameter[];
+  responses: ApiResponse[];
+  rateLimit: number;
+  authentication: 'none' | 'api_key' | 'oauth' | 'jwt';
+  tags: string[];
+  isActive: boolean;
 }
 
 interface ApiParameter {
-  name: string
-  type: string
-  required: boolean
-  description: string
-  example?: any
+  name: string;
+  type: string;
+  required: boolean;
+  description: string;
+  example?: any;
 }
 
 interface ApiResponse {
-  status: number
-  description: string
-  schema: any
-  example?: any
+  status: number;
+  description: string;
+  schema: any;
+  example?: any;
 }
 
 interface WebhookEvent {
-  id: string
-  name: string
-  description: string
-  eventType: string
-  payload: any
-  isActive: boolean
-  subscribers: number
+  id: string;
+  name: string;
+  description: string;
+  eventType: string;
+  payload: any;
+  isActive: boolean;
+  subscribers: number;
 }
 
 interface ApiKey {
-  id: string
-  name: string
-  key: string
-  permissions: string[]
-  rateLimit: number
-  expiresAt?: Date
-  lastUsed?: Date
-  isActive: boolean
+  id: string;
+  name: string;
+  key: string;
+  permissions: string[];
+  rateLimit: number;
+  expiresAt?: Date;
+  lastUsed?: Date;
+  isActive: boolean;
 }
 
 interface Integration {
-  id: string
-  name: string
-  type: 'erp' | 'banking' | 'accounting' | 'custom'
-  status: 'active' | 'inactive' | 'error'
-  lastSync: Date
-  syncFrequency: string
-  dataFlow: 'inbound' | 'outbound' | 'bidirectional'
-  endpoints: string[]
+  id: string;
+  name: string;
+  type: 'erp' | 'banking' | 'accounting' | 'custom';
+  status: 'active' | 'inactive' | 'error';
+  lastSync: Date;
+  syncFrequency: string;
+  dataFlow: 'inbound' | 'outbound' | 'bidirectional';
+  endpoints: string[];
 }
 
 interface MatchingResult {
-  id: string
-  recordA: any
-  recordB: any
-  confidence: number
-  matchType: string
-  status: 'matched' | 'unmatched' | 'discrepancy'
+  id: string;
+  recordA: any;
+  recordB: any;
+  confidence: number;
+  matchType: string;
+  status: 'matched' | 'unmatched' | 'discrepancy';
 }
 
 interface DiscrepancyRecord {
-  id: string
-  priority: 'high' | 'medium' | 'low'
-  status: 'pending' | 'in_review' | 'resolved' | 'escalated'
-  systemA: any
-  systemB: any
-  difference: number
-  differenceType: string
+  id: string;
+  priority: 'high' | 'medium' | 'low';
+  status: 'pending' | 'in_review' | 'resolved' | 'escalated';
+  systemA: any;
+  systemB: any;
+  difference: number;
+  differenceType: string;
 }
 
 interface UnifiedDataContext {
   // Current project data
-  currentProject: ProjectData | null
-  setCurrentProject: (project: ProjectData | null) => void
-  
+  currentProject: ProjectData | null;
+  setCurrentProject: (project: ProjectData | null) => void;
+
   // Workflow state
-  workflowState: WorkflowState | null
-  setWorkflowState: (state: WorkflowState | null) => void
-  
+  workflowState: WorkflowState | null;
+  setWorkflowState: (state: WorkflowState | null) => void;
+
   // Cross-page data synchronization
-  crossPageData: CrossPageData
-  updateCrossPageData: (page: keyof CrossPageData, data: any) => void
-  
+  crossPageData: CrossPageData;
+  updateCrossPageData: (page: keyof CrossPageData, data: any) => void;
+
   // Real-time synchronization
-  syncStatus: SyncStatus
-  syncData: () => Promise<void>
-  
+  syncStatus: SyncStatus;
+  syncData: () => Promise<void>;
+
   // Workflow orchestration
-  workflowProgress: WorkflowProgress
-  advanceWorkflow: (toStage: WorkflowStage) => Promise<void>
-  
+  workflowProgress: WorkflowProgress;
+  advanceWorkflow: (toStage: WorkflowStage) => Promise<void>;
+
   // Cross-page notifications
-  notifications: Notification[]
-  alerts: Alert[]
-  addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => void
-  addAlert: (alert: Omit<Alert, 'id' | 'timestamp'>) => void
-  dismissAlert: (alertId: string) => void
-  
+  notifications: Notification[];
+  alerts: Alert[];
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp'>) => void;
+  addAlert: (alert: Omit<Alert, 'id' | 'timestamp'>) => void;
+  dismissAlert: (alertId: string) => void;
+
   // Data validation
-  validateCrossPageData: (fromPage: string, toPage: string) => ValidationResult
-  validateWorkflowConsistency: () => ValidationResult
-  
+  validateCrossPageData: (fromPage: string, toPage: string) => ValidationResult;
+  validateWorkflowConsistency: () => ValidationResult;
+
   // WebSocket integration
-  isConnected: boolean
-  activeUsers: Array<{ id: string; name: string; page: string; lastSeen: string }>
-  liveComments: Array<{ id: string; userId: string; userName: string; message: string; timestamp: string; page: string }>
-  sendComment: (userId: string, userName: string, message: string) => void
-  updatePresence: (userId: string, userName: string) => void
-  
+  isConnected: boolean;
+  activeUsers: Array<{ id: string; name: string; page: string; lastSeen: string }>;
+  liveComments: Array<{
+    id: string;
+    userId: string;
+    userName: string;
+    message: string;
+    timestamp: string;
+    page: string;
+  }>;
+  sendComment: (userId: string, userName: string, message: string) => void;
+  updatePresence: (userId: string, userName: string) => void;
+
   // Security integration
-  securityPolicies: any[]
-  auditLogs: any[]
-  isSecurityEnabled: boolean
-  checkPermission: (userId: string, resource: string, action: string) => boolean
-  logAuditEvent: (userId: string, action: string, resource: string, result: 'success' | 'failure', details?: any) => void
-  encryptData: (data: any, dataType: string) => any
-  decryptData: (encryptedData: any, dataType: string) => any
-  checkCompliance: (framework: string) => any[]
-  createSecurityPolicy: (policy: any) => any
-  updateSecurityPolicy: (policyId: string, updates: any) => void
-  deleteSecurityPolicy: (policyId: string) => void
-  exportAuditLogs: (format?: 'csv' | 'json') => string
-  
+  securityPolicies: any[];
+  auditLogs: any[];
+  isSecurityEnabled: boolean;
+  checkPermission: (userId: string, resource: string, action: string) => boolean;
+  logAuditEvent: (
+    userId: string,
+    action: string,
+    resource: string,
+    result: 'success' | 'failure',
+    details?: any
+  ) => void;
+  encryptData: (data: any, dataType: string) => any;
+  decryptData: (encryptedData: any, dataType: string) => any;
+  checkCompliance: (framework: string) => any[];
+  createSecurityPolicy: (policy: any) => any;
+  updateSecurityPolicy: (policyId: string, updates: any) => void;
+  deleteSecurityPolicy: (policyId: string) => void;
+  exportAuditLogs: (format?: 'csv' | 'json') => string;
+
   // Real-time updates
-  subscribeToUpdates: (callback: (data: any) => void) => () => void
-  
+  subscribeToUpdates: (callback: (data: any) => void) => () => void;
+
   // Loading states
-  isLoading: boolean
-  error: string | null
-  
+  isLoading: boolean;
+  error: string | null;
+
   // Utility methods
-  exportProject: (projectId: string) => string
-  importProject: (data: string) => ProjectData | null
-  resetWorkflow: () => void
+  exportProject: (projectId: string) => string;
+  importProject: (data: string) => ProjectData | null;
+  resetWorkflow: () => void;
 }
 
-const UnifiedDataContext = createContext<UnifiedDataContext | undefined>(undefined)
+const UnifiedDataContext = createContext<UnifiedDataContext | undefined>(undefined);
 
 interface UnifiedDataProviderProps {
-  children: ReactNode
+  children: ReactNode;
 }
 
 export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ children }) => {
   // WebSocket integration
-  const { isConnected: collaborationConnected, activeUsers, liveComments, sendComment, updatePresence } = useRealtimeCollaboration('unified')
-  const { isConnected: syncConnected, syncStatus: wsSyncStatus, syncData: wsSyncData } = useRealtimeDataSync()
-  
+  const {
+    isConnected: collaborationConnected,
+    activeUsers,
+    liveComments,
+    sendComment,
+    updatePresence,
+  } = useRealtimeCollaboration('unified');
+  const {
+    isConnected: syncConnected,
+    syncStatus: wsSyncStatus,
+    syncData: wsSyncData,
+  } = useRealtimeDataSync();
+
   // Security integration
   const {
     securityPolicies,
@@ -504,15 +540,15 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
     createSecurityPolicy,
     updateSecurityPolicy,
     deleteSecurityPolicy,
-    exportAuditLogs
-  } = useSecurity()
-  
+    exportAuditLogs,
+  } = useSecurity();
+
   // Core state
-  const [currentProject, setCurrentProject] = useState<ProjectData | null>(null)
-  const [workflowState, setWorkflowState] = useState<WorkflowState | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  
+  const [currentProject, setCurrentProject] = useState<ProjectData | null>(null);
+  const [workflowState, setWorkflowState] = useState<WorkflowState | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   // Cross-page data
   const [crossPageData, setCrossPageData] = useState<CrossPageData>({
     ingestion: {
@@ -520,62 +556,76 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
       processedData: [],
       qualityMetrics: { completeness: 0, accuracy: 0, consistency: 0, validity: 0, overall: 0 },
       validationResults: { isValid: false, errors: [], warnings: [], suggestions: [] },
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     },
     reconciliation: {
       records: [],
       matchingResults: [],
       discrepancies: [],
       qualityMetrics: { matchRate: 0, processingTime: 0, discrepancyRate: 0, autoMatchRate: 0 },
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     },
     adjudication: {
       workflows: [],
       discrepancies: [],
       users: [],
       notifications: [],
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     },
     analytics: {
       dashboards: [],
       reports: [],
       predictions: [],
       anomalies: [],
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     },
     security: {
       policies: [],
       auditLogs: [],
       complianceStatus: {
-        sox: { id: '', name: '', status: 'partial', requirements: [], lastAudit: new Date(), nextAudit: new Date() },
-        gdpr: { id: '', name: '', status: 'partial', requirements: [], lastAudit: new Date(), nextAudit: new Date() },
+        sox: {
+          id: '',
+          name: '',
+          status: 'partial',
+          requirements: [],
+          lastAudit: new Date(),
+          nextAudit: new Date(),
+        },
+        gdpr: {
+          id: '',
+          name: '',
+          status: 'partial',
+          requirements: [],
+          lastAudit: new Date(),
+          nextAudit: new Date(),
+        },
         lastAudit: new Date(),
-        nextAudit: new Date()
+        nextAudit: new Date(),
       },
       encryptionConfigs: [],
-      lastUpdated: new Date()
+      lastUpdated: new Date(),
     },
     api: {
       endpoints: [],
       webhooks: [],
       keys: [],
       integrations: [],
-      lastUpdated: new Date()
-    }
-  })
-  
+      lastUpdated: new Date(),
+    },
+  });
+
   // Sync status
   const [syncStatus, setSyncStatus] = useState<SyncStatus>({
     isOnline: navigator.onLine,
     lastSyncTime: new Date(),
     pendingChanges: [],
-    syncErrors: []
-  })
-  
+    syncErrors: [],
+  });
+
   // Notifications and alerts
-  const [notifications, setNotifications] = useState<Notification[]>([])
-  const [alerts, setAlerts] = useState<Alert[]>([])
-  
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [alerts, setAlerts] = useState<Alert[]>([]);
+
   // Workflow progress
   const workflowProgress = useMemo((): WorkflowProgress => {
     if (!workflowState) {
@@ -585,331 +635,369 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
         percentage: 0,
         estimatedTimeRemaining: 0,
         completedStages: [],
-        upcomingStages: ['ingestion', 'reconciliation', 'adjudication', 'analytics', 'security', 'api']
-      }
+        upcomingStages: [
+          'ingestion',
+          'reconciliation',
+          'adjudication',
+          'analytics',
+          'security',
+          'api',
+        ],
+      };
     }
-    
-    const stages = ['ingestion', 'reconciliation', 'adjudication', 'analytics', 'security', 'api']
-    const currentIndex = stages.indexOf(workflowState.currentStage.name)
-    
+
+    const stages = ['ingestion', 'reconciliation', 'adjudication', 'analytics', 'security', 'api'];
+    const currentIndex = stages.indexOf(workflowState.currentStage.name);
+
     return {
       currentStage: currentIndex + 1,
       totalStages: stages.length,
       percentage: Math.round(((currentIndex + 1) / stages.length) * 100),
       estimatedTimeRemaining: (stages.length - currentIndex - 1) * 30, // 30 minutes per stage
       completedStages: stages.slice(0, currentIndex),
-      upcomingStages: stages.slice(currentIndex + 1)
-    }
-  }, [workflowState])
-  
+      upcomingStages: stages.slice(currentIndex + 1),
+    };
+  }, [workflowState]);
+
   // Update cross-page data with WebSocket sync and security
-  const updateCrossPageData = useCallback((page: keyof CrossPageData, data: any) => {
-    // Check permission before updating data
-    const hasPermission = checkPermission('current-user', page, 'update')
-    if (!hasPermission) {
-      logAuditEvent('current-user', 'unauthorized_update_attempt', page, 'failure', {
-        page,
-        data: typeof data === 'object' ? Object.keys(data) : 'unknown'
-      })
-      return
-    }
-
-    // Encrypt sensitive data if security is enabled
-    const processedData = isSecurityEnabled ? encryptData(data, page) : data
-
-    setCrossPageData(prev => ({
-      ...prev,
-      [page]: {
-        ...prev[page],
-        ...processedData,
-        lastUpdated: new Date()
+  const updateCrossPageData = useCallback(
+    (page: keyof CrossPageData, data: any) => {
+      // Check permission before updating data
+      const hasPermission = checkPermission('current-user', page, 'update');
+      if (!hasPermission) {
+        logAuditEvent('current-user', 'unauthorized_update_attempt', page, 'failure', {
+          page,
+          data: typeof data === 'object' ? Object.keys(data) : 'unknown',
+        });
+        return;
       }
-    }))
-    
-    // Sync data via WebSocket if connected
-    if (syncConnected) {
-      wsSyncData('unified', page, processedData)
-    }
 
-    // Log successful update
-    logAuditEvent('current-user', 'update_cross_page_data', page, 'success', {
-      page,
-      dataKeys: typeof data === 'object' ? Object.keys(data) : 'unknown',
-      encrypted: isSecurityEnabled
-    })
-  }, [syncConnected, wsSyncData, checkPermission, logAuditEvent, encryptData, isSecurityEnabled])
-  
+      // Encrypt sensitive data if security is enabled
+      const processedData = isSecurityEnabled ? encryptData(data, page) : data;
+
+      setCrossPageData((prev) => ({
+        ...prev,
+        [page]: {
+          ...prev[page],
+          ...processedData,
+          lastUpdated: new Date(),
+        },
+      }));
+
+      // Sync data via WebSocket if connected
+      if (syncConnected) {
+        wsSyncData('unified', page, processedData);
+      }
+
+      // Log successful update
+      logAuditEvent('current-user', 'update_cross_page_data', page, 'success', {
+        page,
+        dataKeys: typeof data === 'object' ? Object.keys(data) : 'unknown',
+        encrypted: isSecurityEnabled,
+      });
+    },
+    [syncConnected, wsSyncData, checkPermission, logAuditEvent, encryptData, isSecurityEnabled]
+  );
+
   // Add notification
   const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
     const newNotification: Notification = {
       ...notification,
       id: `notification-${Date.now()}`,
-      timestamp: new Date()
-    }
-    
-    setNotifications(prev => [newNotification, ...prev.slice(0, 49)]) // Keep last 50
-  }, [])
-  
+      timestamp: new Date(),
+    };
+
+    setNotifications((prev) => [newNotification, ...prev.slice(0, 49)]); // Keep last 50
+  }, []);
+
   // Sync data
   const performDataSync = useCallback(async () => {
-    setIsLoading(true)
+    setIsLoading(true);
     try {
       // Simulate sync process
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      setSyncStatus(prev => ({
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      setSyncStatus((prev) => ({
         ...prev,
         lastSyncTime: new Date(),
         pendingChanges: [],
-        syncErrors: []
-      }))
-      
+        syncErrors: [],
+      }));
+
       addNotification({
         type: 'success',
         title: 'Data Synchronized',
         message: 'All data has been synchronized successfully',
         page: 'system',
-        isRead: false
-      })
+        isRead: false,
+      });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sync failed')
+      setError(err instanceof Error ? err.message : 'Sync failed');
       addNotification({
         type: 'error',
         title: 'Sync Failed',
         message: 'Failed to synchronize data',
         page: 'system',
-        isRead: false
-      })
-     } finally {
-       setIsLoading(false)
-     }
-   }, [addNotification])
-  
+        isRead: false,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [addNotification]);
+
   // Validate cross-page data
-  const validateCrossPageData = useCallback((fromPage: string, toPage: string): ValidationResult => {
-    const errors: ValidationError[] = []
-    const warnings: ValidationWarning[] = []
-    const suggestions: CorrectionSuggestion[] = []
-    
-    // Add validation logic based on page transitions
-    if (fromPage === 'ingestion' && toPage === 'reconciliation') {
-      const ingestionData = crossPageData.ingestion
-      if (ingestionData.files.length === 0) {
-        errors.push({
-          field: 'files',
-          message: 'No files uploaded for processing',
-          severity: 'error',
-          page: 'ingestion'
-        })
+  const validateCrossPageData = useCallback(
+    (fromPage: string, toPage: string): ValidationResult => {
+      const errors: ValidationError[] = [];
+      const warnings: ValidationWarning[] = [];
+      const suggestions: CorrectionSuggestion[] = [];
+
+      // Add validation logic based on page transitions
+      if (fromPage === 'ingestion' && toPage === 'reconciliation') {
+        const ingestionData = crossPageData.ingestion;
+        if (ingestionData.files.length === 0) {
+          errors.push({
+            field: 'files',
+            message: 'No files uploaded for processing',
+            severity: 'error',
+            page: 'ingestion',
+          });
+        }
+
+        if (ingestionData.qualityMetrics.overall < 0.8) {
+          warnings.push({
+            field: 'quality',
+            message: 'Data quality is below recommended threshold',
+            page: 'ingestion',
+          });
+        }
       }
-      
-      if (ingestionData.qualityMetrics.overall < 0.8) {
-        warnings.push({
-          field: 'quality',
-          message: 'Data quality is below recommended threshold',
-          page: 'ingestion'
-        })
+
+      if (fromPage === 'reconciliation' && toPage === 'review') {
+        const reconciliationData = crossPageData.reconciliation;
+        if (reconciliationData.discrepancies.length > 0) {
+          warnings.push({
+            field: 'discrepancies',
+            message: `${reconciliationData.discrepancies.length} discrepancies remain unresolved`,
+            page: 'reconciliation',
+          });
+        }
       }
-    }
-    
-    if (fromPage === 'reconciliation' && toPage === 'review') {
-      const reconciliationData = crossPageData.reconciliation
-      if (reconciliationData.discrepancies.length > 0) {
-        warnings.push({
-          field: 'discrepancies',
-          message: `${reconciliationData.discrepancies.length} discrepancies remain unresolved`,
-          page: 'reconciliation'
-        })
-      }
-    }
-    
-    return {
-      isValid: errors.length === 0,
-      errors,
-      warnings,
-      suggestions
-    }
-  }, [crossPageData])
-  
+
+      return {
+        isValid: errors.length === 0,
+        errors,
+        warnings,
+        suggestions,
+      };
+    },
+    [crossPageData]
+  );
+
   // Add alert
   const addAlert = useCallback((alert: Omit<Alert, 'id' | 'timestamp'>) => {
     const newAlert: Alert = {
       ...alert,
       id: `alert-${Date.now()}`,
-      timestamp: new Date()
-    }
-    
-    setAlerts(prev => [newAlert, ...prev.slice(0, 19)]) // Keep last 20
-  }, [])
-  
+      timestamp: new Date(),
+    };
+
+    setAlerts((prev) => [newAlert, ...prev.slice(0, 19)]); // Keep last 20
+  }, []);
+
   // Advance workflow
-  const advanceWorkflow = useCallback(async (toStage: WorkflowStage) => {
-    if (!workflowState) return
-    
-    setIsLoading(true)
-    try {
-      // Validate transition
-      const validation = validateCrossPageData(workflowState.currentStage.page, toStage.page)
-      if (!validation.isValid) {
-        throw new Error(`Cannot advance to ${toStage.name}: ${validation.errors.map(e => e.message).join(', ')}`)
+  const advanceWorkflow = useCallback(
+    async (toStage: WorkflowStage) => {
+      if (!workflowState) return;
+
+      setIsLoading(true);
+      try {
+        // Validate transition
+        const validation = validateCrossPageData(workflowState.currentStage.page, toStage.page);
+        if (!validation.isValid) {
+          throw new Error(
+            `Cannot advance to ${toStage.name}: ${validation.errors.map((e) => e.message).join(', ')}`
+          );
+        }
+
+        // Update workflow state
+        setWorkflowState((prev) =>
+          prev
+            ? {
+                ...prev,
+                currentStage: toStage,
+                progress: (toStage.order / 6) * 100,
+                lastUpdated: new Date(),
+                previousStage: prev.currentStage,
+                nextStage: undefined,
+              }
+            : null
+        );
+
+        // Notify users
+        addNotification({
+          type: 'info',
+          title: 'Workflow Advanced',
+          message: `Advanced to ${toStage.name}`,
+          page: toStage.page,
+          isRead: false,
+        });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Workflow advance failed');
+        addAlert({
+          severity: 'high',
+          title: 'Workflow Error',
+          message: err instanceof Error ? err.message : 'Failed to advance workflow',
+          pages: [workflowState.currentStage.page, toStage.page],
+          isDismissed: false,
+        });
+      } finally {
+        setIsLoading(false);
       }
-      
-      // Update workflow state
-      setWorkflowState(prev => prev ? {
-        ...prev,
-        currentStage: toStage,
-        progress: (toStage.order / 6) * 100,
-        lastUpdated: new Date(),
-        previousStage: prev.currentStage,
-        nextStage: undefined
-      } : null)
-      
-      // Notify users
-      addNotification({
-        type: 'info',
-        title: 'Workflow Advanced',
-        message: `Advanced to ${toStage.name}`,
-        page: toStage.page,
-        isRead: false
-      })
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Workflow advance failed')
-      addAlert({
-        severity: 'high',
-        title: 'Workflow Error',
-        message: err instanceof Error ? err.message : 'Failed to advance workflow',
-        pages: [workflowState.currentStage.page, toStage.page],
-        isDismissed: false
-      })
-     } finally {
-       setIsLoading(false)
-     }
-   }, [workflowState, addAlert, addNotification, validateCrossPageData])
-  
+    },
+    [workflowState, addAlert, addNotification, validateCrossPageData]
+  );
+
   // Dismiss alert
   const dismissAlert = useCallback((alertId: string) => {
-    setAlerts(prev => prev.map(alert => 
-      alert.id === alertId ? { ...alert, isDismissed: true } : alert
-    ))
-  }, [])
-  
+    setAlerts((prev) =>
+      prev.map((alert) => (alert.id === alertId ? { ...alert, isDismissed: true } : alert))
+    );
+  }, []);
+
   // Validate workflow consistency
   const validateWorkflowConsistency = useCallback((): ValidationResult => {
-    const errors: ValidationError[] = []
-    const warnings: ValidationWarning[] = []
-    const suggestions: CorrectionSuggestion[] = []
-    
+    const errors: ValidationError[] = [];
+    const warnings: ValidationWarning[] = [];
+    const suggestions: CorrectionSuggestion[] = [];
+
     // Check data consistency across pages
-    const ingestionData = crossPageData.ingestion
-    const reconciliationData = crossPageData.reconciliation
-    
+    const ingestionData = crossPageData.ingestion;
+    const reconciliationData = crossPageData.reconciliation;
+
     if (ingestionData.processedData.length !== reconciliationData.records.length) {
       errors.push({
         field: 'recordCount',
         message: 'Record count mismatch between ingestion and reconciliation',
         severity: 'error',
-        page: 'system'
-      })
+        page: 'system',
+      });
     }
-    
+
     return {
       isValid: errors.length === 0,
       errors,
       warnings,
-      suggestions
-    }
-  }, [crossPageData])
-  
+      suggestions,
+    };
+  }, [crossPageData]);
+
   // Subscribe to updates
-  const subscribeToUpdates = useCallback((callback: (data: any) => void) => {
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      callback({
-        timestamp: new Date(),
-        data: crossPageData
-      })
-    }, 5000) // Update every 5 seconds
-    
-    return () => clearInterval(interval)
-  }, [crossPageData])
-  
+  const subscribeToUpdates = useCallback(
+    (callback: (data: any) => void) => {
+      // Simulate real-time updates
+      const interval = setInterval(() => {
+        callback({
+          timestamp: new Date(),
+          data: crossPageData,
+        });
+      }, 5000); // Update every 5 seconds
+
+      return () => clearInterval(interval);
+    },
+    [crossPageData]
+  );
+
   // Reset workflow
   const resetWorkflow = useCallback(() => {
-    setWorkflowState(null)
+    setWorkflowState(null);
     setCrossPageData({
       ingestion: {
         files: [],
         processedData: [],
         qualityMetrics: { completeness: 0, accuracy: 0, consistency: 0, validity: 0, overall: 0 },
         validationResults: { isValid: false, errors: [], warnings: [], suggestions: [] },
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       },
       reconciliation: {
         records: [],
         matchingResults: [],
         discrepancies: [],
         qualityMetrics: { matchRate: 0, processingTime: 0, discrepancyRate: 0, autoMatchRate: 0 },
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       },
       adjudication: {
         workflows: [],
         discrepancies: [],
         users: [],
         notifications: [],
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       },
       analytics: {
         dashboards: [],
         reports: [],
         predictions: [],
         anomalies: [],
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       },
       security: {
         policies: [],
         auditLogs: [],
         complianceStatus: {
-          sox: { id: '', name: '', status: 'partial', requirements: [], lastAudit: new Date(), nextAudit: new Date() },
-          gdpr: { id: '', name: '', status: 'partial', requirements: [], lastAudit: new Date(), nextAudit: new Date() },
+          sox: {
+            id: '',
+            name: '',
+            status: 'partial',
+            requirements: [],
+            lastAudit: new Date(),
+            nextAudit: new Date(),
+          },
+          gdpr: {
+            id: '',
+            name: '',
+            status: 'partial',
+            requirements: [],
+            lastAudit: new Date(),
+            nextAudit: new Date(),
+          },
           lastAudit: new Date(),
-          nextAudit: new Date()
+          nextAudit: new Date(),
         },
         encryptionConfigs: [],
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       },
       api: {
         endpoints: [],
         webhooks: [],
         keys: [],
         integrations: [],
-        lastUpdated: new Date()
-      }
-    })
-    setNotifications([])
-    setAlerts([])
-  }, [])
-  
+        lastUpdated: new Date(),
+      },
+    });
+    setNotifications([]);
+    setAlerts([]);
+  }, []);
+
   // Monitor online status
   useEffect(() => {
     const handleOnline = () => {
-      setSyncStatus(prev => ({ ...prev, isOnline: true }))
-      performDataSync()
-    }
-    
+      setSyncStatus((prev) => ({ ...prev, isOnline: true }));
+      performDataSync();
+    };
+
     const handleOffline = () => {
-      setSyncStatus(prev => ({ ...prev, isOnline: false }))
-    }
-    
-    window.addEventListener('online', handleOnline)
-    window.addEventListener('offline', handleOffline)
-    
+      setSyncStatus((prev) => ({ ...prev, isOnline: false }));
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
     return () => {
-      window.removeEventListener('online', handleOnline)
-      window.removeEventListener('offline', handleOffline)
-    }
-  }, [performDataSync])
-  
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [performDataSync]);
+
   const contextValue: UnifiedDataContext = {
     currentProject,
     setCurrentProject,
@@ -953,30 +1041,26 @@ export const UnifiedDataProvider: React.FC<UnifiedDataProviderProps> = ({ childr
     exportProject: (projectId: string) => JSON.stringify({ projectId, data: crossPageData }),
     importProject: (data: string) => {
       try {
-        const parsed = JSON.parse(data)
-        return parsed as ProjectData
+        const parsed = JSON.parse(data);
+        return parsed as ProjectData;
       } catch {
-        return null
+        return null;
       }
     },
-    resetWorkflow
-  }
-  
-  return (
-    <UnifiedDataContext.Provider value={contextValue}>
-      {children}
-    </UnifiedDataContext.Provider>
-  )
-}
+    resetWorkflow,
+  };
+
+  return <UnifiedDataContext.Provider value={contextValue}>{children}</UnifiedDataContext.Provider>;
+};
 
 export const useUnifiedData = (): UnifiedDataContext => {
-  const context = useContext(UnifiedDataContext)
+  const context = useContext(UnifiedDataContext);
   if (context === undefined) {
-    throw new Error('useUnifiedData must be used within a UnifiedDataProvider')
+    throw new Error('useUnifiedData must be used within a UnifiedDataProvider');
   }
-  return context
-}
+  return context;
+};
 
 // Legacy compatibility
-export const useData = useUnifiedData
-export const DataProvider = UnifiedDataProvider
+export const useData = useUnifiedData;
+export const DataProvider = UnifiedDataProvider;

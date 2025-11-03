@@ -608,10 +608,14 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
                           setShowWorkflowModal(true);
                         }}
                         className="text-secondary-400 hover:text-secondary-600"
+                        aria-label="View workflow details"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button className="text-secondary-400 hover:text-secondary-600">
+                      <button
+                        className="text-secondary-400 hover:text-secondary-600"
+                        aria-label="Edit workflow"
+                      >
                         <Edit className="w-4 h-4" />
                       </button>
                     </div>

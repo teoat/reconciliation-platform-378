@@ -5,7 +5,7 @@ import { CreateReconciliationJobRequest } from './types';
 
 interface CreateJobModalProps {
   projectId: string;
-  onCreateJob: (jobData: CreateReconciliationJobRequest) => Promise<void>;
+  onCreateJob: (jobData: CreateReconciliationJobRequest) => Promise<unknown>;
   onClose: () => void;
 }
 
@@ -56,57 +56,74 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Job Name</label>
+            <label htmlFor="job-name" className="block text-sm font-medium text-gray-700">Job Name</label>
             <input
+              id="job-name"
               type="text"
               required
               value={formData.name}
               onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
+              placeholder="Enter job name"
+              title="Job Name"
+              aria-label="Job Name"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label htmlFor="job-description" className="block text-sm font-medium text-gray-700">Description</label>
             <textarea
+              id="job-description"
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
               rows={3}
+              placeholder="Enter job description (optional)"
+              title="Job Description"
+              aria-label="Job Description"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Source Data Source ID</label>
+            <label htmlFor="source-data-source-id" className="block text-sm font-medium text-gray-700">Source Data Source ID</label>
             <input
+              id="source-data-source-id"
               type="text"
               required
               value={formData.source_data_source_id}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, source_data_source_id: e.target.value }))
               }
+              placeholder="Enter source data source ID"
+              title="Source Data Source ID"
+              aria-label="Source Data Source ID"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Target Data Source ID</label>
+            <label htmlFor="target-data-source-id" className="block text-sm font-medium text-gray-700">Target Data Source ID</label>
             <input
+              id="target-data-source-id"
               type="text"
               required
               value={formData.target_data_source_id}
               onChange={(e) =>
                 setFormData((prev) => ({ ...prev, target_data_source_id: e.target.value }))
               }
+              placeholder="Enter target data source ID"
+              title="Target Data Source ID"
+              aria-label="Target Data Source ID"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">
+            <label htmlFor="confidence-threshold" className="block text-sm font-medium text-gray-700">
               Confidence Threshold (%)
             </label>
             <input
+              id="confidence-threshold"
               type="number"
               min="0"
               max="100"
@@ -117,6 +134,9 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
                   confidence_threshold: Number(e.target.value) || 0,
                 }))
               }
+              placeholder="Enter confidence threshold (0-100)"
+              title="Confidence Threshold (%)"
+              aria-label="Confidence Threshold Percentage"
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
