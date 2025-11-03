@@ -2,9 +2,9 @@ name: Performance Testing
 
 on:
   push:
-    branches: [main, develop]
+    branches: [master, develop]
   pull_request:
-    branches: [main]
+    branches: [master]
   schedule:
     # Run daily at 2 AM UTC
     - cron: '0 2 * * *'
@@ -198,7 +198,7 @@ jobs:
      name: Alert on Performance Regression
      runs-on: ubuntu-latest
      needs: [bundle-analysis, performance-test, lighthouse-ci]
-     if: failure() && github.ref == 'refs/heads/main'
+     if: failure() && github.ref == 'refs/heads/master'
      steps:
        - name: Checkout code
          uses: actions/checkout@v4
