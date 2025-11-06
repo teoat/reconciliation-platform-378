@@ -478,7 +478,7 @@ function generateSummary() {
 // Main execution
 function main() {
   console.log('Integration and Synchronization Checker')
-  console.log('=' .repeat(80))
+  console.log('='.repeat(80))
   console.log(`Project Root: ${projectRoot}`)
   
   // Run all checks
