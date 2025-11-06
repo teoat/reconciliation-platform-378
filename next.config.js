@@ -1,5 +1,11 @@
 // THIS IS A SINGLE SOURCE OF TRUTH FILE. DO NOT MODIFY WITHOUT CAREFUL CONSIDERATION.
 
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Enable standalone output for Docker optimization
@@ -28,7 +34,7 @@ const nextConfig = {
   // Turbopack configuration for Next.js 16
   turbopack: {
     resolveAlias: {
-      '@': require('path').resolve(__dirname, 'app'),
+      '@': resolve(__dirname, 'app'),
     },
   },
   
@@ -107,4 +113,4 @@ const nextConfig = {
   reactStrictMode: true,
 }
 
-module.exports = nextConfig
+export default nextConfig;

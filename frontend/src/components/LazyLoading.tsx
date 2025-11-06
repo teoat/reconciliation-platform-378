@@ -44,7 +44,6 @@ export const withLazyLoading = <P extends object>(
 ) => {
   const LazyComponent = lazy(() => Promise.resolve({ default: Component }))
   
-  // eslint-disable-next-line react/display-name
   const WrappedComponent = (props: P) => (
     <LazyErrorBoundary fallback={fallback}>
       <Suspense fallback={fallback || <LoadingSpinner />}>
