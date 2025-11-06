@@ -343,7 +343,7 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
                     <h3 className="text-lg font-semibold">Base URL</h3>
                   </div>
                   <code className="text-sm bg-gray-100 p-2 rounded block">
-                    {import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}
+                    {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}
                   </code>
                 </div>
               </Card>
@@ -400,7 +400,7 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
               <div className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Connection</h3>
                 <code className="text-sm bg-gray-100 p-2 rounded block mb-4">
-                  {import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws'}
+                  {process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws'}
                 </code>
                 
                 <div className="space-y-4">

@@ -5,7 +5,6 @@
 //! Status: ✅ Active and Mandatory
 
 use actix_web::{web, App, HttpServer, HttpResponse, Result};
-use std::env;
 use reconciliation_backend::{
     database::Database,
     config::Config,

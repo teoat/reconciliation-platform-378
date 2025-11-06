@@ -4,16 +4,16 @@
 
 export const config = {
   // Backend API Configuration
-  API_URL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
-  WS_URL: import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws',
+  API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api',
+  WS_URL: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws',
   
   // Frontend Configuration
-  APP_NAME: import.meta.env.VITE_APP_NAME || 'Reconciliation Platform',
-  APP_VERSION: import.meta.env.VITE_APP_VERSION || '1.0.0',
+  APP_NAME: process.env.NEXT_PUBLIC_APP_NAME || 'Reconciliation Platform',
+  APP_VERSION: process.env.NEXT_PUBLIC_APP_VERSION || '1.0.0',
   
   // Development Configuration
-  DEBUG: import.meta.env.VITE_DEBUG === 'true',
-  LOG_LEVEL: import.meta.env.VITE_LOG_LEVEL || 'info',
+  DEBUG: process.env.NEXT_PUBLIC_DEBUG === 'true',
+  LOG_LEVEL: process.env.NEXT_PUBLIC_LOG_LEVEL || 'info',
   
   // Feature Flags
   FEATURES: {
