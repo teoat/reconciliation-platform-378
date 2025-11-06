@@ -133,7 +133,7 @@ export const mockReconciliationRecord = {
 export const waitForAsync = () => waitFor(() => Promise.resolve())
 
 // Mock API responses
-export const mockApiResponse = <T>(data: T, success = true) => ({
+export const mockApiResponse = <T,>(data: T, success = true) => ({
   data,
   success,
   message: success ? 'Success' : 'Error',
