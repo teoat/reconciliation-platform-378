@@ -5,11 +5,11 @@ import { useAppSelector, useAppDispatch } from '../store/store'
 // import { updateReconciliationJob } from '../store/slices/reconciliationSlice'
 // import { updateProject } from '../store/slices/projectSlice'
 
-// Stub no-op functions until the slices are implemented
-const addNotification = (_payload: any) => {}
-const updateNotification = (_payload: any) => {}
-const updateReconciliationJob = (_payload: any) => {}
-const updateProject = (_payload: any) => {}
+// Temporary action creators until the slices are implemented
+const addNotification = (payload: any) => ({ type: 'notification/add', payload })
+const updateNotification = (payload: any) => ({ type: 'notification/update', payload })
+const updateReconciliationJob = (payload: any) => ({ type: 'reconciliation/update', payload })
+const updateProject = (payload: any) => ({ type: 'project/update', payload })
 
 // WebSocket integration hook for real-time updates
 export const useWebSocketIntegration = () => {
