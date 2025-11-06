@@ -1,8 +1,8 @@
 import React from 'react'
 import { Menu, X, Search, Bell, User } from 'lucide-react'
-import { useAuth } from '../hooks/useAuth'
+import { useAuth } from '../../hooks/useAuth'
 import { useNavigate, useLocation } from 'react-router-dom'
-import Button from './ui/Button'
+import Button from '../ui/Button'
 
 interface ResponsiveNavigationProps {
   className?: string

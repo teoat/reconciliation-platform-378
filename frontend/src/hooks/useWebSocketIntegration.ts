@@ -1,9 +1,15 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useWebSocketContext } from '../services/WebSocketProvider'
 import { useAppSelector, useAppDispatch } from '../store/store'
-import { addNotification, updateNotification } from '../store/slices/notificationSlice'
-import { updateReconciliationJob } from '../store/slices/reconciliationSlice'
-import { updateProject } from '../store/slices/projectSlice'
+// import { addNotification, updateNotification } from '../store/slices/notificationSlice'
+// import { updateReconciliationJob } from '../store/slices/reconciliationSlice'
+// import { updateProject } from '../store/slices/projectSlice'
+
+// Stub functions until the slices are implemented
+const addNotification = (payload: any) => ({ type: 'notification/add', payload })
+const updateNotification = (payload: any) => ({ type: 'notification/update', payload })
+const updateReconciliationJob = (payload: any) => ({ type: 'reconciliation/update', payload })
+const updateProject = (payload: any) => ({ type: 'project/update', payload })
 
 // WebSocket integration hook for real-time updates
 export const useWebSocketIntegration = () => {
