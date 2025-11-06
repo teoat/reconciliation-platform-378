@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "// NOTE: If you have a jest.config.js file in the root, rename it to jest.config.cjs to avoid ESM/CommonJS conflicts.",
   "scripts": {
     "dev": "next dev -p 1000",
     "build": "next build",
