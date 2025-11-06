@@ -6,7 +6,8 @@
     "dev": "next dev -p 1000",
     "build": "next build",
     "start": "next start -p 1000",
-    "lint": "next lint"
+    "lint": "next lint",
+    "check:integration": "node scripts/check-integration-sync.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
