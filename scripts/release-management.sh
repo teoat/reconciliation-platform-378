@@ -9,7 +9,7 @@ set -e
 REPO_URL="https://github.com/your-org/reconciliation-platform"
 REGISTRY="ghcr.io/your-org"
 APP_NAME="reconciliation"
-RELEASE_BRANCH="main"
+RELEASE_BRANCH="master"
 DEVELOPMENT_BRANCH="develop"
 CHANGELOG_FILE="CHANGELOG.md"
 VERSION_FILE="VERSION"
