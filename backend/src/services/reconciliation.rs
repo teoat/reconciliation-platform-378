@@ -25,6 +25,7 @@ use crate::models::{
 };
 
 /// Reconciliation service
+#[derive(Clone)]
 pub struct ReconciliationService {
     db: Database,
     job_processor: Arc<JobProcessor>,

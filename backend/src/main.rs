@@ -4,39 +4,27 @@
 //! Version: 2.0
 //! Status: ✅ Active and Mandatory
 
-use actix_web::{web, App, HttpServer, HttpResponse, Result, middleware::Logger};
+use actix_web::{web, App, HttpServer, HttpResponse, Result};
 use std::env;
-use chrono::Utc;
 use reconciliation_backend::{
     database::Database,
     config::Config,
     services::{AuthService, UserService, ProjectService, ReconciliationService, FileService, AnalyticsService, MonitoringService},
-    middleware::{AuthMiddleware, SecurityMiddleware, LoggingMiddleware, PerformanceMiddleware, SecurityMiddlewareConfig, LoggingConfig, PerformanceMonitoringConfig},
+    middleware::AuthMiddleware,
     handlers,
 };
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let database_url = env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgresql://reconciliation_user:reconciliation_pass@localhost:5432/reconciliation_app".to_string());
-    
-    let redis_url = env::var("REDIS_URL")
-        .unwrap_or_else(|_| "redis://localhost:6379".to_string());
+    // Create config first
+    let config = Config::from_env().expect("Failed to load configuration");
 
     println!("🚀 Starting 378 Reconciliation Platform Backend");
-    println!("📊 Database URL: {}", database_url);
-    println!("🔴 Redis URL: {}", redis_url);
-
-    // Create config first
-    let config = Config {
-        database_url: database_url.clone(),
-        redis_url: redis_url.clone(),
-        jwt_secret: "your-jwt-secret".to_string(),
-        jwt_expiration: 86400,
-    };
+    println!("📊 Database URL: {}", config.database_url);
+    println!("🔴 Redis URL: {}", config.redis_url);
 
     // Initialize database
-    let database = Database::new(&database_url).await
+    let database = Database::new(&config.database_url).await
         .expect("Failed to connect to database");
 
     // Initialize services
@@ -46,7 +34,7 @@ async fn main() -> std::io::Result<()> {
     let reconciliation_service = ReconciliationService::new(database.clone());
     let file_service = FileService::new(database.clone(), "uploads".to_string());
     let analytics_service = AnalyticsService::new(database.clone());
-    let monitoring_service = MonitoringService::new(database.clone());
+    let monitoring_service = MonitoringService::new();
 
     HttpServer::new(move || {
         App::new()

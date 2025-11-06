@@ -6,6 +6,10 @@ import { configureStore } from '@reduxjs/toolkit'
 import { PersistGate } from 'redux-persist/integration/react'
 import { persistStore } from 'redux-persist'
 
+// Type aliases to avoid JSX parsing issues
+type VoidPromise = Promise<void>
+type VoidOrVoidPromise = void | VoidPromise
+
 // Mock store for testing
 const createMockStore = (initialState = {}) => {
   return configureStore({
@@ -48,8 +52,8 @@ export * from '@testing-library/react'
 export { customRender as render }
 
 // Mock API responses
-export const mockApiResponse = <T>(data: T, delay = 0) => {
-  return new Promise<T>((resolve) => {
+export function mockApiResponse<T>(data: T, delay = 0): Promise<T> {
+  return new Promise((resolve) => {
     setTimeout(() => resolve(data), delay)
   })
 }
@@ -126,8 +130,8 @@ export const mockUseApi = (overrides = {}) => ({
 })
 
 // Wait for async operations
-export const waitFor = (callback: () => void | Promise<void>, options = {}) => {
-  return new Promise<void>((resolve, reject) => {
+export const waitFor = (callback: () => VoidOrVoidPromise, options = {}): VoidPromise => {
+  return new Promise((resolve, reject) => {
     const timeout = setTimeout(() => {
       reject(new Error('Timeout waiting for callback'))
     }, 5000)

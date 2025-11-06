@@ -49,6 +49,12 @@ pub struct CreateDataSourceRequest {
 }
 
 #[derive(Deserialize)]
+pub struct UpdateDataSourceRequest {
+    pub name: Option<String>,
+    pub status: Option<String>,
+}
+
+#[derive(Deserialize)]
 pub struct CreateReconciliationJobRequest {
     pub name: String,
     pub description: Option<String>,
@@ -629,6 +635,88 @@ pub async fn create_data_source(
     }))
 }
 
+pub async fn get_data_sources(
+    project_id: web::Path<Uuid>,
+    data: web::Data<Database>,
+    config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let data_source_service = crate::services::DataSourceService::new(data.get_ref().clone());
+    
+    let data_sources = data_source_service.get_project_data_sources(project_id.into_inner()).await?;
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(data_sources),
+        message: None,
+        error: None,
+    }))
+}
+
+pub async fn get_data_source(
+    path: web::Path<(Uuid, Uuid)>,
+    data: web::Data<Database>,
+    config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let (_project_id, data_source_id) = path.into_inner();
+    let data_source_service = crate::services::DataSourceService::new(data.get_ref().clone());
+    
+    let data_source = data_source_service.get_data_source(data_source_id).await?;
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(data_source),
+        message: None,
+        error: None,
+    }))
+}
+
+pub async fn update_data_source(
+    path: web::Path<(Uuid, Uuid)>,
+    req: web::Json<UpdateDataSourceRequest>,
+    data: web::Data<Database>,
+    config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let (_project_id, data_source_id) = path.into_inner();
+    let data_source_service = crate::services::DataSourceService::new(data.get_ref().clone());
+    
+    let updated_data_source = data_source_service.update_data_source(
+        data_source_id,
+        req.name.clone(),
+        None, // description
+        None, // source_type
+        None, // file_path
+        None, // file_size
+        None, // file_hash
+        None, // schema
+        req.status.clone(),
+    ).await?;
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(updated_data_source),
+        message: Some("Data source updated successfully".to_string()),
+        error: None,
+    }))
+}
+
+pub async fn delete_data_source(
+    path: web::Path<(Uuid, Uuid)>,
+    data: web::Data<Database>,
+    config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let (_project_id, data_source_id) = path.into_inner();
+    let data_source_service = crate::services::DataSourceService::new(data.get_ref().clone());
+    
+    data_source_service.delete_data_source(data_source_id).await?;
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(()),
+        message: Some("Data source deleted successfully".to_string()),
+        error: None,
+    }))
+}
+
 pub async fn get_reconciliation_jobs(
     project_id: web::Path<Uuid>,
     data: web::Data<Database>,
@@ -1124,6 +1212,22 @@ pub async fn get_queued_reconciliation_jobs(
         data: Some(serde_json::json!({
             "queued_jobs": queued_jobs
         })),
+        message: None,
+        error: None,
+    }))
+}
+
+pub async fn get_analytics_dashboard(
+    data: web::Data<Database>,
+    config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let analytics_service = crate::services::AnalyticsService::new(data.get_ref().clone());
+    
+    let dashboard_data = analytics_service.get_dashboard_data().await?;
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(dashboard_data),
         message: None,
         error: None,
     }))

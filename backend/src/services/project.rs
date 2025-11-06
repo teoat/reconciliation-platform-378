@@ -183,6 +183,7 @@ use crate::models::{
 use crate::utils::validation;
 
 /// Project service
+#[derive(Clone)]
 pub struct ProjectService {
     db: Database,
 }
