@@ -114,7 +114,7 @@ export const useLazyLoad = (threshold: number = 0.1) => {
 };
 
 // Debounced Hook
-export const useDebounce = <T>(value: T, delay: number): T => {
+export function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
 
   useEffect(() => {
@@ -128,10 +128,10 @@ export const useDebounce = <T>(value: T, delay: number): T => {
   }, [value, delay]);
 
   return debouncedValue;
-};
+}
 
 // Throttled Hook
-export const useThrottle = <T>(value: T, delay: number): T => {
+export function useThrottle<T>(value: T, delay: number): T {
   const [throttledValue, setThrottledValue] = useState<T>(value);
   const lastExecuted = useRef<number>(Date.now());
 
@@ -150,24 +150,24 @@ export const useThrottle = <T>(value: T, delay: number): T => {
   }, [value, delay]);
 
   return throttledValue;
-};
+}
 
 // Memoized Component Hook
-export const useMemoizedComponent = <P extends object>(
+export function useMemoizedComponent<P extends object>(
   Component: React.ComponentType<P>,
   props: P,
   deps: React.DependencyList
-) => {
+) {
   return useMemo(() => <Component {...props} />, deps);
-};
+}
 
 // Virtual Scrolling Hook
-export const useVirtualScroll = <T>(
+export function useVirtualScroll<T>(
   items: T[],
   itemHeight: number,
   containerHeight: number,
   overscan: number = 5
-) => {
+) {
   const [scrollTop, setScrollTop] = useState(0);
 
   const visibleRange = useMemo(() => {
@@ -195,7 +195,7 @@ export const useVirtualScroll = <T>(
     offsetY,
     setScrollTop,
   };
-};
+}
 
 // Performance Dashboard Component
 export const PerformanceDashboard: React.FC = () => {

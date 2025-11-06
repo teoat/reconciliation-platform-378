@@ -490,10 +490,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 </div>
               </div>
             </div>
-            </div>
           </div>
         </div>
+      )}
 
+      {selectedMetric === 'reconciliation' && reconciliationStats && (
+        <>
         {/* Interactive Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
           {/* Job Status Distribution Chart */}
@@ -555,6 +557,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             />
           </div>
         </div>
+        </>
       )}
 
       {/* Job Status Overview */}
