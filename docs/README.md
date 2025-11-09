@@ -1,30 +1,25 @@
-# 378 Data and Evidence Reconciliation Platform
+# Documentation Index
 
-## Overview
-Enterprise-grade data reconciliation platform built with Rust backend and React frontend.
+Curated reference for the `docs/` directory after the root-level documentation cleanup.
 
-## Features
-- **Data Ingestion**: Multi-format file processing (CSV, Excel, JSON, XML, PDF)
-- **Reconciliation Engine**: Advanced matching algorithms with AI-powered fuzzy matching
-- **Real-time Collaboration**: Live editing and presence indicators
-- **Analytics Dashboard**: Comprehensive reporting and metrics
-- **Security**: Role-based access control and audit logging
+## Core References
+- `../README.md` – Primary landing page with quick start, configuration, and contribution flow. Share this alongside the refreshed `../DEPLOYMENT_GUIDE.md` with the broader team for review/feedback.
+- `../DEPLOYMENT_GUIDE.md` – Single source for dev/production/Kubernetes rollout steps.
+- `project-history.md` – Timeline of milestones and links to supporting materials.
 
-## Quick Start
-1. **Backend**: `cd reconciliation-rust && cargo run`
-2. **Frontend**: `cd frontend-simple && npm run dev`
-3. **Integration Test**: `./test-integration.sh`
+## Operational Playbooks
+- `../DEPLOYMENT_GUIDE.md` – Primary reference for environments, go-live checkpoints, and operations cadence.
+- `INCIDENT_RESPONSE_RUNBOOKS.md`, `SUPPORT_MAINTENANCE_GUIDE.md`, `TROUBLESHOOTING.md` – Stay; remain the canonical operational procedures.
 
-## Architecture
-- **Backend**: Rust + Actix-Web + PostgreSQL + Redis
-- **Frontend**: React + TypeScript + Vite + Tailwind CSS
-- **Infrastructure**: Docker + Docker Compose + Monitoring
+## Architecture & Engineering
+- `ARCHITECTURE.md`, `INFRASTRUCTURE.md`, `SSOT_GUIDANCE.md` – Platform design, infrastructure topology, and configuration governance.
+- `API_DOCUMENTATION.md` – Consolidated REST/WebSocket reference.
 
-## Development
-See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed development setup.
+## Testing & Readiness
+- `UAT_PLAN.md`, `UAT_SUMMARY.md`, `USER_TRAINING_GUIDE.md` – User acceptance, training workstreams.
 
-## Deployment
-See [DEPLOYMENT.md](DEPLOYMENT.md) for production deployment guide.
-
-## API Documentation
-See [API.md](API.md) for complete API reference.
+## Next Cleanup Actions
+- Consolidate deployment runbooks (`DEPLOYMENT_OPERATIONS_GUIDE.md`, `PRODUCTION_DEPLOYMENT.md`, etc.) into the updated `../DEPLOYMENT_GUIDE.md`.
+- Deduplicate API docs (`API_DOCUMENTATION.md` vs `API.md`).
+- Decide whether legacy go-live summaries need to become appendices in `project-history.md` or can be removed.
+- Confirm all cross-links point to existing files post-cleanup.

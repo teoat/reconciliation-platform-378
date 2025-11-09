@@ -1,254 +1,105 @@
 # 378 Reconciliation Platform
 
-A comprehensive, enterprise-grade reconciliation platform built with modern technologies for high-performance data matching and reconciliation workflows.
+Modern tooling for high-performance data reconciliation workflows.
 
-## 🚀 Features
+## Highlights
+- **End-to-end platform**: Rust backend, React + TypeScript frontend, PostgreSQL, Redis.
+- **Scalable by default**: Docker Compose for local work, production-ready configs, Kubernetes manifests.
+- **Observability first**: Prometheus, Grafana, structured logging, and health checks.
+- **Secure foundations**: JWT auth, RBAC, rate limiting, and hardened middleware.
 
-### Core Functionality
-- **Advanced Reconciliation Engine**: Multi-algorithm matching with confidence scoring
-- **Real-time Processing**: WebSocket-based live updates and collaboration
-- **File Processing**: Support for CSV, Excel, and other data formats
-- **Analytics Dashboard**: Comprehensive metrics and reporting
-- **User Management**: Role-based access control and authentication
-- **Project Management**: Multi-tenant project organization
-
-### Technical Features
-- **High Performance**: Optimized for large datasets with virtual scrolling
-- **Scalable Architecture**: Microservices-ready with containerization
-- **Comprehensive Monitoring**: Prometheus metrics and health checks
-- **Security**: CSRF protection, rate limiting, and input validation
-- **Testing**: Unit, integration, and E2E testing with Playwright
-- **Error Handling**: Tier 2 error handling with retry mechanisms
-
-## 🏗️ Architecture
-
-### Backend (Rust)
-- **Framework**: Actix-web for high-performance web services
-- **Database**: PostgreSQL with Diesel ORM
-- **Caching**: Redis for session management and caching
-- **Authentication**: JWT-based authentication
-- **WebSocket**: Real-time communication
-- **Monitoring**: Prometheus metrics and health checks
-
-### Frontend (React + TypeScript)
-- **Framework**: React 18 with TypeScript
-- **State Management**: Redux Toolkit
-- **UI Components**: Tailwind CSS with custom components
-- **Performance**: Code splitting, lazy loading, and virtual scrolling
-- **Real-time**: WebSocket integration for live updates
-- **Testing**: Vitest and Playwright for comprehensive testing
-
-### Infrastructure
-- **Containerization**: Docker and Docker Compose
-- **Orchestration**: Kubernetes with Helm charts
-- **CI/CD**: GitHub Actions for automated testing and deployment
-- **Monitoring**: Prometheus, Grafana, and AlertManager
-- **Logging**: ELK stack (Elasticsearch, Logstash, Kibana)
-
-## 📁 Project Structure
+## Project Layout
 
 ```
-378/
-├── backend/                 # Rust backend service
-│   ├── src/
-│   │   ├── handlers/       # API route handlers
-│   │   ├── services/       # Business logic services
-│   │   ├── models/         # Database models
-│   │   ├── middleware/     # Custom middleware
-│   │   └── websocket.rs    # WebSocket server
-│   ├── tests/              # Backend tests
-│   └── Cargo.toml          # Rust dependencies
-├── frontend/               # React frontend application
-│   ├── src/
-│   │   ├── components/     # React components
-│   │   ├── hooks/          # Custom React hooks
-│   │   ├── services/       # API client and services
-│   │   ├── utils/          # Utility functions
-│   │   └── types/          # TypeScript type definitions
-│   ├── tests/              # Frontend tests
-│   └── package.json        # Node.js dependencies
-├── infrastructure/         # Infrastructure as code
-│   ├── kubernetes/         # K8s manifests
-│   ├── helm/              # Helm charts
-│   └── terraform/         # Terraform configurations
-├── monitoring/            # Monitoring configurations
-│   ├── prometheus/        # Prometheus configs
-│   ├── grafana/           # Grafana dashboards
-│   └── alertmanager/      # Alert configurations
-├── docs/                  # Documentation
-├── scripts/               # Deployment and utility scripts
-└── docker-compose.yml     # Local development setup
+reconciliation-platform-378/
+├── app/                    # Next.js marketing site
+├── backend/                # Rust services
+├── frontend/               # React front-end
+├── docs/                   # Extended documentation
+├── infrastructure/         # IaC, Helm, Kubernetes
+├── monitoring/             # Observability stack
+├── scripts/                # Utility and deployment scripts
+└── docker-compose.yml      # Local orchestration
 ```
 
-## 🚀 Quick Start
+## Getting Started
 
 ### Prerequisites
-- Docker and Docker Compose
-- Node.js 18+ (for frontend development)
-- Rust 1.70+ (for backend development)
-- PostgreSQL 14+
-- Redis 6+
+- Docker Desktop (or Docker Engine) with Docker Compose v2
+- Node.js 18+ and npm
+- Rust 1.70+ with Cargo
 
-### Local Development
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd 378
-   ```
-
-2. **Start the development environment**
-   ```bash
-   docker-compose up -d
-   ```
-
-3. **Access the application**
-   - Frontend: http://localhost:3000
-   - Backend API: http://localhost:8080
-   - Health Check: http://localhost:8080/health
-   - Metrics: http://localhost:8080/metrics
-
-### Manual Setup
-
-1. **Backend Setup**
-   ```bash
-   cd backend
-   cargo build
-   cargo run
-   ```
-
-2. **Frontend Setup**
-   ```bash
-   cd frontend
-   npm install
-   npm run dev
-   ```
-
-## 🧪 Testing
-
-### Backend Tests
+### Quick Start (Docker Compose)
 ```bash
-cd backend
-cargo test
-cargo test --features integration
+# 1. Start everything
+docker compose up -d
+
+# 2. Verify services
+docker compose ps
+curl http://localhost:8080/health
+
+# 3. Explore
+#   Frontend: http://localhost:3000
+#   Backend:  http://localhost:8080
+#   Metrics:  http://localhost:8080/metrics
 ```
 
-### Frontend Tests
-```bash
-cd frontend
-npm test
-npm run test:e2e
-```
+### Manual Workflow
+- **Backend**
+  ```bash
+  cd backend
+  cargo run
+  ```
+- **Frontend**
+  ```bash
+  cd frontend
+  npm install
+  npm run dev
+  ```
+- **Database & cache**: use the Compose services (`docker compose up postgres redis`) or configure local instances via `DATABASE_URL` and `REDIS_URL`.
 
-### E2E Tests
-```bash
-npx playwright test
-```
+### Configuration
+- Backend `.env`
+  ```env
+  DATABASE_URL=postgresql://user:password@localhost:5432/reconciliation
+  REDIS_URL=redis://localhost:6379
+  JWT_SECRET=change-me
+  RUST_LOG=info
+  ```
+- Frontend `.env.local`
+  ```env
+  NEXT_PUBLIC_API_URL=http://localhost:8080
+  NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws
+  ```
 
-## 📊 Monitoring
+## Development Tasks
+- **Run tests**
+  ```bash
+  # backend
+  cd backend && cargo test
 
-The platform includes comprehensive monitoring with:
+  # frontend
+  cd frontend && npm test
 
-- **Prometheus Metrics**: Custom metrics for business logic and performance
-- **Health Checks**: Database, Redis, and system health monitoring
-- **Grafana Dashboards**: Pre-configured dashboards for visualization
-- **Alerting**: Automated alerts for critical issues
+  # e2e
+  npx playwright test
+  ```
+- **Lint & format**
+  - Backend: `cargo fmt && cargo clippy`
+  - Frontend: `npm run lint`
 
-Access monitoring at:
-- Grafana: http://localhost:3001
-- Prometheus: http://localhost:9090
+## Deployment
+- Local and production Compose topologies, Kubernetes manifests, and scripts are documented in `DEPLOYMENT_GUIDE.md`.
+- See `docs/project-history.md` for historical deployment notes and milestone context.
 
-## 🔧 Configuration
+## Observability & Operations
+- Grafana: `http://localhost:3001`
+- Prometheus: `http://localhost:9090`
+- Alertmanager: `http://localhost:9093`
+- Health endpoints: `/health`, `/health/live`, `/health/ready`
 
-### Environment Variables
+## Contributing
+- Fork → branch → commit → PR. Review `CONTRIBUTING.md` for coding standards and workflow.
 
-#### Backend (.env)
-```env
-DATABASE_URL=postgresql://user:password@localhost:5432/reconciliation
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=your-secret-key
-RUST_LOG=info
-```
-
-#### Frontend (.env.local)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:8080
-NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws
-```
-
-## 🚀 Deployment
-
-### Docker Compose (Production)
-```bash
-docker-compose -f docker-compose.production.yml up -d
-```
-
-### Kubernetes
-```bash
-helm install reconciliation ./infrastructure/helm/reconciliation
-```
-
-### Manual Deployment
-```bash
-./scripts/deploy.sh
-```
-
-## 📈 Performance
-
-The platform is optimized for:
-- **Large Datasets**: Virtual scrolling and pagination
-- **High Concurrency**: Connection pooling and async processing
-- **Fast Response Times**: Caching and query optimization
-- **Scalability**: Horizontal scaling with load balancing
-
-## 🔒 Security
-
-Security features include:
-- **Authentication**: JWT-based with refresh tokens
-- **Authorization**: Role-based access control
-- **Input Validation**: Comprehensive data validation
-- **CSRF Protection**: Cross-site request forgery prevention
-- **Rate Limiting**: API rate limiting and throttling
-- **Security Headers**: Comprehensive security headers
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 🆘 Support
-
-For support and questions:
-- Create an issue in the GitHub repository
-- Check the [documentation](docs/)
-- Review the [troubleshooting guide](docs/troubleshooting.md)
-
-## 🗺️ Roadmap
-
-- [ ] Advanced matching algorithms
-- [ ] Machine learning integration
-- [ ] Multi-language support
-- [ ] Advanced reporting features
-- [ ] API rate limiting improvements
-- [ ] Enhanced monitoring capabilities
-
-## 📊 Metrics
-
-The platform tracks comprehensive metrics including:
-- Request/response times
-- Database query performance
-- Cache hit rates
-- User activity
-- Reconciliation job performance
-- System resource usage
-
----
-
-**Built with ❤️ for enterprise-grade reconciliation workflows**
+## License
+- MIT License – see `LICENSE`.

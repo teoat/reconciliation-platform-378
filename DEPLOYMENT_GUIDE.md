@@ -1,237 +1,159 @@
-# 🚀 DEPLOYMENT GUIDE - 378 RECONCILIATION PLATFORM
+# 378 Reconciliation Platform – Deployment Guide
 
-## 📋 **DEPLOYMENT OPTIONS**
+Consolidated deployment instructions for local development, staging, and production environments.
 
-You have several deployment options available:
+## 1. Prerequisites
+- Docker Engine / Docker Desktop with Compose v2
+- Access to project repository and `.env` files
+- Optional: Kubernetes cluster (for advanced deployments)
+- Ensure ports `3000`, `8080`, `9090`, `9093`, `5432`, and `6379` are free
+- For Kubernetes rollouts: `kubectl`, `helm`, `jq`, and access to the target cluster/registry
 
-### 1. **Development Deployment** (Quick Start)
-- Perfect for testing and development
-- Uses Docker Compose with development settings
-- Includes hot reloading and debugging
-
-### 2. **Production Deployment** (Recommended)
-- Production-ready with optimized settings
-- Includes monitoring stack (Prometheus, Grafana)
-- Configured for performance and security
-
-### 3. **Staging Deployment** (Testing)
-- Pre-production environment
-- Mirrors production settings
-- Safe for testing before going live
-
----
-
-## 🚀 **QUICK START - DEVELOPMENT DEPLOYMENT**
-
-### Step 1: Start the Development Environment
+## 2. Local & Development Deployment
 ```bash
-# Start all services
+# start all services
 docker compose up -d
 
-# Check status
+# inspect status
 docker compose ps
-```
 
-### Step 2: Access the Application
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8080
-- **Health Check**: http://localhost:8080/health
-- **Metrics**: http://localhost:8080/metrics
-
-### Step 3: Verify Deployment
-```bash
-# Check logs
+# follow logs (Ctrl+C to stop tailing)
 docker compose logs -f
-
-# Test health endpoint
-curl http://localhost:8080/health
 ```
 
----
+### Default Endpoints
+- Frontend: `http://localhost:3000` (direct container) or `http://localhost` via nginx
+- Backend API: `http://localhost:8080`
+- Health: `http://localhost:8080/health`
+- Metrics: `http://localhost:8080/metrics`
 
-## 🏭 **PRODUCTION DEPLOYMENT**
-
-### Step 1: Prepare Environment Variables
+### Service Checks
 ```bash
-# Copy production environment template
+# database connectivity
+docker compose exec database psql -U reconciliation_user -d reconciliation_app -c "SELECT now();"
+
+# redis connectivity
+docker compose exec redis redis-cli ping
+```
+
+## 3. Production-Grade Compose Deployment
+```bash
+# prepare environment file
 cp config/production.env .env.production
+# edit values (DATABASE_URL, REDIS_URL, JWT_SECRET, etc.)
 
-# Edit with your production values
-nano .env.production
-```
-
-### Step 2: Deploy Production Stack
-```bash
-# Build and start production services
+# launch production stack
 docker compose -f docker-compose.production.yml up -d
-
-# Check status
 docker compose -f docker-compose.production.yml ps
 ```
 
-### Step 3: Access Production Services
-- **Frontend**: http://localhost:3000
-- **Backend**: http://localhost:8080
-- **Grafana**: http://localhost:3001
-- **Prometheus**: http://localhost:9090
+Key services remain on the same ports. Update credentials, SSL termination, and domain routing according to your infrastructure.
 
----
+## 4. Kubernetes & Advanced Environments
+1. Build and push images referenced in the manifests (`reconciliation/backend`, `reconciliation/frontend`) to your registry.
+2. Prepare secrets with concrete values. Either edit `infrastructure/kubernetes/*deployment.yaml` to replace the `change-me` placeholders, or create them dynamically:
+   ```bash
+   kubectl create secret generic reconciliation-secrets \
+     --from-literal=DB_PASSWORD='strong-password' \
+     --from-literal=REDIS_PASSWORD='strong-redis-pass' \
+     --from-literal=JWT_SECRET='generated-jwt-secret' \
+     --from-literal=SMTP_PASSWORD='smtp-secret' \
+     --from-literal=SENTRY_DSN='dsn-value' \
+     --from-literal=DATABASE_URL='postgresql://reconciliation_user:strong-password@postgres-service:5432/reconciliation_db' \
+     --from-literal=REDIS_URL='redis://:strong-redis-pass@redis-service:6379' \
+     --namespace reconciliation \
+     --dry-run=client -o yaml | kubectl apply -f -
+   ```
+   Repeat for staging (`reconciliation-staging-secrets`) using the staging namespace and connection strings.
+3. Deploy resources:
+   ```bash
+   kubectl apply -f infrastructure/kubernetes/production-deployment.yaml
+   kubectl rollout status deployment/backend -n reconciliation
+   kubectl rollout status deployment/frontend -n reconciliation
+   ```
+4. Tail logs as needed:
+   ```bash
+   kubectl logs -f deployment/backend -n reconciliation
+   kubectl logs -f deployment/frontend -n reconciliation
+   ```
 
-## 🔧 **DEPLOYMENT COMMANDS**
-
-### Development Commands
+## 5. Verification Matrix
 ```bash
-# Start development environment
-docker compose up -d
+# backend liveness/readiness
+curl http://localhost:8080/health/live
+curl http://localhost:8080/health/ready
 
-# View logs
-docker compose logs -f
-
-# Stop services
-docker compose down
-
-# Restart services
-docker compose restart
-
-# Rebuild and start
-docker compose up -d --build
+# API smoke tests
+curl http://localhost:8080/api/projects
+curl http://localhost:8080/api/reconciliation-jobs
 ```
 
-### Production Commands
+- Grafana: `http://localhost:3001` (default credentials `admin/admin`; change immediately)
+- Prometheus: `http://localhost:9090`
+- Alertmanager: `http://localhost:9093`
+
+## 6. Operations Playbook
+- **Restart services**
+  ```bash
+  docker compose restart <service>
+  docker compose -f docker-compose.production.yml restart <service>
+  ```
+- **Stop services**
+  ```bash
+  docker compose down
+  docker compose -f docker-compose.production.yml down
+  ```
+- **Rebuild images**
+  ```bash
+  docker compose up -d --build
+  docker compose -f docker-compose.production.yml up -d --build
+  ```
+
+## 7. Troubleshooting
+- **Docker daemon** – restart Docker Desktop or run `sudo systemctl restart docker`.
+- **Port conflicts** – `lsof -i :PORT` (macOS/Linux) or `netstat -ano | findstr :PORT` (Windows) and stop conflicting processes.
+- **Database reset** – `docker compose down -v && docker compose up -d postgres redis`.
+- **Stuck containers** – `docker compose logs --tail=100 <service>` to inspect; rebuild with `--build` if necessary.
+
+## 8. Security Checklist
+- Rotate default credentials (DB, Redis, Grafana, JWT secret).
+- Enforce TLS termination (nginx, Traefik, or cloud load balancer).
+- Configure firewall/network policies for exposed ports.
+- Enable rate limiting, CORS rules, and security headers (handled in backend middleware; review settings before production).
+- Wire monitoring alerts to on-call channels.
+
+## 9. Scaling Guidance
 ```bash
-# Start production environment
-docker compose -f docker-compose.production.yml up -d
-
-# View production logs
-docker compose -f docker-compose.production.yml logs -f
-
-# Stop production services
-docker compose -f docker-compose.production.yml down
-
-# Restart production services
-docker compose -f docker-compose.production.yml restart
+# horizontal scaling via compose
+docker compose -f docker-compose.production.yml up -d --scale backend=3 --scale frontend=2
 ```
 
----
+For elastic scaling, migrate to Kubernetes or another orchestrator and configure autoscaling policies, shared storage, and persistent secrets management.
 
-## 📊 **MONITORING & HEALTH CHECKS**
+## 10. Post-Deployment Checklist
+1. Confirm health endpoints and smoke-test APIs.
+2. Validate frontend workflows end-to-end.
+3. Monitor Grafana dashboards for baseline metrics.
+4. Configure alert routing and incident response.
+5. Document environment-specific overrides.
+6. Schedule regular dependency and security reviews.
 
-### Health Check Endpoints
-- **Liveness**: http://localhost:8080/health/live
-- **Readiness**: http://localhost:8080/health/ready
-- **Comprehensive**: http://localhost:8080/health
-- **Metrics**: http://localhost:8080/metrics
+## 11. Go-Live Summary
+- **Technical readiness**: production environment deployed, SSL/DNS/CDN verified, database migrations complete, monitoring and alerting active.
+- **Security & performance**: vulnerability scans clear, rate limiting/CORS headers enforced, load testing and caching tuned.
+- **Operational readiness**: backups validated, rollback triggers defined, incident response playbooks rehearsed, support team briefed.
+- **User & content readiness**: admin accounts provisioned, role matrix validated, user training and communications scheduled.
+- **Launch execution**: T-24/T0/T+24 hour checkpoints cover final health checks, activation sequence, and post-launch review.
 
-### Monitoring Dashboards
-- **Grafana**: http://localhost:3001 (admin/admin)
-- **Prometheus**: http://localhost:9090
-- **AlertManager**: http://localhost:9093
+See `docs/project-history.md` for milestone context plus pointers to training, UAT, and support materials captured during earlier go-live planning.
 
----
+## 12. Operations & Maintenance
+- Daily/weekly/monthly routines: health review, log rotation, security patching, capacity planning, and disaster-recovery drills.
+- Monitoring stack: Prometheus scrapes backend metrics at `/metrics`; Grafana dashboards cover application, infrastructure, and business KPIs; Alertmanager drives escalation.
+- Backups: PostgreSQL and Redis snapshots automated via CronJobs; verify restores quarterly.
+- Maintenance tooling: `kubectl rollout restart`, `docker compose up -d --build`, and `helm upgrade` support zero-downtime updates.
+- Security posture: rotate secrets, enforce RBAC, keep fail2ban/network policies aligned with compliance requirements.
 
-## 🛠️ **TROUBLESHOOTING**
+For deeper runbooks and troubleshooting flows, consult `docs/TROUBLESHOOTING.md`, `docs/SUPPORT_MAINTENANCE_GUIDE.md`, and `docs/INCIDENT_RESPONSE_RUNBOOKS.md`.
 
-### Common Issues
-
-#### Port Conflicts
-```bash
-# Check what's using ports
-lsof -i :3000
-lsof -i :8080
-
-# Stop conflicting services
-sudo kill -9 <PID>
-```
-
-#### Docker Issues
-```bash
-# Restart Docker
-sudo systemctl restart docker
-
-# Clean up Docker
-docker system prune -a
-```
-
-#### Database Issues
-```bash
-# Reset database
-docker compose down -v
-docker compose up -d
-```
-
-### Logs and Debugging
-```bash
-# View all logs
-docker compose logs
-
-# View specific service logs
-docker compose logs backend
-docker compose logs frontend
-docker compose logs postgres
-
-# Follow logs in real-time
-docker compose logs -f backend
-```
-
----
-
-## 🔒 **SECURITY CONSIDERATIONS**
-
-### Production Security Checklist
-- [ ] Change default passwords
-- [ ] Configure SSL/TLS certificates
-- [ ] Set up firewall rules
-- [ ] Enable rate limiting
-- [ ] Configure CSRF protection
-- [ ] Set up monitoring alerts
-- [ ] Enable security scanning
-
-### Environment Variables
-```bash
-# Required for production
-POSTGRES_PASSWORD=your_secure_password
-JWT_SECRET=your_jwt_secret_key
-REDIS_PASSWORD=your_redis_password
-```
-
----
-
-## 📈 **SCALING**
-
-### Horizontal Scaling
-```bash
-# Scale backend services
-docker compose -f docker-compose.production.yml up -d --scale backend=3
-
-# Scale frontend services
-docker compose -f docker-compose.production.yml up -d --scale frontend=2
-```
-
-### Load Balancing
-- Configure nginx load balancer
-- Use Kubernetes for advanced scaling
-- Set up auto-scaling policies
-
----
-
-## 🎯 **NEXT STEPS AFTER DEPLOYMENT**
-
-1. **Verify Health**: Check all health endpoints
-2. **Test Functionality**: Run through user workflows
-3. **Monitor Performance**: Check Grafana dashboards
-4. **Set Up Alerts**: Configure monitoring alerts
-5. **User Training**: Train end users on the platform
-6. **Go Live**: Announce platform availability
-
----
-
-## 📞 **SUPPORT**
-
-If you encounter issues during deployment:
-1. Check the logs: `docker compose logs -f`
-2. Verify health endpoints
-3. Check the troubleshooting guide
-4. Review the documentation
-5. Contact support if needed
-
-**Your 378 Reconciliation Platform is ready for deployment!** 🚀
+For escalation paths and deeper remediation steps, see `docs/troubleshooting.md` and `docs/project-history.md`.
