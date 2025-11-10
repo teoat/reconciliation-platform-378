@@ -22,6 +22,10 @@ async fn main() -> std::io::Result<()> {
     println!("📊 Database URL: {}", config.database_url);
     println!("🔴 Redis URL: {}", config.redis_url);
 
+    // Store host and port before moving config
+    let host = config.host.clone();
+    let port = config.port;
+
     // Initialize database
     let database = Database::new(&config.database_url).await
         .expect("Failed to connect to database");
@@ -85,7 +89,7 @@ async fn main() -> std::io::Result<()> {
             )
             .route("/", web::get().to(index))
     })
-    .bind(format!("{}:{}", config.host, config.port))?
+    .bind(format!("{}:{}", host, port))?
     .run()
     .await
 }
