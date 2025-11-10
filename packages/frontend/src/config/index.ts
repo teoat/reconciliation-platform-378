@@ -4,8 +4,8 @@
 
 export const config = {
   // Backend API Configuration
-  API_URL: import.meta.env.VITE_API_URL || 'http://localhost:8080/api',
-  WS_URL: import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws',
+  API_URL: import.meta.env.VITE_API_URL || 'http://localhost:2000/api',
+  WS_URL: import.meta.env.VITE_WS_URL || 'ws://localhost:2000/ws',
   
   // Frontend Configuration
   APP_NAME: import.meta.env.VITE_APP_NAME || 'Reconciliation Platform',

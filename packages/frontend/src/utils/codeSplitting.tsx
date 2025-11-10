@@ -244,7 +244,7 @@ export const createConditionalComponent = <T extends ComponentType<any>>(
 // ============================================================================
 
 export const analyzeBundleSize = async () => {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.MODE === 'development') {
     try {
       // Dynamic import to avoid bundling in production
       const { BundleAnalyzerPlugin } = await import('webpack-bundle-analyzer')

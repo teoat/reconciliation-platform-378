@@ -5,7 +5,6 @@
 //! Status: ✅ Active and Mandatory
 
 use actix_web::{web, App, HttpServer, HttpResponse, Result};
-use std::env;
 use reconciliation_backend::{
     database::Database,
     config::Config,
@@ -86,7 +85,7 @@ async fn main() -> std::io::Result<()> {
             )
             .route("/", web::get().to(index))
     })
-    .bind("0.0.0.0:8080")?
+    .bind(format!("{}:{}", config.host, config.port))?
     .run()
     .await
 }
