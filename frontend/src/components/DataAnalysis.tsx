@@ -120,7 +120,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
       // Process expenses data
       if (expensesData.length > 0) {
         setProcessingProgress(25)
-        const processedExpenses = IndonesianDataProcessor.processExpensesData(expensesData)
+        const processedExpenses = IndonesianDataProcessor.processExpenseData(expensesData)
         setProcessedExpenses(processedExpenses)
       }
 
@@ -132,10 +132,17 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
       }
 
       // Perform matching
+      let matchingResults: IndonesianMatchingResult[] = []
       if (processedExpenses.length > 0 && processedBankRecords.length > 0) {
         setProcessingProgress(75)
-        const matches = IndonesianDataProcessor.batchMatchRecords(processedExpenses, processedBankRecords)
-        setMatches(matches)
+        matchingResults = IndonesianDataProcessor.matchRecords(processedExpenses, processedBankRecords)
+        // Transform to expected shape
+        const transformedMatches = matchingResults.map((match, index) => ({
+          expense: processedExpenses[index] || ({} as ProcessedExpenseRecord),
+          bank: match.targetRecord,
+          match
+        }))
+        setMatches(transformedMatches)
       }
 
       // Generate summary
@@ -143,7 +150,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
       const summary = IndonesianDataProcessor.generateReconciliationSummary(
         processedExpenses,
         processedBankRecords,
-        matches
+        matchingResults
       )
       setSummary(summary)
 

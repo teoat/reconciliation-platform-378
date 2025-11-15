@@ -73,6 +73,28 @@ export class IndonesianDataProcessor {
       };
     });
   }
+
+  static generateReconciliationSummary(
+    expenses: ProcessedExpenseRecord[],
+    bankRecords: ProcessedBankRecord[],
+    matches: IndonesianMatchingResult[]
+  ): any {
+    const matched = matches.filter(m => m.matched).length;
+    const unmatched = matches.length - matched;
+    const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    const totalBank = bankRecords.reduce((sum, bank) => sum + bank.amount, 0);
+    
+    return {
+      totalExpenses: expenses.length,
+      totalBankRecords: bankRecords.length,
+      matched,
+      unmatched,
+      matchRate: matches.length > 0 ? (matched / matches.length) * 100 : 0,
+      totalExpenseAmount: totalExpenses,
+      totalBankAmount: totalBank,
+      variance: totalExpenses - totalBank
+    };
+  }
 }
 
 export const processIndonesianBankData = (data: any[]): ProcessedBankRecord[] => {
