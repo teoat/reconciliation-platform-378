@@ -220,6 +220,18 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
 
       const uploadedFile = response.data
       
+      // Transform to FileInfo
+      const fileInfo: FileInfo = {
+        id: uploadedFile.id,
+        filename: uploadedFile.name,
+        size: uploadedFile.file_size || 0,
+        content_type: file.type,
+        status: 'uploaded',
+        project_id: projectId,
+        uploaded_by: 'current-user', // This should come from auth context
+        uploaded_at: uploadedFile.uploaded_at || new Date().toISOString()
+      }
+      
       // Remove from uploading state
       setUploadingFiles(prev => {
         const newMap = new Map(prev)
@@ -228,10 +240,10 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
       })
 
       // Add to files list
-      setFiles(prev => [uploadedFile, ...prev])
+      setFiles(prev => [fileInfo, ...prev])
       
       if (onUploadComplete) {
-        onUploadComplete(uploadedFile)
+        onUploadComplete(fileInfo)
       }
 
       return uploadedFile
@@ -256,16 +268,16 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
 
   // Process file
   const processFile = useCallback(async (fileId: string) => {
-    try {
-      setLoading(true)
-      setError(null)
-      
-      const response = await apiClient.processFile(projectId, fileId)
-      if (response.error) {
-        throw new Error(response.error.message)
-      }
-      
-      const result = response.data
+    await withLoading(async () => {
+      try {
+        setError(null)
+        
+        const response = await apiClient.processFile(projectId, fileId)
+        if (response.error) {
+          throw new Error(getErrorMessageFromApiError(response.error))
+        }
+        
+        const result = response.data
       
       // Update file status
       setFiles(prev => prev.map(file => 
@@ -299,35 +311,33 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
       ))
       
       throw err
-    } finally {
-      setLoading(false)
     }
-  }, [projectId, onProcessingComplete])
+    })
+  }, [projectId, onProcessingComplete, withLoading])
 
   // Delete file
   const deleteFile = useCallback(async (fileId: string) => {
-    try {
-      setLoading(true)
-      setError(null)
-      
-      const response = await apiClient.deleteDataSource(projectId, fileId)
-      if (response.error) {
-        throw new Error(response.error.message)
+    await withLoading(async () => {
+      try {
+        setError(null)
+        
+        const response = await apiClient.deleteDataSource(projectId, fileId)
+        if (response.error) {
+          throw new Error(getErrorMessageFromApiError(response.error))
+        }
+        
+        setFiles(prev => prev.filter(file => file.id !== fileId))
+        setSelectedFiles(prev => {
+          const newSet = new Set(prev)
+          newSet.delete(fileId)
+          return newSet
+        })
+        
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to delete file')
       }
-      
-      setFiles(prev => prev.filter(file => file.id !== fileId))
-      setSelectedFiles(prev => {
-        const newSet = new Set(prev)
-        newSet.delete(fileId)
-        return newSet
-      })
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete file')
-    } finally {
-      setLoading(false)
-    }
-  }, [projectId])
+    })
+  }, [projectId, withLoading])
 
   // Handle file drop
   const handleDrop = useCallback((e: React.DragEvent) => {
