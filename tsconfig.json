@@ -1,10 +1,10 @@
 {
   "compilerOptions": {
-    "target": "es2015",
-    "lib": ["dom", "dom.iterable", "es6"],
+    "target": "es2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false,
+    "strict": true,
     "noEmit": true,
     "esModuleInterop": true,
     "module": "esnext",
@@ -14,16 +14,26 @@
     "jsx": "preserve",
     "incremental": true,
     "forceConsistentCasingInFileNames": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
     "plugins": [
       {
         "name": "next"
       }
     ],
     "paths": {
-      "@/*": ["./frontend/src/*"]
+      "@/*": ["./frontend/src/*"],
+      "@/types": ["./types"]
     }
   },
-  "include": ["frontend/**/*.ts", "frontend/**/*.tsx"],
+  "include": [
+    "next-env.d.ts",
+    "frontend/**/*.ts",
+    "frontend/**/*.tsx",
+    "types/**/*.ts",
+    ".next/types/**/*.ts"
+  ],
   "exclude": [
     "node_modules",
     "frontend/dist",
