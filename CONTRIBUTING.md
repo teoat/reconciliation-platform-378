@@ -116,6 +116,9 @@ npx playwright test
 
 ## 📋 Pull Request Guidelines
 
+### Automated Package Lock Generation
+When you open a pull request, our CI automatically generates `package-lock.json` files for both the root and frontend directories. This ensures that all CI workflows can run successfully using `npm ci`. You don't need to commit these files manually - they are gitignored and will be automatically added to your PR by the GitHub Actions bot.
+
 ### Before Submitting
 - [ ] Code follows style guidelines
 - [ ] Tests pass locally
