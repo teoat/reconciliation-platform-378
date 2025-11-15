@@ -219,7 +219,7 @@ jobs:
           cargo bench --verbose
 
       - name: 📤 Upload performance results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: performance-results
           path: backend/target/criterion/
@@ -295,7 +295,7 @@ jobs:
           cargo deny check
 
       - name: 📤 Upload security results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: security-results
           path: backend/security-reports/
@@ -434,7 +434,7 @@ jobs:
           npm run test:e2e:report
 
       - name: 📤 Upload E2E test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: e2e-test-results
           path: frontend/test-results/
@@ -476,7 +476,7 @@ jobs:
           npm run test:performance
 
       - name: 📤 Upload performance results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-performance-results
           path: frontend/performance-reports/
@@ -519,7 +519,7 @@ jobs:
           snyk test
 
       - name: 📤 Upload security results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: frontend-security-results
           path: frontend/security-reports/
@@ -601,7 +601,7 @@ jobs:
           artillery report load-test-results.json
 
       - name: 📤 Upload load test results
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: load-test-results
           path: load-test-results.json
@@ -713,7 +713,7 @@ jobs:
           fi
 
       - name: 📤 Upload test report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: test-report
           path: test-report.md
