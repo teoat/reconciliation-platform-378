@@ -120,9 +120,27 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
           } else if (data.type === 'user_left') {
             setActiveUsers((prev) => prev.filter((u) => u.id !== data.userId));
           } else if (data.type === 'activity') {
-            setActivities((prev) => [data.activity, ...prev].slice(0, 100));
+            if (data.activity) {
+              setActivities((prev) => [{
+                ...data.activity,
+                userName: data.activity.userName || 'Unknown',
+                action: (data.activity.action as 'viewed' | 'edited' | 'commented' | 'shared' | 'joined' | 'left') || 'viewed',
+                target: data.activity.target || '',
+                targetType: (data.activity.targetType as 'project' | 'file' | 'reconciliation' | 'comment') || 'project',
+                timestamp: new Date(data.activity.timestamp)
+              }, ...prev].slice(0, 100));
+            }
           } else if (data.type === 'comment') {
-            setComments((prev) => [data.comment, ...prev]);
+            if (data.comment) {
+              setComments((prev) => [{
+                ...data.comment,
+                userName: data.comment.userName || 'Unknown',
+                content: data.comment.message || '',
+                targetId: data.comment.targetId || '',
+                targetType: (data.comment.targetType as 'project' | 'file' | 'reconciliation') || 'project',
+                timestamp: new Date(data.comment.timestamp)
+              }, ...prev]);
+            }
           }
         });
         setSessionSubscriptionId(subId);
