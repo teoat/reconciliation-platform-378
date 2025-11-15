@@ -89,8 +89,8 @@ curl http://localhost:8080/health
   - Frontend: `npm run lint`
 
 ## Deployment
-- Local and production Compose topologies, Kubernetes manifests, and scripts are documented in `DEPLOYMENT_GUIDE.md`.
-- See `docs/project-history.md` for historical deployment notes and milestone context.
+- Full deployment instructions: see `DEPLOYMENT_GUIDE.md`
+- Additional documentation: see `docs/` folder
 
 ## Observability & Operations
 - Grafana: `http://localhost:3001`

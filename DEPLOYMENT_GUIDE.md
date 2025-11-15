@@ -145,8 +145,6 @@ For elastic scaling, migrate to Kubernetes or another orchestrator and configure
 - **User & content readiness**: admin accounts provisioned, role matrix validated, user training and communications scheduled.
 - **Launch execution**: T-24/T0/T+24 hour checkpoints cover final health checks, activation sequence, and post-launch review.
 
-See `docs/project-history.md` for milestone context plus pointers to training, UAT, and support materials captured during earlier go-live planning.
-
 ## 12. Operations & Maintenance
 - Daily/weekly/monthly routines: health review, log rotation, security patching, capacity planning, and disaster-recovery drills.
 - Monitoring stack: Prometheus scrapes backend metrics at `/metrics`; Grafana dashboards cover application, infrastructure, and business KPIs; Alertmanager drives escalation.
@@ -154,6 +152,4 @@ See `docs/project-history.md` for milestone context plus pointers to training, U
 - Maintenance tooling: `kubectl rollout restart`, `docker compose up -d --build`, and `helm upgrade` support zero-downtime updates.
 - Security posture: rotate secrets, enforce RBAC, keep fail2ban/network policies aligned with compliance requirements.
 
-For deeper runbooks and troubleshooting flows, consult `docs/TROUBLESHOOTING.md`, `docs/SUPPORT_MAINTENANCE_GUIDE.md`, and `docs/INCIDENT_RESPONSE_RUNBOOKS.md`.
-
-For escalation paths and deeper remediation steps, see `docs/troubleshooting.md` and `docs/project-history.md`.
+For detailed operational procedures, see `docs/TROUBLESHOOTING.md`, `docs/SUPPORT_MAINTENANCE_GUIDE.md`, and `docs/INCIDENT_RESPONSE_RUNBOOKS.md`.

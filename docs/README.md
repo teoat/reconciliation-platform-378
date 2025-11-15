@@ -1,25 +1,27 @@
 # Documentation Index
 
-Curated reference for the `docs/` directory after the root-level documentation cleanup.
+Reference guide for the `docs/` directory.
 
-## Core References
-- `../README.md` – Primary landing page with quick start, configuration, and contribution flow. Share this alongside the refreshed `../DEPLOYMENT_GUIDE.md` with the broader team for review/feedback.
-- `../DEPLOYMENT_GUIDE.md` – Single source for dev/production/Kubernetes rollout steps.
-- `project-history.md` – Timeline of milestones and links to supporting materials.
-
-## Operational Playbooks
-- `../DEPLOYMENT_GUIDE.md` – Primary reference for environments, go-live checkpoints, and operations cadence.
-- `INCIDENT_RESPONSE_RUNBOOKS.md`, `SUPPORT_MAINTENANCE_GUIDE.md`, `TROUBLESHOOTING.md` – Stay; remain the canonical operational procedures.
+## Getting Started
+- **[../README.md](../README.md)** – Main project overview, quick start, and setup
+- **[../DEPLOYMENT_GUIDE.md](../DEPLOYMENT_GUIDE.md)** – Deployment for all environments
+- **[../CONTRIBUTING.md](../CONTRIBUTING.md)** – Contribution guidelines
 
 ## Architecture & Engineering
-- `ARCHITECTURE.md`, `INFRASTRUCTURE.md`, `SSOT_GUIDANCE.md` – Platform design, infrastructure topology, and configuration governance.
-- `API_DOCUMENTATION.md` – Consolidated REST/WebSocket reference.
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** – System architecture and design
+- **[INFRASTRUCTURE.md](INFRASTRUCTURE.md)** – Infrastructure topology
+- **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** – REST/WebSocket API reference
+- **[SSOT_GUIDANCE.md](SSOT_GUIDANCE.md)** – Configuration governance
 
-## Testing & Readiness
-- `UAT_PLAN.md`, `UAT_SUMMARY.md`, `USER_TRAINING_GUIDE.md` – User acceptance, training workstreams.
+## Operations
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** – Common issues and solutions
+- **[INCIDENT_RESPONSE_RUNBOOKS.md](INCIDENT_RESPONSE_RUNBOOKS.md)** – Incident response procedures
+- **[SUPPORT_MAINTENANCE_GUIDE.md](SUPPORT_MAINTENANCE_GUIDE.md)** – Maintenance operations
 
-## Next Cleanup Actions
-- Consolidate deployment runbooks (`DEPLOYMENT_OPERATIONS_GUIDE.md`, `PRODUCTION_DEPLOYMENT.md`, etc.) into the updated `../DEPLOYMENT_GUIDE.md`.
-- Deduplicate API docs (`API_DOCUMENTATION.md` vs `API.md`).
-- Decide whether legacy go-live summaries need to become appendices in `project-history.md` or can be removed.
-- Confirm all cross-links point to existing files post-cleanup.
+## Testing & Training
+- **[UAT_PLAN.md](UAT_PLAN.md)** – User acceptance testing plan
+- **[UAT_SUMMARY.md](UAT_SUMMARY.md)** – UAT results and summary
+- **[USER_TRAINING_GUIDE.md](USER_TRAINING_GUIDE.md)** – End-user training materials
+
+## Reference
+- **[project-history.md](project-history.md)** – Project milestones and history
