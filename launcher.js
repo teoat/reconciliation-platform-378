@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Universal launcher script for the Reconciliation app
+// Universal launcher script for the 378 Data and Evidence Reconciliation App
 // This script detects the OS and runs the appropriate command
 
 const { exec, spawn } = require('child_process');
@@ -7,7 +7,7 @@ const os = require('os');
 const path = require('path');
 const fs = require('fs');
 
-console.log('🚀 Starting Reconciliation App...');
+console.log('🚀 Starting 378 Data and Evidence Reconciliation App...');
 console.log(`📱 Platform: ${os.platform()} ${os.arch()}`);
 
 // Check if Node.js is available

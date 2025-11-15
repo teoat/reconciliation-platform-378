@@ -1,5 +1,5 @@
 #!/bin/bash
-# Production Setup Script for Reconciliation App
+# Production Setup Script for 378 Data and Evidence Reconciliation App
 # Strict implementation with comprehensive error handling
 
 set -euo pipefail  # Exit on any error, undefined vars, pipe failures
@@ -43,7 +43,7 @@ FRONTEND_DIR="$PROJECT_ROOT"
 NODE_VERSION="18"
 NPM_VERSION="9"
 
-log_info "Starting Production Setup for Reconciliation App"
+log_info "Starting Production Setup for 378 Data and Evidence Reconciliation App"
 log_info "Project Root: $PROJECT_ROOT"
 
 # Step 1: Verify Prerequisites
@@ -110,7 +110,7 @@ if [ ! -f "$FRONTEND_DIR/.env.local" ]; then
 # Frontend Environment Variables
 NEXT_PUBLIC_API_URL=http://localhost:3001
 NEXT_PUBLIC_WS_URL=ws://localhost:3001
-NEXT_PUBLIC_APP_NAME=Reconciliation App
+NEXT_PUBLIC_APP_NAME=378 Data and Evidence Reconciliation App
 NEXT_PUBLIC_APP_VERSION=1.0.0
 EOF
     log_success "Created frontend .env.local"
@@ -261,7 +261,7 @@ cat > "$PROJECT_ROOT/stop-production.sh" << 'EOF'
 #!/bin/bash
 # Production Stop Script
 
-echo "Stopping Reconciliation App..."
+echo "Stopping 378 Data and Evidence Reconciliation App..."
 
 # Kill processes on specific ports
 lsof -ti:3001 | xargs kill -9 2>/dev/null || true

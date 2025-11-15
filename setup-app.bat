@@ -1,5 +1,5 @@
 @echo off
-echo 🚀 Reconciliation App Setup
+echo 🚀 378 Data and Evidence Reconciliation App Setup
 echo ==========================
 
 echo.

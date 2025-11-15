@@ -10,5 +10,5 @@
   <rect width="400" height="100" rx="8" fill="url(#darkGrad1)"/>
   <text x="20" y="55" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#1E293B">378</text>
   <text x="100" y="40" font-family="Arial, sans-serif" font-size="16" fill="#1E293B">Data &amp; Evidence</text>
-  <text x="100" y="65" font-family="Arial, sans-serif" font-size="16" fill="#1E293B">Reconciliation App</text>
+  <text x="100" y="65" font-family="Arial, sans-serif" font-size="16" fill="#1E293B">Reconciliation</text>
 </svg>

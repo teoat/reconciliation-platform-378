@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-test.describe('Reconciliation App E2E Tests', () => {
+test.describe('378 Data and Evidence Reconciliation App E2E Tests', () => {
   test.beforeEach(async ({ page }) => {
     // Navigate to the app
     await page.goto('/')
@@ -8,7 +8,7 @@ test.describe('Reconciliation App E2E Tests', () => {
 
   test.describe('Authentication Flow', () => {
     test('should display login page initially', async ({ page }) => {
-      await expect(page).toHaveTitle(/Reconciliation App/)
+      await expect(page).toHaveTitle(/378 Data and Evidence Reconciliation App/)
       await expect(page.locator('h1')).toContainText('Welcome')
     })
 

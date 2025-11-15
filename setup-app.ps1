@@ -1,5 +1,5 @@
-# Complete Reconciliation App Setup Script
-Write-Host "🚀 Reconciliation App Setup Script" -ForegroundColor Green
+# Complete 378 Data and Evidence Reconciliation App Setup Script
+Write-Host "🚀 378 Data and Evidence Reconciliation App Setup Script" -ForegroundColor Green
 Write-Host "=" * 40 -ForegroundColor Blue
 
 # Check if Node.js is installed

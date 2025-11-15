@@ -1,7 +1,7 @@
 # PowerShell script to fix npm PATH and start the app
-# This script adds npm to the PATH and starts the Reconciliation app
+# This script adds npm to the PATH and starts the 378 Data and Evidence Reconciliation App
 
-Write-Host "🔧 Fixing npm PATH and starting Reconciliation App..." -ForegroundColor Green
+Write-Host "🔧 Fixing npm PATH and starting 378 Data and Evidence Reconciliation App..." -ForegroundColor Green
 
 # Add common npm paths to PATH
 $npmPaths = @(
@@ -83,7 +83,7 @@ if (-not (Test-Path "node_modules")) {
 }
 
 # Start the development server
-Write-Host "🚀 Starting Reconciliation App on http://localhost:1000..." -ForegroundColor Green
+Write-Host "🚀 Starting 378 Data and Evidence Reconciliation App on http://localhost:1000..." -ForegroundColor Green
 Write-Host "📝 Press Ctrl+C to stop the server" -ForegroundColor Yellow
 
 # Open the launcher page in browser

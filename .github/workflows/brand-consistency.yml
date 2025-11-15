@@ -36,6 +36,7 @@ jobs:
         
         # Check for old app name references
         echo "📝 Checking for old app name references..."
+        # Look for "Reconciliation App" but NOT "378 Data and Evidence Reconciliation App"
         if grep -rn "Reconciliation App" \
           --exclude-dir=node_modules \
           --exclude-dir=.git \
@@ -45,7 +46,7 @@ jobs:
           --exclude-dir=build \
           --exclude="*.md" \
           --exclude="brand-consistency.yml" \
-          . 2>/dev/null; then
+          . 2>/dev/null | grep -v "378 Data and Evidence Reconciliation App"; then
           echo "❌ Found references to old app name 'Reconciliation App'"
           echo "   Use '378 Data and Evidence Reconciliation App' instead"
           ((errors++))
@@ -56,6 +57,7 @@ jobs:
         
         # Check for old package names (excluding workflow and docs)
         echo "📦 Checking for old package names..."
+        # Look for "reconciliation-app" but NOT "378-data-evidence-reconciliation-app"
         if grep -rn "reconciliation-app" \
           --exclude-dir=node_modules \
           --exclude-dir=.git \
@@ -66,7 +68,7 @@ jobs:
           --exclude="*.md" \
           --exclude="brand-consistency.yml" \
           --exclude="package-lock.json" \
-          . 2>/dev/null; then
+          . 2>/dev/null | grep -v "378-data-evidence-reconciliation-app"; then
           echo "❌ Found references to old package name 'reconciliation-app'"
           echo "   Use '378-data-evidence-reconciliation-app' instead"
           ((errors++))

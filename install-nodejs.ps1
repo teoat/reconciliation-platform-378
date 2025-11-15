@@ -1,5 +1,5 @@
 # PowerShell script to install Node.js on Windows
-Write-Host "🚀 Installing Node.js for Reconciliation App..." -ForegroundColor Green
+Write-Host "🚀 Installing Node.js for 378 Data and Evidence Reconciliation App..." -ForegroundColor Green
 
 # Check if running as administrator
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")

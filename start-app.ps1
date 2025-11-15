@@ -1,5 +1,5 @@
-# PowerShell script to run the Reconciliation app
-Write-Host "Starting Reconciliation App..." -ForegroundColor Green
+# PowerShell script to run the 378 Data and Evidence Reconciliation App
+Write-Host "Starting 378 Data and Evidence Reconciliation App..." -ForegroundColor Green
 
 # Check if Node.js is installed
 try {
