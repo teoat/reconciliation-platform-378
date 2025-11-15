@@ -1,5 +1,5 @@
 // Data Provider Security Hook
-import { useSecurity } from '../../hooks/useSecurity';
+import { useSecurity } from '../../../hooks/useSecurity';
 
 export const useDataProviderSecurity = () => {
   const {
