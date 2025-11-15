@@ -124,9 +124,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
           severity: 'high',
           title: 'Workflow Error',
           message: err instanceof Error ? err.message : 'Failed to advance workflow',
-          pages: [workflowData.workflowState?.currentStage.page || '', toStage.page],
-          isDismissed: false,
-        });
+          type: 'error',
+          status: 'active',
+          createdAt: new Date()
+        } as any);
       } finally {
         setIsLoading(false);
       }
@@ -174,7 +175,11 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     updateCrossPageData: updatesData.updateCrossPageData,
     ...syncData,
     syncData: enhancedSyncData,
-    ...notificationsData,
+    notifications: notificationsData.notifications as any,
+    alerts: notificationsData.alerts as any,
+    addNotification: addNotificationWrapper,
+    addAlert: addAlertWrapper,
+    dismissAlert: notificationsData.dismissAlert,
     validateCrossPageData,
     subscribeToUpdates: updatesData.subscribeToUpdates,
     isLoading,
