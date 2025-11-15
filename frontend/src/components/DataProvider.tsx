@@ -60,11 +60,16 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   // Notifications hook
   const notificationsData = useDataProviderNotifications();
 
+  // Create wrapper for addAlert to match workflow signature
+  const addAlertWrapper = React.useCallback((alert: Omit<import('./data/types').Alert, 'id' | 'timestamp'>) => {
+    notificationsData.addAlert(alert as any);
+  }, [notificationsData]);
+
   // Workflow hook
   const workflowData = useDataProviderWorkflow(
     crossPageData,
     validateCrossPageData,
-    notificationsData.addAlert,
+    addAlertWrapper,
     notificationsData.addNotification
   );
 

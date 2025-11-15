@@ -33,6 +33,11 @@ export const useDataProviderUpdates = (
     logAuditEvent({ userId, action, resource, result, details });
   }, [logAuditEvent]);
 
+  // Wrapper for wsSyncData to match expected signature
+  const wsSyncDataWrapper = React.useCallback(() => {
+    wsSyncData(crossPageData);
+  }, [wsSyncData, crossPageData]);
+
   const { updateCrossPageData: updateCrossPageDataInternal, subscribeToUpdates } =
     useCrossPageDataUpdates(
       crossPageData,
@@ -42,7 +47,7 @@ export const useDataProviderUpdates = (
       encryptData,
       isSecurityEnabled,
       syncConnected,
-      wsSyncData
+      wsSyncDataWrapper
     );
 
   return {
