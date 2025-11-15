@@ -28,6 +28,13 @@ interface LiveComment {
   replies?: LiveComment[];
 }
 
+interface Comment {
+  id?: string;
+  userName?: string;
+  message?: string;
+  timestamp?: number | string;
+}
+
 interface ActiveUser {
   id: string;
   name: string;
@@ -192,7 +199,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                   </div>
                 ) : (
                   liveComments.map((commentMsg, index) => {
-                    const comment = commentMsg.comment as any || {};
+                    const comment = (commentMsg.comment as Comment) || { id: '', userName: 'User', message: 'No message', timestamp: 0 };
                     return (
                       <div key={comment.id || `comment-${commentMsg.projectId || 'unknown'}-${commentMsg.timestamp || index}`} className="space-y-2">
                         <div className="flex space-x-2">
