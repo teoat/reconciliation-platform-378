@@ -390,7 +390,7 @@ import { FrenlyAIProvider } from './components/frenly/FrenlyAIProvider'
     enableTutorial={true}
     initialProgress={[]}
   >
-    <Router basename={process.env.NEXT_PUBLIC_BASE_PATH || '/'}>
+    <Router basename={import.meta.env.BASE_URL || '/'}>
       {/* existing routes */}
     </Router>
   </FrenlyAIProvider>
