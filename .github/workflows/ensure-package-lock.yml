@@ -23,9 +23,17 @@ jobs:
         run: |
           # Create or update the lockfile only; does not install node_modules
           # Generate for root directory (some workflows use npm ci in root)
-          npm install --package-lock-only --legacy-peer-deps
+          echo "Generating package-lock.json for root directory..."
+          if ! npm install --package-lock-only --legacy-peer-deps; then
+            echo "Error: Failed to generate package-lock.json in root directory"
+            exit 1
+          fi
           # Generate for frontend directory (most CI workflows run npm ci here)
-          cd frontend && npm install --package-lock-only
+          echo "Generating package-lock.json for frontend directory..."
+          if ! (cd frontend && npm install --package-lock-only); then
+            echo "Error: Failed to generate package-lock.json in frontend directory"
+            exit 1
+          fi
       - name: Commit package-lock.json if created or changed
         run: |
           git config user.name "github-actions[bot]"
