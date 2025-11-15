@@ -1,0 +1,377 @@
+---
+# ============================================================================
+# SINGLE SOURCE OF TRUTH (SSOT) LOCK FILE
+# ============================================================================
+# This file defines the authoritative implementations for each domain in the
+# Reconciliation Platform codebase.
+#
+# Purpose: Prevent code duplication and ensure consistency
+# Enforcement: Pre-commit hooks, linting rules, code review
+# Updates: Requires architecture team approval
+# ============================================================================
+
+version: '1.0.0'
+date: '2025-01-28'
+enforcement_level: 'strict'
+maintenance_team: 'Architecture Team'
+
+# ============================================================================
+# SOURCES OF TRUTH
+# ============================================================================
+# Defines the canonical implementation for each domain
+
+sources_of_truth:
+
+  # -------------------------------------------------------------------------
+  # API CLIENT
+  # -------------------------------------------------------------------------
+  api_client:
+    description: "Unified API client for all frontend-backend communication"
+    path: "frontend/src/services/apiClient.ts"
+    exports:
+      - "apiClient"  # Singleton instance
+      - "UnifiedApiClient"  # Class for custom instances
+      - "wsClient"  # WebSocket client
+      - "ApiClientError"  # Error type
+    allowed_imports:
+      - "from '../services/apiClient'"
+      - "from '@/services/apiClient'"
+    deprecated_paths:
+      - "frontend/src/utils/apiClient.ts"
+      - "frontend/src/services/ApiService.ts"
+    removal_version: "2.0.0"
+
+  # -------------------------------------------------------------------------
+  # AUTHENTICATION
+  # -------------------------------------------------------------------------
+  authentication:
+    description: "Authentication logic and session management"
+    frontend:
+      path: "frontend/src/hooks/useAuth.tsx"
+      exports:
+        - "AuthProvider"
+        - "useAuth"
+        - "ProtectedRoute"
+    backend:
+      service:
+        path: "backend/src/services/auth.rs"
+        responsibility: "JWT generation, password hashing, user auth logic"
+      middleware:
+        path: "backend/src/middleware/auth.rs"
+        responsibility: "Request authentication and authorization"
+    deprecated_paths:
+      - "frontend/src/components/hooks/useAuth.ts"
+    removal_version: "2.0.0"
+
+  # -------------------------------------------------------------------------
+  # ERROR HANDLING
+  # -------------------------------------------------------------------------
+  error_handling:
+    description: "Error classification, handling, and recovery"
+    path: "frontend/src/utils/errorHandler.ts"
+    exports:
+      - "ErrorHandler"
+      - "globalErrorHandler"
+      - "ErrorBoundary"
+      - "createError"
+      - "ErrorType"
+      - "ErrorSeverity"
+      - "getErrorMessage"
+      - "getErrorTitle"
+    deprecated_paths:
+      - "frontend/src/services/errorHandler.ts"
+    removal_version: "2.0.0"
+
+  # -------------------------------------------------------------------------
+  # VALIDATION
+  # -------------------------------------------------------------------------
+  validation:
+    description: "Data validation rules and utilities"
+    backend:
+      path: "backend/src/services/validation.rs"
+      exports:
+        - "ValidationService"
+        - "ValidationResult"
+        - "CustomValidationError"
+    frontend:
+      path: "frontend/src/utils/validation.ts"
+      note: "To be created in Phase 1"
+      imports_from_config:
+        - "frontend/src/config/AppConfig.ts"
+    deprecated_paths:
+      - "backend/src/utils/validation.rs"
+    removal_version: "2.0.0"
+    notes:
+      - "Password validation MUST require special characters"
+      - "All validators must align between frontend and backend"
+
+  # -------------------------------------------------------------------------
+  # CACHE MANAGEMENT
+  # -------------------------------------------------------------------------
+  cache:
+    description: "Caching services and HTTP cache middleware"
+    backend:
+      service:
+        path: "backend/src/services/cache.rs"
+        responsibility: "Core Redis caching, cache strategies, multi-level cache"
+      middleware:
+        path: "backend/src/middleware/cache.rs"
+        responsibility: "HTTP-level response caching"
+        note: "Uses cache service internally"
+    frontend:
+      path: "frontend/src/services/cacheService.ts"
+    relationship:
+      - "Middleware depends on Service"
+      - "Both share Redis client instance"
+
+  # -------------------------------------------------------------------------
+  # CONFIGURATION
+  # -------------------------------------------------------------------------
+  configuration:
+    description: "Application configuration and constants"
+    frontend:
+      path: "frontend/src/config/AppConfig.ts"
+      exports:
+        - "APP_CONFIG"
+        - "API_ENDPOINTS"
+        - "VALIDATION_RULES"
+        - "ERROR_MESSAGES"
+        - "Config"  # Unified export
+    backend:
+      path: "backend/src/config/mod.rs"
+      exports:
+        - "Config"
+        - "MonitoringConfig"
+        - "EmailConfig"
+        - "BillingConfig"
+    rules:
+      - "No hard-coded configuration values"
+      - "Read from environment variables only"
+      - "No direct access to process.env in components"
+    deprecated_paths:
+      - "frontend/src/config/index.ts"
+
+  # -------------------------------------------------------------------------
+  # MONITORING
+  # -------------------------------------------------------------------------
+  monitoring:
+    description: "Performance monitoring and error tracking"
+    frontend:
+      config:
+        path: "frontend/src/config/monitoring.ts"
+        responsibility: "Monitoring configuration only"
+      service:
+        path: "frontend/src/services/monitoring.ts"
+        responsibility: "Implementation, metric collection"
+    backend:
+      config:
+        path: "backend/src/config/monitoring.rs"
+      service:
+        path: "backend/src/services/monitoring.rs"
+    deprecated_paths:
+      - "backend/src/monitoring.rs"
+    rule: "Config files contain NO business logic"
+
+  # -------------------------------------------------------------------------
+  # FILE SERVICES
+  # -------------------------------------------------------------------------
+  file_services:
+    description: "File upload, validation, and processing"
+    frontend:
+      path: "frontend/src/services/fileService.ts"
+    backend:
+      path: "backend/src/services/file.rs"
+    validation:
+      path: "frontend/src/utils/fileValidation.ts"
+
+  # -------------------------------------------------------------------------
+  # WEBSOCKET
+  # -------------------------------------------------------------------------
+  websocket:
+    description: "Real-time WebSocket communication"
+    frontend:
+      client:
+        path: "frontend/src/services/apiClient.ts"  # Uses wsClient export
+        hook:
+          path: "frontend/src/hooks/useWebSocketIntegration.tsx"
+    backend:
+      path: "backend/src/websocket.rs"
+
+  # -------------------------------------------------------------------------
+  # PERFORMANCE UTILITIES
+  # -------------------------------------------------------------------------
+  performance:
+    frontend:
+      path: "frontend/src/utils/performance.ts"
+    backend:
+      middleware:
+        path: "backend/src/middleware/performance.rs"
+
+# ============================================================================
+# DEPRECATED MODULES
+# ============================================================================
+# Files that should NOT be imported from anymore
+# Will be removed in the specified version
+
+deprecated_modules:
+  - path: "frontend/src/utils/apiClient.ts"
+    reason: "Replaced by services/apiClient.ts"
+    use_instead: "frontend/src/services/apiClient.ts"
+    removal_version: "2.0.0"
+    
+  - path: "frontend/src/components/hooks/useAuth.ts"
+    reason: "Mock implementation - replaced by hooks/useAuth.tsx"
+    use_instead: "frontend/src/hooks/useAuth.tsx"
+    removal_version: "2.0.0"
+    
+  - path: "frontend/src/services/errorHandler.ts"
+    reason: "Replaced by utils/errorHandler.ts"
+    use_instead: "frontend/src/utils/errorHandler.ts"
+    removal_version: "2.0.0"
+    
+  - path: "backend/src/utils/validation.rs"
+    reason: "Replaced by services/validation.rs"
+    use_instead: "backend/src/services/validation.rs"
+    removal_version: "2.0.0"
+    
+  - path: "frontend/src/config/index.ts"
+    reason: "Replaced by AppConfig.ts"
+    use_instead: "frontend/src/config/AppConfig.ts"
+    removal_version: "2.0.0"
+    
+  - path: "backend/src/monitoring.rs"
+    reason: "Replaced by config/monitoring.rs and services/monitoring.rs"
+    use_instead: "backend/src/config/monitoring.rs"
+    removal_version: "2.0.0"
+
+# ============================================================================
+# ENFORCEMENT RULES
+# ============================================================================
+
+enforcement_rules:
+  - No new implementations of existing SSOT modules
+  - Must import from SSOT paths only
+  - Deprecated modules show warnings in IDE
+  - Pre-commit hooks block deprecated imports
+  - Code review requires SSOT compliance
+  - Architecture team approval for new SSOT modules
+
+# ============================================================================
+# MIGRATION STATUS
+# ============================================================================
+
+migration_status:
+  current_phase: 1
+  phases:
+    - phase: 1
+      name: "Critical Duplicates"
+      status: "in_progress"
+      tasks:
+        - "Consolidate API clients"
+        - "Consolidate error handlers"
+        - "Fix validation inconsistencies"
+        - "Document auth SSOT"
+      target_completion: "2025-02-04"
+      
+    - phase: 2
+      name: "Configuration"
+      status: "pending"
+      tasks:
+        - "Standardize configuration structure"
+        - "Remove hard-coded values"
+        - "Document config SSOT"
+      target_completion: "2025-02-11"
+      
+    - phase: 3
+      name: "Services"
+      status: "pending"
+      tasks:
+        - "Review and consolidate duplicate services"
+        - "Document service dependencies"
+        - "Create service dependency graph"
+      target_completion: "2025-02-18"
+      
+    - phase: 4
+      name: "Documentation Cleanup"
+      status: "pending"
+      tasks:
+        - "Archive redundant documentation"
+        - "Create master documentation structure"
+        - "Update references"
+      target_completion: "2025-02-25"
+
+# ============================================================================
+# METRICS
+# ============================================================================
+
+metrics:
+  total_files_analyzed: 567
+  duplicates_found: 254
+  redundancy_percentage: 45
+  estimated_loc_reduction: 15000
+  hazeness_reduction_percentage: 40
+  
+  ssot_modules:
+    critical: 6
+    high: 4
+    medium: 3
+    
+  deprecated_modules: 6
+  enforcement_tools: 3
+
+# ============================================================================
+# VALIDATION
+# ============================================================================
+# Used by automated tools to validate SSOT compliance
+
+validation:
+  import_patterns:
+    allowed:
+      - "^@/services/apiClient$"
+      - "^@/hooks/useAuth$"
+      - "^@/utils/errorHandler$"
+      - "^@/config/AppConfig$"
+      - "^@/services/cacheService$"
+      - "^@/utils/validation$"
+      
+    forbidden:
+      - ".*/utils/apiClient"
+      - ".*/components/hooks/useAuth"
+      - ".*/services/errorHandler"
+      - ".*/utils/validation"  # Backend
+      - ".*/config/index"
+
+  file_existence:
+    required:
+      - "frontend/src/services/apiClient.ts"
+      - "frontend/src/hooks/useAuth.tsx"
+      - "frontend/src/utils/errorHandler.ts"
+      - "frontend/src/config/AppConfig.ts"
+      - "backend/src/services/validation.rs"
+      - "backend/src/services/auth.rs"
+      - "backend/src/config/mod.rs"
+
+# ============================================================================
+# NOTES
+# ============================================================================
+
+notes:
+  - "This file is the authoritative source for SSOT definitions"
+  - "Changes require architecture team approval"
+  - "Version increments with breaking changes"
+  - "All deprecated modules should have deprecation warnings"
+  - "Documentation links to this file"
+  - "Pre-commit hooks enforce rules defined here"
+
+# ============================================================================
+# CHANGELOG
+# ============================================================================
+
+changelog:
+  - version: "1.0.0"
+    date: "2025-01-28"
+    changes:
+      - "Initial SSOT lock file creation"
+      - "Defined all critical SSOT modules"
+      - "Added enforcement rules and migration plan"
+

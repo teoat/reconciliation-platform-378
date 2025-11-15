@@ -1,0 +1,35 @@
+
+> reconciliation-frontend@0.0.0 build
+> vite build --mode production
+
+vite v5.4.21 building for production...
+transforming...
+✓ 239 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                  1.67 kB │ gzip:  0.66 kB
+dist/css/index-DlJMIyGs.css                     54.01 kB │ gzip:  9.16 kB
+dist/js/NotFound-BdeX8wzE.js                     5.50 kB │ gzip:  1.06 kB
+dist/js/ProjectCreate-BiExgkoi.js                7.20 kB │ gzip:  1.63 kB
+dist/js/EnhancedDropzone-CLaPIS0U.js             9.21 kB │ gzip:  2.17 kB
+dist/js/Dashboard-Dq_wY9lj.js                    9.49 kB │ gzip:  1.98 kB
+dist/js/ProjectEdit-Cat372OD.js                  9.52 kB │ gzip:  1.95 kB
+dist/js/FileUpload-B0ORrbGG.js                  11.54 kB │ gzip:  2.37 kB
+dist/js/ApiTester-BihJwZeT.js                   17.50 kB │ gzip:  3.14 kB
+dist/js/Profile-C7p5iPsR.js                     18.72 kB │ gzip:  2.80 kB
+dist/js/QuickReconciliationWizard-CsR8YEIO.js   19.98 kB │ gzip:  3.67 kB
+dist/js/ProjectDetail-LiVJnjBB.js               23.29 kB │ gzip:  3.28 kB
+dist/js/ApiDocumentation-BR3Z8Xrk.js            26.66 kB │ gzip:  3.60 kB
+dist/js/ApiIntegrationStatus-_IEXCN8g.js        28.07 kB │ gzip:  4.30 kB
+dist/js/settings-feature-D3lIZeGM.js            31.22 kB │ gzip:  6.00 kB
+dist/js/index-L9JUIhYw.js                       32.80 kB │ gzip:  5.25 kB
+dist/js/reconciliation-feature-B6xiZgiV.js      42.45 kB │ gzip:  6.39 kB
+dist/js/forms-vendor-u6GrmQhW.js                54.33 kB │ gzip: 12.51 kB
+dist/js/admin-feature-D434K_ky.js               56.00 kB │ gzip:  9.31 kB
+dist/js/analytics-feature-DMOHjMhB.js           57.39 kB │ gzip:  8.98 kB
+dist/js/utils-services-DXgNPEWC.js              62.63 kB │ gzip: 15.48 kB
+dist/js/index-ByAppvPy.js                       70.74 kB │ gzip: 10.12 kB
+dist/js/vendor-misc-CYY0rKnZ.js                 90.57 kB │ gzip: 30.79 kB
+dist/js/react-core-CbTxeOG7.js                 123.20 kB │ gzip: 38.18 kB
+dist/js/react-dom-vendor-Z7G_U4tt.js           269.92 kB │ gzip: 82.16 kB
+✓ built in 1m 16s

@@ -1,0 +1,32 @@
+# Codecov configuration
+coverage:
+  status:
+    project:
+      default:
+        target: 80%
+        threshold: 2%
+      backend:
+        target: 70%
+        threshold: 2%
+      frontend:
+        target: 80%
+        threshold: 2%
+    patch:
+      default:
+        target: 80%
+        threshold: 2%
+
+ignore:
+  - '**/node_modules/**'
+  - '**/tests/**'
+  - '**/__tests__/**'
+  - '**/mocks/**'
+
+comment:
+  layout: 'reach, diff, flags, files'
+  behavior: default
+  require_changes: false
+
+codecov:
+  notify:
+    after_n_builds: 1

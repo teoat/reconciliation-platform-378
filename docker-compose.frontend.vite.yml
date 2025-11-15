@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  frontend-vite:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.frontend.vite
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+    image: frontend-vite:local
+    container_name: reconciliation-frontend-vite
+    environment:
+      - VITE_API_URL=${VITE_API_URL:-http://backend:2000/api}
+      - VITE_WS_URL=${VITE_WS_URL:-ws://backend:2000}
+      - NODE_ENV=production
+    ports:
+      - "1000:80"
+    restart: unless-stopped
+    depends_on:
+      - backend
+
+  backend:
+    # Uses your existing backend service if present; override here if needed
+    image: reconciliation-backend:local
+    profiles: ["vite"]
+

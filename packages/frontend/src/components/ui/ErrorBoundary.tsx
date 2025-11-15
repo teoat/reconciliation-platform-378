@@ -39,7 +39,7 @@ export class ErrorBoundary extends Component<Props, State> {
     })
 
     // Log error to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.error('ErrorBoundary caught an error:', error, errorInfo)
     }
 
@@ -47,7 +47,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.props.onError?.(error, errorInfo)
 
     // Log to external service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.MODE === 'production') {
       // Here you would typically send the error to a service like Sentry
       console.error('Production error:', error, errorInfo)
     }
@@ -88,7 +88,7 @@ export class ErrorBoundary extends Component<Props, State> {
               We're sorry, but something unexpected happened. Please try refreshing the page or contact support if the problem persists.
             </p>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.MODE === 'development' && this.state.error && (
               <div className="mb-6 p-4 bg-gray-100 rounded-lg text-left">
                 <h3 className="text-sm font-medium text-gray-900 mb-2">Error Details:</h3>
                 <pre className="text-xs text-gray-600 whitespace-pre-wrap">
@@ -142,7 +142,7 @@ export const useErrorHandler = () => {
     console.error('Error caught by useErrorHandler:', error, errorInfo)
     
     // Log to external service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.MODE === 'production') {
       // Send to error tracking service
       console.error('Production error:', error, errorInfo)
     }
@@ -269,7 +269,7 @@ export const setupGlobalErrorHandling = () => {
     console.error('Unhandled promise rejection:', event.reason)
     
     // Log to external service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.MODE === 'production') {
       console.error('Production unhandled rejection:', event.reason)
     }
     
@@ -281,7 +281,7 @@ export const setupGlobalErrorHandling = () => {
     console.error('Global error:', event.error)
     
     // Log to external service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.MODE === 'production') {
       console.error('Production global error:', event.error)
     }
   })

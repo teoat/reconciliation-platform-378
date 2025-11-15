@@ -1,0 +1,94 @@
+# AlertManager Configuration for 378 Reconciliation Platform
+global:
+  resolve_timeout: 5m
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+
+# Routing tree for alerts
+route:
+  receiver: 'default-receiver'
+  group_by: ['alertname', 'severity', 'environment']
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 12h
+  routes:
+    # Critical alerts go to PagerDuty
+    - match:
+        severity: critical
+      receiver: 'pagerduty-critical'
+      continue: true
+    
+    # High severity alerts to Slack + PagerDuty
+    - match_re:
+        severity: warning|high
+      receiver: 'slack-notifications'
+    
+    # Info alerts to Slack only
+    - match:
+        severity: info
+      receiver: 'slack-notifications'
+
+# Inhibition rules
+inhibit_rules:
+  # Critical alerts inhibit warnings for same alert
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname']
+
+# Alert receivers
+receivers:
+  # Default receiver for all alerts
+  - name: 'default-receiver'
+    slack_configs:
+      - channel: '#production-alerts'
+        title: '🚨 {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *Alert:* {{ .Annotations.summary }}
+          *Description:* {{ .Annotations.description }}
+          *Severity:* {{ .Labels.severity }}
+          *Environment:* {{ .Labels.environment }}
+          {{ end }}
+        send_resolved: true
+  
+  # Critical alerts to PagerDuty
+  - name: 'pagerduty-critical'
+    pagerduty_configs:
+      - service_key: '${PAGERDUTY_SERVICE_KEY}'
+        severity: 'critical'
+        description: '{{ .GroupLabels.alertname }}'
+        details:
+          summary: '{{ .CommonAnnotations.summary }}'
+          description: '{{ .CommonAnnotations.description }}'
+          severity: '{{ .CommonLabels.severity }}'
+          environment: '{{ .CommonLabels.environment }}'
+    
+    # Also send to Slack for visibility
+    slack_configs:
+      - channel: '#critical-alerts'
+        title: '🔥 CRITICAL: {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          *CRITICAL ALERT*
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+          Severity: {{ .Labels.severity }}
+          {{ end }}
+  
+  # Slack notifications for warnings and info
+  - name: 'slack-notifications'
+    slack_configs:
+      - channel: '#production-alerts'
+        title: '⚠️ {{ .GroupLabels.alertname }}'
+        text: |
+          {{ range .Alerts }}
+          {{ .Annotations.summary }}
+          {{ .Annotations.description }}
+          {{ end }}
+        send_resolved: true
+
+# Template files
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
