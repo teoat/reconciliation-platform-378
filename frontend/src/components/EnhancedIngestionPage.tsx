@@ -321,7 +321,7 @@ const EnhancedIngestionPage = () => {
     let processedData: ProcessedData[]
     
     if (file.name.includes('expenses')) {
-      const expenses = IndonesianDataProcessor.processExpensesData(rawData)
+      const expenses = IndonesianDataProcessor.processExpenseData(rawData)
       processedData = expenses.map((expense: ProcessedExpenseRecord) => ({
         id: expense.id,
         source: 'ingestion' as const,
@@ -403,7 +403,7 @@ const EnhancedIngestionPage = () => {
         id: item.id,
         type: 'ingestion_to_reconciliation',
         status: 'pending',
-        data: item,
+        data: item as unknown as Record<string, unknown>,
         timestamp: Date.now(),
         source: 'ingestion',
         target: 'reconciliation'

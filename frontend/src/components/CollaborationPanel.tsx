@@ -28,6 +28,13 @@ interface LiveComment {
   replies?: LiveComment[];
 }
 
+interface Comment {
+  id?: string;
+  userName?: string;
+  message?: string;
+  timestamp?: number | string;
+}
+
 interface ActiveUser {
   id: string;
   name: string;
@@ -223,11 +230,32 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                               <span>Reply</span>
                             </button>
                           </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium text-gray-900">
+                                {comment.userName || 'User'}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {comment.timestamp ? formatTimestamp(comment.timestamp) : 'Now'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-700 mt-1">
+                              {comment.message || 'No message'}
+                            </p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <button
+                                onClick={() => setReplyingTo(comment.id || `${index}`)}
+                                className="text-xs text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+                              >
+                                <Reply className="w-3 h-3" />
+                                <span>Reply</span>
+                              </button>
+                            </div>
                         </div>
                       </div>
                       
                       {/* Reply Input */}
-                      {replyingTo === comment.id && (
+                      {replyingTo === (comment.id || `${index}`) && (
                         <div className="ml-8 space-y-2">
                           <div className="flex space-x-2">
                             <input
@@ -238,12 +266,12 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                               className="flex-1 text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
-                                  handleSendReply(comment.id);
+                                  handleSendReply(comment.id || `${index}`);
                                 }
                               }}
                             />
                             <button
-                              onClick={() => handleSendReply(comment.id)}
+                              onClick={() => handleSendReply(comment.id || `${index}`)}
                               className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
                             >
                               <Send className="w-3 h-3" />
