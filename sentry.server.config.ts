@@ -98,7 +98,7 @@ Sentry.init({
   },
   
   // Server context
-  serverName: process.env.SENTRY_SERVER_NAME || 'reconciliation-app-server',
+  serverName: process.env.SENTRY_SERVER_NAME || '378-data-evidence-reconciliation-app-server',
   
   // Additional options
   maxBreadcrumbs: 50,
@@ -108,7 +108,7 @@ Sentry.init({
   // Custom tags
   initialScope: {
     tags: {
-      component: 'reconciliation-app-server',
+      component: '378-data-evidence-reconciliation-app-server',
       version: process.env.npm_package_version || '1.0.0',
       node_version: process.version,
     },

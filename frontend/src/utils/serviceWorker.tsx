@@ -49,7 +49,7 @@ export const defaultServiceWorkerConfig: ServiceWorkerConfig = {
   scope: '/',
   updateInterval: 60000, // 1 minute
   cacheStrategy: 'staleWhileRevalidate',
-  cacheName: 'reconciliation-app-cache',
+  cacheName: '378-data-evidence-reconciliation-app-cache',
   maxCacheSize: 50 * 1024 * 1024, // 50MB
   maxCacheAge: 7 * 24 * 60 * 60 * 1000, // 7 days
   offlineFallback: true,

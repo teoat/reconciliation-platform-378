@@ -1,5 +1,5 @@
 # Simple Node.js installation guide
-Write-Host "🚀 Node.js Installation Guide for Reconciliation App" -ForegroundColor Green
+Write-Host "🚀 Node.js Installation Guide for 378 Data and Evidence Reconciliation App" -ForegroundColor Green
 Write-Host "=" * 50 -ForegroundColor Blue
 
 Write-Host "`n📋 Manual Installation Steps:" -ForegroundColor Cyan

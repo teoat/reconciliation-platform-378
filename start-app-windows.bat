@@ -1,10 +1,10 @@
 @echo off
-title Reconciliation App Launcher
+title 378 Data and Evidence Reconciliation App Launcher
 color 0A
 
 echo.
 echo ========================================
-echo    Reconciliation App Launcher
+echo    378 Data and Evidence Reconciliation App
 echo ========================================
 echo.
 
@@ -104,7 +104,7 @@ start "" "launcher.html"
 
 REM Start the development server
 echo.
-echo Starting Reconciliation App on http://localhost:1000...
+echo Starting 378 Data and Evidence Reconciliation App on http://localhost:1000...
 echo Press Ctrl+C to stop the server
 echo.
 "%NPM_PATH%" run dev

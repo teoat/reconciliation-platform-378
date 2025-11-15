@@ -1,6 +1,6 @@
 @echo off
-REM Windows batch script to run the Reconciliation app
-echo Starting Reconciliation App...
+REM Windows batch script to run the 378 Data and Evidence Reconciliation App
+echo Starting 378 Data and Evidence Reconciliation App...
 
 REM Check if Node.js is installed
 node --version >nul 2>&1

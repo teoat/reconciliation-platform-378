@@ -121,7 +121,7 @@ Sentry.init({
     // Add custom tags
     event.tags = {
       ...event.tags,
-      component: 'reconciliation-app',
+      component: '378-data-evidence-reconciliation-app',
       version: process.env.npm_package_version || '1.0.0',
     }
     
@@ -132,7 +132,7 @@ Sentry.init({
   fingerprint: ['{{ default }}'],
   
   // Server-side configuration
-  serverName: process.env.SENTRY_SERVER_NAME || 'reconciliation-app',
+  serverName: process.env.SENTRY_SERVER_NAME || '378-data-evidence-reconciliation-app',
   
   // Additional options
   maxBreadcrumbs: 50,

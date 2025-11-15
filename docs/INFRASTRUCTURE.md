@@ -589,8 +589,8 @@ config:
 #### Development Environment
 ```bash
 # Clone repository
-git clone https://github.com/your-org/reconciliation-app.git
-cd reconciliation-app
+git clone https://github.com/your-org/378-data-evidence-reconciliation-app.git
+cd 378-data-evidence-reconciliation-app
 
 # Copy environment file
 cp .env.example .env
@@ -614,7 +614,7 @@ docker-compose -f docker-compose.staging.yml up -d
 npm run test:smoke:staging
 
 # Verify deployment
-curl https://staging.reconciliation-app.com/health
+curl https://staging.378-data-reconciliation.com/health
 ```
 
 #### Production Environment

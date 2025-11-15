@@ -320,7 +320,7 @@ config:
 
 # Staging environment
 config:
-  target: 'https://staging.reconciliation-app.com'
+  target: 'https://staging.378-data-reconciliation.com'
   phases:
     - duration: 120
       arrivalRate: 10
@@ -328,7 +328,7 @@ config:
 
 # Production environment
 config:
-  target: 'https://reconciliation-app.com'
+  target: 'https://378-data-reconciliation.com'
   phases:
     - duration: 300
       arrivalRate: 20
