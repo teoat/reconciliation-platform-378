@@ -116,5 +116,5 @@ actix = "0.13"
 # Testing
 [dev-dependencies]
 tokio-test = "0.4"
-mockall = "0.11"
+mockall = "0.13"
 actix-service = "2.0"
