@@ -437,7 +437,7 @@ export const AppShell: React.FC<AppShellProps> = ({ children }) => {
 
 ---
 
-**Generated:** 2025-11-15  
+**Generated:** 2024-06-15  
 **Document Type:** Architecture Visualization  
 **Purpose:** Visual guide to Frenly AI implementation  
 **Status:** Reference Documentation
