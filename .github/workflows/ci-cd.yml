@@ -382,7 +382,7 @@ jobs:
     - name: Upload performance results
       uses: actions/upload-artifact@v4
       with:
-        name: performance-results
+        name: ci-cd-performance-results
         path: performance-results.json
 
   # Cleanup
