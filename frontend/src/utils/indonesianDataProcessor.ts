@@ -62,14 +62,71 @@ export class IndonesianDataProcessor {
     sourceRecords: ProcessedBankRecord[] | ProcessedExpenseRecord[],
     targetRecords: ProcessedBankRecord[] | ProcessedExpenseRecord[]
   ): IndonesianMatchingResult[] {
+    // TODO: Replace stub with production-ready matching logic.
+    // TODO: Add fuzzy matching (e.g., by amount, date, description) if IDs are missing or inconsistent.
+    // TODO: Integrate with external matching libraries if needed.
+    // Validate required fields and handle malformed data.
+    function isValidRecord(record: any): boolean {
+      return (
+        typeof record.amount === 'number' &&
+        typeof record.date === 'string' &&
+        typeof record.description === 'string'
+      );
+    }
     return sourceRecords.map((source) => {
-      const target = targetRecords.find((t) => t.id === source.id);
+      // Validate source record
+      if (!isValidRecord(source)) {
+        // Malformed source record
+        return {
+          matched: false,
+          confidence: 0,
+          sourceRecord: source as ProcessedBankRecord,
+          targetRecord: {} as ProcessedBankRecord,
+          differences: [
+            { field: 'validation', sourceValue: source, targetValue: null }
+          ]
+        };
+      }
+      // Try to find a matching target record by ID
+      let target = targetRecords.find((t) => t.id === source.id && isValidRecord(t));
+      // If not found, try to match by amount and date (simple fuzzy match)
+      if (!target) {
+        target = targetRecords.find(
+          (t) =>
+            isValidRecord(t) &&
+            t.amount === source.amount &&
+            t.date === source.date
+        );
+      }
+      // If still not found, try to match by description (very fuzzy)
+      if (!target) {
+        target = targetRecords.find(
+          (t) =>
+            isValidRecord(t) &&
+            t.description &&
+            source.description &&
+            t.description.trim().toLowerCase() === source.description.trim().toLowerCase()
+        );
+      }
+      // Collect differences if matched
+      let differences: Array<{ field: string; sourceValue: any; targetValue: any }> = [];
+      if (target) {
+        ['amount', 'date', 'description'].forEach((field) => {
+          if (source[field] !== target[field]) {
+            differences.push({
+              field,
+              sourceValue: source[field],
+              targetValue: target[field]
+            });
+          }
+        });
+      }
       return {
         matched: !!target,
         confidence: target ? 0.95 : 0,
         sourceRecord: source as ProcessedBankRecord,
         targetRecord: (target as ProcessedBankRecord) || ({} as ProcessedBankRecord),
-        differences: []
+        differences
       };
     });
   }
