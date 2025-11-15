@@ -233,74 +233,62 @@ docker-compose up --build -d
 kubectl apply -f k8s/
 ```
 
-### **Terraform (AWS)**
+### Manual Workflow
+- **Backend**
+  ```bash
+  cd backend
+  cargo run
+  ```
+- **Frontend**
+  ```bash
+  cd frontend
+  npm install
+  npm run dev
+  ```
+- **Database & cache**: use the Compose services (`docker compose up postgres redis`) or configure local instances via `DATABASE_URL` and `REDIS_URL`.
 
-```bash
-cd terraform
-terraform init
-terraform plan
-terraform apply
-```
+### Configuration
+- Backend `.env`
+  ```env
+  DATABASE_URL=postgresql://user:password@localhost:5432/reconciliation
+  REDIS_URL=redis://localhost:6379
+  JWT_SECRET=change-me
+  RUST_LOG=info
+  ```
+- Frontend `.env.local`
+  ```env
+  NEXT_PUBLIC_API_URL=http://localhost:8080
+  NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws
+  ```
 
----
+## Development Tasks
+- **Run tests**
+  ```bash
+  # backend
+  cd backend && cargo test
 
-## 🤝 Contributing
+  # frontend
+  cd frontend && npm test
 
-### **Development Setup**
+  # e2e
+  npx playwright test
+  ```
+- **Lint & format**
+  - Backend: `cargo fmt && cargo clippy`
+  - Frontend: `npm run lint`
 
-1. Clone the repository
-2. Install dependencies (`npm install`, `cargo build`)
-3. Set up environment variables (`.env`)
-4. Run database migrations
-5. Start development servers
+## Deployment
+- Full deployment instructions: see `DEPLOYMENT_GUIDE.md`
+- Additional documentation: see `docs/` folder
 
-### **Code Standards**
+## Observability & Operations
+- Grafana: `http://localhost:3001`
+- Prometheus: `http://localhost:9090`
+- Alertmanager: `http://localhost:9093`
+- Health endpoints: `/health`, `/health/live`, `/health/ready`
 
-- TypeScript strict mode
-- ESLint configuration
-- Rust clippy checks
-- Pre-commit hooks
+## Contributing
+- Fork → branch → commit → PR. Review `CONTRIBUTING.md` for coding standards and workflow.
 
-### **Environment Templates**
-
-- Root: `.env.example` (includes backend and frontend defaults)
-- Production sample: `config/production.env.example`
-  Copy and adjust to your environment.
-
----
-
-## 📝 License
-
-MIT License - See [LICENSE](./LICENSE) file
-
----
-
-## 👥 Team
-
-**378 Reconciliation Platform Team**
-
----
-
-## 🎯 Roadmap
-
-### **Upcoming Features**
-
-- [ ] Workflow Templates
-- [ ] Collaborative Review
-- [ ] Advanced Matching Rules Engine
-- [ ] AI Discrepancy Resolution
-- [ ] Predictive Analytics
-
----
-
-## 📞 Support
-
-- **Documentation**: See `/docs` directory
-- **Issues**: GitHub Issues
-- **Security**: security@example.com
-
----
-
-**Status**: ✅ **Production Ready**  
-**Version**: 1.0.0  
-**Last Updated**: January 2025
+## License
+- MIT License – see `LICENSE`.

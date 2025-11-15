@@ -312,14 +312,11 @@ curl http://localhost:2000/api/v1/health
 
 ## 🔗 Additional Resources
 
-- [Architecture Documentation](./docs/ARCHITECTURE.md)
-- [API Documentation](./docs/API_REFERENCE.md)
-- [Troubleshooting Guide](./docs/TROUBLESHOOTING.md)
-- [Security Guide](./docs/SECURITY.md)
+## 12. Operations & Maintenance
+- Daily/weekly/monthly routines: health review, log rotation, security patching, capacity planning, and disaster-recovery drills.
+- Monitoring stack: Prometheus scrapes backend metrics at `/metrics`; Grafana dashboards cover application, infrastructure, and business KPIs; Alertmanager drives escalation.
+- Backups: PostgreSQL and Redis snapshots automated via CronJobs; verify restores quarterly.
+- Maintenance tooling: `kubectl rollout restart`, `docker compose up -d --build`, and `helm upgrade` support zero-downtime updates.
+- Security posture: rotate secrets, enforce RBAC, keep fail2ban/network policies aligned with compliance requirements.
 
----
-
-**Status**: ✅ **Production Ready**  
-**Version**: 1.0.0  
-**Last Updated**: January 2025
-
+For detailed operational procedures, see `docs/TROUBLESHOOTING.md`, `docs/SUPPORT_MAINTENANCE_GUIDE.md`, and `docs/INCIDENT_RESPONSE_RUNBOOKS.md`.

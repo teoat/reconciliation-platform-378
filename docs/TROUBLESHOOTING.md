@@ -821,8 +821,8 @@ fi
 
 1. **Check documentation**
    - [API Documentation](./API_DOCUMENTATION.md)
-   - [Deployment Guide](./DEPLOYMENT_GUIDE.md)
-   - [User Guide](./USER_GUIDE.md)
+   - [Deployment Guide](../DEPLOYMENT_GUIDE.md)
+   - [User Training Guide](./USER_TRAINING_GUIDE.md)
 
 2. **Search logs**
    - Use `grep` to search for specific errors
