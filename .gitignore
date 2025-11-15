@@ -113,7 +113,8 @@ dist
 
 # Gatsby files
 .cache/
-public
+# public (Gatsby build output - but allow Next.js public assets)
+# Note: Next.js uses public/ for static assets which should be committed
 
 # Storybook build outputs
 .out

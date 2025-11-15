@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" width="400" height="100">
+  <title>378 Data and Evidence Reconciliation App - Dark Main Logo</title>
+  <desc>Dark mode main logo for 378 Data and Evidence Reconciliation App</desc>
+  <defs>
+    <linearGradient id="darkGrad1" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#60A5FA;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#3B82F6;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="400" height="100" rx="8" fill="url(#darkGrad1)"/>
+  <text x="20" y="55" font-family="Arial, sans-serif" font-size="32" font-weight="bold" fill="#1E293B">378</text>
+  <text x="100" y="40" font-family="Arial, sans-serif" font-size="16" fill="#1E293B">Data &amp; Evidence</text>
+  <text x="100" y="65" font-family="Arial, sans-serif" font-size="16" fill="#1E293B">Reconciliation App</text>
+</svg>

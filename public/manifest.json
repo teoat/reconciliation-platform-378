@@ -1,0 +1,53 @@
+{
+  "name": "378 Data and Evidence Reconciliation App",
+  "short_name": "378 Reconciliation",
+  "description": "A comprehensive data and evidence reconciliation application for matching and analysis",
+  "theme_color": "#3B82F6",
+  "background_color": "#F8FAFC",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/favicon-32x32.svg",
+      "sizes": "32x32",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/favicon-16x16.svg",
+      "sizes": "16x16",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/logos/logo-compact.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "categories": [
+    "productivity",
+    "business",
+    "finance"
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "View reconciliation dashboard",
+      "url": "/dashboard",
+      "icons": []
+    },
+    {
+      "name": "Upload",
+      "short_name": "Upload",
+      "description": "Upload new data files",
+      "url": "/upload",
+      "icons": []
+    }
+  ]
+}

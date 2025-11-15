@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline | 378 Data and Evidence Reconciliation App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1E293B;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            max-width: 600px;
+        }
+        .icon {
+            font-size: 6rem;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: #1E293B;
+        }
+        p {
+            font-size: 1.125rem;
+            color: #64748B;
+            margin-bottom: 1.5rem;
+            line-height: 1.6;
+        }
+        .brand-name {
+            font-weight: 600;
+            color: #F59E0B;
+        }
+        .features {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 0.5rem;
+            margin: 2rem 0;
+            border-left: 4px solid #F59E0B;
+            text-align: left;
+        }
+        .features h2 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: #1E293B;
+        }
+        .features ul {
+            list-style: none;
+            padding: 0;
+        }
+        .features li {
+            padding: 0.5rem 0;
+            color: #475569;
+            font-size: 0.875rem;
+        }
+        .features li:before {
+            content: "✓ ";
+            color: #10B981;
+            font-weight: bold;
+            margin-right: 0.5rem;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-block;
+            background: #F59E0B;
+            color: white;
+            cursor: pointer;
+            border: none;
+            font-size: 1rem;
+        }
+        .btn:hover {
+            background: #D97706;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+        .footer {
+            margin-top: 3rem;
+            color: #94A3B8;
+            font-size: 0.875rem;
+        }
+        .status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            background: #FEF3C7;
+            border-radius: 9999px;
+            color: #D97706;
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">📡</div>
+        <div class="status">Offline Mode</div>
+        <h1>You're Currently Offline</h1>
+        <p>You've lost connection to the <span class="brand-name">378 Data and Evidence Reconciliation App</span>. Some features may be limited.</p>
+        
+        <div class="features">
+            <h2>Available Offline Features:</h2>
+            <ul>
+                <li>View recently accessed reconciliation data</li>
+                <li>Review cached reports and analytics</li>
+                <li>Access downloaded files and documents</li>
+                <li>View your profile and settings</li>
+            </ul>
+        </div>
+
+        <button onclick="location.reload()" class="btn">Try to Reconnect</button>
+
+        <div class="footer">
+            <p>Your work will sync automatically once you're back online.</p>
+            <p>&copy; 2024 378 Data and Evidence Reconciliation App. All rights reserved.</p>
+        </div>
+    </div>
+
+    <script>
+        // Auto-reload when connection is restored
+        window.addEventListener('online', () => {
+            location.reload();
+        });
+
+        // Update UI based on connection status
+        function updateConnectionStatus() {
+            if (navigator.onLine) {
+                location.reload();
+            }
+        }
+
+        // Check connection every 5 seconds
+        setInterval(updateConnectionStatus, 5000);
+    </script>
+</body>
+</html>
