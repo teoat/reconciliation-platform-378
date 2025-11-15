@@ -4,7 +4,8 @@ on:
     types: [opened, synchronize, reopened]
 
 permissions:
-  contents: write
+  contents: write  # Required to commit generated package-lock.json files back to PR branch.
+  # Note: This workflow uses 'pull_request' (not 'pull_request_target'), so write access is scoped to the PR branch and not the base repository. This mitigates risk for PRs from forks.
 
 jobs:
   ensure-lock:
