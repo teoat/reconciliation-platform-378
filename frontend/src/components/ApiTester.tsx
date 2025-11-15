@@ -26,7 +26,7 @@ interface ApiTestResult {
   endpoint: string
   method: string
   status: 'success' | 'error' | 'pending'
-  response?: Record<string, unknown> | unknown[]
+  response?: unknown
   error?: string
   duration?: number
   timestamp: Date
@@ -69,7 +69,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
     setTestResults(prev => [pendingResult, ...prev])
     
     try {
-      let response: any
+      let response: unknown
       
       // Execute the appropriate API call based on endpoint
       switch (endpoint) {
@@ -110,7 +110,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
       )
       
       setResponseBody(JSON.stringify(response, null, 2))
-      showSuccess(`API Test Successful: ${endpoint}`)
+      showSuccess(`API Test Successful - Endpoint ${endpoint} responded successfully`)
       
     } catch (error) {
       const duration = Date.now() - startTime
@@ -132,7 +132,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
       )
       
       setResponseBody(JSON.stringify({ error: errorMessage }, null, 2))
-      showError(`API Test Failed: ${errorMessage}`)
+      showError(`API Test Failed - ${errorMessage}`)
     }
   }, [showSuccess, showError])
 

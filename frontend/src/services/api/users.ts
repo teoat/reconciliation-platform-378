@@ -54,17 +54,7 @@ export class UsersApiService {
 
       return {
         users,
-        pagination: response.data ? {
-          page: response.data.page,
-          per_page: response.data.per_page,
-          total: response.data.total,
-          total_pages: response.data.total_pages,
-        } : {
-          page,
-          per_page,
-          total: users.length,
-          total_pages: Math.ceil(users.length / per_page),
-        },
+        pagination,
       };
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : 'Failed to fetch users');

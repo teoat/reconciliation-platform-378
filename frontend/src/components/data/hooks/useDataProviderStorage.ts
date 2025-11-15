@@ -1,13 +1,16 @@
 // Data Provider Storage Hook
-import { useDataStorage } from './storage';
+import React from 'react';
+import { useDataStorage } from '../storage';
+import type { ProjectData } from '../../../services/dataManagement';
 
 export const useDataProviderStorage = (
+  setCurrentProject: React.Dispatch<React.SetStateAction<ProjectData | null>>,
   setIsLoading: (loading: boolean) => void,
   setError: (error: string | null) => void
 ) => {
   const {
     currentProject,
-    setCurrentProject,
+    setCurrentProject: setCurrentProjectInternal,
     createProject,
     updateProject,
     addIngestionData,
@@ -21,7 +24,7 @@ export const useDataProviderStorage = (
     subscribeToProject,
     exportProject,
     importProject,
-  } = useDataStorage(setIsLoading, setError);
+  } = useDataStorage(setCurrentProject, setIsLoading as any, setError as any);
 
   return {
     currentProject,

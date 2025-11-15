@@ -86,7 +86,7 @@ import {
   IndonesianDataProcessor, 
   ProcessedExpenseRecord, 
   ProcessedBankRecord 
-} from '../utils/indonesianDataProcessor'
+} from '../../../utils/indonesianDataProcessor'
 
 // Enhanced Interfaces for Integration
 interface SynchronizedDataState {
@@ -108,7 +108,7 @@ interface ProcessedData {
   id: string
   source: 'ingestion' | 'reconciliation' | 'indonesian'
   type: 'expense' | 'bank' | 'mixed'
-  data: CSVRecord
+  data: CSVRecord | ProcessedExpenseRecord | ProcessedBankRecord
   quality: DataQualityMetrics
   isIndonesian: boolean
   processedAt: string
@@ -150,7 +150,7 @@ interface IndonesianProcessedData extends ProcessedData {
 interface SynchronizationTask {
   id: string
   type: 'ingestion_to_reconciliation' | 'reconciliation_to_ingestion' | 'indonesian_processing'
-  data: Record<string, unknown> | unknown[]
+  data: Record<string, unknown> | unknown[] | ProcessedData
   timestamp: number
   status: 'pending' | 'processing' | 'completed' | 'error'
   source: string
@@ -242,7 +242,7 @@ const readFileContent = async (file: File): Promise<string> => {
     }).filter(record => Object.values(record).some(value => value !== ''))
   }
 
-  const calculateIndonesianQualityMetrics = (data: CSVRecord): DataQualityMetrics => {
+  const calculateIndonesianQualityMetrics = (data: CSVRecord | ProcessedExpenseRecord | ProcessedBankRecord): DataQualityMetrics => {
     const metrics = {
       completeness: 0,
       accuracy: 0,
@@ -253,17 +253,19 @@ const readFileContent = async (file: File): Promise<string> => {
       overall: 0
     }
 
+    const dataRecord = data as Record<string, unknown>;
+    
     // Calculate completeness based on required fields
-    const requiredFields = ['tanggal', 'deskripsi', 'jumlah', 'kategori']
-    const filledFields = requiredFields.filter(field => data[field] && String(data[field]).trim() !== '')
-    metrics.completeness = (filledFields.length / requiredFields.length) * 100
+    const requiredFields = ['tanggal', 'deskripsi', 'jumlah', 'kategori', 'date', 'description', 'amount']
+    const filledFields = requiredFields.filter(field => dataRecord[field] && String(dataRecord[field]).trim() !== '')
+    metrics.completeness = (filledFields.length / Math.min(4, requiredFields.length)) * 100
 
     // Calculate accuracy based on data format validation
     let accuracyScore = 0
-    if (data.tanggal && /^\d{4}-\d{2}-\d{2}$/.test(String(data.tanggal))) accuracyScore += 25
-    if (data.jumlah && !isNaN(parseFloat(String(data.jumlah)))) accuracyScore += 25
-    if (data.deskripsi && String(data.deskripsi).length > 5) accuracyScore += 25
-    if (data.kategori && String(data.kategori).length > 2) accuracyScore += 25
+    if ((dataRecord.tanggal || dataRecord.date) && /^\d{4}-\d{2}-\d{2}/.test(String(dataRecord.tanggal || dataRecord.date))) accuracyScore += 25
+    if ((dataRecord.jumlah || dataRecord.amount) && !isNaN(parseFloat(String(dataRecord.jumlah || dataRecord.amount)))) accuracyScore += 25
+    if ((dataRecord.deskripsi || dataRecord.description) && String(dataRecord.deskripsi || dataRecord.description).length > 5) accuracyScore += 25
+    if ((dataRecord.kategori || dataRecord.category1) && String(dataRecord.kategori || dataRecord.category1).length > 2) accuracyScore += 25
     metrics.accuracy = accuracyScore
 
     // Calculate consistency (simplified)

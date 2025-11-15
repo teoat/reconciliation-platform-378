@@ -1,7 +1,24 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect } from 'react'
-import { FrenlyState, FrenlyMessage, PageGuidance } from '../types/frenly'
+import { FrenlyState, FrenlyMessage } from '../types/frenly'
+
+// Define PageGuidance interface locally
+interface PageGuidance {
+  page: string;
+  title: string;
+  description: string;
+  steps: Array<{
+    id: string;
+    title: string;
+    description: string;
+    completed: boolean;
+    tips?: string[];
+  }>;
+  tips?: string[];
+  warnings?: string[];
+  celebrations?: string[];
+}
 
 interface FrenlyContextType {
   state: FrenlyState

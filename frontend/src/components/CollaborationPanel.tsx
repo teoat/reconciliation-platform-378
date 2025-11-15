@@ -175,10 +175,10 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      User {user.userId}
+                      {user.userId}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {user.isOnline ? 'Online' : 'Offline'}
+                      {user.action}
                     </p>
                   </div>
                 </div>
@@ -199,12 +199,36 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                   </div>
                 ) : (
                   liveComments.map((commentMsg, index) => {
-                    const comment = (commentMsg.comment as Comment) || { id: '', userName: 'User', message: 'No message', timestamp: 0 };
+                    // Extract comment data safely
+                    const comment = commentMsg.comment as LiveComment | undefined;
+                    if (!comment) return null;
+                    
                     return (
-                      <div key={comment.id || `comment-${commentMsg.projectId || 'unknown'}-${commentMsg.timestamp || index}`} className="space-y-2">
-                        <div className="flex space-x-2">
-                          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                            <User className="w-3 h-3 text-white" />
+                    <div key={comment.id || `comment-${index}`} className="space-y-2">
+                      <div className="flex space-x-2">
+                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                          <User className="w-3 h-3 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <span className="text-sm font-medium text-gray-900">
+                              {comment.userName}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {formatTimestamp(comment.timestamp)}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-700 mt-1">
+                            {comment.message}
+                          </p>
+                          <div className="flex items-center space-x-2 mt-1">
+                            <button
+                              onClick={() => setReplyingTo(comment.id)}
+                              className="text-xs text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+                            >
+                              <Reply className="w-3 h-3" />
+                              <span>Reply</span>
+                            </button>
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center space-x-2">
@@ -265,7 +289,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                         </div>
                       )}
                     </div>
-                  );
+                    );
                   })
                 )}
                 <div ref={commentsEndRef} />
