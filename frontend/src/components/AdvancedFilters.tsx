@@ -1,23 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X } from 'lucide-react'
-import { Filter } from 'lucide-react'
-import { Search } from 'lucide-react'
-import { Calendar } from 'lucide-react'
-import { DollarSign } from 'lucide-react'
-import { Hash } from 'lucide-react'
-import { Type } from 'lucide-react'
-import { CheckSquare } from 'lucide-react'
-import { Square } from 'lucide-react'
-import { Plus } from 'lucide-react'
-import { Minus } from 'lucide-react'
-import { ArrowUpDown } from 'lucide-react'
-import { ChevronDown } from 'lucide-react'
-import { ChevronUp } from 'lucide-react'
-import { AlertCircle } from 'lucide-react'
-import { Info } from 'lucide-react'
-import { Settings } from 'lucide-react'
+import { X, Filter, Calendar, DollarSign, Hash, Type, CheckSquare, Square, Plus, Minus, ArrowUpDown, ChevronDown, ChevronUp, AlertCircle, Info, Settings } from 'lucide-react'
 import { Save } from 'lucide-react'
 import { RefreshCw } from 'lucide-react'
 import { Trash2 } from 'lucide-react'
@@ -171,7 +155,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
         return (
           <input
             type="text"
-            value={filter.value || ''}
+            value={typeof filter.value === 'string' || typeof filter.value === 'number' ? filter.value : ''}
             onChange={(e) => handleFilterChange(filter.id, { value: e.target.value })}
             className="input-field"
             placeholder="Enter value..."

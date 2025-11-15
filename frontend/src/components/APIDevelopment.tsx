@@ -102,9 +102,9 @@ const APIDevelopment = ({ project, onProgressUpdate }: APIDevelopmentProps) => {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [logs, setLogs] = useState<APILog[]>([]);
   const [selectedEndpoint, setSelectedEndpoint] = useState<APIEndpoint | null>(null);
-  const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
+  const [_selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
   const [showEndpointModal, setShowEndpointModal] = useState(false);
-  const [showWebhookModal, setShowWebhookModal] = useState(false);
+  const [_showWebhookModal, setShowWebhookModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'endpoints' | 'webhooks' | 'logs' | 'documentation'>(
     'endpoints'
   );

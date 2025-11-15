@@ -26,7 +26,7 @@ class EncryptionService {
 
   constructor() {
     // Use a secure key from environment - required for production
-    const envKey = import.meta.env.VITE_STORAGE_KEY;
+    const envKey = process.env.NEXT_PUBLIC_STORAGE_KEY;
     if (!envKey || envKey === 'default-key-change-in-production') {
       throw new Error('VITE_STORAGE_KEY must be set to a secure random key in production');
     }

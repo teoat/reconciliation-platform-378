@@ -9,10 +9,19 @@
 
 // Environment-agnostic configuration reading
 const getEnvVar = (key: string, fallback: string) => {
-  // Try VITE_ prefix (Vite)
-  if (import.meta.env?.[key]) return import.meta.env[key];
-  // Try process.env (Node/React)
-  if (process.env?.[key]) return process.env[key];
+  // Try NEXT_PUBLIC_ prefix (Next.js)
+  const nextPublicKey = `NEXT_PUBLIC_${key.replace('VITE_', '')}`;
+  if (typeof process !== 'undefined' && process.env?.[nextPublicKey]) {
+    return process.env[nextPublicKey];
+  }
+  // Try process.env with original key
+  if (typeof process !== 'undefined' && process.env?.[key]) {
+    return process.env[key];
+  }
+  // Try VITE_ prefix (for backward compatibility, though won't work in Next.js)
+  if (typeof window !== 'undefined' && (window as any).import?.meta?.env?.[key]) {
+    return (window as any).import.meta.env[key];
+  }
   return fallback;
 };
 

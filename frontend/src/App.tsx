@@ -62,11 +62,11 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 
 function App() {
   const wsConfig = {
-    url: import.meta.env.VITE_WS_URL || 'ws://localhost:2000',
+    url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:2000',
     reconnectInterval: 5000,
     maxReconnectAttempts: 5,
     heartbeatInterval: 30000,
-    debug: import.meta.env.DEV,
+    debug: process.env.NODE_ENV === 'development',
   };
 
   // Initialize unified fetch interceptor on mount
@@ -91,7 +91,7 @@ function App() {
       <ReduxProvider>
         <WebSocketProvider config={wsConfig}>
           <AuthProvider>
-            <Router basename={import.meta.env.VITE_BASE_PATH || '/'}>
+            <Router basename={process.env.NEXT_PUBLIC_BASE_PATH || '/'}>
               <div className="min-h-screen bg-gray-100">
                 <ToastContainer />
                 <Routes>

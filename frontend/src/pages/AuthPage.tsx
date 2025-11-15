@@ -110,7 +110,7 @@ const AuthPage: React.FC = () => {
 
   // Load Google Identity Services script
   useEffect(() => {
-    const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+    const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
     if (!googleClientId) {
       return // Skip if no Google Client ID is configured
     }
