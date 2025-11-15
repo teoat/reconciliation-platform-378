@@ -65,12 +65,17 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     notificationsData.addAlert(alert as any);
   }, [notificationsData]);
 
+  // Create wrapper for addNotification to match workflow signature
+  const addNotificationWrapper = React.useCallback((notification: Omit<import('./data/types').Notification, 'id' | 'timestamp'>) => {
+    notificationsData.addNotification(notification as any);
+  }, [notificationsData]);
+
   // Workflow hook
   const workflowData = useDataProviderWorkflow(
     crossPageData,
     validateCrossPageData,
     addAlertWrapper,
-    notificationsData.addNotification
+    addNotificationWrapper
   );
 
   // Sync hook
@@ -103,8 +108,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
   // Enhanced sync data function with notifications
   const enhancedSyncData = React.useCallback(async () => {
-    await syncData.performDataSync(notificationsData.addNotification);
-  }, [syncData, notificationsData]);
+    await syncData.performDataSync(addNotificationWrapper);
+  }, [syncData, addNotificationWrapper]);
 
   // Enhanced advance workflow with loading states
   const enhancedAdvanceWorkflow = React.useCallback(
