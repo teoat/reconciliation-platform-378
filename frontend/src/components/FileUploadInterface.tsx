@@ -18,6 +18,7 @@ import { X } from 'lucide-react'
 import { CheckCircle } from 'lucide-react'
 import { AlertCircle } from 'lucide-react'
 import { AlertTriangle } from 'lucide-react'
+import { XCircle } from 'lucide-react'
 import { Clock } from 'lucide-react'
 import { Download } from 'lucide-react'
 import { RefreshCw } from 'lucide-react'
@@ -165,7 +166,7 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
   const dropZoneRef = useRef<HTMLDivElement>(null)
 
   // WebSocket integration for real-time updates
-  const { isConnected, subscribe } = useWebSocketIntegration()
+  const { isConnected, subscribe, unsubscribe } = useWebSocketIntegration()
 
   // Load files - using unified utilities
   const loadFiles = useCallback(async () => {
@@ -189,7 +190,7 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
   }, [projectId, withLoading])
 
   // Upload file
-  const uploadFile = useCallback(async (file: File, request: FileUploadRequest) => {
+  const uploadFile = useCallback(async (file: File, request: FileUploadRequest): Promise<FileInfo> => {
     const fileId = `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
     
     try {
@@ -246,7 +247,7 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
         onUploadComplete(fileInfo)
       }
 
-      return uploadedFile
+      return fileInfo
     } catch (err) {
       // Remove from uploading state
       setUploadingFiles(prev => {
@@ -285,14 +286,13 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
           ? { 
               ...file, 
               status: 'completed' as const,
-              processed_at: new Date().toISOString(),
-              record_count: result.record_count
+              processed_at: new Date().toISOString()
             }
           : file
       ))
       
       if (onProcessingComplete) {
-        onProcessingComplete(result)
+        onProcessingComplete(result as unknown as ProcessingResult)
       }
       
       return result
@@ -414,16 +414,16 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
       if (data.project_id === projectId) {
         setFiles(prev => prev.map(file => 
           file.id === data.file_id 
-            ? { ...file, ...data.updates }
+            ? { ...file, ...data.updates, status: data.updates.status as FileInfo['status'] }
             : file
         ))
       }
     })
 
     return () => {
-      unsubscribeFileUpdate()
+      unsubscribe('file_update', unsubscribeFileUpdate)
     }
-  }, [isConnected, projectId, subscribe])
+  }, [isConnected, projectId, subscribe, unsubscribe])
 
   // Load files on mount
   useEffect(() => {
