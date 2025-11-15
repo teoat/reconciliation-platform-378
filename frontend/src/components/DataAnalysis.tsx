@@ -84,7 +84,7 @@ import {
   ProcessedExpenseRecord, 
   ProcessedBankRecord, 
   IndonesianMatchingResult 
-} from '../../utils/indonesianDataProcessor'
+} from '../../../utils/indonesianDataProcessor'
 
 interface DataAnalysisProps {
   isVisible: boolean
