@@ -129,10 +129,10 @@ impl InternationalizationService {
         };
         
         // Initialize with default languages and locales
-        service.initialize_default_languages();
-        service.initialize_default_locales();
-        service.initialize_default_timezones();
-        service.initialize_default_translations();
+        service.initialize_default_languages().await;
+        service.initialize_default_locales().await;
+        service.initialize_default_timezones().await;
+        service.initialize_default_translations().await;
         
         service
     }

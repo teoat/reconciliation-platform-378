@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 import Button from './ui/Button'
 import Card from './ui/Card'
-import { StatusBadge } from './ui/StatusBadge'
+import StatusBadge from './ui/StatusBadge'
 
 interface ApiDocumentationProps {
   className?: string

@@ -399,7 +399,7 @@ class SecurityService extends EventEmitter {
     this.emit('security_event', event);
 
     // Log to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.MODE === 'development') {
       console.warn('Security Event:', event);
     }
   }
