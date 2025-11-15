@@ -1,5 +1,7 @@
 // Data Provider Storage Hook
+import React from 'react';
 import { useDataStorage } from '../storage';
+import type { ProjectData } from '../../../services/dataManagement';
 
 export const useDataProviderStorage = (
   setCurrentProject: React.Dispatch<React.SetStateAction<ProjectData | null>>,

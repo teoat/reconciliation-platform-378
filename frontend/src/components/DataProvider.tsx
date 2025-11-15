@@ -7,6 +7,7 @@ import { useDataValidation } from './data/sync';
 import { createInitialCrossPageData } from './data/initialData';
 import { WorkflowStage } from './data/types';
 import type { ReactNode } from 'react';
+import type { ProjectData } from '../services/dataManagement';
 import {
   useDataProviderSecurity,
   useDataProviderWorkflow,
