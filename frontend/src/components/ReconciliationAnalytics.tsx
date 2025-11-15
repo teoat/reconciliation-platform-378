@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { TrendingUp } from 'lucide-react'
+import { BarChart3 } from 'lucide-react'
 import { Activity } from 'lucide-react'
 import { Target } from 'lucide-react'
 import { Clock } from 'lucide-react'
