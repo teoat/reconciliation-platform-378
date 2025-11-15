@@ -15,7 +15,7 @@ jobs:
           ref: ${{ github.event.pull_request.head.ref }}
           ref: ${{ github.head_ref }}
           persist-credentials: true
-      - name: Setup Node
+        uses: actions/setup-node@v4
         uses: actions/setup-node@v3
         with:
           node-version: '18'
