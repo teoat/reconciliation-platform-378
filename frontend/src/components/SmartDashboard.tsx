@@ -58,7 +58,7 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
       if (response.error) {
         setError(getErrorMessageFromApiError(response.error))
       } else if (response.data) {
-        setDashboardData(response.data)
+        setDashboardData(response.data as DashboardData)
       }
     } catch (err) {
       setError('Failed to load dashboard data')

@@ -135,7 +135,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       // Simulate API call
       const newUser: User = {
         id: Date.now().toString(),
-        ...data,
+        email: data.email,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        role: data.role,
         status: 'pending',
         last_login: new Date().toISOString(),
         created_at: new Date().toISOString(),
@@ -208,7 +211,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
   const userColumns: Column<User>[] = [
     {
       key: 'email',
-      label: 'Email',
+      header: 'Email',
       sortable: true,
       render: (value, row) => (
         <div className="flex items-center space-x-3">
@@ -226,7 +229,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
     },
     {
       key: 'role',
-      label: 'Role',
+      header: 'Role',
       sortable: true,
       render: (value) => (
         <StatusBadge 
@@ -239,7 +242,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
     },
     {
       key: 'status',
-      label: 'Status',
+      header: 'Status',
       sortable: true,
       render: (value) => (
         <StatusBadge 
@@ -251,7 +254,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
     },
     {
       key: 'last_login',
-      label: 'Last Login',
+      header: 'Last Login',
       sortable: true,
       render: (value) => (
         <div className="text-sm text-gray-600">
@@ -261,7 +264,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
     },
     {
       key: 'created_at',
-      label: 'Created',
+      header: 'Created',
       sortable: true,
       render: (value) => (
         <div className="text-sm text-gray-600">
@@ -271,7 +274,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
     },
     {
       key: 'id' as keyof User,
-      label: 'Actions',
+      header: 'Actions',
       render: (_, row) => (
         <div className="flex items-center space-x-2">
           <Button
