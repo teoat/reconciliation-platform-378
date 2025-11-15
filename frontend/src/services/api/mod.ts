@@ -303,14 +303,7 @@ export class ApiService {
     try {
       const response = await apiClient.healthCheck();
       if (!response.success || response.error) {
-<<<<<<< Current (Your changes)
         throw new Error(getErrorMessageFromApiError(response.error));
-=======
-        const errorMessage = typeof response.error === 'string' 
-          ? response.error 
-          : response.error?.message || 'Health check failed';
-        throw new Error(errorMessage);
->>>>>>> Incoming (Background Agent changes)
       }
       return response.data;
     } catch (error) {

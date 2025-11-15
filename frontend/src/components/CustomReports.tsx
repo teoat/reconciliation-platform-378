@@ -288,7 +288,7 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       const cashflowData = getCashflowData();
 
       // Apply filters
-      let data: ReconciliationRecord[] = [];
+      let data: unknown[] = [];
       switch (report.dataSource) {
         case 'reconciliation':
           data = reconciliationData?.records || [];
@@ -305,9 +305,9 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       }
 
       // Apply filters
-      data = data.filter((record) => {
+      data = (data as Record<string, unknown>[]).filter((record) => {
         return report.filters.every((filter) => {
-          const recordValue = (record as unknown as Record<string, unknown>)[filter.field];
+          const recordValue = record[filter.field];
           const filterValue = filter.value;
           
           switch (filter.operator) {
@@ -350,9 +350,9 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
             break;
           case 'sum':
             if (metric.field) {
-              metricsData[metric.id] = data.reduce(
-                (sum, record) => {
-                  const fieldValue = (record as unknown as Record<string, unknown>)[metric.field!];
+              metricsData[metric.id] = (data as Record<string, unknown>[]).reduce(
+                (sum: number, record) => {
+                  const fieldValue = record[metric.field!];
                   return sum + (Number(fieldValue) || 0);
                 },
                 0
@@ -361,14 +361,14 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
             break;
           case 'average': {
             if (metric.field) {
-              const values = data
+              const values = (data as Record<string, unknown>[])
                 .map((record) => {
-                  const fieldValue = (record as unknown as Record<string, unknown>)[metric.field!];
+                  const fieldValue = record[metric.field!];
                   return Number(fieldValue) || 0;
                 })
                 .filter((v) => v > 0);
               metricsData[metric.id] =
-                values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
+                values.length > 0 ? values.reduce((sum: number, val) => sum + val, 0) / values.length : 0;
             }
             break;
           }

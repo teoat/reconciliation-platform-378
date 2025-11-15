@@ -86,7 +86,7 @@ import {
   IndonesianDataProcessor, 
   ProcessedExpenseRecord, 
   ProcessedBankRecord 
-} from '../utils/indonesianDataProcessor'
+} from '../../../utils/indonesianDataProcessor'
 
 // Enhanced Interfaces for Integration
 interface SynchronizedDataState {

@@ -70,7 +70,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
   // Update presence when component mounts
   useEffect(() => {
     if (isConnected) {
-      updatePresence('current-user', 'Current User');
+      updatePresence('online');
     }
   }, [isConnected, updatePresence]);
 
@@ -162,16 +162,16 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
             </div>
             <div className="space-y-2">
               {activeUsers.map((user) => (
-                <div key={user.id} className="flex items-center space-x-2">
+                <div key={user.userId} className="flex items-center space-x-2">
                   <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                     <User className="w-3 h-3 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {user.name}
+                      {user.userId}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {formatLastSeen(user.lastSeen)}
+                      {user.action}
                     </p>
                   </div>
                 </div>
@@ -191,8 +191,13 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                     <p className="text-xs text-gray-400">Start the conversation!</p>
                   </div>
                 ) : (
-                  liveComments.map((comment) => (
-                    <div key={comment.id} className="space-y-2">
+                  liveComments.map((commentMsg, index) => {
+                    // Extract comment data safely
+                    const comment = commentMsg.comment as LiveComment | undefined;
+                    if (!comment) return null;
+                    
+                    return (
+                    <div key={comment.id || `comment-${index}`} className="space-y-2">
                       <div className="flex space-x-2">
                         <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                           <User className="w-3 h-3 text-white" />
@@ -256,7 +261,8 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                         </div>
                       )}
                     </div>
-                  ))
+                    );
+                  })
                 )}
                 <div ref={commentsEndRef} />
               </div>

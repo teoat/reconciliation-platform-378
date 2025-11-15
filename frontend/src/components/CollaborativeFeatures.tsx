@@ -630,7 +630,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
       <div className="card mb-6">
         <div className="border-b border-secondary-200">
           <nav className="flex space-x-8">
-            {[
+            {([
               { id: 'members', label: 'Team Members', icon: Users },
               { id: 'workspaces', label: 'Workspaces', icon: Building },
               { id: 'activities', label: 'Activities', icon: Activity },
@@ -641,7 +641,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
                   className={`flex items-center space-x-2 py-4 px-1 border-b-2 font-medium text-sm ${
                     activeTab === tab.id
                       ? 'border-primary-500 text-primary-600'
