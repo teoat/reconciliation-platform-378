@@ -90,6 +90,7 @@ class IndonesianDataProcessor {
   static matchRecords(expenses: any[], bank: any[]): any[] { return []; }
   static batchMatchRecords(expenses: any[], bank: any[]): any[] { return []; }
   static generateSummary(expenses: any[], bank: any[], matches: any[]): any { return {}; }
+  static generateReconciliationSummary(expenses: any[], bank: any[], matches: any[]): any { return {}; }
 }
 
 interface DataAnalysisProps {
