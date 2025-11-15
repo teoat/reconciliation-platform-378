@@ -334,7 +334,7 @@ export class FrenlyGuidanceAgent implements MetaAgent {
     try {
       logger.debug('FrenlyGuidanceAgent executing message generation...');
 
-      const messageContext = context as MessageContext | undefined;
+      const messageContext = context as unknown as MessageContext | undefined;
       if (!messageContext || !messageContext.userId) {
         throw new Error('Message context with userId is required');
       }

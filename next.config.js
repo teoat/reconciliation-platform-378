@@ -1,7 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Bundle analyzer configuration and optimization
+  // Ignore certain directories during build
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    // Exclude certain directories from being processed
+    config.watchOptions = {
+      ...config.watchOptions,
+      ignored: ['**/agents/**', '**/api/**', '**/backend/**', '**/reconciliation-rust/**', '**/__tests__/**'],
+    };
+    
     // Add bundle analyzer in production builds
     if (!dev && process.env.ANALYZE === 'true') {
       const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');

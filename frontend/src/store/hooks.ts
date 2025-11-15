@@ -349,9 +349,53 @@ export const useNotificationHelpers = () => {
     dispatch(notificationsActions.clearAllNotifications());
   }, [dispatch]);
 
+  const showSuccess = useCallback(
+    (message: string) => {
+      addNotification({
+        type: 'success',
+        message,
+      });
+    },
+    [addNotification]
+  );
+
+  const showError = useCallback(
+    (message: string) => {
+      addNotification({
+        type: 'error',
+        message,
+      });
+    },
+    [addNotification]
+  );
+
+  const showInfo = useCallback(
+    (message: string) => {
+      addNotification({
+        type: 'info',
+        message,
+      });
+    },
+    [addNotification]
+  );
+
+  const showWarning = useCallback(
+    (message: string) => {
+      addNotification({
+        type: 'warning',
+        message,
+      });
+    },
+    [addNotification]
+  );
+
   return {
     addNotification,
     removeNotification,
     clearAllNotifications,
+    showSuccess,
+    showError,
+    showInfo,
+    showWarning,
   };
 };

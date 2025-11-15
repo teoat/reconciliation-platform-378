@@ -149,13 +149,20 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
     }
   }
 
+  const getInputValue = (value: any): string => {
+    if (typeof value === 'string' || typeof value === 'number') {
+      return String(value);
+    }
+    return '';
+  };
+
   const renderFilterInput = (filter: FilterConfig) => {
     switch (filter.type) {
       case 'text':
         return (
           <input
             type="text"
-            value={typeof filter.value === 'string' || typeof filter.value === 'number' ? filter.value : ''}
+            value={getInputValue(filter.value)}
             onChange={(e) => handleFilterChange(filter.id, { value: e.target.value })}
             className="input-field"
             placeholder="Enter value..."
@@ -166,7 +173,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
           <div className="flex items-center space-x-2">
             <input
               type="number"
-              value={filter.value || ''}
+              value={getInputValue(filter.value)}
               onChange={(e) => handleFilterChange(filter.id, { value: e.target.value })}
               className="input-field w-32"
               placeholder="Value"
@@ -176,7 +183,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                 <span className="text-secondary-500">and</span>
                 <input
                   type="number"
-                  value={filter.value2 || ''}
+                  value={getInputValue(filter.value2)}
                   onChange={(e) => handleFilterChange(filter.id, { value2: e.target.value })}
                   className="input-field w-32"
                   placeholder="Value 2"
@@ -190,7 +197,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
           <div className="flex items-center space-x-2">
             <input
               type="date"
-              value={filter.value || ''}
+              value={getInputValue(filter.value)}
               onChange={(e) => handleFilterChange(filter.id, { value: e.target.value })}
               className="input-field w-40"
             />
@@ -199,7 +206,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                 <span className="text-secondary-500">and</span>
                 <input
                   type="date"
-                  value={filter.value2 || ''}
+                  value={getInputValue(filter.value2)}
                   onChange={(e) => handleFilterChange(filter.id, { value2: e.target.value })}
                   className="input-field w-40"
                 />
@@ -210,13 +217,13 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
       case 'select':
         return (
           <select
-            value={filter.value || ''}
+            value={getInputValue(filter.value)}
             onChange={(e) => handleFilterChange(filter.id, { value: e.target.value })}
             className="input-field"
           >
             <option value="">Select value...</option>
             {filter.options?.map(option => (
-              <option key={option.value} value={option.value}>
+              <option key={String(option.value)} value={String(option.value)}>
                 {option.label}
               </option>
             ))}
@@ -226,15 +233,15 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
         return (
           <div className="space-y-2">
             {filter.options?.map(option => (
-              <label key={option.value} className="flex items-center space-x-2">
+              <label key={String(option.value)} className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  checked={Array.isArray(filter.value) && filter.value.includes(option.value)}
+                  checked={Array.isArray(filter.value) && filter.value.includes(String(option.value))}
                   onChange={(e) => {
                     const currentValues = Array.isArray(filter.value) ? filter.value : []
                     const newValues = e.target.checked
-                      ? [...currentValues, option.value]
-                      : currentValues.filter(v => v !== option.value)
+                      ? [...currentValues, String(option.value)]
+                      : currentValues.filter(v => v !== String(option.value))
                     handleFilterChange(filter.id, { value: newValues })
                   }}
                   className="rounded border-secondary-300"
@@ -247,7 +254,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
       case 'boolean':
         return (
           <select
-            value={filter.value || ''}
+            value={getInputValue(filter.value)}
             onChange={(e) => handleFilterChange(filter.id, { value: e.target.value === 'true' })}
             className="input-field"
           >
