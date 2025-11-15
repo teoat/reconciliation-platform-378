@@ -144,7 +144,7 @@ Sentry.init({
 })
 
 // Custom error reporting functions
-export const reportError = (error: Error, context?: Record<string, any>) => {
+export const reportError = (error: Error, context?: Record<string, unknown>) => {
   Sentry.withScope((scope) => {
     if (context) {
       scope.setContext('errorContext', context)
@@ -177,7 +177,7 @@ export const setTag = (key: string, value: string) => {
   Sentry.setTag(key, value)
 }
 
-export const setContext = (key: string, context: Record<string, any>) => {
+export const setContext = (key: string, context: Record<string, unknown>) => {
   Sentry.setContext(key, context)
 }
 

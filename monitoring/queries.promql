@@ -1,0 +1,15 @@
+# CUJ/BVP-aligned PromQL queries
+
+# API latency p95 (target < 200ms)
+histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service="backend"}[5m])) by (le))
+
+# Reconciliation job success rate
+sum(rate(reconciliation_jobs_completed_total[5m])) / sum(rate(reconciliation_jobs_started_total[5m]))
+
+# Cache hit rate
+sum(rate(cache_hits_total[5m])) / (sum(rate(cache_hits_total[5m])) + sum(rate(cache_misses_total[5m])))
+
+# DB query duration p95
+histogram_quantile(0.95, sum(rate(db_query_duration_seconds_bucket[5m])) by (le))
+
+

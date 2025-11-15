@@ -1,0 +1,62 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "_comment": "Stryker configuration for mutation testing to ensure test quality and coverage depth",
+  "packageManager": "npm",
+  "reporters": ["html", "clear-text", "progress", "dashboard"],
+  "testRunner": "jest",
+  "testRunner_comment": "Using Jest as the test runner for mutation testing",
+  "coverageAnalysis": "perTest",
+  "coverageAnalysis_comment": "Analyze coverage per test for more accurate mutation testing",
+  "mutate": [
+    "frontend/src/**/*.ts",
+    "frontend/src/**/*.tsx",
+    "!frontend/src/**/*.test.ts",
+    "!frontend/src/**/*.test.tsx",
+    "!frontend/src/**/*.spec.ts",
+    "!frontend/src/**/*.spec.tsx",
+    "!frontend/src/**/*.d.ts",
+    "!frontend/src/**/__tests__/**",
+    "!frontend/src/**/node_modules/**",
+    "!frontend/src/**/*.config.*",
+    "!frontend/src/**/*.stories.*"
+  ],
+  "mutate_comment": "Target source files for mutation, excluding test files and config",
+  "thresholds": {
+    "high": 99,
+    "low": 95,
+    "break": 90
+  },
+  "thresholds_comment": "Require 99% mutation score for high quality, break build below 90%",
+  "timeoutMS": 10000,
+  "timeoutMS_comment": "10 second timeout per mutation test",
+  "timeoutFactor": 2,
+  "timeoutFactor_comment": "Double timeout for slower mutations",
+  "maxConcurrentTestRunners": 4,
+  "maxConcurrentTestRunners_comment": "Run up to 4 test runners concurrently",
+  "ignoreStatic": false,
+  "ignoreStatic_comment": "Don't ignore static initializers",
+  "checkers": ["typescript"],
+  "checkers_comment": "Use TypeScript checker for better mutation analysis",
+  "tsconfigFile": "tsconfig.json",
+  "buildCommand": "npm run build",
+  "buildCommand_comment": "Build command to run before mutation testing",
+  "testFramework": "jest",
+  "plugins": ["@stryker-mutator/jest-runner", "@stryker-mutator/typescript-checker"],
+  "plugins_comment": "Required plugins for Vitest and TypeScript",
+  "commandRunner": {
+    "command": "npm test"
+  },
+  "commandRunner_comment": "Command to run tests",
+  "dashboard": {
+    "baseUrl": "https://dashboard.stryker-mutator.io/api/reports",
+    "reportType": "full"
+  },
+  "dashboard_comment": "Upload results to Stryker dashboard for trend analysis",
+  "tempDirName": ".stryker-tmp",
+  "cleanTempDir": true,
+  "cleanTempDir_comment": "Clean temporary files after testing",
+  "fileLogLevel": "debug",
+  "logLevel": "info",
+  "allowConsoleColors": true,
+  "appendPlugins": []
+}

@@ -28,7 +28,7 @@ scrape_configs:
     static_configs:
       - targets: ['backend:2000']
     scrape_interval: 10s
-    metrics_path: /metrics
+    metrics_path: /api/v1/metrics
     scrape_timeout: 5s
 
   # PostgreSQL Database
@@ -74,12 +74,8 @@ scrape_configs:
     scrape_interval: 30s
     metrics_path: /metrics
 
-# Storage configuration
-storage:
-  tsdb:
-    retention.time: 30d
-    retention.size: 10GB
-    wal-compression: true
+# Note: Retention and WAL compression are set via command-line flags in docker-compose
+# Leave storage defaults in config file; see docker-compose.yml for retention settings
 
 # Remote write configuration (for long-term storage)
 # remote_write:

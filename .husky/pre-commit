@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run lint-staged
+npx lint-staged
+
+# Run technical debt check (warn only)
+npm run audit:debt || echo "⚠️ Technical debt audit failed, continuing..."
+
+# Run type checking (fail on error)
+npx tsc --noEmit || exit 1
+
+# Run build verification (fail on error in CI, warn in local)
+if [ -n "$CI" ]; then
+  npm run build || exit 1
+else
+  npm run build || echo "⚠️ Build failed, please fix before committing"
+fi
+
+# Run security audit (warn only)
+npm audit --audit-level moderate || echo "⚠️ Security vulnerabilities found, please review"
+
+# Run tests (fail on error in CI, warn in local)
+if [ -n "$CI" ]; then
+  npm run test:ci
+else
+  npm run test || echo "⚠️ Tests failed, please fix before committing"
+fi
+

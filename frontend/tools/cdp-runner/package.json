@@ -1,0 +1,15 @@
+{
+  "name": "cdp-runner",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "diag": "node ../devtools-cdp-diagnostic.cjs",
+    "diag:full": "DIAG_DURATION_MS=20000 node ../devtools-cdp-diagnostic.cjs",
+    "diag:quick": "DIAG_DURATION_MS=5000 node ../devtools-cdp-diagnostic.cjs"
+  },
+  "devDependencies": {
+    "chrome-launcher": "^1.1.0",
+    "chrome-remote-interface": "^0.33.0"
+  }
+}
