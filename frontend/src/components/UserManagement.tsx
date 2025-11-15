@@ -219,7 +219,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
             <Users className="h-4 w-4 text-blue-600" />
           </div>
           <div>
-            <div className="font-medium text-gray-900">{value}</div>
+            <div className="font-medium text-gray-900">{String(value)}</div>
             <div className="text-sm text-gray-500">
               {row.first_name} {row.last_name}
             </div>
