@@ -68,7 +68,7 @@ jobs:
           VITE_WS_URL: ${{ secrets.WS_URL }}
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-files
           path: dist/
