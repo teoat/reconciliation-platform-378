@@ -1,0 +1,108 @@
+{
+  "summary": {
+    "overallCompliance": false,
+    "overallStatus": "good",
+    "totalViolations": 9,
+    "timestamp": "2025-11-01T23:43:24.372Z"
+  },
+  "categories": {
+    "coreWebVitals": {
+      "compliant": false,
+      "violations": 1,
+      "metrics": {
+        "metrics": {
+          "lcp": {
+            "compliant": false,
+            "status": "warning",
+            "distance": 12
+          },
+          "fid": {
+            "compliant": false,
+            "status": "warning",
+            "distance": 20
+          },
+          "cls": {
+            "compliant": true,
+            "status": "critical",
+            "distance": 50
+          }
+        }
+      }
+    },
+    "application": {
+      "compliant": false,
+      "violations": 1,
+      "metrics": {
+        "metrics": {
+          "initialLoad": {
+            "compliant": false,
+            "status": "warning",
+            "distance": 16.67
+          },
+          "navigation": {
+            "compliant": true,
+            "status": "good",
+            "distance": -20
+          },
+          "apiResponse": {
+            "compliant": false,
+            "status": "warning",
+            "distance": 20
+          }
+        }
+      }
+    },
+    "userExperience": {
+      "compliant": false,
+      "violations": 1,
+      "metrics": {
+        "metrics": {
+          "errorRate": {
+            "compliant": false,
+            "status": "warning",
+            "distance": 100
+          },
+          "availability": {
+            "compliant": false,
+            "status": "warning",
+            "distance": -0.2
+          },
+          "responsiveness": {
+            "compliant": true,
+            "status": "critical",
+            "distance": 50
+          }
+        }
+      }
+    },
+    "business": {
+      "compliant": false,
+      "violations": 1,
+      "metrics": {
+        "metrics": {
+          "conversion": {
+            "compliant": false,
+            "status": "warning",
+            "distance": -7.37
+          },
+          "taskCompletion": {
+            "compliant": false,
+            "status": "warning",
+            "distance": -8.89
+          },
+          "userSatisfaction": {
+            "compliant": false,
+            "status": "warning",
+            "distance": -5
+          }
+        }
+      }
+    }
+  },
+  "recommendations": [
+    "Address metrics performance issues in the coreWebVitals category.",
+    "Address metrics performance issues in the application category.",
+    "Address metrics performance issues in the userExperience category.",
+    "Address metrics performance issues in the business category."
+  ]
+}

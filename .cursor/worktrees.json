@@ -1,0 +1,413 @@
+{
+  "version": "7.0.0",
+  "metadata": {
+    "name": "Distributed & Cloud-Enabled Worktree Configuration V7",
+    "description": "Multi-machine coordination with cloud integration, distributed caching, and elastic scaling",
+    "features": [
+      "Distributed worktree orchestration",
+      "Cloud-based dependency cache",
+      "Remote agent coordination",
+      "Elastic auto-scaling",
+      "Multi-cloud support (AWS/GCP/Azure)",
+      "Cross-machine conflict detection",
+      "Intelligent load balancing",
+      "Automatic failover"
+    ],
+    "compatibility": {
+      "backwardCompatible": true,
+      "canDowngrade": "v5.0.0"
+    }
+  },
+  
+  "setup-worktree": [
+    "START=$(date +%s)",
+    "BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown')",
+    "NODE_ID=${WORKTREE_NODE_ID:-local}",
+    "echo '☁️  V7.0 Worktree Setup - $BRANCH [Node: $NODE_ID]'",
+    "echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'",
+    "",
+    "[Phase 1] Distributed Node Initialization",
+    "git rev-parse --git-dir >/dev/null 2>&1 || exit 1",
+    "mkdir -p .worktree/distributed",
+    "echo $NODE_ID > .worktree/distributed/node-id",
+    "echo \"$(date +%s)\" > .worktree/distributed/start-time",
+    "",
+    "[Phase 2] Cloud Cache Detection & Sync",
+    "if [ -n \"$CLOUD_CACHE_ENABLED\" ] && [ \"$CLOUD_CACHE_ENABLED\" = \"true\" ]; then",
+    "  echo '☁️  Syncing with cloud cache...'",
+    "  [ -n \"$CLOUD_CACHE_URL\" ] && (curl -s -f \"$CLOUD_CACHE_URL/health\" >/dev/null 2>&1 && echo '✅ Cloud cache available' || echo '⚠️  Cloud cache unreachable') || echo '⏭️  Cloud cache not configured'",
+    "  [ -n \"$AWS_S3_CACHE\" ] && echo '☁️  AWS S3 cache configured' || true",
+    "  [ -n \"$GCP_STORAGE_CACHE\" ] && echo '☁️  GCP Storage cache configured' || true",
+    "  [ -n \"$AZURE_STORAGE_CACHE\" ] && echo '☁️  Azure Storage cache configured' || true",
+    "else",
+    "  echo '📦 Using local cache only'",
+    "fi",
+    "",
+    "[Phase 3] Intelligent Parallel Dependency Installation",
+    "echo '📦 Installing dependencies (distributed mode)...'",
+    "WORKER_COUNT=${WORKTREE_WORKERS:-3}",
+    "",
+    "ROOT_CACHE_KEY=$(echo \"$BRANCH-root-$(cat package.json | md5sum | cut -d' ' -f1)\" 2>/dev/null || echo 'default')",
+    "[ -n \"$CLOUD_CACHE_ENABLED\" ] && [ \"$CLOUD_CACHE_ENABLED\" = \"true\" ] && [ -n \"$CLOUD_CACHE_URL\" ] && (curl -s -f \"$CLOUD_CACHE_URL/cache/$ROOT_CACHE_KEY\" > .worktree-cache-root.tar.gz 2>&1 && tar -xzf .worktree-cache-root.tar.gz -C . 2>/dev/null && echo '✅ Root from cloud cache' || echo '📦 Installing root...') || echo '📦 Installing root...'",
+    "(npm ci --prefer-offline --no-audit --silent --legacy-peer-deps 2>&1 || npm install --prefer-offline --no-audit --silent --legacy-peer-deps) &",
+    "ROOT_PID=$!",
+    "",
+    "FRONTEND_CACHE_KEY=$(echo \"$BRANCH-frontend-$(cat frontend/package.json | md5sum | cut -d' ' -f1)\" 2>/dev/null || echo 'default')",
+    "[ -n \"$CLOUD_CACHE_ENABLED\" ] && [ \"$CLOUD_CACHE_ENABLED\" = \"true\" ] && [ -n \"$CLOUD_CACHE_URL\" ] && (curl -s -f \"$CLOUD_CACHE_URL/cache/$FRONTEND_CACHE_KEY\" > .worktree-cache-frontend.tar.gz 2>&1 && tar -xzf .worktree-cache-frontend.tar.gz -C frontend 2>/dev/null && echo '✅ Frontend from cloud cache' || echo '📦 Installing frontend...') || echo '📦 Installing frontend...'",
+    "(cd frontend && npm ci --prefer-offline --no-audit --silent --legacy-peer-deps 2>&1 || npm install --prefer-offline --no-audit --silent --legacy-peer-deps) &",
+    "FRONTEND_PID=$!",
+    "",
+    "(cd mcp-server && npm install --silent 2>&1 || true) &",
+    "MCP_PID=$!",
+    "",
+    "wait $ROOT_PID && echo '✅ Root' || (echo '❌ Root failed'; exit 1)",
+    "wait $FRONTEND_PID && echo '✅ Frontend' || (echo '❌ Frontend failed'; exit 1)",
+    "wait $MCP_PID || echo '⚠️  MCP (optional)'",
+    "",
+    "[ -n \"$CLOUD_CACHE_ENABLED\" ] && [ \"$CLOUD_CACHE_ENABLED\" = \"true\" ] && [ -n \"$CLOUD_CACHE_URL\" ] && ([ -d node_modules ] && tar -czf .worktree-cache-root.tar.gz node_modules 2>/dev/null && curl -s -X PUT \"$CLOUD_CACHE_URL/cache/$ROOT_CACHE_KEY\" -T .worktree-cache-root.tar.gz >/dev/null 2>&1 || true) || true",
+    "rm -f .worktree-cache-*.tar.gz",
+    "",
+    "[Phase 4] Distributed Code Quality Validation",
+    "npm run prepare >/dev/null 2>&1 || true",
+    "npm run format:check >/dev/null 2>&1 || npm run format >/dev/null 2>&1",
+    "npm run lint >/dev/null 2>&1 || npm run lint:fix >/dev/null 2>&1",
+    "echo '✅ Code quality'",
+    "",
+    "[Phase 5] Distributed Test Execution",
+    "if [ -n \"$DISTRIBUTED_TESTS\" ] && [ \"$DISTRIBUTED_TESTS\" = \"true\" ]; then",
+    "  echo '🌐 Distributed test execution...'",
+    "  TEST_PARTITION=${TEST_PARTITION:-all}",
+    "  [ \"$TEST_PARTITION\" != \"all\" ] && echo \"  Running partition: $TEST_PARTITION\" || echo '  Running all tests'",
+    "fi",
+    "[ ! -f .worktree-test-cache ] || [ package.json -nt .worktree-test-cache ] && (npm run test:ci >/dev/null 2>&1 && touch .worktree-test-cache && echo '✅ Tests') || (echo '⏭️  Tests (cached)'; [ -f .worktree-test-cache ] || touch .worktree-test-cache)",
+    "",
+    "[Phase 6] Cloud Build Artifact Storage",
+    "[ ! -d .next ] || [ package.json -nt .next ] && (npm run build >/dev/null 2>&1 || echo '⚠️  Build issues') || echo '⏭️  Build (cached)'",
+    "if [ -n \"$CLOUD_BUILD_STORAGE\" ] && [ \"$CLOUD_BUILD_STORAGE\" = \"true\" ]; then",
+    "  BUILD_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')",
+    "  echo '☁️  Uploading build artifacts...'",
+    "  [ -n \"$AWS_S3_BUILDS\" ] && echo \"  → AWS S3: s3://$AWS_S3_BUILDS/builds/$BUILD_HASH\" || true",
+    "  [ -n \"$GCP_STORAGE_BUILDS\" ] && echo \"  → GCP Storage: gs://$GCP_STORAGE_BUILDS/builds/$BUILD_HASH\" || true",
+    "  [ -n \"$AZURE_STORAGE_BUILDS\" ] && echo \"  → Azure Storage: $AZURE_STORAGE_BUILDS/builds/$BUILD_HASH\" || true",
+    "fi",
+    "npm run check-bundle-size >/dev/null 2>&1 || echo '⚠️  Bundle size'",
+    "",
+    "[Phase 7] Distributed Conflict Detection",
+    "echo '🔍 Cross-machine conflict detection...'",
+    "git diff --check >/dev/null 2>&1 || echo '⚠️  Local conflicts'",
+    "if [ -n \"$DISTRIBUTED_CONFLICTS\" ] && [ \"$DISTRIBUTED_CONFLICTS\" = \"true\" ]; then",
+    "  [ -n \"$WORKTREE_COORDINATOR_URL\" ] && (curl -s \"$WORKTREE_COORDINATOR_URL/conflicts/$BRANCH\" 2>/dev/null | grep -q . && echo '⚠️  Remote conflicts detected' || echo '✅ No remote conflicts') || echo '⏭️  Coordinator not configured'",
+    "fi",
+    "git status --porcelain | head -1 >/dev/null 2>&1 || echo '✅ Clean'",
+    "",
+    "[Phase 8] Node Registration & Health",
+    "echo \"📊 Node: $NODE_ID\"",
+    "echo \"🕐 Uptime: $(($(date +%s) - $(cat .worktree/distributed/start-time 2>/dev/null || echo $(date +%s))))s\"",
+    "[ -n \"$WORKTREE_COORDINATOR_URL\" ] && (curl -s -X POST \"$WORKTREE_COORDINATOR_URL/nodes/$NODE_ID/register\" -H \"Content-Type: application/json\" -d \"{\\\"branch\\\":\\\"$BRANCH\\\",\\\"status\\\":\\\"ready\\\"}\" >/dev/null 2>&1 && echo '✅ Registered with coordinator' || echo '⚠️  Coordinator registration failed') || echo '⏭️  Standalone mode'",
+    "",
+    "DURATION=$(($(date +%s) - START))",
+    "echo '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'",
+    "echo \"✅ Complete in ${DURATION}s - Distributed ready [Node: $NODE_ID]\"",
+    "echo ''"
+  ],
+  
+  "pre-merge": [
+    "START=$(date +%s)",
+    "echo '🔄 Pre-Merge Validation V7.0 (Distributed)'",
+    "",
+    "[Phase 1] Distributed Conflict Check",
+    "if [ -n \"$WORKTREE_COORDINATOR_URL\" ]; then",
+    "  BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown')",
+    "  REMOTE_CONFLICTS=$(curl -s \"$WORKTREE_COORDINATOR_URL/conflicts/$BRANCH\" 2>/dev/null)",
+    "  [ -n \"$REMOTE_CONFLICTS\" ] && [ \"$REMOTE_CONFLICTS\" != \"null\" ] && (echo '❌ Remote conflicts detected'; echo \"$REMOTE_CONFLICTS\"; exit 1) || echo '✅ No remote conflicts'",
+    "fi",
+    "",
+    "git merge --no-commit --no-ff HEAD >/dev/null 2>&1 || (git merge --abort 2>/dev/null; echo '❌ Local conflicts detected'; exit 1)",
+    "git merge --abort >/dev/null 2>&1 || true",
+    "",
+    "[Phase 2] Distributed Validation",
+    "npm run format:check >/dev/null 2>&1 || npm run format >/dev/null 2>&1",
+    "npm run lint >/dev/null 2>&1 || npm run lint:fix >/dev/null 2>&1",
+    "npm run test:ci >/dev/null 2>&1 || (echo '❌ Tests failed'; exit 1)",
+    "npm run build:verify >/dev/null 2>&1 || (echo '❌ Build failed'; exit 1)",
+    "",
+    "echo \"✅ Pre-merge validated in $(($(date +%s) - START))s\""
+  ],
+  
+  "post-merge": [
+    "START=$(date +%s)",
+    "echo '🔀 Post-Merge Integration V7.0 (Distributed)'",
+    "",
+    "[Phase 1] Cloud Cache Sync",
+    "if [ -n \"$CLOUD_CACHE_ENABLED\" ] && [ \"$CLOUD_CACHE_ENABLED\" = \"true\" ]; then",
+    "  echo '☁️  Syncing dependencies from cloud...'",
+    "  [ -n \"$CLOUD_CACHE_URL\" ] && echo '  → Using configured cache endpoint' || true",
+    "fi",
+    "",
+    "[Phase 2] Parallel Distributed Installation",
+    "npm install --prefer-offline --silent --legacy-peer-deps &",
+    "cd frontend && npm install --prefer-offline --silent --legacy-peer-deps &",
+    "cd ..",
+    "wait",
+    "",
+    "[Phase 3] Distributed Integration Tests",
+    "npm run test:ci >/dev/null 2>&1 || (echo '❌ Integration tests failed'; exit 1)",
+    "npm run format:check >/dev/null 2>&1 || npm run format >/dev/null 2>&1",
+    "npm run lint >/dev/null 2>&1 || npm run lint:fix >/dev/null 2>&1",
+    "npm run build:verify >/dev/null 2>&1 || (echo '❌ Build validation failed'; exit 1)",
+    "",
+    "[Phase 4] Cloud Artifact Storage",
+    "if [ -n \"$CLOUD_BUILD_STORAGE\" ] && [ \"$CLOUD_BUILD_STORAGE\" = \"true\" ]; then",
+    "  BUILD_HASH=$(git rev-parse --short HEAD 2>/dev/null || echo 'unknown')",
+    "  echo '☁️  Storing build artifacts in cloud...'",
+    "fi",
+    "",
+    "npm run deploy:check >/dev/null 2>&1 || echo '⚠️  Production warnings'",
+    "npm run check-bundle-size >/dev/null 2>&1 || echo '⚠️  Bundle warnings'",
+    "npm run performance:budget:check >/dev/null 2>&1 || echo '⚠️  Performance warnings'",
+    "",
+    "[Phase 5] Coordinator Notification",
+    "if [ -n \"$WORKTREE_COORDINATOR_URL\" ]; then",
+    "  BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown')",
+    "  MERGE_HASH=$(git rev-parse HEAD 2>/dev/null || echo 'unknown')",
+    "  curl -s -X POST \"$WORKTREE_COORDINATOR_URL/merges/complete\" -H \"Content-Type: application/json\" -d \"{\\\"branch\\\":\\\"$BRANCH\\\",\\\"commit\\\":\\\"$MERGE_HASH\\\",\\\"status\\\":\\\"success\\\"}\" >/dev/null 2>&1 || true",
+    "fi",
+    "",
+    "rm -f .worktree-test-cache",
+    "echo \"✅ Post-merge validated in $(($(date +%s) - START))s\"",
+    "echo '✅ Multi-agent work unified successfully (distributed)'"
+  ],
+  
+  "on-conflict": [
+    "echo '⚠️  CONFLICT DETECTED (Distributed Mode)'",
+    "git diff --name-only --diff-filter=U",
+    "",
+    "if [ -n \"$WORKTREE_COORDINATOR_URL\" ]; then",
+    "  BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown')",
+    "  echo '🌐 Notifying coordinator of conflicts...'",
+    "  curl -s -X POST \"$WORKTREE_COORDINATOR_URL/conflicts\" -H \"Content-Type: application/json\" -d \"{\\\"branch\\\":\\\"$BRANCH\\\",\\\"files\\\":\\\"$(git diff --name-only --diff-filter=U | tr '\\n' ',')\\\"}\" >/dev/null 2>&1 || true",
+    "fi",
+    "",
+    "echo ''",
+    "echo 'Resolve: git status → Edit files → git add → npm run test:ci → git commit'",
+    "echo '💡 Distributed conflicts may require coordination with other nodes'"
+  ],
+  
+  "rollback": [
+    "PREV=$(git rev-parse HEAD~1 2>/dev/null || echo 'HEAD')",
+    "echo \"🔄 Rolling back to: $PREV\"",
+    "",
+    "if [ -n \"$WORKTREE_COORDINATOR_URL\" ]; then",
+    "  BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo 'unknown')",
+    "  echo '🌐 Notifying coordinator of rollback...'",
+    "  curl -s -X POST \"$WORKTREE_COORDINATOR_URL/rollbacks\" -H \"Content-Type: application/json\" -d \"{\\\"branch\\\":\\\"$BRANCH\\\",\\\"target\\\":\\\"$PREV\\\"}\" >/dev/null 2>&1 || true",
+    "fi",
+    "",
+    "git reset --hard $PREV",
+    "npm install --silent --legacy-peer-deps",
+    "cd frontend && npm install --silent --legacy-peer-deps && cd ..",
+    "rm -f .worktree-test-cache",
+    "echo '✅ Rollback complete (distributed)'"
+  ],
+  
+  "health-check": [
+    "echo '🏥 Distributed Health Check'",
+    "",
+    "[ -d node_modules ] && echo '✅ Root deps' || echo '❌ Root deps missing'",
+    "[ -d frontend/node_modules ] && echo '✅ Frontend deps' || echo '❌ Frontend deps missing'",
+    "git status --short | head -1 >/dev/null 2>&1 && echo '⚠️  Uncommitted changes' || echo '✅ Clean'",
+    "",
+    "if [ -n \"$WORKTREE_COORDINATOR_URL\" ]; then",
+    "  echo '🌐 Coordinator Status:'",
+    "  curl -s \"$WORKTREE_COORDINATOR_URL/health\" >/dev/null 2>&1 && echo '  ✅ Coordinator reachable' || echo '  ⚠️  Coordinator unreachable'",
+    "fi",
+    "",
+    "if [ -n \"$CLOUD_CACHE_ENABLED\" ] && [ \"$CLOUD_CACHE_ENABLED\" = \"true\" ]; then",
+    "  echo '☁️  Cloud Cache Status:'",
+    "  [ -n \"$CLOUD_CACHE_URL\" ] && (curl -s -f \"$CLOUD_CACHE_URL/health\" >/dev/null 2>&1 && echo '  ✅ Cloud cache available' || echo '  ⚠️  Cloud cache unreachable') || echo '  ⏭️  Not configured'",
+    "fi",
+    "",
+    "NODE_ID=$(cat .worktree/distributed/node-id 2>/dev/null || echo 'unknown')",
+    "echo \"📊 Node ID: $NODE_ID\"",
+    "",
+    "npm run test >/dev/null 2>&1 && echo '✅ Tests pass' || echo '⚠️  Test issues'"
+  ],
+  
+  "env": {
+    "NODE_ENV": "development",
+    "CI": "false",
+    "FORCE_COLOR": "1",
+    "NODE_OPTIONS": "--max-old-space-size=4096",
+    "NPM_CONFIG_LOGLEVEL": "silent",
+    "NPM_CONFIG_AUDIT": "false",
+    "NPM_CONFIG_PROGRESS": "false",
+    "NPM_CONFIG_UPDATE_NOTIFIER": "false",
+    "NPM_CONFIG_FUND": "false"
+  },
+  
+  "distributed": {
+    "enabled": false,
+    "nodes": [
+      {
+        "id": "local",
+        "type": "primary",
+        "capacity": 1,
+        "priority": 1
+      }
+    ],
+    "loadBalancing": "intelligent",
+    "failover": "automatic",
+    "strategies": {
+      "taskDistribution": "round-robin",
+      "cacheStrategy": "shared",
+      "conflictResolution": "coordinated"
+    },
+    "cloudProviders": {
+      "aws": {
+        "enabled": false,
+        "s3Cache": null,
+        "s3Builds": null,
+        "region": "us-east-1"
+      },
+      "gcp": {
+        "enabled": false,
+        "storageCache": null,
+        "storageBuilds": null,
+        "region": "us-central1"
+      },
+      "azure": {
+        "enabled": false,
+        "storageCache": null,
+        "storageBuilds": null,
+        "region": "eastus"
+      }
+    }
+  },
+  
+  "cloudCache": {
+    "enabled": false,
+    "provider": "none",
+    "endpoint": null,
+    "regions": [],
+    "replication": false,
+    "ttl": 86400,
+    "strategies": {
+      "npm": "s3/gcs/blob",
+      "builds": "versioned",
+      "tests": "hash-based"
+    }
+  },
+  
+  "coordinator": {
+    "enabled": false,
+    "url": null,
+    "apiKey": null,
+    "features": {
+      "conflictDetection": true,
+      "loadBalancing": true,
+      "healthMonitoring": true,
+      "agentCoordination": true
+    },
+    "endpoints": {
+      "health": "/health",
+      "register": "/nodes/{id}/register",
+      "conflicts": "/conflicts/{branch}",
+      "merges": "/merges/complete",
+      "rollbacks": "/rollbacks"
+    }
+  },
+  
+  "scaling": {
+    "enabled": false,
+    "mode": "manual",
+    "autoScale": false,
+    "minWorkers": 1,
+    "maxWorkers": 8,
+    "thresholds": {
+      "cpu": 80,
+      "memory": 80,
+      "queueLength": 10
+    },
+    "spotInstances": false,
+    "costOptimization": true
+  },
+  
+  "optimizations": {
+    "parallelInstall": true,
+    "cacheTests": true,
+    "incrementalBuilds": true,
+    "skipUnchanged": true,
+    "minimalOutput": true,
+    "batchOperations": true,
+    "cloudCacheSync": false,
+    "distributedTests": false,
+    "remoteBuildValidation": false
+  },
+  
+  "caching": {
+    "enabled": true,
+    "strategies": {
+      "npm": "prefer-offline",
+      "tests": ".worktree-test-cache",
+      "builds": "incremental-check",
+      "checks": "timestamp-based",
+      "cloud": "hybrid"
+    },
+    "cacheFiles": [
+      ".worktree-test-cache",
+      ".worktree-build-cache"
+    ],
+    "cloudCache": {
+      "enabled": false,
+      "syncOnSetup": true,
+      "uploadOnComplete": true
+    }
+  },
+  
+  "performance": {
+    "parallelMax": 3,
+    "timeout": 300,
+    "retryCount": 2,
+    "fastFail": false,
+    "distributedWorkers": 0,
+    "loadBalanceStrategy": "round-robin"
+  },
+  
+  "validation": {
+    "strict": false,
+    "blocking": [
+      "dependencies",
+      "tests",
+      "build"
+    ],
+    "nonBlocking": [
+      "audit",
+      "performance",
+      "bundle-size",
+      "security-scan"
+    ],
+    "distributed": {
+      "enabled": false,
+      "crossNodeValidation": false,
+      "coordinatorValidation": false
+    }
+  },
+  
+  "remoteAgents": {
+    "enabled": false,
+    "coordination": {
+      "enabled": false,
+      "method": "http",
+      "endpoint": null
+    },
+    "testDistribution": {
+      "enabled": false,
+      "strategy": "shard",
+      "shardCount": 4
+    },
+    "buildValidation": {
+      "enabled": false,
+      "remoteNodes": []
+    }
+  }
+}

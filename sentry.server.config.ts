@@ -116,7 +116,7 @@ Sentry.init({
 })
 
 // Server-side error reporting functions
-export const reportServerError = (error: Error, context?: Record<string, any>) => {
+export const reportServerError = (error: Error, context?: Record<string, unknown>) => {
   Sentry.withScope((scope) => {
     if (context) {
       scope.setContext('serverErrorContext', context)
@@ -154,7 +154,7 @@ export const setServerTag = (key: string, value: string) => {
   Sentry.setTag(key, value)
 }
 
-export const setServerContext = (key: string, context: Record<string, any>) => {
+export const setServerContext = (key: string, context: Record<string, unknown>) => {
   Sentry.setContext(key, context)
 }
 
@@ -189,7 +189,7 @@ export const withApiErrorHandler = (handler: any) => {
 }
 
 // Database error handler
-export const handleDatabaseError = (error: Error, operation: string, context?: Record<string, any>) => {
+export const handleDatabaseError = (error: Error, operation: string, context?: Record<string, unknown>) => {
   reportServerError(error, {
     operation,
     errorType: 'database',
@@ -198,7 +198,7 @@ export const handleDatabaseError = (error: Error, operation: string, context?: R
 }
 
 // External API error handler
-export const handleExternalApiError = (error: Error, api: string, endpoint: string, context?: Record<string, any>) => {
+export const handleExternalApiError = (error: Error, api: string, endpoint: string, context?: Record<string, unknown>) => {
   reportServerError(error, {
     api,
     endpoint,
@@ -208,7 +208,7 @@ export const handleExternalApiError = (error: Error, api: string, endpoint: stri
 }
 
 // File system error handler
-export const handleFileSystemError = (error: Error, operation: string, filePath: string, context?: Record<string, any>) => {
+export const handleFileSystemError = (error: Error, operation: string, filePath: string, context?: Record<string, unknown>) => {
   reportServerError(error, {
     operation,
     filePath,
@@ -218,7 +218,7 @@ export const handleFileSystemError = (error: Error, operation: string, filePath:
 }
 
 // Validation error handler
-export const handleValidationError = (error: Error, field: string, value: any, context?: Record<string, any>) => {
+export const handleValidationError = (error: Error, field: string, value: any, context?: Record<string, unknown>) => {
   reportServerError(error, {
     field,
     value: typeof value === 'string' ? value.substring(0, 100) : value,
@@ -228,7 +228,7 @@ export const handleValidationError = (error: Error, field: string, value: any, c
 }
 
 // Authentication error handler
-export const handleAuthError = (error: Error, userId?: string, context?: Record<string, any>) => {
+export const handleAuthError = (error: Error, userId?: string, context?: Record<string, unknown>) => {
   reportServerError(error, {
     userId,
     errorType: 'authentication',
@@ -237,7 +237,7 @@ export const handleAuthError = (error: Error, userId?: string, context?: Record<
 }
 
 // Authorization error handler
-export const handleAuthorizationError = (error: Error, userId: string, resource: string, action: string, context?: Record<string, any>) => {
+export const handleAuthorizationError = (error: Error, userId: string, resource: string, action: string, context?: Record<string, unknown>) => {
   reportServerError(error, {
     userId,
     resource,
@@ -248,7 +248,7 @@ export const handleAuthorizationError = (error: Error, userId: string, resource:
 }
 
 // Rate limiting error handler
-export const handleRateLimitError = (error: Error, userId: string, endpoint: string, context?: Record<string, any>) => {
+export const handleRateLimitError = (error: Error, userId: string, endpoint: string, context?: Record<string, unknown>) => {
   reportServerError(error, {
     userId,
     endpoint,
@@ -258,7 +258,7 @@ export const handleRateLimitError = (error: Error, userId: string, endpoint: str
 }
 
 // Business logic error handler
-export const handleBusinessLogicError = (error: Error, operation: string, data: any, context?: Record<string, any>) => {
+export const handleBusinessLogicError = (error: Error, operation: string, data: any, context?: Record<string, unknown>) => {
   reportServerError(error, {
     operation,
     data: typeof data === 'string' ? data.substring(0, 100) : data,

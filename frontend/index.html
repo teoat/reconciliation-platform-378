@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reconciliation Platform</title>
+  </head>
+  <body>
+    <!-- External libraries loaded from CDN for better caching and reduced bundle size -->
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script src="https://unpkg.com/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/lucide@0.294.0/dist/umd/lucide.js"></script>
+    <script>
+      // Make libraries available globally
+      window.io = io;
+      window.axios = axios;
+      window.lucide = lucide;
+    </script>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

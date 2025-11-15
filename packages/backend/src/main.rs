@@ -5,7 +5,6 @@
 //! Status: ✅ Active and Mandatory
 
 use actix_web::{web, App, HttpServer, HttpResponse, Result};
-use std::env;
 use reconciliation_backend::{
     database::Database,
     config::Config,
@@ -22,6 +21,10 @@ async fn main() -> std::io::Result<()> {
     println!("🚀 Starting 378 Reconciliation Platform Backend");
     println!("📊 Database URL: {}", config.database_url);
     println!("🔴 Redis URL: {}", config.redis_url);
+
+    // Store host and port before moving config
+    let host = config.host.clone();
+    let port = config.port;
 
     // Initialize database
     let database = Database::new(&config.database_url).await
@@ -86,7 +89,7 @@ async fn main() -> std::io::Result<()> {
             )
             .route("/", web::get().to(index))
     })
-    .bind("0.0.0.0:8080")?
+    .bind(format!("{}:{}", host, port))?
     .run()
     .await
 }

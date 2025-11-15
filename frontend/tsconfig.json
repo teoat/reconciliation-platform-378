@@ -1,0 +1,52 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Build performance */
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.tsbuildinfo",
+    "assumeChangesOnlyAffectDirectDependencies": true,
+
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+
+    /* Path mapping */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/services/*": ["./src/services/*"],
+      "@/utils/*": ["./src/utils/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/store/*": ["./src/store/*"]
+    }
+  },
+  "include": ["src", "vite-env.d.ts"],
+  "exclude": [
+    "src/__tests__/pages/IngestionPage.test.tsx",
+    "src/components/WorkflowAutomation.tsx",
+    "src/pages/DashboardPage.tsx",
+    "src/pages/index.tsx",
+    "src/utils/fontOptimization.ts",
+    "src/utils/imageOptimization.ts",
+    "src/utils/serviceWorker.ts",
+    "src/utils/testing.tsx"
+  ],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}

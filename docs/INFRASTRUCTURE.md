@@ -273,9 +273,9 @@ The CI/CD pipeline includes:
 ```yaml
 on:
   push:
-    branches: [ main, develop, feature/* ]
+    branches: [ master, develop, feature/* ]
   pull_request:
-    branches: [ main, develop ]
+    branches: [ master, develop ]
   workflow_dispatch:
     inputs:
       environment:

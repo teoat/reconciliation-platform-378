@@ -1,0 +1,60 @@
+# WebSocket Metrics Configuration for Prometheus
+groups:
+  - name: websocket_alerts
+    interval: 30s
+    rules:
+      # WebSocket connection count alert
+      - alert: HighWebSocketConnections
+        expr: websocket_connections_active > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: websocket
+        annotations:
+          summary: "High WebSocket connection count"
+          description: "WebSocket connections at {{ $value }} (threshold: 1000)"
+
+      # WebSocket message rate alert
+      - alert: HighWebSocketMessageRate
+        expr: rate(websocket_messages_total[5m]) > 10000
+        for: 2m
+        labels:
+          severity: warning
+          service: websocket
+        annotations:
+          summary: "High WebSocket message rate"
+          description: "Message rate at {{ $value }}/sec (threshold: 10000)"
+
+      # WebSocket error rate alert
+      - alert: WebSocketErrors
+        expr: rate(websocket_errors_total[5m]) > 100
+        for: 1m
+        labels:
+          severity: critical
+          service: websocket
+        annotations:
+          summary: "High WebSocket error rate"
+          description: "Error rate at {{ $value }}/sec (threshold: 100)"
+
+      # Compression efficiency
+      - alert: LowCompressionRatio
+        expr: websocket_compression_ratio < 0.5
+        for: 10m
+        labels:
+          severity: info
+          service: websocket
+        annotations:
+          summary: "Low WebSocket compression ratio"
+          description: "Compression ratio at {{ $value }} (expected: >0.5)"
+
+      # Batching efficiency
+      - alert: LowBatchingEfficiency
+        expr: websocket_batch_utilization < 0.6
+        for: 10m
+        labels:
+          severity: info
+          service: websocket
+        annotations:
+          summary: "Low batch utilization"
+          description: "Batch utilization at {{ $value }} (expected: >0.6)"
+

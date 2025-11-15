@@ -1,4 +1,4 @@
-# Documentation Index
+# 378 Reconciliation Platform
 
 Reference guide for the `docs/` directory.
 

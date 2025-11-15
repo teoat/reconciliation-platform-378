@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reconciliation-api
+  namespace: reconciliation-platform
+  labels:
+    app: reconciliation-api
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: reconciliation-api
+  template:
+    metadata:
+      labels:
+        app: reconciliation-api
+    spec:
+      containers:
+      - name: reconciliation-api
+        image: reconciliation-rust:latest
+        ports:
+        - containerPort: 2000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: reconciliation-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: reconciliation-config
+              key: REDIS_URL
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: reconciliation-secrets
+              key: jwt-secret
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 2000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 2000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: reconciliation-service
+  namespace: reconciliation-platform
+spec:
+  selector:
+    app: reconciliation-api
+  ports:
+  - port: 2000
+    targetPort: 2000
+  type: ClusterIP

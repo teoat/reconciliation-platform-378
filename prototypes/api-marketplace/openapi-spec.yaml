@@ -1,0 +1,211 @@
+openapi: 3.0.0
+info:
+  title: Reconciliation Platform API
+  description: API for reconciliation platform with marketplace features
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: api-support@reconciliation.com
+servers:
+  - url: https://api.reconciliation.com/v1
+    description: Production server
+  - url: https://staging-api.reconciliation.com/v1
+    description: Staging server
+paths:
+  /reconciliation/records:
+    get:
+      summary: Get reconciliation records
+      parameters:
+        - name: project_id
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: List of reconciliation records
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReconciliationRecord'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+    post:
+      summary: Create reconciliation record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateReconciliationRecord'
+      responses:
+        '201':
+          description: Reconciliation record created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReconciliationRecord'
+  /reconciliation/matches:
+    post:
+      summary: Find matches for records
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                records:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/ReconciliationRecord'
+                options:
+                  $ref: '#/components/schemas/MatchOptions'
+      responses:
+        '200':
+          description: Match results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  matches:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MatchResult'
+                  summary:
+                    $ref: '#/components/schemas/MatchSummary'
+components:
+  schemas:
+    ReconciliationRecord:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        description:
+          type: string
+        transaction_date:
+          type: string
+          format: date
+        source:
+          type: string
+        status:
+          type: string
+          enum: [pending, matched, unmatched, disputed]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    CreateReconciliationRecord:
+      type: object
+      required:
+        - project_id
+        - amount
+        - description
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        amount:
+          type: number
+          format: double
+        description:
+          type: string
+        transaction_date:
+          type: string
+          format: date
+        source:
+          type: string
+    MatchResult:
+      type: object
+      properties:
+        record1:
+          $ref: '#/components/schemas/ReconciliationRecord'
+        record2:
+          $ref: '#/components/schemas/ReconciliationRecord'
+        confidence:
+          type: number
+          format: double
+        match_type:
+          type: string
+          enum: [exact, fuzzy, amount, date]
+        reasons:
+          type: array
+          items:
+            type: string
+    MatchOptions:
+      type: object
+      properties:
+        confidence_threshold:
+          type: number
+          format: double
+          default: 0.8
+        match_types:
+          type: array
+          items:
+            type: string
+            enum: [exact, fuzzy, amount, date]
+        max_matches:
+          type: integer
+          default: 100
+    MatchSummary:
+      type: object
+      properties:
+        total_comparisons:
+          type: integer
+        high_confidence_matches:
+          type: integer
+        medium_confidence_matches:
+          type: integer
+        low_confidence_matches:
+          type: integer
+        processing_time:
+          type: number
+          format: double
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []

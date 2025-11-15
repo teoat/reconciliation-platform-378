@@ -258,7 +258,7 @@ export const preloadOnHover = (componentImport: () => Promise<any>) => {
 
 // Get component bundle size (for development)
 export const getComponentBundleSize = async (componentPath: string) => {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.MODE === 'development') {
     try {
       const module = await import(componentPath)
       console.log(`Bundle size for ${componentPath}:`, module)

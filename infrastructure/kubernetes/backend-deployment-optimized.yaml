@@ -1,0 +1,284 @@
+# ============================================================================
+# ULTIMATE OPTIMIZED KUBERNETES DEPLOYMENT - BACKEND
+# ============================================================================
+# Service: reconciliation-backend
+# Runtime: Rust 1.90 (Optimized Binary)
+# Resource Limits: 350MB RAM, 350m CPU (70% of baseline)
+# Image Size: ~50-70MB
+# ============================================================================
+
+---
+# ============================================================================
+# Deployment Configuration
+# ============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reconciliation-backend
+  namespace: reconciliation
+  labels:
+    app: reconciliation-backend
+    version: v1.0.0
+    tier: backend
+    component: api
+spec:
+  replicas: 3  # Minimum replicas for high availability
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0  # Zero-downtime deployments
+  selector:
+    matchLabels:
+      app: reconciliation-backend
+  template:
+    metadata:
+      labels:
+        app: reconciliation-backend
+        version: v1.0.0
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "2000"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: reconciliation-backend-sa
+      
+      # Security hardening - non-root user
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 1001
+        fsGroup: 1001
+        fsGroupChangePolicy: "Always"
+        seccompProfile:
+          type: "RuntimeDefault"
+      
+      containers:
+      - name: backend
+        image: reconciliation-backend:latest  # Replace with your registry
+        imagePullPolicy: Always
+        
+        ports:
+        - name: http
+          containerPort: 2000
+          protocol: TCP
+        - name: metrics
+          containerPort: 9091
+          protocol: TCP
+        
+        # Environment variables from ConfigMap and Secrets
+        env:
+        # Database configuration
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: reconciliation-secrets
+              key: database-url
+              optional: false
+        
+        # Redis configuration
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: reconciliation-secrets
+              key: redis-url
+              optional: false
+        
+        # Security secrets
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: reconciliation-secrets
+              key: jwt-secret
+              optional: false
+        
+        # Application configuration
+        - name: RUST_LOG
+          value: "info"
+        - name: RUST_BACKTRACE
+          value: "0"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: PORT
+          value: "2000"
+        - name: ENVIRONMENT
+          value: "production"
+        
+        # Resource configuration - Optimized to 70% of baseline
+        resources:
+          requests:
+            memory: "256Mi"  # Request 256MB (guaranteed)
+            cpu: "250m"      # Request 0.25 CPU cores
+          limits:
+            memory: "350Mi"  # Limit to 350MB (70% of 500MB)
+            cpu: "350m"      # Limit to 0.35 CPU cores (70% of 500m)
+        
+        # Liveness probe - detects unhealthy containers
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 40  # Grace period for startup
+          periodSeconds: 30
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        
+        # Readiness probe - ensures traffic only to ready pods
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 15  # Faster startup readiness check
+          periodSeconds: 10
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        
+        # Startup probe - for slower-starting applications
+        startupProbe:
+          httpGet:
+            path: /health
+            port: http
+            scheme: HTTP
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 30  # Allow up to 5 minutes to start
+        
+        # Volume mounts for persistent data
+        volumeMounts:
+        - name: uploads
+          mountPath: /app/uploads
+          readOnly: false
+        - name: logs
+          mountPath: /app/logs
+          readOnly: false
+        
+        # Pod Disruption Budget - ensure availability during updates
+      
+      volumes:
+      - name: uploads
+        persistentVolumeClaim:
+          claimName: backend-uploads-pvc
+      - name: logs
+        emptyDir: {}
+      
+      terminationGracePeriodSeconds: 30
+      
+      # Affinity rules for pod distribution
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - reconciliation-backend
+              topologyKey: kubernetes.io/hostname
+
+---
+# ============================================================================
+# Service Configuration
+# ============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: reconciliation-backend
+  namespace: reconciliation
+  labels:
+    app: reconciliation-backend
+    tier: backend
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+spec:
+  type: ClusterIP  # Use LoadBalancer for external access
+  selector:
+    app: reconciliation-backend
+  ports:
+  - name: http
+    port: 2000
+    targetPort: http
+    protocol: TCP
+  - name: metrics
+    port: 9091
+    targetPort: metrics
+    protocol: TCP
+  sessionAffinity: ClientIP  # Sticky sessions
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800  # 3 hours
+
+---
+# ============================================================================
+# Horizontal Pod Autoscaler
+# ============================================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: reconciliation-backend-hpa
+  namespace: reconciliation
+  labels:
+    app: reconciliation-backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: reconciliation-backend
+  minReplicas: 3  # Minimum for HA
+  maxReplicas: 15  # Maximum for high load
+  metrics:
+  # CPU-based scaling (primary metric)
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70  # Scale when CPU > 70%
+  # Memory-based scaling (secondary metric)
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80  # Scale when Memory > 80%
+  
+  # Behavioral configuration for smooth scaling
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300  # Wait 5 min before scaling down
+      policies:
+      - type: Percent
+        value: 25  # Scale down max 25% at a time
+        periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0  # Scale up immediately
+      policies:
+      - type: Percent
+        value: 50  # Scale up max 50% at a time
+        periodSeconds: 30
+      - type: Pods
+        value: 2  # Or add 2 pods at a time
+        periodSeconds: 30
+      selectPolicy: Max  # Use the most aggressive policy
+
+---
+# ============================================================================
+# Pod Disruption Budget
+# ============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: reconciliation-backend-pdb
+  namespace: reconciliation
+spec:
+  minAvailable: 2  # Always have at least 2 pods available
+  selector:
+    matchLabels:
+      app: reconciliation-backend
+

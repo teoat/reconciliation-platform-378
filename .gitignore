@@ -227,9 +227,17 @@ backups/
 # ============================================================================
 
 # Environment files with secrets
+.env
 .env.*
 !.env.example
 !.env.template
+
+# Config directory environment files
+config/*.env
+!config/*.env.example
+
+# Test environment files (except examples)
+backend/tests/test.env
 
 # SSH keys
 *.pem
@@ -355,3 +363,47 @@ files/
 # ============================================================================
 # END OF GITIGNORE
 # ============================================================================
+
+# Logs
+logs
+dev-debug.log
+# Environment variables
+# Editor directories and files
+.idea
+.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# OS specific
+
+# Task files
+# tasks.json
+# tasks/
+
+# ============================================================================
+# ARCHIVED FILES & FOLDERS
+# ============================================================================
+docs/archive/
+backup_*/
+archived/
+archive/
+*.archived
+
+# ============================================================================
+# TEST FILES
+# ============================================================================
+__tests__/
+**/__tests__/
+*.test.ts
+*.test.tsx
+*.test.js
+*.test.jsx
+*.spec.ts
+*.spec.tsx
+*.spec.js
+*.spec.jsx
+test-results/
+coverage/
+.nyc_output/

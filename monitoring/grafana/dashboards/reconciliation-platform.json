@@ -1,0 +1,112 @@
+{
+  "dashboard": {
+    "title": "378 Reconciliation Platform - Production Dashboard",
+    "tags": ["reconciliation", "production", "backend"],
+    "timezone": "browser",
+    "panels": [
+      {
+        "id": 1,
+        "title": "API Request Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total[5m])) by (method)"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+      },
+      {
+        "id": 2,
+        "title": "P95 API Latency",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum by (le, endpoint) (rate(http_request_duration_seconds_bucket[5m])))",
+            "legendFormat": "{{ endpoint }}"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "sum(rate(http_requests_total{status_code=~\"5..\"}[5m]))",
+            "legendFormat": "5xx Errors"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+      },
+      {
+        "id": 4,
+        "title": "Database Connection Pool",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "database_connections_active",
+            "legendFormat": "Active Connections"
+          },
+          {
+            "expr": "database_connections_idle",
+            "legendFormat": "Idle Connections"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+      },
+      {
+        "id": 5,
+        "title": "Cache Hit Rate",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "(cache_hits_total / (cache_hits_total + cache_misses_total)) * 100",
+            "legendFormat": "Hit Rate %"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 0, "y": 16}
+      },
+      {
+        "id": 6,
+        "title": "Active Reconciliation Jobs",
+        "type": "singlestat",
+        "targets": [
+          {
+            "expr": "reconciliation_jobs_active",
+            "legendFormat": "Active Jobs"
+          }
+        ],
+        "gridPos": {"h": 4, "w": 6, "x": 6, "y": 16}
+      },
+      {
+        "id": 7,
+        "title": "Database CPU Usage",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "postgresql_exporter_database_cpu_usage",
+            "legendFormat": "CPU %"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20}
+      },
+      {
+        "id": 8,
+        "title": "System Memory",
+        "type": "graph",
+        "targets": [
+          {
+            "expr": "system_memory_usage_percent",
+            "legendFormat": "Memory %"
+          }
+        ],
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 20}
+      }
+    ],
+    "refresh": "10s",
+    "schemaVersion": 16,
+    "version": 0
+  }
+}
+

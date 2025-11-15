@@ -1,5 +1,5 @@
 import { render, screen, waitFor } from '../test-utils'
-import { DataProvider, useData } from '../app/components/DataProvider'
+import { DataProvider, useData } from '../../frontend/src/components/DataProvider'
 import { createMockProject } from '../test-utils'
 
 // Test component that uses the DataProvider
