@@ -194,7 +194,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                   liveComments.map((commentMsg, index) => {
                     const comment = commentMsg.comment as any || {};
                     return (
-                      <div key={`${commentMsg.projectId}-${index}`} className="space-y-2">
+                      <div key={comment.id || `comment-${commentMsg.projectId || 'unknown'}-${commentMsg.timestamp || index}`} className="space-y-2">
                         <div className="flex space-x-2">
                           <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
                             <User className="w-3 h-3 text-white" />
