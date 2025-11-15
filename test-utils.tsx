@@ -1,6 +1,6 @@
 import { render, RenderOptions } from '@testing-library/react'
 import { ReactElement } from 'react'
-import { DataProvider } from '../app/components/DataProvider'
+import { DataProvider } from './frontend/src/components/DataProvider'
 
 // Custom render function that includes providers
 const AllTheProviders = ({ children }: { children: React.ReactNode }) => {

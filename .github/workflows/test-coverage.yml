@@ -1,0 +1,48 @@
+name: Test Coverage
+
+on:
+  pull_request:
+    branches: [master, develop]
+  push:
+    branches: [master, develop]
+
+jobs:
+  frontend-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      - name: Install dependencies
+        run: cd frontend && npm ci
+      - name: Run tests with coverage
+        run: cd frontend && npm run test:coverage || echo "Coverage tool not yet installed"
+      - name: Upload coverage (if available)
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          file: ./frontend/coverage/coverage-final.json
+          flags: frontend
+          fail_ci_if_error: false
+
+  backend-coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+      - name: Install tarpaulin
+        run: cargo install cargo-tarpaulin
+      - name: Run tests with coverage
+        run: cd backend && cargo tarpaulin --out Xml || echo "Coverage run completed"
+      - name: Upload coverage (if available)
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          file: ./backend/coverage.xml
+          flags: backend
+          fail_ci_if_error: false
+

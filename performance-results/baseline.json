@@ -1,0 +1,16 @@
+{
+  "bundleSize": {
+    "totalSize": 0,
+    "chunks": [],
+    "timestamp": "2025-10-31T19:13:31.660Z"
+  },
+  "synthetic": {
+    "initialLoadTime": 2815.90411119996,
+    "domContentLoaded": 1710.8196003063658,
+    "firstPaint": 1316.6431133614358,
+    "reactHydrationTime": 443.70581503320795,
+    "timestamp": "2025-10-31T19:13:31.671Z"
+  },
+  "lighthouse": null,
+  "timestamp": "2025-10-31T19:14:31.749Z"
+}

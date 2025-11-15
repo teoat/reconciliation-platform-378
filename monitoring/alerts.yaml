@@ -1,0 +1,192 @@
+# Prometheus Alerting Rules for Reconciliation Platform
+# This file defines alerts for monitoring the health and performance of the backend
+
+groups:
+  - name: backend_critical_alerts.label_query}}
+    interval: 30s
+    rules:
+      # High API Latency Alert
+      - alert: HighAPILatency
+        expr: histogram_quantile(0.95, sum by (le, endpoint) (rate(http_request_duration_seconds_bucket[5m]))) > 0.5
+        for: 5m
+        labels:
+          severity: critical
+          component: backend
+          environment: production
+        annotations:
+          summary: "P95 API latency exceeds 500ms"
+          description: "Endpoint {{ $labels.endpoint }} has P95 latency of {{ $value }}s"
+          runbook_url: "https://wiki.company.com/runbook/high-latency"
+          
+      # Database Connection Pool Exhaustion
+      - alert: DatabaseConnectionPoolExhausted
+        expr: database_connections_active / 20 > 0.9
+        for: 1m
+        labels:
+          severity: critical
+          component: database
+        annotations:
+          summary: "Database connection pool at {{ $value | humanizePercentage }} capacity"
+          description: "Database pool has {{ $value }} active connections out of 20 maximum"
+          runbook_url: "https://wiki.company.com/runbook/db-pool-exhaustion"
+          
+      # High Error Rate Alert
+      - alert: HighErrorRate
+        expr: sum(rate(http_requests_total{status_code=~"5.."}[5m])) > 10
+        for: 3m
+        labels:
+          severity: critical
+          component: backend
+        annotations:
+          summary: "Error rate of {{ $value }} req/s exceeds threshold"
+          description: "Backend is experiencing {{ $value }} 5xx errors per second"
+          runbook_url: "https://wiki.company.com/runbook/high-error-rate"
+          
+      # Database Query Performance Degradation
+      - alert: SlowDatabaseQueries
+        expr: histogram_quantile(0.95, sum by (le, query_type) doctor(rate(database_query_duration_seconds_bucket[5m]))) > 0.2
+        for: 10m
+        labels:
+          severity: warning
+          component: database
+        annotations:
+          summary: "Slow database queries detected"
+          description: "Query type {{ $labels.query_type }} has P95 latency of {{ $value }}s"
+          
+      # Redis Connection Failure
+      - alert: RedisConnectionFailure
+        expr: up{job="redis"} == 0
+        for: 30s
+        labels:
+          severity: critical
+          component: cache
+        annotations:
+          summary: "Redis is down"
+          description: "Redis server is not responding"
+          
+  - name: backend_performance_alerts
+    interval: 60s
+    rules:
+      # Cache Hit Rate Low
+      - alert: LowCacheHitRate
+        expr: (cache_hits_total / (cache_hits_total + cache_misses_total)) < 0.7
+        for: 15m
+        labels:
+          severity: warning
+          component: cache
+        annotations:
+          summary: "Cache hit rate is {{ $value | humanizePercentage }}"
+          description: "Cache effectiveness is low, consider increasing TTL or cache size"
+          
+      # Reconciliation Job Failure Rate
+      - alert: HighJobFailureRate
+        expr: sum(rate(reconciliation_jobs_total{status="failed"}[5m])) / sum(rate(reconciliation_jobs_total[5m])) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          component: reconciliation
+        annotations:
+          summary: "High reconciliation job failure rate"
+          description: "{{ $value | humanizePercentage }} of reconciliation jobs are failing"
+          
+      # Memory Usage High
+      - alert: HighMemoryUsage
+        expr: system_memory_usage_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "Memory usage at {{ $value }}%"
+          description: "System memory usage is high"
+          
+      # CPU Usage High
+      - alert: HighCPUUsage
+        expr: system_cpu_usage_percent > 80
+        for: 10m
+        labels:
+          severity: warning
+          component: system
+        annotations:
+          summary: "CPU usage at {{ $value }}%"
+          description: "System CPU usage is high for extended period"
+          
+  - name: backend_backup_alerts
+    interval: 300s
+    rules:
+      # Backup Staleness
+      - alert: BackupNotRunRecently
+        expr: time() - backup_last_run_time > 7200
+        for: 0m
+        labels:
+          severity: critical
+          component: backup
+        annotations:
+          summary: "No backup in the last 2 hours"
+          description: "Automated backup is overdue, data loss risk is high"
+          
+      # Backup Failure
+      - alert: BackupFailure
+        expr: increase(backup_failures_total[1h]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          component: backup
+        annotations:
+          summary: "Backup has failed"
+          description: "Recent backup attempt failed: {{ $value }} failures in last hour"
+          
+  - name: backend_security_alerts
+    interval: 60s
+    rules:
+      # Suspicious Activity - High Failed Login Attempts
+      - alert: SuspiciousLoginActivity
+        expr: rate(user_login_failures_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "Suspicious login activity detected"
+          description: "{{ $value }} failed login attempts per second"
+          
+      # Rate Limit Violations
+      - alert: ExcessiveRateLimitHits
+        expr: rate(rate_limit_hits_total[5m]) > 20
+        for: 10m
+        labels:
+          severity: info
+          component: security
+        annotations:
+          summary: "High rate limit violations"
+          description: "Rate limits being hit frequently, possible DDoS attempt"
+          
+      # Unauthorized Access Attempts
+      - alert: UnauthorizedAccessAttempts
+        expr: rate(http_requests_total{status_code="401"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          component: security
+        annotations:
+          summary: "High number of unauthorized access attempts"
+          description: "{{ $value }} unauthorized requests per second"
+
+# Alertmanager notification configuration (reference)
+# notify:
+#   - name: "slack-notifications"
+#     webhook_configs:
+#       - url: "{{ SLACK_WEBHOOK_URL }}"
+#         send_resolved: true
+#     template: |
+#       {{ range .Alerts }}
+#       *Alert:* {{ .Annotations.summary }}
+#       *Description:* {{ .Annotations.description }}
+#       *Severity:* {{ .Labels.severity }}
+#       {{ end }}
+#   
+#   - name: "pagerduty-critical"
+#     pagerduty_configs:
+#       - service_key: "{{ PAGERDUTY_SERVICE_KEY }}"
+#         severity: "critical"
+

@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: reconciliation-platform-ingress
+  labels:
+    app: reconciliation-platform
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  tls:
+  - hosts:
+    - reconciliation-platform.example.com
+    secretName: reconciliation-platform-tls
+  rules:
+  - host: reconciliation-platform.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: reconciliation-platform
+            port:
+              number: 80
+
