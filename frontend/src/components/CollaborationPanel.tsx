@@ -70,7 +70,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
   // Update presence when component mounts
   useEffect(() => {
     if (isConnected) {
-      updatePresence('current-user', 'Current User');
+      updatePresence('online');
     }
   }, [isConnected, updatePresence]);
 
@@ -162,16 +162,16 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
             </div>
             <div className="space-y-2">
               {activeUsers.map((user) => (
-                <div key={user.id} className="flex items-center space-x-2">
+                <div key={user.userId} className="flex items-center space-x-2">
                   <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                     <User className="w-3 h-3 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {user.name}
+                      User {user.userId}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {formatLastSeen(user.lastSeen)}
+                      {user.isOnline ? 'Online' : 'Offline'}
                     </p>
                   </div>
                 </div>
@@ -191,38 +191,40 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                     <p className="text-xs text-gray-400">Start the conversation!</p>
                   </div>
                 ) : (
-                  liveComments.map((comment) => (
-                    <div key={comment.id} className="space-y-2">
-                      <div className="flex space-x-2">
-                        <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
-                          <User className="w-3 h-3 text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2">
-                            <span className="text-sm font-medium text-gray-900">
-                              {comment.userName}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {formatTimestamp(comment.timestamp)}
-                            </span>
+                  liveComments.map((commentMsg, index) => {
+                    const comment = commentMsg.comment as any || {};
+                    return (
+                      <div key={`${commentMsg.projectId}-${index}`} className="space-y-2">
+                        <div className="flex space-x-2">
+                          <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <User className="w-3 h-3 text-white" />
                           </div>
-                          <p className="text-sm text-gray-700 mt-1">
-                            {comment.message}
-                          </p>
-                          <div className="flex items-center space-x-2 mt-1">
-                            <button
-                              onClick={() => setReplyingTo(comment.id)}
-                              className="text-xs text-blue-600 hover:text-blue-800 flex items-center space-x-1"
-                            >
-                              <Reply className="w-3 h-3" />
-                              <span>Reply</span>
-                            </button>
-                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-sm font-medium text-gray-900">
+                                {comment.userName || 'User'}
+                              </span>
+                              <span className="text-xs text-gray-500">
+                                {comment.timestamp ? formatTimestamp(comment.timestamp) : 'Now'}
+                              </span>
+                            </div>
+                            <p className="text-sm text-gray-700 mt-1">
+                              {comment.message || 'No message'}
+                            </p>
+                            <div className="flex items-center space-x-2 mt-1">
+                              <button
+                                onClick={() => setReplyingTo(comment.id || `${index}`)}
+                                className="text-xs text-blue-600 hover:text-blue-800 flex items-center space-x-1"
+                              >
+                                <Reply className="w-3 h-3" />
+                                <span>Reply</span>
+                              </button>
+                            </div>
                         </div>
                       </div>
                       
                       {/* Reply Input */}
-                      {replyingTo === comment.id && (
+                      {replyingTo === (comment.id || `${index}`) && (
                         <div className="ml-8 space-y-2">
                           <div className="flex space-x-2">
                             <input
@@ -233,12 +235,12 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                               className="flex-1 text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
                               onKeyPress={(e) => {
                                 if (e.key === 'Enter') {
-                                  handleSendReply(comment.id);
+                                  handleSendReply(comment.id || `${index}`);
                                 }
                               }}
                             />
                             <button
-                              onClick={() => handleSendReply(comment.id)}
+                              onClick={() => handleSendReply(comment.id || `${index}`)}
                               className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
                             >
                               <Send className="w-3 h-3" />
@@ -256,7 +258,8 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                         </div>
                       )}
                     </div>
-                  ))
+                  );
+                  })
                 )}
                 <div ref={commentsEndRef} />
               </div>

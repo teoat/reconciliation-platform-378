@@ -291,10 +291,10 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       let data: ReconciliationRecord[] = [];
       switch (report.dataSource) {
         case 'reconciliation':
-          data = reconciliationData?.records || [];
+          data = (reconciliationData?.records || []) as unknown as ReconciliationRecord[];
           break;
         case 'cashflow':
-          data = cashflowData?.records || [];
+          data = (cashflowData?.records || []) as unknown as ReconciliationRecord[];
           break;
         case 'projects':
           data = []; // Would fetch project data

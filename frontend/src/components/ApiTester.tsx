@@ -69,7 +69,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
     setTestResults(prev => [pendingResult, ...prev])
     
     try {
-      let response: Record<string, unknown> | unknown[] | undefined
+      let response: any
       
       // Execute the appropriate API call based on endpoint
       switch (endpoint) {
@@ -110,7 +110,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
       )
       
       setResponseBody(JSON.stringify(response, null, 2))
-      showSuccess('API Test Successful', `Endpoint ${endpoint} responded successfully`)
+      showSuccess(`API Test Successful: ${endpoint}`)
       
     } catch (error) {
       const duration = Date.now() - startTime
@@ -132,7 +132,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
       )
       
       setResponseBody(JSON.stringify({ error: errorMessage }, null, 2))
-      showError('API Test Failed', errorMessage)
+      showError(`API Test Failed: ${errorMessage}`)
     }
   }, [showSuccess, showError])
 
@@ -164,7 +164,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
 
   const copyToClipboard = useCallback((text: string) => {
     navigator.clipboard.writeText(text)
-    showSuccess('Copied', 'Response copied to clipboard')
+    showSuccess('Response copied to clipboard')
   }, [showSuccess])
 
   const downloadResults = useCallback(() => {
@@ -183,7 +183,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
     
-    showSuccess('Downloaded', 'Test results downloaded successfully')
+    showSuccess('Test results downloaded successfully')
   }, [testResults, showSuccess])
 
   const clearResults = useCallback(() => {
