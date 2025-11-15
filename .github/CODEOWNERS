@@ -1,0 +1,54 @@
+# Code Owners
+# This file defines individuals or teams responsible for code in this repository
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+# Unless a later match takes precedence, these users will be requested for review when someone opens a PR
+* @teoat
+
+# Backend (Rust) code ownership
+/backend/ @teoat
+/reconciliation-backend/ @teoat
+/reconciliation-rust/ @teoat
+*.rs @teoat
+Cargo.toml @teoat
+Cargo.lock @teoat
+
+# Frontend code ownership
+/frontend/ @teoat
+/packages/frontend/ @teoat
+*.tsx @teoat
+*.jsx @teoat
+*.ts @teoat
+*.js @teoat
+package.json @teoat
+package-lock.json @teoat
+
+# Infrastructure and DevOps
+/.github/ @teoat
+/infrastructure/ @teoat
+/terraform/ @teoat
+/k8s/ @teoat
+docker-compose*.yml @teoat
+Dockerfile* @teoat
+*.sh @teoat
+
+# CI/CD workflows
+/.github/workflows/ @teoat
+
+# Security and governance
+/.github/rulesets/ @teoat
+/governance_spec.json @teoat
+
+# Database and migrations
+/backend/migrations/ @teoat
+*.sql @teoat
+
+# Documentation
+*.md @teoat
+/docs/ @teoat
+
+# Configuration files
+/.github/dependabot.yml @teoat
+/.github/CODEOWNERS @teoat
+.gitignore @teoat
