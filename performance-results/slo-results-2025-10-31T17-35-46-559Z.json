@@ -1,0 +1,86 @@
+{
+  "overall": {
+    "compliant": false,
+    "status": "good",
+    "violations": 12
+  },
+  "categories": {
+    "coreWebVitals": {
+      "metrics": {
+        "lcp": {
+          "compliant": false,
+          "status": "unknown",
+          "distance": 0
+        },
+        "fid": {
+          "compliant": false,
+          "status": "unknown",
+          "distance": 0
+        },
+        "cls": {
+          "compliant": false,
+          "status": "unknown",
+          "distance": 0
+        }
+      }
+    },
+    "application": {
+      "metrics": {
+        "initialLoad": {
+          "compliant": false,
+          "status": "unknown",
+          "distance": 0
+        },
+        "navigation": {
+          "compliant": false,
+          "status": "unknown",
+          "distance": 0
+        },
+        "apiResponse": {
+          "compliant": false,
+          "status": "unknown",
+          "distance": 0
+        }
+      }
+    },
+    "userExperience": {
+      "metrics": {
+        "errorRate": {
+          "compliant": false,
+          "status": "unknown",
+          "distance": 0
+        },
+        "availability": {
+          "compliant": false,
+          "status": "unknown",
+          "distance": 0
+        },
+        "responsiveness": {
+          "compliant": false,
+          "status": "unknown",
+          "distance": 0
+        }
+      }
+    },
+    "business": {
+      "metrics": {
+        "conversion": {
+          "compliant": false,
+          "status": "unknown",
+          "distance": 0
+        },
+        "taskCompletion": {
+          "compliant": false,
+          "status": "unknown",
+          "distance": 0
+        },
+        "userSatisfaction": {
+          "compliant": false,
+          "status": "unknown",
+          "distance": 0
+        }
+      }
+    }
+  },
+  "timestamp": "2025-10-31T17:35:46.559Z"
+}

@@ -275,11 +275,10 @@ VITE_DEBUG=true npm run dev
 
 ## 📚 Documentation
 
-- [API Documentation](./docs/api.md)
-- [Component Library](./docs/components.md)
-- [Testing Guide](./docs/testing.md)
-- [Deployment Guide](./docs/deployment.md)
-- [User Testing Guide](./USER_TESTING.md)
+- [Testing Guide](./TESTING.md) - Developer testing documentation
+- [Performance Guide](./PERFORMANCE.md) - Performance optimization details
+- [Security Guide](./SECURITY.md) - Security implementation details
+- [User Acceptance Testing](../../docs/UAT_PLAN.md) - UAT plan and test cases
 
 ## 🆘 Support
 

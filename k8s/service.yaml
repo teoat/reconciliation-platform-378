@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: reconciliation-platform
+  labels:
+    app: reconciliation-platform
+spec:
+  type: LoadBalancer
+  ports:
+  - name: frontend
+    port: 80
+    targetPort: 1000
+    protocol: TCP
+  - name: backend
+    port: 2000
+    targetPort: 2000
+    protocol: TCP
+  selector:
+    app: reconciliation-platform
+

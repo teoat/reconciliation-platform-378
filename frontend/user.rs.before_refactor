@@ -1,0 +1,56 @@
+// BEFORE: Single large user.rs file with all functionality
+// This file would contain all user-related services mixed together
+
+use crate::error::Result;
+use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Utc};
+use std::collections::HashSet;
+
+// All types mixed together
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct LoginRequest { /* ... */ }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserProfile { /* ... */ }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub enum Role { /* ... */ }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserSession { /* ... */ }
+
+// All services in one file
+pub struct AuthService { /* ... */ }
+pub struct ProfileService { /* ... */ }
+pub struct PermissionService { /* ... */ }
+pub struct SessionService { /* ... */ }
+
+// All error types mixed together
+#[derive(Debug, thiserror::Error)]
+pub enum AuthError { /* ... */ }
+
+#[derive(Debug, thiserror::Error)]
+pub enum ProfileError { /* ... */ }
+
+#[derive(Debug, thiserror::Error)]
+pub enum PermissionError { /* ... */ }
+
+#[derive(Debug, thiserror::Error)]
+pub enum SessionError { /* ... */ }
+
+// All implementations mixed together
+impl AuthService {
+    // Auth methods...
+}
+
+impl ProfileService {
+    // Profile methods...
+}
+
+impl PermissionService {
+    // Permission methods...
+}
+
+impl SessionService {
+    // Session methods...
+}

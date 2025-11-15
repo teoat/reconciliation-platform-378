@@ -1,0 +1,7 @@
+{
+  "*.{js,jsx,ts,tsx}": ["eslint --fix", "prettier --write", "tsc --noEmit --skipLibCheck"],
+  "*.{json,md,yml,yaml}": ["prettier --write"],
+  "*.rs": ["cargo fmt --check", "cargo clippy -- -D warnings"],
+  "*.{css,scss}": ["prettier --write"],
+  "*.{html}": ["prettier --write"]
+}

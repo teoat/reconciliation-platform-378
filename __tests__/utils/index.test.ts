@@ -7,7 +7,7 @@ import {
   deepClone,
   debounce,
   throttle
-} from '../../app/utils'
+} from '../../frontend/src/utils'
 
 describe('Utility Functions', () => {
   describe('formatCurrency', () => {

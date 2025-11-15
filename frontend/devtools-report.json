@@ -1,0 +1,95 @@
+{
+  "startedAt": "2025-10-30T23:26:09.879Z",
+  "targetUrl": "http://localhost:1000/login",
+  "durationMs": 30000,
+  "console": [
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network"
+    },
+    {
+      "type": "verbose",
+      "text": "[DOM] Input elements should have autocomplete attributes (suggested: \"current-password\"): (More info: https://goo.gl/9p2vKq) %o",
+      "source": "recommendation"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network"
+    },
+    {
+      "type": "error",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "source": "network"
+    }
+  ],
+  "exceptions": [],
+  "networkFailures": [
+    {
+      "requestId": "70175.14",
+      "url": "http://localhost:2000/socket.io/?EIO=4&transport=polling&t=1zgxztj8",
+      "status": 404,
+      "statusText": "Not Found",
+      "mimeType": "text/plain"
+    },
+    {
+      "requestId": "70175.16",
+      "url": "http://localhost:2000/socket.io/?EIO=4&transport=polling&t=1zhsoh1a",
+      "status": 404,
+      "statusText": "Not Found",
+      "mimeType": "text/plain"
+    },
+    {
+      "requestId": "70175.17",
+      "url": "http://localhost:2000/socket.io/?EIO=4&transport=polling&t=1zjsgror",
+      "status": 404,
+      "statusText": "Not Found",
+      "mimeType": "text/plain"
+    },
+    {
+      "requestId": "70175.18",
+      "url": "http://localhost:2000/socket.io/?EIO=4&transport=polling&t=1zn7e0xr",
+      "status": 404,
+      "statusText": "Not Found",
+      "mimeType": "text/plain"
+    },
+    {
+      "requestId": "70175.19",
+      "url": "http://localhost:2000/socket.io/?EIO=4&transport=polling&t=1zr2esc4",
+      "status": 404,
+      "statusText": "Not Found",
+      "mimeType": "text/plain"
+    },
+    {
+      "requestId": "70175.20",
+      "url": "http://localhost:2000/socket.io/?EIO=4&transport=polling&t=1zuxfgqt",
+      "status": 404,
+      "statusText": "Not Found",
+      "mimeType": "text/plain"
+    }
+  ],
+  "longTasks": [],
+  "summary": {
+    "errors": 6,
+    "warnings": 0,
+    "failedRequests": 6,
+    "exceptions": 0
+  },
+  "finishedAt": "2025-10-30T23:26:40.892Z"
+}

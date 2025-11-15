@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: reconciliation-config
+  namespace: reconciliation-platform
+data:
+  NODE_ENV: "staging"
+

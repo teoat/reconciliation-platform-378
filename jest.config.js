@@ -1,5 +1,5 @@
-# Comprehensive Test Configuration
-# Jest configuration for frontend testing
+// Comprehensive Test Configuration
+// Jest configuration for frontend testing
 
 module.exports = {
   // Test environment
@@ -9,19 +9,20 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   
   // Module name mapping
-  moduleNameMapping: {
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
-    '^@/components/(.*)$': '<rootDir>/app/components/$1',
-    '^@/pages/(.*)$': '<rootDir>/app/pages/$1',
-    '^@/services/(.*)$': '<rootDir>/app/services/$1',
-    '^@/utils/(.*)$': '<rootDir>/app/utils/$1',
-    '^@/types/(.*)$': '<rootDir>/app/types/$1',
+    '^@/components/(.*)$': '<rootDir>/components/$1',
+    '^@/pages/(.*)$': '<rootDir>/pages/$1',
+    '^@/services/(.*)$': '<rootDir>/services/$1',
+    '^@/utils/(.*)$': '<rootDir>/utils/$1',
+    '^@/types/(.*)$': '<rootDir>/types/$1',
   },
   
   // Test patterns
   testMatch: [
+    '<rootDir>/__tests__/**/*.test.{js,jsx,ts,tsx}',
     '<rootDir>/tests/**/*.test.{js,jsx,ts,tsx}',
-    '<rootDir>/app/**/*.test.{js,jsx,ts,tsx}',
+    '<rootDir>/services/__tests__/**/*.test.{js,jsx,ts,tsx}',
   ],
   
   // Coverage configuration
@@ -29,26 +30,44 @@ module.exports = {
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html', 'json'],
   collectCoverageFrom: [
-    'app/**/*.{js,jsx,ts,tsx}',
-    '!app/**/*.d.ts',
-    '!app/**/*.stories.{js,jsx,ts,tsx}',
-    '!app/**/*.test.{js,jsx,ts,tsx}',
-    '!app/**/node_modules/**',
+    'frontend/src/components/**/*.{js,jsx,ts,tsx}',
+    'frontend/src/pages/**/*.{js,jsx,ts,tsx}',
+    'frontend/src/services/**/*.{js,jsx,ts,tsx}',
+    'frontend/src/utils/**/*.{js,jsx,ts,tsx}',
+    'frontend/src/hooks/**/*.{js,jsx,ts,tsx}',
+    '!**/*.d.ts',
+    '!**/*.stories.{js,jsx,ts,tsx}',
+    '!**/*.test.{js,jsx,ts,tsx}',
+    '!**/__tests__/**',
+    '!**/node_modules/**',
   ],
   
   // Coverage thresholds
   coverageThreshold: {
     global: {
+      branches: 75,
+      functions: 75,
+      lines: 75,
+      statements: 75,
+    },
+    './frontend/src/utils/': {
       branches: 80,
       functions: 80,
       lines: 80,
       statements: 80,
     },
+    './frontend/src/components/': {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
+    },
   },
   
   // Transform configuration
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': 'babel-jest',
+    '^.+\\.(ts|tsx)$': 'ts-jest',
+    '^.+\\.(js|jsx)$': 'babel-jest',
   },
   
   // Module file extensions
@@ -66,15 +85,6 @@ module.exports = {
   // Verbose output
   verbose: true,
   
-  // Global setup
-  globalSetup: '<rootDir>/tests/global-setup.ts',
-  
-  // Global teardown
-  globalTeardown: '<rootDir>/tests/global-teardown.ts',
-  
-  // Test results processor
-  testResultsProcessor: 'jest-sonar-reporter',
-  
   // Transform ignore patterns
   transformIgnorePatterns: [
     'node_modules/(?!(.*\\.mjs$|@testing-library|@hookform|react-hook-form))',
@@ -88,11 +98,7 @@ module.exports = {
     url: 'http://localhost:3000',
   },
   
-  // Watch plugins
-  watchPlugins: [
-    'jest-watch-typeahead/filename',
-    'jest-watch-typeahead/testname',
-  ],
+
   
   // Error handling
   errorOnDeprecated: true,

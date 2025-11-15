@@ -139,7 +139,7 @@ class WebSocketService {
 
   constructor() {
     this.config = {
-      url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:2000',
+      url: import.meta.env.VITE_WS_URL || 'ws://localhost:2000',
       reconnectInterval: 5000,
       maxReconnectAttempts: 10,
       pingInterval: 30000,

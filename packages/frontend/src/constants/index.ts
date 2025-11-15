@@ -1,8 +1,8 @@
 // Application constants and configuration
 
 export const APP_CONFIG = {
-  API_BASE_URL: process.env.REACT_APP_API_URL || 'http://localhost:2000',
-  WS_BASE_URL: process.env.REACT_APP_WS_URL || 'ws://localhost:2000',
+  API_BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:2000/api',
+  WS_BASE_URL: import.meta.env.VITE_WS_URL || 'ws://localhost:2000',
   MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
   SESSION_TIMEOUT: 30 * 60 * 1000, // 30 minutes
   AUTO_SAVE_INTERVAL: 5 * 1000, // 5 seconds
@@ -10,7 +10,7 @@ export const APP_CONFIG = {
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000, // 1 second
   VERSION: '1.0.0',
-  ENVIRONMENT: process.env.NODE_ENV || 'development'
+  ENVIRONMENT: import.meta.env.MODE || 'development'
 }
 
 export const API_ENDPOINTS = {
