@@ -30,7 +30,7 @@ COPY reconciliation-rust/migrations ./migrations
 RUN cargo build --release
 
 # Stage 2: Runtime stage
-FROM alpine:3.18 AS runtime
+FROM alpine:3.22 AS runtime
 
 # Install runtime dependencies
 RUN apk add --no-cache \
