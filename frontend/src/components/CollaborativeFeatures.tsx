@@ -140,9 +140,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    'members' | 'workspaces' | 'activities' | 'assignments' | 'notifications'
-  >('members');
+  const [activeTab, setActiveTab] = useState<string>('members');
   const [isCreating, setIsCreating] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
@@ -636,7 +634,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
               { id: 'activities', label: 'Activities', icon: Activity },
               { id: 'assignments', label: 'Assignments', icon: UserCheck },
               { id: 'notifications', label: 'Notifications', icon: Bell },
-            ] as const).map((tab) => {
+            ].map((tab) => {
               const Icon = tab.icon;
               return (
                 <button

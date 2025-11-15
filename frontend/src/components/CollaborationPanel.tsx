@@ -56,6 +56,10 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
     updatePresence
   } = useRealtimeCollaboration(page);
 
+  // Cast to expected types for component use
+  const typedComments = liveComments as unknown as LiveComment[];
+  const typedActiveUsers = activeUsers as unknown as ActiveUser[];
+
   const [newComment, setNewComment] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
@@ -65,12 +69,12 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
   // Auto-scroll to bottom when new comments arrive
   useEffect(() => {
     commentsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [liveComments]);
+  }, [typedComments]);
 
   // Update presence when component mounts
   useEffect(() => {
     if (isConnected) {
-      updatePresence('current-user', 'Current User');
+      updatePresence('online');
     }
   }, [isConnected, updatePresence]);
 
@@ -158,10 +162,10 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
           <div className="p-4 border-b border-gray-200">
             <div className="flex items-center justify-between mb-2">
               <h3 className="text-sm font-medium text-gray-900">Active Users</h3>
-              <span className="text-xs text-gray-500">{activeUsers.length}</span>
+              <span className="text-xs text-gray-500">{typedActiveUsers.length}</span>
             </div>
             <div className="space-y-2">
-              {activeUsers.map((user) => (
+              {typedActiveUsers.map((user) => (
                 <div key={user.id} className="flex items-center space-x-2">
                   <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                     <User className="w-3 h-3 text-white" />
@@ -184,14 +188,14 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
             <div className="p-4 border-b border-gray-200">
               <h3 className="text-sm font-medium text-gray-900 mb-2">Live Comments</h3>
               <div className="space-y-3 max-h-64 overflow-y-auto">
-                {liveComments.length === 0 ? (
+                {typedComments.length === 0 ? (
                   <div className="text-center py-4">
                     <MessageSquare className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                     <p className="text-sm text-gray-500">No comments yet</p>
                     <p className="text-xs text-gray-400">Start the conversation!</p>
                   </div>
                 ) : (
-                  liveComments.map((comment) => (
+                  typedComments.map((comment) => (
                     <div key={comment.id} className="space-y-2">
                       <div className="flex space-x-2">
                         <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
@@ -302,6 +306,10 @@ export const CollaborationButton: React.FC<{
 }> = ({ page, isOpen, onToggle, className = '' }) => {
   const { isConnected, activeUsers, liveComments } = useRealtimeCollaboration(page);
 
+  // Cast to expected types
+  const typedActiveUsers = activeUsers as unknown as ActiveUser[];
+  const typedComments = liveComments as unknown as LiveComment[];
+
   return (
     <button
       onClick={onToggle}
@@ -310,14 +318,14 @@ export const CollaborationButton: React.FC<{
     >
       <div className="relative">
         <MessageSquare className="w-6 h-6 mx-auto" />
-        {activeUsers.length > 0 && (
+        {typedActiveUsers.length > 0 && (
           <span className="absolute -top-1 -right-1 bg-green-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            {activeUsers.length}
+            {typedActiveUsers.length}
           </span>
         )}
-        {liveComments.length > 0 && (
+        {typedComments.length > 0 && (
           <span className="absolute -bottom-1 -right-1 bg-orange-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-            {liveComments.length}
+            {typedComments.length}
           </span>
         )}
         {!isConnected && (

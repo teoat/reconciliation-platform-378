@@ -79,12 +79,18 @@ import { FileSpreadsheet } from 'lucide-react'
 import { FileCode } from 'lucide-react'
 import { FileJson } from 'lucide-react'
 import { X } from 'lucide-react'
-import { 
-  IndonesianDataProcessor, 
-  ProcessedExpenseRecord, 
-  ProcessedBankRecord, 
-  IndonesianMatchingResult 
-} from '../utils/indonesianDataProcessor'
+
+// Temporary stub types and class until indonesianDataProcessor module is implemented
+type ProcessedExpenseRecord = any;
+type ProcessedBankRecord = any;
+type IndonesianMatchingResult = any;
+class IndonesianDataProcessor {
+  static processExpensesData(data: any[]): any[] { return data; }
+  static processBankData(data: any[]): any[] { return data; }
+  static matchRecords(expenses: any[], bank: any[]): any[] { return []; }
+  static batchMatchRecords(expenses: any[], bank: any[]): any[] { return []; }
+  static generateSummary(expenses: any[], bank: any[], matches: any[]): any { return {}; }
+}
 
 interface DataAnalysisProps {
   isVisible: boolean

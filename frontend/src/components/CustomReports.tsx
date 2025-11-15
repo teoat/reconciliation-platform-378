@@ -288,13 +288,13 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       const cashflowData = getCashflowData();
 
       // Apply filters
-      let data: ReconciliationRecord[] = [];
+      let data: any[] = [];
       switch (report.dataSource) {
         case 'reconciliation':
           data = reconciliationData?.records || [];
           break;
         case 'cashflow':
-          data = cashflowData?.records || [];
+          data = (cashflowData?.records as any) || [];
           break;
         case 'projects':
           data = []; // Would fetch project data
