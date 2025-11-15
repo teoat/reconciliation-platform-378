@@ -41,6 +41,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [crossPageData, setCrossPageData] = useState(createInitialCrossPageData());
+  const [currentProject, setCurrentProject] = useState<ProjectData | null>(null);
 
   // Memory optimization
   const cleanup = useComprehensiveCleanup();
@@ -50,7 +51,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const securityData = useDataProviderSecurity();
 
   // Storage hook
-  const storageData = useDataProviderStorage(setIsLoading, setError);
+  const storageData = useDataProviderStorage(setCurrentProject, setIsLoading, setError);
 
   // Validation hook
   const { validateCrossPageData } = useDataValidation(crossPageData);
@@ -152,7 +153,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   }, [securityData]);
 
   const exportAuditLogsWrapper = React.useCallback((startDate?: string, endDate?: string) => {
-    return securityData.exportAuditLogs(startDate, endDate);
+    return securityData.exportAuditLogs();
   }, [securityData]);
 
   const contextValue: DataContextType = {
@@ -185,7 +186,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     deleteSecurityPolicy: deleteSecurityPolicyWrapper,
     exportAuditLogs: exportAuditLogsWrapper,
     securityPolicies: securityData.securityPolicies as unknown as Record<string, unknown>[],
-    auditLogs: securityData.auditLogs as unknown as Record<string, unknown>[],
+    auditLogs: securityData.auditLogs as any,
     // Enhanced methods
     advanceWorkflow: enhancedAdvanceWorkflow,
     resetWorkflow: enhancedResetWorkflow,
