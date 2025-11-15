@@ -137,8 +137,8 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
         setProcessingProgress(75)
         matchingResults = IndonesianDataProcessor.matchRecords(processedExpenses, processedBankRecords)
         // Transform to expected shape
-        const transformedMatches = matchingResults.map((match, index) => ({
-          expense: processedExpenses[index] || ({} as ProcessedExpenseRecord),
+        const transformedMatches = matchingResults.map((match) => ({
+          expense: match.sourceRecord as ProcessedExpenseRecord,
           bank: match.targetRecord,
           match
         }))
