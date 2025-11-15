@@ -234,9 +234,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       render: (value) => (
         <StatusBadge 
           status={value === 'admin' ? 'success' : value === 'user' ? 'info' : 'warning'}
-          variant="outline"
         >
-          {value}
+          {String(value)}
         </StatusBadge>
       )
     },
@@ -248,7 +247,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
         <StatusBadge 
           status={value === 'active' ? 'success' : value === 'pending' ? 'warning' : 'error'}
         >
-          {value}
+          {String(value)}
         </StatusBadge>
       )
     },
@@ -258,7 +257,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       sortable: true,
       render: (value) => (
         <div className="text-sm text-gray-600">
-          {new Date(value).toLocaleDateString()}
+          {new Date(String(value)).toLocaleDateString()}
         </div>
       )
     },
@@ -268,7 +267,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       sortable: true,
       render: (value) => (
         <div className="text-sm text-gray-600">
-          {new Date(value).toLocaleDateString()}
+          {new Date(String(value)).toLocaleDateString()}
         </div>
       )
     },
@@ -438,8 +437,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
         <Card>
           <div className="p-6">
             <DataTable
-              data={filteredUsers}
-              columns={userColumns}
+              data={filteredUsers as unknown as Record<string, unknown>[]}
+              columns={userColumns as unknown as Column<Record<string, unknown>>[]}
               emptyMessage="No users found"
             />
           </div>
