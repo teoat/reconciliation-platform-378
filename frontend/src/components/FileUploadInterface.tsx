@@ -1,5 +1,6 @@
 'use client'
 import { logger } from '@/services/logger'
+import { getErrorMessageFromApiError } from '../utils/errorExtraction'
 
 import React, { useState, useCallback, useRef, useEffect } from 'react'
 import { useLoading } from '../hooks/useLoading'
@@ -164,7 +165,7 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
   const dropZoneRef = useRef<HTMLDivElement>(null)
 
   // WebSocket integration for real-time updates
-  const { isConnected, sendMessage, subscribe } = useWebSocketIntegration()
+  const { isConnected, subscribe } = useWebSocketIntegration()
 
   // Load files - using unified utilities
   const loadFiles = useCallback(async () => {
@@ -209,13 +210,12 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
       // Upload file
       const response = await apiClient.uploadFile(projectId, file, {
         name: file.name,
-        description: request.description,
         project_id: request.project_id,
         source_type: 'file'
       })
 
       if (response.error) {
-        throw new Error(response.error.message)
+        throw new Error(getErrorMessageFromApiError(response.error))
       }
 
       const uploadedFile = response.data
