@@ -41,7 +41,7 @@ if [ ! -f .env ]; then
     cat > .env << 'EOF'
 # PostgreSQL Configuration
 POSTGRES_DB=reconciliation_app
-接OSTGRES_USER=postgres
+POSTGRES_USER=postgres
 POSTGRES_PASSWORD=postgres_secure_$(date +%s)
 
 # Backend Configuration

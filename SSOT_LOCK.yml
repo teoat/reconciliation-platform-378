@@ -45,7 +45,7 @@ sources_of_truth:
   # AUTHENTICATION
   # -------------------------------------------------------------------------
   authentication:
-    dicription: "Authentication logic and session management"
+    description: "Authentication logic and session management"
     frontend:
       path: "frontend/src/hooks/useAuth.tsx"
       exports:
