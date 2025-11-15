@@ -630,7 +630,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
       <div className="card mb-6">
         <div className="border-b border-secondary-200">
           <nav className="flex space-x-8">
-            {[
+            {([
               { id: 'members', label: 'Team Members', icon: Users },
               { id: 'workspaces', label: 'Workspaces', icon: Building },
               { id: 'activities', label: 'Activities', icon: Activity },
