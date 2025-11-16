@@ -225,9 +225,7 @@ impl<S> RateLimitService<S> {
             e.into_inner()
         });
 
-        let entry = store
-            .entry(client_id.to_string())
-            .or_insert_with(VecDeque::new);
+        let entry = store.entry(client_id.to_string()).or_default();
 
         // Remove expired entries
         while let Some(front) = entry.front() {
