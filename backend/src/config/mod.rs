@@ -22,7 +22,7 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> Result<Self, crate::errors::AppError> {
-        dotenv::dotenv().ok();
+        dotenvy::dotenv().ok();
 
         Ok(Config {
             database_url: env::var("DATABASE_URL")

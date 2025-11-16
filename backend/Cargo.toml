@@ -85,13 +85,13 @@ utoipa = { version = "3.0", features = ["actix_extras"] }
 utoipa-swagger-ui = { version = "3.0", features = ["actix-web"] }
 
 # Monitoring
-prometheus = "0.13"
+prometheus = "0.14"  # Updated from 0.13 (fixes protobuf vulnerability)
 once_cell = "1.19"
 sentry = { version = "0.32", features = ["tower", "tracing", "log"] }
 sentry-actix = "0.32"
 
 # Validation
-validator = { version = "0.16", features = ["derive"] }
+validator = { version = "0.20", features = ["derive"] }  # Updated from 0.16 (fixes idna vulnerability)
 
 # AWS SDK (for secrets management and S3 backups)
 aws-config = "1.0"
@@ -103,8 +103,8 @@ thiserror = "1.0"
 anyhow = "1.0"
 
 # Configuration
-config = "0.13"
-dotenv = "0.15"
+config = "0.15"  # Updated from 0.13 (fixes yaml-rust unmaintained)
+dotenvy = "0.15"  # Replaces dotenv 0.15 (unmaintained)
 num_cpus = "1.0"
 
 # WebSocket
