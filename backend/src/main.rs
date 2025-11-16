@@ -15,7 +15,7 @@ use reconciliation_backend::{
 async fn main() -> std::io::Result<()> {
     // Print to stderr immediately (before logging init) for debugging
     eprintln!("🚀 Backend starting...");
-    
+
     // Initialize logging
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
     log::info!("Logging initialized");
@@ -26,7 +26,7 @@ async fn main() -> std::io::Result<()> {
         Ok(cfg) => {
             log::info!("Configuration loaded successfully");
             cfg
-        },
+        }
         Err(e) => {
             eprintln!("Failed to load configuration: {}", e);
             log::error!("Configuration error: {}", e);
