@@ -1,5 +1,20 @@
 {
 	"mcpServers": {
+		"task-master-ai": {
+			"command": "npx",
+			"args": ["-y", "task-master-ai"],
+			"env": {
+				"ANTHROPIC_API_KEY": "",
+				"PERPLEXITY_API_KEY": "",
+				"OPENAI_API_KEY": "",
+				"GOOGLE_API_KEY": "",
+				"XAI_API_KEY": "",
+				"OPENROUTER_API_KEY": "",
+				"MISTRAL_API_KEY": "",
+				"AZURE_OPENAI_API_KEY": "",
+				"OLLAMA_API_KEY": ""
+			}
+		},
 		"filesystem": {
 			"command": "npx",
 			"args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/Arief/Documents/GitHub/reconciliation-platform-378"],
@@ -28,18 +43,11 @@
 			"command": "node",
 			"args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/index.js"],
 			"env": {
-				"NODE_ENV": "development"
+				"NODE_ENV": "development",
+				"DATABASE_URL": "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app",
+				"REDIS_URL": "redis://:redis_pass@localhost:6379",
+				"PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378"
 			}
-		},
-		"playwright": {
-			"command": "npx",
-			"args": ["-y", "@modelcontextprotocol/server-playwright"],
-			"env": {}
-		},
-		"memory": {
-			"command": "npx",
-			"args": ["-y", "@modelcontextprotocol/server-memory"],
-			"env": {}
 		}
 	}
 }
