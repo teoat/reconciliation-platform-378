@@ -88,7 +88,7 @@ services:
   backend:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile.backend.optimized.v2
+      dockerfile: infrastructure/docker/Dockerfile.backend
     container_name: reconciliation-backend
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
@@ -137,7 +137,7 @@ services:
   frontend:
     build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile.frontend.optimized.v2
+      dockerfile: infrastructure/docker/Dockerfile.frontend
       args:
         BUILDKIT_INLINE_CACHE: 1
         VITE_API_URL: ${VITE_API_URL:-http://localhost:2000}/api/v1
