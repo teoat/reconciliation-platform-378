@@ -187,8 +187,14 @@ export default defineConfig({
           return `assets/[name]-[hash].${ext}`;
         },
       },
-      // Note: Removed external configuration to avoid runtime errors
-      // All dependencies should be bundled unless explicitly available via CDN with proper script tags
+      // Mark optional dependencies as external
+      external: (id) => {
+        // @sentry/react is optional and dynamically imported with error handling
+        if (id.includes('@sentry/react')) {
+          return true;
+        }
+        return false;
+      },
     },
     // Optimize chunk size warnings
     chunkSizeWarningLimit: 300,
