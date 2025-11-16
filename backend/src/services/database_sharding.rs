@@ -27,7 +27,7 @@ impl ShardConfig {
                 name: "shard_0".to_string(),
                 connection_string: format!("{}?sslmode=disable", base_url.replace("reconciliation_app", "reconciliation_shard_0")),
                 user_range_min: 0,
-                user_range_max: 170141183460469231731687303715884105727 / 4, // u64::MAX / 4
+                user_range_max: u64::MAX / 4,
                 database_name: "reconciliation_shard_0".to_string(),
                 host: "postgres".to_string(),
                 port: 5432,
