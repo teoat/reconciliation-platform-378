@@ -1,4 +1,4 @@
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider, ProtectedRoute } from './hooks/useAuth';
 import { ReduxProvider } from './store/ReduxProvider';
@@ -10,39 +10,22 @@ import AppShell from './components/layout/AppShell';
 import AuthPage from './pages/AuthPage';
 import ToastContainer from './components/ui/ToastContainer';
 
-// Temporarily disable lazy loading to fix build issues
-// const Dashboard = lazy(() => import('./components/Dashboard'));
-// const ReconciliationPage = lazy(() => import('./pages/ReconciliationPage'));
-// const QuickReconciliationWizard = lazy(() => import('./pages/QuickReconciliationWizard'));
-// const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'));
-// const UserManagement = lazy(() => import('./components/UserManagement'));
-// const ApiIntegrationStatus = lazy(() => import('./components/ApiIntegrationStatus'));
-// const ApiTester = lazy(() => import('./components/ApiTester'));
-// const ApiDocumentation = lazy(() => import('./components/ApiDocumentation'));
-// const ProjectCreate = lazy(() => import('./components/pages/ProjectCreate'));
-// const ProjectDetail = lazy(() => import('./components/pages/ProjectDetail'));
-// const ProjectEdit = lazy(() => import('./components/pages/ProjectEdit'));
-// const FileUpload = lazy(() => import('./components/pages/FileUpload'));
-// const Settings = lazy(() => import('./components/pages/Settings'));
-// const Profile = lazy(() => import('./components/pages/Profile'));
-// const NotFound = lazy(() => import('./components/pages/NotFound'));
-
-// Direct imports for now
-import Dashboard from './components/Dashboard';
-import ReconciliationPage from './pages/ReconciliationPage';
-import QuickReconciliationWizard from './pages/QuickReconciliationWizard';
-import AnalyticsDashboard from './components/AnalyticsDashboard';
-import UserManagement from './components/UserManagement';
-import ApiIntegrationStatus from './components/ApiIntegrationStatus';
-import ApiTester from './components/ApiTester';
-import ApiDocumentation from './components/ApiDocumentation';
-import ProjectCreate from './components/pages/ProjectCreate';
-import ProjectDetail from './components/pages/ProjectDetail';
-import ProjectEdit from './components/pages/ProjectEdit';
-import FileUpload from './components/pages/FileUpload';
-import Settings from './components/pages/Settings';
-import Profile from './components/pages/Profile';
-import NotFound from './components/pages/NotFound';
+// Lazy load route components for better performance
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const ReconciliationPage = lazy(() => import('./pages/ReconciliationPage'));
+const QuickReconciliationWizard = lazy(() => import('./pages/QuickReconciliationWizard'));
+const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'));
+const UserManagement = lazy(() => import('./components/UserManagement'));
+const ApiIntegrationStatus = lazy(() => import('./components/ApiIntegrationStatus'));
+const ApiTester = lazy(() => import('./components/ApiTester'));
+const ApiDocumentation = lazy(() => import('./components/ApiDocumentation'));
+const ProjectCreate = lazy(() => import('./components/pages/ProjectCreate'));
+const ProjectDetail = lazy(() => import('./components/pages/ProjectDetail'));
+const ProjectEdit = lazy(() => import('./components/pages/ProjectEdit'));
+const FileUpload = lazy(() => import('./components/pages/FileUpload'));
+const Settings = lazy(() => import('./components/pages/Settings'));
+const Profile = lazy(() => import('./components/pages/Profile'));
+const NotFound = lazy(() => import('./components/pages/NotFound'));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -101,7 +84,9 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <AppLayout>
-                          <Dashboard />
+                          <Suspense fallback={<LoadingSpinner />}>
+                            <Dashboard />
+                          </Suspense>
                         </AppLayout>
                       </ProtectedRoute>
                     }

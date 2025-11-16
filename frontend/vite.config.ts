@@ -187,24 +187,8 @@ export default defineConfig({
           return `assets/[name]-[hash].${ext}`;
         },
       },
-      // External dependencies - mark optional dependencies as external
-      external: (id) => {
-        // @sentry/react is optional and may not be installed
-        if (id.includes('@sentry/react')) {
-          return true;
-        }
-        // Externalize commonly available libraries to reduce bundle size
-        if (id.includes('socket.io-client')) {
-          return true; // Socket.io client - load from CDN
-        }
-        if (id.includes('axios')) {
-          return true; // Axios - load from CDN
-        }
-        if (id.includes('lucide-react')) {
-          return true; // Icon library - load from CDN
-        }
-        return false;
-      },
+      // Note: Removed external configuration to avoid runtime errors
+      // All dependencies should be bundled unless explicitly available via CDN with proper script tags
     },
     // Optimize chunk size warnings
     chunkSizeWarningLimit: 300,
