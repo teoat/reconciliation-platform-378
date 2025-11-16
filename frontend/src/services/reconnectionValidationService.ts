@@ -145,8 +145,8 @@ class ReconnectionValidationService {
 
   public startValidation(
     key: string,
-    getCurrentData: () => any,
-    getServerData: () => Promise<any>,
+    getCurrentData: () => Record<string, unknown>,
+    getServerData: () => Promise<Record<string, unknown>>,
     metadata: {
       userId?: string;
       projectId?: string;

@@ -22,7 +22,7 @@ interface OfflineData {
   id: string
   type: 'create' | 'update' | 'delete'
   endpoint: string
-  data: any
+  data: Record<string, unknown>
   timestamp: Date
   retryCount: number
   maxRetries: number
@@ -45,8 +45,8 @@ class PWAService {
   private status: PWAStatus
   private offlineData: OfflineData[] = []
   private updateAvailable = false
-  private installPrompt: any = null
-  private listeners: Map<string, Function[]> = new Map()
+  private installPrompt: BeforeInstallPromptEvent | null = null
+  private listeners = new Map<string, Array<(...args: unknown[]) => void>>()
 
   public static getInstance(): PWAService {
     if (!PWAService.instance) {
@@ -445,14 +445,14 @@ class PWAService {
   }
 
   // Event system
-  public on(event: string, callback: Function): void {
+  public on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, [])
     }
     this.listeners.get(event)!.push(callback)
   }
 
-  public off(event: string, callback: Function): void {
+  public off(event: string, callback: (...args: unknown[]) => void): void {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
       const index = callbacks.indexOf(callback)

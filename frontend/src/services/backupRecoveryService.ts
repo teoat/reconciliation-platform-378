@@ -250,7 +250,7 @@ class BackupRecoveryService {
   private plans: Map<string, RecoveryPlan> = new Map();
   private jobs: Map<string, BackupJob> = new Map();
   private recoveryJobs: Map<string, RecoveryJob> = new Map();
-  private listeners: Map<string, Function[]> = new Map();
+  private listeners = new Map<string, Array<(...args: unknown[]) => void>>();
   private isInitialized: boolean = false;
 
   public static getInstance(): BackupRecoveryService {
@@ -932,14 +932,14 @@ class BackupRecoveryService {
   }
 
   // Event system
-  public on(event: string, callback: Function): void {
+  public on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(callback);
   }
 
-  public off(event: string, callback: Function): void {
+  public off(event: string, callback: (...args: unknown[]) => void): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);

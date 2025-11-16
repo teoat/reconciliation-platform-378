@@ -68,7 +68,7 @@ class LastWriteWinsService {
   private records: Map<string, TimestampedRecord> = new Map();
   private conflicts: Map<string, ConflictResolution> = new Map();
   private config: TimestampConfig;
-  private listeners: Map<string, Function[]> = new Map();
+  private listeners = new Map<string, Array<(...args: unknown[]) => void>>();
   private conflictTimer?: NodeJS.Timeout;
 
   public static getInstance(): LastWriteWinsService {
@@ -509,14 +509,14 @@ class LastWriteWinsService {
   }
 
   // Event system
-  public on(event: string, callback: Function): void {
+  public on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(callback);
   }
 
-  public off(event: string, callback: Function): void {
+  public off(event: string, callback: (...args: unknown[]) => void): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);

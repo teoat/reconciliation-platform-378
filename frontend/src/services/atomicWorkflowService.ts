@@ -73,7 +73,7 @@ class AtomicWorkflowService {
   private operations: Map<string, AtomicOperation> = new Map();
   private locks: Map<string, WorkflowLock> = new Map();
   private config: WorkflowConfig;
-  private listeners: Map<string, Function[]> = new Map();
+  private listeners = new Map<string, Array<(...args: unknown[]) => void>>();
   private operationTimer?: NodeJS.Timeout;
   private lockTimer?: NodeJS.Timeout;
 
@@ -597,14 +597,14 @@ class AtomicWorkflowService {
   }
 
   // Event system
-  public on(event: string, callback: Function): void {
+  public on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(callback);
   }
 
-  public off(event: string, callback: Function): void {
+  public off(event: string, callback: (...args: unknown[]) => void): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);

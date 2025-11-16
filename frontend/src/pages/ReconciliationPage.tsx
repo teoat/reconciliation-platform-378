@@ -196,7 +196,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       key: 'id',
       label: 'Job ID',
       sortable: true,
-      render: (value) => <span className="font-mono text-sm">{value.slice(0, 8)}...</span>,
+      render: (value) => <span className="font-mono text-sm">{value ? value.slice(0, 8) : 'N/A'}...</span>,
     },
     {
       key: 'status',
@@ -214,7 +214,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       key: 'created_at',
       label: 'Started',
       sortable: true,
-      render: (value) => new Date(value).toLocaleString(),
+      render: (value) => value ? new Date(value).toLocaleString() : 'N/A',
     },
     {
       key: 'progress',
@@ -277,22 +277,23 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       key: 'id',
       label: 'Match ID',
       sortable: true,
-      render: (value) => <span className="font-mono text-sm">{value.slice(0, 8)}...</span>,
+      render: (value) => <span className="font-mono text-sm">{value ? value.slice(0, 8) : 'N/A'}...</span>,
     },
     {
       key: 'confidence_score',
       label: 'Confidence',
       sortable: true,
       render: (value) => {
-        const progressValue = Math.round(value * 100);
+        const score = value ?? 0;
+        const progressValue = Math.round(score * 100);
         return (
           <div className="flex items-center space-x-2">
             <div className="w-16 bg-gray-200 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all duration-300 ${
-                  value >= 0.8 ? 'bg-green-500' : value >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'
+                  score >= 0.8 ? 'bg-green-500' : score >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'
                 }`}
-                style={{ width: `${value * 100}%` }}
+                style={{ width: `${score * 100}%` }}
               />
             </div>
             <span className="text-sm font-medium">{progressValue}%</span>
@@ -316,7 +317,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       key: 'created_at',
       label: 'Created',
       sortable: true,
-      render: (value) => new Date(value).toLocaleDateString(),
+      render: (value) => value ? new Date(value).toLocaleDateString() : 'N/A',
     },
     {
       key: 'actions',

@@ -13,6 +13,7 @@ export * from './websocket';
 export * from './project';
 export * from './ingestion';
 export * from './reconciliation';
+export * from './data';
 
 // ============================================================================
 // CORE APPLICATION TYPES
@@ -318,8 +319,8 @@ export interface IngestionJob {
   dataSourceName: string;
   filename: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
-  metadata: Record<string, any>;
-  qualityMetrics: any;
+  metadata: Record<string, unknown>;
+  qualityMetrics: Record<string, unknown>;
   recordCount: number;
   errorMessage: string;
   createdBy: string;
@@ -421,8 +422,8 @@ export interface ValidationResult {
   rule: string;
   status: 'pass' | 'fail' | 'warning';
   message: string;
-  value: any;
-  expectedValue?: any;
+  value: unknown;
+  expectedValue?: unknown;
 }
 
 export interface DataError {
@@ -509,7 +510,7 @@ export type MatchingRuleType = 'exact' | 'fuzzy' | 'range' | 'pattern' | 'custom
 export interface MatchingCriteria {
   field: string;
   operator: ComparisonOperator;
-  value: any;
+  value: unknown;
   weight: number;
   tolerance?: number;
   caseSensitive?: boolean;
@@ -1090,7 +1091,7 @@ export interface ChartFilter {
   id: string;
   field: string;
   operator: ComparisonOperator;
-  value: any;
+  value: unknown;
   enabled: boolean;
 }
 
@@ -1151,7 +1152,7 @@ export interface DashboardFilter {
   field: string;
   type: FilterType;
   options: FilterOption[];
-  defaultValue?: any;
+  defaultValue?: unknown;
   required: boolean;
 }
 
@@ -1159,7 +1160,7 @@ export type FilterType = 'select' | 'multiselect' | 'date' | 'daterange' | 'numb
 
 export interface FilterOption {
   label: string;
-  value: any;
+  value: unknown;
   disabled?: boolean;
 }
 
@@ -1250,7 +1251,7 @@ export interface ReportData {
 export interface ReportFilter {
   field: string;
   operator: ComparisonOperator;
-  value: any;
+  value: unknown;
 }
 
 export interface ReportAggregation {
@@ -1380,7 +1381,7 @@ export interface ApiRequest {
   method: HttpMethod;
   url: string;
   headers: Record<string, string>;
-  body?: any;
+  body?: unknown;
   params?: Metadata;
   query?: Metadata;
 }
@@ -1468,7 +1469,7 @@ export type RuleType = 'validation' | 'matching' | 'notification' | 'escalation'
 export interface RuleCondition {
   field: string;
   operator: ComparisonOperator;
-  value: any;
+  value: unknown;
   logicalOperator?: LogicalOperator;
 }
 
@@ -1629,7 +1630,7 @@ export interface SecurityRule {
 export interface SecurityCondition {
   field: string;
   operator: ComparisonOperator;
-  value: any;
+  value: unknown;
   logicalOperator?: LogicalOperator;
 }
 
@@ -1712,7 +1713,7 @@ export interface AccessControl {
 export interface AccessCondition {
   field: string;
   operator: ComparisonOperator;
-  value: any;
+  value: unknown;
 }
 
 export interface RiskAssessment {
@@ -1776,7 +1777,7 @@ export type ExportStatus = 'pending' | 'processing' | 'completed' | 'failed' | '
 export interface ExportFilter {
   field: string;
   operator: ComparisonOperator;
-  value: any;
+  value: unknown;
 }
 
 export interface ExportOptions {
@@ -1842,7 +1843,7 @@ export interface SortParams {
 export interface FilterParams {
   field: string;
   operator: ComparisonOperator;
-  value: any;
+  value: unknown;
 }
 
 export interface SearchParams {
@@ -1912,7 +1913,7 @@ export interface AppError {
 export interface ValidationError {
   field: string;
   message: string;
-  value: any;
+  value: unknown;
   rule: string;
 }
 
@@ -2105,7 +2106,7 @@ export interface FeatureToggle {
 export interface FeatureCondition {
   field: string;
   operator: ComparisonOperator;
-  value: any;
+  value: unknown;
 }
 
 // ============================================================================

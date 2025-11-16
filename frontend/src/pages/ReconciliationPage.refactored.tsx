@@ -158,7 +158,7 @@ const ReconciliationPage: React.FC = () => {
                 ← Back to Dashboard
               </Button>
               <div>
-                <h1 className="text-xl font-semibold text-gray-900">{project.name}</h1>
+                <h1 className="text-xl font-semibold text-gray-900">{project?.name ?? 'Project'}</h1>
                 <p className="text-sm text-gray-500">Reconciliation Management</p>
               </div>
             </div>

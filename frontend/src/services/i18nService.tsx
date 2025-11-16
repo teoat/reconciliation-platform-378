@@ -58,7 +58,7 @@ class I18nService {
   private config: I18nConfig;
   private currentLanguage: string;
   private resources: Map<string, LanguageResource> = new Map();
-  private listeners: Map<string, Function[]> = new Map();
+  private listeners = new Map<string, Array<(...args: unknown[]) => void>>();
   private pluralRules: Map<string, PluralRule> = new Map();
 
   public static getInstance(): I18nService {
@@ -604,14 +604,14 @@ class I18nService {
   }
 
   // Event system
-  public on(event: string, callback: Function): void {
+  public on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(callback);
   }
 
-  public off(event: string, callback: Function): void {
+  public off(event: string, callback: (...args: unknown[]) => void): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);

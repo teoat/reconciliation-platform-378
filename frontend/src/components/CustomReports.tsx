@@ -291,10 +291,10 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       let data: ReconciliationRecord[] = [];
       switch (report.dataSource) {
         case 'reconciliation':
-          data = reconciliationData?.records || [];
+          data = reconciliationData?.records ?? [];
           break;
         case 'cashflow':
-          data = cashflowData?.records || [];
+          data = cashflowData?.records ?? [];
           break;
         case 'projects':
           data = []; // Would fetch project data
@@ -548,7 +548,7 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
 
             {/* Tags */}
             <div className="flex flex-wrap gap-1 mb-4">
-              {(report.tags || []).map((tag) => (
+              {(report.tags ?? []).map((tag) => (
                 <span
                   key={tag}
                   className="px-2 py-1 text-xs bg-primary-100 text-primary-700 rounded-full"
@@ -562,7 +562,7 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
             <div className="space-y-2 mb-4">
               <h4 className="text-sm font-medium text-secondary-900">Key Metrics:</h4>
               <div className="grid grid-cols-2 gap-2">
-                {(report.metrics || []).slice(0, 4).map((metric) => (
+                {(report.metrics ?? []).slice(0, 4).map((metric) => (
                   <div key={metric.id} className="text-xs">
                     <div className="text-secondary-600">{metric.name}</div>
                     <div className="font-semibold text-secondary-900">
@@ -577,7 +577,7 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
             <div className="space-y-2">
               <h4 className="text-sm font-medium text-secondary-900">Visualizations:</h4>
               <div className="flex flex-wrap gap-1">
-                {(report.visualizations || []).map((viz, index) => (
+                {(report.visualizations ?? []).map((viz, index) => (
                   <div
                     key={index}
                     className="flex items-center space-x-1 px-2 py-1 text-xs bg-secondary-100 text-secondary-700 rounded"
@@ -641,7 +641,7 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
               <div>
                 <h4 className="text-lg font-semibold text-secondary-900 mb-4">Key Metrics</h4>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {(selectedReport.metrics || []).map((metric) => (
+                  {(selectedReport.metrics ?? []).map((metric) => (
                     <div key={metric.id} className="p-4 bg-secondary-50 rounded-lg">
                       <div className="text-sm text-secondary-600 mb-1">{metric.name}</div>
                       <div className="text-2xl font-bold text-secondary-900">
@@ -656,7 +656,7 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
               <div>
                 <h4 className="text-lg font-semibold text-secondary-900 mb-4">Visualizations</h4>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {(selectedReport.visualizations || []).map((viz, index) => (
+                  {(selectedReport.visualizations ?? []).map((viz, index) => (
                     <div key={index} className="p-4 border border-secondary-200 rounded-lg">
                       <div className="flex items-center space-x-2 mb-4">
                         {getVisualizationIcon(viz.type)}
@@ -678,7 +678,7 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
               <div>
                 <h4 className="text-lg font-semibold text-secondary-900 mb-4">Applied Filters</h4>
                 <div className="space-y-2">
-                  {(selectedReport.filters || []).map((filter, index) => (
+                  {(selectedReport.filters ?? []).map((filter, index) => (
                     <div
                       key={index}
                       className="flex items-center space-x-2 p-2 bg-secondary-50 rounded"

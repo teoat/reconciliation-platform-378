@@ -435,7 +435,20 @@ impl PasswordManager {
             .first::<PasswordEntry>(&mut conn)
             .optional()
             .map_err(|e| {
-                log::error!("Database error checking password entry '{}': {}", entry.name, e);
+                log::error!("Database error checking password entry '{}': {} (Error kind: {:?})", entry.name, e, e);
+                // Log additional context for database errors
+                match &e {
+                    diesel::result::Error::DatabaseError(kind, info) => {
+                        log::error!("Database constraint/error details: {:?}, {:?}", kind, info);
+                    }
+                    diesel::result::Error::NotFound => {
+                        // This is expected when checking existence - not an error
+                        log::debug!("Password entry '{}' not found (expected for new entries)", entry.name);
+                    }
+                    _ => {
+                        log::error!("Unexpected database error type: {:?}", e);
+                    }
+                }
                 AppError::Database(e)
             })?;
         
@@ -452,7 +465,7 @@ impl PasswordManager {
                 ))
                 .execute(&mut conn)
                 .map_err(|e| {
-                    log::error!("Database error updating password entry '{}': {}", entry.name, e);
+                    log::error!("Database error updating password entry '{}': {} (Error kind: {:?})", entry.name, e, e);
                     AppError::Database(e)
                 })?;
         } else {
@@ -461,7 +474,15 @@ impl PasswordManager {
                 .values(entry)
                 .execute(&mut conn)
                 .map_err(|e| {
-                    log::error!("Database error inserting password entry '{}': {}", entry.name, e);
+                    log::error!("Database error inserting password entry '{}': {} (Error kind: {:?})", 
+                        entry.name, e, e);
+                    // Provide more context for debugging
+                    match &e {
+                        diesel::result::Error::DatabaseError(kind, info) => {
+                            log::error!("Database constraint/error details: {:?}, {:?}", kind, info);
+                        }
+                        _ => {}
+                    }
                     AppError::Database(e)
                 })?;
         }

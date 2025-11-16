@@ -70,7 +70,7 @@ export const MonitoringDashboard: React.FC = () => {
       const response = await fetch('/api/monitoring/metrics');
       if (response.ok) {
         const data = await response.json();
-        setMetrics(data || null);
+        setMetrics(data ?? null);
       } else {
         throw new Error(`Failed to fetch metrics: ${response.status}`);
       }

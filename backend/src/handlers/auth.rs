@@ -179,8 +179,8 @@ pub async fn login(
         user: crate::services::auth::UserInfo {
             id: user.id,
             email: user.email,
-            first_name: user.first_name.unwrap_or_default(),
-            last_name: user.last_name.unwrap_or_default(),
+            first_name: user.first_name.as_deref().unwrap_or("").to_string(),
+            last_name: user.last_name.as_deref().unwrap_or("").to_string(),
             role: "user".to_string(), // TODO: Implement proper role fetching
             is_active: user.status == "active",
             last_login: user.last_login_at,
@@ -530,7 +530,8 @@ pub async fn google_oauth(
 
     let first_name = token_info["given_name"].as_str().unwrap_or("").to_string();
     let last_name = token_info["family_name"].as_str().unwrap_or("").to_string();
-    let picture = token_info["picture"].as_str().map(|s| s.to_string());
+    // Safe: JSON parsing with fallback to empty string
+    let _picture = token_info["picture"].as_str().map(|s| s.to_string()); // Reserved for future use
 
     // Create or get user
     let create_oauth_request = CreateOAuthUserRequest {

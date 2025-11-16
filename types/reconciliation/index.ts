@@ -5,11 +5,11 @@ export interface ReconciliationSource {
   systemId: string;
   systemName: string;
   recordId: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   timestamp: string;
   quality: DataQuality;
   confidence: number;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
 }
 
 export interface DataQuality {
@@ -35,7 +35,7 @@ export interface MatchingRule {
 export interface MatchingCriteria {
   field: string;
   operator: 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'regex' | 'fuzzy';
-  value: any;
+  value: unknown;
   tolerance?: number;
   weight: number;
 }
@@ -44,7 +44,7 @@ export interface MatchingResult {
   matched: boolean;
   confidence: number;
   reason: string;
-  details: Record<string, any>;
+  details: Record<string, unknown>;
 }
 
 export interface AuditEntry {
@@ -53,9 +53,9 @@ export interface AuditEntry {
   userName: string;
   action: string;
   timestamp: string;
-  details: Record<string, any>;
-  previousValue?: any;
-  newValue?: any;
+  details: Record<string, unknown>;
+  previousValue?: unknown;
+  newValue?: unknown;
   ipAddress?: string;
   userAgent?: string;
 }
@@ -126,8 +126,8 @@ export interface ReconciliationMetrics {
 export interface FilterConfig {
   field: string;
   operator: 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'greaterThan' | 'lessThan' | 'between' | 'in' | 'notIn';
-  value: any;
-  value2?: any;
+  value: unknown;
+  value2?: unknown;
   active: boolean;
 }
 
@@ -154,7 +154,7 @@ export interface BulkAction {
 }
 
 export interface ReconciliationPageProps {
-  project: any;
+  project: Record<string, unknown>;
   onProgressUpdate?: (step: string) => void;
 }
 

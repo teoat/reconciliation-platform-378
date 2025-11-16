@@ -10,8 +10,8 @@ import { Button } from './Button';
 // Import ariaLiveRegionsService with fallback
 import ariaLiveRegionsServiceModule from '../../services/ariaLiveRegionsService';
 const ariaLiveRegionsService = 
-  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService || 
-  (ariaLiveRegionsServiceModule as any).default?.getInstance?.() ||
+  (ariaLiveRegionsServiceModule as Record<string, unknown>).ariaLiveRegionsService || 
+  ((ariaLiveRegionsServiceModule as Record<string, unknown>).default as { getInstance?: () => unknown })?.getInstance?.() ||
   ariaLiveRegionsServiceModule;
 
 export interface FallbackContentProps {

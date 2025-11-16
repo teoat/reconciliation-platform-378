@@ -670,7 +670,7 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-secondary-200">
-                      {Object.keys(selectedChart.data[0] || {}).map((key) => (
+                      {Object.keys(selectedChart.data[0] ?? {}).map((key) => (
                         <th
                           key={key}
                           className="text-left py-2 px-3 font-medium text-secondary-600"

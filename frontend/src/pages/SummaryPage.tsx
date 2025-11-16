@@ -7,7 +7,7 @@ import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 export interface PageConfig {
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<Record<string, unknown>>;
   path: string;
   showStats?: boolean;
   showFilters?: boolean;
@@ -17,7 +17,7 @@ export interface PageConfig {
 export interface StatsCard {
   title: string;
   value: string | number;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<Record<string, unknown>>;
   color: string;
   trend?: {
     direction: 'up' | 'down' | 'neutral';
@@ -36,7 +36,7 @@ export interface FilterConfig {
 
 export interface ActionConfig {
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<Record<string, unknown>>;
   onClick: () => void;
   variant?: 'primary' | 'secondary' | 'danger';
   loading?: boolean;
@@ -173,6 +173,8 @@ const BasePage: React.FC<BasePageProps> = ({
                       value={filterValues[filter.key] || ''}
                       onChange={(e) => handleFilterChange(filter.key, e.target.value)}
                       className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      aria-label={filter.label}
+                      title={filter.label}
                     >
                       <option value="">All {filter.label}</option>
                       {filter.options?.map((option) => (
@@ -236,7 +238,7 @@ const BasePage: React.FC<BasePageProps> = ({
 };
 
 const SummaryPageContent: React.FC = () => {
-  const [data] = useState<any>(null);
+  const [data] = useState<Record<string, unknown> | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFormat, setExportFormat] = useState<'csv' | 'pdf' | 'json'>('csv');
 
@@ -253,25 +255,25 @@ const SummaryPageContent: React.FC = () => {
     ? [
         {
           title: 'Total Records',
-          value: data.reconciliationSummary?.totalRecords || 0,
+          value: Number((data.reconciliationSummary as Record<string, unknown>)?.totalRecords ?? 0),
           icon: FileText,
           color: 'bg-blue-100 text-blue-600',
         },
         {
           title: 'Matched',
-          value: data.reconciliationSummary?.matchedRecords || 0,
+          value: Number((data.reconciliationSummary as Record<string, unknown>)?.matchedRecords ?? 0),
           icon: CheckCircle,
           color: 'bg-green-100 text-green-600',
         },
         {
           title: 'Unmatched',
-          value: data.reconciliationSummary?.unmatchedRecords || 0,
+          value: Number((data.reconciliationSummary as Record<string, unknown>)?.unmatchedRecords ?? 0),
           icon: AlertCircle,
           color: 'bg-red-100 text-red-600',
         },
         {
           title: 'Discrepancies',
-          value: data.reconciliationSummary?.discrepancyRecords || 0,
+          value: Number((data.reconciliationSummary as Record<string, unknown>)?.discrepancyRecords ?? 0),
           icon: AlertCircle,
           color: 'bg-yellow-100 text-yellow-600',
         },
@@ -303,16 +305,20 @@ const SummaryPageContent: React.FC = () => {
     if (!data?.systemBreakdown) return;
 
     const headers = ['System', 'Total Records', 'Matched', 'Unmatched', 'Match Rate'];
-    const rows = data.systemBreakdown.map((system: any) => [
-      system.system,
-      system.records,
-      system.matched,
-      system.unmatched,
-      `${((system.matched / system.records) * 100).toFixed(1)}%`,
-    ]);
+    const rows = (data.systemBreakdown as Array<Record<string, unknown>>).map((system) => {
+      const matched = Number(system.matched ?? 0);
+      const records = Number(system.records ?? 0);
+      return [
+        system.system ?? 'Unknown',
+        records,
+        matched,
+        Number(system.unmatched ?? 0),
+        records > 0 ? `${((matched / records) * 100).toFixed(1)}%` : '0%',
+      ];
+    });
 
     const csvContent = [headers, ...rows]
-      .map((row) => row.map((cell: any) => `"${cell}"`).join(','))
+      .map((row) => row.map((cell) => `"${String(cell ?? '')}"`).join(','))
       .join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -382,21 +388,23 @@ const SummaryPageContent: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {data?.systemBreakdown?.map((system: any, index: number) => {
-                const matchRate = (system.matched / system.records) * 100;
+              {(Array.isArray(data?.systemBreakdown) ? data.systemBreakdown : []).map((system: Record<string, unknown>, index: number) => {
+                const matched = Number(system.matched ?? 0);
+                const records = Number(system.records ?? 0);
+                const matchRate = records > 0 ? (matched / records) * 100 : 0;
                 return (
                   <tr key={index} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {system.system}
+                      {String(system.system ?? 'Unknown')}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {system.records}
+                      {records}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {system.matched}
+                      {matched}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {system.unmatched}
+                      {Number(system.unmatched ?? 0)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                       <span
@@ -430,7 +438,7 @@ const SummaryPageContent: React.FC = () => {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {data?.recommendations?.map((recommendation: string, index: number) => (
+              {(Array.isArray(data?.recommendations) ? data.recommendations : []).map((recommendation: string, index: number) => (
                 <div key={index} className="flex items-start space-x-3">
                   <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
                   <p className="text-sm text-gray-700">{recommendation}</p>
@@ -449,7 +457,7 @@ const SummaryPageContent: React.FC = () => {
           </div>
           <div className="p-6">
             <div className="space-y-3">
-              {data?.nextSteps?.map((step: string, index: number) => (
+              {(Array.isArray(data?.nextSteps) ? data.nextSteps : []).map((step: string, index: number) => (
                 <div key={index} className="flex items-start space-x-3">
                   <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
                     <span className="text-xs font-medium text-blue-600">{index + 1}</span>
@@ -471,11 +479,14 @@ const SummaryPageContent: React.FC = () => {
       >
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Export Format</label>
+            <label htmlFor="export-format" className="block text-sm font-medium text-gray-700 mb-2">Export Format</label>
             <select
+              id="export-format"
               value={exportFormat}
               onChange={(e) => setExportFormat(e.target.value as 'csv' | 'pdf' | 'json')}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              aria-label="Export Format"
+              title="Select export format"
             >
               <option value="csv">CSV - Comma Separated Values</option>
               <option value="pdf">PDF - Portable Document Format</option>

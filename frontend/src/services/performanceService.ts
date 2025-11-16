@@ -4,23 +4,23 @@ import { logger } from '@/services/logger';
 
 import { EventEmitter } from 'events';
 
-const createPerformanceMemory = (usedJSHeapSize, totalJSHeapSize, jsHeapSizeLimit) => ({
+const createPerformanceMemory = (usedJSHeapSize: number, totalJSHeapSize: number, jsHeapSizeLimit: number) => ({
   usedJSHeapSize,
   totalJSHeapSize,
   jsHeapSizeLimit,
 });
 
 export const createPerformanceMetrics = (
-  pageLoadTime,
-  firstContentfulPaint,
-  largestContentfulPaint,
-  firstInputDelay,
-  cumulativeLayoutShift,
-  memoryUsage,
-  bundleSize,
-  cacheHitRate,
-  apiResponseTime,
-  timestamp
+  pageLoadTime: number,
+  firstContentfulPaint: number,
+  largestContentfulPaint: number,
+  firstInputDelay: number,
+  cumulativeLayoutShift: number,
+  memoryUsage: ReturnType<typeof createPerformanceMemory>,
+  bundleSize: number,
+  cacheHitRate: number,
+  apiResponseTime: number,
+  timestamp: number
 ) => ({
   pageLoadTime,
   firstContentfulPaint,
@@ -34,14 +34,14 @@ export const createPerformanceMetrics = (
   timestamp,
 });
 
-export const createBundleAnalysis = (totalSize, gzippedSize, chunks, duplicates) => ({
+export const createBundleAnalysis = (totalSize: number, gzippedSize: number, chunks: unknown[], duplicates: unknown[]) => ({
   totalSize,
   gzippedSize,
   chunks,
   duplicates,
 });
 
-export const createCacheStrategy = (name, maxAge, maxSize, strategy) => ({
+export const createCacheStrategy = (name: string, maxAge: number, maxSize: number, strategy: string) => ({
   name,
   maxAge,
   maxSize,

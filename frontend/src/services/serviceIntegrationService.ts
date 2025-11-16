@@ -45,7 +45,7 @@ export interface ServiceStatus {
 class ServiceIntegrationService {
   private static instance: ServiceIntegrationService;
   private config: ServiceIntegrationConfig;
-  private listeners: Map<string, Function[]> = new Map();
+  private listeners = new Map<string, Array<(...args: unknown[]) => void>>();
   private performanceMetrics: Map<string, number> = new Map();
 
   public static getInstance(): ServiceIntegrationService {
@@ -416,14 +416,14 @@ class ServiceIntegrationService {
   }
 
   // Event system
-  public on(event: string, callback: Function): void {
+  public on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(callback);
   }
 
-  public off(event: string, callback: Function): void {
+  public off(event: string, callback: (...args: unknown[]) => void): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);

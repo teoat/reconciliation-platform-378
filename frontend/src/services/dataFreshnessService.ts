@@ -42,7 +42,7 @@ export interface RefreshStrategy {
 export interface RefreshCondition {
   field: string
   operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains'
-  value: any
+  value: unknown
 }
 
 export interface DataSource {
@@ -61,7 +61,7 @@ class DataFreshnessService {
   private freshnessData: Map<string, DataFreshness> = new Map()
   private dataSources: Map<string, DataSource> = new Map()
   private config: RefreshConfig
-  private listeners: Map<string, Function[]> = new Map()
+  private listeners = new Map<string, Array<(...args: unknown[]) => void>>()
   private refreshTimer?: NodeJS.Timeout
   private freshnessTimer?: NodeJS.Timeout
 
@@ -107,7 +107,7 @@ class DataFreshnessService {
       const stored = localStorage.getItem('data_freshness')
       if (stored) {
         const data = JSON.parse(stored)
-        data.freshnessData.forEach((item: any) => {
+        data.freshnessData.forEach((item: Record<string, unknown>) => {
           const freshness: DataFreshness = {
             ...item,
             lastUpdated: new Date(item.lastUpdated),
@@ -153,7 +153,7 @@ class DataFreshnessService {
   public registerData(
     dataType: DataFreshness['dataType'],
     dataId: string,
-    data: any,
+    data: Record<string, unknown>,
     options: {
       ttl?: number
       source?: DataFreshness['source']
@@ -193,7 +193,7 @@ class DataFreshnessService {
   public updateData(
     dataType: DataFreshness['dataType'],
     dataId: string,
-    data: any,
+    data: Record<string, unknown>,
     options: {
       source?: DataFreshness['source']
       userId?: string
@@ -276,7 +276,7 @@ class DataFreshnessService {
       strategy?: RefreshStrategy
       userId?: string
     } = {}
-  ): Promise<{ success: boolean; data?: any; freshness?: DataFreshness }> {
+  ): Promise<{ success: boolean; data?: Record<string, unknown>; freshness?: DataFreshness }> {
     const freshness = this.getFreshnessStatus(dataType, dataId)
     if (!freshness) {
       return { success: false }
@@ -438,7 +438,7 @@ class DataFreshnessService {
     })
   }
 
-  private calculateChecksum(data: any): string {
+  private calculateChecksum(data: Record<string, unknown>): string {
     const str = JSON.stringify(data)
     let hash = 0
     for (let i = 0; i < str.length; i++) {
@@ -492,14 +492,14 @@ class DataFreshnessService {
   }
 
   // Event system
-  public on(event: string, callback: Function): void {
+  public on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, [])
     }
     this.listeners.get(event)!.push(callback)
   }
 
-  public off(event: string, callback: Function): void {
+  public off(event: string, callback: (...args: unknown[]) => void): void {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
       const index = callbacks.indexOf(callback)
@@ -509,7 +509,7 @@ class DataFreshnessService {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: unknown): void {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
       callbacks.forEach(callback => callback(data))
@@ -533,11 +533,11 @@ class DataFreshnessService {
 export const useDataFreshness = () => {
   const service = DataFreshnessService.getInstance()
 
-  const registerData = (dataType: DataFreshness['dataType'], dataId: string, data: any, options?: any) => {
+  const registerData = (dataType: DataFreshness['dataType'], dataId: string, data: Record<string, unknown>, options?: Record<string, unknown>) => {
     return service.registerData(dataType, dataId, data, options)
   }
 
-  const updateData = (dataType: DataFreshness['dataType'], dataId: string, data: any, options?: any) => {
+  const updateData = (dataType: DataFreshness['dataType'], dataId: string, data: Record<string, unknown>, options?: Record<string, unknown>) => {
     return service.updateData(dataType, dataId, data, options)
   }
 
@@ -557,7 +557,7 @@ export const useDataFreshness = () => {
     return service.isDataExpired(dataType, dataId)
   }
 
-  const refreshData = (dataType: DataFreshness['dataType'], dataId: string, options?: any) => {
+  const refreshData = (dataType: DataFreshness['dataType'], dataId: string, options?: Record<string, unknown>) => {
     return service.refreshData(dataType, dataId, options)
   }
 
