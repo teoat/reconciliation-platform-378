@@ -4,10 +4,11 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Content Security Policy - CDN scripts removed, using npm packages instead -->
-    <!-- Development: Allows unsafe-eval for React dev tools, unsafe-inline for styles -->
-    <!-- Production: Should use nonces (see CSP utility functions) -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ws: wss: http://localhost:* https://localhost:*; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
+    <!-- Content Security Policy -->
+    <!-- CSP is managed dynamically by CSPManager in src/services/security/csp.ts -->
+    <!-- Development: Uses unsafe-inline/unsafe-eval for easier debugging -->
+    <!-- Production: Uses nonce-based CSP (nonces injected at build time via Vite plugin) -->
+    <!-- The CSP meta tag will be injected by CSPManager.setupCSP() on app initialization -->
     <title>Reconciliation Platform</title>
   </head>
   <body>

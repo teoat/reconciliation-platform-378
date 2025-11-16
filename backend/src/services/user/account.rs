@@ -52,6 +52,7 @@ impl UserAccountService {
         user_id: Uuid,
         current_password: &str,
         new_password: &str,
+        password_manager: Option<std::sync::Arc<crate::services::password_manager::PasswordManager>>,
     ) -> AppResult<()> {
         let mut conn = self.db.get_connection()?;
 
@@ -82,6 +83,12 @@ impl UserAccountService {
             .set(users::password_hash.eq(new_password_hash))
             .execute(&mut conn)
             .map_err(AppError::Database)?;
+
+        // Update password manager master key if provided
+        if let Some(pm) = password_manager {
+            pm.set_user_master_key(user_id, new_password).await;
+            log::info!("Updated password manager master key for user: {}", user_id);
+        }
 
         Ok(())
     }

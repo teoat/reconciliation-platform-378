@@ -37,12 +37,13 @@ pub struct ValidationService {
 
 impl ValidationService {
     pub fn new() -> Result<Self, regex::Error> {
+        // Regex for allowed characters only (no look-ahead assertions)
+        // Rust's regex crate doesn't support look-ahead, so password validation
+        // is handled separately in the password validator
         Ok(Self {
             email_regex: Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")?,
             phone_regex: Regex::new(r"^\+?[1-9]\d{1,14}$")?,
-            password_regex: Regex::new(
-                r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$",
-            )?,
+            password_regex: Regex::new(r"^[A-Za-z\d@$!%*?&]{8,}$")?,
             file_extension_regex: Regex::new(r"^\.(csv|xlsx|xls|json|xml|txt)$")?,
         })
     }

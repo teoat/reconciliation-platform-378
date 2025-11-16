@@ -8,20 +8,24 @@
  */
 
 // Environment-agnostic configuration reading
-const getEnvVar = (key: string, fallback: string) => {
-  // Try NEXT_PUBLIC_ prefix (Next.js)
+const getEnvVar = (key: string, fallback: string): string => {
+  // Priority 1: Vite environment variables (import.meta.env.VITE_*)
+  // This is the correct way for Vite - accessed directly, not via window
+  if (typeof import !== 'undefined' && import.meta?.env?.[key]) {
+    return import.meta.env[key] as string;
+  }
+  
+  // Priority 2: Try NEXT_PUBLIC_ prefix (for backward compatibility during migration)
   const nextPublicKey = `NEXT_PUBLIC_${key.replace('VITE_', '')}`;
   if (typeof process !== 'undefined' && process.env?.[nextPublicKey]) {
     return process.env[nextPublicKey];
   }
-  // Try process.env with original key
+  
+  // Priority 3: Try process.env with original key (legacy support)
   if (typeof process !== 'undefined' && process.env?.[key]) {
     return process.env[key];
   }
-  // Try VITE_ prefix (for backward compatibility, though won't work in Next.js)
-  if (typeof window !== 'undefined' && (window as any).import?.meta?.env?.[key]) {
-    return (window as any).import.meta.env[key];
-  }
+  
   return fallback;
 };
 

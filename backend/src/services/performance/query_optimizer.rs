@@ -100,7 +100,6 @@ impl QueryOptimizer {
 
     fn estimate_optimization_impact(&self, query: &str, duration: Duration) -> OptimizationImpact {
         let mut impact_score = 0;
-        let _impact_level = OptimizationLevel::Low;
 
         // More aggressive scoring for queries >50ms (P95 target)
         if duration > Duration::from_millis(1000) {
@@ -126,12 +125,12 @@ impl QueryOptimizer {
             impact_score += 1;
         }
 
-        match impact_score {
-            0 => impact_level = OptimizationLevel::Low,
-            1..=2 => impact_level = OptimizationLevel::Medium,
-            3..=4 => impact_level = OptimizationLevel::High,
-            _ => impact_level = OptimizationLevel::Critical,
-        }
+        let impact_level = match impact_score {
+            0 => OptimizationLevel::Low,
+            1..=2 => OptimizationLevel::Medium,
+            3..=4 => OptimizationLevel::High,
+            _ => OptimizationLevel::Critical,
+        };
 
         OptimizationImpact {
             score: impact_score,

@@ -351,7 +351,7 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
                     <h3 className="text-lg font-semibold">Base URL</h3>
                   </div>
                   <code className="text-sm bg-gray-100 p-2 rounded block">
-                    {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}
+                    {import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}
                   </code>
                 </div>
               </Card>

@@ -5,11 +5,12 @@ import App from './App.tsx'
 import './index.css'
 
 // Initialize Elastic APM RUM
-if (process.env.NODE_ENV === 'production' || process.env.ELASTIC_APM_SERVER_URL) {
+// Vite: Use import.meta.env instead of process.env
+if (import.meta.env.PROD || import.meta.env.VITE_ELASTIC_APM_SERVER_URL) {
   initApm({
-    serviceName: process.env.ELASTIC_APM_SERVICE_NAME || 'reconciliation-frontend',
-    serverUrl: process.env.ELASTIC_APM_SERVER_URL || 'http://localhost:8200',
-    environment: process.env.ELASTIC_APM_ENVIRONMENT || 'development',
+    serviceName: import.meta.env.VITE_ELASTIC_APM_SERVICE_NAME || 'reconciliation-frontend',
+    serverUrl: import.meta.env.VITE_ELASTIC_APM_SERVER_URL || 'http://localhost:8200',
+    environment: import.meta.env.VITE_ELASTIC_APM_ENVIRONMENT || import.meta.env.MODE || 'development',
     distributedTracingOrigins: ['http://localhost:2000'],
     // Enable real user monitoring
     disableInstrumentations: [],

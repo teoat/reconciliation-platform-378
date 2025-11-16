@@ -52,7 +52,7 @@ function App() {
     reconnectInterval: 5000,
     maxReconnectAttempts: 5,
     heartbeatInterval: 30000,
-    debug: process.env.NODE_ENV === 'development',
+    debug: import.meta.env.DEV, // Vite: Use import.meta.env.DEV instead of process.env.NODE_ENV
   };
 
   // Initialize unified fetch interceptor on mount
@@ -77,7 +77,7 @@ function App() {
       <ReduxProvider>
         <WebSocketProvider config={wsConfig}>
           <AuthProvider>
-            <Router basename={process.env.NEXT_PUBLIC_BASE_PATH || '/'}>
+            <Router basename={import.meta.env.VITE_BASE_PATH || '/'}>
               <div className="min-h-screen bg-gray-100">
                 <KeyboardShortcuts />
                 <ToastContainer />

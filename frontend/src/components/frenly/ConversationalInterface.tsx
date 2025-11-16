@@ -9,6 +9,8 @@ import { logger } from '../services/logger'; * Conversational Interface Componen
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageCircle, Send, X, Minimize2, Maximize2 } from 'lucide-react';
 import { frenlyAgentService } from '@/services/frenlyAgentService';
+// Note: Using relative import because agents/ is at project root, not in frontend/src
+// Consider moving agents/ to frontend/src/agents/ or configuring a path alias for better maintainability
 import { MessageContext } from '../../../../agents/guidance/FrenlyGuidanceAgent';
 
 export interface ConversationMessage {

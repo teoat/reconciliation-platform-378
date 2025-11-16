@@ -1,13 +1,22 @@
 // Content Security Policy Module
 import { SecurityEvent, SecurityEventType, SecuritySeverity } from './types';
+import { logger } from '../logger';
+import { 
+  initializeNonceCSP, 
+  buildCSPHeader,
+  getNonce
+} from '../../utils/cspNonce';
+import { getCSPPolicy } from '../../utils/securityConfig';
 
 export class CSPManager {
   private cspViolations: string[] = [];
   private logSecurityEvent: (event: Omit<SecurityEvent, 'id' | 'timestamp'>) => Promise<void>;
+  private nonce: string | null = null;
 
   constructor(
     logSecurityEvent: (event: Omit<SecurityEvent, 'id' | 'timestamp'>) => Promise<void>,
-    _generateId: () => string // Unused but required by interface
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _generateId: () => string // Required by interface but not used in this class
   ) {
     this.logSecurityEvent = logSecurityEvent;
   }
@@ -17,6 +26,11 @@ export class CSPManager {
 
     const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development';
     
+    // Initialize nonce early for production
+    if (!isDevelopment) {
+      this.nonce = initializeNonceCSP();
+    }
+    
     // Remove existing CSP meta tag if present
     const existingCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
     if (existingCSP) {
@@ -25,9 +39,6 @@ export class CSPManager {
     
     const meta = document.createElement('meta');
     meta.httpEquiv = 'Content-Security-Policy';
-    
-    // Generate nonce for production
-    const nonce = this.generateNonce();
     
     // Development: More permissive to allow eval for React dev tools
     // Production: Use nonces instead of unsafe-inline
@@ -44,22 +55,13 @@ export class CSPManager {
         "form-action 'self'",
       ].join('; ');
     } else {
-      // Production: Use nonces for better security
-      meta.content = [
-        "default-src 'self'",
-        `script-src 'self' 'nonce-${nonce}'`,
-        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-        "img-src 'self' data: https:",
-        "font-src 'self' data: https://fonts.gstatic.com",
-        "connect-src 'self' ws: wss: https:",
-        "frame-ancestors 'none'",
-        "base-uri 'self'",
-        "form-action 'self'",
-      ].join('; ');
+      // Production: Use nonce-based CSP from securityConfig
+      const productionPolicy = getCSPPolicy('production');
+      meta.content = buildCSPHeader(productionPolicy);
       
-      // Store nonce for use in inline scripts
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as unknown as Record<string, unknown>).__CSP_NONCE__ = nonce;
+      logger.info('CSP initialized with nonce-based policy', { 
+        noncePrefix: this.nonce?.substring(0, 8) + '...' 
+      });
     }
     
     document.head.appendChild(meta);
@@ -92,21 +94,10 @@ export class CSPManager {
   }
 
   /**
-   * Generates a CSP nonce for inline scripts/styles
-   */
-  private generateNonce(): string {
-    const array = new Uint8Array(16);
-    crypto.getRandomValues(array);
-    return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
-  }
-
-  /**
-   * Gets the current CSP nonce (for use in inline scripts)
+   * Gets the current CSP nonce (for use in dynamically created scripts/styles)
    */
   getNonce(): string | null {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const nonce = (window as Record<string, unknown>).__CSP_NONCE__;
-    return typeof nonce === 'string' ? nonce : null;
+    return this.nonce || getNonce();
   }
 }
 

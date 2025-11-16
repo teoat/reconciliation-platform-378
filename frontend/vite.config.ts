@@ -1,11 +1,16 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import { resolve } from 'path';
+import { cspNoncePlugin } from './vite-plugin-csp-nonce';
 
 // https://vitejs.dev/config/
 export default defineConfig({
   base: process.env.VITE_BASE_PATH || '/',
-  plugins: [react()],
+  plugins: [
+    react(),
+    // CSP nonce injection for production builds
+    cspNoncePlugin({ enabled: process.env.NODE_ENV === 'production' }),
+  ],
   server: {
     port: 1000,
     host: '0.0.0.0',

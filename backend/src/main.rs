@@ -36,11 +36,11 @@ async fn main() -> std::io::Result<()> {
     std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
     log::info!("Logging initialized");
 
-    // Load configuration
+    // Load configuration (initial load from env - needed for database connection)
     log::info!("Loading configuration...");
-    let config = match Config::from_env() {
+    let mut config = match Config::from_env() {
         Ok(cfg) => {
-            log::info!("Configuration loaded successfully");
+            log::info!("Configuration loaded successfully from environment");
             cfg
         }
         Err(e) => {
@@ -131,6 +131,15 @@ async fn main() -> std::io::Result<()> {
         log::warn!("Failed to initialize application passwords: {:?}", e);
     } else {
         log::info!("Application passwords migrated to password manager");
+    }
+
+    // Update config from password manager (after password manager is initialized)
+    // This allows us to use passwords from password manager without circular dependency
+    if let Err(e) = config.update_from_password_manager(Arc::clone(&password_manager)).await {
+        log::warn!("Failed to update config from password manager: {:?}", e);
+        log::warn!("Continuing with environment variable values");
+    } else {
+        log::info!("Configuration updated from password manager");
     }
 
     use actix_web::{web, HttpServer};

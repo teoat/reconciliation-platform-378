@@ -26,8 +26,18 @@ class EncryptionService {
 
   constructor() {
     // Use a secure key from environment - required for production
-    const envKey = process.env.NEXT_PUBLIC_STORAGE_KEY;
+    const envKey = import.meta.env.VITE_STORAGE_KEY;
+    
+    // Development fallback (not secure, but allows development)
+    const isDevelopment = import.meta.env.MODE === 'development' || import.meta.env.PROD !== true;
+    const fallbackKey = isDevelopment ? 'dev-storage-key-not-secure-change-in-production' : undefined;
+    
     if (!envKey || envKey === 'default-key-change-in-production') {
+      if (isDevelopment && fallbackKey) {
+        console.warn('VITE_STORAGE_KEY is not set. Using development fallback. This is NOT secure for production.');
+        this.key = fallbackKey;
+        return;
+      }
       throw new Error('VITE_STORAGE_KEY must be set to a secure random key in production');
     }
     this.key = envKey;

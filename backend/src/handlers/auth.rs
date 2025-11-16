@@ -322,10 +322,14 @@ pub async fn change_password(
     // Extract user_id from request
     let user_id = crate::handlers::helpers::extract_user_id(&http_req)?;
 
+    // Get password manager if available
+    let password_manager = http_req.app_data::<web::Data<Arc<crate::services::password_manager::PasswordManager>>>()
+        .map(|pm| Arc::clone(pm.get_ref()));
+
     // Change password
     user_service
         .as_ref()
-        .change_password(user_id, &req.current_password, &req.new_password)
+        .change_password(user_id, &req.current_password, &req.new_password, password_manager)
         .await?;
 
     Ok(
@@ -369,6 +373,7 @@ pub async fn request_password_reset(
 /// Confirm password reset
 pub async fn confirm_password_reset(
     req: web::Json<crate::services::auth::PasswordResetConfirmation>,
+    http_req: HttpRequest,
     data: web::Data<crate::database::Database>,
     auth_service: web::Data<Arc<AuthService>>,
     config: web::Data<crate::config::Config>,
@@ -378,9 +383,32 @@ pub async fn confirm_password_reset(
         auth_service.as_ref().get_expiration(),
     );
 
+    // Get user_id from reset token to clear master key
+    use crate::models::schema::password_reset_tokens;
+    use diesel::prelude::*;
+    use sha2::{Digest, Sha256};
+    
+    let mut hasher = Sha256::new();
+    hasher.update(req.token.as_bytes());
+    let token_hash = format!("{:x}", hasher.finalize());
+    
+    let mut conn = data.get_connection()?;
+    let reset_token = password_reset_tokens::table
+        .filter(password_reset_tokens::token_hash.eq(&token_hash))
+        .first::<crate::models::PasswordResetToken>(&mut conn)
+        .ok();
+
     enhanced_auth
         .confirm_password_reset(&req.token, &req.new_password, &data)
         .await?;
+
+    // Clear password manager master key if user_id is available
+    if let Some(token) = reset_token {
+        if let Some(password_manager) = http_req.app_data::<web::Data<Arc<crate::services::password_manager::PasswordManager>>>() {
+            password_manager.clear_user_master_key(token.user_id).await;
+            log::info!("Cleared password manager master key after password reset for user: {}", token.user_id);
+        }
+    }
 
     Ok(
         HttpResponse::Ok().json(crate::handlers::types::ApiResponse::<()> {

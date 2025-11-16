@@ -406,9 +406,10 @@ impl UserService {
         user_id: Uuid,
         current_password: &str,
         new_password: &str,
+        password_manager: Option<Arc<crate::services::password_manager::PasswordManager>>,
     ) -> AppResult<()> {
         self.account_service
-            .change_password(user_id, current_password, new_password)
+            .change_password(user_id, current_password, new_password, password_manager)
             .await
     }
 
@@ -649,7 +650,9 @@ impl traits::UserServiceTrait for UserService {
         current_password: &str,
         new_password: &str,
     ) -> AppResult<()> {
-        UserService::change_password(self, user_id, current_password, new_password).await
+        // Trait doesn't support password_manager, pass None
+        // Password manager integration is handled at handler level
+        UserService::change_password(self, user_id, current_password, new_password, None).await
     }
 
     async fn search_users(

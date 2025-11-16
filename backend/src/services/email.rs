@@ -25,6 +25,7 @@ pub struct EmailService {
     smtp_password: String,
     from_email: String,
     resilience: Option<Arc<ResilienceManager>>,
+    password_manager: Option<Arc<crate::services::password_manager::PasswordManager>>,
 }
 
 impl Default for EmailService {
@@ -47,6 +48,7 @@ impl EmailService {
             from_email: env::var("SMTP_FROM")
                 .unwrap_or_else(|_| "noreply@reconciliation.com".to_string()),
             resilience: None,
+            password_manager: None,
         }
     }
 
@@ -63,7 +65,43 @@ impl EmailService {
             from_email: env::var("SMTP_FROM")
                 .unwrap_or_else(|_| "noreply@reconciliation.com".to_string()),
             resilience: Some(resilience),
+            password_manager: None,
         }
+    }
+
+    /// Create email service with password manager
+    pub fn new_with_password_manager(
+        password_manager: Arc<crate::services::password_manager::PasswordManager>,
+    ) -> Self {
+        Self {
+            smtp_host: env::var("SMTP_HOST").unwrap_or_else(|_| "localhost".to_string()),
+            smtp_port: env::var("SMTP_PORT")
+                .unwrap_or_else(|_| "587".to_string())
+                .parse()
+                .unwrap_or(587),
+            smtp_user: env::var("SMTP_USER").unwrap_or_else(|_| "".to_string()),
+            smtp_password: env::var("SMTP_PASSWORD").unwrap_or_else(|_| "".to_string()),
+            from_email: env::var("SMTP_FROM")
+                .unwrap_or_else(|_| "noreply@reconciliation.com".to_string()),
+            resilience: None,
+            password_manager: Some(password_manager),
+        }
+    }
+
+    /// Get SMTP password from password manager or fallback to stored value
+    async fn get_smtp_password(&self) -> String {
+        if let Some(ref pm) = self.password_manager {
+            match pm.get_password_by_name("SMTP_PASSWORD", None).await {
+                Ok(password) => {
+                    log::debug!("Loaded SMTP_PASSWORD from password manager");
+                    return password;
+                }
+                Err(_) => {
+                    log::debug!("SMTP_PASSWORD not found in password manager, using stored value");
+                }
+            }
+        }
+        self.smtp_password.clone()
     }
 
     /// Send password reset email

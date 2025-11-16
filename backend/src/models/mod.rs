@@ -609,7 +609,10 @@ pub struct NewUserSession {
     pub user_id: Uuid,
     pub session_token: String,
     pub refresh_token: Option<String>,
-    // pub ip_address: Option<String>, // TODO: Fix IP address type for Inet
+    // Note: ip_address is commented out because Diesel's Insertable doesn't support String -> Inet conversion
+    // To insert ip_address, use raw SQL: INSERT INTO user_sessions (...) VALUES (..., $ip_address::inet, ...)
+    // Or handle it in the service layer by casting the String to Inet in the SQL query
+    // pub ip_address: Option<String>,
     pub user_agent: Option<String>,
     pub device_info: Option<serde_json::Value>,
     pub is_active: bool,
