@@ -117,25 +117,32 @@ export class MemoryLeakDetector {
   /**
    * Verify all resources have been cleaned up
    */
-  static verify(): { hasLeaks: boolean; details: string[] } {
-    const stats = this.getMemoryStats();
+  static verify(opts: { sampleCount?: number } = {}): { hasLeaks: boolean; details: string[] } {
+    const sampleCount = opts.sampleCount ?? 5;
     const details: string[] = [];
     let hasLeaks = false;
 
-    if (stats.activeListeners > 0) {
-      details.push(`${stats.activeListeners} event listeners not removed`);
+    const listenerCount = Array.from(this.activeListeners.values()).reduce((sum, set) => sum + set.size, 0);
+    if (listenerCount > 0) {
+      const sampleKeys = Array.from(this.activeListeners.keys()).slice(0, sampleCount);
+      details.push(`${listenerCount} event listeners not removed (examples: ${sampleKeys.join(', ')})`);
       hasLeaks = true;
     }
-    if (stats.activeIntervals > 0) {
-      details.push(`${stats.activeIntervals} intervals not cleared`);
+    const intervalCount = this.activeIntervals.size;
+    if (intervalCount > 0) {
+      const sample = Array.from(this.activeIntervals).slice(0, sampleCount);
+      details.push(`${intervalCount} intervals not cleared (examples: ${sample.join(', ')})`);
       hasLeaks = true;
     }
-    if (stats.activeTimeouts > 0) {
-      details.push(`${stats.activeTimeouts} timeouts not cleared`);
+    const timeoutCount = this.activeTimeouts.size;
+    if (timeoutCount > 0) {
+      const sample = Array.from(this.activeTimeouts).slice(0, sampleCount);
+      details.push(`${timeoutCount} timeouts not cleared (examples: ${sample.join(', ')})`);
       hasLeaks = true;
     }
-    if (stats.activeSubscriptions > 0) {
-      details.push(`${stats.activeSubscriptions} subscriptions not unsubscribed`);
+    const subscriptionCount = this.activeSubscriptions.size;
+    if (subscriptionCount > 0) {
+      details.push(`${subscriptionCount} subscriptions not unsubscribed`);
       hasLeaks = true;
     }
 
