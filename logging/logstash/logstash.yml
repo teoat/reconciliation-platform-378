@@ -1,7 +1,9 @@
 http.host: "0.0.0.0"
 path.config: /usr/share/logstash/pipeline
-pipeline.workers: 1
-pipeline.batch.size: 125
+# Optimized pipeline configuration for better throughput
+pipeline.workers: 2
+pipeline.batch.size: 500
 pipeline.batch.delay: 50
+# pipeline.ordered disabled for better performance (order preservation not required for logs)
 config.reload.automatic: true
 config.reload.interval: 3s

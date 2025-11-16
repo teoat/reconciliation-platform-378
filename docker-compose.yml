@@ -99,7 +99,7 @@ services:
       LOG_FORMAT: json
       CUSTOM_CSP: "default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:2000 ws://localhost:2000 http://localhost:1000 ws://localhost:1000; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
-      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:1000}
       RUST_LOG: ${RUST_LOG:-info}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
@@ -126,10 +126,11 @@ services:
         condition: service_started
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://localhost:2000/health >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:2000/api/health >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
 
   # ==========================================================================
   # FRONTEND (React/Vite)
@@ -244,7 +245,7 @@ services:
       - ./logging/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
     ports:
       - "${LOGSTASH_PORT:-5044}:5044"      # Beats input (required for Filebeat log ingestion)
-      - "${LOGSTASH_HTTP_PORT:-9600}:9600" # HTTP API for monitoring and node stats (required)
+      - "127.0.0.1:${LOGSTASH_HTTP_PORT:-9600}:9600" # HTTP API (localhost only for security)
     networks:
       - reconciliation-network
     depends_on:
@@ -253,6 +254,25 @@ services:
     restart: unless-stopped
     environment:
        - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.5'
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ==========================================================================
   # LOG AGGREGATION: KIBANA
