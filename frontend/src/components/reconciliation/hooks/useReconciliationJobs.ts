@@ -1,9 +1,10 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { logger } from '@/services/logger';
 import { useLoading } from '@/hooks/useLoading';
 import { RetryUtility } from '@/utils/retryUtility';
 import { apiClient } from '@/services/apiClient';
 import { useWebSocketIntegration } from '@/hooks/useWebSocketIntegration';
+import { getErrorMessageFromApiError } from '@/utils/errorExtraction';
 import type { ReconciliationJob, ReconciliationProgress } from '../types';
 import type { BackendReconciliationJob } from '@/services/apiClient/types';
 
@@ -27,7 +28,8 @@ export const useReconciliationJobs = ({
 
   // WebSocket integration
   const wsIntegration = useWebSocketIntegration();
-  const { isConnected, subscribe } = wsIntegration;
+  const { isConnected, subscribe, unsubscribe } = wsIntegration;
+  const jobsRef = useRef<ReconciliationJob[]>([]);
 
   // Map backend job to component type
   const mapBackendJob = useCallback(
@@ -99,6 +101,10 @@ export const useReconciliationJobs = ({
   }, [projectId, withLoading, mapBackendJob]);
 
   // Load job progress
+  useEffect(() => {
+    jobsRef.current = jobs;
+  }, [jobs]);
+
   const loadJobProgress = useCallback(async (jobId: string) => {
     try {
       const response = await apiClient.getReconciliationJobProgress(jobId);
@@ -111,9 +117,12 @@ export const useReconciliationJobs = ({
         setJobProgress(progress as ReconciliationProgress);
       }
     } catch (err) {
-      logger.error('Failed to load job progress:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load job progress';
+      setError(errorMessage);
+      setJobProgress(null);
+      logger.error('Failed to load job progress', { jobId, error: err });
     }
-  }, []);
+  }, [setError]);
 
   // Create reconciliation job
   const createJob = useCallback(
@@ -145,7 +154,7 @@ export const useReconciliationJobs = ({
             matching_rules: [],
             settings: jobData.settings || {},
           };
-            const response = await apiClient.createReconciliationJob(projectId, backendJobData);
+          const response = await apiClient.createReconciliationJob(projectId, backendJobData);
           if (response.error) {
             throw new Error(getErrorMessageFromApiError(response.error));
           }
@@ -187,21 +196,21 @@ export const useReconciliationJobs = ({
             throw new Error(errorMessage);
           }
 
+          let updatedJob: ReconciliationJob | null = null;
+          const startedAt = new Date().toISOString();
           setJobs((prev) =>
-            prev.map((job) =>
-              job.id === jobId
-                ? { ...job, status: 'running' as const, started_at: new Date().toISOString() }
-                : job
-            )
+            prev.map((job) => {
+              if (job.id === jobId) {
+                const nextJob = { ...job, status: 'running' as const, started_at: startedAt };
+                updatedJob = nextJob;
+                return nextJob;
+              }
+              return job;
+            })
           );
 
-          const updatedJob = jobs.find((j) => j.id === jobId);
           if (updatedJob && onJobUpdate) {
-            onJobUpdate({
-              ...updatedJob,
-              status: 'running',
-              started_at: new Date().toISOString(),
-            });
+            onJobUpdate(updatedJob);
           }
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : 'Failed to start job';
@@ -227,13 +236,20 @@ export const useReconciliationJobs = ({
             throw new Error(errorMessage);
           }
 
+          let updatedJob: ReconciliationJob | null = null;
           setJobs((prev) =>
-            prev.map((job) => (job.id === jobId ? { ...job, status: 'cancelled' as const } : job))
+            prev.map((job) => {
+              if (job.id === jobId) {
+                const nextJob = { ...job, status: 'cancelled' as const };
+                updatedJob = nextJob;
+                return nextJob;
+              }
+              return job;
+            })
           );
 
-          const updatedJob = jobs.find((j) => j.id === jobId);
           if (updatedJob && onJobUpdate) {
-            onJobUpdate({ ...updatedJob, status: 'cancelled' });
+            onJobUpdate(updatedJob);
           }
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : 'Failed to stop job';
@@ -279,89 +295,88 @@ export const useReconciliationJobs = ({
   );
 
   // WebSocket event handlers
-  useEffect(() => {
-    if (!isConnected) return;
+    useEffect(() => {
+      if (!isConnected) return;
 
-    // Subscribe to job updates
-    const unsubscribeJobUpdate = subscribe('job_update', (data: unknown) => {
-      const updateData = data as Record<string, unknown> & {
-        job_id?: string;
-        project_id?: string;
-        updates?: Record<string, unknown>;
-      };
-      if (updateData.job_id && updateData.project_id === projectId) {
-        setJobs((prev) =>
-          prev.map((job) =>
-            job.id === updateData.job_id ? { ...job, ...(updateData.updates || {}) } : job
-          )
-        );
-      }
-    });
-
-    // Subscribe to reconciliation progress updates
-    const unsubscribeProgressUpdate = subscribe('reconciliation:progress', (data: unknown) => {
-      const wsData = data as Record<string, unknown> & {
-        jobId?: string;
-        job_id?: string;
-        progress?: number;
-        status?: string;
-        processed_records?: number;
-        matched_records?: number;
-        unmatched_records?: number;
-      };
-      const jobId = (wsData.jobId || wsData.job_id) as string | undefined;
-      if (jobId && jobs.some((j) => j.id === jobId)) {
-        const progressData: ReconciliationProgress = {
-          job_id: jobId,
-          status: (wsData.status as string) || 'running',
-          progress: (wsData.progress as number) || 0,
-          processed_records: (wsData.processed_records as number) || 0,
-          matched_records: (wsData.matched_records as number) || 0,
-          unmatched_records: (wsData.unmatched_records as number) || 0,
-          current_phase: 'processing',
+      const jobUpdateSubscriptionId = subscribe('job_update', (data: unknown) => {
+        const updateData = data as Record<string, unknown> & {
+          job_id?: string;
+          project_id?: string;
+          updates?: Record<string, unknown>;
         };
+        if (updateData.job_id && updateData.project_id === projectId) {
+          setJobs((prev) =>
+            prev.map((job) =>
+              job.id === updateData.job_id ? { ...job, ...(updateData.updates || {}) } : job
+            )
+          );
+        }
+      });
 
-        setJobProgress(progressData);
+      const progressSubscriptionId = subscribe('reconciliation:progress', (data: unknown) => {
+        const wsData = data as Record<string, unknown> & {
+          jobId?: string;
+          job_id?: string;
+          progress?: number;
+          status?: string;
+          processed_records?: number;
+          matched_records?: number;
+          unmatched_records?: number;
+        };
+        const jobId = (wsData.jobId || wsData.job_id) as string | undefined;
+        const currentJobs = jobsRef.current;
+        if (jobId && currentJobs.some((j) => j.id === jobId)) {
+          const progressData: ReconciliationProgress = {
+            job_id: jobId,
+            status: (wsData.status as string) || 'running',
+            progress: (wsData.progress as number) || 0,
+            processed_records: (wsData.processed_records as number) || 0,
+            matched_records: (wsData.matched_records as number) || 0,
+            unmatched_records: (wsData.unmatched_records as number) || 0,
+            current_phase: 'processing',
+          };
 
-        setJobs((prev) =>
-          prev.map((job) => {
-            if (job.id === jobId) {
-              const updatedJob = {
-                ...job,
-                status: progressData.status as
-                  | 'pending'
-                  | 'running'
-                  | 'completed'
-                  | 'failed'
-                  | 'cancelled',
-                progress: progressData.progress,
-                processed_records: progressData.processed_records,
-                matched_records: progressData.matched_records,
-                unmatched_records: progressData.unmatched_records,
-                updated_at: new Date().toISOString(),
-              };
+          setJobProgress(progressData);
 
-              if (progressData.status === 'completed' && job.status !== 'completed' && onJobUpdate) {
-                onJobUpdate(updatedJob);
+          setJobs((prev) =>
+            prev.map((job) => {
+              if (job.id === jobId) {
+                const updatedJob = {
+                  ...job,
+                  status: progressData.status as
+                    | 'pending'
+                    | 'running'
+                    | 'completed'
+                    | 'failed'
+                    | 'cancelled',
+                  progress: progressData.progress,
+                  processed_records: progressData.processed_records,
+                  matched_records: progressData.matched_records,
+                  unmatched_records: progressData.unmatched_records,
+                  updated_at: new Date().toISOString(),
+                };
+
+                if (progressData.status === 'completed' && job.status !== 'completed' && onJobUpdate) {
+                  onJobUpdate(updatedJob);
+                }
+
+                return updatedJob;
               }
+              return job;
+            })
+          );
+        }
+      });
 
-              return updatedJob;
-            }
-            return job;
-          })
-        );
-      }
-    });
-
-    return () => {
-      if (typeof unsubscribeJobUpdate === 'function') {
-        unsubscribeJobUpdate();
-      }
-      if (typeof unsubscribeProgressUpdate === 'function') {
-        unsubscribeProgressUpdate();
-      }
-    };
-  }, [isConnected, projectId, jobs, subscribe, onJobUpdate]);
+      return () => {
+        if (jobUpdateSubscriptionId) {
+          unsubscribe('job_update', jobUpdateSubscriptionId);
+        }
+        if (progressSubscriptionId) {
+          unsubscribe('reconciliation:progress', progressSubscriptionId);
+        }
+      };
+    }, [isConnected, projectId, subscribe, unsubscribe, onJobUpdate]);
 
   // Load jobs on mount
   useEffect(() => {
