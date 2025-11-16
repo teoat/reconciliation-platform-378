@@ -1,5 +1,5 @@
 //! Request ID tracing middleware for the Reconciliation Backend
-//! 
+//!
 //! Generates unique request IDs for each HTTP request to enable distributed tracing
 //! and easier production debugging.
 
@@ -48,34 +48,39 @@ where
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(
+        &self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let service = self.service.clone();
-        
+
         // Generate or retrieve request ID
-        let request_id = req.headers()
+        let request_id = req
+            .headers()
             .get("X-Request-ID")
             .and_then(|h| h.to_str().ok())
             .map(|s| s.to_string())
             .unwrap_or_else(|| Uuid::new_v4().to_string());
-        
+
         // Store request ID in request extensions for access in handlers
         req.extensions_mut().insert(request_id.clone());
-        
+
         Box::pin(async move {
             let res = service.call(req).await?;
-            
+
             // Add request ID to response headers
             let (req, mut res) = res.into_parts();
             res.headers_mut().insert(
                 actix_web::http::header::HeaderName::from_static("x-request-id"),
-                actix_web::http::header::HeaderValue::from_str(&request_id)
-                    .unwrap_or_else(|_| actix_web::http::header::HeaderValue::from_static("unknown")),
+                actix_web::http::header::HeaderValue::from_str(&request_id).unwrap_or_else(|_| {
+                    actix_web::http::header::HeaderValue::from_static("unknown")
+                }),
             );
-            
+
             Ok(ServiceResponse::new(req, res))
         })
     }
@@ -97,4 +102,3 @@ impl RequestIdExt for actix_web::HttpRequest {
         self.extensions().get::<String>().cloned()
     }
 }
-

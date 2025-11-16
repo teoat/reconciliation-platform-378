@@ -1,5 +1,5 @@
 //! Performance monitoring and optimization service
-//! 
+//!
 //! This module provides performance monitoring, caching, and optimization capabilities
 //! including metrics collection, system monitoring, query optimization, and connection pooling.
 
@@ -8,17 +8,17 @@ pub mod monitoring;
 pub mod query_optimizer;
 
 pub use metrics::{
-    MetricsCollector, PerformanceMetrics, RequestMetrics, CacheStats,
-    REQUEST_COUNTER, REQUEST_DURATION, ACTIVE_CONNECTIONS, DATABASE_CONNECTIONS,
-    CACHE_HITS, CACHE_MISSES, RECONCILIATION_JOBS, FILE_UPLOADS,
+    CacheStats, MetricsCollector, PerformanceMetrics, RequestMetrics, ACTIVE_CONNECTIONS,
+    CACHE_HITS, CACHE_MISSES, DATABASE_CONNECTIONS, FILE_UPLOADS, RECONCILIATION_JOBS,
+    REQUEST_COUNTER, REQUEST_DURATION,
 };
-pub use monitoring::{SystemMonitor, SystemMetrics};
+pub use monitoring::{SystemMetrics, SystemMonitor};
 
-pub use query_optimizer::{QueryOptimizer, QueryAnalysis, OptimizationImpact, OptimizationLevel};
+pub use query_optimizer::{OptimizationImpact, OptimizationLevel, QueryAnalysis, QueryOptimizer};
 
-use std::time::Duration;
-use serde_json;
 use crate::errors::AppResult;
+use serde_json;
+use std::time::Duration;
 
 /// Main performance service that combines metrics collection and system monitoring
 pub struct PerformanceService {
@@ -33,39 +33,45 @@ impl PerformanceService {
             system_monitor: SystemMonitor::new(),
         }
     }
-    
+
     pub async fn record_request(&self, request_metrics: RequestMetrics) {
         self.metrics_collector.record_request(request_metrics).await;
     }
-    
+
     pub async fn record_cache_hit(&self) {
         self.metrics_collector.record_cache_hit().await;
     }
-    
+
     pub async fn record_cache_miss(&self) {
         self.metrics_collector.record_cache_miss().await;
     }
-    
+
     pub async fn record_cache_eviction(&self) {
         self.metrics_collector.record_cache_eviction().await;
     }
-    
+
     pub async fn update_active_connections(&self, count: u64) {
-        self.metrics_collector.update_active_connections(count).await;
+        self.metrics_collector
+            .update_active_connections(count)
+            .await;
     }
-    
+
     pub async fn update_database_connections(&self, count: u64) {
-        self.metrics_collector.update_database_connections(count).await;
+        self.metrics_collector
+            .update_database_connections(count)
+            .await;
     }
-    
+
     pub async fn update_reconciliation_jobs(&self, count: u64) {
-        self.metrics_collector.update_reconciliation_jobs(count).await;
+        self.metrics_collector
+            .update_reconciliation_jobs(count)
+            .await;
     }
-    
+
     pub async fn update_file_uploads(&self, count: u64) {
         self.metrics_collector.update_file_uploads(count).await;
     }
-    
+
     pub async fn get_metrics(&self) -> PerformanceMetrics {
         // Clone the data immediately to avoid lifetime issues
         let metrics_data = (*self.metrics_collector.get_metrics().read().await).clone();
@@ -90,21 +96,21 @@ impl PerformanceService {
         } else {
             0.0
         };
-        
+
         let error_rate = if total_requests > 0 {
             error_count as f64 / total_requests as f64
         } else {
             0.0
         };
-        
+
         let cache_hit_rate = if cache_stats_data.hits + cache_stats_data.misses > 0 {
             cache_stats_data.hits as f64 / (cache_stats_data.hits + cache_stats_data.misses) as f64
         } else {
             0.0
         };
-        
+
         let system_metrics = self.system_monitor.get_system_metrics();
-        
+
         PerformanceMetrics {
             request_count: total_requests,
             average_response_time,
@@ -123,11 +129,11 @@ impl PerformanceService {
             timestamp: system_metrics.timestamp,
         }
     }
-    
+
     pub async fn get_prometheus_metrics(&self) -> String {
         self.metrics_collector.get_prometheus_metrics().await
     }
-    
+
     pub async fn get_comprehensive_metrics(&self) -> AppResult<serde_json::Value> {
         // Clone the data immediately to avoid lifetime issues
         let metrics_data = (*self.metrics_collector.get_metrics().read().await).clone();
@@ -143,16 +149,16 @@ impl PerformanceService {
                 request_count += 1;
             }
         }
-        
+
         let average_response_time = if request_count > 0 {
             total_duration.as_secs_f64() / request_count as f64
         } else {
             0.0
         };
-        
+
         // Calculate error rate (simplified - would need to track error responses)
         let error_rate = 0.0; // Placeholder - would need to track error responses
-        
+
         // Calculate cache hit rate
         let total_cache_requests = cache_stats_data.hits + cache_stats_data.misses;
         let cache_hit_rate = if total_cache_requests > 0 {
@@ -160,18 +166,18 @@ impl PerformanceService {
         } else {
             0.0
         };
-        
+
         // Get system metrics
         let system_metrics = self.system_monitor.get_system_metrics();
-        
+
         // Get Prometheus metrics
         let prometheus_metrics = self.get_prometheus_metrics().await;
-        
+
         // Extract metric values before json! macro (can't use blocks in json! macro)
         let active_connections = metrics::ACTIVE_CONNECTIONS.get() as u64;
         let database_connections = metrics::DATABASE_CONNECTIONS.get() as u64;
         let timestamp = chrono::Utc::now().to_rfc3339();
-        
+
         let comprehensive_metrics = serde_json::json!({
             "performance": {
                 "request_count": request_count,
@@ -194,7 +200,7 @@ impl PerformanceService {
             "prometheus": prometheus_metrics,
             "timestamp": chrono::Utc::now().to_rfc3339()
         });
-        
+
         Ok(comprehensive_metrics)
     }
 }
@@ -220,40 +226,40 @@ impl DatabasePool {
             max_lifetime: Duration::from_secs(1800), // 30 minutes
         }
     }
-    
+
     pub fn optimized_for_reconciliation() -> Self {
         Self {
-            max_connections: 50,        // Increased for high concurrency
-            min_connections: 10,        // Higher minimum for faster response
-            connection_timeout: Duration::from_secs(10),  // Faster timeout
+            max_connections: 50,                         // Increased for high concurrency
+            min_connections: 10,                         // Higher minimum for faster response
+            connection_timeout: Duration::from_secs(10), // Faster timeout
             idle_timeout: Duration::from_secs(300),      // Shorter idle time
             acquire_timeout: Duration::from_secs(5),     // Faster acquire
             max_lifetime: Duration::from_secs(1800),     // 30 minutes
         }
     }
-    
+
     pub fn with_max_connections(mut self, max: u32) -> Self {
         self.max_connections = max;
         self
     }
-    
+
     pub fn with_min_connections(mut self, min: u32) -> Self {
         self.min_connections = min;
         self
     }
-    
+
     pub fn with_timeouts(mut self, connection: Duration, idle: Duration) -> Self {
         self.connection_timeout = connection;
         self.idle_timeout = idle;
         self
     }
-    
+
     pub fn with_advanced_timeouts(
-        mut self, 
-        connection: Duration, 
-        idle: Duration, 
+        mut self,
+        connection: Duration,
+        idle: Duration,
         acquire: Duration,
-        lifetime: Duration
+        lifetime: Duration,
     ) -> Self {
         self.connection_timeout = connection;
         self.idle_timeout = idle;
@@ -280,12 +286,12 @@ impl RedisPool {
             retry_attempts: 3,
         }
     }
-    
+
     pub fn with_max_connections(mut self, max: u32) -> Self {
         self.max_connections = max;
         self
     }
-    
+
     pub fn with_timeouts(mut self, connection: Duration, command: Duration) -> Self {
         self.connection_timeout = connection;
         self.command_timeout = command;
@@ -308,17 +314,17 @@ impl FileProcessor {
             buffer_size: 65536, // 64KB buffer
         }
     }
-    
+
     pub fn with_chunk_size(mut self, size: usize) -> Self {
         self.chunk_size = size;
         self
     }
-    
+
     pub fn with_max_concurrent(mut self, max: usize) -> Self {
         self.max_concurrent_files = max;
         self
     }
-    
+
     pub fn with_buffer_size(mut self, size: usize) -> Self {
         self.buffer_size = size;
         self
@@ -354,4 +360,3 @@ impl Default for FileProcessor {
         Self::new()
     }
 }
-

@@ -2,17 +2,17 @@
 //!
 //! This module contains all the data structures used by the internationalization service.
 
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// Supported language
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub struct Language {
-    pub code: String, // ISO 639-1 code (e.g., "en", "es", "fr")
-    pub name: String, // Display name (e.g., "English", "Spanish", "French")
+    pub code: String,        // ISO 639-1 code (e.g., "en", "es", "fr")
+    pub name: String,        // Display name (e.g., "English", "Spanish", "French")
     pub native_name: String, // Native name (e.g., "English", "Español", "Français")
-    pub is_rtl: bool, // Right-to-left language
+    pub is_rtl: bool,        // Right-to-left language
     pub is_default: bool,
 }
 

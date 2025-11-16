@@ -1,22 +1,18 @@
 //! Metrics module for the Reconciliation Backend
-//! 
+//!
 //! Provides Prometheus metrics for monitoring:
 //! - Security metrics (rate limiting, CSRF, auth)
 //! - Database metrics (query duration, pool stats)
 //! - Cache metrics (hits, misses, hit rate)
 //! - Application metrics (request counts, errors)
 
-use std::sync::atomic::{AtomicU64, Ordering};
-use std::sync::Arc;
 use once_cell::sync::Lazy;
 use prometheus::{
-    Registry, Encoder, TextEncoder,
-    HistogramVec, Histogram,
-    CounterVec, Counter,
-    GaugeVec, Gauge,
-    opts,
-    histogram_opts,
+    histogram_opts, opts, Counter, CounterVec, Encoder, Gauge, GaugeVec, Histogram, HistogramVec,
+    Registry, TextEncoder,
 };
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::Arc;
 
 /// Security metrics tracking
 #[derive(Clone)]
@@ -52,7 +48,8 @@ impl SecurityMetrics {
     }
 
     pub fn record_unauthorized_attempt(&self) {
-        self.unauthorized_access_attempts.fetch_add(1, Ordering::Relaxed);
+        self.unauthorized_access_attempts
+            .fetch_add(1, Ordering::Relaxed);
     }
 
     pub fn get_prometheus_metrics(&self) -> String {
@@ -100,7 +97,7 @@ impl PiiMasker {
     /// Mask UUIDs (keep first and last few chars)
     pub fn mask_uuid(uuid: &str) -> String {
         if uuid.len() > 8 {
-            format!("{}***{}", &uuid[..4], &uuid[uuid.len()-4..])
+            format!("{}***{}", &uuid[..4], &uuid[uuid.len() - 4..])
         } else {
             String::from("***")
         }
@@ -141,8 +138,9 @@ pub static DB_QUERY_DURATION: Lazy<HistogramVec> = Lazy::new(|| {
             "Database query duration in seconds"
         )
         .buckets(vec![0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 2.0, 5.0]),
-        &["route", "operation", "table"]
-    ).unwrap_or_else(|e| {
+        &["route", "operation", "table"],
+    )
+    .unwrap_or_else(|e| {
         log::error!("Failed to create DB_QUERY_DURATION metric: {}", e);
         panic!("Failed to initialize metrics: {}", e);
     })
@@ -151,12 +149,10 @@ pub static DB_QUERY_DURATION: Lazy<HistogramVec> = Lazy::new(|| {
 /// Cache operation counters
 pub static CACHE_HITS: Lazy<CounterVec> = Lazy::new(|| {
     CounterVec::new(
-        opts!(
-            "reconciliation_cache_hits_total",
-            "Total cache hits"
-        ),
-        &["cache_level", "key_type"]
-    ).unwrap_or_else(|e| {
+        opts!("reconciliation_cache_hits_total", "Total cache hits"),
+        &["cache_level", "key_type"],
+    )
+    .unwrap_or_else(|e| {
         log::error!("Failed to create CACHE_HITS metric: {}", e);
         panic!("Failed to initialize metrics: {}", e);
     })
@@ -164,12 +160,10 @@ pub static CACHE_HITS: Lazy<CounterVec> = Lazy::new(|| {
 
 pub static CACHE_MISSES: Lazy<CounterVec> = Lazy::new(|| {
     CounterVec::new(
-        opts!(
-            "reconciliation_cache_misses_total",
-            "Total cache misses"
-        ),
-        &["cache_level", "key_type"]
-    ).unwrap_or_else(|e| {
+        opts!("reconciliation_cache_misses_total", "Total cache misses"),
+        &["cache_level", "key_type"],
+    )
+    .unwrap_or_else(|e| {
         log::error!("Failed to create CACHE_MISSES metric: {}", e);
         panic!("Failed to initialize metrics: {}", e);
     })
@@ -177,36 +171,33 @@ pub static CACHE_MISSES: Lazy<CounterVec> = Lazy::new(|| {
 
 /// Connection pool metrics
 pub static DB_POOL_ACTIVE: Lazy<Gauge> = Lazy::new(|| {
-    Gauge::with_opts(
-        opts!(
-            "reconciliation_db_pool_connections_active",
-            "Active database connections in pool"
-        )
-    ).unwrap_or_else(|e| {
+    Gauge::with_opts(opts!(
+        "reconciliation_db_pool_connections_active",
+        "Active database connections in pool"
+    ))
+    .unwrap_or_else(|e| {
         log::error!("Failed to create DB_POOL_ACTIVE metric: {}", e);
         panic!("Failed to initialize metrics: {}", e);
     })
 });
 
 pub static DB_POOL_IDLE: Lazy<Gauge> = Lazy::new(|| {
-    Gauge::with_opts(
-        opts!(
-            "reconciliation_db_pool_connections_idle",
-            "Idle database connections in pool"
-        )
-    ).unwrap_or_else(|e| {
+    Gauge::with_opts(opts!(
+        "reconciliation_db_pool_connections_idle",
+        "Idle database connections in pool"
+    ))
+    .unwrap_or_else(|e| {
         log::error!("Failed to create DB_POOL_IDLE metric: {}", e);
         panic!("Failed to initialize metrics: {}", e);
     })
 });
 
 pub static DB_POOL_SIZE: Lazy<Gauge> = Lazy::new(|| {
-    Gauge::with_opts(
-        opts!(
-            "reconciliation_db_pool_connections_total",
-            "Total database connections in pool"
-        )
-    ).unwrap_or_else(|e| {
+    Gauge::with_opts(opts!(
+        "reconciliation_db_pool_connections_total",
+        "Total database connections in pool"
+    ))
+    .unwrap_or_else(|e| {
         log::error!("Failed to create DB_POOL_SIZE metric: {}", e);
         panic!("Failed to initialize metrics: {}", e);
     })
@@ -214,12 +205,11 @@ pub static DB_POOL_SIZE: Lazy<Gauge> = Lazy::new(|| {
 
 /// Database pool exhaustion counter
 pub static DB_POOL_EXHAUSTION: Lazy<Counter> = Lazy::new(|| {
-    Counter::with_opts(
-        opts!(
-            "reconciliation_db_pool_exhaustion_total",
-            "Total number of database pool exhaustion events"
-        )
-    ).unwrap_or_else(|e| {
+    Counter::with_opts(opts!(
+        "reconciliation_db_pool_exhaustion_total",
+        "Total number of database pool exhaustion events"
+    ))
+    .unwrap_or_else(|e| {
         log::error!("Failed to create DB_POOL_EXHAUSTION metric: {}", e);
         panic!("Failed to initialize metrics: {}", e);
     })
@@ -228,12 +218,10 @@ pub static DB_POOL_EXHAUSTION: Lazy<Counter> = Lazy::new(|| {
 /// Request metrics
 pub static HTTP_REQUESTS_TOTAL: Lazy<CounterVec> = Lazy::new(|| {
     CounterVec::new(
-        opts!(
-            "reconciliation_http_requests_total",
-            "Total HTTP requests"
-        ),
-        &["method", "route", "status"]
-    ).unwrap_or_else(|e| {
+        opts!("reconciliation_http_requests_total", "Total HTTP requests"),
+        &["method", "route", "status"],
+    )
+    .unwrap_or_else(|e| {
         log::error!("Failed to create HTTP_REQUESTS_TOTAL metric: {}", e);
         panic!("Failed to initialize metrics: {}", e);
     })
@@ -245,9 +233,12 @@ pub static HTTP_REQUEST_DURATION: Lazy<HistogramVec> = Lazy::new(|| {
             "reconciliation_http_request_duration_seconds",
             "HTTP request duration in seconds"
         )
-        .buckets(vec![0.001, 0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0]),
-        &["method", "route"]
-    ).unwrap_or_else(|e| {
+        .buckets(vec![
+            0.001, 0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0,
+        ]),
+        &["method", "route"],
+    )
+    .unwrap_or_else(|e| {
         log::error!("Failed to create HTTP_REQUEST_DURATION metric: {}", e);
         panic!("Failed to initialize metrics: {}", e);
     })
@@ -260,8 +251,9 @@ pub static CIRCUIT_BREAKER_STATE: Lazy<GaugeVec> = Lazy::new(|| {
             "reconciliation_circuit_breaker_state",
             "Circuit breaker state (0=closed, 1=half-open, 2=open)"
         ),
-        &["service"]
-    ).unwrap_or_else(|e| {
+        &["service"],
+    )
+    .unwrap_or_else(|e| {
         log::error!("Failed to create CIRCUIT_BREAKER_STATE metric: {}", e);
         panic!("Failed to initialize metrics: {}", e);
     })
@@ -273,8 +265,9 @@ pub static CIRCUIT_BREAKER_FAILURES: Lazy<CounterVec> = Lazy::new(|| {
             "reconciliation_circuit_breaker_failures_total",
             "Total circuit breaker failures"
         ),
-        &["service"]
-    ).unwrap_or_else(|e| {
+        &["service"],
+    )
+    .unwrap_or_else(|e| {
         log::error!("Failed to create CIRCUIT_BREAKER_FAILURES metric: {}", e);
         panic!("Failed to initialize metrics: {}", e);
     })
@@ -286,8 +279,9 @@ pub static CIRCUIT_BREAKER_SUCCESSES: Lazy<CounterVec> = Lazy::new(|| {
             "reconciliation_circuit_breaker_successes_total",
             "Total circuit breaker successes"
         ),
-        &["service"]
-    ).unwrap_or_else(|e| {
+        &["service"],
+    )
+    .unwrap_or_else(|e| {
         log::error!("Failed to create CIRCUIT_BREAKER_SUCCESSES metric: {}", e);
         panic!("Failed to initialize metrics: {}", e);
     })
@@ -299,8 +293,9 @@ pub static CIRCUIT_BREAKER_REQUESTS: Lazy<CounterVec> = Lazy::new(|| {
             "reconciliation_circuit_breaker_requests_total",
             "Total circuit breaker requests"
         ),
-        &["service"]
-    ).unwrap_or_else(|e| {
+        &["service"],
+    )
+    .unwrap_or_else(|e| {
         log::error!("Failed to create CIRCUIT_BREAKER_REQUESTS metric: {}", e);
         panic!("Failed to initialize metrics: {}", e);
     })
@@ -309,7 +304,7 @@ pub static CIRCUIT_BREAKER_REQUESTS: Lazy<CounterVec> = Lazy::new(|| {
 /// Register all metrics with Prometheus registry
 pub fn register_all_metrics() -> Registry {
     let registry = Registry::new();
-    
+
     // Register all metrics with error logging (avoid panics in production)
     for metric in [
         Box::new(DB_QUERY_DURATION.clone()) as Box<dyn prometheus::core::Collector>,
@@ -330,7 +325,7 @@ pub fn register_all_metrics() -> Registry {
             log::error!("Failed to register Prometheus metric: {}", e);
         }
     }
-    
+
     registry
 }
 
@@ -360,7 +355,9 @@ pub fn record_cache_hit(cache_level: &str, key_type: &str) {
 
 /// Helper to record cache miss
 pub fn record_cache_miss(cache_level: &str, key_type: &str) {
-    CACHE_MISSES.with_label_values(&[cache_level, key_type]).inc();
+    CACHE_MISSES
+        .with_label_values(&[cache_level, key_type])
+        .inc();
 }
 
 /// Helper to update pool metrics

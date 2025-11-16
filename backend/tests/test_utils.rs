@@ -6,7 +6,8 @@ use serde_json::json;
 use uuid::Uuid;
 
 // Test configuration
-pub const TEST_DATABASE_URL: &str = "postgresql://test_user:test_pass@localhost:5432/reconciliation_test";
+pub const TEST_DATABASE_URL: &str =
+    "postgresql://test_user:test_pass@localhost:5432/reconciliation_test";
 
 // ============================================================================
 // TEST FIXTURES

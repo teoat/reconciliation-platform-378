@@ -1,13 +1,15 @@
 //! Alert management implementation
 
+use chrono::Utc;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
-use chrono::Utc;
 
 use crate::errors::{AppError, AppResult};
-use crate::services::monitoring::types::{AlertDefinition, AlertInstance, AlertSeverity, AlertStatus};
+use crate::services::monitoring::types::{
+    AlertDefinition, AlertInstance, AlertSeverity, AlertStatus,
+};
 
 /// Alert manager
 pub struct AlertManager {
@@ -50,8 +52,15 @@ impl AlertManager {
     }
 
     /// Trigger an alert
-    pub async fn trigger_alert(&self, alert_id: &str, severity: AlertSeverity, message: String) -> AppResult<Uuid> {
-        let definition = self.get_alert_definition(alert_id).await
+    pub async fn trigger_alert(
+        &self,
+        alert_id: &str,
+        severity: AlertSeverity,
+        message: String,
+    ) -> AppResult<Uuid> {
+        let definition = self
+            .get_alert_definition(alert_id)
+            .await
             .ok_or_else(|| AppError::ValidationError("Alert definition not found".to_string()))?;
 
         let message_clone = message.clone();
@@ -66,7 +75,10 @@ impl AlertManager {
         };
 
         let alert_id = alert_instance.id;
-        self.active_alerts.write().await.insert(alert_id, alert_instance);
+        self.active_alerts
+            .write()
+            .await
+            .insert(alert_id, alert_instance);
 
         // Send notifications
         self.send_notifications(&definition, &message_clone).await?;
@@ -77,7 +89,7 @@ impl AlertManager {
     /// Resolve an alert
     pub async fn resolve_alert(&self, alert_instance_id: Uuid) -> AppResult<()> {
         let mut alerts = self.active_alerts.write().await;
-        if let Some(mut alert) = alerts.get_mut(&alert_instance_id) {
+        if let Some(alert) = alerts.get_mut(&alert_instance_id) {
             alert.status = AlertStatus::Resolved;
             alert.resolved_at = Some(Utc::now());
         }
@@ -87,17 +99,27 @@ impl AlertManager {
     /// List active alerts
     pub async fn list_active_alerts(&self) -> Vec<AlertInstance> {
         let alerts = self.active_alerts.read().await;
-        alerts.values()
+        alerts
+            .values()
             .filter(|a| matches!(a.status, AlertStatus::Active))
             .cloned()
             .collect()
     }
 
     /// Send notifications for an alert
-    async fn send_notifications(&self, definition: &AlertDefinition, message: &str) -> AppResult<()> {
+    async fn send_notifications(
+        &self,
+        definition: &AlertDefinition,
+        message: &str,
+    ) -> AppResult<()> {
         for channel in &definition.notification_channels {
             // In a real implementation, this would send notifications via the configured channels
-            log::info!("Sending alert notification via {} to {}: {}", channel.type_, channel.endpoint, message);
+            log::info!(
+                "Sending alert notification via {} to {}: {}",
+                channel.type_,
+                channel.endpoint,
+                message
+            );
         }
         Ok(())
     }
@@ -108,4 +130,3 @@ impl Default for AlertManager {
         Self::new()
     }
 }
-

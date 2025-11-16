@@ -1,20 +1,18 @@
 // backend/src/services/internationalization.rs
 use crate::errors::{AppError, AppResult};
-use std::collections::HashMap;
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use log::info;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use log::info;
-use serde::{Serialize, Deserialize};
+use uuid::Uuid;
 
 // Re-export types from models for backward compatibility
-pub use crate::services::internationalization_models::*;
 use crate::services::internationalization_data::{
-    get_default_languages, get_default_locales, get_default_timezones, get_default_translations
+    get_default_languages, get_default_locales, get_default_timezones, get_default_translations,
 };
-
-
+pub use crate::services::internationalization_models::*;
 
 /// Number format configuration
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
@@ -33,10 +31,6 @@ pub struct CurrencyFormat {
     pub decimal_places: usize,
     pub symbol_spacing: bool,
 }
-
-
-
-
 
 /// Translation request
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -57,8 +51,6 @@ pub struct TranslationResponse {
     pub target_language: String,
     pub alternatives: Vec<String>,
 }
-
-
 
 /// Localization context
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -89,10 +81,10 @@ impl InternationalizationService {
             timezones: Arc::new(RwLock::new(HashMap::new())),
             translation_cache: Arc::new(RwLock::new(HashMap::new())),
         };
-        
+
         // Initialize with default data
         service.initialize_defaults().await;
-        
+
         service
     }
 
@@ -100,17 +92,26 @@ impl InternationalizationService {
     async fn initialize_defaults(&mut self) {
         // Initialize languages
         for language in get_default_languages() {
-            self.languages.write().await.insert(language.code.clone(), language);
+            self.languages
+                .write()
+                .await
+                .insert(language.code.clone(), language);
         }
 
         // Initialize locales
         for locale in get_default_locales() {
-            self.locales.write().await.insert(locale.code.clone(), locale);
+            self.locales
+                .write()
+                .await
+                .insert(locale.code.clone(), locale);
         }
 
         // Initialize timezones
         for timezone in get_default_timezones() {
-            self.timezones.write().await.insert(timezone.code.clone(), timezone);
+            self.timezones
+                .write()
+                .await
+                .insert(timezone.code.clone(), timezone);
         }
 
         // Initialize translations
@@ -120,12 +121,12 @@ impl InternationalizationService {
         }
     }
 
-
-
-
     /// Add language
     pub async fn add_language(&self, language: Language) -> AppResult<()> {
-        self.languages.write().await.insert(language.code.clone(), language);
+        self.languages
+            .write()
+            .await
+            .insert(language.code.clone(), language);
         Ok(())
     }
 
@@ -143,7 +144,10 @@ impl InternationalizationService {
 
     /// Add locale
     pub async fn add_locale(&self, locale: Locale) -> AppResult<()> {
-        self.locales.write().await.insert(locale.code.clone(), locale);
+        self.locales
+            .write()
+            .await
+            .insert(locale.code.clone(), locale);
         Ok(())
     }
 
@@ -167,9 +171,13 @@ impl InternationalizationService {
     }
 
     /// Get translation
-    pub async fn get_translation(&self, key: &str, language_code: &str) -> AppResult<Option<String>> {
+    pub async fn get_translation(
+        &self,
+        key: &str,
+        language_code: &str,
+    ) -> AppResult<Option<String>> {
         let cache_key = format!("{}:{}", language_code, key);
-        
+
         // Check cache first
         {
             let cache = self.translation_cache.read().await;
@@ -181,10 +189,13 @@ impl InternationalizationService {
         // Check translations
         let translation_key = format!("{}:{}", language_code, key);
         let translations = self.translations.read().await;
-        
+
         if let Some(translation) = translations.get(&translation_key) {
             // Cache the result
-            self.translation_cache.write().await.insert(cache_key, translation.value.clone());
+            self.translation_cache
+                .write()
+                .await
+                .insert(cache_key, translation.value.clone());
             Ok(Some(translation.value.clone()))
         } else {
             // Fallback to default language (English)
@@ -202,12 +213,18 @@ impl InternationalizationService {
     }
 
     /// Translate text
-    pub async fn translate_text(&self, request: TranslationRequest) -> AppResult<TranslationResponse> {
+    pub async fn translate_text(
+        &self,
+        request: TranslationRequest,
+    ) -> AppResult<TranslationResponse> {
         // In a real implementation, this would use a translation service like Google Translate, DeepL, etc.
         // For now, we'll simulate this with a simple lookup
-        
-        let cache_key = format!("{}:{}:{}", request.source_language, request.target_language, request.text);
-        
+
+        let cache_key = format!(
+            "{}:{}:{}",
+            request.source_language, request.target_language, request.text
+        );
+
         // Check cache first
         {
             let cache = self.translation_cache.read().await;
@@ -254,7 +271,10 @@ impl InternationalizationService {
         };
 
         // Cache the result
-        self.translation_cache.write().await.insert(cache_key, translated_text.clone());
+        self.translation_cache
+            .write()
+            .await
+            .insert(cache_key, translated_text.clone());
 
         Ok(TranslationResponse {
             translated_text,
@@ -306,7 +326,15 @@ impl InternationalizationService {
 
             for &ch in chars.iter().rev() {
                 if count > 0 && count % 3 == 0 {
-                    result.insert(0, locale.number_format.thousands_separator.chars().next().unwrap_or(','));
+                    result.insert(
+                        0,
+                        locale
+                            .number_format
+                            .thousands_separator
+                            .chars()
+                            .next()
+                            .unwrap_or(','),
+                    );
                 }
                 result.insert(0, ch);
                 count += 1;
@@ -327,20 +355,32 @@ impl InternationalizationService {
         let locales = self.locales.read().await;
         if let Some(locale) = locales.get(locale_code) {
             let formatted_number = self.format_number(amount, locale_code).await?;
-            
+
             match locale.currency_format.position {
                 CurrencyPosition::Before => {
                     if locale.currency_format.symbol_spacing {
-                        Ok(format!("{} {}", locale.currency_format.symbol, formatted_number))
+                        Ok(format!(
+                            "{} {}",
+                            locale.currency_format.symbol, formatted_number
+                        ))
                     } else {
-                        Ok(format!("{}{}", locale.currency_format.symbol, formatted_number))
+                        Ok(format!(
+                            "{}{}",
+                            locale.currency_format.symbol, formatted_number
+                        ))
                     }
                 }
                 CurrencyPosition::After => {
                     if locale.currency_format.symbol_spacing {
-                        Ok(format!("{} {}", formatted_number, locale.currency_format.symbol))
+                        Ok(format!(
+                            "{} {}",
+                            formatted_number, locale.currency_format.symbol
+                        ))
                     } else {
-                        Ok(format!("{}{}", formatted_number, locale.currency_format.symbol))
+                        Ok(format!(
+                            "{}{}",
+                            formatted_number, locale.currency_format.symbol
+                        ))
                     }
                 }
             }
@@ -351,10 +391,15 @@ impl InternationalizationService {
     }
 
     /// Convert timezone
-    pub async fn convert_timezone(&self, datetime: DateTime<Utc>, from_tz: &str, to_tz: &str) -> AppResult<DateTime<Utc>> {
+    pub async fn convert_timezone(
+        &self,
+        datetime: DateTime<Utc>,
+        from_tz: &str,
+        to_tz: &str,
+    ) -> AppResult<DateTime<Utc>> {
         // In a real implementation, this would use chrono-tz
         // For now, we'll simulate this
-        
+
         let timezones = self.timezones.read().await;
         let from_timezone = timezones.get(from_tz);
         let to_timezone = timezones.get(to_tz);
@@ -363,7 +408,10 @@ impl InternationalizationService {
             let offset_diff = to.offset_seconds - from.offset_seconds;
             Ok(datetime + chrono::Duration::seconds(offset_diff as i64))
         } else {
-            Err(AppError::Validation(format!("Invalid timezone: {} or {}", from_tz, to_tz)))
+            Err(AppError::Validation(format!(
+                "Invalid timezone: {} or {}",
+                from_tz, to_tz
+            )))
         }
     }
 
@@ -383,21 +431,38 @@ impl InternationalizationService {
     pub async fn detect_language(&self, text: &str) -> AppResult<String> {
         // In a real implementation, this would use a language detection library
         // For now, we'll use simple heuristics
-        
+
         let text_lower = text.to_lowercase();
-        
+
         // Check for common English words
-        let english_words = ["the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by"];
-        let english_count = english_words.iter().filter(|word| text_lower.contains(*word)).count();
-        
+        let english_words = [
+            "the", "and", "or", "but", "in", "on", "at", "to", "for", "of", "with", "by",
+        ];
+        let english_count = english_words
+            .iter()
+            .filter(|word| text_lower.contains(*word))
+            .count();
+
         // Check for common Spanish words
-        let spanish_words = ["el", "la", "de", "que", "y", "a", "en", "un", "es", "se", "no", "te", "lo", "le", "da", "su", "por", "son", "con", "para"];
-        let spanish_count = spanish_words.iter().filter(|word| text_lower.contains(*word)).count();
-        
+        let spanish_words = [
+            "el", "la", "de", "que", "y", "a", "en", "un", "es", "se", "no", "te", "lo", "le",
+            "da", "su", "por", "son", "con", "para",
+        ];
+        let spanish_count = spanish_words
+            .iter()
+            .filter(|word| text_lower.contains(*word))
+            .count();
+
         // Check for common French words
-        let french_words = ["le", "la", "de", "et", "à", "un", "il", "que", "ne", "se", "ce", "pas", "dans", "du", "pour", "par", "sur", "avec", "une", "être"];
-        let french_count = french_words.iter().filter(|word| text_lower.contains(*word)).count();
-        
+        let french_words = [
+            "le", "la", "de", "et", "à", "un", "il", "que", "ne", "se", "ce", "pas", "dans", "du",
+            "pour", "par", "sur", "avec", "une", "être",
+        ];
+        let french_count = french_words
+            .iter()
+            .filter(|word| text_lower.contains(*word))
+            .count();
+
         if english_count > spanish_count && english_count > french_count {
             Ok("en".to_string())
         } else if spanish_count > french_count {
@@ -413,7 +478,7 @@ impl InternationalizationService {
     pub async fn get_localization_context(&self, user_id: Uuid) -> AppResult<LocalizationContext> {
         // In a real implementation, this would get user preferences from database
         // For now, we'll return default context
-        
+
         Ok(LocalizationContext {
             language: "en".to_string(),
             locale: "en-US".to_string(),
@@ -425,10 +490,17 @@ impl InternationalizationService {
     }
 
     /// Update user localization preferences
-    pub async fn update_user_localization(&self, user_id: Uuid, context: LocalizationContext) -> AppResult<()> {
+    pub async fn update_user_localization(
+        &self,
+        user_id: Uuid,
+        context: LocalizationContext,
+    ) -> AppResult<()> {
         // In a real implementation, this would update user preferences in database
         // For now, we'll just log the update
-        info!("Updated localization context for user {}: {:?}", user_id, context);
+        info!(
+            "Updated localization context for user {}: {:?}",
+            user_id, context
+        );
         Ok(())
     }
 
@@ -442,16 +514,19 @@ impl InternationalizationService {
     pub async fn get_translation_stats(&self) -> AppResult<TranslationStats> {
         let translations = self.translations.read().await;
         let cache = self.translation_cache.read().await;
-        
+
         let mut stats = TranslationStats::default();
         stats.total_translations = translations.len() as u32;
         stats.cached_translations = cache.len() as u32;
-        
+
         // Count translations by language
         for translation in translations.values() {
-            *stats.translations_by_language.entry(translation.language_code.clone()).or_insert(0) += 1;
+            *stats
+                .translations_by_language
+                .entry(translation.language_code.clone())
+                .or_insert(0) += 1;
         }
-        
+
         Ok(stats)
     }
 }
@@ -484,29 +559,44 @@ mod tests {
     #[tokio::test]
     async fn test_internationalization_service() {
         let service = InternationalizationService::new().await;
-        
+
         // Test getting language
-        let language = service.get_language("en").await.expect("Failed to get language");
+        let language = service
+            .get_language("en")
+            .await
+            .expect("Failed to get language");
         assert!(language.is_some());
         assert_eq!(language.expect("Expected language").code, "en");
-        
+
         // Test listing languages
-        let languages = service.list_languages().await.expect("Failed to list languages");
+        let languages = service
+            .list_languages()
+            .await
+            .expect("Failed to list languages");
         assert!(!languages.is_empty());
-        
+
         // Test getting locale
-        let locale = service.get_locale("en-US").await.expect("Failed to get locale");
+        let locale = service
+            .get_locale("en-US")
+            .await
+            .expect("Failed to get locale");
         assert!(locale.is_some());
         assert_eq!(locale.expect("Expected locale").code, "en-US");
-        
+
         // Test getting translation
-        let translation = service.get_translation("welcome", "en").await.expect("Failed to get translation");
+        let translation = service
+            .get_translation("welcome", "en")
+            .await
+            .expect("Failed to get translation");
         assert_eq!(translation, Some("Welcome".to_string()));
-        
+
         // Test translation fallback
-        let translation = service.get_translation("welcome", "es").await.expect("Failed to get translation");
+        let translation = service
+            .get_translation("welcome", "es")
+            .await
+            .expect("Failed to get translation");
         assert_eq!(translation, Some("Bienvenido".to_string()));
-        
+
         // Test text translation
         let request = TranslationRequest {
             text: "Welcome".to_string(),
@@ -515,37 +605,55 @@ mod tests {
             context: None,
             domain: None,
         };
-        
-        let response = service.translate_text(request).await.expect("Failed to translate text");
+
+        let response = service
+            .translate_text(request)
+            .await
+            .expect("Failed to translate text");
         assert_eq!(response.translated_text, "Bienvenido");
-        
+
         // Test date formatting
         let date = Utc::now();
-        let formatted_date = service.format_date(date, "en-US").await.expect("Failed to format date");
+        let formatted_date = service
+            .format_date(date, "en-US")
+            .await
+            .expect("Failed to format date");
         assert!(!formatted_date.is_empty());
-        
+
         // Test number formatting
-        let formatted_number = service.format_number(1234.56, "en-US").await.expect("Failed to format number");
+        let formatted_number = service
+            .format_number(1234.56, "en-US")
+            .await
+            .expect("Failed to format number");
         assert!(formatted_number.contains("1,234"));
-        
+
         // Test currency formatting
-        let formatted_currency = service.format_currency(1234.56, "en-US").await.expect("Failed to format currency");
+        let formatted_currency = service
+            .format_currency(1234.56, "en-US")
+            .await
+            .expect("Failed to format currency");
         assert!(formatted_currency.contains("$"));
-        
+
         // Test language detection
-        let detected_language = service.detect_language("Hello world").await.expect("Failed to detect language");
+        let detected_language = service
+            .detect_language("Hello world")
+            .await
+            .expect("Failed to detect language");
         assert_eq!(detected_language, "en");
-        
+
         // Test timezone conversion
         let datetime = Utc::now();
-        let converted = service.convert_timezone(datetime, "UTC", "America/New_York").await.expect("Failed to convert timezone");
+        let converted = service
+            .convert_timezone(datetime, "UTC", "America/New_York")
+            .await
+            .expect("Failed to convert timezone");
         assert!(converted != datetime);
     }
 
     #[tokio::test]
     async fn test_translation_management() {
         let service = InternationalizationService::new().await;
-        
+
         // Test adding translation
         let translation = Translation {
             key: "test_key".to_string(),
@@ -556,38 +664,62 @@ mod tests {
             created_at: Utc::now(),
             updated_at: Utc::now(),
         };
-        
-        service.add_translation(translation).await.expect("Failed to add translation");
-        
+
+        service
+            .add_translation(translation)
+            .await
+            .expect("Failed to add translation");
+
         // Test getting added translation
-        let retrieved = service.get_translation("test_key", "en").await.expect("Failed to get translation");
+        let retrieved = service
+            .get_translation("test_key", "en")
+            .await
+            .expect("Failed to get translation");
         assert_eq!(retrieved, Some("Test Value".to_string()));
-        
+
         // Test clearing cache
-        service.clear_translation_cache().await.expect("Failed to clear cache");
-        
+        service
+            .clear_translation_cache()
+            .await
+            .expect("Failed to clear cache");
+
         // Test getting translation stats
-        let stats = service.get_translation_stats().await.expect("Failed to get stats");
+        let stats = service
+            .get_translation_stats()
+            .await
+            .expect("Failed to get stats");
         assert!(stats.total_translations > 0);
     }
 
     #[tokio::test]
     async fn test_locale_formatting() {
         let service = InternationalizationService::new().await;
-        
+
         // Test different locale formatting
         let number = 1234.56;
-        
-        let us_format = service.format_number(number, "en-US").await.expect("Failed to format number");
+
+        let us_format = service
+            .format_number(number, "en-US")
+            .await
+            .expect("Failed to format number");
         assert!(us_format.contains("1,234"));
-        
-        let es_format = service.format_number(number, "es-ES").await.expect("Failed to format number");
+
+        let es_format = service
+            .format_number(number, "es-ES")
+            .await
+            .expect("Failed to format number");
         assert!(es_format.contains("1.234"));
-        
-        let us_currency = service.format_currency(number, "en-US").await.expect("Failed to format currency");
+
+        let us_currency = service
+            .format_currency(number, "en-US")
+            .await
+            .expect("Failed to format currency");
         assert!(us_currency.contains("$"));
-        
-        let es_currency = service.format_currency(number, "es-ES").await.expect("Failed to format currency");
+
+        let es_currency = service
+            .format_currency(number, "es-ES")
+            .await
+            .expect("Failed to format currency");
         assert!(es_currency.contains("€"));
     }
 }

@@ -1,16 +1,16 @@
 //! CSRF protection middleware
 
+use actix_service::{Service, Transform};
 use actix_web::{
     dev::{ServiceRequest, ServiceResponse},
     Error, Result,
 };
-use actix_service::{Service, Transform};
 use futures_util::future::{ok, Ready};
+use hmac::{Hmac, Mac};
+use sha2::Sha256;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use sha2::Sha256;
-use hmac::{Hmac, Mac};
 
 use super::metrics::CSRF_FAILURES;
 
@@ -72,7 +72,7 @@ where
         // Skip CSRF protection for safe methods and certain endpoints
         if self.should_skip_csrf(&method, &path) {
             let fut = self.service.call(req);
-            return Box::pin(async move { fut.await });
+            return Box::pin(fut);
         }
 
         // Check CSRF token for state-changing requests
@@ -80,23 +80,27 @@ where
             if let Err(error) = self.validate_csrf_token(&req) {
                 CSRF_FAILURES.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                 let fut = async move {
-                    Err(actix_web::error::ErrorBadRequest(format!("CSRF validation failed: {}", error)))
+                    Err(actix_web::error::ErrorBadRequest(format!(
+                        "CSRF validation failed: {}",
+                        error
+                    )))
                 };
                 return Box::pin(fut);
             }
         }
 
         let fut = self.service.call(req);
-        Box::pin(async move { fut.await })
+        Box::pin(fut)
     }
 }
 
 impl<S> CsrfProtectionService<S> {
     fn should_skip_csrf(&self, method: &actix_web::http::Method, path: &str) -> bool {
         // Skip CSRF for safe methods
-        if *method == actix_web::http::Method::GET ||
-           *method == actix_web::http::Method::HEAD ||
-           *method == actix_web::http::Method::OPTIONS {
+        if *method == actix_web::http::Method::GET
+            || *method == actix_web::http::Method::HEAD
+            || *method == actix_web::http::Method::OPTIONS
+        {
             return true;
         }
 
@@ -107,16 +111,16 @@ impl<S> CsrfProtectionService<S> {
         // This is a placeholder - actual skip logic happens earlier in the middleware chain.
 
         // Skip CSRF for health checks and public endpoints
-        path.starts_with("/health") ||
-        path.starts_with("/api/auth/login") ||
-        path.starts_with("/api/auth/register")
+        path.starts_with("/health")
+            || path.starts_with("/api/auth/login")
+            || path.starts_with("/api/auth/register")
     }
 
     fn is_state_changing_method(&self, method: &actix_web::http::Method) -> bool {
-        *method == actix_web::http::Method::POST ||
-        *method == actix_web::http::Method::PUT ||
-        *method == actix_web::http::Method::PATCH ||
-        *method == actix_web::http::Method::DELETE
+        *method == actix_web::http::Method::POST
+            || *method == actix_web::http::Method::PUT
+            || *method == actix_web::http::Method::PATCH
+            || *method == actix_web::http::Method::DELETE
     }
 
     fn validate_csrf_token(&self, req: &ServiceRequest) -> Result<(), String> {
@@ -130,9 +134,11 @@ impl<S> CsrfProtectionService<S> {
 
         match (token_header, cookie_token) {
             (Some(header_token), Some(cookie_token)) => {
-                let header_str = header_token.to_str().map_err(|_| "Invalid CSRF token header")?;
+                let header_str = header_token
+                    .to_str()
+                    .map_err(|_| "Invalid CSRF token header")?;
                 let cookie_str = cookie_token.value();
-                
+
                 if header_str == cookie_str {
                     // Validate token format and signature
                     self.validate_token_signature(header_str)?;
@@ -148,11 +154,11 @@ impl<S> CsrfProtectionService<S> {
     fn validate_token_signature(&self, token: &str) -> Result<(), String> {
         // CSRF token format: base64(plain_token:hmac_signature)
         // where hmac_signature is HMAC-SHA256(plain_token, secret)
-        
+
         if token.len() < 32 {
             return Err("Invalid CSRF token format: too short".to_string());
         }
-        
+
         // Try to decode as base64 token with HMAC signature
         if let Ok(decoded) = {
             use base64::Engine;
@@ -163,14 +169,14 @@ impl<S> CsrfProtectionService<S> {
                 let parts: Vec<&str> = decoded_str.split(':').collect();
                 if parts.len() == 2 {
                     let (plain_token, provided_signature) = (parts[0], parts[1]);
-                    
+
                     // Compute expected signature using HMAC-SHA256
                     type HmacSha256 = Hmac<Sha256>;
                     let mut mac = HmacSha256::new_from_slice(self.secret.as_bytes())
                         .map_err(|e| format!("Failed to initialize HMAC: {}", e))?;
                     mac.update(plain_token.as_bytes());
                     let expected_signature = hex::encode(mac.finalize().into_bytes());
-                    
+
                     // Constant-time comparison to prevent timing attacks
                     if provided_signature == expected_signature {
                         // Validate token format (should be UUID-like or similar)
@@ -183,14 +189,13 @@ impl<S> CsrfProtectionService<S> {
                 }
             }
         }
-        
+
         // Legacy validation: if token doesn't match HMAC format, check basic format
         log::warn!("CSRF token does not match HMAC format, using legacy validation");
         if token.len() >= 32 {
             return Ok(());
         }
-        
+
         Err("Invalid CSRF token format".to_string())
     }
 }
-

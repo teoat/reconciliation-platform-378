@@ -38,7 +38,8 @@ mod database_sharding_service_tests {
     async fn test_cross_shard_query_handling() {
         let service = DatabaseShardingService::new(4);
 
-        let query = service.handle_cross_shard_query("SELECT * FROM users WHERE created_at > ?", &[&"2024-01-01"]);
+        let query = service
+            .handle_cross_shard_query("SELECT * FROM users WHERE created_at > ?", &[&"2024-01-01"]);
         assert!(query.is_ok());
     }
 }
@@ -47,7 +48,7 @@ mod database_sharding_service_tests {
 #[cfg(test)]
 mod realtime_service_tests {
     use super::*;
-    use reconciliation_backend::services::realtime::{RealtimeService, RealtimeEvent};
+    use reconciliation_backend::services::realtime::{RealtimeEvent, RealtimeService};
 
     #[tokio::test]
     async fn test_realtime_service_creation() {
@@ -110,7 +111,10 @@ mod backup_recovery_service_tests {
         let service = BackupRecoveryService::new();
 
         // Create a backup first
-        let backup_id = service.create_backup(BackupType::Incremental).await.unwrap();
+        let backup_id = service
+            .create_backup(BackupType::Incremental)
+            .await
+            .unwrap();
 
         // Test restoration
         let result = service.restore_backup(&backup_id).await;
@@ -131,7 +135,7 @@ mod backup_recovery_service_tests {
 #[cfg(test)]
 mod email_service_tests {
     use super::*;
-    use reconciliation_backend::services::email::{EmailService, EmailMessage};
+    use reconciliation_backend::services::email::{EmailMessage, EmailService};
 
     #[tokio::test]
     async fn test_email_service_creation() {
@@ -180,7 +184,7 @@ mod email_service_tests {
 #[cfg(test)]
 mod monitoring_service_tests {
     use super::*;
-    use reconciliation_backend::services::monitoring::{MonitoringService, MetricType};
+    use reconciliation_backend::services::monitoring::{MetricType, MonitoringService};
 
     #[tokio::test]
     async fn test_monitoring_service_creation() {
@@ -192,7 +196,9 @@ mod monitoring_service_tests {
     async fn test_metric_collection() {
         let service = MonitoringService::new();
 
-        let result = service.record_metric("api_response_time", 150.5, MetricType::Gauge).await;
+        let result = service
+            .record_metric("api_response_time", 150.5, MetricType::Gauge)
+            .await;
         assert!(result.is_ok());
     }
 
@@ -210,7 +216,9 @@ mod monitoring_service_tests {
         let service = MonitoringService::new();
 
         // Record a high error rate
-        let _ = service.record_metric("error_rate", 95.0, MetricType::Gauge).await;
+        let _ = service
+            .record_metric("error_rate", 95.0, MetricType::Gauge)
+            .await;
 
         let alerts = service.check_alerts().await;
         assert!(!alerts.is_empty());
@@ -221,7 +229,7 @@ mod monitoring_service_tests {
 #[cfg(test)]
 mod secrets_service_tests {
     use super::*;
-    use reconciliation_backend::services::secrets::{SecretsService, SecretType};
+    use reconciliation_backend::services::secrets::{SecretType, SecretsService};
 
     #[tokio::test]
     async fn test_secrets_service_creation() {
@@ -234,7 +242,9 @@ mod secrets_service_tests {
         let service = SecretsService::new();
         let secret_value = "super_secret_api_key";
 
-        let result = service.store_secret("api_key", secret_value, SecretType::ApiKey).await;
+        let result = service
+            .store_secret("api_key", secret_value, SecretType::ApiKey)
+            .await;
         assert!(result.is_ok());
     }
 
@@ -244,7 +254,9 @@ mod secrets_service_tests {
         let secret_value = "my_secret_value";
 
         // Store first
-        let _ = service.store_secret("test_secret", secret_value, SecretType::Generic).await;
+        let _ = service
+            .store_secret("test_secret", secret_value, SecretType::Generic)
+            .await;
 
         // Retrieve
         let retrieved = service.retrieve_secret("test_secret").await;
@@ -259,7 +271,9 @@ mod secrets_service_tests {
         let new_secret = "new_secret";
 
         // Store initial secret
-        let _ = service.store_secret("rotating_secret", old_secret, SecretType::DatabasePassword).await;
+        let _ = service
+            .store_secret("rotating_secret", old_secret, SecretType::DatabasePassword)
+            .await;
 
         // Rotate
         let result = service.rotate_secret("rotating_secret", new_secret).await;

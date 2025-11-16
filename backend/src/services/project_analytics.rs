@@ -3,16 +3,14 @@
 //! This module contains analytics, statistics, and performance monitoring
 //! functionality for projects.
 
-use diesel::prelude::*;
-use uuid::Uuid;
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
-use crate::models::schema::{projects, reconciliation_jobs, data_sources};
 use crate::services::project_models::{
-    ProjectAnalytics, JobStatistics, FileStatistics, RecordStatistics, RecentActivity,
-    MonthlyTrend, ProjectPerformance, JobPerformance, FilePerformance, ProjectCollaborator,
-    ActivityData,
+    ActivityData, FilePerformance, FileStatistics, JobPerformance, JobStatistics, MonthlyTrend,
+    ProjectAnalytics, ProjectCollaborator, ProjectPerformance, RecentActivity, RecordStatistics,
 };
+use diesel::prelude::*;
+use uuid::Uuid;
 
 /// Project service analytics operations
 pub struct ProjectAnalyticsOps {
@@ -54,7 +52,7 @@ impl ProjectAnalyticsOps {
                 COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_files,
                 COALESCE(SUM(file_size), 0) as total_size
              FROM uploaded_files
-             WHERE project_id = $1"
+             WHERE project_id = $1",
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .get_result::<crate::services::project_models::FileStats>(&mut conn)
@@ -68,7 +66,7 @@ impl ProjectAnalyticsOps {
                 COUNT(CASE WHEN status = 'unmatched' THEN 1 END) as unmatched_records,
                 AVG(confidence_score) as avg_confidence_score
              FROM reconciliation_records
-             WHERE project_id = $1"
+             WHERE project_id = $1",
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .get_result::<crate::services::project_models::RecordStats>(&mut conn)
@@ -92,7 +90,7 @@ impl ProjectAnalyticsOps {
               FROM uploaded_files
               WHERE project_id = $1
               ORDER BY activity_time DESC
-              LIMIT 10"
+              LIMIT 10",
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .load::<RecentActivity>(&mut conn)
@@ -108,7 +106,7 @@ impl ProjectAnalyticsOps {
               WHERE project_id = $1
               AND created_at >= NOW() - INTERVAL '12 months'
               GROUP BY DATE_TRUNC('month', created_at)
-              ORDER BY month"
+              ORDER BY month",
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .load::<MonthlyTrend>(&mut conn)
@@ -171,7 +169,7 @@ impl ProjectAnalyticsOps {
                 COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_jobs
              FROM reconciliation_jobs
              WHERE project_id = $1
-             AND created_at >= NOW() - INTERVAL '30 days'"
+             AND created_at >= NOW() - INTERVAL '30 days'",
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .get_result::<crate::services::project_models::PerformanceData>(&mut conn)
@@ -186,7 +184,7 @@ impl ProjectAnalyticsOps {
              FROM files
              WHERE project_id = $1
              AND created_at >= NOW() - INTERVAL '30 days'
-             AND status = 'completed'"
+             AND status = 'completed'",
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .get_result::<crate::services::project_models::FilePerformanceData>(&mut conn)
@@ -201,7 +199,10 @@ impl ProjectAnalyticsOps {
                 successful_jobs: performance_data.successful_jobs,
                 failed_jobs: performance_data.failed_jobs,
                 success_rate: if performance_data.total_jobs > 0 {
-                    Some(performance_data.successful_jobs as f64 / performance_data.total_jobs as f64)
+                    Some(
+                        performance_data.successful_jobs as f64
+                            / performance_data.total_jobs as f64,
+                    )
                 } else {
                     None
                 },
@@ -211,7 +212,10 @@ impl ProjectAnalyticsOps {
                 total_size_processed_bytes: file_performance.total_size_processed.unwrap_or(0),
                 total_files_processed: file_performance.total_files_processed,
                 average_file_size_bytes: if file_performance.total_files_processed > 0 {
-                    Some(file_performance.total_size_processed.unwrap_or(0) as f64 / file_performance.total_files_processed as f64)
+                    Some(
+                        file_performance.total_size_processed.unwrap_or(0) as f64
+                            / file_performance.total_files_processed as f64,
+                    )
                 } else {
                     None
                 },
@@ -221,7 +225,10 @@ impl ProjectAnalyticsOps {
     }
 
     /// Get project collaborators
-    pub async fn get_project_collaborators(&self, project_id: Uuid) -> AppResult<Vec<ProjectCollaborator>> {
+    pub async fn get_project_collaborators(
+        &self,
+        project_id: Uuid,
+    ) -> AppResult<Vec<ProjectCollaborator>> {
         let mut conn = self.db.get_connection()?;
 
         // Get project collaborators (users who have access to the project)
@@ -244,14 +251,15 @@ impl ProjectAnalyticsOps {
                  SELECT DISTINCT owner_id FROM projects WHERE id = $1
              )
              GROUP BY u.id, u.email, u.first_name, u.last_name, u.role, u.is_active, u.last_login_at
-             ORDER BY last_activity DESC NULLS LAST"
+             ORDER BY last_activity DESC NULLS LAST",
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .load::<crate::services::project_models::CollaboratorData>(&mut conn)
         .map_err(AppError::Database)?;
 
-        Ok(collaborators.into_iter().map(|collaborator| {
-            ProjectCollaborator {
+        Ok(collaborators
+            .into_iter()
+            .map(|collaborator| ProjectCollaborator {
                 id: collaborator.id,
                 email: collaborator.email,
                 first_name: collaborator.first_name,
@@ -261,12 +269,16 @@ impl ProjectAnalyticsOps {
                 last_login_at: collaborator.last_login_at,
                 job_count: collaborator.job_count,
                 last_activity: collaborator.last_activity,
-            }
-        }).collect())
+            })
+            .collect())
     }
 
     /// Get project activity timeline
-    pub async fn get_project_timeline(&self, project_id: Uuid, limit: Option<i64>) -> AppResult<Vec<crate::services::project_models::ProjectActivity>> {
+    pub async fn get_project_timeline(
+        &self,
+        project_id: Uuid,
+        limit: Option<i64>,
+    ) -> AppResult<Vec<crate::services::project_models::ProjectActivity>> {
         let mut conn = self.db.get_connection()?;
         let limit = limit.unwrap_or(50);
 
@@ -311,27 +323,33 @@ impl ProjectAnalyticsOps {
              FROM files
              WHERE project_id = $1
              ORDER BY activity_time DESC
-             LIMIT $2"
+             LIMIT $2",
         )
         .bind::<diesel::sql_types::Uuid, _>(project_id)
         .bind::<diesel::sql_types::BigInt, _>(limit)
         .load::<ActivityData>(&mut conn)
         .map_err(AppError::Database)?;
 
-        Ok(activities.into_iter().map(|activity| {
-            crate::services::project_models::ProjectActivity {
-                activity_type: activity.activity_type,
-                activity_description: activity.activity_description,
-                activity_time: activity.activity_time,
-                user_id: activity.user_id,
-                job_id: activity.job_id,
-                file_id: activity.file_id,
-            }
-        }).collect())
+        Ok(activities
+            .into_iter()
+            .map(
+                |activity| crate::services::project_models::ProjectActivity {
+                    activity_type: activity.activity_type,
+                    activity_description: activity.activity_description,
+                    activity_time: activity.activity_time,
+                    user_id: activity.user_id,
+                    job_id: activity.job_id,
+                    file_id: activity.file_id,
+                },
+            )
+            .collect())
     }
 
     /// Helper method to get project info
-    async fn get_project_info(&self, project_id: Uuid) -> AppResult<crate::services::project_models::ProjectInfo> {
+    async fn get_project_info(
+        &self,
+        project_id: Uuid,
+    ) -> AppResult<crate::services::project_models::ProjectInfo> {
         use crate::services::project_crud::ProjectCrudOps;
         let crud_ops = ProjectCrudOps::new(self.db.clone());
         crud_ops.get_project_by_id(project_id).await

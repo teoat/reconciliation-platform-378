@@ -1,23 +1,22 @@
 //! Logging Middleware
-//! 
+//!
 //! This module provides comprehensive logging middleware for structured logging,
 //! request/response logging, and error tracking.
 
-use actix_web::{dev::ServiceRequest, Error, HttpMessage, Result};
 use actix_web::dev::{Service, ServiceResponse, Transform};
 use actix_web::http::header::HeaderMap;
+use actix_web::{dev::ServiceRequest, Error, HttpMessage, Result};
 use futures::future::{ok, Ready};
 use futures::Future;
-use std::rc::Rc;
+use regex;
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::pin::Pin;
+use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
 use uuid::Uuid;
-use regex;
-
 
 /// Logging configuration
 #[derive(Debug, Clone)]
@@ -56,7 +55,11 @@ impl Default for LoggingConfig {
             include_body: false,
             max_body_size: 1024,
             sensitive_headers: vec!["authorization".to_string(), "cookie".to_string()],
-            sensitive_fields: vec!["password".to_string(), "token".to_string(), "secret".to_string()],
+            sensitive_fields: vec![
+                "password".to_string(),
+                "token".to_string(),
+                "secret".to_string(),
+            ],
             pii_patterns: vec![],
         }
     }
@@ -149,7 +152,10 @@ where
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(
+        &self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
@@ -160,64 +166,101 @@ where
         Box::pin(async move {
             let start_time = Instant::now();
             let request_id = Uuid::new_v4().to_string();
-            
+
             // Extract request information
             let method = req.method().to_string();
             let path = req.path().to_string();
-            let ip_address = req.connection_info().peer_addr().unwrap_or("unknown").to_string();
-            let user_agent = req.headers().get("User-Agent")
+            let ip_address = req
+                .connection_info()
+                .peer_addr()
+                .unwrap_or("unknown")
+                .to_string();
+            let user_agent = req
+                .headers()
+                .get("User-Agent")
                 .and_then(|h| h.to_str().ok())
                 .map(|s| s.to_string());
 
             // Extract user ID if available
-            let user_id = req.extensions()
+            let user_id = req
+                .extensions()
                 .get::<crate::services::auth::Claims>()
                 .map(|claims| claims.sub.clone());
 
             // Extract request body if configured
-            let request_body: Option<String> = if state.config.include_body && state.config.enable_request_logging {
-                // Try to peek at request body for logging (non-consuming)
-                None // Request body extraction would require consuming the request
-            } else {
-                None
-            };
+            let request_body: Option<String> =
+                if state.config.include_body && state.config.enable_request_logging {
+                    // Try to peek at request body for logging (non-consuming)
+                    None // Request body extraction would require consuming the request
+                } else {
+                    None
+                };
 
             // Log request
             if state.config.enable_request_logging {
-                log_request(&state, &request_id, &method, &path, &ip_address, &user_agent, &user_id, Some(req.headers()), request_body.as_deref()).await;
+                log_request(
+                    &state,
+                    &request_id,
+                    &method,
+                    &path,
+                    &ip_address,
+                    &user_agent,
+                    &user_id,
+                    Some(req.headers()),
+                    request_body.as_deref(),
+                )
+                .await;
             }
 
             // Call the next service
             let result = service.call(req).await;
-            
+
             let response_time = start_time.elapsed();
             let response_time_ms = response_time.as_millis() as u64;
 
             match result {
                 Ok(res) => {
                     let status_code = res.status().as_u16();
-                    
+
                     // Extract response body if configured (note: this is a simplified approach)
                     // In production, you'd want to buffer and log response bodies more carefully
-                    let response_body: Option<String> = if state.config.include_body && state.config.enable_response_logging {
-                        None // Response body extraction would require consuming the response
-                    } else {
-                        None
-                    };
-                    
+                    let response_body: Option<String> =
+                        if state.config.include_body && state.config.enable_response_logging {
+                            None // Response body extraction would require consuming the response
+                        } else {
+                            None
+                        };
+
                     // Log response
                     if state.config.enable_response_logging {
-                        log_response(&state, &request_id, &method, &path, status_code, response_time_ms, response_body.as_deref()).await;
+                        log_response(
+                            &state,
+                            &request_id,
+                            &method,
+                            &path,
+                            status_code,
+                            response_time_ms,
+                            response_body.as_deref(),
+                        )
+                        .await;
                     }
-                    
+
                     Ok(res)
                 }
                 Err(error) => {
                     // Log error
                     if state.config.enable_error_logging {
-                        log_error(&state, &request_id, &method, &path, &error, response_time_ms).await;
+                        log_error(
+                            &state,
+                            &request_id,
+                            &method,
+                            &path,
+                            &error,
+                            response_time_ms,
+                        )
+                        .await;
                     }
-                    
+
                     Err(error)
                 }
             }
@@ -231,13 +274,17 @@ fn mask_sensitive_data(data: &str, sensitive_patterns: &[String]) -> String {
 
     // Mask common PII patterns
     let pii_patterns = vec![
-        r"\b\d{3}-\d{2}-\d{4}\b", // SSN
-        r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b", // Credit card
+        r"\b\d{3}-\d{2}-\d{4}\b",                               // SSN
+        r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b",          // Credit card
         r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", // Email
-        r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b", // Phone
+        r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b",                       // Phone
     ];
 
-    for pattern in pii_patterns.iter().copied().chain(sensitive_patterns.iter().map(|s| s.as_str())) {
+    for pattern in pii_patterns
+        .iter()
+        .copied()
+        .chain(sensitive_patterns.iter().map(|s| s.as_str()))
+    {
         if let Ok(regex) = regex::Regex::new(pattern) {
             masked = regex.replace_all(&masked, "***MASKED***").to_string();
         }
@@ -271,26 +318,37 @@ async fn log_request(
                 if state.config.sensitive_headers.contains(&header_name) {
                     header_map.insert(name.as_str().to_string(), "***MASKED***".to_string());
                 } else {
-                    header_map.insert(name.as_str().to_string(), mask_sensitive_data(header_value, &state.config.pii_patterns));
+                    header_map.insert(
+                        name.as_str().to_string(),
+                        mask_sensitive_data(header_value, &state.config.pii_patterns),
+                    );
                 }
             }
-            metadata.insert("headers".to_string(), serde_json::to_value(header_map).unwrap_or_default());
+            metadata.insert(
+                "headers".to_string(),
+                serde_json::to_value(header_map).unwrap_or_default(),
+            );
         }
     }
 
     // Include request body if configured (with PII masking)
     if let Some(body_data) = body {
-        let masked_body = if state.config.include_body && body_data.len() <= state.config.max_body_size {
-            mask_sensitive_data(body_data, &state.config.sensitive_fields)
-        } else {
-            "[body too large or not included]".to_string()
-        };
-        metadata.insert("request_body".to_string(), serde_json::Value::String(masked_body));
+        let masked_body =
+            if state.config.include_body && body_data.len() <= state.config.max_body_size {
+                mask_sensitive_data(body_data, &state.config.sensitive_fields)
+            } else {
+                "[body too large or not included]".to_string()
+            };
+        metadata.insert(
+            "request_body".to_string(),
+            serde_json::Value::String(masked_body),
+        );
     }
 
     let log_entry = LogEntry {
         id: Uuid::new_v4().to_string(),
-        timestamp: SystemTime::now().duration_since(UNIX_EPOCH)
+        timestamp: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0),
         level: "info".to_string(),
@@ -328,26 +386,34 @@ async fn log_response(
     body: Option<&str>,
 ) {
     let level = if status_code >= 400 { "error" } else { "info" };
-    
+
     let mut metadata = HashMap::new();
-    
+
     // Include response body if configured (with PII masking)
     if let Some(body_data) = body {
-        let masked_body = if state.config.include_body && body_data.len() <= state.config.max_body_size {
-            mask_sensitive_data(body_data, &state.config.sensitive_fields)
-        } else {
-            "[body too large or not included]".to_string()
-        };
-        metadata.insert("response_body".to_string(), serde_json::Value::String(masked_body));
+        let masked_body =
+            if state.config.include_body && body_data.len() <= state.config.max_body_size {
+                mask_sensitive_data(body_data, &state.config.sensitive_fields)
+            } else {
+                "[body too large or not included]".to_string()
+            };
+        metadata.insert(
+            "response_body".to_string(),
+            serde_json::Value::String(masked_body),
+        );
     }
-    
+
     let log_entry = LogEntry {
         id: Uuid::new_v4().to_string(),
-        timestamp: SystemTime::now().duration_since(UNIX_EPOCH)
+        timestamp: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0),
         level: level.to_string(),
-        message: format!("Response: {} {} - Status: {} - Time: {}ms", method, path, status_code, response_time_ms),
+        message: format!(
+            "Response: {} {} - Status: {} - Time: {}ms",
+            method, path, status_code, response_time_ms
+        ),
         request_id: Some(request_id.to_string()),
         user_id: None,
         ip_address: None,
@@ -375,7 +441,8 @@ async fn log_error(
 ) {
     let log_entry = LogEntry {
         id: Uuid::new_v4().to_string(),
-        timestamp: SystemTime::now().duration_since(UNIX_EPOCH)
+        timestamp: SystemTime::now()
+            .duration_since(UNIX_EPOCH)
             .map(|d| d.as_secs())
             .unwrap_or(0),
         level: "error".to_string(),
@@ -414,14 +481,20 @@ impl StructuredLogger {
             config,
         }
     }
-    
-    pub async fn log(&self, level: LogLevel, message: &str, metadata: Option<HashMap<String, serde_json::Value>>) {
+
+    pub async fn log(
+        &self,
+        level: LogLevel,
+        message: &str,
+        metadata: Option<HashMap<String, serde_json::Value>>,
+    ) {
         if self.should_log(&level) {
             let log_entry = LogEntry {
                 id: Uuid::new_v4().to_string(),
-        timestamp: SystemTime::now().duration_since(UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0),
+                timestamp: SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .map(|d| d.as_secs())
+                    .unwrap_or(0),
                 level: level.to_string(),
                 message: message.to_string(),
                 request_id: None,
@@ -438,7 +511,7 @@ impl StructuredLogger {
 
             let mut logs = self.logs.write().await;
             logs.push(log_entry);
-            
+
             // Keep only last 10000 logs
             if logs.len() > 10000 {
                 let len = logs.len();
@@ -446,60 +519,90 @@ impl StructuredLogger {
             }
         }
     }
-    
-    pub async fn log_info(&self, message: &str, metadata: Option<HashMap<String, serde_json::Value>>) {
+
+    pub async fn log_info(
+        &self,
+        message: &str,
+        metadata: Option<HashMap<String, serde_json::Value>>,
+    ) {
         self.log(LogLevel::Info, message, metadata).await;
     }
-    
-    pub async fn log_warn(&self, message: &str, metadata: Option<HashMap<String, serde_json::Value>>) {
+
+    pub async fn log_warn(
+        &self,
+        message: &str,
+        metadata: Option<HashMap<String, serde_json::Value>>,
+    ) {
         self.log(LogLevel::Warn, message, metadata).await;
     }
-    
-    pub async fn log_error(&self, message: &str, error: Option<&Error>, metadata: Option<HashMap<String, serde_json::Value>>) {
+
+    pub async fn log_error(
+        &self,
+        message: &str,
+        error: Option<&Error>,
+        metadata: Option<HashMap<String, serde_json::Value>>,
+    ) {
         let mut log_metadata = metadata.unwrap_or_default();
-        
+
         if let Some(err) = error {
-            log_metadata.insert("error_type".to_string(), serde_json::Value::String("application_error".to_string()));
-            log_metadata.insert("error_message".to_string(), serde_json::Value::String(err.to_string()));
+            log_metadata.insert(
+                "error_type".to_string(),
+                serde_json::Value::String("application_error".to_string()),
+            );
+            log_metadata.insert(
+                "error_message".to_string(),
+                serde_json::Value::String(err.to_string()),
+            );
         }
-        
+
         self.log(LogLevel::Error, message, Some(log_metadata)).await;
     }
-    
-    pub async fn log_debug(&self, message: &str, metadata: Option<HashMap<String, serde_json::Value>>) {
+
+    pub async fn log_debug(
+        &self,
+        message: &str,
+        metadata: Option<HashMap<String, serde_json::Value>>,
+    ) {
         self.log(LogLevel::Debug, message, metadata).await;
     }
-    
-    pub async fn log_trace(&self, message: &str, metadata: Option<HashMap<String, serde_json::Value>>) {
+
+    pub async fn log_trace(
+        &self,
+        message: &str,
+        metadata: Option<HashMap<String, serde_json::Value>>,
+    ) {
         self.log(LogLevel::Trace, message, metadata).await;
     }
-    
+
     fn should_log(&self, level: &LogLevel) -> bool {
         match (&self.config.log_level, level) {
             (LogLevel::Trace, _) => true,
-            (LogLevel::Debug, LogLevel::Debug | LogLevel::Info | LogLevel::Warn | LogLevel::Error) => true,
+            (
+                LogLevel::Debug,
+                LogLevel::Debug | LogLevel::Info | LogLevel::Warn | LogLevel::Error,
+            ) => true,
             (LogLevel::Info, LogLevel::Info | LogLevel::Warn | LogLevel::Error) => true,
             (LogLevel::Warn, LogLevel::Warn | LogLevel::Error) => true,
             (LogLevel::Error, LogLevel::Error) => true,
             _ => false,
         }
     }
-    
+
     pub async fn get_logs(&self, level: Option<LogLevel>, limit: Option<usize>) -> Vec<LogEntry> {
         let logs = self.logs.read().await;
         let mut filtered_logs: Vec<LogEntry> = logs.clone();
-        
+
         if let Some(level_filter) = level {
             filtered_logs.retain(|log| log.level == level_filter.to_string());
         }
-        
+
         if let Some(limit_count) = limit {
             filtered_logs.truncate(limit_count);
         }
-        
+
         filtered_logs
     }
-    
+
     pub async fn get_logs_by_time_range(&self, start_time: u64, end_time: u64) -> Vec<LogEntry> {
         let logs = self.logs.read().await;
         logs.iter()
@@ -507,7 +610,7 @@ impl StructuredLogger {
             .cloned()
             .collect()
     }
-    
+
     pub async fn get_error_logs(&self) -> Vec<LogEntry> {
         let logs = self.logs.read().await;
         logs.iter()
@@ -515,11 +618,11 @@ impl StructuredLogger {
             .cloned()
             .collect()
     }
-    
+
     pub async fn get_slow_requests(&self, threshold_ms: u64) -> Vec<LogEntry> {
         let logs = self.logs.read().await;
         logs.iter()
-            .filter(|log| log.response_time_ms.map_or(false, |time| time > threshold_ms))
+            .filter(|log| log.response_time_ms.is_some_and(|time| time > threshold_ms))
             .cloned()
             .collect()
     }
@@ -533,7 +636,8 @@ impl ToString for LogLevel {
             LogLevel::Info => "info",
             LogLevel::Warn => "warn",
             LogLevel::Error => "error",
-        }.to_string()
+        }
+        .to_string()
     }
 }
 
@@ -557,13 +661,19 @@ pub struct ErrorEntry {
     pub metadata: HashMap<String, serde_json::Value>,
 }
 
+impl Default for ErrorTrackingService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ErrorTrackingService {
     pub fn new() -> Self {
         Self {
             errors: Arc::new(RwLock::new(Vec::new())),
         }
     }
-    
+
     pub async fn track_error(
         &self,
         error_type: &str,
@@ -578,9 +688,10 @@ impl ErrorTrackingService {
     ) {
         let error_entry = ErrorEntry {
             id: Uuid::new_v4().to_string(),
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH)
-            .map(|d| d.as_secs())
-            .unwrap_or(0),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
             error_type: error_type.to_string(),
             error_message: error_message.to_string(),
             stack_trace: stack_trace.map(|s| s.to_string()),
@@ -594,37 +705,41 @@ impl ErrorTrackingService {
 
         let mut errors = self.errors.write().await;
         errors.push(error_entry);
-        
+
         // Keep only last 5000 errors
         if errors.len() > 5000 {
             let len = errors.len();
             errors.drain(0..len - 5000);
         }
     }
-    
-    pub async fn get_errors(&self, error_type: Option<&str>, limit: Option<usize>) -> Vec<ErrorEntry> {
+
+    pub async fn get_errors(
+        &self,
+        error_type: Option<&str>,
+        limit: Option<usize>,
+    ) -> Vec<ErrorEntry> {
         let errors = self.errors.read().await;
         let mut filtered_errors: Vec<ErrorEntry> = errors.clone();
-        
+
         if let Some(type_filter) = error_type {
             filtered_errors.retain(|error| error.error_type == type_filter);
         }
-        
+
         if let Some(limit_count) = limit {
             filtered_errors.truncate(limit_count);
         }
-        
+
         filtered_errors
     }
-    
+
     pub async fn get_error_statistics(&self) -> HashMap<String, usize> {
         let errors = self.errors.read().await;
         let mut stats = HashMap::new();
-        
+
         for error in errors.iter() {
             *stats.entry(error.error_type.clone()).or_insert(0) += 1;
         }
-        
+
         stats
     }
 }

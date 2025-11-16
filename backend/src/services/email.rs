@@ -1,9 +1,9 @@
 //! Email service for sending authentication and notification emails
 
-use std::env;
-use std::sync::Arc;
 use crate::errors::{AppError, AppResult};
 use crate::services::resilience::ResilienceManager;
+use std::env;
+use std::sync::Arc;
 
 /// Email template types
 #[derive(Debug, Clone)]
@@ -24,6 +24,12 @@ pub struct EmailService {
     resilience: Option<Arc<ResilienceManager>>,
 }
 
+impl Default for EmailService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl EmailService {
     /// Create a new email service
     pub fn new() -> Self {
@@ -35,11 +41,12 @@ impl EmailService {
                 .unwrap_or(587),
             smtp_user: env::var("SMTP_USER").unwrap_or_else(|_| "".to_string()),
             smtp_password: env::var("SMTP_PASSWORD").unwrap_or_else(|_| "".to_string()),
-            from_email: env::var("SMTP_FROM").unwrap_or_else(|_| "noreply@reconciliation.com".to_string()),
+            from_email: env::var("SMTP_FROM")
+                .unwrap_or_else(|_| "noreply@reconciliation.com".to_string()),
             resilience: None,
         }
     }
-    
+
     /// Create email service with resilience manager
     pub fn new_with_resilience(resilience: Arc<ResilienceManager>) -> Self {
         Self {
@@ -50,11 +57,12 @@ impl EmailService {
                 .unwrap_or(587),
             smtp_user: env::var("SMTP_USER").unwrap_or_else(|_| "".to_string()),
             smtp_password: env::var("SMTP_PASSWORD").unwrap_or_else(|_| "".to_string()),
-            from_email: env::var("SMTP_FROM").unwrap_or_else(|_| "noreply@reconciliation.com".to_string()),
+            from_email: env::var("SMTP_FROM")
+                .unwrap_or_else(|_| "noreply@reconciliation.com".to_string()),
             resilience: Some(resilience),
         }
     }
-    
+
     /// Send password reset email
     pub async fn send_password_reset(
         &self,
@@ -81,10 +89,10 @@ Reconciliation Platform Team
 "#,
             user_name, token
         );
-        
+
         self.send_email(to, subject, &body).await
     }
-    
+
     /// Send email verification
     pub async fn send_email_verification(
         &self,
@@ -108,10 +116,10 @@ Reconciliation Platform Team
 "#,
             user_name, token
         );
-        
+
         self.send_email(to, subject, &body).await
     }
-    
+
     /// Send welcome email
     pub async fn send_welcome_email(&self, to: &str, user_name: &str) -> AppResult<()> {
         let subject = "Welcome to Reconciliation Platform";
@@ -128,15 +136,16 @@ Reconciliation Platform Team
 "#,
             user_name
         );
-        
+
         self.send_email(to, subject, &body).await
     }
-    
+
     /// Send generic email with resilience (circuit breaker and retry)
     pub async fn send_email(&self, to: &str, subject: &str, body: &str) -> AppResult<()> {
-        self.send_email_with_correlation(to, subject, body, None).await
+        self.send_email_with_correlation(to, subject, body, None)
+            .await
     }
-    
+
     /// Send email with correlation ID for tracing
     pub async fn send_email_with_correlation(
         &self,
@@ -147,20 +156,25 @@ Reconciliation Platform Team
     ) -> AppResult<()> {
         // If resilience manager is available, use it for SMTP operations
         if let Some(ref resilience) = self.resilience {
-            return resilience.execute_api_with_correlation(
-                || async {
-                    self.send_email_internal(to, subject, body).await
-                },
-                correlation_id,
-            ).await;
+            return resilience
+                .execute_api_with_correlation(
+                    || async { self.send_email_internal(to, subject, body).await },
+                    correlation_id,
+                )
+                .await;
         }
-        
+
         // Fallback to direct call if no resilience manager
         let corr_id = correlation_id.as_deref().unwrap_or("unknown");
-        log::debug!("[{}] Sending email to {} with subject: {}", corr_id, to, subject);
+        log::debug!(
+            "[{}] Sending email to {} with subject: {}",
+            corr_id,
+            to,
+            subject
+        );
         self.send_email_internal(to, subject, body).await
     }
-    
+
     /// Internal email sending implementation
     async fn send_email_internal(&self, to: &str, subject: &str, _body: &str) -> AppResult<()> {
         // In production, integrate with lettre or similar
@@ -171,34 +185,36 @@ Reconciliation Platform Team
             to,
             subject
         );
-        
+
         // In production with lettre:
         /*
         use lettre::{Message, SmtpTransport, Transport};
-        
+
         let email = Message::builder()
             .from(self.from_email.parse().map_err(|e| AppError::Internal(format!("Invalid from email: {}", e)))?)
             .to(to.parse().map_err(|e| AppError::Internal(format!("Invalid to email: {}", e)))?)
             .subject(subject)
             .body(body.to_string())
             .map_err(|e| AppError::Internal(format!("Failed to build email: {}", e)))?;
-        
+
         let mailer = SmtpTransport::relay(&self.smtp_host)
             .map_err(|e| AppError::Internal(format!("Failed to create SMTP transport: {}", e)))?
             .port(self.smtp_port)
             .credentials((&self.smtp_user, &self.smtp_password))
             .build();
-        
+
         mailer.send(&email)
             .map_err(|e| AppError::Internal(format!("Failed to send email: {}", e)))?;
         */
-        
+
         // Simulate potential failure for testing resilience
         // In production, this would be the actual SMTP call
         if self.smtp_host == "fail.test" {
-            return Err(AppError::Internal("Simulated SMTP failure for testing".to_string()));
+            return Err(AppError::Internal(
+                "Simulated SMTP failure for testing".to_string(),
+            ));
         }
-        
+
         Ok(())
     }
 }
@@ -206,11 +222,10 @@ Reconciliation Platform Team
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_email_service_creation() {
         let service = EmailService::new();
         assert!(!service.smtp_host.is_empty());
     }
 }
-

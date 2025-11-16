@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-use crate::services::api_versioning::types::{MigrationStrategy, MigrationStep};
+use crate::services::api_versioning::types::{MigrationStep, MigrationStrategy};
 
 /// Migration manager
 pub struct MigrationManager {
@@ -22,12 +22,19 @@ impl MigrationManager {
     /// Add migration strategy
     pub async fn add_migration_strategy(&self, strategy: MigrationStrategy) -> AppResult<()> {
         let key = format!("{}:{}", strategy.from_version, strategy.to_version);
-        self.migration_strategies.write().await.insert(key, strategy);
+        self.migration_strategies
+            .write()
+            .await
+            .insert(key, strategy);
         Ok(())
     }
 
     /// Get migration strategy
-    pub async fn get_migration_strategy(&self, from_version: &str, to_version: &str) -> AppResult<Option<MigrationStrategy>> {
+    pub async fn get_migration_strategy(
+        &self,
+        from_version: &str,
+        to_version: &str,
+    ) -> AppResult<Option<MigrationStrategy>> {
         let key = format!("{}:{}", from_version, to_version);
         let strategies = self.migration_strategies.read().await;
         Ok(strategies.get(&key).cloned())
@@ -42,13 +49,17 @@ impl MigrationManager {
     /// Execute migration step
     pub async fn execute_migration_step(&self, step: &MigrationStep) -> AppResult<()> {
         // In a real implementation, this would execute the migration commands
-        log::info!("Executing migration step {}: {}", step.step_number, step.description);
-        
+        log::info!(
+            "Executing migration step {}: {}",
+            step.step_number,
+            step.description
+        );
+
         // Validate after migration
         for check in &step.validation_checks {
             log::info!("Validation check: {}", check);
         }
-        
+
         Ok(())
     }
 
@@ -56,7 +67,11 @@ impl MigrationManager {
     pub async fn rollback_migration_step(&self, step: &MigrationStep) -> AppResult<()> {
         if let Some(rollback_commands) = &step.rollback_commands {
             // In a real implementation, this would execute rollback commands
-            log::info!("Rolling back migration step {}: {}", step.step_number, step.description);
+            log::info!(
+                "Rolling back migration step {}: {}",
+                step.step_number,
+                step.description
+            );
             for cmd in rollback_commands {
                 log::info!("Rollback command: {}", cmd);
             }
@@ -70,4 +85,3 @@ impl Default for MigrationManager {
         Self::new()
     }
 }
-

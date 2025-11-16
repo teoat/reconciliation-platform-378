@@ -1,14 +1,14 @@
 //! Profile management handlers module
 
 use actix_web::{web, HttpResponse, Result};
-use uuid::Uuid;
 use std::sync::Arc;
 use std::time::Duration;
+use uuid::Uuid;
 
 use crate::errors::AppError;
+use crate::handlers::types::ApiResponse;
 use crate::services::cache::MultiLevelCache;
 use crate::services::user::UserService;
-use crate::handlers::types::{ApiResponse};
 
 /// Profile data structure
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -73,8 +73,7 @@ pub struct UpdateProfileRequest {
 
 /// Configure profile routes
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
-    cfg
-        .route("", web::get().to(get_profile))
+    cfg.route("", web::get().to(get_profile))
         .route("", web::put().to(update_profile))
         .route("/avatar", web::post().to(upload_avatar))
         .route("/stats", web::get().to(get_profile_stats));
@@ -139,7 +138,9 @@ pub async fn get_profile(
     };
 
     // Cache for 15 minutes
-    let _ = cache.set(&cache_key, &profile, Some(Duration::from_secs(900))).await;
+    let _ = cache
+        .set(&cache_key, &profile, Some(Duration::from_secs(900)))
+        .await;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -162,25 +163,33 @@ pub async fn update_profile(
     // Validate input
     if let Some(ref first_name) = update_req.first_name {
         if first_name.trim().is_empty() || first_name.len() > 50 {
-            return Err(AppError::Validation("First name must be 1-50 characters".to_string()));
+            return Err(AppError::Validation(
+                "First name must be 1-50 characters".to_string(),
+            ));
         }
     }
 
     if let Some(ref last_name) = update_req.last_name {
         if last_name.trim().is_empty() || last_name.len() > 50 {
-            return Err(AppError::Validation("Last name must be 1-50 characters".to_string()));
+            return Err(AppError::Validation(
+                "Last name must be 1-50 characters".to_string(),
+            ));
         }
     }
 
     if let Some(ref bio) = update_req.bio {
         if bio.len() > 500 {
-            return Err(AppError::Validation("Bio must be less than 500 characters".to_string()));
+            return Err(AppError::Validation(
+                "Bio must be less than 500 characters".to_string(),
+            ));
         }
     }
 
     if let Some(ref website) = update_req.website {
         if !website.is_empty() && !website.starts_with("http") {
-            return Err(AppError::Validation("Website must be a valid URL starting with http".to_string()));
+            return Err(AppError::Validation(
+                "Website must be a valid URL starting with http".to_string(),
+            ));
         }
     }
 
@@ -193,7 +202,9 @@ pub async fn update_profile(
             role: None,
             is_active: None,
         };
-        user_service.update_user(user_id_val, update_user_req).await?;
+        user_service
+            .update_user(user_id_val, update_user_req)
+            .await?;
     }
 
     // For now, extended profile fields are not persisted

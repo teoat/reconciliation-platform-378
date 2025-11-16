@@ -1,9 +1,9 @@
 // GDPR/CCPA Compliance Endpoints
 // Data export, deletion, and consent management
 
-use actix_web::{web, HttpResponse, HttpRequest, Result as ActixResult};
-use uuid::Uuid;
+use actix_web::{web, HttpRequest, HttpResponse, Result as ActixResult};
 use serde::Deserialize;
+use uuid::Uuid;
 
 /// Export user data (GDPR Right to Access)
 /// ✅ Implemented: Full data export ready
@@ -25,7 +25,7 @@ pub async fn export_user_data(
         "export_format": "json",
         "timestamp": chrono::Utc::now().to_rfc3339()
     });
-    
+
     Ok(HttpResponse::Ok().json(export_data))
 }
 
@@ -48,7 +48,7 @@ pub async fn delete_user_data(
         "retention_period_days": 30,
         "permanent_deletion_date": chrono::Utc::now() + chrono::Duration::days(30)
     });
-    
+
     Ok(HttpResponse::Ok().json(response))
 }
 
@@ -75,7 +75,7 @@ pub async fn set_consent(
             "marketing": true
         }
     });
-    
+
     Ok(HttpResponse::Ok().json(response))
 }
 
@@ -90,4 +90,3 @@ pub struct ConsentData {
 // web::resource("/api/v1/users/{id}/export").route(web::get().to(gdpr::export_user_data))
 // web::resource("/api/v1/users/{id}").route(web::delete().to(gdpr::delete_user_data))
 // web::resource("/api/v1/consent").route(web::post().to(gdpr::set_consent))
-

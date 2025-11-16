@@ -3,15 +3,15 @@
 //! This service provides centralized error logging with correlation IDs for
 //! distributed tracing and better error tracking across the application.
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use uuid::Uuid;
-use chrono::{DateTime, Utc};
+use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::sync::RwLock;
 use tokio::fs::OpenOptions;
 use tokio::io::AsyncWriteExt;
-use std::path::PathBuf;
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
 /// Error log entry with correlation ID
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -149,11 +149,12 @@ impl ErrorLoggingService {
         } else {
             self.generate_correlation_id().await
         };
-        
+
         // Ensure correlation ID is set in context
         context.request_id = Some(correlation_id.clone());
-        
-        self.log_error(&correlation_id, error_type, message, level, context).await;
+
+        self.log_error(&correlation_id, error_type, message, level, context)
+            .await;
     }
 
     /// Log error from AppError with automatic correlation ID extraction
@@ -172,49 +173,35 @@ impl ErrorLoggingService {
         });
 
         let (error_type, message, level) = match error {
-            crate::errors::AppError::Database(_) => (
-                "DatabaseError",
-                error.to_string(),
-                ErrorLevel::Error,
-            ),
-            crate::errors::AppError::Connection(_) => (
-                "ConnectionError",
-                error.to_string(),
-                ErrorLevel::Critical,
-            ),
+            crate::errors::AppError::Database(_) => {
+                ("DatabaseError", error.to_string(), ErrorLevel::Error)
+            }
+            crate::errors::AppError::Connection(_) => {
+                ("ConnectionError", error.to_string(), ErrorLevel::Critical)
+            }
             crate::errors::AppError::Authentication(_) => (
                 "AuthenticationError",
                 error.to_string(),
                 ErrorLevel::Warning,
             ),
-            crate::errors::AppError::Authorization(_) => (
-                "AuthorizationError",
-                error.to_string(),
-                ErrorLevel::Warning,
-            ),
-            crate::errors::AppError::Validation(_) => (
-                "ValidationError",
-                error.to_string(),
-                ErrorLevel::Warning,
-            ),
-            crate::errors::AppError::Internal(_) | crate::errors::AppError::InternalServerError(_) => (
-                "InternalError",
-                error.to_string(),
-                ErrorLevel::Error,
-            ),
-            crate::errors::AppError::NotFound(_) => (
-                "NotFoundError",
-                error.to_string(),
-                ErrorLevel::Info,
-            ),
-            _ => (
-                "UnknownError",
-                error.to_string(),
-                ErrorLevel::Error,
-            ),
+            crate::errors::AppError::Authorization(_) => {
+                ("AuthorizationError", error.to_string(), ErrorLevel::Warning)
+            }
+            crate::errors::AppError::Validation(_) => {
+                ("ValidationError", error.to_string(), ErrorLevel::Warning)
+            }
+            crate::errors::AppError::Internal(_)
+            | crate::errors::AppError::InternalServerError(_) => {
+                ("InternalError", error.to_string(), ErrorLevel::Error)
+            }
+            crate::errors::AppError::NotFound(_) => {
+                ("NotFoundError", error.to_string(), ErrorLevel::Info)
+            }
+            _ => ("UnknownError", error.to_string(), ErrorLevel::Error),
         };
 
-        self.log_error(&corr_id, error_type, &message, level, context).await;
+        self.log_error(&corr_id, error_type, &message, level, context)
+            .await;
     }
 
     /// Start a new correlation context
@@ -268,7 +255,10 @@ impl ErrorLoggingService {
     }
 
     /// Get correlation context
-    pub async fn get_correlation_context(&self, correlation_id: &str) -> Option<CorrelationContext> {
+    pub async fn get_correlation_context(
+        &self,
+        correlation_id: &str,
+    ) -> Option<CorrelationContext> {
         let contexts = self.correlation_context.read().await;
         contexts.get(correlation_id).cloned()
     }
@@ -276,17 +266,14 @@ impl ErrorLoggingService {
     /// Get recent error logs
     pub async fn get_recent_errors(&self, limit: usize) -> Vec<ErrorLogEntry> {
         let entries = self.log_entries.read().await;
-        entries.iter()
-            .rev()
-            .take(limit)
-            .cloned()
-            .collect()
+        entries.iter().rev().take(limit).cloned().collect()
     }
 
     /// Get errors by correlation ID
     pub async fn get_errors_by_correlation(&self, correlation_id: &str) -> Vec<ErrorLogEntry> {
         let entries = self.log_entries.read().await;
-        entries.iter()
+        entries
+            .iter()
             .filter(|entry| entry.correlation_id == correlation_id)
             .cloned()
             .collect()
@@ -314,7 +301,10 @@ impl ErrorLoggingService {
         // Also cleanup old correlation contexts
         let mut contexts = self.correlation_context.write().await;
         contexts.retain(|_, context| {
-            Utc::now().signed_duration_since(context.start_time).num_hours() < max_age_hours
+            Utc::now()
+                .signed_duration_since(context.start_time)
+                .num_hours()
+                < max_age_hours
         });
     }
 
@@ -349,13 +339,18 @@ impl ErrorLoggingService {
                 }
             } else {
                 // Default log file path if not specified
-                let default_path = format!("logs/error_{}.log", chrono::Utc::now().format("%Y%m%d"));
+                let default_path =
+                    format!("logs/error_{}.log", chrono::Utc::now().format("%Y%m%d"));
                 if let Err(e) = self.write_to_file(entry, &default_path).await {
-                    log::error!("Failed to write error log to default file {}: {}", default_path, e);
+                    log::error!(
+                        "Failed to write error log to default file {}: {}",
+                        default_path,
+                        e
+                    );
                 }
             }
         }
-        
+
         // TODO: Add external service integration (ELK, Loki, etc.)
         // This would integrate with centralized logging services
     }
@@ -365,7 +360,11 @@ impl ErrorLoggingService {
     }
 
     /// Write error log entry to file with rotation support
-    async fn write_to_file(&self, entry: &ErrorLogEntry, file_path: &str) -> Result<(), std::io::Error> {
+    async fn write_to_file(
+        &self,
+        entry: &ErrorLogEntry,
+        file_path: &str,
+    ) -> Result<(), std::io::Error> {
         // Ensure log directory exists
         if let Some(parent) = PathBuf::from(file_path).parent() {
             tokio::fs::create_dir_all(parent).await?;
@@ -379,9 +378,13 @@ impl ErrorLoggingService {
             .await?;
 
         // Write entry as JSON line
-        let json = serde_json::to_string(entry)
-            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, format!("JSON serialization failed: {}", e)))?;
-        
+        let json = serde_json::to_string(entry).map_err(|e| {
+            std::io::Error::new(
+                std::io::ErrorKind::InvalidData,
+                format!("JSON serialization failed: {}", e),
+            )
+        })?;
+
         file.write_all(json.as_bytes()).await?;
         file.write_all(b"\n").await?;
         file.flush().await?;
@@ -390,7 +393,11 @@ impl ErrorLoggingService {
         if let Ok(metadata) = tokio::fs::metadata(file_path).await {
             if metadata.len() > 100 * 1024 * 1024 {
                 // Rotate log file
-                let rotated_path = format!("{}.{}", file_path, chrono::Utc::now().format("%Y%m%d_%H%M%S"));
+                let rotated_path = format!(
+                    "{}.{}",
+                    file_path,
+                    chrono::Utc::now().format("%Y%m%d_%H%M%S")
+                );
                 if let Err(e) = tokio::fs::rename(file_path, &rotated_path).await {
                     log::warn!("Failed to rotate log file: {}", e);
                 }
@@ -470,26 +477,30 @@ impl ErrorContext {
 #[macro_export]
 macro_rules! log_error {
     ($logger:expr, $correlation_id:expr, $error_type:expr, $message:expr) => {
-        $logger.log_error(
-            $correlation_id,
-            $error_type,
-            $message,
-            $crate::services::error_logging::ErrorLevel::Error,
-            $crate::services::error_logging::ErrorContext::new(),
-        ).await
+        $logger
+            .log_error(
+                $correlation_id,
+                $error_type,
+                $message,
+                $crate::services::error_logging::ErrorLevel::Error,
+                $crate::services::error_logging::ErrorContext::new(),
+            )
+            .await
     };
 }
 
 #[macro_export]
 macro_rules! log_error_with_context {
     ($logger:expr, $correlation_id:expr, $error_type:expr, $message:expr, $context:expr) => {
-        $logger.log_error(
-            $correlation_id,
-            $error_type,
-            $message,
-            $crate::services::error_logging::ErrorLevel::Error,
-            $context,
-        ).await
+        $logger
+            .log_error(
+                $correlation_id,
+                $error_type,
+                $message,
+                $crate::services::error_logging::ErrorLevel::Error,
+                $context,
+            )
+            .await
     };
 }
 
@@ -503,6 +514,8 @@ macro_rules! start_correlation {
 #[macro_export]
 macro_rules! start_correlation_child {
     ($logger:expr, $operation:expr, $parent_id:expr) => {
-        $logger.start_correlation_context($operation, Some($parent_id.to_string())).await
+        $logger
+            .start_correlation_context($operation, Some($parent_id.to_string()))
+            .await
     };
 }

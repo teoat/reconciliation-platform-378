@@ -1,17 +1,20 @@
 //! Validation service module
-//! 
+//!
 //! Provides comprehensive input validation for various data types
 
+pub mod business_rules;
 pub mod email;
-pub mod password;
-pub mod uuid;
 pub mod file;
 pub mod json_schema;
-pub mod business_rules;
+pub mod password;
 pub mod types;
+pub mod uuid;
 
 // Re-exports
-pub use types::{ValidationResult, CustomValidationError, ValidationService, SchemaValidator, ValidationRule, ValidationErrorType};
+pub use types::{
+    CustomValidationError, SchemaValidator, ValidationErrorType, ValidationResult, ValidationRule,
+    ValidationService,
+};
 
 // Main validation service that delegates to specialized validators
 use crate::errors::{AppError, AppResult};
@@ -31,10 +34,12 @@ impl ValidationServiceDelegate {
         Ok(Self {
             email_validator: email::EmailValidator::new()?,
             password_validator: password::PasswordValidator::new()?,
-            uuid_validator: uuid::UuidValidator::new().unwrap_or_else(|_| uuid::UuidValidator {}),
+            uuid_validator: uuid::UuidValidator::new().unwrap_or(uuid::UuidValidator {}),
             file_validator: file::FileValidator::new()?,
-            json_schema_validator: json_schema::JsonSchemaValidator::new().unwrap_or_else(|_| json_schema::JsonSchemaValidator {}),
-            business_rules_validator: business_rules::BusinessRulesValidator::new().unwrap_or_else(|_| business_rules::BusinessRulesValidator {}),
+            json_schema_validator: json_schema::JsonSchemaValidator::new()
+                .unwrap_or(json_schema::JsonSchemaValidator {}),
+            business_rules_validator: business_rules::BusinessRulesValidator::new()
+                .unwrap_or(business_rules::BusinessRulesValidator {}),
         })
     }
 
@@ -63,7 +68,11 @@ impl ValidationServiceDelegate {
         self.json_schema_validator.validate(data, schema)
     }
 
-    pub fn validate_business_rules(&self, entity_type: &str, data: &HashMap<String, serde_json::Value>) -> AppResult<()> {
+    pub fn validate_business_rules(
+        &self,
+        entity_type: &str,
+        data: &HashMap<String, serde_json::Value>,
+    ) -> AppResult<()> {
         self.business_rules_validator.validate(entity_type, data)
     }
 
@@ -72,10 +81,13 @@ impl ValidationServiceDelegate {
         if phone.is_empty() {
             return Ok(()); // Phone is optional
         }
-        let phone_regex = Regex::new(r"^\+?[1-9]\d{1,14}$")
-            .map_err(|_| AppError::InternalServerError("Failed to compile phone regex".to_string()))?;
+        let phone_regex = Regex::new(r"^\+?[1-9]\d{1,14}$").map_err(|_| {
+            AppError::InternalServerError("Failed to compile phone regex".to_string())
+        })?;
         if !phone_regex.is_match(phone) {
-            return Err(AppError::Validation("Invalid phone number format".to_string()));
+            return Err(AppError::Validation(
+                "Invalid phone number format".to_string(),
+            ));
         }
         Ok(())
     }
@@ -87,14 +99,16 @@ impl Default for ValidationServiceDelegate {
             // Fallback if initialization fails - create with empty validators
             log::error!("Failed to initialize ValidationServiceDelegate: {:?}", e);
             Self {
-                email_validator: email::EmailValidator::new().expect("Failed to create email validator"),
-                password_validator: password::PasswordValidator::new().expect("Failed to create password validator"),
+                email_validator: email::EmailValidator::new()
+                    .expect("Failed to create email validator"),
+                password_validator: password::PasswordValidator::new()
+                    .expect("Failed to create password validator"),
                 uuid_validator: uuid::UuidValidator {},
-                file_validator: file::FileValidator::new().expect("Failed to create file validator"),
+                file_validator: file::FileValidator::new()
+                    .expect("Failed to create file validator"),
                 json_schema_validator: json_schema::JsonSchemaValidator {},
                 business_rules_validator: business_rules::BusinessRulesValidator {},
             }
         })
     }
 }
-

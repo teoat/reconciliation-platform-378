@@ -1,9 +1,9 @@
 //! Password hashing and validation
 
-use bcrypt::{hash, verify, DEFAULT_COST};
 use crate::errors::{AppError, AppResult};
-use rand::Rng;
+use bcrypt::{hash, verify, DEFAULT_COST};
 use rand::distributions::Alphanumeric;
+use rand::Rng;
 
 /// Password manager
 pub struct PasswordManager;
@@ -47,7 +47,10 @@ impl PasswordManager {
             ));
         }
 
-        if !password.chars().any(|c| "!@#$%^&*()_+-=[]{}|;:,.<>?".contains(c)) {
+        if !password
+            .chars()
+            .any(|c| "!@#$%^&*()_+-=[]{}|;:,.<>?".contains(c))
+        {
             return Err(AppError::Validation(
                 "Password must contain at least one special character".to_string(),
             ));
@@ -67,4 +70,3 @@ impl PasswordManager {
         Ok(token)
     }
 }
-

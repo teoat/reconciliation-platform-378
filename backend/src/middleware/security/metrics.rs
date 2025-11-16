@@ -7,20 +7,20 @@ pub static CSRF_FAILURES: AtomicU64 = AtomicU64::new(0);
 pub static AUTH_DENIED: AtomicU64 = AtomicU64::new(0);
 pub static UNAUTHORIZED_ACCESS_ATTEMPTS: AtomicU64 = AtomicU64::new(0);
 
-pub fn get_rate_limit_blocks() -> u64 { 
-    RATE_LIMIT_BLOCKS.load(Ordering::Relaxed) 
+pub fn get_rate_limit_blocks() -> u64 {
+    RATE_LIMIT_BLOCKS.load(Ordering::Relaxed)
 }
 
-pub fn get_csrf_failures() -> u64 { 
-    CSRF_FAILURES.load(Ordering::Relaxed) 
+pub fn get_csrf_failures() -> u64 {
+    CSRF_FAILURES.load(Ordering::Relaxed)
 }
 
-pub fn get_auth_denied() -> u64 { 
-    AUTH_DENIED.load(Ordering::Relaxed) 
+pub fn get_auth_denied() -> u64 {
+    AUTH_DENIED.load(Ordering::Relaxed)
 }
 
-pub fn get_unauthorized_access_attempts() -> u64 { 
-    UNAUTHORIZED_ACCESS_ATTEMPTS.load(Ordering::Relaxed) 
+pub fn get_unauthorized_access_attempts() -> u64 {
+    UNAUTHORIZED_ACCESS_ATTEMPTS.load(Ordering::Relaxed)
 }
 
 pub fn get_all_security_metrics() -> String {
@@ -43,4 +43,3 @@ pub fn get_all_security_metrics() -> String {
         UNAUTHORIZED_ACCESS_ATTEMPTS.load(Ordering::Relaxed),
     )
 }
-

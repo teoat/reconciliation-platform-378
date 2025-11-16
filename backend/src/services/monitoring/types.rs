@@ -1,9 +1,9 @@
 //! Monitoring types and data structures
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::time::Duration;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 /// Health check result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,11 +31,11 @@ impl HealthStatus {
     pub fn is_healthy(&self) -> bool {
         matches!(self, HealthStatus::Healthy)
     }
-    
+
     pub fn is_degraded(&self) -> bool {
         matches!(self, HealthStatus::Degraded)
     }
-    
+
     pub fn is_unhealthy(&self) -> bool {
         matches!(self, HealthStatus::Unhealthy)
     }
@@ -105,4 +105,3 @@ pub struct NotificationChannel {
     pub endpoint: String,
     pub config: Option<serde_json::Value>,
 }
-

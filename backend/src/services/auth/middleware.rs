@@ -1,7 +1,7 @@
 //! Security middleware and CORS configuration
 
-use actix_web::HttpRequest;
 use crate::errors::{AppError, AppResult};
+use actix_web::HttpRequest;
 
 /// Security middleware utilities
 pub struct SecurityMiddleware;
@@ -37,14 +37,10 @@ impl SecurityMiddleware {
     }
 
     /// Validate file upload security
-    pub fn validate_file_upload(
-        filename: &str,
-        content_type: &str,
-        size: usize,
-    ) -> AppResult<()> {
+    pub fn validate_file_upload(filename: &str, content_type: &str, size: usize) -> AppResult<()> {
         // Check file extension
         let allowed_extensions = ["csv", "xlsx", "xls", "json", "txt"];
-        let extension = filename.split('.').last().unwrap_or("").to_lowercase();
+        let extension = filename.split('.').next_back().unwrap_or("").to_lowercase();
 
         if !allowed_extensions.contains(&extension.as_str()) {
             return Err(AppError::Validation(format!(
@@ -110,4 +106,3 @@ impl CorsConfig {
         ]
     }
 }
-

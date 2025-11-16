@@ -6,15 +6,15 @@
 //! - Interface-based programming
 
 use async_trait::async_trait;
-use uuid::Uuid;
 use std::sync::Arc;
+use uuid::Uuid;
 
 use crate::errors::AppResult;
 
 // Re-export types from sub-services for convenience
-pub use super::profile::UserProfile;
 pub use super::permissions::{Permission, Role};
 pub use super::preferences::{UserPreferences, UserSettings};
+pub use super::profile::UserProfile;
 
 /// Trait for user profile operations
 #[async_trait]
@@ -51,12 +51,7 @@ pub trait PermissionServiceTrait: Send + Sync {
     fn get_role_permissions(&self, role: &str) -> Vec<Permission>;
 
     /// Check if user has permission
-    async fn has_permission(
-        &self,
-        user_id: Uuid,
-        resource: &str,
-        action: &str,
-    ) -> AppResult<bool>;
+    async fn has_permission(&self, user_id: Uuid, resource: &str, action: &str) -> AppResult<bool>;
 
     /// Get role definition
     fn get_role(&self, role_id: &str) -> AppResult<Role>;
@@ -76,12 +71,7 @@ pub trait PreferencesServiceTrait: Send + Sync {
     ) -> AppResult<UserPreferences>;
 
     /// Update a specific preference
-    async fn update_preference(
-        &self,
-        user_id: Uuid,
-        key: &str,
-        value: &str,
-    ) -> AppResult<()>;
+    async fn update_preference(&self, user_id: Uuid, key: &str, value: &str) -> AppResult<()>;
 
     /// Get user settings (comprehensive)
     async fn get_settings(&self, user_id: Uuid) -> AppResult<UserSettings>;
@@ -187,19 +177,38 @@ pub trait UserServiceTrait: Send + Sync {
     async fn delete_user(&self, user_id: Uuid) -> AppResult<()>;
 
     /// List users with pagination
-    async fn list_users(&self, page: Option<i64>, per_page: Option<i64>) -> AppResult<UserListResponse>;
+    async fn list_users(
+        &self,
+        page: Option<i64>,
+        per_page: Option<i64>,
+    ) -> AppResult<UserListResponse>;
 
     /// Update user's last login time
     async fn update_last_login(&self, user_id: Uuid) -> AppResult<()>;
 
     /// Change user password
-    async fn change_password(&self, user_id: Uuid, current_password: &str, new_password: &str) -> AppResult<()>;
+    async fn change_password(
+        &self,
+        user_id: Uuid,
+        current_password: &str,
+        new_password: &str,
+    ) -> AppResult<()>;
 
     /// Search users
-    async fn search_users(&self, query: &str, page: Option<i64>, per_page: Option<i64>) -> AppResult<UserListResponse>;
+    async fn search_users(
+        &self,
+        query: &str,
+        page: Option<i64>,
+        per_page: Option<i64>,
+    ) -> AppResult<UserListResponse>;
 
     /// Get users by role
-    async fn get_users_by_role(&self, role: &str, page: Option<i64>, per_page: Option<i64>) -> AppResult<UserListResponse>;
+    async fn get_users_by_role(
+        &self,
+        role: &str,
+        page: Option<i64>,
+        per_page: Option<i64>,
+    ) -> AppResult<UserListResponse>;
 
     /// Get active users count
     async fn get_active_users_count(&self) -> AppResult<i64>;
@@ -214,7 +223,8 @@ pub trait UserServiceTrait: Send + Sync {
     ) -> AppResult<UserListResponse>;
 
     /// Bulk update user status
-    async fn bulk_update_user_status(&self, user_ids: Vec<Uuid>, is_active: bool) -> AppResult<i64>;
+    async fn bulk_update_user_status(&self, user_ids: Vec<Uuid>, is_active: bool)
+        -> AppResult<i64>;
 
     /// Get user statistics
     async fn get_user_statistics(&self) -> AppResult<UserStatistics>;
@@ -245,7 +255,9 @@ pub trait UserServiceTrait: Send + Sync {
         first_name: Option<String>,
         last_name: Option<String>,
     ) -> AppResult<UserProfile> {
-        self.profile().update_profile(user_id, email, first_name, last_name).await
+        self.profile()
+            .update_profile(user_id, email, first_name, last_name)
+            .await
     }
 
     /// Delegate to permission service - get user role
@@ -259,13 +271,10 @@ pub trait UserServiceTrait: Send + Sync {
     }
 
     /// Delegate to permission service - check permission
-    async fn has_permission(
-        &self,
-        user_id: Uuid,
-        resource: &str,
-        action: &str,
-    ) -> AppResult<bool> {
-        self.permissions().has_permission(user_id, resource, action).await
+    async fn has_permission(&self, user_id: Uuid, resource: &str, action: &str) -> AppResult<bool> {
+        self.permissions()
+            .has_permission(user_id, resource, action)
+            .await
     }
 
     /// Delegate to permission service - get role permissions
@@ -289,7 +298,9 @@ pub trait UserServiceTrait: Send + Sync {
         user_id: Uuid,
         preferences: UserPreferences,
     ) -> AppResult<UserPreferences> {
-        self.preferences().update_preferences(user_id, preferences).await
+        self.preferences()
+            .update_preferences(user_id, preferences)
+            .await
     }
 
     /// Delegate to preferences service - get user settings
@@ -307,12 +318,9 @@ pub trait UserServiceTrait: Send + Sync {
     }
 
     /// Delegate to preferences service - update specific preference
-    async fn update_user_preference(
-        &self,
-        user_id: Uuid,
-        key: &str,
-        value: &str,
-    ) -> AppResult<()> {
-        self.preferences().update_preference(user_id, key, value).await
+    async fn update_user_preference(&self, user_id: Uuid, key: &str, value: &str) -> AppResult<()> {
+        self.preferences()
+            .update_preference(user_id, key, value)
+            .await
     }
 }

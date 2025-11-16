@@ -15,4 +15,3 @@ impl UuidValidator {
             .map_err(|_| AppError::Validation("Invalid UUID format".to_string()))
     }
 }
-

@@ -1,9 +1,9 @@
 //! Helper functions for handlers
-//! 
+//!
 //! Shared utility functions used across multiple handler modules.
 
-use actix_web::HttpRequest;
 use crate::utils::extract_user_id as extract_user_id_util;
+use actix_web::HttpRequest;
 
 /// Helper function to mask email addresses for logging
 pub fn mask_email(email: &str) -> String {

@@ -51,34 +51,39 @@ where
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(
+        &self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let service = self.service.clone();
-        
+
         // Generate or retrieve correlation ID
-        let correlation_id = req.headers()
+        let correlation_id = req
+            .headers()
             .get(CORRELATION_ID_HEADER)
             .and_then(|h| h.to_str().ok())
             .map(|s| s.to_string())
             .unwrap_or_else(|| Uuid::new_v4().to_string());
-        
+
         // Store correlation ID in request extensions for access in handlers
         req.extensions_mut().insert(correlation_id.clone());
-        
+
         Box::pin(async move {
             let res = service.call(req).await?;
-            
+
             // Add correlation ID to response headers
             let (req, mut res) = res.into_parts();
             res.headers_mut().insert(
                 actix_web::http::header::HeaderName::from_static("x-correlation-id"),
-                actix_web::http::header::HeaderValue::from_str(&correlation_id)
-                    .unwrap_or_else(|_| actix_web::http::header::HeaderValue::from_static("unknown")),
+                actix_web::http::header::HeaderValue::from_str(&correlation_id).unwrap_or_else(
+                    |_| actix_web::http::header::HeaderValue::from_static("unknown"),
+                ),
             );
-            
+
             Ok(ServiceResponse::new(req, res))
         })
     }
@@ -100,4 +105,3 @@ impl CorrelationIdExt for actix_web::HttpRequest {
         self.extensions().get::<String>().cloned()
     }
 }
-

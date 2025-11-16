@@ -1,8 +1,8 @@
 //! Validation types and common structures
 
+use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use regex::Regex;
 
 use crate::errors::{AppError, AppResult};
 
@@ -37,22 +37,26 @@ impl ValidationService {
         Ok(Self {
             email_regex: Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")?,
             phone_regex: Regex::new(r"^\+?[1-9]\d{1,14}$")?,
-            password_regex: Regex::new(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$")?,
+            password_regex: Regex::new(
+                r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$",
+            )?,
             file_extension_regex: Regex::new(r"^\.(csv|xlsx|xls|json|xml|txt)$")?,
         })
     }
 
     pub fn validate_email(&self, email: &str) -> AppResult<()> {
         use super::email::EmailValidator;
-        let validator = EmailValidator::new()
-            .map_err(|e| AppError::InternalServerError(format!("Failed to create email validator: {:?}", e)))?;
+        let validator = EmailValidator::new().map_err(|e| {
+            AppError::InternalServerError(format!("Failed to create email validator: {:?}", e))
+        })?;
         validator.validate(email)
     }
 
     pub fn validate_password(&self, password: &str) -> AppResult<()> {
         use super::password::PasswordValidator;
-        let validator = PasswordValidator::new()
-            .map_err(|e| AppError::InternalServerError(format!("Failed to create password validator: {:?}", e)))?;
+        let validator = PasswordValidator::new().map_err(|e| {
+            AppError::InternalServerError(format!("Failed to create password validator: {:?}", e))
+        })?;
         validator.validate(password)
     }
 
@@ -61,7 +65,9 @@ impl ValidationService {
             return Ok(()); // Phone is optional
         }
         if !self.phone_regex.is_match(phone) {
-            return Err(AppError::Validation("Invalid phone number format".to_string()));
+            return Err(AppError::Validation(
+                "Invalid phone number format".to_string(),
+            ));
         }
         Ok(())
     }
@@ -73,27 +79,32 @@ impl ValidationService {
 
     pub fn validate_filename(&self, filename: &str) -> AppResult<()> {
         use super::file::FileValidator;
-        let validator = FileValidator::new()
-            .map_err(|e| AppError::InternalServerError(format!("Failed to create file validator: {:?}", e)))?;
+        let validator = FileValidator::new().map_err(|e| {
+            AppError::InternalServerError(format!("Failed to create file validator: {:?}", e))
+        })?;
         validator.validate_filename(filename)
     }
 
     pub fn validate_file_size(&self, size: u64, max_size: u64) -> AppResult<()> {
         use super::file::FileValidator;
-        let validator = FileValidator::new()
-            .map_err(|e| AppError::InternalServerError(format!("Failed to create file validator: {:?}", e)))?;
+        let validator = FileValidator::new().map_err(|e| {
+            AppError::InternalServerError(format!("Failed to create file validator: {:?}", e))
+        })?;
         validator.validate_size(size, max_size)
     }
 
     pub fn validate_csv_structure(&self, data: &str) -> AppResult<Vec<String>> {
         let lines: Vec<&str> = data.lines().collect();
-        
+
         if lines.is_empty() {
             return Err(AppError::Validation("CSV file is empty".to_string()));
         }
 
         let header_line = lines[0];
-        let headers: Vec<String> = header_line.split(',').map(|s| s.trim().to_string()).collect();
+        let headers: Vec<String> = header_line
+            .split(',')
+            .map(|s| s.trim().to_string())
+            .collect();
 
         if headers.is_empty() {
             return Err(AppError::Validation("CSV file has no headers".to_string()));
@@ -103,9 +114,10 @@ impl ValidationService {
         let mut seen_headers = std::collections::HashSet::new();
         for header in &headers {
             if !seen_headers.insert(header) {
-                return Err(AppError::Validation(
-                    format!("Duplicate header found: {}", header)
-                ));
+                return Err(AppError::Validation(format!(
+                    "Duplicate header found: {}",
+                    header
+                )));
             }
         }
 
@@ -113,9 +125,12 @@ impl ValidationService {
         for (line_num, line) in lines.iter().enumerate().skip(1) {
             let fields: Vec<&str> = line.split(',').collect();
             if fields.len() != headers.len() {
-                return Err(AppError::Validation(
-                    format!("Row {} has {} fields, expected {}", line_num + 1, fields.len(), headers.len())
-                ));
+                return Err(AppError::Validation(format!(
+                    "Row {} has {} fields, expected {}",
+                    line_num + 1,
+                    fields.len(),
+                    headers.len()
+                )));
             }
         }
 
@@ -128,14 +143,18 @@ impl ValidationService {
         validator.validate(data, schema)
     }
 
-    pub fn validate_data_integrity(&self, data: &HashMap<String, serde_json::Value>) -> AppResult<()> {
+    pub fn validate_data_integrity(
+        &self,
+        data: &HashMap<String, serde_json::Value>,
+    ) -> AppResult<()> {
         // Check for required fields
         let required_fields = vec!["id", "created_at", "updated_at"];
         for field in required_fields {
             if !data.contains_key(field) {
-                return Err(AppError::Validation(
-                    format!("Required field '{}' is missing", field)
-                ));
+                return Err(AppError::Validation(format!(
+                    "Required field '{}' is missing",
+                    field
+                )));
             }
         }
 
@@ -149,28 +168,38 @@ impl ValidationService {
         // Validate timestamps
         if let Some(created_at) = data.get("created_at") {
             if let Some(created_at_str) = created_at.as_str() {
-                chrono::DateTime::parse_from_rfc3339(created_at_str)
-                    .map_err(|_| AppError::Validation("Invalid created_at timestamp format".to_string()))?;
+                chrono::DateTime::parse_from_rfc3339(created_at_str).map_err(|_| {
+                    AppError::Validation("Invalid created_at timestamp format".to_string())
+                })?;
             }
         }
 
         if let Some(updated_at) = data.get("updated_at") {
             if let Some(updated_at_str) = updated_at.as_str() {
-                chrono::DateTime::parse_from_rfc3339(updated_at_str)
-                    .map_err(|_| AppError::Validation("Invalid updated_at timestamp format".to_string()))?;
+                chrono::DateTime::parse_from_rfc3339(updated_at_str).map_err(|_| {
+                    AppError::Validation("Invalid updated_at timestamp format".to_string())
+                })?;
             }
         }
 
         Ok(())
     }
 
-    pub fn validate_business_rules(&self, entity_type: &str, data: &HashMap<String, serde_json::Value>) -> AppResult<()> {
+    pub fn validate_business_rules(
+        &self,
+        entity_type: &str,
+        data: &HashMap<String, serde_json::Value>,
+    ) -> AppResult<()> {
         use super::business_rules::BusinessRulesValidator;
         let validator = BusinessRulesValidator::new()?;
         validator.validate(entity_type, data)
     }
 
-    pub fn validate_comprehensive(&self, entity_type: &str, data: &HashMap<String, serde_json::Value>) -> AppResult<ValidationResult> {
+    pub fn validate_comprehensive(
+        &self,
+        entity_type: &str,
+        data: &HashMap<String, serde_json::Value>,
+    ) -> AppResult<ValidationResult> {
         let mut errors = Vec::new();
         let mut warnings = Vec::new();
 
@@ -237,7 +266,11 @@ impl ValidationService {
                     if value.is_string() {
                         if let Some(str_value) = value.as_str() {
                             if str_value.len() > 1000 {
-                                warnings.push(format!("Field '{}' is very long ({} characters)", field, str_value.len()));
+                                warnings.push(format!(
+                                    "Field '{}' is very long ({} characters)",
+                                    field,
+                                    str_value.len()
+                                ));
                             }
                         }
                     }
@@ -279,4 +312,3 @@ pub enum ValidationErrorType {
     Invalid,
     Mismatch,
 }
-

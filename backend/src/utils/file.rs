@@ -28,7 +28,7 @@ pub fn generate_unique_filename(original_filename: &str) -> String {
     let extension = get_file_extension(original_filename)
         .map(|ext| format!(".{}", ext))
         .unwrap_or_default();
-    
+
     let uuid = Uuid::new_v4();
     format!("{}{}", uuid, extension)
 }
@@ -36,7 +36,10 @@ pub fn generate_unique_filename(original_filename: &str) -> String {
 /// Validate file size
 pub fn validate_file_size(size: usize, max_size: usize) -> Result<(), String> {
     if size > max_size {
-        Err(format!("File size {} exceeds maximum allowed size of {}", size, max_size))
+        Err(format!(
+            "File size {} exceeds maximum allowed size of {}",
+            size, max_size
+        ))
     } else {
         Ok(())
     }
@@ -47,12 +50,12 @@ pub fn format_file_size(bytes: u64) -> String {
     const UNITS: &[&str] = &["B", "KB", "MB", "GB", "TB"];
     let mut size = bytes as f64;
     let mut unit_index = 0;
-    
+
     while size >= 1024.0 && unit_index < UNITS.len() - 1 {
         size /= 1024.0;
         unit_index += 1;
     }
-    
+
     format!("{:.1} {}", size, UNITS[unit_index])
 }
 

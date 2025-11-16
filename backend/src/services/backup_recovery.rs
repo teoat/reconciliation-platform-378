@@ -1,15 +1,15 @@
 // backend/src/services/backup_recovery.rs
 use crate::errors::{AppError, AppResult};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::PathBuf;
+use std::sync::Arc;
 use std::time::Duration;
-use uuid::Uuid;
-use chrono::{DateTime, Utc};
 use tokio::fs;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use std::sync::Arc;
 use tokio::sync::RwLock;
+use uuid::Uuid;
 
 /// Backup configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,7 +53,11 @@ pub enum StorageConfig {
     /// Local filesystem storage
     Local { path: PathBuf },
     /// AWS S3 storage
-    S3 { bucket: String, region: String, prefix: String },
+    S3 {
+        bucket: String,
+        region: String,
+        prefix: String,
+    },
     /// Google Cloud Storage
     GCS { bucket: String, prefix: String },
     /// Azure Blob Storage
@@ -146,7 +150,10 @@ impl BackupService {
         };
 
         // Store metadata
-        self.metadata_store.write().await.insert(backup_id, metadata.clone());
+        self.metadata_store
+            .write()
+            .await
+            .insert(backup_id, metadata.clone());
 
         // Perform backup
         match self.perform_backup(&backup_id, BackupType::Full).await {
@@ -154,25 +161,31 @@ impl BackupService {
                 metadata.size_bytes = size;
                 metadata.checksum = checksum;
                 metadata.status = BackupStatus::Completed;
-                
+
                 // Update metadata
-                self.metadata_store.write().await.insert(backup_id, metadata);
-                
+                self.metadata_store
+                    .write()
+                    .await
+                    .insert(backup_id, metadata);
+
                 // Update stats
                 self.update_backup_stats(true, size).await;
-                
+
                 Ok(backup_id)
             }
             Err(e) => {
                 metadata.status = BackupStatus::Failed;
                 metadata.error_message = Some(e.to_string());
-                
+
                 // Update metadata
-                self.metadata_store.write().await.insert(backup_id, metadata);
-                
+                self.metadata_store
+                    .write()
+                    .await
+                    .insert(backup_id, metadata);
+
                 // Update stats
                 self.update_backup_stats(false, 0).await;
-                
+
                 Err(e)
             }
         }
@@ -184,8 +197,15 @@ impl BackupService {
         let start_time = Utc::now();
 
         // Verify base backup exists
-        if !self.metadata_store.read().await.contains_key(&base_backup_id) {
-            return Err(AppError::ValidationError("Base backup not found".to_string()));
+        if !self
+            .metadata_store
+            .read()
+            .await
+            .contains_key(&base_backup_id)
+        {
+            return Err(AppError::ValidationError(
+                "Base backup not found".to_string(),
+            ));
         }
 
         // Create backup metadata
@@ -201,33 +221,45 @@ impl BackupService {
         };
 
         // Store metadata
-        self.metadata_store.write().await.insert(backup_id, metadata.clone());
+        self.metadata_store
+            .write()
+            .await
+            .insert(backup_id, metadata.clone());
 
         // Perform incremental backup
-        match self.perform_incremental_backup(&backup_id, base_backup_id).await {
+        match self
+            .perform_incremental_backup(&backup_id, base_backup_id)
+            .await
+        {
             Ok((size, checksum)) => {
                 metadata.size_bytes = size;
                 metadata.checksum = checksum;
                 metadata.status = BackupStatus::Completed;
-                
+
                 // Update metadata
-                self.metadata_store.write().await.insert(backup_id, metadata);
-                
+                self.metadata_store
+                    .write()
+                    .await
+                    .insert(backup_id, metadata);
+
                 // Update stats
                 self.update_backup_stats(true, size).await;
-                
+
                 Ok(backup_id)
             }
             Err(e) => {
                 metadata.status = BackupStatus::Failed;
                 metadata.error_message = Some(e.to_string());
-                
+
                 // Update metadata
-                self.metadata_store.write().await.insert(backup_id, metadata);
-                
+                self.metadata_store
+                    .write()
+                    .await
+                    .insert(backup_id, metadata);
+
                 // Update stats
                 self.update_backup_stats(false, 0).await;
-                
+
                 Err(e)
             }
         }
@@ -236,7 +268,10 @@ impl BackupService {
     /// Restore from backup
     pub async fn restore_backup(&self, backup_id: Uuid) -> AppResult<()> {
         // Get backup metadata
-        let metadata = self.metadata_store.read().await
+        let metadata = self
+            .metadata_store
+            .read()
+            .await
             .get(&backup_id)
             .ok_or_else(|| AppError::ValidationError("Backup not found".to_string()))?
             .clone();
@@ -244,7 +279,10 @@ impl BackupService {
         // Update status
         let mut updated_metadata = metadata.clone();
         updated_metadata.status = BackupStatus::Restoring;
-        self.metadata_store.write().await.insert(backup_id, updated_metadata);
+        self.metadata_store
+            .write()
+            .await
+            .insert(backup_id, updated_metadata);
 
         // Perform restore
         match self.perform_restore(&metadata).await {
@@ -252,7 +290,7 @@ impl BackupService {
                 // Update stats
                 let mut stats = self.backup_stats.write().await;
                 stats.last_restore_time = Some(Utc::now());
-                
+
                 Ok(())
             }
             Err(e) => {
@@ -260,8 +298,11 @@ impl BackupService {
                 let mut failed_metadata = metadata;
                 failed_metadata.status = BackupStatus::Failed;
                 failed_metadata.error_message = Some(e.to_string());
-                self.metadata_store.write().await.insert(backup_id, failed_metadata);
-                
+                self.metadata_store
+                    .write()
+                    .await
+                    .insert(backup_id, failed_metadata);
+
                 Err(e)
             }
         }
@@ -276,22 +317,23 @@ impl BackupService {
     /// Get backup metadata
     pub async fn get_backup_metadata(&self, backup_id: Uuid) -> AppResult<BackupMetadata> {
         let metadata_store = self.metadata_store.read().await;
-        metadata_store.get(&backup_id)
+        metadata_store
+            .get(&backup_id)
             .ok_or_else(|| AppError::ValidationError("Backup not found".to_string()))
-            .map(|m| m.clone())
+            .cloned()
     }
 
     /// Delete backup
     pub async fn delete_backup(&self, backup_id: Uuid) -> AppResult<()> {
         // Get metadata
         let metadata = self.get_backup_metadata(backup_id).await?;
-        
+
         // Delete from storage
         self.delete_backup_from_storage(&metadata).await?;
-        
+
         // Remove from metadata store
         self.metadata_store.write().await.remove(&backup_id);
-        
+
         Ok(())
     }
 
@@ -299,16 +341,16 @@ impl BackupService {
     pub async fn cleanup_old_backups(&self) -> AppResult<u32> {
         let mut deleted_count = 0;
         let now = Utc::now();
-        
+
         let mut metadata_store = self.metadata_store.write().await;
         let mut to_delete = Vec::new();
-        
+
         for (backup_id, metadata) in metadata_store.iter() {
             if metadata.retention_until < now {
                 to_delete.push(*backup_id);
             }
         }
-        
+
         for backup_id in to_delete {
             if let Some(metadata) = metadata_store.remove(&backup_id) {
                 // Delete from storage
@@ -318,7 +360,7 @@ impl BackupService {
                 deleted_count += 1;
             }
         }
-        
+
         Ok(deleted_count)
     }
 
@@ -329,11 +371,19 @@ impl BackupService {
     }
 
     /// Perform the actual backup
-    async fn perform_backup(&self, backup_id: &Uuid, backup_type: BackupType) -> AppResult<(u64, String)> {
+    async fn perform_backup(
+        &self,
+        backup_id: &Uuid,
+        backup_type: BackupType,
+    ) -> AppResult<(u64, String)> {
         match backup_type {
             BackupType::Full => self.perform_full_backup(backup_id).await,
-            BackupType::Incremental => Err(AppError::InternalServerError("Incremental backup not implemented".to_string())),
-            BackupType::Differential => Err(AppError::InternalServerError("Differential backup not implemented".to_string())),
+            BackupType::Incremental => Err(AppError::InternalServerError(
+                "Incremental backup not implemented".to_string(),
+            )),
+            BackupType::Differential => Err(AppError::InternalServerError(
+                "Differential backup not implemented".to_string(),
+            )),
             BackupType::FileSystem => self.perform_filesystem_backup(backup_id).await,
             BackupType::Configuration => self.perform_config_backup(backup_id).await,
         }
@@ -346,38 +396,45 @@ impl BackupService {
         // 2. Create a database dump
         // 3. Compress and encrypt if configured
         // 4. Upload to storage
-        
+
         // For now, we'll simulate this
         let backup_data = format!("Full database backup for {}", backup_id);
         let compressed_data = self.compress_data(backup_data.as_bytes())?;
-        
+
         let size = compressed_data.len() as u64;
         let checksum = self.calculate_checksum(&compressed_data);
-        
+
         // Store backup
         self.store_backup(backup_id, &compressed_data).await?;
-        
+
         Ok((size, checksum))
     }
 
     /// Perform incremental backup
-    async fn perform_incremental_backup(&self, backup_id: &Uuid, base_backup_id: Uuid) -> AppResult<(u64, String)> {
+    async fn perform_incremental_backup(
+        &self,
+        backup_id: &Uuid,
+        base_backup_id: Uuid,
+    ) -> AppResult<(u64, String)> {
         // In a real implementation, this would:
         // 1. Compare with base backup
         // 2. Create incremental changes
         // 3. Compress and encrypt
         // 4. Upload to storage
-        
+
         // For now, we'll simulate this
-        let backup_data = format!("Incremental backup for {} based on {}", backup_id, base_backup_id);
+        let backup_data = format!(
+            "Incremental backup for {} based on {}",
+            backup_id, base_backup_id
+        );
         let compressed_data = self.compress_data(backup_data.as_bytes())?;
-        
+
         let size = compressed_data.len() as u64;
         let checksum = self.calculate_checksum(&compressed_data);
-        
+
         // Store backup
         self.store_backup(backup_id, &compressed_data).await?;
-        
+
         Ok((size, checksum))
     }
 
@@ -387,17 +444,17 @@ impl BackupService {
         // 1. Create tar archive of filesystem
         // 2. Compress and encrypt
         // 3. Upload to storage
-        
+
         // For now, we'll simulate this
         let backup_data = format!("Filesystem backup for {}", backup_id);
         let compressed_data = self.compress_data(backup_data.as_bytes())?;
-        
+
         let size = compressed_data.len() as u64;
         let checksum = self.calculate_checksum(&compressed_data);
-        
+
         // Store backup
         self.store_backup(backup_id, &compressed_data).await?;
-        
+
         Ok((size, checksum))
     }
 
@@ -407,17 +464,17 @@ impl BackupService {
         // 1. Export configuration files
         // 2. Compress and encrypt
         // 3. Upload to storage
-        
+
         // For now, we'll simulate this
         let backup_data = format!("Configuration backup for {}", backup_id);
         let compressed_data = self.compress_data(backup_data.as_bytes())?;
-        
+
         let size = compressed_data.len() as u64;
         let checksum = self.calculate_checksum(&compressed_data);
-        
+
         // Store backup
         self.store_backup(backup_id, &compressed_data).await?;
-        
+
         Ok((size, checksum))
     }
 
@@ -425,16 +482,18 @@ impl BackupService {
     async fn perform_restore(&self, metadata: &BackupMetadata) -> AppResult<()> {
         // Retrieve backup from storage
         let backup_data = self.retrieve_backup(metadata).await?;
-        
+
         // Verify checksum
         let calculated_checksum = self.calculate_checksum(&backup_data);
         if calculated_checksum != metadata.checksum {
-            return Err(AppError::InternalServerError("Backup checksum verification failed".to_string()));
+            return Err(AppError::InternalServerError(
+                "Backup checksum verification failed".to_string(),
+            ));
         }
-        
+
         // Decompress data
         let decompressed_data = self.decompress_data(&backup_data)?;
-        
+
         // Restore based on backup type
         match metadata.backup_type {
             BackupType::Full => self.restore_full_backup(&decompressed_data).await,
@@ -485,8 +544,9 @@ impl BackupService {
         match &self.config.storage_config {
             StorageConfig::Local { path } => {
                 let backup_path = path.join(format!("{}.backup", backup_id));
-                fs::write(&backup_path, data).await
-                    .map_err(|e| AppError::InternalServerError(format!("Failed to write backup file: {}", e)))?;
+                fs::write(&backup_path, data).await.map_err(|e| {
+                    AppError::InternalServerError(format!("Failed to write backup file: {}", e))
+                })?;
             }
             StorageConfig::S3 { .. } => {
                 // In a real implementation, this would upload to S3
@@ -501,7 +561,7 @@ impl BackupService {
                 println!("Uploading backup {} to Azure", backup_id);
             }
         }
-        
+
         Ok(())
     }
 
@@ -510,8 +570,9 @@ impl BackupService {
         match &self.config.storage_config {
             StorageConfig::Local { path } => {
                 let backup_path = path.join(format!("{}.backup", metadata.id));
-                fs::read(&backup_path).await
-                    .map_err(|e| AppError::InternalServerError(format!("Failed to read backup file: {}", e)))
+                fs::read(&backup_path).await.map_err(|e| {
+                    AppError::InternalServerError(format!("Failed to read backup file: {}", e))
+                })
             }
             StorageConfig::S3 { .. } => {
                 // In a real implementation, this would download from S3
@@ -533,8 +594,9 @@ impl BackupService {
         match &self.config.storage_config {
             StorageConfig::Local { path } => {
                 let backup_path = path.join(format!("{}.backup", metadata.id));
-                fs::remove_file(&backup_path).await
-                    .map_err(|e| AppError::InternalServerError(format!("Failed to delete backup file: {}", e)))?;
+                fs::remove_file(&backup_path).await.map_err(|e| {
+                    AppError::InternalServerError(format!("Failed to delete backup file: {}", e))
+                })?;
             }
             StorageConfig::S3 { .. } => {
                 // In a real implementation, this would delete from S3
@@ -549,7 +611,7 @@ impl BackupService {
                 println!("Deleting backup {} from Azure", metadata.id);
             }
         }
-        
+
         Ok(())
     }
 
@@ -579,7 +641,7 @@ impl BackupService {
     fn calculate_checksum(&self, data: &[u8]) -> String {
         use std::collections::hash_map::DefaultHasher;
         use std::hash::{Hash, Hasher};
-        
+
         let mut hasher = DefaultHasher::new();
         data.hash(&mut hasher);
         format!("{:x}", hasher.finish())
@@ -588,7 +650,8 @@ impl BackupService {
     /// Calculate retention date
     fn calculate_retention_date(&self, created_at: DateTime<Utc>) -> DateTime<Utc> {
         // For now, we'll use daily retention
-        created_at + chrono::Duration::days(self.config.retention_policy.daily_retention_days as i64)
+        created_at
+            + chrono::Duration::days(self.config.retention_policy.daily_retention_days as i64)
     }
 
     /// Update backup statistics
@@ -658,7 +721,10 @@ impl DisasterRecoveryService {
 
     /// Execute disaster recovery procedure
     pub async fn execute_recovery(&self, procedure_id: &str) -> AppResult<()> {
-        let procedure = self.recovery_procedures.read().await
+        let procedure = self
+            .recovery_procedures
+            .read()
+            .await
             .get(procedure_id)
             .ok_or_else(|| AppError::ValidationError("Recovery procedure not found".to_string()))?
             .clone();
@@ -705,7 +771,10 @@ impl DisasterRecoveryService {
 
     /// Add recovery procedure
     pub async fn add_recovery_procedure(&self, procedure: RecoveryProcedure) -> AppResult<()> {
-        self.recovery_procedures.write().await.insert(procedure.id.clone(), procedure);
+        self.recovery_procedures
+            .write()
+            .await
+            .insert(procedure.id.clone(), procedure);
         Ok(())
     }
 
@@ -741,15 +810,15 @@ mod tests {
         };
 
         let backup_service = BackupService::new(config);
-        
+
         // Test full backup
         let backup_id = backup_service.create_full_backup().await.unwrap();
         assert!(!backup_id.is_nil());
-        
+
         // Test listing backups
         let backups = backup_service.list_backups().await.unwrap();
         assert_eq!(backups.len(), 1);
-        
+
         // Test getting backup metadata
         let metadata = backup_service.get_backup_metadata(backup_id).await.unwrap();
         assert_eq!(metadata.id, backup_id);
@@ -777,28 +846,29 @@ mod tests {
 
         let backup_service = BackupService::new(config);
         let recovery_service = DisasterRecoveryService::new(backup_service);
-        
+
         // Test adding recovery procedure
         let procedure = RecoveryProcedure {
             id: "test_procedure".to_string(),
             name: "Test Recovery Procedure".to_string(),
             description: "A test recovery procedure".to_string(),
-            steps: vec![
-                RecoveryStep {
-                    id: "step1".to_string(),
-                    name: "Test Step".to_string(),
-                    description: "A test step".to_string(),
-                    step_type: RecoveryStepType::RunCommand,
-                    parameters: HashMap::new(),
-                    timeout: Duration::from_secs(30),
-                }
-            ],
+            steps: vec![RecoveryStep {
+                id: "step1".to_string(),
+                name: "Test Step".to_string(),
+                description: "A test step".to_string(),
+                step_type: RecoveryStepType::RunCommand,
+                parameters: HashMap::new(),
+                timeout: Duration::from_secs(30),
+            }],
             estimated_time: Duration::from_secs(60),
             dependencies: Vec::new(),
         };
-        
-        recovery_service.add_recovery_procedure(procedure).await.unwrap();
-        
+
+        recovery_service
+            .add_recovery_procedure(procedure)
+            .await
+            .unwrap();
+
         // Test listing procedures
         let procedures = recovery_service.list_recovery_procedures().await.unwrap();
         assert_eq!(procedures.len(), 1);

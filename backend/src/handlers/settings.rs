@@ -1,12 +1,12 @@
 //! Settings management handlers module
 
 use actix_web::{web, HttpResponse, Result};
-use uuid::Uuid;
 use std::time::Duration;
+use uuid::Uuid;
 
 use crate::errors::AppError;
+use crate::handlers::types::ApiResponse;
 use crate::services::cache::MultiLevelCache;
-use crate::handlers::types::{ApiResponse};
 
 /// Settings data structure
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
@@ -48,8 +48,7 @@ pub struct DisplaySettings {
 
 /// Configure settings routes
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
-    cfg
-        .route("", web::get().to(get_settings))
+    cfg.route("", web::get().to(get_settings))
         .route("", web::put().to(update_settings))
         .route("/reset", web::post().to(reset_settings));
 }
@@ -102,7 +101,13 @@ pub async fn get_settings(
     };
 
     // Cache for 30 minutes
-    let _ = cache.set(&cache_key, &default_settings, Some(Duration::from_secs(1800))).await;
+    let _ = cache
+        .set(
+            &cache_key,
+            &default_settings,
+            Some(Duration::from_secs(1800)),
+        )
+        .await;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -123,22 +128,30 @@ pub async fn update_settings(
 
     // Validate settings
     if !["light", "dark", "auto"].contains(&settings.theme.as_str()) {
-        return Err(AppError::Validation("Invalid theme. Must be 'light', 'dark', or 'auto'".to_string()));
+        return Err(AppError::Validation(
+            "Invalid theme. Must be 'light', 'dark', or 'auto'".to_string(),
+        ));
     }
 
     if !["public", "private", "team"].contains(&settings.privacy.profile_visibility.as_str()) {
-        return Err(AppError::Validation("Invalid profile visibility. Must be 'public', 'private', or 'team'".to_string()));
+        return Err(AppError::Validation(
+            "Invalid profile visibility. Must be 'public', 'private', or 'team'".to_string(),
+        ));
     }
 
     if settings.display.items_per_page < 10 || settings.display.items_per_page > 100 {
-        return Err(AppError::Validation("Items per page must be between 10 and 100".to_string()));
+        return Err(AppError::Validation(
+            "Items per page must be between 10 and 100".to_string(),
+        ));
     }
 
     // In a real implementation, this would save to database
     // For now, just cache the settings
 
     let cache_key = format!("settings:{}", user_id_val);
-    let _ = cache.set(&cache_key, &settings, Some(Duration::from_secs(1800))).await;
+    let _ = cache
+        .set(&cache_key, &settings, Some(Duration::from_secs(1800)))
+        .await;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,

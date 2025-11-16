@@ -1,10 +1,10 @@
 //! Critical Monitoring Alerts Setup
-//! 
+//!
 //! Configures essential monitoring alerts for production deployment
 
-use std::collections::HashMap;
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 
 /// Critical alert configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,10 +21,23 @@ pub struct CriticalAlert {
 /// Alert threshold configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum AlertThreshold {
-    ErrorRate { max_percentage: f64, time_window_minutes: u32 },
-    ResponseTime { max_ms: u32, percentile: u8 },
-    Availability { min_percentage: f64, time_window_minutes: u32 },
-    Custom { metric: String, operator: String, value: f64 },
+    ErrorRate {
+        max_percentage: f64,
+        time_window_minutes: u32,
+    },
+    ResponseTime {
+        max_ms: u32,
+        percentile: u8,
+    },
+    Availability {
+        min_percentage: f64,
+        time_window_minutes: u32,
+    },
+    Custom {
+        metric: String,
+        operator: String,
+        value: f64,
+    },
 }
 
 /// Alert severity levels
@@ -75,18 +88,18 @@ impl CriticalAlertManager {
     /// Create new critical alert manager
     pub fn new() -> Self {
         let notification_service = NotificationService::new();
-        
+
         let mut manager = Self {
             alerts: HashMap::new(),
             notification_service,
         };
-        
+
         // Setup default critical alerts
         manager.setup_default_alerts();
-        
+
         manager
     }
-    
+
     /// Setup default critical alerts
     fn setup_default_alerts(&mut self) {
         // Error rate alert
@@ -102,7 +115,7 @@ impl CriticalAlertManager {
             enabled: true,
             notification_channels: vec!["slack".to_string(), "email".to_string()],
         });
-        
+
         // Response time alert
         self.add_alert(CriticalAlert {
             id: "response_time_high".to_string(),
@@ -116,7 +129,7 @@ impl CriticalAlertManager {
             enabled: true,
             notification_channels: vec!["slack".to_string()],
         });
-        
+
         // Availability alert
         self.add_alert(CriticalAlert {
             id: "availability_low".to_string(),
@@ -128,9 +141,13 @@ impl CriticalAlertManager {
             },
             severity: AlertSeverity::Critical,
             enabled: true,
-            notification_channels: vec!["slack".to_string(), "email".to_string(), "webhook".to_string()],
+            notification_channels: vec![
+                "slack".to_string(),
+                "email".to_string(),
+                "webhook".to_string(),
+            ],
         });
-        
+
         // Database connection alert
         self.add_alert(CriticalAlert {
             id: "database_connections_high".to_string(),
@@ -145,7 +162,7 @@ impl CriticalAlertManager {
             enabled: true,
             notification_channels: vec!["slack".to_string()],
         });
-        
+
         // Memory usage alert
         self.add_alert(CriticalAlert {
             id: "memory_usage_high".to_string(),
@@ -160,7 +177,7 @@ impl CriticalAlertManager {
             enabled: true,
             notification_channels: vec!["slack".to_string()],
         });
-        
+
         // Disk space alert
         self.add_alert(CriticalAlert {
             id: "disk_space_low".to_string(),
@@ -176,51 +193,49 @@ impl CriticalAlertManager {
             notification_channels: vec!["slack".to_string(), "email".to_string()],
         });
     }
-    
+
     /// Add a new alert
     pub fn add_alert(&mut self, alert: CriticalAlert) {
         self.alerts.insert(alert.id.clone(), alert);
     }
-    
+
     /// Check if alert should trigger
     pub fn check_alert(&self, alert_id: &str, current_value: f64) -> bool {
         let Some(alert) = self.alerts.get(alert_id) else {
             return false;
         };
-        
+
         if !alert.enabled {
             return false;
         }
-        
+
         match &alert.threshold {
-            AlertThreshold::ErrorRate { max_percentage, .. } => {
-                current_value > *max_percentage
-            },
-            AlertThreshold::ResponseTime { max_ms, .. } => {
-                current_value > (*max_ms as f64)
-            },
-            AlertThreshold::Availability { min_percentage, .. } => {
-                current_value < *min_percentage
-            },
-            AlertThreshold::Custom { operator, value, .. } => {
-                match operator.as_str() {
-                    ">" => current_value > *value,
-                    "<" => current_value < *value,
-                    ">=" => current_value >= *value,
-                    "<=" => current_value <= *value,
-                    "==" => (current_value - *value).abs() < 0.001,
-                    _ => false,
-                }
+            AlertThreshold::ErrorRate { max_percentage, .. } => current_value > *max_percentage,
+            AlertThreshold::ResponseTime { max_ms, .. } => current_value > (*max_ms as f64),
+            AlertThreshold::Availability { min_percentage, .. } => current_value < *min_percentage,
+            AlertThreshold::Custom {
+                operator, value, ..
+            } => match operator.as_str() {
+                ">" => current_value > *value,
+                "<" => current_value < *value,
+                ">=" => current_value >= *value,
+                "<=" => current_value <= *value,
+                "==" => (current_value - *value).abs() < 0.001,
+                _ => false,
             },
         }
     }
-    
+
     /// Trigger alert notification
-    pub async fn trigger_alert(&self, alert_id: &str, current_value: f64) -> Result<(), AlertError> {
+    pub async fn trigger_alert(
+        &self,
+        alert_id: &str,
+        current_value: f64,
+    ) -> Result<(), AlertError> {
         let Some(alert) = self.alerts.get(alert_id) else {
             return Err(AlertError::AlertNotFound(alert_id.to_string()));
         };
-        
+
         let message = format!(
             "🚨 {} Alert Triggered\n\nAlert: {}\nDescription: {}\nCurrent Value: {:.2}\nThreshold: {:?}\nTime: {}",
             alert.severity,
@@ -230,39 +245,43 @@ impl CriticalAlertManager {
             alert.threshold,
             Utc::now().format("%Y-%m-%d %H:%M:%S UTC")
         );
-        
+
         // Send to all configured channels
         for channel in &alert.notification_channels {
             match channel.as_str() {
                 "slack" => {
                     self.notification_service.send_slack_alert(&message).await?;
-                },
+                }
                 "email" => {
-                    self.notification_service.send_email_alert(&alert.name, &message).await?;
-                },
+                    self.notification_service
+                        .send_email_alert(&alert.name, &message)
+                        .await?;
+                }
                 "webhook" => {
-                    self.notification_service.send_webhook_alert(&message).await?;
-                },
+                    self.notification_service
+                        .send_webhook_alert(&message)
+                        .await?;
+                }
                 _ => {
                     log::warn!("Unknown notification channel: {}", channel);
                 }
             }
         }
-        
+
         log::info!("Alert {} triggered and notifications sent", alert_id);
         Ok(())
     }
-    
+
     /// Get all alerts
     pub fn get_alerts(&self) -> Vec<&CriticalAlert> {
         self.alerts.values().collect()
     }
-    
+
     /// Get enabled alerts
     pub fn get_enabled_alerts(&self) -> Vec<&CriticalAlert> {
         self.alerts.values().filter(|alert| alert.enabled).collect()
     }
-    
+
     /// Enable/disable alert
     pub fn set_alert_enabled(&mut self, alert_id: &str, enabled: bool) -> Result<(), AlertError> {
         if let Some(alert) = self.alerts.get_mut(alert_id) {
@@ -271,6 +290,12 @@ impl CriticalAlertManager {
         } else {
             Err(AlertError::AlertNotFound(alert_id.to_string()))
         }
+    }
+}
+
+impl Default for NotificationService {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -287,7 +312,7 @@ impl NotificationService {
                 .collect(),
         }
     }
-    
+
     fn load_email_config() -> Option<EmailConfig> {
         Some(EmailConfig {
             smtp_host: std::env::var("SMTP_HOST").ok()?,
@@ -303,7 +328,7 @@ impl NotificationService {
                 .collect(),
         })
     }
-    
+
     async fn send_slack_alert(&self, message: &str) -> Result<(), AlertError> {
         if let Some(webhook_url) = &self.slack_webhook {
             let payload = serde_json::json!({
@@ -311,7 +336,7 @@ impl NotificationService {
                 "username": "378-Alerts",
                 "icon_emoji": ":warning:"
             });
-            
+
             let client = reqwest::Client::new();
             let response = client
                 .post(webhook_url)
@@ -319,19 +344,22 @@ impl NotificationService {
                 .send()
                 .await
                 .map_err(|e| AlertError::NotificationError(e.to_string()))?;
-            
+
             if !response.status().is_success() {
-                return Err(AlertError::NotificationError(format!("Slack webhook failed: {}", response.status())));
+                return Err(AlertError::NotificationError(format!(
+                    "Slack webhook failed: {}",
+                    response.status()
+                )));
             }
-            
+
             log::info!("Slack alert sent successfully");
         } else {
             log::warn!("Slack webhook URL not configured");
         }
-        
+
         Ok(())
     }
-    
+
     async fn send_email_alert(&self, subject: &str, message: &str) -> Result<(), AlertError> {
         if let Some(config) = &self.email_config {
             // In a real implementation, this would use lettre to send emails
@@ -340,10 +368,10 @@ impl NotificationService {
         } else {
             log::warn!("Email configuration not available");
         }
-        
+
         Ok(())
     }
-    
+
     async fn send_webhook_alert(&self, message: &str) -> Result<(), AlertError> {
         for webhook_url in &self.webhook_urls {
             let payload = serde_json::json!({
@@ -351,7 +379,7 @@ impl NotificationService {
                 "timestamp": Utc::now(),
                 "source": "378-reconciliation-platform"
             });
-            
+
             let client = reqwest::Client::new();
             let response = client
                 .post(webhook_url)
@@ -359,14 +387,18 @@ impl NotificationService {
                 .send()
                 .await
                 .map_err(|e| AlertError::NotificationError(e.to_string()))?;
-            
+
             if !response.status().is_success() {
-                log::warn!("Webhook alert failed for {}: {}", webhook_url, response.status());
+                log::warn!(
+                    "Webhook alert failed for {}: {}",
+                    webhook_url,
+                    response.status()
+                );
             } else {
                 log::info!("Webhook alert sent to {}", webhook_url);
             }
         }
-        
+
         Ok(())
     }
 }
@@ -376,10 +408,10 @@ impl NotificationService {
 pub enum AlertError {
     #[error("Alert not found: {0}")]
     AlertNotFound(String),
-    
+
     #[error("Notification error: {0}")]
     NotificationError(String),
-    
+
     #[error("Configuration error: {0}")]
     ConfigurationError(String),
 }

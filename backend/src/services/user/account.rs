@@ -4,12 +4,12 @@
 //! and login tracking.
 
 use diesel::prelude::*;
-use uuid::Uuid;
 use std::sync::Arc;
+use uuid::Uuid;
 
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
-use crate::models::{User, UpdateUser, schema::users};
+use crate::models::{schema::users, UpdateUser, User};
 use crate::services::auth::AuthService;
 
 /// User account service for authentication-related operations
@@ -47,7 +47,12 @@ impl UserAccountService {
     }
 
     /// Change user password
-    pub async fn change_password(&self, user_id: Uuid, current_password: &str, new_password: &str) -> AppResult<()> {
+    pub async fn change_password(
+        &self,
+        user_id: Uuid,
+        current_password: &str,
+        new_password: &str,
+    ) -> AppResult<()> {
         let mut conn = self.db.get_connection()?;
 
         // Get user
@@ -57,8 +62,13 @@ impl UserAccountService {
             .map_err(AppError::Database)?;
 
         // Verify current password
-        if !self.auth_service.verify_password(current_password, &user.password_hash)? {
-            return Err(AppError::Authentication("Current password is incorrect".to_string()));
+        if !self
+            .auth_service
+            .verify_password(current_password, &user.password_hash)?
+        {
+            return Err(AppError::Authentication(
+                "Current password is incorrect".to_string(),
+            ));
         }
 
         // Validate new password
@@ -76,4 +86,3 @@ impl UserAccountService {
         Ok(())
     }
 }
-

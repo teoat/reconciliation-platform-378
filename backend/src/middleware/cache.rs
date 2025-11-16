@@ -1,10 +1,11 @@
-use actix_web::{
-    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    Error, HttpResponse, body::{MessageBody, BoxBody},
-};
-use futures::future::{LocalBoxFuture, ok, Ready};
-use std::rc::Rc;
 use crate::services::cache::MultiLevelCache;
+use actix_web::{
+    body::{BoxBody, MessageBody},
+    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
+    Error, HttpResponse,
+};
+use futures::future::{ok, LocalBoxFuture, Ready};
+use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -38,19 +39,29 @@ where
     type Future = Ready<Result<Self::Transform, Self::InitError>>;
 
     fn new_transform(&self, service: S) -> Self::Future {
-        let redis_url = std::env::var("REDIS_URL")
-            .unwrap_or_else(|_| "redis://localhost:6379".to_string());
+        let redis_url =
+            std::env::var("REDIS_URL").unwrap_or_else(|_| "redis://localhost:6379".to_string());
         let cache_service = match MultiLevelCache::new(&redis_url) {
             Ok(cache) => cache,
             Err(e) => {
-                log::error!("Failed to create cache service with REDIS_URL {}: {}", redis_url, e);
+                log::error!(
+                    "Failed to create cache service with REDIS_URL {}: {}",
+                    redis_url,
+                    e
+                );
                 log::error!("Cache middleware will not function correctly - ensure REDIS_URL is set correctly");
                 // Return a fallback or panic depending on requirements
                 // For now, we'll panic as cache service is critical
-                panic!("Failed to create cache service - ensure REDIS_URL is set correctly: {}", e);
+                panic!(
+                    "Failed to create cache service - ensure REDIS_URL is set correctly: {}",
+                    e
+                );
             }
         };
-        ok(CacheMiddleware::new(Rc::new(service), Arc::new(cache_service)))
+        ok(CacheMiddleware::new(
+            Rc::new(service),
+            Arc::new(cache_service),
+        ))
     }
 }
 
@@ -104,15 +115,20 @@ where
         Box::pin(async move {
             let path = req.path().to_string();
             let method = req.method().to_string();
-            
+
             // Only cache GET requests
             if method == "GET" {
                 let cache_key = format!("cache:{}:{}", method, path);
-                
+
                 // Try to get from cache
-                if let Ok(Some(cached_response)) = cache_service.get::<serde_json::Value>(&cache_key).await {
+                if let Ok(Some(cached_response)) =
+                    cache_service.get::<serde_json::Value>(&cache_key).await
+                {
                     let response = HttpResponse::Ok().json(cached_response);
-                    return Ok(ServiceResponse::new(req.into_parts().0, response.map_into_boxed_body()));
+                    return Ok(ServiceResponse::new(
+                        req.into_parts().0,
+                        response.map_into_boxed_body(),
+                    ));
                 }
             }
 
@@ -126,7 +142,9 @@ where
                 match actix_web::body::to_bytes(res.into_body()).await {
                     Ok(bytes) => {
                         if let Ok(body) = serde_json::from_slice::<serde_json::Value>(&bytes) {
-                            let _ = cache_service.set(&cache_key, &body, Some(Duration::from_secs(60))).await;
+                            let _ = cache_service
+                                .set(&cache_key, &body, Some(Duration::from_secs(60)))
+                                .await;
                         }
                         let res = HttpResponse::build(status).body(bytes);
                         return Ok(ServiceResponse::new(req, res.map_into_boxed_body()));

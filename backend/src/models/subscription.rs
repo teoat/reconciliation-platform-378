@@ -2,8 +2,8 @@
 // Handles subscription tiers and billing
 
 // use diesel::{Queryable, Insertable, Identifiable, AsChangeset};
-use serde::{Serialize, Deserialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 // use crate::models::schema::subscriptions; // Table not yet created
@@ -169,21 +169,20 @@ impl UsageMetrics {
             Some(limit) => self.reconciliation_count <= limit,
             None => true,
         };
-        
+
         let storage_ok = self.storage_bytes <= self.storage_limit_bytes;
-        
+
         let project_ok = match self.project_limit {
             Some(limit) => self.project_count <= limit,
             None => true,
         };
-        
+
         reconciliation_ok && storage_ok && project_ok
     }
 
     pub fn reconciliation_usage_percent(&self) -> Option<f64> {
-        self.reconciliation_limit.map(|limit| {
-            (self.reconciliation_count as f64 / limit as f64) * 100.0
-        })
+        self.reconciliation_limit
+            .map(|limit| (self.reconciliation_count as f64 / limit as f64) * 100.0)
     }
 
     pub fn storage_usage_percent(&self) -> f64 {
@@ -211,4 +210,3 @@ pub struct InvoiceLineItem {
     pub amount: f64,
     pub quantity: usize,
 }
-

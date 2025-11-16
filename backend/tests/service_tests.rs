@@ -3,9 +3,11 @@
 
 #[cfg(test)]
 mod error_translation_service_tests {
-    use reconciliation_backend::services::error_translation::{ErrorTranslationService, ErrorContext};
-    use uuid::Uuid;
     use chrono::Utc;
+    use reconciliation_backend::services::error_translation::{
+        ErrorContext, ErrorTranslationService,
+    };
+    use uuid::Uuid;
 
     #[test]
     fn test_error_translation_service_creation() {
@@ -46,7 +48,11 @@ mod error_translation_service_tests {
             resource_id: Some("file_123".to_string()),
         };
 
-        let result = service.translate_error("VALIDATION_ERROR", context, Some("Custom message".to_string()));
+        let result = service.translate_error(
+            "VALIDATION_ERROR",
+            context,
+            Some("Custom message".to_string()),
+        );
         assert!(!result.title.is_empty());
         assert!(!result.message.is_empty());
         assert!(!result.code.is_empty());
@@ -77,8 +83,16 @@ mod error_translation_service_tests {
 
         for code in error_codes {
             let result = service.translate_error(code, empty_context.clone(), None);
-            assert!(!result.title.is_empty(), "Title should not be empty for {}", code);
-            assert!(!result.message.is_empty(), "Message should not be empty for {}", code);
+            assert!(
+                !result.title.is_empty(),
+                "Title should not be empty for {}",
+                code
+            );
+            assert!(
+                !result.message.is_empty(),
+                "Message should not be empty for {}",
+                code
+            );
             assert_eq!(result.code, code);
         }
     }
@@ -99,19 +113,22 @@ mod error_translation_service_tests {
         assert!(!result.title.is_empty());
         assert!(!result.message.is_empty());
         // Should default to generic error
-        assert!(result.message.contains("unexpected error") || result.message.contains("error occurred"));
+        assert!(
+            result.message.contains("unexpected error")
+                || result.message.contains("error occurred")
+        );
     }
 }
 
 #[cfg(test)]
 mod file_service_tests {
-    use reconciliation_backend::services::file::{FileService, FileInfo, FileMetadata};
+    use actix_multipart::Multipart;
+    use futures_util::stream::StreamExt;
     use reconciliation_backend::database::Database;
+    use reconciliation_backend::services::file::{FileInfo, FileMetadata, FileService};
+    use std::io::Cursor;
     use std::path::PathBuf;
     use uuid::Uuid;
-    use actix_multipart::Multipart;
-    use std::io::Cursor;
-    use futures_util::stream::StreamExt;
 
     // Mock database for testing
     fn create_mock_database() -> Database {
@@ -162,7 +179,9 @@ mod file_service_tests {
 
 #[cfg(test)]
 mod validation_service_tests {
-    use reconciliation_backend::services::validation::{ValidationService, ValidationResult, ValidationRule};
+    use reconciliation_backend::services::validation::{
+        ValidationResult, ValidationRule, ValidationService,
+    };
     use serde_json::Value;
 
     #[test]
@@ -203,7 +222,9 @@ mod validation_service_tests {
         let service = ValidationService::new();
 
         // Valid UUID
-        assert!(service.validate_uuid("550e8400-e29b-41d4-a716-446655440000").is_ok());
+        assert!(service
+            .validate_uuid("550e8400-e29b-41d4-a716-446655440000")
+            .is_ok());
 
         // Invalid UUID
         assert!(service.validate_uuid("not-a-uuid").is_err());
@@ -225,7 +246,9 @@ mod validation_service_tests {
 
         // Valid data
         let valid_data = serde_json::json!({"name": "John", "age": 30});
-        assert!(service.validate_json_schema(valid_data, schema.clone()).is_ok());
+        assert!(service
+            .validate_json_schema(valid_data, schema.clone())
+            .is_ok());
 
         // Invalid data - missing required field
         let invalid_data = serde_json::json!({"age": 30});
@@ -237,11 +260,17 @@ mod validation_service_tests {
         let service = ValidationService::new();
 
         // Valid file types
-        assert!(service.validate_file_type("document.pdf", "application/pdf").is_ok());
-        assert!(service.validate_file_type("image.jpg", "image/jpeg").is_ok());
+        assert!(service
+            .validate_file_type("document.pdf", "application/pdf")
+            .is_ok());
+        assert!(service
+            .validate_file_type("image.jpg", "image/jpeg")
+            .is_ok());
 
         // Invalid file types
-        assert!(service.validate_file_type("malicious.exe", "application/x-msdownload").is_err());
+        assert!(service
+            .validate_file_type("malicious.exe", "application/x-msdownload")
+            .is_err());
 
         // File size validation
         assert!(service.validate_file_size(1024, 2048).is_ok()); // Under limit
@@ -251,7 +280,7 @@ mod validation_service_tests {
 
 #[cfg(test)]
 mod security_service_tests {
-    use reconciliation_backend::services::security::{SecurityService, SecurityEvent, ThreatLevel};
+    use reconciliation_backend::services::security::{SecurityEvent, SecurityService, ThreatLevel};
     use uuid::Uuid;
 
     #[test]
@@ -298,15 +327,23 @@ mod security_service_tests {
         let service = SecurityService::new();
 
         // Test various threat patterns
-        assert!(service.detect_sql_injection("SELECT * FROM users").is_some());
-        assert!(service.detect_xss("<script>alert('xss')</script>").is_some());
-        assert!(service.detect_brute_force(vec!["192.168.1.1"; 10]).is_some());
+        assert!(service
+            .detect_sql_injection("SELECT * FROM users")
+            .is_some());
+        assert!(service
+            .detect_xss("<script>alert('xss')</script>")
+            .is_some());
+        assert!(service
+            .detect_brute_force(vec!["192.168.1.1"; 10])
+            .is_some());
     }
 }
 
 #[cfg(test)]
 mod monitoring_service_tests {
-    use reconciliation_backend::services::monitoring::{MonitoringService, MetricType, MetricValue};
+    use reconciliation_backend::services::monitoring::{
+        MetricType, MetricValue, MonitoringService,
+    };
     use std::collections::HashMap;
 
     #[test]
@@ -328,7 +365,11 @@ mod monitoring_service_tests {
         assert!(true);
 
         // Record a histogram metric
-        service.record_metric("test_histogram", MetricValue::Histogram(vec![1.0, 2.0, 3.0]), HashMap::new());
+        service.record_metric(
+            "test_histogram",
+            MetricValue::Histogram(vec![1.0, 2.0, 3.0]),
+            HashMap::new(),
+        );
         assert!(true);
     }
 
@@ -357,7 +398,7 @@ mod monitoring_service_tests {
 
 #[cfg(test)]
 mod cache_service_tests {
-    use reconciliation_backend::services::cache::{CacheService, CacheEntry};
+    use reconciliation_backend::services::cache::{CacheEntry, CacheService};
     use std::time::Duration;
 
     #[test]
@@ -429,7 +470,7 @@ mod cache_service_tests {
 
 #[cfg(test)]
 mod email_service_tests {
-    use reconciliation_backend::services::email::{EmailService, EmailMessage};
+    use reconciliation_backend::services::email::{EmailMessage, EmailService};
     use uuid::Uuid;
 
     #[test]
@@ -482,7 +523,9 @@ mod email_service_tests {
 
 #[cfg(test)]
 mod backup_recovery_service_tests {
-    use reconciliation_backend::services::backup_recovery::{BackupRecoveryService, BackupConfig, RecoveryPoint};
+    use reconciliation_backend::services::backup_recovery::{
+        BackupConfig, BackupRecoveryService, RecoveryPoint,
+    };
     use uuid::Uuid;
 
     #[test]
@@ -537,7 +580,9 @@ mod backup_recovery_service_tests {
 
 #[cfg(test)]
 mod analytics_service_tests {
-    use reconciliation_backend::services::analytics::{AnalyticsService, AnalyticsEvent, MetricAggregation};
+    use reconciliation_backend::services::analytics::{
+        AnalyticsEvent, AnalyticsService, MetricAggregation,
+    };
     use uuid::Uuid;
 
     #[test]

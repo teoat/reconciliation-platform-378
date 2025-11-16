@@ -3,19 +3,19 @@
 //! This module provides JWT authentication, password hashing, role-based access control,
 //! and security middleware, split into focused sub-modules.
 
-pub mod types;
 pub mod jwt;
+pub mod middleware;
 pub mod password;
 pub mod roles;
+pub mod types;
 pub mod validation;
-pub mod middleware;
 
-pub use types::*;
 pub use jwt::JwtManager;
+pub use middleware::{CorsConfig, SecurityMiddleware};
 pub use password::PasswordManager;
-pub use roles::{UserRole, RoleManager};
+pub use roles::{RoleManager, UserRole};
+pub use types::*;
 pub use validation::ValidationUtils;
-pub use middleware::{SecurityMiddleware, CorsConfig};
 
 use crate::errors::{AppError, AppResult};
 
@@ -98,8 +98,8 @@ impl EnhancedAuthService {
         Self {
             jwt_secret,
             jwt_expiration,
-            session_timeout: 3600,        // 1 hour
-            password_reset_timeout: 1800, // 30 minutes
+            session_timeout: 3600,          // 1 hour
+            password_reset_timeout: 1800,   // 30 minutes
             session_rotation_interval: 900, // Rotate session every 15 minutes
         }
     }
@@ -145,10 +145,10 @@ impl EnhancedAuthService {
         email: &str,
         db: &crate::database::Database,
     ) -> AppResult<String> {
-        use diesel::prelude::*;
         use crate::models::schema::password_reset_tokens;
         use crate::models::NewPasswordResetToken;
-        use sha2::{Sha256, Digest};
+        use diesel::prelude::*;
+        use sha2::{Digest, Sha256};
 
         // Check if user exists
         let mut conn = db.get_connection()?;
@@ -169,9 +169,7 @@ impl EnhancedAuthService {
         let now = chrono::Utc::now();
         diesel::update(password_reset_tokens::table)
             .filter(password_reset_tokens::user_id.eq(user.id))
-            .set(crate::models::UpdatePasswordResetToken {
-                used_at: Some(now),
-            })
+            .set(crate::models::UpdatePasswordResetToken { used_at: Some(now) })
             .execute(&mut conn)
             .map_err(AppError::Database)?;
 
@@ -198,11 +196,11 @@ impl EnhancedAuthService {
         new_password: &str,
         db: &crate::database::Database,
     ) -> AppResult<()> {
-        use diesel::prelude::*;
         use crate::models::schema::password_reset_tokens;
         use crate::models::schema::users;
         use crate::models::{PasswordResetToken, UpdatePasswordResetToken};
-        use sha2::{Sha256, Digest};
+        use diesel::prelude::*;
+        use sha2::{Digest, Sha256};
 
         // Validate password strength
         PasswordManager::validate_password_strength(new_password)?;
@@ -217,9 +215,7 @@ impl EnhancedAuthService {
         let reset_token = password_reset_tokens::table
             .filter(password_reset_tokens::token_hash.eq(&token_hash))
             .first::<PasswordResetToken>(&mut conn)
-            .map_err(|_| {
-                AppError::Authentication("Invalid or expired reset token".to_string())
-            })?;
+            .map_err(|_| AppError::Authentication("Invalid or expired reset token".to_string()))?;
 
         // Check if token is already used
         if reset_token.used_at.is_some() {
@@ -247,9 +243,7 @@ impl EnhancedAuthService {
         // Mark token as used
         diesel::update(password_reset_tokens::table)
             .filter(password_reset_tokens::id.eq(reset_token.id))
-            .set(UpdatePasswordResetToken {
-                used_at: Some(now),
-            })
+            .set(UpdatePasswordResetToken { used_at: Some(now) })
             .execute(&mut conn)
             .map_err(AppError::Database)?;
 
@@ -299,10 +293,10 @@ impl EnhancedAuthService {
         _email: &str,
         db: &crate::database::Database,
     ) -> AppResult<String> {
-        use diesel::prelude::*;
         use crate::models::schema::email_verification_tokens;
         use crate::models::NewEmailVerificationToken;
-        use sha2::{Sha256, Digest};
+        use diesel::prelude::*;
+        use sha2::{Digest, Sha256};
 
         // Generate verification token
         let token = PasswordManager::generate_reset_token()?;
@@ -335,15 +329,11 @@ impl EnhancedAuthService {
     }
 
     /// Verify email with token
-    pub async fn verify_email(
-        &self,
-        token: &str,
-        db: &crate::database::Database,
-    ) -> AppResult<()> {
-        use diesel::prelude::*;
+    pub async fn verify_email(&self, token: &str, db: &crate::database::Database) -> AppResult<()> {
         use crate::models::schema::email_verification_tokens;
         use crate::models::{EmailVerificationToken, UpdateEmailVerificationToken};
-        use sha2::{Sha256, Digest};
+        use diesel::prelude::*;
+        use sha2::{Digest, Sha256};
 
         // Hash the provided token
         let mut hasher = Sha256::new();
@@ -361,7 +351,9 @@ impl EnhancedAuthService {
 
         // Check if already verified
         if verification_token.used_at.is_some() {
-            return Err(AppError::Authentication("Email already verified".to_string()));
+            return Err(AppError::Authentication(
+                "Email already verified".to_string(),
+            ));
         }
 
         // Check if expired
@@ -375,9 +367,7 @@ impl EnhancedAuthService {
         // Mark as verified
         diesel::update(email_verification_tokens::table)
             .filter(email_verification_tokens::id.eq(verification_token.id))
-            .set(UpdateEmailVerificationToken {
-                used_at: Some(now),
-            })
+            .set(UpdateEmailVerificationToken { used_at: Some(now) })
             .execute(&mut conn)
             .map_err(AppError::Database)?;
 
@@ -387,4 +377,3 @@ impl EnhancedAuthService {
         Ok(())
     }
 }
-

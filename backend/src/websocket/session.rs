@@ -2,17 +2,17 @@
 //!
 //! This module contains the WebSocket session actor and related connection handling.
 
+use actix::{Actor, ActorContext, Addr, AsyncContext, Handler, StreamHandler};
 use actix_web_actors::ws;
-use actix::{Actor, StreamHandler, Handler, Addr, AsyncContext, ActorContext};
-use uuid::Uuid;
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::time::Instant;
+use uuid::Uuid;
 
-use crate::errors::AppResult;
 use crate::database::Database;
-use crate::websocket::types::*;
+use crate::errors::AppResult;
 use crate::websocket::server::WsServer;
+use crate::websocket::types::*;
 
 /// WebSocket session actor
 pub struct WsSession {
@@ -69,7 +69,9 @@ impl Actor for WsSession {
     fn stopped(&mut self, _ctx: &mut Self::Context) {
         // Unregister session from server if authenticated
         if let Some(user_id) = self.user_id.clone() {
-            self.server.do_send(UnregisterSession { user_id: user_id.to_string() });
+            self.server.do_send(UnregisterSession {
+                user_id: user_id.to_string(),
+            });
         }
     }
 }
@@ -79,41 +81,54 @@ impl Handler<WsMessage> for WsSession {
 
     fn handle(&mut self, msg: WsMessage, ctx: &mut Self::Context) {
         match msg {
-            WsMessage::Auth { token } => {
-                match self.validate_token(&token) {
-                    Ok(claims) => {
-                        self.user_id = Some(claims.sub.clone());
-                        self.authenticated = true;
-                        
-                        let response = WsMessage::Notification {
-                            title: "Authentication".to_string(),
-                            message: "Authentication successful".to_string(),
-                            level: "success".to_string(),
-                        };
-                        ctx.text(serde_json::to_string(&response).unwrap_or_default());
-                    }
-                    Err(_) => {
-                        let response = WsMessage::Error {
-                            code: "AUTH_ERROR".to_string(),
-                            message: "Invalid authentication token".to_string(),
-                        };
-                        ctx.text(serde_json::to_string(&response).unwrap_or_default());
-                    }
+            WsMessage::Auth { token } => match self.validate_token(&token) {
+                Ok(claims) => {
+                    self.user_id = Some(claims.sub.clone());
+                    self.authenticated = true;
+
+                    let response = WsMessage::Notification {
+                        title: "Authentication".to_string(),
+                        message: "Authentication successful".to_string(),
+                        level: "success".to_string(),
+                    };
+                    ctx.text(serde_json::to_string(&response).unwrap_or_default());
                 }
-            }
+                Err(_) => {
+                    let response = WsMessage::Error {
+                        code: "AUTH_ERROR".to_string(),
+                        message: "Invalid authentication token".to_string(),
+                    };
+                    ctx.text(serde_json::to_string(&response).unwrap_or_default());
+                }
+            },
             WsMessage::JoinProject { project_id } => {
                 self.handle_join_project(project_id, ctx);
             }
             WsMessage::LeaveProject { project_id } => {
                 self.handle_leave_project(project_id, ctx);
             }
-            WsMessage::DataUpdate { project_id, entity_type, entity_id, action, data } => {
+            WsMessage::DataUpdate {
+                project_id,
+                entity_type,
+                entity_id,
+                action,
+                data,
+            } => {
                 self.handle_data_update(project_id, entity_type, entity_id, action, data, ctx);
             }
-            WsMessage::Collaboration { project_id, user_id, action, data } => {
+            WsMessage::Collaboration {
+                project_id,
+                user_id,
+                action,
+                data,
+            } => {
                 self.handle_collaboration(project_id, user_id, action, data, ctx);
             }
-            WsMessage::Notification { title, message, level } => {
+            WsMessage::Notification {
+                title,
+                message,
+                level,
+            } => {
                 self.handle_notification(title, message, level, ctx);
             }
             WsMessage::Error { code, message } => {
@@ -126,8 +141,10 @@ impl Handler<WsMessage> for WsSession {
                 // Handle progress and metrics updates
                 // Note: These message types will be broadcast to all connected clients in the project
             }
-            WsMessage::AuthSuccess { .. } | WsMessage::ProjectJoined { .. } 
-            | WsMessage::ProjectLeft { .. } | WsMessage::Ping => {
+            WsMessage::AuthSuccess { .. }
+            | WsMessage::ProjectJoined { .. }
+            | WsMessage::ProjectLeft { .. }
+            | WsMessage::Ping => {
                 // Handle these message types
                 // Note: These are acknowledged but not broadcast (client-specific messages)
             }
@@ -196,7 +213,13 @@ impl WsSession {
                 };
                 ctx.text(serde_json::to_string(&response).unwrap_or_default());
             }
-            WsMessage::DataUpdate { project_id, entity_type, entity_id, action, data } => {
+            WsMessage::DataUpdate {
+                project_id,
+                entity_type,
+                entity_id,
+                action,
+                data,
+            } => {
                 let response = WsMessage::DataUpdate {
                     project_id,
                     entity_type,
@@ -206,7 +229,12 @@ impl WsSession {
                 };
                 ctx.text(serde_json::to_string(&response).unwrap_or_default());
             }
-            WsMessage::Collaboration { project_id, user_id, action, data } => {
+            WsMessage::Collaboration {
+                project_id,
+                user_id,
+                action,
+                data,
+            } => {
                 let response = WsMessage::Collaboration {
                     project_id,
                     user_id,
@@ -232,12 +260,12 @@ impl WsSession {
             Ok(claims) => {
                 self.user_id = Some(claims.sub.clone());
                 self.authenticated = true;
-                
+
                 self.server.do_send(RegisterSession {
                     user_id: claims.sub.clone(),
                     session: ctx.address(),
                 });
-                
+
                 let response = WsMessage::Notification {
                     title: "Authentication".to_string(),
                     message: "Authenticated successfully".to_string(),
@@ -267,7 +295,7 @@ impl WsSession {
         }
 
         self.project_rooms.insert(project_id);
-        
+
         if let Some(user_id) = &self.user_id {
             self.server.do_send(JoinProjectRoom {
                 user_id: user_id.to_string(),
@@ -275,7 +303,7 @@ impl WsSession {
                 session: ctx.address(),
             });
         }
-        
+
         let response = WsMessage::Notification {
             title: "Project".to_string(),
             message: format!("Joined project {}", project_id),
@@ -287,14 +315,14 @@ impl WsSession {
     /// Handle leaving project room
     fn handle_leave_project(&mut self, project_id: Uuid, ctx: &mut ws::WebsocketContext<Self>) {
         self.project_rooms.remove(&project_id);
-        
+
         if let Some(user_id) = &self.user_id {
             self.server.do_send(LeaveProjectRoom {
                 user_id: user_id.to_string(),
                 project_id,
             });
         }
-        
+
         let response = WsMessage::Notification {
             title: "Project".to_string(),
             message: format!("Left project {}", project_id),
@@ -304,7 +332,15 @@ impl WsSession {
     }
 
     /// Handle data update
-    fn handle_data_update(&mut self, project_id: Uuid, entity_type: String, entity_id: Uuid, action: String, data: serde_json::Value, ctx: &mut ws::WebsocketContext<Self>) {
+    fn handle_data_update(
+        &mut self,
+        project_id: Uuid,
+        entity_type: String,
+        entity_id: Uuid,
+        action: String,
+        data: serde_json::Value,
+        ctx: &mut ws::WebsocketContext<Self>,
+    ) {
         if !self.authenticated || !self.project_rooms.contains(&project_id) {
             let response = WsMessage::Error {
                 code: "AUTH_ERROR".to_string(),
@@ -316,13 +352,26 @@ impl WsSession {
 
         self.server.do_send(BroadcastToProject {
             project_id,
-            message: WsMessage::DataUpdate { project_id, entity_type, entity_id, action, data },
+            message: WsMessage::DataUpdate {
+                project_id,
+                entity_type,
+                entity_id,
+                action,
+                data,
+            },
             exclude_session: Some(ctx.address()),
         });
     }
 
     /// Handle collaboration message
-    fn handle_collaboration(&mut self, project_id: Uuid, user_id: String, action: String, data: serde_json::Value, ctx: &mut ws::WebsocketContext<Self>) {
+    fn handle_collaboration(
+        &mut self,
+        project_id: Uuid,
+        user_id: String,
+        action: String,
+        data: serde_json::Value,
+        ctx: &mut ws::WebsocketContext<Self>,
+    ) {
         if !self.authenticated || !self.project_rooms.contains(&project_id) {
             let response = WsMessage::Error {
                 code: "AUTH_ERROR".to_string(),
@@ -334,19 +383,39 @@ impl WsSession {
 
         self.server.do_send(BroadcastToProject {
             project_id,
-            message: WsMessage::Collaboration { project_id, user_id, action, data },
+            message: WsMessage::Collaboration {
+                project_id,
+                user_id,
+                action,
+                data,
+            },
             exclude_session: Some(ctx.address()),
         });
     }
 
     /// Handle notification
-    fn handle_notification(&mut self, title: String, message: String, level: String, ctx: &mut ws::WebsocketContext<Self>) {
-        let response = WsMessage::Notification { title, message, level };
+    fn handle_notification(
+        &mut self,
+        title: String,
+        message: String,
+        level: String,
+        ctx: &mut ws::WebsocketContext<Self>,
+    ) {
+        let response = WsMessage::Notification {
+            title,
+            message,
+            level,
+        };
         ctx.text(serde_json::to_string(&response).unwrap_or_default());
     }
 
     /// Handle error message
-    fn handle_error(&mut self, code: String, message: String, ctx: &mut ws::WebsocketContext<Self>) {
+    fn handle_error(
+        &mut self,
+        code: String,
+        message: String,
+        ctx: &mut ws::WebsocketContext<Self>,
+    ) {
         let response = WsMessage::Error { code, message };
         ctx.text(serde_json::to_string(&response).unwrap_or_default());
     }
@@ -356,4 +425,3 @@ impl WsSession {
         self.last_ping = Some(Instant::now());
     }
 }
-

@@ -1,13 +1,13 @@
 // Security Hardening Service
 // This service handles security measures, vulnerability scanning, and compliance validation
 
+use bcrypt::{hash, verify, DEFAULT_COST};
+use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
-use bcrypt::{hash, verify, DEFAULT_COST};
 use uuid::Uuid;
 
 // Security configuration
@@ -42,7 +42,10 @@ impl Default for SecurityConfig {
             rate_limit_window: Duration::from_secs(3600), // 1 hour
             enable_csrf: true,
             enable_cors: true,
-            allowed_origins: vec!["http://localhost:1000".to_string(), "http://localhost:3000".to_string()],
+            allowed_origins: vec![
+                "http://localhost:1000".to_string(),
+                "http://localhost:3000".to_string(),
+            ],
             enable_helmet: true,
             enable_hsts: true,
             enable_csp: true,
@@ -145,11 +148,14 @@ impl SecurityService {
     }
 
     pub async fn verify_password(&self, password: &str, hash: &str) -> Result<bool, String> {
-        verify(password, hash)
-            .map_err(|e| format!("Password verification failed: {}", e))
+        verify(password, hash).map_err(|e| format!("Password verification failed: {}", e))
     }
 
-    pub async fn generate_jwt_token(&self, user_id: &str, claims: HashMap<String, String>) -> Result<String, String> {
+    pub async fn generate_jwt_token(
+        &self,
+        user_id: &str,
+        claims: HashMap<String, String>,
+    ) -> Result<String, String> {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|_| "System time is before Unix epoch")?
@@ -178,7 +184,12 @@ impl SecurityService {
     }
 
     // Login attempt tracking
-    pub async fn record_login_attempt(&self, ip_address: &str, user_id: Option<&str>, success: bool) {
+    pub async fn record_login_attempt(
+        &self,
+        ip_address: &str,
+        user_id: Option<&str>,
+        success: bool,
+    ) {
         let now = SystemTime::now();
         let key = format!("{}:{}", ip_address, user_id.unwrap_or("unknown"));
 
@@ -200,35 +211,52 @@ impl SecurityService {
                 user_id: user_id.map(|s| s.to_string()),
                 ip_address: ip_address.to_string(),
                 user_agent: None,
-                description: format!("Account locked due to {} failed login attempts", user_attempts.len()),
+                description: format!(
+                    "Account locked due to {} failed login attempts",
+                    user_attempts.len()
+                ),
                 metadata: HashMap::new(),
                 timestamp: chrono::Utc::now().to_rfc3339(),
-            }).await;
+            })
+            .await;
         }
 
         // Log the attempt
         self.log_security_event(SecurityEvent {
             id: Uuid::new_v4().to_string(),
-            event_type: if success { SecurityEventType::LoginSuccess } else { SecurityEventType::LoginFailure },
-            severity: if success { SecuritySeverity::Low } else { SecuritySeverity::Medium },
+            event_type: if success {
+                SecurityEventType::LoginSuccess
+            } else {
+                SecurityEventType::LoginFailure
+            },
+            severity: if success {
+                SecuritySeverity::Low
+            } else {
+                SecuritySeverity::Medium
+            },
             user_id: user_id.map(|s| s.to_string()),
             ip_address: ip_address.to_string(),
             user_agent: None,
-            description: if success { "Successful login".to_string() } else { "Failed login attempt".to_string() },
+            description: if success {
+                "Successful login".to_string()
+            } else {
+                "Failed login attempt".to_string()
+            },
             metadata: HashMap::new(),
             timestamp: chrono::Utc::now().to_rfc3339(),
-        }).await;
+        })
+        .await;
     }
 
     pub async fn is_account_locked(&self, ip_address: &str, user_id: Option<&str>) -> bool {
         let key = format!("{}:{}", ip_address, user_id.unwrap_or("unknown"));
         let attempts = self.login_attempts.read().await;
-        
+
         if let Some(user_attempts) = attempts.get(&key) {
             let now = SystemTime::now();
             let cutoff = now - self.config.lockout_duration;
             let recent_attempts = user_attempts.iter().filter(|&&time| time > cutoff).count();
-            
+
             recent_attempts >= self.config.max_login_attempts as usize
         } else {
             false
@@ -242,9 +270,11 @@ impl SecurityService {
 
         if let Some(entry) = rate_limits.get_mut(identifier) {
             // Check if still in current window
-            if now.duration_since(entry.window_start)
+            if now
+                .duration_since(entry.window_start)
                 .map_err(|_| "Time went backwards")?
-                < self.config.rate_limit_window {
+                < self.config.rate_limit_window
+            {
                 if entry.count >= self.config.rate_limit_requests {
                     // Rate limit exceeded
                     self.log_security_event(SecurityEvent {
@@ -257,8 +287,9 @@ impl SecurityService {
                         description: "Rate limit exceeded".to_string(),
                         metadata: HashMap::new(),
                         timestamp: chrono::Utc::now().to_rfc3339(),
-                    }).await;
-                    
+                    })
+                    .await;
+
                     return Err("Rate limit exceeded".to_string());
                 }
                 entry.count += 1;
@@ -269,18 +300,26 @@ impl SecurityService {
             }
         } else {
             // First request
-            rate_limits.insert(identifier.to_string(), RateLimitEntry {
-                count: 1,
-                window_start: now,
-                blocked_until: None,
-            });
+            rate_limits.insert(
+                identifier.to_string(),
+                RateLimitEntry {
+                    count: 1,
+                    window_start: now,
+                    blocked_until: None,
+                },
+            );
         }
 
         Ok(true)
     }
 
     // Session management
-    pub async fn create_session(&self, user_id: &str, ip_address: &str, user_agent: &str) -> String {
+    pub async fn create_session(
+        &self,
+        user_id: &str,
+        ip_address: &str,
+        user_agent: &str,
+    ) -> String {
         let session_id = Uuid::new_v4().to_string();
         let now = SystemTime::now();
         let expires_at = now + self.config.session_timeout;
@@ -302,10 +341,10 @@ impl SecurityService {
 
     pub async fn validate_session(&self, session_id: &str) -> Result<SessionInfo, String> {
         let mut sessions = self.active_sessions.write().await;
-        
+
         if let Some(session) = sessions.get_mut(session_id) {
             let now = SystemTime::now();
-            
+
             if now > session.expires_at {
                 sessions.remove(session_id);
                 return Err("Session expired".to_string());
@@ -313,11 +352,13 @@ impl SecurityService {
 
             // Update last activity
             session.last_activity = now;
-            
+
             // Extend session if needed
-            if now.duration_since(session.created_at)
+            if now
+                .duration_since(session.created_at)
                 .map_err(|_| "Session created in future")?
-                > self.config.session_timeout / 2 {
+                > self.config.session_timeout / 2
+            {
                 session.expires_at = now + self.config.session_timeout;
             }
 
@@ -335,7 +376,7 @@ impl SecurityService {
     pub async fn cleanup_expired_sessions(&self) {
         let now = SystemTime::now();
         let mut sessions = self.active_sessions.write().await;
-        
+
         sessions.retain(|_, session| session.expires_at > now);
     }
 
@@ -355,22 +396,21 @@ impl SecurityService {
             description: format!("IP address blocked for {} seconds", duration.as_secs()),
             metadata: HashMap::new(),
             timestamp: chrono::Utc::now().to_rfc3339(),
-        }).await;
+        })
+        .await;
     }
 
     pub async fn is_ip_blocked(&self, ip_address: &str) -> bool {
         let blocked_ips = self.blocked_ips.read().await;
-        
+
         if let Some(&block_until) = blocked_ips.get(ip_address) {
             if SystemTime::now() < block_until {
                 return true;
             }
         }
-        
+
         false
     }
-
-
 
     pub fn validate_email(&self, email: &str) -> bool {
         // Basic email validation
@@ -394,7 +434,10 @@ impl SecurityService {
             return Err("Password must contain at least one number".to_string());
         }
 
-        if !password.chars().any(|c| "!@#$%^&*()_+-=[]{}|;:,.<>?".contains(c)) {
+        if !password
+            .chars()
+            .any(|c| "!@#$%^&*()_+-=[]{}|;:,.<>?".contains(c))
+        {
             return Err("Password must contain at least one special character".to_string());
         }
 
@@ -469,45 +512,48 @@ impl SecurityService {
         if !self.config.enable_csrf {
             return Ok("csrf_disabled".to_string());
         }
-        
+
         let token = Uuid::new_v4().to_string();
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .map_err(|_| "System time is before UNIX epoch".to_string())?
             .as_secs();
         let expires_at = now + self.config.session_timeout.as_secs();
-        
+
         let mut csrf_tokens = self.csrf_tokens.write().await;
-        csrf_tokens.insert(token.clone(), CsrfToken {
-            user_id,
-            expires_at,
-        });
-        
+        csrf_tokens.insert(
+            token.clone(),
+            CsrfToken {
+                user_id,
+                expires_at,
+            },
+        );
+
         Ok(token)
     }
-    
+
     /// Validate CSRF token
     pub async fn validate_csrf_token(&self, token: &str, user_id: Uuid) -> Result<bool, String> {
         if !self.config.enable_csrf {
             return Ok(true);
         }
-        
+
         let csrf_tokens = self.csrf_tokens.read().await;
-        
+
         if let Some(csrf_token) = csrf_tokens.get(token) {
             let now = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map_err(|_| "System time is before UNIX epoch".to_string())?
                 .as_secs();
-            
+
             if csrf_token.user_id == user_id && csrf_token.expires_at > now {
                 return Ok(true);
             }
         }
-        
+
         Err("Invalid or expired CSRF token".to_string())
     }
-    
+
     /// Sanitize input to prevent XSS and injection attacks
     pub fn sanitize_input(&self, input: &str) -> String {
         input
@@ -520,62 +566,90 @@ impl SecurityService {
             .replace('\r', "\\r")
             .replace('\t', "\\t")
     }
-    
+
     /// Validate input for SQL injection patterns
     pub fn validate_input_for_sql_injection(&self, input: &str) -> Result<(), String> {
         let dangerous_patterns = [
-            "'", "\"", ";", "--", "/*", "*/", "xp_", "sp_", "exec", "execute",
-            "select", "insert", "update", "delete", "drop", "create", "alter",
-            "union", "script", "javascript:", "vbscript:", "onload", "onerror"
+            "'",
+            "\"",
+            ";",
+            "--",
+            "/*",
+            "*/",
+            "xp_",
+            "sp_",
+            "exec",
+            "execute",
+            "select",
+            "insert",
+            "update",
+            "delete",
+            "drop",
+            "create",
+            "alter",
+            "union",
+            "script",
+            "javascript:",
+            "vbscript:",
+            "onload",
+            "onerror",
         ];
-        
+
         let input_lower = input.to_lowercase();
-        
+
         for pattern in &dangerous_patterns {
             if input_lower.contains(pattern) {
                 return Err(format!("Potentially dangerous input detected: {}", pattern));
             }
         }
-        
+
         Ok(())
     }
-    
+
     /// Validate file upload for security
-    pub fn validate_file_upload(&self, filename: &str, content_type: &str, size: u64) -> Result<(), String> {
+    pub fn validate_file_upload(
+        &self,
+        filename: &str,
+        content_type: &str,
+        size: u64,
+    ) -> Result<(), String> {
         // Check file extension
         let allowed_extensions = ["csv", "json", "xlsx", "txt", "pdf"];
         let extension = filename.split('.').next_back().unwrap_or("").to_lowercase();
-        
+
         if !allowed_extensions.contains(&extension.as_str()) {
             return Err("File type not allowed".to_string());
         }
-        
+
         // Check content type
         let allowed_types = [
-            "text/csv", "application/json", "application/vnd.ms-excel",
+            "text/csv",
+            "application/json",
+            "application/vnd.ms-excel",
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            "text/plain", "application/pdf"
+            "text/plain",
+            "application/pdf",
         ];
-        
+
         if !allowed_types.contains(&content_type) {
             return Err("Content type not allowed".to_string());
         }
-        
+
         // Check file size (10MB limit)
         if size > 10 * 1024 * 1024 {
             return Err("File too large".to_string());
         }
-        
+
         Ok(())
     }
-    
+
     /// Clean up expired CSRF tokens
     pub async fn cleanup_expired_csrf_tokens(&self) {
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or(Duration::from_secs(0))
             .as_secs();
-        
+
         let mut csrf_tokens = self.csrf_tokens.write().await;
         csrf_tokens.retain(|_, token| token.expires_at > now);
     }

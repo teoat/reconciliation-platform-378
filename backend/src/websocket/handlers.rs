@@ -2,14 +2,14 @@
 //!
 //! This module contains HTTP handlers for WebSocket connections.
 
+use actix::Addr;
 use actix_web::{web, HttpRequest, HttpResponse, Result};
 use actix_web_actors::ws;
-use actix::{Addr};
 use std::sync::Arc;
 
-use crate::errors::AppError;
-use crate::database::Database;
 use crate::config::Config;
+use crate::database::Database;
+use crate::errors::AppError;
 use crate::websocket::server::WsServer;
 use crate::websocket::session::WsSession;
 
@@ -36,4 +36,3 @@ pub async fn websocket_handler(
 pub fn configure_websocket_routes(cfg: &mut web::ServiceConfig) {
     cfg.route("/ws", web::get().to(websocket_handler));
 }
-

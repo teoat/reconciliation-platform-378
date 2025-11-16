@@ -1,10 +1,10 @@
 //! WebSocket message types and data structures
 
-use actix::{Message, Addr};
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+use actix::{Addr, Message};
 use chrono::DateTime;
 use chrono::Utc;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// WebSocket message types
 #[derive(Debug, Clone, Serialize, Deserialize, Message)]
@@ -142,4 +142,3 @@ pub struct MetricsUpdate {
     pub metrics: serde_json::Value,
     pub timestamp: DateTime<Utc>,
 }
-

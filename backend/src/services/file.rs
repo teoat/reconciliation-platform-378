@@ -1,20 +1,20 @@
 //! File service for handling file uploads and processing
 
-use std::sync::Arc;
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
-use crate::services::resilience::ResilienceManager;
-use crate::models::{NewUploadedFile, UploadedFile};
 use crate::models::schema;
+use crate::models::{NewUploadedFile, UploadedFile};
+use crate::services::resilience::ResilienceManager;
 use actix_multipart::Multipart;
 use actix_web::http::header::CONTENT_DISPOSITION;
 use diesel::prelude::*;
 use futures_util::TryStreamExt as _;
+use serde::{Deserialize, Serialize};
+use std::path::PathBuf;
+use std::sync::Arc;
 use tokio::fs;
 use tokio::io::AsyncWriteExt as _;
-use std::path::PathBuf;
 use uuid::Uuid;
-use serde::{Deserialize, Serialize};
 
 /// File upload result
 #[derive(Debug, Serialize, Deserialize)]
@@ -44,13 +44,13 @@ pub struct FileService {
 impl FileService {
     /// Create a new file service
     pub fn new(db: Database, upload_path: String) -> Self {
-        Self { 
-            db, 
+        Self {
+            db,
             upload_path,
             resilience: None,
         }
     }
-    
+
     /// Create file service with resilience manager
     pub fn new_with_resilience(
         db: Database,
@@ -63,7 +63,7 @@ impl FileService {
             resilience: Some(resilience),
         }
     }
-    
+
     /// Set resilience manager
     pub fn with_resilience(mut self, resilience: Arc<ResilienceManager>) -> Self {
         self.resilience = Some(resilience);
@@ -81,7 +81,9 @@ impl FileService {
         let mut tmp_dir = PathBuf::from(&self.upload_path);
         tmp_dir.push("tmp");
         tmp_dir.push(upload_id.to_string());
-        fs::create_dir_all(&tmp_dir).await.map_err(|e| AppError::Internal(format!("Failed to create tmp dir: {}", e)))?;
+        fs::create_dir_all(&tmp_dir)
+            .await
+            .map_err(|e| AppError::Internal(format!("Failed to create tmp dir: {}", e)))?;
 
         Ok(serde_json::json!({
             "upload_id": upload_id,
@@ -101,13 +103,21 @@ impl FileService {
         let mut tmp_dir = PathBuf::from(&self.upload_path);
         tmp_dir.push("tmp");
         tmp_dir.push(upload_id.to_string());
-        fs::create_dir_all(&tmp_dir).await.map_err(|e| AppError::Internal(format!("Failed to ensure tmp dir: {}", e)))?;
+        fs::create_dir_all(&tmp_dir)
+            .await
+            .map_err(|e| AppError::Internal(format!("Failed to ensure tmp dir: {}", e)))?;
 
         let mut part_path = tmp_dir.clone();
         part_path.push(format!("{}.part", chunk_index));
-        let mut f = fs::File::create(&part_path).await.map_err(|e| AppError::Internal(format!("Failed to create chunk file: {}", e)))?;
-        f.write_all(bytes).await.map_err(|e| AppError::Internal(format!("Failed to write chunk: {}", e)))?;
-        f.flush().await.map_err(|e| AppError::Internal(format!("Failed to flush chunk: {}", e)))?;
+        let mut f = fs::File::create(&part_path)
+            .await
+            .map_err(|e| AppError::Internal(format!("Failed to create chunk file: {}", e)))?;
+        f.write_all(bytes)
+            .await
+            .map_err(|e| AppError::Internal(format!("Failed to write chunk: {}", e)))?;
+        f.flush()
+            .await
+            .map_err(|e| AppError::Internal(format!("Failed to flush chunk: {}", e)))?;
         Ok(())
     }
 
@@ -122,7 +132,9 @@ impl FileService {
         // Ensure project directory
         let mut project_dir = PathBuf::from(&self.upload_path);
         project_dir.push(project_id.to_string());
-        fs::create_dir_all(&project_dir).await.map_err(|e| AppError::Internal(format!("Failed to create project dir: {}", e)))?;
+        fs::create_dir_all(&project_dir)
+            .await
+            .map_err(|e| AppError::Internal(format!("Failed to create project dir: {}", e)))?;
 
         // Open final file
         let mut final_path = project_dir.clone();
@@ -145,21 +157,36 @@ impl FileService {
                 .map_err(|e| AppError::Validation(format!("Missing chunk {}: {}", idx, e)))?;
             let mut buf = vec![0u8; 1024 * 1024];
             loop {
-                let n = tokio::io::AsyncReadExt::read(&mut part, &mut buf).await.map_err(|e| AppError::Internal(format!("Failed to read chunk {}: {}", idx, e)))?;
-                if n == 0 { break; }
-                final_file.write_all(&buf[..n]).await.map_err(|e| AppError::Internal(format!("Failed to append chunk {}: {}", idx, e)))?;
+                let n = tokio::io::AsyncReadExt::read(&mut part, &mut buf)
+                    .await
+                    .map_err(|e| {
+                        AppError::Internal(format!("Failed to read chunk {}: {}", idx, e))
+                    })?;
+                if n == 0 {
+                    break;
+                }
+                final_file.write_all(&buf[..n]).await.map_err(|e| {
+                    AppError::Internal(format!("Failed to append chunk {}: {}", idx, e))
+                })?;
                 total_size += n as i64;
             }
         }
 
-        final_file.flush().await.map_err(|e| AppError::Internal(format!("Failed to flush final file: {}", e)))?;
+        final_file
+            .flush()
+            .await
+            .map_err(|e| AppError::Internal(format!("Failed to flush final file: {}", e)))?;
 
         // Best-effort cleanup
         let _ = fs::remove_dir_all(&tmp_dir).await;
 
         Ok(FileUploadResult {
             id: Uuid::new_v4(),
-            filename: final_path.file_name().unwrap_or_default().to_string_lossy().to_string(),
+            filename: final_path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string(),
             size: total_size,
             status: "uploaded".to_string(),
             project_id,
@@ -185,12 +212,18 @@ impl FileService {
         // Prepare upload directory
         let mut upload_dir = PathBuf::from(&self.upload_path);
         upload_dir.push(project_id.to_string());
-        fs::create_dir_all(&upload_dir).await.map_err(|e| AppError::Internal(format!("Failed to create upload dir: {}", e)))?;
+        fs::create_dir_all(&upload_dir)
+            .await
+            .map_err(|e| AppError::Internal(format!("Failed to create upload dir: {}", e)))?;
 
         let mut saved_filename: Option<String> = None;
         let mut total_size: i64 = 0;
 
-        while let Some(mut field) = payload.try_next().await.map_err(|e| AppError::Validation(format!("Invalid multipart data: {}", e)))? {
+        while let Some(mut field) = payload
+            .try_next()
+            .await
+            .map_err(|e| AppError::Validation(format!("Invalid multipart data: {}", e)))?
+        {
             let name = field.name().to_string();
             if name != "file" {
                 // Skip non-file fields for now
@@ -198,7 +231,12 @@ impl FileService {
                     match field.try_next().await {
                         Ok(Some(_)) => continue,
                         Ok(None) => break,
-                        Err(e) => return Err(AppError::Validation(format!("Invalid multipart data: {}", e))),
+                        Err(e) => {
+                            return Err(AppError::Validation(format!(
+                                "Invalid multipart data: {}",
+                                e
+                            )))
+                        }
                     }
                 }
                 continue;
@@ -207,8 +245,11 @@ impl FileService {
             // Content-Type validation (best-effort; may be missing from client)
             if let Some(ct) = field.content_type() {
                 let essence = ct.essence_str();
-                if !allowed_types.iter().any(|t| *t == essence) {
-                    return Err(AppError::Validation(format!("Unsupported content-type: {}", essence)));
+                if !allowed_types.contains(&essence) {
+                    return Err(AppError::Validation(format!(
+                        "Unsupported content-type: {}",
+                        essence
+                    )));
                 }
             }
 
@@ -237,7 +278,11 @@ impl FileService {
 
             // Stream chunks to disk
             let mut this_file_size: i64 = 0;
-            while let Some(chunk) = field.try_next().await.map_err(|e| AppError::Validation(format!("Failed reading chunk: {}", e)))? {
+            while let Some(chunk) = field
+                .try_next()
+                .await
+                .map_err(|e| AppError::Validation(format!("Failed reading chunk: {}", e)))?
+            {
                 let len = chunk.len() as i64;
                 this_file_size += len;
                 total_size += len;
@@ -252,11 +297,14 @@ impl FileService {
                     .map_err(|e| AppError::Internal(format!("Failed writing chunk: {}", e)))?;
             }
 
-            file.flush().await.map_err(|e| AppError::Internal(format!("Failed flushing file: {}", e)))?;
+            file.flush()
+                .await
+                .map_err(|e| AppError::Internal(format!("Failed flushing file: {}", e)))?;
             saved_filename = Some(filename);
         }
 
-        let filename = saved_filename.ok_or_else(|| AppError::Validation("No file field provided".to_string()))?;
+        let filename = saved_filename
+            .ok_or_else(|| AppError::Validation("No file field provided".to_string()))?;
 
         // Persist file record in database
         let new_file = NewUploadedFile {
@@ -274,13 +322,13 @@ impl FileService {
         // Use resilience manager for database operations if available
         let uploaded_file: UploadedFile = {
             use crate::models::schema::uploaded_files::dsl::*;
-            
+
             if let Some(ref resilience) = self.resilience {
                 // Use async database connection with circuit breaker
-                let mut conn = resilience.execute_database(async {
-                    self.db.get_connection_async().await
-                }).await?;
-                
+                let mut conn = resilience
+                    .execute_database(async { self.db.get_connection_async().await })
+                    .await?;
+
                 diesel::insert_into(uploaded_files)
                     .values(&new_file)
                     .returning(UploadedFile::as_returning())
@@ -308,7 +356,9 @@ impl FileService {
     /// Get file info
     pub async fn get_file(&self, _file_id: Uuid) -> AppResult<FileUploadResult> {
         // Placeholder implementation
-        Err(AppError::Internal("Get file not yet implemented".to_string()))
+        Err(AppError::Internal(
+            "Get file not yet implemented".to_string(),
+        ))
     }
 
     /// Delete a file
@@ -317,9 +367,9 @@ impl FileService {
         let file_info: UploadedFile = {
             if let Some(ref resilience) = self.resilience {
                 // Use async database connection with circuit breaker
-                let mut conn = resilience.execute_database(async {
-                    self.db.get_connection_async().await
-                }).await?;
+                let mut conn = resilience
+                    .execute_database(async { self.db.get_connection_async().await })
+                    .await?;
 
                 schema::uploaded_files::table
                     .find(file_id)
@@ -338,16 +388,17 @@ impl FileService {
         // Delete the physical file
         let file_path = PathBuf::from(&self.upload_path).join(&file_info.file_path);
         if file_path.exists() {
-            fs::remove_file(&file_path).await
+            fs::remove_file(&file_path)
+                .await
                 .map_err(|e| AppError::Internal(format!("Failed to delete file: {}", e)))?;
         }
 
         // Delete the database record with resilience if available
         if let Some(ref resilience) = self.resilience {
             // Use async database connection with circuit breaker
-            let mut conn = resilience.execute_database(async {
-                self.db.get_connection_async().await
-            }).await?;
+            let mut conn = resilience
+                .execute_database(async { self.db.get_connection_async().await })
+                .await?;
 
             diesel::delete(schema::uploaded_files::table.find(file_id))
                 .execute(&mut conn)
@@ -383,7 +434,8 @@ impl FileService {
         }
 
         // Read first 1KB or 10 lines, whichever comes first
-        let content = fs::read_to_string(&full_path).await
+        let content = fs::read_to_string(&full_path)
+            .await
             .map_err(|e| AppError::Internal(format!("Failed to read file: {}", e)))?;
 
         // For security, limit preview to first 10 lines or 1KB
@@ -417,5 +469,9 @@ fn sanitize_filename_simple(input: &str) -> String {
         }
     }
     let trimmed = out.trim();
-    if trimmed.is_empty() { "upload.bin".to_string() } else { trimmed.to_string() }
+    if trimmed.is_empty() {
+        "upload.bin".to_string()
+    } else {
+        trimmed.to_string()
+    }
 }

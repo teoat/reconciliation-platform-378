@@ -10,7 +10,9 @@ pub struct PasswordValidator {
 impl PasswordValidator {
     pub fn new() -> Result<Self, regex::Error> {
         Ok(Self {
-            password_regex: Regex::new(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$")?,
+            password_regex: Regex::new(
+                r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$",
+            )?,
         })
     }
 
@@ -20,7 +22,9 @@ impl PasswordValidator {
         }
 
         if password.len() < 8 {
-            return Err(AppError::Validation("Password must be at least 8 characters long".to_string()));
+            return Err(AppError::Validation(
+                "Password must be at least 8 characters long".to_string(),
+            ));
         }
 
         if password.len() > 128 {
@@ -36,4 +40,3 @@ impl PasswordValidator {
         Ok(())
     }
 }
-

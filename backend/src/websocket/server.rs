@@ -2,16 +2,16 @@
 //!
 //! This module contains the WebSocket server actor that manages all connections.
 
-use actix::{Actor, Handler, Addr};
+use actix::{Actor, Addr, Handler};
 use std::collections::HashMap;
 
-use tokio::sync::RwLock;
 use std::sync::Arc;
+use tokio::sync::RwLock;
 
-use crate::errors::AppResult;
 use crate::database::Database;
-use crate::websocket::types::*;
+use crate::errors::AppResult;
 use crate::websocket::session::WsSession;
+use crate::websocket::types::*;
 
 /// WebSocket server actor
 pub struct WsServer {
@@ -71,7 +71,7 @@ impl Handler<RegisterSession> for WsServer {
         let sessions = self.sessions.clone();
         let user_id = msg.user_id;
         let session_addr = msg.session;
-        
+
         tokio::spawn(async move {
             let mut sessions = sessions.write().await;
             sessions.insert(user_id, session_addr);
@@ -85,7 +85,7 @@ impl Handler<UnregisterSession> for WsServer {
     fn handle(&mut self, msg: UnregisterSession, _ctx: &mut Self::Context) {
         let sessions = self.sessions.clone();
         let user_id = msg.user_id;
-        
+
         tokio::spawn(async move {
             let mut sessions = sessions.write().await;
             sessions.remove(&user_id);
@@ -117,7 +117,7 @@ impl Handler<BroadcastToProject> for WsServer {
         let _project_id = msg.project_id;
         let message = msg.message;
         let exclude_session = msg.exclude_session;
-        
+
         tokio::spawn(async move {
             let sessions = sessions.read().await;
             for (_, session) in sessions.iter() {
@@ -143,7 +143,7 @@ impl Handler<BroadcastJobProgress> for WsServer {
         let status = msg.status;
         let eta = msg.eta;
         let message = msg.message;
-        
+
         tokio::spawn(async move {
             let job_progress_message = WsMessage::JobProgressUpdate {
                 job_id,
@@ -152,7 +152,7 @@ impl Handler<BroadcastJobProgress> for WsServer {
                 eta,
                 message,
             };
-            
+
             let sessions = sessions.read().await;
             for (_, session) in sessions.iter() {
                 session.do_send(job_progress_message.clone());
@@ -167,13 +167,13 @@ impl Handler<BroadcastMetricsUpdate> for WsServer {
     fn handle(&mut self, msg: BroadcastMetricsUpdate, _ctx: &mut Self::Context) {
         let sessions = self.sessions.clone();
         let metrics = msg.metrics;
-        
+
         tokio::spawn(async move {
             let metrics_message = WsMessage::MetricsUpdate {
                 metrics,
                 timestamp: chrono::Utc::now(),
             };
-            
+
             let sessions = sessions.read().await;
             for (_, session) in sessions.iter() {
                 session.do_send(metrics_message.clone());
@@ -181,4 +181,3 @@ impl Handler<BroadcastMetricsUpdate> for WsServer {
         });
     }
 }
-

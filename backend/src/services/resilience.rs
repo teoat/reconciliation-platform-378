@@ -3,11 +3,11 @@
 //! Provides circuit breakers, retry logic, and graceful degradation
 //! for database, cache, and external API calls.
 
-use std::sync::Arc;
-use std::time::Duration;
 use crate::errors::AppResult;
 use crate::middleware::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use std::time::Duration;
 
 /// Configuration for circuit breaker service
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -84,30 +84,24 @@ impl ResilienceManager {
     /// Create a resilience manager with custom configuration
     pub fn with_config(config: ResilienceConfig) -> Self {
         Self {
-            database_circuit_breaker: Arc::new(CircuitBreaker::new(
-                CircuitBreakerConfig {
-                    failure_threshold: config.database.failure_threshold as usize,
-                    success_threshold: config.database.success_threshold as usize,
-                    timeout: Duration::from_secs(config.database.timeout_seconds),
-                    enable_fallback: config.database.enable_fallback,
-                }
-            )),
-            cache_circuit_breaker: Arc::new(CircuitBreaker::new(
-                CircuitBreakerConfig {
-                    failure_threshold: config.cache.failure_threshold as usize,
-                    success_threshold: config.cache.success_threshold as usize,
-                    timeout: Duration::from_secs(config.cache.timeout_seconds),
-                    enable_fallback: config.cache.enable_fallback,
-                }
-            )),
-            api_circuit_breaker: Arc::new(CircuitBreaker::new(
-                CircuitBreakerConfig {
-                    failure_threshold: config.api.failure_threshold as usize,
-                    success_threshold: config.api.success_threshold as usize,
-                    timeout: Duration::from_secs(config.api.timeout_seconds),
-                    enable_fallback: config.api.enable_fallback,
-                }
-            )),
+            database_circuit_breaker: Arc::new(CircuitBreaker::new(CircuitBreakerConfig {
+                failure_threshold: config.database.failure_threshold as usize,
+                success_threshold: config.database.success_threshold as usize,
+                timeout: Duration::from_secs(config.database.timeout_seconds),
+                enable_fallback: config.database.enable_fallback,
+            })),
+            cache_circuit_breaker: Arc::new(CircuitBreaker::new(CircuitBreakerConfig {
+                failure_threshold: config.cache.failure_threshold as usize,
+                success_threshold: config.cache.success_threshold as usize,
+                timeout: Duration::from_secs(config.cache.timeout_seconds),
+                enable_fallback: config.cache.enable_fallback,
+            })),
+            api_circuit_breaker: Arc::new(CircuitBreaker::new(CircuitBreakerConfig {
+                failure_threshold: config.api.failure_threshold as usize,
+                success_threshold: config.api.success_threshold as usize,
+                timeout: Duration::from_secs(config.api.timeout_seconds),
+                enable_fallback: config.api.enable_fallback,
+            })),
             retry_config: config.retry,
         }
     }
@@ -117,9 +111,10 @@ impl ResilienceManager {
     where
         F: std::future::Future<Output = AppResult<T>>,
     {
-        self.execute_database_with_correlation(operation, None).await
+        self.execute_database_with_correlation(operation, None)
+            .await
     }
-    
+
     /// Execute database operation with circuit breaker and correlation ID
     pub async fn execute_database_with_correlation<F, T>(
         &self,
@@ -130,24 +125,33 @@ impl ResilienceManager {
         F: std::future::Future<Output = AppResult<T>>,
     {
         use crate::monitoring::metrics;
-        
+
         let corr_id = correlation_id.as_deref().unwrap_or("unknown");
-        
+
         // Record request
-        metrics::CIRCUIT_BREAKER_REQUESTS.with_label_values(&["database"]).inc();
-        
+        metrics::CIRCUIT_BREAKER_REQUESTS
+            .with_label_values(&["database"])
+            .inc();
+
         // Log operation start with correlation ID
-        log::debug!("[{}] Executing database operation with circuit breaker", corr_id);
-        
+        log::debug!(
+            "[{}] Executing database operation with circuit breaker",
+            corr_id
+        );
+
         // Execute with circuit breaker
         match self.database_circuit_breaker.call(operation).await {
             Ok(result) => {
-                metrics::CIRCUIT_BREAKER_SUCCESSES.with_label_values(&["database"]).inc();
+                metrics::CIRCUIT_BREAKER_SUCCESSES
+                    .with_label_values(&["database"])
+                    .inc();
                 log::debug!("[{}] Database operation succeeded", corr_id);
                 Ok(result)
             }
             Err(e) => {
-                metrics::CIRCUIT_BREAKER_FAILURES.with_label_values(&["database"]).inc();
+                metrics::CIRCUIT_BREAKER_FAILURES
+                    .with_label_values(&["database"])
+                    .inc();
                 log::warn!("[{}] Database operation failed: {}", corr_id, e);
                 Err(e)
             }
@@ -161,7 +165,7 @@ impl ResilienceManager {
     {
         self.execute_cache_with_correlation(operation, None).await
     }
-    
+
     /// Execute cache operation with circuit breaker and correlation ID
     pub async fn execute_cache_with_correlation<F, T>(
         &self,
@@ -172,24 +176,33 @@ impl ResilienceManager {
         F: std::future::Future<Output = AppResult<T>>,
     {
         use crate::monitoring::metrics;
-        
+
         let corr_id = correlation_id.as_deref().unwrap_or("unknown");
-        
+
         // Record request
-        metrics::CIRCUIT_BREAKER_REQUESTS.with_label_values(&["cache"]).inc();
-        
+        metrics::CIRCUIT_BREAKER_REQUESTS
+            .with_label_values(&["cache"])
+            .inc();
+
         // Log operation start with correlation ID
-        log::debug!("[{}] Executing cache operation with circuit breaker", corr_id);
-        
+        log::debug!(
+            "[{}] Executing cache operation with circuit breaker",
+            corr_id
+        );
+
         // Execute with circuit breaker
         match self.cache_circuit_breaker.call(operation).await {
             Ok(result) => {
-                metrics::CIRCUIT_BREAKER_SUCCESSES.with_label_values(&["cache"]).inc();
+                metrics::CIRCUIT_BREAKER_SUCCESSES
+                    .with_label_values(&["cache"])
+                    .inc();
                 log::debug!("[{}] Cache operation succeeded", corr_id);
                 Ok(result)
             }
             Err(e) => {
-                metrics::CIRCUIT_BREAKER_FAILURES.with_label_values(&["cache"]).inc();
+                metrics::CIRCUIT_BREAKER_FAILURES
+                    .with_label_values(&["cache"])
+                    .inc();
                 log::warn!("[{}] Cache operation failed: {}", corr_id, e);
                 Err(e)
             }
@@ -205,7 +218,7 @@ impl ResilienceManager {
     {
         self.execute_api_with_correlation(operation, None).await
     }
-    
+
     /// Execute external API call with circuit breaker, retry, and correlation ID
     pub async fn execute_api_with_correlation<F, T, Fut>(
         &self,
@@ -218,60 +231,91 @@ impl ResilienceManager {
         T: Send,
     {
         use crate::monitoring::metrics;
-        
+
         let corr_id = correlation_id.as_deref().unwrap_or("unknown");
-        
+
         // Record request
-        metrics::CIRCUIT_BREAKER_REQUESTS.with_label_values(&["api"]).inc();
-        
+        metrics::CIRCUIT_BREAKER_REQUESTS
+            .with_label_values(&["api"])
+            .inc();
+
         // Log operation start with correlation ID
         log::debug!("[{}] Executing API operation with circuit breaker", corr_id);
-        
+
         // Execute with circuit breaker first, then retry if needed
         let cb_result = self.api_circuit_breaker.call(operation()).await;
-        
+
         // If circuit breaker fails, retry with exponential backoff
         match cb_result {
             Ok(result) => {
-                metrics::CIRCUIT_BREAKER_SUCCESSES.with_label_values(&["api"]).inc();
+                metrics::CIRCUIT_BREAKER_SUCCESSES
+                    .with_label_values(&["api"])
+                    .inc();
                 log::debug!("[{}] API operation succeeded", corr_id);
                 Ok(result)
             }
             Err(e) => {
-                metrics::CIRCUIT_BREAKER_FAILURES.with_label_values(&["api"]).inc();
+                metrics::CIRCUIT_BREAKER_FAILURES
+                    .with_label_values(&["api"])
+                    .inc();
                 log::warn!("[{}] API operation failed, retrying: {}", corr_id, e);
-                
+
                 // Retry with exponential backoff using configured retry config
                 let mut attempt = 0;
                 let mut delay_ms = self.retry_config.initial_delay_ms;
-                
+
                 while attempt < self.retry_config.max_retries {
-                    log::debug!("[{}] Retry attempt {} for API operation", corr_id, attempt + 1);
-                    
+                    log::debug!(
+                        "[{}] Retry attempt {} for API operation",
+                        corr_id,
+                        attempt + 1
+                    );
+
                     match self.api_circuit_breaker.call(operation()).await {
                         Ok(result) => {
-                            metrics::CIRCUIT_BREAKER_SUCCESSES.with_label_values(&["api"]).inc();
-                            log::info!("[{}] API operation succeeded after {} retries", corr_id, attempt + 1);
+                            metrics::CIRCUIT_BREAKER_SUCCESSES
+                                .with_label_values(&["api"])
+                                .inc();
+                            log::info!(
+                                "[{}] API operation succeeded after {} retries",
+                                corr_id,
+                                attempt + 1
+                            );
                             return Ok(result);
                         }
                         Err(err) => {
-                            metrics::CIRCUIT_BREAKER_FAILURES.with_label_values(&["api"]).inc();
+                            metrics::CIRCUIT_BREAKER_FAILURES
+                                .with_label_values(&["api"])
+                                .inc();
                             attempt += 1;
                             if attempt < self.retry_config.max_retries {
                                 // Calculate delay with exponential backoff
-                                let calculated_delay = (delay_ms as f64 * self.retry_config.backoff_multiplier) as u64;
-                                let final_delay = std::cmp::min(calculated_delay, self.retry_config.max_delay_ms);
-                                log::debug!("[{}] Waiting {}ms before retry {}", corr_id, final_delay, attempt + 1);
-                                tokio::time::sleep(std::time::Duration::from_millis(final_delay)).await;
+                                let calculated_delay =
+                                    (delay_ms as f64 * self.retry_config.backoff_multiplier) as u64;
+                                let final_delay =
+                                    std::cmp::min(calculated_delay, self.retry_config.max_delay_ms);
+                                log::debug!(
+                                    "[{}] Waiting {}ms before retry {}",
+                                    corr_id,
+                                    final_delay,
+                                    attempt + 1
+                                );
+                                tokio::time::sleep(std::time::Duration::from_millis(final_delay))
+                                    .await;
                                 delay_ms = final_delay;
                             } else {
-                                log::error!("[{}] API operation failed after {} retries: {}", corr_id, self.retry_config.max_retries, err);
+                                log::error!(
+                                    "[{}] API operation failed after {} retries: {}",
+                                    corr_id,
+                                    self.retry_config.max_retries,
+                                    err
+                                );
                                 return Err(err);
                             }
                         }
                     }
                 }
-                
+
                 log::error!("[{}] API operation failed after all retries", corr_id);
                 Err(e)
             }
@@ -281,7 +325,8 @@ impl ResilienceManager {
     /// Get database circuit breaker stats
     pub async fn get_database_stats(&self) -> crate::middleware::circuit_breaker::CircuitStats {
         let stats = self.database_circuit_breaker.get_stats().await;
-        self.update_circuit_breaker_metrics("database", &stats).await;
+        self.update_circuit_breaker_metrics("database", &stats)
+            .await;
         stats
     }
 
@@ -306,15 +351,17 @@ impl ResilienceManager {
         stats: &crate::middleware::circuit_breaker::CircuitStats,
     ) {
         use crate::monitoring::metrics;
-        
+
         // Update state gauge (0=closed, 1=half-open, 2=open)
         let state_value = match stats.state {
             crate::middleware::circuit_breaker::CircuitState::Closed => 0.0,
             crate::middleware::circuit_breaker::CircuitState::HalfOpen => 1.0,
             crate::middleware::circuit_breaker::CircuitState::Open => 2.0,
         };
-        metrics::CIRCUIT_BREAKER_STATE.with_label_values(&[service]).set(state_value);
-        
+        metrics::CIRCUIT_BREAKER_STATE
+            .with_label_values(&[service])
+            .set(state_value);
+
         // Note: Request/success/failure counters are already being incremented
         // in execute_* methods above. This method just updates the state gauge.
     }
@@ -339,10 +386,7 @@ pub mod graceful_degradation {
 
     /// Execute operation with graceful degradation
     /// Returns fallback value if operation fails
-    pub async fn execute_with_fallback<F, T>(
-        operation: F,
-        fallback: T,
-    ) -> T
+    pub async fn execute_with_fallback<F, T>(operation: F, fallback: T) -> T
     where
         F: std::future::Future<Output = AppResult<T>>,
         T: Clone,
@@ -357,14 +401,13 @@ pub mod graceful_degradation {
     }
 
     /// Execute operation with default fallback for Option types
-    pub async fn execute_with_default<F, T>(
-        operation: F,
-    ) -> T
+    pub async fn execute_with_default<F, T>(operation: F) -> T
     where
         F: std::future::Future<Output = AppResult<Option<T>>>,
         T: Default,
     {
-        operation.await
+        operation
+            .await
             .unwrap_or_else(|e| {
                 log::warn!("Operation failed, using default: {}", e);
                 None
@@ -373,9 +416,7 @@ pub mod graceful_degradation {
     }
 
     /// Execute operation with empty fallback for collections
-    pub async fn execute_with_empty<F, T>(
-        operation: F,
-    ) -> T
+    pub async fn execute_with_empty<F, T>(operation: F) -> T
     where
         F: std::future::Future<Output = AppResult<T>>,
         T: Default,
@@ -402,4 +443,3 @@ pub mod graceful_degradation {
         operation.await
     }
 }
-

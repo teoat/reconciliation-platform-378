@@ -1,11 +1,11 @@
 // backend/src/services/accessibility.rs
 use crate::errors::{AppError, AppResult};
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use uuid::Uuid;
-use chrono::{DateTime, Utc};
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use uuid::Uuid;
 
 /// Accessibility compliance level
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -124,7 +124,7 @@ impl AccessibilityService {
             audits: Arc::new(RwLock::new(HashMap::new())),
             compliance_stats: Arc::new(RwLock::new(ComplianceStats::default())),
         };
-        
+
         service.initialize_wcag_guidelines().await;
         service
     }
@@ -138,16 +138,22 @@ impl AccessibilityService {
                 description: "All non-text content has a text alternative".to_string(),
                 level: ComplianceLevel::A,
                 category: AccessibilityCategory::Perceivable,
-                criteria: vec![
-                    AccessibilityCriteria {
-                        id: "1.1.1".to_string(),
-                        title: "Non-text Content".to_string(),
-                        description: "All non-text content that is presented to the user has a text alternative".to_string(),
-                        level: ComplianceLevel::A,
-                        test_methods: vec!["Automated testing".to_string(), "Manual inspection".to_string()],
-                        success_criteria: vec!["Images have alt text".to_string(), "Charts have descriptions".to_string()],
-                    }
-                ],
+                criteria: vec![AccessibilityCriteria {
+                    id: "1.1.1".to_string(),
+                    title: "Non-text Content".to_string(),
+                    description:
+                        "All non-text content that is presented to the user has a text alternative"
+                            .to_string(),
+                    level: ComplianceLevel::A,
+                    test_methods: vec![
+                        "Automated testing".to_string(),
+                        "Manual inspection".to_string(),
+                    ],
+                    success_criteria: vec![
+                        "Images have alt text".to_string(),
+                        "Charts have descriptions".to_string(),
+                    ],
+                }],
             },
             AccessibilityGuideline {
                 id: "1.4".to_string(),
@@ -155,16 +161,17 @@ impl AccessibilityService {
                 description: "Make it easier for users to see and hear content".to_string(),
                 level: ComplianceLevel::AA,
                 category: AccessibilityCategory::Perceivable,
-                criteria: vec![
-                    AccessibilityCriteria {
-                        id: "1.4.3".to_string(),
-                        title: "Contrast (Minimum)".to_string(),
-                        description: "Text has a contrast ratio of at least 4.5:1".to_string(),
-                        level: ComplianceLevel::AA,
-                        test_methods: vec!["Color contrast analyzer".to_string()],
-                        success_criteria: vec!["Normal text: 4.5:1 ratio".to_string(), "Large text: 3:1 ratio".to_string()],
-                    }
-                ],
+                criteria: vec![AccessibilityCriteria {
+                    id: "1.4.3".to_string(),
+                    title: "Contrast (Minimum)".to_string(),
+                    description: "Text has a contrast ratio of at least 4.5:1".to_string(),
+                    level: ComplianceLevel::AA,
+                    test_methods: vec!["Color contrast analyzer".to_string()],
+                    success_criteria: vec![
+                        "Normal text: 4.5:1 ratio".to_string(),
+                        "Large text: 3:1 ratio".to_string(),
+                    ],
+                }],
             },
             AccessibilityGuideline {
                 id: "2.1".to_string(),
@@ -172,29 +179,36 @@ impl AccessibilityService {
                 description: "Make all functionality available from a keyboard".to_string(),
                 level: ComplianceLevel::A,
                 category: AccessibilityCategory::Operable,
-                criteria: vec![
-                    AccessibilityCriteria {
-                        id: "2.1.1".to_string(),
-                        title: "Keyboard".to_string(),
-                        description: "All functionality is available from a keyboard".to_string(),
-                        level: ComplianceLevel::A,
-                        test_methods: vec!["Keyboard navigation testing".to_string()],
-                        success_criteria: vec!["All interactive elements accessible via keyboard".to_string()],
-                    }
-                ],
+                criteria: vec![AccessibilityCriteria {
+                    id: "2.1.1".to_string(),
+                    title: "Keyboard".to_string(),
+                    description: "All functionality is available from a keyboard".to_string(),
+                    level: ComplianceLevel::A,
+                    test_methods: vec!["Keyboard navigation testing".to_string()],
+                    success_criteria: vec![
+                        "All interactive elements accessible via keyboard".to_string()
+                    ],
+                }],
             },
         ];
 
         for guideline in guidelines {
-            self.guidelines.write().await.insert(guideline.id.clone(), guideline);
+            self.guidelines
+                .write()
+                .await
+                .insert(guideline.id.clone(), guideline);
         }
     }
 
     /// Perform accessibility audit
-    pub async fn perform_audit(&self, page_url: String, content: String) -> AppResult<AccessibilityAudit> {
+    pub async fn perform_audit(
+        &self,
+        page_url: String,
+        content: String,
+    ) -> AppResult<AccessibilityAudit> {
         let audit_id = Uuid::new_v4();
         let mut issues = Vec::new();
-        
+
         // Check for missing alt text
         if content.contains("<img") && !content.contains("alt=") {
             issues.push(AccessibilityIssue {
@@ -209,7 +223,7 @@ impl AccessibilityService {
                 automated: true,
             });
         }
-        
+
         // Check for missing form labels
         if content.contains("<input") && !content.contains("<label") {
             issues.push(AccessibilityIssue {
@@ -224,7 +238,7 @@ impl AccessibilityService {
                 automated: true,
             });
         }
-        
+
         // Check for keyboard navigation
         if content.contains("onclick") && !content.contains("onkeydown") {
             issues.push(AccessibilityIssue {
@@ -239,26 +253,45 @@ impl AccessibilityService {
                 automated: true,
             });
         }
-        
+
         // Calculate score
         let total_issues = issues.len() as u32;
-        let critical_issues = issues.iter().filter(|i| matches!(i.severity, IssueSeverity::Critical)).count() as u32;
-        let serious_issues = issues.iter().filter(|i| matches!(i.severity, IssueSeverity::Serious)).count() as u32;
-        let moderate_issues = issues.iter().filter(|i| matches!(i.severity, IssueSeverity::Moderate)).count() as u32;
-        let minor_issues = issues.iter().filter(|i| matches!(i.severity, IssueSeverity::Minor)).count() as u32;
-        
+        let critical_issues = issues
+            .iter()
+            .filter(|i| matches!(i.severity, IssueSeverity::Critical))
+            .count() as u32;
+        let serious_issues = issues
+            .iter()
+            .filter(|i| matches!(i.severity, IssueSeverity::Serious))
+            .count() as u32;
+        let moderate_issues = issues
+            .iter()
+            .filter(|i| matches!(i.severity, IssueSeverity::Moderate))
+            .count() as u32;
+        let minor_issues = issues
+            .iter()
+            .filter(|i| matches!(i.severity, IssueSeverity::Minor))
+            .count() as u32;
+
         let score = if total_issues == 0 {
             100.0
         } else {
-            let penalty = critical_issues as f64 * 20.0 + serious_issues as f64 * 10.0 + moderate_issues as f64 * 5.0 + minor_issues as f64 * 2.0;
+            let penalty = critical_issues as f64 * 20.0
+                + serious_issues as f64 * 10.0
+                + moderate_issues as f64 * 5.0
+                + minor_issues as f64 * 2.0;
             (100.0 - penalty).max(0.0)
         };
-        
+
         let audit = AccessibilityAudit {
             id: audit_id,
             page_url,
             audit_date: Utc::now(),
-            compliance_level: if score >= 90.0 { ComplianceLevel::AA } else { ComplianceLevel::A },
+            compliance_level: if score >= 90.0 {
+                ComplianceLevel::AA
+            } else {
+                ComplianceLevel::A
+            },
             total_issues,
             critical_issues,
             serious_issues,
@@ -267,10 +300,10 @@ impl AccessibilityService {
             issues,
             score,
         };
-        
+
         self.audits.write().await.insert(audit_id, audit.clone());
         self.update_compliance_stats(&audit).await;
-        
+
         Ok(audit)
     }
 
@@ -278,20 +311,23 @@ impl AccessibilityService {
     async fn update_compliance_stats(&self, audit: &AccessibilityAudit) {
         let mut stats = self.compliance_stats.write().await;
         stats.total_audits += 1;
-        
+
         if audit.score >= 90.0 {
             stats.compliant_pages += 1;
         } else {
             stats.non_compliant_pages += 1;
         }
-        
+
         // Update average score
         let total_score = stats.average_score * (stats.total_audits - 1) as f64 + audit.score;
         stats.average_score = total_score / stats.total_audits as f64;
-        
+
         // Update most common issues
         for issue in &audit.issues {
-            *stats.most_common_issues.entry(issue.type_.clone()).or_insert(0) += 1;
+            *stats
+                .most_common_issues
+                .entry(issue.type_.clone())
+                .or_insert(0) += 1;
         }
     }
 
@@ -314,13 +350,17 @@ impl AccessibilityService {
     }
 
     /// List audits
-    pub async fn list_audits(&self, limit: Option<usize>, offset: Option<usize>) -> AppResult<Vec<AccessibilityAudit>> {
+    pub async fn list_audits(
+        &self,
+        limit: Option<usize>,
+        offset: Option<usize>,
+    ) -> AppResult<Vec<AccessibilityAudit>> {
         let audits = self.audits.read().await;
         let audits_vec: Vec<_> = audits.values().cloned().collect();
-        
+
         let offset = offset.unwrap_or(0);
         let limit = limit.unwrap_or(100);
-        
+
         Ok(audits_vec.into_iter().skip(offset).take(limit).collect())
     }
 
@@ -334,19 +374,22 @@ impl AccessibilityService {
     pub async fn generate_report(&self, audit_id: Uuid) -> AppResult<String> {
         let audits = self.audits.read().await;
         if let Some(audit) = audits.get(&audit_id) {
-            let mut report = format!("# Accessibility Audit Report\n\n");
+            let mut report = "# Accessibility Audit Report\n\n".to_string();
             report.push_str(&format!("**Page:** {}\n", audit.page_url));
             report.push_str(&format!("**Date:** {}\n", audit.audit_date));
             report.push_str(&format!("**Score:** {:.1}/100\n", audit.score));
-            report.push_str(&format!("**Compliance Level:** {:?}\n\n", audit.compliance_level));
-            
+            report.push_str(&format!(
+                "**Compliance Level:** {:?}\n\n",
+                audit.compliance_level
+            ));
+
             report.push_str("## Issues Summary\n\n");
             report.push_str(&format!("- **Total Issues:** {}\n", audit.total_issues));
             report.push_str(&format!("- **Critical:** {}\n", audit.critical_issues));
             report.push_str(&format!("- **Serious:** {}\n", audit.serious_issues));
             report.push_str(&format!("- **Moderate:** {}\n", audit.moderate_issues));
             report.push_str(&format!("- **Minor:** {}\n\n", audit.minor_issues));
-            
+
             if !audit.issues.is_empty() {
                 report.push_str("## Detailed Issues\n\n");
                 for issue in &audit.issues {
@@ -356,7 +399,7 @@ impl AccessibilityService {
                     report.push_str(&format!("**Fix:** {}\n\n", issue.fix_suggestion));
                 }
             }
-            
+
             Ok(report)
         } else {
             Err(AppError::Validation("Audit not found".to_string()))
@@ -382,7 +425,7 @@ mod tests {
     #[tokio::test]
     async fn test_accessibility_service() {
         let service = AccessibilityService::new().await;
-        
+
         // Test performing audit
         let content = r#"
             <html>
@@ -392,31 +435,50 @@ mod tests {
                     <button onclick="submit()">Submit</button>
                 </body>
             </html>
-        "#.to_string();
-        
-        let audit = service.perform_audit("https://example.com".to_string(), content).await.expect("Failed to perform audit");
-        
+        "#
+        .to_string();
+
+        let audit = service
+            .perform_audit("https://example.com".to_string(), content)
+            .await
+            .expect("Failed to perform audit");
+
         assert!(audit.total_issues > 0);
         assert!(audit.score < 100.0);
-        
+
         // Test getting audit
-        let retrieved_audit = service.get_audit(audit.id).await.expect("Failed to get audit");
+        let retrieved_audit = service
+            .get_audit(audit.id)
+            .await
+            .expect("Failed to get audit");
         assert!(retrieved_audit.is_some());
-        
+
         // Test listing audits
-        let audits = service.list_audits(Some(10), None).await.expect("Failed to list audits");
+        let audits = service
+            .list_audits(Some(10), None)
+            .await
+            .expect("Failed to list audits");
         assert!(!audits.is_empty());
-        
+
         // Test getting guidelines
-        let guidelines = service.list_guidelines().await.expect("Failed to list guidelines");
+        let guidelines = service
+            .list_guidelines()
+            .await
+            .expect("Failed to list guidelines");
         assert!(!guidelines.is_empty());
-        
+
         // Test getting compliance stats
-        let stats = service.get_compliance_stats().await.expect("Failed to get compliance stats");
+        let stats = service
+            .get_compliance_stats()
+            .await
+            .expect("Failed to get compliance stats");
         assert!(stats.total_audits > 0);
-        
+
         // Test generating report
-        let report = service.generate_report(audit.id).await.expect("Failed to generate report");
+        let report = service
+            .generate_report(audit.id)
+            .await
+            .expect("Failed to generate report");
         assert!(report.contains("Accessibility Audit Report"));
     }
 }

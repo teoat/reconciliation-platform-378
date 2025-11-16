@@ -1,15 +1,16 @@
 // backend/src/middleware/validation.rs
-use actix_web::{
-    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
-    Error, HttpMessage, HttpResponse, body::{MessageBody, BoxBody},
-};
-use futures::future::{LocalBoxFuture, Ready, ok, err};
-use futures::TryStreamExt;
-use std::rc::Rc;
-use crate::services::validation::ValidationService;
 use crate::errors::AppError;
+use crate::services::validation::ValidationService;
+use actix_web::{
+    body::{BoxBody, MessageBody},
+    dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
+    Error, HttpMessage, HttpResponse,
+};
+use futures::future::{err, ok, LocalBoxFuture, Ready};
+use futures::TryStreamExt;
 use serde_json::json;
 use std::collections::HashMap;
+use std::rc::Rc;
 
 pub struct ValidationMiddleware<S> {
     service: Rc<S>,
@@ -67,16 +68,21 @@ where
             // Extract request data for validation
             let path = req.path().to_string();
             let method = req.method().to_string();
-            
+
             // Validate based on endpoint
-            if let Err(validation_error) = validate_endpoint(&validation_service, &path, &method, &mut req).await {
+            if let Err(validation_error) =
+                validate_endpoint(&validation_service, &path, &method, &mut req).await
+            {
                 let error_response = HttpResponse::BadRequest().json(json!({
                     "error": "VALIDATION_ERROR",
                     "message": validation_error.to_string(),
                     "timestamp": chrono::Utc::now().to_rfc3339()
                 }));
-                
-                return Ok(ServiceResponse::new(req.into_parts().0, error_response.map_into_boxed_body()));
+
+                return Ok(ServiceResponse::new(
+                    req.into_parts().0,
+                    error_response.map_into_boxed_body(),
+                ));
             }
 
             // Continue with the request
@@ -98,15 +104,9 @@ async fn validate_endpoint(
         .map_err(|e| AppError::Internal(format!("Invalid regex pattern: {}", e)))?;
 
     match (method, path) {
-        ("POST", "/api/auth/register") => {
-            validate_register_request(validation_service, req).await
-        }
-        ("POST", "/api/auth/login") => {
-            validate_login_request(validation_service, req).await
-        }
-        ("POST", "/api/projects") => {
-            validate_create_project_request(validation_service, req).await
-        }
+        ("POST", "/api/auth/register") => validate_register_request(validation_service, req).await,
+        ("POST", "/api/auth/login") => validate_login_request(validation_service, req).await,
+        ("POST", "/api/projects") => validate_create_project_request(validation_service, req).await,
         ("POST", "/api/files/upload") => {
             validate_file_upload_request(validation_service, req).await
         }
@@ -133,14 +133,15 @@ async fn validate_register_request(
 ) -> Result<(), AppError> {
     // Extract JSON body
     let body = extract_json_body(req).await?;
-    
+
     // Validate required fields
     let required_fields = vec!["email", "password", "first_name", "last_name"];
     for field in required_fields {
         if !body.contains_key(field) {
-            return Err(AppError::Validation(
-                format!("Required field '{}' is missing", field)
-            ));
+            return Err(AppError::Validation(format!(
+                "Required field '{}' is missing",
+                field
+            )));
         }
     }
 
@@ -158,7 +159,7 @@ async fn validate_register_request(
     if let Some(first_name) = body.get("first_name").and_then(|v| v.as_str()) {
         if first_name.is_empty() || first_name.len() > 100 {
             return Err(AppError::Validation(
-                "First name must be between 1 and 100 characters".to_string()
+                "First name must be between 1 and 100 characters".to_string(),
             ));
         }
     }
@@ -166,7 +167,7 @@ async fn validate_register_request(
     if let Some(last_name) = body.get("last_name").and_then(|v| v.as_str()) {
         if last_name.is_empty() || last_name.len() > 100 {
             return Err(AppError::Validation(
-                "Last name must be between 1 and 100 characters".to_string()
+                "Last name must be between 1 and 100 characters".to_string(),
             ));
         }
     }
@@ -180,14 +181,15 @@ async fn validate_login_request(
     req: &mut ServiceRequest,
 ) -> Result<(), AppError> {
     let body = extract_json_body(req).await?;
-    
+
     // Validate required fields
     let required_fields = vec!["email", "password"];
     for field in required_fields {
         if !body.contains_key(field) {
-            return Err(AppError::Validation(
-                format!("Required field '{}' is missing", field)
-            ));
+            return Err(AppError::Validation(format!(
+                "Required field '{}' is missing",
+                field
+            )));
         }
     }
 
@@ -212,17 +214,17 @@ async fn validate_create_project_request(
     req: &mut ServiceRequest,
 ) -> Result<(), AppError> {
     let body = extract_json_body(req).await?;
-    
+
     // Validate required fields
     if !body.contains_key("name") {
-                return Err(AppError::Validation("Project name is required".to_string()));
+        return Err(AppError::Validation("Project name is required".to_string()));
     }
 
     // Validate project name
     if let Some(name) = body.get("name").and_then(|v| v.as_str()) {
         if name.is_empty() || name.len() > 200 {
             return Err(AppError::Validation(
-                "Project name must be between 1 and 200 characters".to_string()
+                "Project name must be between 1 and 200 characters".to_string(),
             ));
         }
     }
@@ -231,7 +233,7 @@ async fn validate_create_project_request(
     if let Some(description) = body.get("description").and_then(|v| v.as_str()) {
         if description.len() > 1000 {
             return Err(AppError::Validation(
-                "Description cannot exceed 1000 characters".to_string()
+                "Description cannot exceed 1000 characters".to_string(),
             ));
         }
     }
@@ -243,7 +245,7 @@ async fn validate_create_project_request(
                 if let Some(max_users_num) = max_users.as_u64() {
                     if max_users_num > 100 {
                         return Err(AppError::Validation(
-                            "Maximum concurrent users cannot exceed 100".to_string()
+                            "Maximum concurrent users cannot exceed 100".to_string(),
                         ));
                     }
                 }
@@ -279,14 +281,20 @@ async fn validate_create_job_request(
     req: &mut ServiceRequest,
 ) -> Result<(), AppError> {
     let body = extract_json_body(req).await?;
-    
+
     // Validate required fields
-    let required_fields = vec!["name", "project_id", "source_data_source_id", "target_data_source_id"];
+    let required_fields = vec![
+        "name",
+        "project_id",
+        "source_data_source_id",
+        "target_data_source_id",
+    ];
     for field in required_fields {
         if !body.contains_key(field) {
-            return Err(AppError::Validation(
-                format!("Required field '{}' is missing", field)
-            ));
+            return Err(AppError::Validation(format!(
+                "Required field '{}' is missing",
+                field
+            )));
         }
     }
 
@@ -307,7 +315,7 @@ async fn validate_create_job_request(
     if let Some(name) = body.get("name").and_then(|v| v.as_str()) {
         if name.is_empty() || name.len() > 200 {
             return Err(AppError::Validation(
-                "Job name must be between 1 and 200 characters".to_string()
+                "Job name must be between 1 and 200 characters".to_string(),
             ));
         }
     }
@@ -316,7 +324,7 @@ async fn validate_create_job_request(
     if let Some(threshold) = body.get("confidence_threshold").and_then(|v| v.as_f64()) {
         if !(0.0..=1.0).contains(&threshold) {
             return Err(AppError::Validation(
-                "Confidence threshold must be between 0.0 and 1.0".to_string()
+                "Confidence threshold must be between 0.0 and 1.0".to_string(),
             ));
         }
     }
@@ -326,7 +334,7 @@ async fn validate_create_job_request(
         if let Some(rules_array) = rules.as_array() {
             if rules_array.is_empty() {
                 return Err(AppError::Validation(
-                    "At least one matching rule is required".to_string()
+                    "At least one matching rule is required".to_string(),
                 ));
             }
 
@@ -334,16 +342,20 @@ async fn validate_create_job_request(
                 if let Some(rule_obj) = rule.as_object() {
                     if !rule_obj.contains_key("field") || !rule_obj.contains_key("type") {
                         return Err(AppError::Validation(
-                            "Each matching rule must have 'field' and 'type' properties".to_string()
+                            "Each matching rule must have 'field' and 'type' properties"
+                                .to_string(),
                         ));
                     }
 
                     if let Some(rule_type) = rule_obj.get("type").and_then(|v| v.as_str()) {
-                        let valid_types = vec!["exact", "fuzzy", "contains", "starts_with", "ends_with"];
+                        let valid_types =
+                            ["exact", "fuzzy", "contains", "starts_with", "ends_with"];
                         if !valid_types.contains(&rule_type) {
-                            return Err(AppError::Validation(
-                                format!("Invalid rule type: {}. Valid types are: {}", rule_type, valid_types.join(", "))
-                            ));
+                            return Err(AppError::Validation(format!(
+                                "Invalid rule type: {}. Valid types are: {}",
+                                rule_type,
+                                valid_types.join(", ")
+                            )));
                         }
                     }
                 }
@@ -360,12 +372,12 @@ async fn validate_update_project_request(
     req: &mut ServiceRequest,
 ) -> Result<(), AppError> {
     let body = extract_json_body(req).await?;
-    
+
     // Validate project name if provided
     if let Some(name) = body.get("name").and_then(|v| v.as_str()) {
         if name.is_empty() || name.len() > 200 {
             return Err(AppError::Validation(
-                "Project name must be between 1 and 200 characters".to_string()
+                "Project name must be between 1 and 200 characters".to_string(),
             ));
         }
     }
@@ -374,7 +386,7 @@ async fn validate_update_project_request(
     if let Some(description) = body.get("description").and_then(|v| v.as_str()) {
         if description.len() > 1000 {
             return Err(AppError::Validation(
-                "Description cannot exceed 1000 characters".to_string()
+                "Description cannot exceed 1000 characters".to_string(),
             ));
         }
     }
@@ -388,7 +400,7 @@ async fn validate_update_user_request(
     req: &mut ServiceRequest,
 ) -> Result<(), AppError> {
     let body = extract_json_body(req).await?;
-    
+
     // Validate email if provided
     if let Some(email) = body.get("email").and_then(|v| v.as_str()) {
         validation_service.validate_email(email)?;
@@ -401,32 +413,38 @@ async fn validate_update_user_request(
 
     // Validate role if provided
     if let Some(role) = body.get("role").and_then(|v| v.as_str()) {
-        let valid_roles = vec!["admin", "user", "analyst", "viewer"];
+        let valid_roles = ["admin", "user", "analyst", "viewer"];
         if !valid_roles.contains(&role) {
-            return Err(AppError::Validation(
-                format!("Invalid role: {}. Valid roles are: {}", role, valid_roles.join(", "))
-            ));
+            return Err(AppError::Validation(format!(
+                "Invalid role: {}. Valid roles are: {}",
+                role,
+                valid_roles.join(", ")
+            )));
         }
     }
 
     Ok(())
 }
 /// Extract JSON body from request
-async fn extract_json_body(req: &mut ServiceRequest) -> Result<HashMap<String, serde_json::Value>, AppError> {
-    let bytes = req.take_payload().try_fold(Vec::new(), |mut acc, chunk| async move {
-        acc.extend_from_slice(&chunk);
-        Ok(acc)
-    }).await.map_err(|e| AppError::Validation(e.to_string()))?;
+async fn extract_json_body(
+    req: &mut ServiceRequest,
+) -> Result<HashMap<String, serde_json::Value>, AppError> {
+    let bytes = req
+        .take_payload()
+        .try_fold(Vec::new(), |mut acc, chunk| async move {
+            acc.extend_from_slice(&chunk);
+            Ok(acc)
+        })
+        .await
+        .map_err(|e| AppError::Validation(e.to_string()))?;
 
     serde_json::from_slice(&bytes).map_err(|e| AppError::Validation(e.to_string()))
 }
 
-
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use actix_web::{test, web, App, http};
+    use actix_web::{http, test, web, App};
     use serde_json::json;
 
     #[actix_web::test]
@@ -440,15 +458,19 @@ mod tests {
                         Ok(res)
                     }
                 })
-                .route("/test", web::post().to(|| async { HttpResponse::Ok().json("success") }))
-        ).await;
+                .route(
+                    "/test",
+                    web::post().to(|| async { HttpResponse::Ok().json("success") }),
+                ),
+        )
+        .await;
 
         // Test valid request
         let req = test::TestRequest::post()
             .uri("/test")
             .set_json(&json!({"test": "data"}))
             .to_request();
-        
+
         let resp = test::call_service(&app, req).await;
         assert_eq!(resp.status(), http::StatusCode::OK);
     }

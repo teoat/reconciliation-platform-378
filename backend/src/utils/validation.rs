@@ -7,7 +7,7 @@ use uuid::Uuid;
 pub fn validate_email(email: &str) -> Result<(), String> {
     let email_regex = Regex::new(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$")
         .map_err(|e| format!("Invalid regex: {}", e))?;
-    
+
     if email_regex.is_match(email) {
         Ok(())
     } else {
@@ -20,26 +20,25 @@ pub fn validate_password(password: &str) -> Result<(), String> {
     if password.len() < 8 {
         return Err("Password must be at least 8 characters long".to_string());
     }
-    
+
     if !password.chars().any(|c| c.is_uppercase()) {
         return Err("Password must contain at least one uppercase letter".to_string());
     }
-    
+
     if !password.chars().any(|c| c.is_lowercase()) {
         return Err("Password must contain at least one lowercase letter".to_string());
     }
-    
+
     if !password.chars().any(|c| c.is_numeric()) {
         return Err("Password must contain at least one number".to_string());
     }
-    
+
     Ok(())
 }
 
 /// Validate UUID string
 pub fn validate_uuid(uuid_str: &str) -> Result<Uuid, String> {
-    Uuid::parse_str(uuid_str)
-        .map_err(|e| format!("Invalid UUID: {}", e))
+    Uuid::parse_str(uuid_str).map_err(|e| format!("Invalid UUID: {}", e))
 }
 
 /// Validate required field
@@ -52,11 +51,22 @@ pub fn validate_required<T>(value: &Option<T>, field_name: &str) -> Result<(), S
 }
 
 /// Validate string length
-pub fn validate_string_length(value: &str, min: usize, max: usize, field_name: &str) -> Result<(), String> {
+pub fn validate_string_length(
+    value: &str,
+    min: usize,
+    max: usize,
+    field_name: &str,
+) -> Result<(), String> {
     if value.len() < min {
-        Err(format!("{} must be at least {} characters long", field_name, min))
+        Err(format!(
+            "{} must be at least {} characters long",
+            field_name, min
+        ))
     } else if value.len() > max {
-        Err(format!("{} must be no more than {} characters long", field_name, max))
+        Err(format!(
+            "{} must be no more than {} characters long",
+            field_name, max
+        ))
     } else {
         Ok(())
     }
@@ -91,6 +101,10 @@ pub fn validate_role(role: &str) -> Result<(), String> {
     if valid_roles.contains(&role.to_lowercase().as_str()) {
         Ok(())
     } else {
-        Err(format!("Invalid role: {}. Must be one of: {}", role, valid_roles.join(", ")))
+        Err(format!(
+            "Invalid role: {}. Must be one of: {}",
+            role,
+            valid_roles.join(", ")
+        ))
     }
 }

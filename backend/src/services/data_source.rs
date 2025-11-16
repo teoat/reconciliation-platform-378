@@ -1,20 +1,18 @@
 //! Data source service for the Reconciliation Backend
-//! 
+//!
 //! This module provides data source management functionality including
 //! CRUD operations, file processing, and data source validation.
 
 use diesel::prelude::*;
 
-use uuid::Uuid;
 use chrono::Utc;
 use serde::Serialize;
+use uuid::Uuid;
 
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
-use crate::models::{
-    DataSource, NewDataSource, UpdateDataSource,
-};
 use crate::models::schema::data_sources;
+use crate::models::{DataSource, NewDataSource, UpdateDataSource};
 
 /// Data source service
 pub struct DataSourceService {
@@ -25,7 +23,7 @@ impl DataSourceService {
     pub fn new(db: Database) -> Self {
         Self { db }
     }
-    
+
     /// Create a new data source
     pub async fn create_data_source(
         &self,
@@ -38,7 +36,7 @@ impl DataSourceService {
         schema: Option<serde_json::Value>,
     ) -> AppResult<DataSource> {
         let mut conn = self.db.get_connection()?;
-        
+
         let new_data_source = NewDataSource {
             project_id,
             name: name.clone(),
@@ -49,13 +47,13 @@ impl DataSourceService {
             file_size,
             file_hash,
             record_count: None,
-            schema: schema,
+            schema,
             status: "uploaded".to_string(),
             uploaded_at: Some(Utc::now()),
             processed_at: None,
             is_active: true,
         };
-        
+
         // Use raw SQL insert to avoid trait issues
         #[derive(QueryableByName)]
         #[allow(dead_code)]
@@ -142,35 +140,35 @@ impl DataSourceService {
 
         Ok(data_source)
     }
-    
+
     /// Get data sources for a project
     pub async fn get_project_data_sources(&self, project_id: Uuid) -> AppResult<Vec<DataSource>> {
         let mut conn = self.db.get_connection()?;
-        
+
         let sources = data_sources::table
             .filter(data_sources::project_id.eq(project_id))
             .filter(data_sources::is_active.eq(true))
             .order(data_sources::created_at.desc())
             .load::<DataSource>(&mut conn)
             .map_err(AppError::Database)?;
-        
+
         Ok(sources)
     }
-    
+
     /// Get a data source by ID
     pub async fn get_data_source(&self, id: Uuid) -> AppResult<Option<DataSource>> {
         let mut conn = self.db.get_connection()?;
-        
+
         let data_source = data_sources::table
             .filter(data_sources::id.eq(id))
             .filter(data_sources::is_active.eq(true))
             .first::<DataSource>(&mut conn)
             .optional()
             .map_err(AppError::Database)?;
-        
+
         Ok(data_source)
     }
-    
+
     /// Update a data source
     pub async fn update_data_source(
         &self,
@@ -185,7 +183,7 @@ impl DataSourceService {
         status: Option<String>,
     ) -> AppResult<DataSource> {
         let mut conn = self.db.get_connection()?;
-        
+
         let update_data = UpdateDataSource {
             name,
             description,
@@ -195,63 +193,85 @@ impl DataSourceService {
             file_size,
             file_hash,
             record_count: None,
-            schema: schema,
+            schema,
             status,
             uploaded_at: None,
             processed_at: Some(Utc::now()),
             is_active: None,
         };
-        
+
         // Build update query manually to handle JsonValue properly
-        let update_query = diesel::update(data_sources::table.filter(data_sources::id.eq(id)))
-            .set((
+        let update_query =
+            diesel::update(data_sources::table.filter(data_sources::id.eq(id))).set((
                 update_data.name.map(|name| data_sources::name.eq(name)),
-                update_data.description.map(|desc| data_sources::description.eq(desc)),
-                update_data.source_type.map(|st| data_sources::source_type.eq(st)),
-                update_data.connection_config.map(|cc| data_sources::connection_config.eq(cc)),
-                update_data.file_path.map(|fp| data_sources::file_path.eq(fp)),
-                update_data.file_size.map(|fs| data_sources::file_size.eq(fs)),
-                update_data.file_hash.map(|fh| data_sources::file_hash.eq(fh)),
-                update_data.record_count.map(|rc| data_sources::record_count.eq(rc)),
+                update_data
+                    .description
+                    .map(|desc| data_sources::description.eq(desc)),
+                update_data
+                    .source_type
+                    .map(|st| data_sources::source_type.eq(st)),
+                update_data
+                    .connection_config
+                    .map(|cc| data_sources::connection_config.eq(cc)),
+                update_data
+                    .file_path
+                    .map(|fp| data_sources::file_path.eq(fp)),
+                update_data
+                    .file_size
+                    .map(|fs| data_sources::file_size.eq(fs)),
+                update_data
+                    .file_hash
+                    .map(|fh| data_sources::file_hash.eq(fh)),
+                update_data
+                    .record_count
+                    .map(|rc| data_sources::record_count.eq(rc)),
                 update_data.schema.map(|s| data_sources::schema.eq(s)),
-                update_data.status.map(|status| data_sources::status.eq(status)),
-                update_data.uploaded_at.map(|ua| data_sources::uploaded_at.eq(ua)),
-                update_data.processed_at.map(|pa| data_sources::processed_at.eq(pa)),
-                update_data.is_active.map(|ia| data_sources::is_active.eq(ia)),
+                update_data
+                    .status
+                    .map(|status| data_sources::status.eq(status)),
+                update_data
+                    .uploaded_at
+                    .map(|ua| data_sources::uploaded_at.eq(ua)),
+                update_data
+                    .processed_at
+                    .map(|pa| data_sources::processed_at.eq(pa)),
+                update_data
+                    .is_active
+                    .map(|ia| data_sources::is_active.eq(ia)),
             ));
 
         let data_source = update_query
             .returning(DataSource::as_returning())
             .get_result(&mut conn)
             .map_err(AppError::Database)?;
-        
+
         Ok(data_source)
     }
-    
+
     /// Delete a data source (soft delete)
     pub async fn delete_data_source(&self, id: Uuid) -> AppResult<()> {
         let mut conn = self.db.get_connection()?;
-        
+
         diesel::update(data_sources::table)
             .filter(data_sources::id.eq(id))
             .set(data_sources::is_active.eq(false))
             .execute(&mut conn)
             .map_err(AppError::Database)?;
-        
+
         Ok(())
     }
-    
+
     /// Get data source statistics
     pub async fn get_data_source_stats(&self, project_id: Uuid) -> AppResult<DataSourceStats> {
         let mut conn = self.db.get_connection()?;
-        
+
         let total_count = data_sources::table
             .filter(data_sources::project_id.eq(project_id))
             .filter(data_sources::is_active.eq(true))
             .count()
             .get_result::<i64>(&mut conn)
             .map_err(AppError::Database)?;
-        
+
         let csv_count = data_sources::table
             .filter(data_sources::project_id.eq(project_id))
             .filter(data_sources::source_type.eq("csv"))
@@ -259,7 +279,7 @@ impl DataSourceService {
             .count()
             .get_result::<i64>(&mut conn)
             .map_err(AppError::Database)?;
-        
+
         let json_count = data_sources::table
             .filter(data_sources::project_id.eq(project_id))
             .filter(data_sources::source_type.eq("json"))
@@ -267,7 +287,7 @@ impl DataSourceService {
             .count()
             .get_result::<i64>(&mut conn)
             .map_err(AppError::Database)?;
-        
+
         let processed_count = data_sources::table
             .filter(data_sources::project_id.eq(project_id))
             .filter(data_sources::status.eq("processed"))
@@ -275,7 +295,7 @@ impl DataSourceService {
             .count()
             .get_result::<i64>(&mut conn)
             .map_err(AppError::Database)?;
-        
+
         Ok(DataSourceStats {
             total_count,
             csv_count,
@@ -284,12 +304,14 @@ impl DataSourceService {
             pending_count: total_count - processed_count,
         })
     }
-    
+
     /// Validate data source
     pub async fn validate_data_source(&self, id: Uuid) -> AppResult<DataSourceValidation> {
-        let data_source = self.get_data_source(id).await?
+        let data_source = self
+            .get_data_source(id)
+            .await?
             .ok_or_else(|| AppError::NotFound("Data source not found".to_string()))?;
-        
+
         let mut validation = DataSourceValidation {
             id: data_source.id,
             name: data_source.name,
@@ -297,7 +319,7 @@ impl DataSourceService {
             errors: Vec::new(),
             warnings: Vec::new(),
         };
-        
+
         // Check if file exists
         if let Some(file_path) = &data_source.file_path {
             if !std::path::Path::new(file_path).exists() {
@@ -305,30 +327,35 @@ impl DataSourceService {
                 validation.errors.push("File does not exist".to_string());
             }
         }
-        
+
         // Check file size
         if let Some(file_size) = data_source.file_size {
             if file_size <= 0 {
                 validation.is_valid = false;
                 validation.errors.push("Invalid file size".to_string());
-            } else if file_size > 100 * 1024 * 1024 { // 100MB limit
-                validation.warnings.push("File size exceeds recommended limit".to_string());
+            } else if file_size > 100 * 1024 * 1024 {
+                // 100MB limit
+                validation
+                    .warnings
+                    .push("File size exceeds recommended limit".to_string());
             }
         }
-        
+
         // Check source type
         if !["csv", "json", "xlsx", "txt"].contains(&data_source.source_type.as_str()) {
             validation.is_valid = false;
-            validation.errors.push("Unsupported source type".to_string());
+            validation
+                .errors
+                .push("Unsupported source type".to_string());
         }
-        
+
         // Check schema
         if let Some(schema) = &data_source.schema {
             if schema.is_null() {
                 validation.warnings.push("Schema is null".to_string());
             }
         }
-        
+
         Ok(validation)
     }
 }

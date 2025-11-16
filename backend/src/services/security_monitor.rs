@@ -2,14 +2,14 @@
 //!
 //! Anomaly detection, automated alerting, and security dashboard
 
+use crate::errors::AppResult;
+use crate::services::email::EmailService;
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
 use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
-use crate::errors::AppResult;
-use crate::services::email::EmailService;
-use reqwest::Client;
 
 /// Security event types
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -53,13 +53,13 @@ pub enum SecuritySeverity {
 pub struct AnomalyDetectionConfig {
     /// Threshold for brute force detection (failed logins)
     pub brute_force_threshold: usize,
-    
+
     /// Time window for brute force detection
     pub brute_force_window: Duration,
-    
+
     /// Threshold for unusual access patterns
     pub unusual_access_threshold: usize,
-    
+
     /// Enable anomaly detection
     pub enable_anomaly_detection: bool,
 }
@@ -94,8 +94,14 @@ struct AlertRule {
 
 #[derive(Debug, Clone)]
 enum AlertCondition {
-    EventCount { event_type: SecurityEventType, threshold: usize, window: Duration },
-    AnomalyScore { threshold: f64 },
+    EventCount {
+        event_type: SecurityEventType,
+        threshold: usize,
+        window: Duration,
+    },
+    AnomalyScore {
+        threshold: f64,
+    },
 }
 
 #[derive(Debug, Clone)]
@@ -120,7 +126,10 @@ impl SecurityMonitor {
     }
 
     /// Create a new security monitor with email service
-    pub fn with_email_service(config: AnomalyDetectionConfig, email_service: Arc<EmailService>) -> Self {
+    pub fn with_email_service(
+        config: AnomalyDetectionConfig,
+        email_service: Arc<EmailService>,
+    ) -> Self {
         Self {
             config,
             events: Arc::new(RwLock::new(Vec::new())),
@@ -147,7 +156,7 @@ impl SecurityMonitor {
         // Store event
         let mut events = self.events.write().await;
         events.push(event.clone());
-        
+
         // Keep only recent events (last 1000)
         if events.len() > 1000 {
             events.remove(0);
@@ -156,7 +165,7 @@ impl SecurityMonitor {
 
         // Check if this indicates an anomaly
         let anomaly_score = self.calculate_anomaly_score(&event).await;
-        
+
         let mut scores = self.anomaly_scores.write().await;
         scores.insert(event.id.clone(), anomaly_score);
         drop(scores);
@@ -179,10 +188,14 @@ impl SecurityMonitor {
         let window_start = now - self.config.brute_force_window;
 
         let events = self.events.read().await;
-        let failure_count = events.iter()
+        let failure_count = events
+            .iter()
             .filter(|e| {
-                matches!(e.event_type, SecurityEventType::AuthenticationFailure) &&
-                e.source_ip.as_ref().map(|ip| ip == ip_address).unwrap_or(false)
+                matches!(e.event_type, SecurityEventType::AuthenticationFailure)
+                    && e.source_ip
+                        .as_ref()
+                        .map(|ip| ip == ip_address)
+                        .unwrap_or(false)
             })
             .count();
 
@@ -224,7 +237,8 @@ impl SecurityMonitor {
         let window = Duration::from_secs(600); // 10 minutes
         let now = Instant::now();
 
-        events.iter()
+        events
+            .iter()
             .filter(|e| {
                 std::mem::discriminant(&e.event_type) == std::mem::discriminant(&event.event_type)
             })
@@ -237,7 +251,11 @@ impl SecurityMonitor {
 
         for (_, rule) in rules.iter() {
             let should_trigger = match &rule.condition {
-                AlertCondition::EventCount { event_type, threshold, window: _ } => {
+                AlertCondition::EventCount {
+                    event_type,
+                    threshold,
+                    window: _,
+                } => {
                     std::mem::discriminant(&event.event_type) == std::mem::discriminant(event_type)
                 }
                 AlertCondition::AnomalyScore { threshold } => score >= *threshold,
@@ -266,7 +284,8 @@ impl SecurityMonitor {
     /// Send email alert
     async fn send_email_alert(&self, email: &str, event: &SecurityEvent, score: f64) {
         if let Some(email_service) = &self.email_service {
-            let subject = format!("🚨 Security Alert: {} (Score: {:.1})", 
+            let subject = format!(
+                "🚨 Security Alert: {} (Score: {:.1})",
                 match event.severity {
                     SecuritySeverity::Critical => "CRITICAL",
                     SecuritySeverity::High => "HIGH",
@@ -313,7 +332,10 @@ Security Monitoring System
                 log::info!("Security email alert sent to {}", email);
             }
         } else {
-            log::warn!("Email service not configured, cannot send email alert to {}", email);
+            log::warn!(
+                "Email service not configured, cannot send email alert to {}",
+                email
+            );
         }
     }
 
@@ -394,11 +416,7 @@ Security Monitoring System
     /// Get recent security events
     pub async fn get_recent_events(&self, limit: usize) -> Vec<SecurityEvent> {
         let events = self.events.read().await;
-        events.iter()
-            .rev()
-            .take(limit)
-            .cloned()
-            .collect()
+        events.iter().rev().take(limit).cloned().collect()
     }
 
     /// Get anomaly scores
@@ -434,7 +452,10 @@ mod tests {
             id: Uuid::new_v4().to_string(),
             event_type: SecurityEventType::BruteForceAttack,
             severity: SecuritySeverity::Critical,
-            timestamp: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?.as_secs().to_string(),
+            timestamp: SystemTime::now()
+                .duration_since(SystemTime::UNIX_EPOCH)?
+                .as_secs()
+                .to_string(),
             source_ip: Some("127.0.0.1".to_string()),
             user_id: None,
             description: "Test event".to_string(),
@@ -446,4 +467,3 @@ mod tests {
         Ok(())
     }
 }
-

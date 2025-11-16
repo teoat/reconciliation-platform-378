@@ -1,10 +1,9 @@
 //! Analytics types and data structures
 
-use serde::{Serialize, Deserialize};
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 // Using serde_json::Value directly
-
 
 /// Dashboard data
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -119,5 +118,3 @@ pub struct MonthlyJobCount {
     pub month: String,
     pub count: i64,
 }
-
-

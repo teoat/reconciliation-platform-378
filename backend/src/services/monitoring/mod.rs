@@ -3,15 +3,14 @@
 //! This module provides comprehensive monitoring, metrics collection,
 //! health checks, and alerting functionality.
 
-pub mod types;
+pub mod alerts;
+pub mod health;
 pub mod metrics;
 pub mod service;
-pub mod health;
-pub mod alerts;
+pub mod types;
 
-pub use types::*;
+pub use alerts::AlertManager;
+pub use health::{DatabaseHealthChecker, RedisHealthChecker, SystemHealthChecker};
 pub use metrics::*;
 pub use service::MonitoringService;
-pub use health::{DatabaseHealthChecker, RedisHealthChecker, SystemHealthChecker};
-pub use alerts::AlertManager;
-
+pub use types::*;

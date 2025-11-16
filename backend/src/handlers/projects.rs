@@ -2,35 +2,54 @@
 
 use actix_multipart::Multipart;
 use actix_web::{web, HttpRequest, HttpResponse, Result};
-use uuid::Uuid;
 use std::time::Duration;
+use uuid::Uuid;
 
-use crate::errors::AppError;
-use crate::database::Database;
 use crate::config::Config;
+use crate::database::Database;
+use crate::errors::AppError;
 use crate::services::cache::MultiLevelCache;
 
-use crate::handlers::types::{SearchQueryParams, CreateProjectRequest, UpdateProjectRequest, CreateDataSourceRequest, ApiResponse, FileUploadRequest};
+use crate::handlers::types::{
+    ApiResponse, CreateDataSourceRequest, CreateProjectRequest, FileUploadRequest,
+    SearchQueryParams, UpdateProjectRequest,
+};
 // Using serde_json::Value directly
-
 
 use crate::handlers::helpers::extract_user_id;
 use crate::utils::check_project_permission;
 
 /// Configure project management routes
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
-    cfg
-        .route("", web::get().to(get_projects))
+    cfg.route("", web::get().to(get_projects))
         .route("", web::post().to(create_project))
         .route("/{project_id}", web::get().to(get_project))
         .route("/{project_id}", web::put().to(update_project))
         .route("/{project_id}", web::delete().to(delete_project))
-        .route("/{project_id}/data-sources", web::get().to(get_project_data_sources))
-        .route("/{project_id}/data-sources", web::post().to(create_data_source))
-        .route("/{project_id}/reconciliation-jobs", web::get().to(get_reconciliation_jobs))
-        .route("/{project_id}/reconciliation-jobs", web::post().to(create_reconciliation_job))
-        .route("/{project_id}/reconciliation/view", web::get().to(get_project_reconciliation_view))
-        .route("/{project_id}/files/upload", web::post().to(upload_file_to_project));
+        .route(
+            "/{project_id}/data-sources",
+            web::get().to(get_project_data_sources),
+        )
+        .route(
+            "/{project_id}/data-sources",
+            web::post().to(create_data_source),
+        )
+        .route(
+            "/{project_id}/reconciliation-jobs",
+            web::get().to(get_reconciliation_jobs),
+        )
+        .route(
+            "/{project_id}/reconciliation-jobs",
+            web::post().to(create_reconciliation_job),
+        )
+        .route(
+            "/{project_id}/reconciliation/view",
+            web::get().to(get_project_reconciliation_view),
+        )
+        .route(
+            "/{project_id}/files/upload",
+            web::post().to(upload_file_to_project),
+        );
 }
 
 /// Get projects endpoint
@@ -55,11 +74,12 @@ pub async fn get_projects(
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     // Try cache first
-    let cache_key = format!("projects:page:{}:per_page:{}", 
-        query.page.unwrap_or(1), 
+    let cache_key = format!(
+        "projects:page:{}:per_page:{}",
+        query.page.unwrap_or(1),
         query.per_page.unwrap_or(10)
     );
-    
+
     if let Ok(Some(cached)) = cache.get::<serde_json::Value>(&cache_key).await {
         return Ok(HttpResponse::Ok().json(ApiResponse {
             success: true,
@@ -68,18 +88,22 @@ pub async fn get_projects(
             error: None,
         }));
     }
-    
+
     let project_service = crate::services::project::ProjectService::new(data.get_ref().clone());
-    
-    let response = project_service.list_projects(
-        query.page.map(|p| p as i64),
-        query.per_page.map(|p| p as i64),
-    ).await?;
-    
+
+    let response = project_service
+        .list_projects(
+            query.page.map(|p| p as i64),
+            query.per_page.map(|p| p as i64),
+        )
+        .await?;
+
     // Cache the response for 5 minutes
     let response_json = serde_json::to_value(&response)?;
-    let _ = cache.set(&cache_key, &response_json, Some(Duration::from_secs(300))).await;
-    
+    let _ = cache
+        .set(&cache_key, &response_json, Some(Duration::from_secs(300)))
+        .await;
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(response),
@@ -97,18 +121,23 @@ pub async fn create_project(
 ) -> Result<HttpResponse, AppError> {
     let project_service = crate::services::project::ProjectService::new(data.get_ref().clone());
     let caller_user_id = extract_user_id(&http_req)?;
-    let is_admin = crate::utils::authorization::check_admin_permission(data.get_ref(), caller_user_id).is_ok();
-    
+    let is_admin =
+        crate::utils::authorization::check_admin_permission(data.get_ref(), caller_user_id).is_ok();
+
     let request = crate::services::project::CreateProjectRequest {
         name: req.name.clone(),
         description: req.description.clone(),
         // Enforce server-side owner assignment: caller unless admin provides explicit owner_id
-        owner_id: if is_admin { req.owner_id } else { caller_user_id },
+        owner_id: if is_admin {
+            req.owner_id
+        } else {
+            caller_user_id
+        },
         status: req.status.clone(),
         settings: req.settings.clone(),
     };
     let project = project_service.create_project(request).await?;
-    
+
     Ok(HttpResponse::Created().json(ApiResponse {
         success: true,
         data: Some(project),
@@ -127,10 +156,10 @@ pub async fn get_project(
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
     let project_id = path.into_inner();
-    
+
     // Check authorization before accessing project
     crate::utils::check_project_permission(data.get_ref(), user_id, project_id)?;
-    
+
     // Try cache first
     let cache_key = format!("project:{}", project_id);
     if let Ok(Some(cached)) = cache.get::<serde_json::Value>(&cache_key).await {
@@ -141,15 +170,17 @@ pub async fn get_project(
             error: None,
         }));
     }
-    
+
     let project_service = crate::services::project::ProjectService::new(data.get_ref().clone());
-    
+
     let project = project_service.get_project_by_id(project_id).await?;
-    
+
     // Cache the response for 10 minutes
     let project_json = serde_json::to_value(&project)?;
-    let _ = cache.set(&cache_key, &project_json, Some(Duration::from_secs(600))).await;
-    
+    let _ = cache
+        .set(&cache_key, &project_json, Some(Duration::from_secs(600)))
+        .await;
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(project),
@@ -169,12 +200,12 @@ pub async fn update_project(
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
     let project_id = path.into_inner();
-    
+
     // Check authorization before updating project
     crate::utils::check_project_permission(data.get_ref(), user_id, project_id)?;
-    
+
     let project_service = crate::services::project::ProjectService::new(data.get_ref().clone());
-    
+
     let request = crate::services::project::UpdateProjectRequest {
         name: req.name.clone(),
         description: req.description.clone(),
@@ -182,11 +213,14 @@ pub async fn update_project(
         settings: req.settings.clone(),
     };
     let project = project_service.update_project(project_id, request).await?;
-    
+
     // ✅ CACHE INVALIDATION: Clear cache after project update
-    cache.delete(&format!("project:{}", project_id)).await.unwrap_or_default();
+    cache
+        .delete(&format!("project:{}", project_id))
+        .await
+        .unwrap_or_default();
     cache.delete("projects:*").await.unwrap_or_default();
-    
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(project),
@@ -205,18 +239,21 @@ pub async fn delete_project(
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
     let project_id = path.into_inner();
-    
+
     // Check authorization before deleting project
     crate::utils::check_project_permission(data.get_ref(), user_id, project_id)?;
-    
+
     let project_service = crate::services::project::ProjectService::new(data.get_ref().clone());
-    
+
     project_service.delete_project(project_id).await?;
-    
+
     // ✅ CACHE INVALIDATION: Clear cache after project deletion
-    cache.delete(&format!("project:{}", project_id)).await.unwrap_or_default();
+    cache
+        .delete(&format!("project:{}", project_id))
+        .await
+        .unwrap_or_default();
     cache.delete("projects:*").await.unwrap_or_default();
-    
+
     Ok(HttpResponse::NoContent().finish())
 }
 
@@ -230,10 +267,10 @@ pub async fn get_project_data_sources(
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
     let project_id_val = project_id.into_inner();
-    
+
     // Check authorization before accessing project data sources
     crate::utils::check_project_permission(data.get_ref(), user_id, project_id_val)?;
-    
+
     // Try cache first (5 minute TTL)
     let cache_key = format!("data_sources:project:{}", project_id_val);
     if let Ok(Some(cached)) = cache.get::<serde_json::Value>(&cache_key).await {
@@ -244,15 +281,24 @@ pub async fn get_project_data_sources(
             error: None,
         }));
     }
-    
-    let data_source_service = crate::services::data_source::DataSourceService::new(data.get_ref().clone());
-    
-    let data_sources = data_source_service.get_project_data_sources(project_id_val).await?;
-    
+
+    let data_source_service =
+        crate::services::data_source::DataSourceService::new(data.get_ref().clone());
+
+    let data_sources = data_source_service
+        .get_project_data_sources(project_id_val)
+        .await?;
+
     // Cache for 5 minutes
     let data_sources_json = serde_json::to_value(&data_sources)?;
-    let _ = cache.set(&cache_key, &data_sources_json, Some(Duration::from_secs(300))).await;
-    
+    let _ = cache
+        .set(
+            &cache_key,
+            &data_sources_json,
+            Some(Duration::from_secs(300)),
+        )
+        .await;
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(data_sources),
@@ -274,22 +320,31 @@ pub async fn create_data_source(
     let user_id = extract_user_id(&http_req)?;
     let project_id_val = project_id.into_inner();
     crate::utils::check_project_permission(data.get_ref(), user_id, project_id_val)?;
-    let data_source_service = crate::services::data_source::DataSourceService::new(data.get_ref().clone());
-    
-    let new_data_source = data_source_service.create_data_source(
-        project_id_val,
-        req.name.clone(),
-        req.source_type.clone(),
-        req.file_path.clone(),
-        req.file_size,
-        req.file_hash.clone(),
+    let data_source_service =
+        crate::services::data_source::DataSourceService::new(data.get_ref().clone());
+
+    let new_data_source = data_source_service
+        .create_data_source(
+            project_id_val,
+            req.name.clone(),
+            req.source_type.clone(),
+            req.file_path.clone(),
+            req.file_size,
+            req.file_hash.clone(),
             req.schema.clone(),
-    ).await?;
-    
+        )
+        .await?;
+
     // ✅ CACHE INVALIDATION: Clear project and data sources cache after creation
-    cache.delete(&format!("data_sources:project:{}", project_id_val)).await.unwrap_or_default();
-    cache.delete(&format!("project:{}", project_id_val)).await.unwrap_or_default();
-    
+    cache
+        .delete(&format!("data_sources:project:{}", project_id_val))
+        .await
+        .unwrap_or_default();
+    cache
+        .delete(&format!("project:{}", project_id_val))
+        .await
+        .unwrap_or_default();
+
     Ok(HttpResponse::Created().json(ApiResponse {
         success: true,
         data: Some(new_data_source),
@@ -323,12 +378,16 @@ pub async fn get_project_reconciliation_view(
         }));
     }
 
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
     let project_service = crate::services::project::ProjectService::new(data.get_ref().clone());
-    let analytics_service = crate::services::analytics::AnalyticsService::new(data.get_ref().clone());
+    let analytics_service =
+        crate::services::analytics::AnalyticsService::new(data.get_ref().clone());
 
     let project = project_service.get_project_by_id(project_id_val).await?;
-    let jobs = reconciliation_service.get_project_reconciliation_jobs(project_id_val).await?;
+    let jobs = reconciliation_service
+        .get_project_reconciliation_jobs(project_id_val)
+        .await?;
     let stats = analytics_service.get_project_stats(project_id_val).await?;
 
     let view = serde_json::json!({
@@ -338,7 +397,9 @@ pub async fn get_project_reconciliation_view(
         "stats": stats,
     });
 
-    let _ = cache.set(&cache_key, &view, Some(Duration::from_secs(60))).await;
+    let _ = cache
+        .set(&cache_key, &view, Some(Duration::from_secs(60)))
+        .await;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -358,10 +419,10 @@ pub async fn get_reconciliation_jobs(
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
     let project_id_val = project_id.into_inner();
-    
+
     // Check authorization before accessing project jobs
     crate::utils::check_project_permission(data.get_ref(), user_id, project_id_val)?;
-    
+
     // Try cache first (2 minute TTL for frequently updated data)
     let cache_key = format!("jobs:project:{}", project_id_val);
     if let Ok(Some(cached)) = cache.get::<serde_json::Value>(&cache_key).await {
@@ -372,15 +433,20 @@ pub async fn get_reconciliation_jobs(
             error: None,
         }));
     }
-    
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
-    
-    let jobs = reconciliation_service.get_project_reconciliation_jobs(project_id_val).await?;
-    
+
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
+
+    let jobs = reconciliation_service
+        .get_project_reconciliation_jobs(project_id_val)
+        .await?;
+
     // Cache for 2 minutes
     let jobs_json = serde_json::to_value(&jobs)?;
-    let _ = cache.set(&cache_key, &jobs_json, Some(Duration::from_secs(120))).await;
-    
+    let _ = cache
+        .set(&cache_key, &jobs_json, Some(Duration::from_secs(120)))
+        .await;
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(jobs),
@@ -398,20 +464,22 @@ pub async fn create_reconciliation_job(
     cache: web::Data<MultiLevelCache>,
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
-    
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
+
     // Extract user_id from request
     let user_id = extract_user_id(&http_req)?;
     let project_id_val = project_id.into_inner();
-    
+
     // ✅ SECURITY FIX: Check authorization before creating job
     crate::utils::check_project_permission(data.get_ref(), user_id, project_id_val)?;
 
     // Extract matching_rules from settings or use defaults
     let matching_rules = if let Some(settings) = &req.settings {
         if let Some(rules) = settings.get("matching_rules") {
-            serde_json::from_value(rules.clone())
-                .map_err(|e| AppError::Validation(format!("Invalid matching_rules format: {}", e)))?
+            serde_json::from_value(rules.clone()).map_err(|e| {
+                AppError::Validation(format!("Invalid matching_rules format: {}", e))
+            })?
         } else {
             vec![]
         }
@@ -437,25 +505,33 @@ pub async fn create_reconciliation_job(
         .action("create_reconciliation_job")
         .resource_type("reconciliation_job")
         .build();
-    
-    let result = reconciliation_service.create_reconciliation_job(user_id, request).await;
-    
+
+    let result = reconciliation_service
+        .create_reconciliation_job(user_id, request)
+        .await;
+
     let new_job = match result {
         Ok(job) => job,
         Err(error) => {
             let friendly_error = error_service.translate_error(
                 &error.to_string(),
                 context,
-                Some("Failed to create reconciliation job".to_string())
+                Some("Failed to create reconciliation job".to_string()),
             );
             return Err(AppError::InternalServerError(friendly_error.message));
         }
     };
-    
+
     // ✅ CACHE INVALIDATION: Clear cache after job creation
-    cache.delete(&format!("jobs:project:{}", project_id_val)).await.unwrap_or_default();
-    cache.delete(&format!("project:{}", project_id_val)).await.unwrap_or_default();
-    
+    cache
+        .delete(&format!("jobs:project:{}", project_id_val))
+        .await
+        .unwrap_or_default();
+    cache
+        .delete(&format!("project:{}", project_id_val))
+        .await
+        .unwrap_or_default();
+
     Ok(HttpResponse::Created().json(ApiResponse {
         success: true,
         data: Some(new_job),
@@ -498,16 +574,22 @@ pub async fn upload_file_to_project(
     // ✅ SECURITY: Check authorization before allowing upload
     check_project_permission(data.get_ref(), user_id, project_id_val)?;
 
-    let file_service = crate::services::file::FileService::new(
-        data.get_ref().clone(),
-        config.upload_path.clone(),
-    );
+    let file_service =
+        crate::services::file::FileService::new(data.get_ref().clone(), config.upload_path.clone());
 
-    let file_info = file_service.upload_file(payload, project_id_val, user_id).await?;
+    let file_info = file_service
+        .upload_file(payload, project_id_val, user_id)
+        .await?;
 
     // ✅ CACHE INVALIDATION: Clear project cache after file upload
-    cache.delete(&format!("project:{}", project_id_val)).await.unwrap_or_default();
-    cache.delete(&format!("files:project:{}", project_id_val)).await.unwrap_or_default();
+    cache
+        .delete(&format!("project:{}", project_id_val))
+        .await
+        .unwrap_or_default();
+    cache
+        .delete(&format!("files:project:{}", project_id_val))
+        .await
+        .unwrap_or_default();
 
     // REST compliant: Return 201 Created with Location header
     let location = format!("/api/v1/files/{}", file_info.id);

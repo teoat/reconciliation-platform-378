@@ -1,9 +1,7 @@
 //! Metrics definitions and collection
 
-use prometheus::{
-    Counter, Histogram, Gauge, CounterVec, HistogramVec, Opts, HistogramOpts,
-};
 use log;
+use prometheus::{Counter, CounterVec, Gauge, Histogram, HistogramOpts, HistogramVec, Opts};
 
 // ============================================================================
 // COMPREHENSIVE METRICS DEFINITIONS
@@ -227,4 +225,3 @@ lazy_static::lazy_static! {
         panic!("Failed to initialize metrics: {}", e);
     });
 }
-

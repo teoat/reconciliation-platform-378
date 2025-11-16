@@ -1,8 +1,8 @@
 //! Shared types and DTOs for API handlers
 
 use serde::{Deserialize, Serialize};
-use validator::Validate;
 use uuid::Uuid;
+use validator::Validate;
 
 /// Generic API response wrapper
 #[derive(Serialize)]
@@ -68,7 +68,11 @@ pub struct FileQueryParams {
 // Project-related DTOs
 #[derive(Deserialize, Validate)]
 pub struct CreateProjectRequest {
-    #[validate(length(min = 1, max = 255, message = "Project name must be between 1 and 255 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Project name must be between 1 and 255 characters"
+    ))]
     pub name: String,
     #[validate(length(max = 1000, message = "Description cannot exceed 1000 characters"))]
     pub description: Option<String>,
@@ -100,14 +104,22 @@ pub struct CreateDataSourceRequest {
 // Reconciliation job DTOs
 #[derive(Deserialize, Validate)]
 pub struct CreateReconciliationJobRequest {
-    #[validate(length(min = 1, max = 255, message = "Job name must be between 1 and 255 characters"))]
+    #[validate(length(
+        min = 1,
+        max = 255,
+        message = "Job name must be between 1 and 255 characters"
+    ))]
     pub name: String,
     #[validate(length(max = 1000, message = "Description cannot exceed 1000 characters"))]
     pub description: Option<String>,
     pub project_id: Uuid,
     pub source_data_source_id: Uuid,
     pub target_data_source_id: Uuid,
-    #[validate(range(min = 0.0, max = 1.0, message = "Confidence threshold must be between 0 and 1"))]
+    #[validate(range(
+        min = 0.0,
+        max = 1.0,
+        message = "Confidence threshold must be between 0 and 1"
+    ))]
     pub confidence_threshold: f64,
     pub settings: Option<serde_json::Value>,
 }

@@ -5,21 +5,21 @@
 //! - Permissions: Role and permission management
 //! - Preferences: User preferences and settings
 
-pub mod profile;
-pub mod permissions;
-pub mod preferences;
-pub mod query;
 pub mod account;
 pub mod analytics;
+pub mod permissions;
+pub mod preferences;
+pub mod profile;
+pub mod query;
 pub mod traits;
 
 // Re-export sub-service types for convenience
-pub use profile::{ProfileService, UserProfile};
-pub use permissions::{PermissionService, Permission, Role};
-pub use preferences::{PreferencesService, UserPreferences};
-pub use query::UserQueryService;
 pub use account::UserAccountService;
 pub use analytics::UserAnalyticsService;
+pub use permissions::{Permission, PermissionService, Role};
+pub use preferences::{PreferencesService, UserPreferences};
+pub use profile::{ProfileService, UserProfile};
+pub use query::UserQueryService;
 
 // Re-export traits for external use
 pub use traits::*;
@@ -31,17 +31,17 @@ pub use traits::*;
 // Main user service that composes sub-services
 
 use diesel::prelude::*;
-use diesel::{QueryDsl, ExpressionMethods, RunQueryDsl};
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use uuid::Uuid;
 
-use std::sync::Arc;
 use async_trait::async_trait;
+use std::sync::Arc;
 
-use crate::database::{Database, transaction::with_transaction};
+use crate::database::{transaction::with_transaction, Database};
 use crate::errors::{AppError, AppResult};
 use crate::models::{
-    User, NewUser, UpdateUser,
-    schema::{users, projects},
+    schema::{projects, users},
+    NewUser, UpdateUser, User,
 };
 use crate::services::auth::{AuthService, ValidationUtils};
 
@@ -68,7 +68,10 @@ impl UserService {
             permission_service: Arc::new(PermissionService::new(Arc::clone(&db))),
             preferences_service: Arc::new(PreferencesService::new(Arc::clone(&db))),
             query_service: Arc::new(UserQueryService::new(Arc::clone(&db))),
-            account_service: Arc::new(UserAccountService::new(Arc::clone(&db), auth_service.clone())),
+            account_service: Arc::new(UserAccountService::new(
+                Arc::clone(&db),
+                auth_service.clone(),
+            )),
             analytics_service: Arc::new(UserAnalyticsService::new(Arc::clone(&db))),
             db,
             auth_service,
@@ -79,7 +82,8 @@ impl UserService {
     pub async fn create_user(&self, request: CreateUserRequest) -> AppResult<UserInfo> {
         // Validate input
         ValidationUtils::validate_email(&request.email)?;
-        self.auth_service.validate_password_strength(&request.password)?;
+        self.auth_service
+            .validate_password_strength(&request.password)?;
 
         // Hash password
         let password_hash = self.auth_service.hash_password(&request.password)?;
@@ -88,7 +92,9 @@ impl UserService {
         let role = request.role.unwrap_or_else(|| "user".to_string());
         // Validate role format - standardize to match OAuth user validation
         if role != "user" && role != "admin" && role != "manager" && role != "viewer" {
-            return Err(AppError::Validation("Invalid role. Must be one of: user, admin, manager, viewer".to_string()));
+            return Err(AppError::Validation(
+                "Invalid role. Must be one of: user, admin, manager, viewer".to_string(),
+            ));
         }
 
         // Create user - move duplicate check inside transaction to prevent race condition
@@ -112,7 +118,9 @@ impl UserService {
                 .map_err(AppError::Database)?;
 
             if count > 0 {
-                return Err(AppError::Conflict("User with this email already exists".to_string()));
+                return Err(AppError::Conflict(
+                    "User with this email already exists".to_string(),
+                ));
             }
 
             // Insert user
@@ -130,7 +138,8 @@ impl UserService {
                 })?;
 
             Ok(result)
-        }).await?;
+        })
+        .await?;
 
         // Get created user with project count
         self.get_user_by_id(created_user_id).await
@@ -149,7 +158,9 @@ impl UserService {
         let role = request.role.unwrap_or_else(|| "user".to_string());
         // Validate role format - match regular user validation
         if role != "user" && role != "admin" && role != "manager" && role != "viewer" {
-            return Err(AppError::Validation("Invalid role. Must be one of: user, admin, manager, viewer".to_string()));
+            return Err(AppError::Validation(
+                "Invalid role. Must be one of: user, admin, manager, viewer".to_string(),
+            ));
         }
 
         // Create user - check if exists inside transaction to prevent race condition
@@ -201,7 +212,9 @@ impl UserService {
                             .first::<Uuid>(tx)
                         {
                             Ok(user_id) => Ok(Some(user_id)),
-                            Err(_) => Err(AppError::Conflict("User with this email already exists".to_string())),
+                            Err(_) => Err(AppError::Conflict(
+                                "User with this email already exists".to_string(),
+                            )),
                         }
                     } else {
                         Err(AppError::Database(e))
@@ -210,12 +223,15 @@ impl UserService {
             }?;
 
             Ok(result)
-        }).await?;
+        })
+        .await?;
 
         // Get user (new or existing) with project count
         match result {
             Some(user_id) => self.get_user_by_id(user_id).await,
-            None => Err(AppError::Internal("Failed to create or retrieve user".to_string())),
+            None => Err(AppError::Internal(
+                "Failed to create or retrieve user".to_string(),
+            )),
         }
     }
 
@@ -238,7 +254,10 @@ impl UserService {
         Ok(UserInfo {
             id: user.id,
             email: user.email,
-            name: user.first_name.as_ref().and_then(|f| user.last_name.as_ref().map(|l| format!("{} {}", f, l))),
+            name: user
+                .first_name
+                .as_ref()
+                .and_then(|f| user.last_name.as_ref().map(|l| format!("{} {}", f, l))),
             first_name: user.first_name.unwrap_or_default(),
             last_name: user.last_name.unwrap_or_default(),
             role: user.status.clone(),
@@ -274,7 +293,11 @@ impl UserService {
     }
 
     /// Update user (atomic operation within transaction)
-    pub async fn update_user(&self, user_id: Uuid, request: UpdateUserRequest) -> AppResult<UserInfo> {
+    pub async fn update_user(
+        &self,
+        user_id: Uuid,
+        request: UpdateUserRequest,
+    ) -> AppResult<UserInfo> {
         // Use transaction to ensure validation and update are atomic
         with_transaction(self.db.get_pool(), |tx| {
             // Check if user exists
@@ -296,14 +319,18 @@ impl UserService {
                     .map_err(AppError::Database)?;
 
                 if count > 0 {
-                    return Err(AppError::Conflict("Email already taken by another user".to_string()));
+                    return Err(AppError::Conflict(
+                        "Email already taken by another user".to_string(),
+                    ));
                 }
             }
 
             // Validate role if provided
             if let Some(ref role) = request.role {
                 if role != "user" && role != "admin" && role != "manager" && role != "viewer" {
-                    return Err(AppError::Validation("Invalid role. Must be one of: user, admin, manager, viewer".to_string()));
+                    return Err(AppError::Validation(
+                        "Invalid role. Must be one of: user, admin, manager, viewer".to_string(),
+                    ));
                 }
             }
 
@@ -311,8 +338,12 @@ impl UserService {
             let update_data = UpdateUser {
                 email: request.email.map(|e| ValidationUtils::sanitize_string(&e)),
                 username: None,
-                first_name: request.first_name.map(|f| ValidationUtils::sanitize_string(&f)),
-                last_name: request.last_name.map(|l| ValidationUtils::sanitize_string(&l)),
+                first_name: request
+                    .first_name
+                    .map(|f| ValidationUtils::sanitize_string(&f)),
+                last_name: request
+                    .last_name
+                    .map(|l| ValidationUtils::sanitize_string(&l)),
                 status: request.role,
                 email_verified: request.is_active,
                 last_login_at: None,
@@ -326,7 +357,8 @@ impl UserService {
                 .map_err(AppError::Database)?;
 
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         // Return updated user
         self.get_user_by_id(user_id).await
@@ -356,7 +388,11 @@ impl UserService {
     }
 
     /// List users with pagination
-    pub async fn list_users(&self, page: Option<i64>, per_page: Option<i64>) -> AppResult<UserListResponse> {
+    pub async fn list_users(
+        &self,
+        page: Option<i64>,
+        per_page: Option<i64>,
+    ) -> AppResult<UserListResponse> {
         self.query_service.list_users(page, per_page).await
     }
 
@@ -366,18 +402,37 @@ impl UserService {
     }
 
     /// Change user password
-    pub async fn change_password(&self, user_id: Uuid, current_password: &str, new_password: &str) -> AppResult<()> {
-        self.account_service.change_password(user_id, current_password, new_password).await
+    pub async fn change_password(
+        &self,
+        user_id: Uuid,
+        current_password: &str,
+        new_password: &str,
+    ) -> AppResult<()> {
+        self.account_service
+            .change_password(user_id, current_password, new_password)
+            .await
     }
 
     /// Search users
-    pub async fn search_users(&self, query: &str, page: Option<i64>, per_page: Option<i64>) -> AppResult<UserListResponse> {
+    pub async fn search_users(
+        &self,
+        query: &str,
+        page: Option<i64>,
+        per_page: Option<i64>,
+    ) -> AppResult<UserListResponse> {
         self.query_service.search_users(query, page, per_page).await
     }
 
     /// Get users by role
-    pub async fn get_users_by_role(&self, role: &str, page: Option<i64>, per_page: Option<i64>) -> AppResult<UserListResponse> {
-        self.query_service.get_users_by_role(role, page, per_page).await
+    pub async fn get_users_by_role(
+        &self,
+        role: &str,
+        page: Option<i64>,
+        per_page: Option<i64>,
+    ) -> AppResult<UserListResponse> {
+        self.query_service
+            .get_users_by_role(role, page, per_page)
+            .await
     }
 
     /// Get active users count
@@ -393,11 +448,17 @@ impl UserService {
         page: Option<i64>,
         per_page: Option<i64>,
     ) -> AppResult<UserListResponse> {
-        self.query_service.get_users_by_date_range(start_date, end_date, page, per_page).await
+        self.query_service
+            .get_users_by_date_range(start_date, end_date, page, per_page)
+            .await
     }
 
     /// Bulk update user status
-    pub async fn bulk_update_user_status(&self, user_ids: Vec<Uuid>, is_active: bool) -> AppResult<i64> {
+    pub async fn bulk_update_user_status(
+        &self,
+        user_ids: Vec<Uuid>,
+        is_active: bool,
+    ) -> AppResult<i64> {
         let mut conn = self.db.get_connection()?;
 
         let count = diesel::update(users::table.filter(users::id.eq_any(user_ids)))
@@ -445,7 +506,9 @@ impl UserService {
         first_name: Option<String>,
         last_name: Option<String>,
     ) -> AppResult<profile::UserProfile> {
-        self.profile_service.update_profile(user_id, email, first_name, last_name).await
+        self.profile_service
+            .update_profile(user_id, email, first_name, last_name)
+            .await
     }
 
     /// Delegate to permission service - get user role
@@ -455,7 +518,9 @@ impl UserService {
 
     /// Delegate to permission service - update user role
     pub async fn update_user_role(&self, user_id: Uuid, role: &str) -> AppResult<()> {
-        self.permission_service.update_user_role(user_id, role).await
+        self.permission_service
+            .update_user_role(user_id, role)
+            .await
     }
 
     /// Delegate to permission service - check permission
@@ -465,7 +530,9 @@ impl UserService {
         resource: &str,
         action: &str,
     ) -> AppResult<bool> {
-        self.permission_service.has_permission(user_id, resource, action).await
+        self.permission_service
+            .has_permission(user_id, resource, action)
+            .await
     }
 
     /// Delegate to permission service - get role permissions
@@ -479,7 +546,10 @@ impl UserService {
     }
 
     /// Delegate to preferences service - get user preferences
-    pub async fn get_user_preferences(&self, user_id: Uuid) -> AppResult<preferences::UserPreferences> {
+    pub async fn get_user_preferences(
+        &self,
+        user_id: Uuid,
+    ) -> AppResult<preferences::UserPreferences> {
         self.preferences_service.get_preferences(user_id).await
     }
 
@@ -489,7 +559,9 @@ impl UserService {
         user_id: Uuid,
         preferences: preferences::UserPreferences,
     ) -> AppResult<preferences::UserPreferences> {
-        self.preferences_service.update_preferences(user_id, preferences).await
+        self.preferences_service
+            .update_preferences(user_id, preferences)
+            .await
     }
 
     /// Delegate to preferences service - update specific preference
@@ -499,7 +571,9 @@ impl UserService {
         key: &str,
         value: &str,
     ) -> AppResult<()> {
-        self.preferences_service.update_preference(user_id, key, value).await
+        self.preferences_service
+            .update_preference(user_id, key, value)
+            .await
     }
 
     /// Delegate to preferences service - get user settings
@@ -513,7 +587,9 @@ impl UserService {
         user_id: Uuid,
         settings: preferences::UserSettings,
     ) -> AppResult<preferences::UserSettings> {
-        self.preferences_service.update_settings(user_id, settings).await
+        self.preferences_service
+            .update_settings(user_id, settings)
+            .await
     }
 }
 
@@ -525,7 +601,10 @@ impl traits::UserServiceTrait for UserService {
         UserService::create_user(self, request).await
     }
 
-    async fn create_oauth_user(&self, request: traits::CreateOAuthUserRequest) -> AppResult<traits::UserInfo> {
+    async fn create_oauth_user(
+        &self,
+        request: traits::CreateOAuthUserRequest,
+    ) -> AppResult<traits::UserInfo> {
         UserService::create_oauth_user(self, request).await
     }
 
@@ -541,7 +620,11 @@ impl traits::UserServiceTrait for UserService {
         UserService::user_exists_by_email(self, email).await
     }
 
-    async fn update_user(&self, user_id: Uuid, request: traits::UpdateUserRequest) -> AppResult<traits::UserInfo> {
+    async fn update_user(
+        &self,
+        user_id: Uuid,
+        request: traits::UpdateUserRequest,
+    ) -> AppResult<traits::UserInfo> {
         UserService::update_user(self, user_id, request).await
     }
 
@@ -549,7 +632,11 @@ impl traits::UserServiceTrait for UserService {
         UserService::delete_user(self, user_id).await
     }
 
-    async fn list_users(&self, page: Option<i64>, per_page: Option<i64>) -> AppResult<traits::UserListResponse> {
+    async fn list_users(
+        &self,
+        page: Option<i64>,
+        per_page: Option<i64>,
+    ) -> AppResult<traits::UserListResponse> {
         UserService::list_users(self, page, per_page).await
     }
 
@@ -557,15 +644,30 @@ impl traits::UserServiceTrait for UserService {
         UserService::update_last_login(self, user_id).await
     }
 
-    async fn change_password(&self, user_id: Uuid, current_password: &str, new_password: &str) -> AppResult<()> {
+    async fn change_password(
+        &self,
+        user_id: Uuid,
+        current_password: &str,
+        new_password: &str,
+    ) -> AppResult<()> {
         UserService::change_password(self, user_id, current_password, new_password).await
     }
 
-    async fn search_users(&self, query: &str, page: Option<i64>, per_page: Option<i64>) -> AppResult<traits::UserListResponse> {
+    async fn search_users(
+        &self,
+        query: &str,
+        page: Option<i64>,
+        per_page: Option<i64>,
+    ) -> AppResult<traits::UserListResponse> {
         UserService::search_users(self, query, page, per_page).await
     }
 
-    async fn get_users_by_role(&self, role: &str, page: Option<i64>, per_page: Option<i64>) -> AppResult<traits::UserListResponse> {
+    async fn get_users_by_role(
+        &self,
+        role: &str,
+        page: Option<i64>,
+        per_page: Option<i64>,
+    ) -> AppResult<traits::UserListResponse> {
         UserService::get_users_by_role(self, role, page, per_page).await
     }
 
@@ -583,7 +685,11 @@ impl traits::UserServiceTrait for UserService {
         UserService::get_users_by_date_range(self, start_date, end_date, page, per_page).await
     }
 
-    async fn bulk_update_user_status(&self, user_ids: Vec<Uuid>, is_active: bool) -> AppResult<i64> {
+    async fn bulk_update_user_status(
+        &self,
+        user_ids: Vec<Uuid>,
+        is_active: bool,
+    ) -> AppResult<i64> {
         UserService::bulk_update_user_status(self, user_ids, is_active).await
     }
 
@@ -603,5 +709,3 @@ impl traits::UserServiceTrait for UserService {
         Arc::clone(&self.preferences_service)
     }
 }
-
-

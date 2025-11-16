@@ -2,11 +2,11 @@
 //!
 //! Handles job queuing, processing, and status tracking.
 
+use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 /// Job processor for managing concurrent reconciliation jobs
 pub struct JobProcessor {
@@ -63,7 +63,10 @@ impl JobProcessor {
             status.progress = 0;
             Ok(())
         } else {
-            Err(crate::errors::AppError::NotFound(format!("Job {} not found", job_id)))
+            Err(crate::errors::AppError::NotFound(format!(
+                "Job {} not found",
+                job_id
+            )))
         }
     }
 }
@@ -81,7 +84,8 @@ impl JobHandle {
             if let Some(status) = active_jobs.get_mut(&self.job_id) {
                 // Calculate percentage from progress (0-100)
                 let percentage = if progress.total_records.map(|t| t > 0).unwrap_or(false) {
-                    (progress.processed_records as f64 / progress.total_records.unwrap() as f64 * 100.0) as i32
+                    (progress.processed_records as f64 / progress.total_records.unwrap() as f64
+                        * 100.0) as i32
                 } else {
                     progress.progress
                 };
@@ -103,6 +107,12 @@ pub struct JobStatus {
     pub processed_records: i32,
     pub matched_records: i32,
     pub unmatched_records: i32,
+}
+
+impl Default for JobStatus {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl JobStatus {
@@ -128,7 +138,13 @@ impl JobStatus {
         self.updated_at = Utc::now();
     }
 
-    pub fn update_progress(&mut self, progress: i32, processed_records: i32, matched_records: i32, unmatched_records: i32) {
+    pub fn update_progress(
+        &mut self,
+        progress: i32,
+        processed_records: i32,
+        matched_records: i32,
+        unmatched_records: i32,
+    ) {
         self.progress = progress;
         self.processed_records = processed_records;
         self.matched_records = matched_records;

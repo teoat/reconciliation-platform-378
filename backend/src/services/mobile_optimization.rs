@@ -2,9 +2,9 @@
 use crate::errors::AppResult;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use uuid::Uuid;
 use std::sync::Arc;
 use tokio::sync::RwLock;
+use uuid::Uuid;
 
 /// Progressive Web App configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -196,7 +196,7 @@ impl MobileOptimizationService {
             })),
             optimization_stats: Arc::new(RwLock::new(OptimizationStats::default())),
         };
-        
+
         service.initialize_runtime_cache().await;
         service
     }
@@ -241,28 +241,28 @@ impl MobileOptimizationService {
     pub async fn generate_service_worker(&self) -> AppResult<String> {
         let config = self.service_worker_config.read().await;
         let offline_config = self.offline_config.read().await;
-        
+
         let mut script = String::new();
         script.push_str("// Service Worker for 378 Reconciliation Platform\n");
         script.push_str("const CACHE_NAME = '378-recon-v1';\n");
         script.push_str("const OFFLINE_URL = '/offline.html';\n\n");
-        
+
         script.push_str("// Install event\n");
         script.push_str("self.addEventListener('install', (event) => {\n");
         script.push_str("  event.waitUntil(\n");
         script.push_str("    caches.open(CACHE_NAME)\n");
         script.push_str("      .then((cache) => {\n");
         script.push_str("        return cache.addAll([\n");
-        
+
         for resource in &config.precache_resources {
             script.push_str(&format!("          '{}',\n", resource));
         }
-        
+
         script.push_str("        ]);\n");
         script.push_str("      })\n");
         script.push_str("  );\n");
         script.push_str("});\n\n");
-        
+
         script.push_str("// Fetch event\n");
         script.push_str("self.addEventListener('fetch', (event) => {\n");
         script.push_str("  if (event.request.mode === 'navigate') {\n");
@@ -287,7 +287,7 @@ impl MobileOptimizationService {
         script.push_str("    );\n");
         script.push_str("  }\n");
         script.push_str("});\n\n");
-        
+
         script.push_str("// Background sync\n");
         if offline_config.enabled {
             script.push_str("self.addEventListener('sync', (event) => {\n");
@@ -295,13 +295,13 @@ impl MobileOptimizationService {
             script.push_str("    event.waitUntil(doBackgroundSync());\n");
             script.push_str("  }\n");
             script.push_str("});\n\n");
-            
+
             script.push_str("async function doBackgroundSync() {\n");
             script.push_str("  // Implement background sync logic\n");
             script.push_str("  console.log('Background sync triggered');\n");
             script.push_str("}\n");
         }
-        
+
         Ok(script)
     }
 
@@ -356,17 +356,23 @@ impl MobileOptimizationService {
     /// Generate mobile-specific CSS
     pub async fn generate_mobile_css(&self) -> AppResult<String> {
         let ui_config = self.mobile_ui_config.read().await;
-        
+
         let mut css = String::new();
         css.push_str("/* Mobile-specific styles */\n");
         css.push_str("@media (max-width: 768px) {\n");
-        
+
         // Touch targets
         css.push_str("  .touch-target {\n");
-        css.push_str(&format!("    min-height: {}px;\n", ui_config.touch_targets_min_size));
-        css.push_str(&format!("    min-width: {}px;\n", ui_config.touch_targets_min_size));
+        css.push_str(&format!(
+            "    min-height: {}px;\n",
+            ui_config.touch_targets_min_size
+        ));
+        css.push_str(&format!(
+            "    min-width: {}px;\n",
+            ui_config.touch_targets_min_size
+        ));
         css.push_str("  }\n\n");
-        
+
         // Pull to refresh
         if ui_config.pull_to_refresh {
             css.push_str("  .pull-to-refresh {\n");
@@ -374,7 +380,7 @@ impl MobileOptimizationService {
             css.push_str("    overflow: hidden;\n");
             css.push_str("  }\n\n");
         }
-        
+
         // Bottom navigation
         if ui_config.bottom_navigation {
             css.push_str("  .bottom-navigation {\n");
@@ -387,37 +393,37 @@ impl MobileOptimizationService {
             css.push_str("    z-index: 1000;\n");
             css.push_str("  }\n\n");
         }
-        
+
         // Swipe gestures
         if ui_config.swipe_gestures {
             css.push_str("  .swipeable {\n");
             css.push_str("    touch-action: pan-x;\n");
             css.push_str("  }\n\n");
         }
-        
+
         css.push_str("}\n");
-        
+
         Ok(css)
     }
 
     /// Generate mobile-specific JavaScript
     pub async fn generate_mobile_js(&self) -> AppResult<String> {
         let ui_config = self.mobile_ui_config.read().await;
-        
+
         let mut js = String::new();
         js.push_str("// Mobile-specific JavaScript\n");
-        
+
         // Pull to refresh
         if ui_config.pull_to_refresh {
             js.push_str("// Pull to refresh implementation\n");
             js.push_str("let startY = 0;\n");
             js.push_str("let currentY = 0;\n");
             js.push_str("let isRefreshing = false;\n\n");
-            
+
             js.push_str("document.addEventListener('touchstart', (e) => {\n");
             js.push_str("  startY = e.touches[0].clientY;\n");
             js.push_str("});\n\n");
-            
+
             js.push_str("document.addEventListener('touchmove', (e) => {\n");
             js.push_str("  currentY = e.touches[0].clientY;\n");
             js.push_str("  const diff = currentY - startY;\n");
@@ -430,7 +436,7 @@ impl MobileOptimizationService {
             js.push_str("  }\n");
             js.push_str("});\n\n");
         }
-        
+
         // Haptic feedback
         if ui_config.haptic_feedback {
             js.push_str("// Haptic feedback\n");
@@ -440,18 +446,18 @@ impl MobileOptimizationService {
             js.push_str("  }\n");
             js.push_str("}\n\n");
         }
-        
+
         // Swipe gestures
         if ui_config.swipe_gestures {
             js.push_str("// Swipe gesture detection\n");
             js.push_str("let swipeStartX = 0;\n");
             js.push_str("let swipeStartY = 0;\n\n");
-            
+
             js.push_str("document.addEventListener('touchstart', (e) => {\n");
             js.push_str("  swipeStartX = e.touches[0].clientX;\n");
             js.push_str("  swipeStartY = e.touches[0].clientY;\n");
             js.push_str("});\n\n");
-            
+
             js.push_str("document.addEventListener('touchend', (e) => {\n");
             js.push_str("  const swipeEndX = e.changedTouches[0].clientX;\n");
             js.push_str("  const swipeEndY = e.changedTouches[0].clientY;\n");
@@ -469,13 +475,13 @@ impl MobileOptimizationService {
             js.push_str("  }\n");
             js.push_str("});\n\n");
         }
-        
+
         // Infinite scroll
         if ui_config.infinite_scroll {
             js.push_str("// Infinite scroll\n");
             js.push_str("let isLoading = false;\n");
             js.push_str("let hasMore = true;\n\n");
-            
+
             js.push_str("window.addEventListener('scroll', () => {\n");
             js.push_str("  if (isLoading || !hasMore) return;\n");
             js.push_str("  \n");
@@ -488,23 +494,28 @@ impl MobileOptimizationService {
             js.push_str("  }\n");
             js.push_str("});\n\n");
         }
-        
+
         Ok(js)
     }
 
     /// Track mobile usage statistics
-    pub async fn track_mobile_usage(&self, user_id: Uuid, device_type: String, pwa_installed: bool) -> AppResult<()> {
+    pub async fn track_mobile_usage(
+        &self,
+        user_id: Uuid,
+        device_type: String,
+        pwa_installed: bool,
+    ) -> AppResult<()> {
         let mut stats = self.optimization_stats.write().await;
         stats.total_users += 1;
-        
+
         if device_type == "mobile" {
             stats.mobile_users += 1;
         }
-        
+
         if pwa_installed {
             stats.pwa_installs += 1;
         }
-        
+
         Ok(())
     }
 
@@ -520,36 +531,66 @@ impl MobileOptimizationService {
         let pwa_config = self.get_pwa_config().await?;
         let offline_config = self.get_offline_config().await?;
         let mobile_ui_config = self.get_mobile_ui_config().await?;
-        
+
         let mut report = String::new();
         report.push_str("# Mobile Optimization Report\n\n");
-        
+
         report.push_str("## PWA Configuration\n");
         report.push_str(&format!("- **Name:** {}\n", pwa_config.name));
         report.push_str(&format!("- **Display Mode:** {:?}\n", pwa_config.display));
         report.push_str(&format!("- **Theme Color:** {}\n", pwa_config.theme_color));
-        report.push_str(&format!("- **Icons:** {} configured\n\n", pwa_config.icons.len()));
-        
+        report.push_str(&format!(
+            "- **Icons:** {} configured\n\n",
+            pwa_config.icons.len()
+        ));
+
         report.push_str("## Offline Functionality\n");
         report.push_str(&format!("- **Enabled:** {}\n", offline_config.enabled));
-        report.push_str(&format!("- **Sync Strategy:** {:?}\n", offline_config.sync_strategy));
-        report.push_str(&format!("- **Max Storage:** {} MB\n\n", offline_config.max_offline_storage_mb));
-        
+        report.push_str(&format!(
+            "- **Sync Strategy:** {:?}\n",
+            offline_config.sync_strategy
+        ));
+        report.push_str(&format!(
+            "- **Max Storage:** {} MB\n\n",
+            offline_config.max_offline_storage_mb
+        ));
+
         report.push_str("## Mobile UI Features\n");
-        report.push_str(&format!("- **Touch Targets:** {}px minimum\n", mobile_ui_config.touch_targets_min_size));
-        report.push_str(&format!("- **Gesture Support:** {}\n", mobile_ui_config.gesture_support));
-        report.push_str(&format!("- **Haptic Feedback:** {}\n", mobile_ui_config.haptic_feedback));
-        report.push_str(&format!("- **Pull to Refresh:** {}\n", mobile_ui_config.pull_to_refresh));
-        report.push_str(&format!("- **Infinite Scroll:** {}\n", mobile_ui_config.infinite_scroll));
-        report.push_str(&format!("- **Bottom Navigation:** {}\n", mobile_ui_config.bottom_navigation));
-        report.push_str(&format!("- **Swipe Gestures:** {}\n\n", mobile_ui_config.swipe_gestures));
-        
+        report.push_str(&format!(
+            "- **Touch Targets:** {}px minimum\n",
+            mobile_ui_config.touch_targets_min_size
+        ));
+        report.push_str(&format!(
+            "- **Gesture Support:** {}\n",
+            mobile_ui_config.gesture_support
+        ));
+        report.push_str(&format!(
+            "- **Haptic Feedback:** {}\n",
+            mobile_ui_config.haptic_feedback
+        ));
+        report.push_str(&format!(
+            "- **Pull to Refresh:** {}\n",
+            mobile_ui_config.pull_to_refresh
+        ));
+        report.push_str(&format!(
+            "- **Infinite Scroll:** {}\n",
+            mobile_ui_config.infinite_scroll
+        ));
+        report.push_str(&format!(
+            "- **Bottom Navigation:** {}\n",
+            mobile_ui_config.bottom_navigation
+        ));
+        report.push_str(&format!(
+            "- **Swipe Gestures:** {}\n\n",
+            mobile_ui_config.swipe_gestures
+        ));
+
         report.push_str("## Usage Statistics\n");
         report.push_str(&format!("- **Total Users:** {}\n", stats.total_users));
         report.push_str(&format!("- **Mobile Users:** {}\n", stats.mobile_users));
         report.push_str(&format!("- **PWA Installs:** {}\n", stats.pwa_installs));
         report.push_str(&format!("- **Offline Usage:** {}\n", stats.offline_usage));
-        
+
         Ok(report)
     }
 }
@@ -607,41 +648,71 @@ mod tests {
     #[tokio::test]
     async fn test_mobile_optimization_service() {
         let service = MobileOptimizationService::new().await;
-        
+
         // Test PWA manifest generation
-        let manifest = service.generate_pwa_manifest().await.expect("Failed to generate PWA manifest");
+        let manifest = service
+            .generate_pwa_manifest()
+            .await
+            .expect("Failed to generate PWA manifest");
         assert!(manifest.contains("378 Reconciliation Platform"));
-        
+
         // Test service worker generation
-        let sw_script = service.generate_service_worker().await.expect("Failed to generate service worker");
+        let sw_script = service
+            .generate_service_worker()
+            .await
+            .expect("Failed to generate service worker");
         assert!(sw_script.contains("Service Worker"));
-        
+
         // Test mobile CSS generation
-        let mobile_css = service.generate_mobile_css().await.expect("Failed to generate mobile CSS");
+        let mobile_css = service
+            .generate_mobile_css()
+            .await
+            .expect("Failed to generate mobile CSS");
         assert!(mobile_css.contains("@media (max-width: 768px)"));
-        
+
         // Test mobile JS generation
-        let mobile_js = service.generate_mobile_js().await.expect("Failed to generate mobile JS");
+        let mobile_js = service
+            .generate_mobile_js()
+            .await
+            .expect("Failed to generate mobile JS");
         assert!(mobile_js.contains("Mobile-specific JavaScript"));
-        
+
         // Test configuration updates
-        let mut pwa_config = service.get_pwa_config().await.expect("Failed to get PWA config");
+        let mut pwa_config = service
+            .get_pwa_config()
+            .await
+            .expect("Failed to get PWA config");
         pwa_config.name = "Updated Name".to_string();
-        service.update_pwa_config(pwa_config).await.expect("Failed to update PWA config");
-        
-        let updated_config = service.get_pwa_config().await.expect("Failed to get updated PWA config");
+        service
+            .update_pwa_config(pwa_config)
+            .await
+            .expect("Failed to update PWA config");
+
+        let updated_config = service
+            .get_pwa_config()
+            .await
+            .expect("Failed to get updated PWA config");
         assert_eq!(updated_config.name, "Updated Name");
-        
+
         // Test usage tracking
-        service.track_mobile_usage(Uuid::new_v4(), "mobile".to_string(), true).await.expect("Failed to track mobile usage");
-        
-        let stats = service.get_optimization_stats().await.expect("Failed to get optimization stats");
+        service
+            .track_mobile_usage(Uuid::new_v4(), "mobile".to_string(), true)
+            .await
+            .expect("Failed to track mobile usage");
+
+        let stats = service
+            .get_optimization_stats()
+            .await
+            .expect("Failed to get optimization stats");
         assert!(stats.total_users > 0);
         assert!(stats.mobile_users > 0);
         assert!(stats.pwa_installs > 0);
-        
+
         // Test report generation
-        let report = service.generate_optimization_report().await.expect("Failed to generate optimization report");
+        let report = service
+            .generate_optimization_report()
+            .await
+            .expect("Failed to generate optimization report");
         assert!(report.contains("Mobile Optimization Report"));
     }
 }

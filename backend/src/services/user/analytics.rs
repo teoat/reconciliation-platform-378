@@ -2,15 +2,14 @@
 //!
 //! Handles user statistics and analytics operations.
 
-
-use diesel::{QueryDsl, ExpressionMethods, RunQueryDsl};
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use std::sync::Arc;
 
+use super::traits::UserStatistics;
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::models::schema::users;
-use chrono::{Utc, Duration};
-use super::traits::UserStatistics;
+use chrono::{Duration, Utc};
 
 /// User analytics service for statistics and analytics
 pub struct UserAnalyticsService {
@@ -76,4 +75,3 @@ impl UserAnalyticsService {
         })
     }
 }
-

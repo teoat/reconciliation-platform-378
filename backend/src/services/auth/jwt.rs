@@ -1,9 +1,9 @@
 //! JWT token generation and validation
 
-use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+use super::types::Claims;
 use crate::errors::{AppError, AppResult};
 use crate::models::User;
-use super::types::Claims;
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
@@ -46,7 +46,7 @@ impl JwtManager {
             &claims,
             &EncodingKey::from_secret(self.secret.as_ref()),
         )
-        .map_err(|e| AppError::Jwt(e))
+        .map_err(AppError::Jwt)
     }
 
     /// Validate and decode a JWT token
@@ -59,7 +59,7 @@ impl JwtManager {
             &validation,
         )
         .map(|data| data.claims)
-        .map_err(|e| AppError::Jwt(e))
+        .map_err(AppError::Jwt)
     }
 
     /// Extract user ID from token
@@ -69,4 +69,3 @@ impl JwtManager {
             .map_err(|e| AppError::Authentication(format!("Invalid user ID in token: {}", e)))
     }
 }
-

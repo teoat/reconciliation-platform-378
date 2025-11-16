@@ -1,11 +1,11 @@
 //! Security headers middleware
 
+use actix_service::{Service, Transform};
+use actix_web::http::header::{HeaderMap, HeaderName, HeaderValue};
 use actix_web::{
     dev::{ServiceRequest, ServiceResponse},
     Error, HttpMessage, Result,
 };
-use actix_web::http::header::{HeaderName, HeaderValue, HeaderMap};
-use actix_service::{Service, Transform};
 use futures_util::future::{ok, Ready};
 use std::future::Future;
 use std::pin::Pin;
@@ -180,13 +180,20 @@ impl<S> SecurityHeadersService<S> {
 #[derive(Clone)]
 pub struct CspNonce(pub String);
 
-fn add_security_headers_to_response<B>(res: &mut ServiceResponse<B>, config: &SecurityHeadersConfig, nonce: Option<&str>) {
+fn add_security_headers_to_response<B>(
+    res: &mut ServiceResponse<B>,
+    config: &SecurityHeadersConfig,
+    nonce: Option<&str>,
+) {
     let is_https = res.request().connection_info().scheme() == "https";
     let headers = res.headers_mut();
 
     // Core headers based on configuration
     if config.enable_x_content_type_options {
-        headers.insert(HeaderName::from_static("x-content-type-options"), HeaderValue::from_static("nosniff"));
+        headers.insert(
+            HeaderName::from_static("x-content-type-options"),
+            HeaderValue::from_static("nosniff"),
+        );
     }
 
     if config.enable_x_frame_options {
@@ -198,7 +205,10 @@ fn add_security_headers_to_response<B>(res: &mut ServiceResponse<B>, config: &Se
     }
 
     if config.enable_x_xss_protection {
-        headers.insert(HeaderName::from_static("x-xss-protection"), HeaderValue::from_static("1; mode=block"));
+        headers.insert(
+            HeaderName::from_static("x-xss-protection"),
+            HeaderValue::from_static("1; mode=block"),
+        );
     }
 
     if config.enable_referrer_policy {
@@ -241,4 +251,3 @@ fn add_security_headers_to_response<B>(res: &mut ServiceResponse<B>, config: &Se
         }
     }
 }
-

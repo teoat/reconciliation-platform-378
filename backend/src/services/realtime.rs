@@ -1,13 +1,13 @@
 // Real-time Notification Service
 // This service handles real-time notifications and updates
 
+use chrono::Utc;
+use log::info;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
-use chrono::Utc;
-use log::info;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Notification {
@@ -60,7 +60,7 @@ impl NotificationService {
             subscribers: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     pub async fn create_notification(
         &self,
         user_id: String,
@@ -78,32 +78,35 @@ impl NotificationService {
             created_at: Utc::now().to_rfc3339(),
             expires_at: None,
         };
-        
+
         let mut notifications = self.notifications.write().await;
         notifications
             .entry(user_id)
             .or_insert_with(Vec::new)
             .push(notification.clone());
-        
+
         notification
     }
-    
+
     pub async fn get_user_notifications(&self, user_id: &str) -> Vec<Notification> {
         let notifications = self.notifications.read().await;
         notifications.get(user_id).cloned().unwrap_or_default()
     }
-    
+
     pub async fn mark_notification_read(&self, user_id: &str, notification_id: &str) -> bool {
         let mut notifications = self.notifications.write().await;
         if let Some(user_notifications) = notifications.get_mut(user_id) {
-            if let Some(notification) = user_notifications.iter_mut().find(|n| n.id == notification_id) {
+            if let Some(notification) = user_notifications
+                .iter_mut()
+                .find(|n| n.id == notification_id)
+            {
                 notification.read = true;
                 return true;
             }
         }
         false
     }
-    
+
     pub async fn subscribe_to_updates(&self, user_id: String, websocket_id: Uuid) {
         let mut subscribers = self.subscribers.write().await;
         subscribers
@@ -111,14 +114,14 @@ impl NotificationService {
             .or_insert_with(Vec::new)
             .push(websocket_id);
     }
-    
+
     pub async fn unsubscribe_from_updates(&self, user_id: &str, websocket_id: Uuid) {
         let mut subscribers = self.subscribers.write().await;
         if let Some(user_subscribers) = subscribers.get_mut(user_id) {
             user_subscribers.retain(|&id| id != websocket_id);
         }
     }
-    
+
     pub async fn broadcast_update(&self, user_id: &str, update: RealtimeUpdate) {
         let subscribers = self.subscribers.read().await;
         if let Some(user_subscribers) = subscribers.get(user_id) {
@@ -129,7 +132,7 @@ impl NotificationService {
             }
         }
     }
-    
+
     pub async fn broadcast_reconciliation_progress(
         &self,
         user_id: &str,
@@ -148,10 +151,10 @@ impl NotificationService {
             }),
             timestamp: Utc::now().to_rfc3339(),
         };
-        
+
         self.broadcast_update(user_id, update).await;
     }
-    
+
     pub async fn broadcast_file_upload_progress(
         &self,
         user_id: &str,
@@ -170,10 +173,10 @@ impl NotificationService {
             }),
             timestamp: Utc::now().to_rfc3339(),
         };
-        
+
         self.broadcast_update(user_id, update).await;
     }
-    
+
     pub async fn broadcast_system_alert(
         &self,
         user_id: &str,
@@ -181,13 +184,15 @@ impl NotificationService {
         message: &str,
         level: NotificationLevel,
     ) {
-        let notification = self.create_notification(
-            user_id.to_string(),
-            title.to_string(),
-            message.to_string(),
-            level,
-        ).await;
-        
+        let notification = self
+            .create_notification(
+                user_id.to_string(),
+                title.to_string(),
+                message.to_string(),
+                level,
+            )
+            .await;
+
         let update = RealtimeUpdate {
             id: Uuid::new_v4().to_string(),
             user_id: user_id.to_string(),
@@ -195,7 +200,7 @@ impl NotificationService {
             data: serde_json::to_value(notification).unwrap_or(serde_json::Value::Null),
             timestamp: Utc::now().to_rfc3339(),
         };
-        
+
         self.broadcast_update(user_id, update).await;
     }
 }
@@ -247,7 +252,7 @@ impl CollaborationService {
             comments: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     pub async fn user_join_page(&self, user_id: String, username: String, page: String) {
         let active_user = ActiveUser {
             user_id: user_id.clone(),
@@ -256,21 +261,21 @@ impl CollaborationService {
             last_seen: Utc::now().to_rfc3339(),
             cursor_position: None,
         };
-        
+
         let mut active_users = self.active_users.write().await;
         active_users
             .entry(page)
             .or_insert_with(Vec::new)
             .push(active_user);
     }
-    
+
     pub async fn user_leave_page(&self, user_id: String, page: String) {
         let mut active_users = self.active_users.write().await;
         if let Some(page_users) = active_users.get_mut(&page) {
             page_users.retain(|user| user.user_id != user_id);
         }
     }
-    
+
     pub async fn update_cursor_position(
         &self,
         user_id: String,
@@ -285,7 +290,7 @@ impl CollaborationService {
             }
         }
     }
-    
+
     pub async fn add_comment(
         &self,
         user_id: String,
@@ -304,21 +309,21 @@ impl CollaborationService {
             created_at: Utc::now().to_rfc3339(),
             updated_at: None,
         };
-        
+
         let mut comments = self.comments.write().await;
         comments
             .entry(page)
             .or_insert_with(Vec::new)
             .push(comment.clone());
-        
+
         comment
     }
-    
+
     pub async fn get_page_comments(&self, page: &str) -> Vec<Comment> {
         let comments = self.comments.read().await;
         comments.get(page).cloned().unwrap_or_default()
     }
-    
+
     pub async fn get_active_users(&self, page: &str) -> Vec<ActiveUser> {
         let active_users = self.active_users.read().await;
         active_users.get(page).cloned().unwrap_or_default()

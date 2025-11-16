@@ -3,35 +3,60 @@
 use actix_web::{web, HttpRequest, HttpResponse, Result};
 use uuid::Uuid;
 
-use crate::errors::AppError;
-use crate::database::Database;
 use crate::config::Config;
-use crate::services::cache::MultiLevelCache;
+use crate::database::Database;
+use crate::errors::AppError;
 use crate::handlers::helpers::extract_user_id;
-use actix::Addr;
-use crate::websocket::WsServer;
-use crate::handlers::types::{UpdateReconciliationJobRequest, ApiResponse, ReconciliationResultsQuery};
+use crate::handlers::types::{
+    ApiResponse, ReconciliationResultsQuery, UpdateReconciliationJobRequest,
+};
+use crate::services::cache::MultiLevelCache;
 use crate::services::reconciliation::service::MatchResolve;
+use crate::websocket::WsServer;
+use actix::Addr;
 use actix_files::NamedFile;
 use std::path::PathBuf;
 
 /// Configure reconciliation routes
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
-    cfg
-        .route("/jobs", web::get().to(get_reconciliation_jobs))
+    cfg.route("/jobs", web::get().to(get_reconciliation_jobs))
         .route("/jobs", web::post().to(create_reconciliation_job))
         .route("/batch-resolve", web::post().to(batch_resolve_conflicts))
         .route("/jobs/{job_id}", web::get().to(get_reconciliation_job))
         .route("/jobs/{job_id}", web::put().to(update_reconciliation_job))
-        .route("/jobs/{job_id}", web::delete().to(delete_reconciliation_job))
-        .route("/jobs/{job_id}/start", web::post().to(start_reconciliation_job))
-        .route("/jobs/{job_id}/stop", web::post().to(stop_reconciliation_job))
-        .route("/jobs/{job_id}/results", web::get().to(get_reconciliation_results))
+        .route(
+            "/jobs/{job_id}",
+            web::delete().to(delete_reconciliation_job),
+        )
+        .route(
+            "/jobs/{job_id}/start",
+            web::post().to(start_reconciliation_job),
+        )
+        .route(
+            "/jobs/{job_id}/stop",
+            web::post().to(stop_reconciliation_job),
+        )
+        .route(
+            "/jobs/{job_id}/results",
+            web::get().to(get_reconciliation_results),
+        )
         .route("/jobs/{job_id}/export", web::post().to(start_export_job))
-        .route("/jobs/{job_id}/export/status", web::get().to(get_export_status))
-        .route("/matches/{match_id}", web::put().to(update_reconciliation_match))
-        .route("/jobs/{job_id}/export/download", web::get().to(download_export_file))
-        .route("/jobs/{job_id}/progress", web::get().to(get_reconciliation_progress))
+        .route(
+            "/jobs/{job_id}/export/status",
+            web::get().to(get_export_status),
+        )
+        .route(
+            "/matches/{match_id}",
+            web::put().to(update_reconciliation_match),
+        )
+        .route(
+            "/jobs/{job_id}/export/download",
+            web::get().to(download_export_file),
+        )
+        .route(
+            "/jobs/{job_id}/progress",
+            web::get().to(get_reconciliation_progress),
+        )
         .route("/active", web::get().to(get_active_reconciliation_jobs))
         .route("/queued", web::get().to(get_queued_reconciliation_jobs))
         .route("/sample/onboard", web::post().to(start_sample_onboarding));
@@ -40,8 +65,6 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 pub struct BatchResolveRequest {
     pub resolves: Vec<MatchResolve>,
 }
-
-
 
 /// Batch resolve reconciliation conflicts
 pub async fn batch_resolve_conflicts(
@@ -52,9 +75,12 @@ pub async fn batch_resolve_conflicts(
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
 
-    let result = reconciliation_service.batch_approve_matches(user_id, req.resolves.clone()).await?;
+    let result = reconciliation_service
+        .batch_approve_matches(user_id, req.resolves.clone())
+        .await?;
 
     // Best-effort cache invalidation for affected jobs/projects if present in result
     // (Service can include affected ids in the future)
@@ -66,7 +92,10 @@ pub async fn batch_resolve_conflicts(
             "rejected": result.rejected,
             "errors": result.errors,
         })),
-        message: Some(format!("Resolved {} matches", result.approved + result.rejected)),
+        message: Some(format!(
+            "Resolved {} matches",
+            result.approved + result.rejected
+        )),
         error: None,
     }))
 }
@@ -94,16 +123,18 @@ pub async fn create_reconciliation_job(
     cache: web::Data<MultiLevelCache>,
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
     let user_id = extract_user_id(&http_req)?;
-    
+
     // Security check
     crate::utils::check_project_permission(data.get_ref(), user_id, req.project_id)?;
-    
+
     let matching_rules = if let Some(settings) = &req.settings {
         if let Some(rules) = settings.get("matching_rules") {
-            serde_json::from_value(rules.clone())
-                .map_err(|e| AppError::Validation(format!("Invalid matching_rules format: {}", e)))?
+            serde_json::from_value(rules.clone()).map_err(|e| {
+                AppError::Validation(format!("Invalid matching_rules format: {}", e))
+            })?
         } else {
             vec![]
         }
@@ -120,12 +151,20 @@ pub async fn create_reconciliation_job(
         confidence_threshold: req.confidence_threshold,
         matching_rules,
     };
-    
-    let new_job = reconciliation_service.create_reconciliation_job(user_id, request).await?;
-    
-    cache.delete(&format!("jobs:project:{}", req.project_id)).await.unwrap_or_default();
-    cache.delete(&format!("project:{}", req.project_id)).await.unwrap_or_default();
-    
+
+    let new_job = reconciliation_service
+        .create_reconciliation_job(user_id, request)
+        .await?;
+
+    cache
+        .delete(&format!("jobs:project:{}", req.project_id))
+        .await
+        .unwrap_or_default();
+    cache
+        .delete(&format!("project:{}", req.project_id))
+        .await
+        .unwrap_or_default();
+
     Ok(HttpResponse::Created().json(ApiResponse {
         success: true,
         data: Some(new_job),
@@ -143,12 +182,15 @@ pub async fn get_reconciliation_job(
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
     let job_id_val = job_id.into_inner();
-    
+
     crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
-    
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
-    let job_status = reconciliation_service.get_reconciliation_job_status(job_id_val).await?;
-    
+
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
+    let job_status = reconciliation_service
+        .get_reconciliation_job_status(job_id_val)
+        .await?;
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(job_status),
@@ -174,13 +216,9 @@ pub async fn update_reconciliation_match(
     let reviewed_by = req.get("reviewed_by").and_then(|r| r.as_str());
 
     // Update the match
-    let updated_match = reconciliation_service.update_match(
-        user_id,
-        match_id_val,
-        status,
-        confidence_score,
-        reviewed_by,
-    ).await?;
+    let updated_match = reconciliation_service
+        .update_match(user_id, match_id_val, status, confidence_score, reviewed_by)
+        .await?;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -201,24 +239,37 @@ pub async fn update_reconciliation_job(
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
     let job_id_val = job_id.into_inner();
-    
+
     crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
-    
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
-    let project_id = crate::utils::authorization::get_project_id_from_job(data.get_ref(), job_id_val)?;
-    
-    let updated_job = reconciliation_service.update_reconciliation_job(
-        job_id_val,
-        req.name.clone(),
-        req.description.clone(),
-        req.confidence_threshold,
-        req.settings.clone(),
-    ).await?;
-    
-    cache.delete(&format!("job:{}", job_id_val)).await.unwrap_or_default();
-    cache.delete(&format!("jobs:project:{}", project_id)).await.unwrap_or_default();
-    cache.delete(&format!("project:{}", project_id)).await.unwrap_or_default();
-    
+
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
+    let project_id =
+        crate::utils::authorization::get_project_id_from_job(data.get_ref(), job_id_val)?;
+
+    let updated_job = reconciliation_service
+        .update_reconciliation_job(
+            job_id_val,
+            req.name.clone(),
+            req.description.clone(),
+            req.confidence_threshold,
+            req.settings.clone(),
+        )
+        .await?;
+
+    cache
+        .delete(&format!("job:{}", job_id_val))
+        .await
+        .unwrap_or_default();
+    cache
+        .delete(&format!("jobs:project:{}", project_id))
+        .await
+        .unwrap_or_default();
+    cache
+        .delete(&format!("project:{}", project_id))
+        .await
+        .unwrap_or_default();
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(updated_job),
@@ -237,13 +288,17 @@ pub async fn delete_reconciliation_job(
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
     let job_id_val = job_id.into_inner();
-    
+
     crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
-    
-    let project_id = crate::utils::authorization::get_project_id_from_job(data.get_ref(), job_id_val).ok();
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
-    
-    reconciliation_service.delete_reconciliation_job(job_id_val).await?;
+
+    let project_id =
+        crate::utils::authorization::get_project_id_from_job(data.get_ref(), job_id_val).ok();
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
+
+    reconciliation_service
+        .delete_reconciliation_job(job_id_val)
+        .await?;
 
     if let Some(pid) = project_id {
         let _ = cache.invalidate_job_cache(job_id_val, pid).await;
@@ -263,16 +318,20 @@ pub async fn start_reconciliation_job(
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
     let job_id_val = job_id.into_inner();
-    
+
     crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
-    
-    let project_id = crate::utils::authorization::get_project_id_from_job(data.get_ref(), job_id_val).ok();
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new_with_ws(
-        data.get_ref().clone(),
-        ws_server.get_ref().clone(),
-    );
-    
-    reconciliation_service.start_reconciliation_job(job_id_val).await?;
+
+    let project_id =
+        crate::utils::authorization::get_project_id_from_job(data.get_ref(), job_id_val).ok();
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new_with_ws(
+            data.get_ref().clone(),
+            ws_server.get_ref().clone(),
+        );
+
+    reconciliation_service
+        .start_reconciliation_job(job_id_val)
+        .await?;
 
     if let Some(pid) = project_id {
         let _ = cache.invalidate_job_cache(job_id_val, pid).await;
@@ -296,13 +355,17 @@ pub async fn stop_reconciliation_job(
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
     let job_id_val = job_id.into_inner();
-    
+
     crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
-    
-    let project_id = crate::utils::authorization::get_project_id_from_job(data.get_ref(), job_id_val).ok();
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
-    
-    reconciliation_service.stop_reconciliation_job(job_id_val).await?;
+
+    let project_id =
+        crate::utils::authorization::get_project_id_from_job(data.get_ref(), job_id_val).ok();
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
+
+    reconciliation_service
+        .stop_reconciliation_job(job_id_val)
+        .await?;
 
     if let Some(pid) = project_id {
         let _ = cache.invalidate_job_cache(job_id_val, pid).await;
@@ -326,28 +389,29 @@ pub async fn get_reconciliation_results(
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
     let job_id_val = job_id.into_inner();
-    
+
     crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
-    
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
-    
-    let results = reconciliation_service.get_reconciliation_results(
-        job_id_val,
-        query.page,
-        query.per_page,
-        query.lean,
-    ).await?;
+
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
+
+    let results = reconciliation_service
+        .get_reconciliation_results(job_id_val, query.page, query.per_page, query.lean)
+        .await?;
 
     // Support lean payloads: return minimal fields if requested
     if let Some(lean) = query.lean {
         if lean {
-            let lean_items: Vec<serde_json::Value> = results.into_iter().map(|r| {
-                serde_json::json!({
-                    "id": r.id,
-                    "confidence": r.confidence_score,
-                    "status": r.match_type,
+            let lean_items: Vec<serde_json::Value> = results
+                .into_iter()
+                .map(|r| {
+                    serde_json::json!({
+                        "id": r.id,
+                        "confidence": r.confidence_score,
+                        "status": r.match_type,
+                    })
                 })
-            }).collect();
+                .collect();
             return Ok(HttpResponse::Ok().json(ApiResponse {
                 success: true,
                 data: Some(serde_json::json!({"items": lean_items})),
@@ -389,9 +453,15 @@ pub async fn start_export_job(
     let mut export_dir = PathBuf::from(&config.upload_path);
     export_dir.push("exports");
     export_dir.push(job_id_val.to_string());
-    tokio::fs::create_dir_all(&export_dir).await.map_err(|e| AppError::Internal(format!("Failed to create export dir: {}", e)))?;
+    tokio::fs::create_dir_all(&export_dir)
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to create export dir: {}", e)))?;
 
-    let filename = format!("results_{}.{}", chrono::Utc::now().format("%Y%m%d%H%M%S"), &format);
+    let filename = format!(
+        "results_{}.{}",
+        chrono::Utc::now().format("%Y%m%d%H%M%S"),
+        &format
+    );
     let mut export_path = export_dir.clone();
     export_path.push(&filename);
 
@@ -400,29 +470,51 @@ pub async fn start_export_job(
     let cache_clone = cache.clone();
     let path_for_task = export_path.clone();
     tokio::spawn(async move {
-        let res = crate::services::reconciliation::export_job_results(&db_clone, job_id_val, &path_for_task, &format).await;
+        let res = crate::services::reconciliation::export_job_results(
+            &db_clone,
+            job_id_val,
+            &path_for_task,
+            &format,
+        )
+        .await;
         if res.is_ok() {
             let link_info = serde_json::json!({
                 "ready": true,
                 "file_name": filename,
                 "download": true
             });
-            let _ = cache_clone.get_ref().set(&format!("export:{}", job_id_val), &link_info, Some(std::time::Duration::from_secs(48 * 3600))).await;
+            let _ = cache_clone
+                .get_ref()
+                .set(
+                    &format!("export:{}", job_id_val),
+                    &link_info,
+                    Some(std::time::Duration::from_secs(48 * 3600)),
+                )
+                .await;
         } else {
             let link_info = serde_json::json!({ "ready": false, "error": "export_failed" });
-            let _ = cache_clone.get_ref().set(&format!("export:{}", job_id_val), &link_info, Some(std::time::Duration::from_secs(3600))).await;
+            let _ = cache_clone
+                .get_ref()
+                .set(
+                    &format!("export:{}", job_id_val),
+                    &link_info,
+                    Some(std::time::Duration::from_secs(3600)),
+                )
+                .await;
         }
     });
 
-    Ok(HttpResponse::Accepted().json(ApiResponse::<serde_json::Value> {
-        success: true,
-        data: Some(serde_json::json!({
-            "status": "processing",
-            "check": format!("/api/v1/reconciliation/jobs/{}/export/status", job_id_val)
-        })),
-        message: Some("Export started".to_string()),
-        error: None,
-    }))
+    Ok(
+        HttpResponse::Accepted().json(ApiResponse::<serde_json::Value> {
+            success: true,
+            data: Some(serde_json::json!({
+                "status": "processing",
+                "check": format!("/api/v1/reconciliation/jobs/{}/export/status", job_id_val)
+            })),
+            message: Some("Export started".to_string()),
+            error: None,
+        }),
+    )
 }
 
 /// Get export status and link if ready
@@ -434,7 +526,10 @@ pub async fn get_export_status(
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     let job_id_val = job_id.into_inner();
-    if let Some(info) = cache.get::<serde_json::Value>(&format!("export:{}", job_id_val)).await? {
+    if let Some(info) = cache
+        .get::<serde_json::Value>(&format!("export:{}", job_id_val))
+        .await?
+    {
         return Ok(HttpResponse::Ok().json(ApiResponse {
             success: true,
             data: Some(serde_json::json!({
@@ -463,19 +558,28 @@ pub async fn download_export_file(
     config: web::Data<Config>,
 ) -> Result<NamedFile, AppError> {
     let job_id_val = job_id.into_inner();
-    let export_dir = PathBuf::from(&config.upload_path).join("exports").join(job_id_val.to_string());
+    let export_dir = PathBuf::from(&config.upload_path)
+        .join("exports")
+        .join(job_id_val.to_string());
     // Choose the most recent file
-    let mut entries = tokio::fs::read_dir(&export_dir).await.map_err(|_| AppError::NotFound("Export not found".to_string()))?;
+    let mut entries = tokio::fs::read_dir(&export_dir)
+        .await
+        .map_err(|_| AppError::NotFound("Export not found".to_string()))?;
     let mut latest: Option<PathBuf> = None;
-    while let Some(e) = entries.next_entry().await.map_err(|e| AppError::Internal(e.to_string()))? {
+    while let Some(e) = entries
+        .next_entry()
+        .await
+        .map_err(|e| AppError::Internal(e.to_string()))?
+    {
         let path = e.path();
-        if path.is_file() {
-            if latest.as_ref()
+        if path.is_file()
+            && latest
+                .as_ref()
                 .map(|p| p.file_name() < path.file_name())
-                .unwrap_or(true) // Safe default: if can't compare, treat as older
-            {
-                latest = Some(path);
-            }
+                .unwrap_or(true)
+        // Safe default: if can't compare, treat as older
+        {
+            latest = Some(path);
         }
     }
     let file = latest.ok_or_else(|| AppError::NotFound("Export file not ready".to_string()))?;
@@ -512,25 +616,29 @@ pub async fn start_sample_onboarding(
         Ok(false) | Err(_) => file_a.clone(),
     };
 
-    let ds_a = ds_service.create_data_source(
-        req.project_id,
-        "Sample Source A".to_string(),
-        "file".to_string(),
-        Some(file_a.to_string_lossy().to_string()),
-        None,
-        None,
-        None,
-    ).await?;
+    let ds_a = ds_service
+        .create_data_source(
+            req.project_id,
+            "Sample Source A".to_string(),
+            "file".to_string(),
+            Some(file_a.to_string_lossy().to_string()),
+            None,
+            None,
+            None,
+        )
+        .await?;
 
-    let ds_b = ds_service.create_data_source(
-        req.project_id,
-        "Sample Source B".to_string(),
-        "file".to_string(),
-        Some(file_b_path.to_string_lossy().to_string()),
-        None,
-        None,
-        None,
-    ).await?;
+    let ds_b = ds_service
+        .create_data_source(
+            req.project_id,
+            "Sample Source B".to_string(),
+            "file".to_string(),
+            Some(file_b_path.to_string_lossy().to_string()),
+            None,
+            None,
+            None,
+        )
+        .await?;
 
     // Create reconciliation job
     let recon_service = crate::services::reconciliation::ReconciliationService::new_with_ws(
@@ -539,17 +647,24 @@ pub async fn start_sample_onboarding(
     );
     let job_req = crate::services::reconciliation::CreateReconciliationJobRequest {
         project_id: req.project_id,
-        name: format!("Sample Reconciliation {}", chrono::Utc::now().format("%H:%M:%S")),
+        name: format!(
+            "Sample Reconciliation {}",
+            chrono::Utc::now().format("%H:%M:%S")
+        ),
         description: Some("Auto-created from sample onboarding".to_string()),
         source_a_id: ds_a.id,
         source_b_id: ds_b.id,
         confidence_threshold: req.confidence_threshold.unwrap_or(0.8),
         matching_rules: vec![],
     };
-    let job_status = recon_service.create_reconciliation_job(user_id, job_req).await?;
+    let job_status = recon_service
+        .create_reconciliation_job(user_id, job_req)
+        .await?;
 
     // Start job
-    recon_service.start_reconciliation_job(job_status.id).await?;
+    recon_service
+        .start_reconciliation_job(job_status.id)
+        .await?;
 
     // Invalidate caches
     let _ = cache.invalidate_project_cache(req.project_id).await;
@@ -574,12 +689,15 @@ pub async fn get_reconciliation_progress(
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
     let job_id_val = job_id.into_inner();
-    
+
     crate::utils::check_job_access(data.get_ref(), user_id, job_id_val)?;
-    
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
-    let job_status = reconciliation_service.get_reconciliation_job_status(job_id_val).await?;
-    
+
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
+    let job_status = reconciliation_service
+        .get_reconciliation_job_status(job_id_val)
+        .await?;
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(serde_json::json!({
@@ -599,9 +717,10 @@ pub async fn get_reconciliation_progress(
 pub async fn get_active_reconciliation_jobs(
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
     let active_jobs = reconciliation_service.get_active_jobs().await?;
-    
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(serde_json::json!({
@@ -616,9 +735,10 @@ pub async fn get_active_reconciliation_jobs(
 pub async fn get_queued_reconciliation_jobs(
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
-    let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
+    let reconciliation_service =
+        crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
     let queued_jobs = reconciliation_service.get_queued_jobs().await?;
-    
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(serde_json::json!({

@@ -1,7 +1,7 @@
 //! API versioning types and data structures
 
-use serde::{Deserialize, Serialize};
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 
 /// API version information
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -145,4 +145,3 @@ pub struct VersionStats {
     pub total_endpoints: u32,
     pub breaking_changes_count: u32,
 }
-

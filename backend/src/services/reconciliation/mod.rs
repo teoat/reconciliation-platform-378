@@ -1,38 +1,36 @@
 //! Reconciliation service module
-//! 
+//!
 //! This module provides the core reconciliation engine split into focused modules:
 //! - `matching.rs`: Matching algorithms (exact, fuzzy, contains)
 //! - `processing.rs`: Processing logic (chunking, result saving)
 //! - `job_management.rs`: Job lifecycle management
 //! - `types.rs`: Common types and data structures
 
+pub mod job_management;
 pub mod matching;
 pub mod processing;
-pub mod job_management;
 pub mod service;
 pub mod types;
 
-pub use matching::{MatchingAlgorithm, ExactMatchingAlgorithm, ContainsMatchingAlgorithm, FuzzyMatchingAlgorithm, build_exact_index, match_records};
+pub use job_management::{JobHandle, JobProcessor, JobProgress, JobStatus};
+pub use matching::{
+    build_exact_index, match_records, ContainsMatchingAlgorithm, ExactMatchingAlgorithm,
+    FuzzyMatchingAlgorithm, MatchingAlgorithm,
+};
+pub use processing::{
+    process_data_sources_chunked, save_reconciliation_results, send_progress, update_job_progress,
+    update_job_status,
+};
 pub use types::FuzzyAlgorithmType;
-pub use processing::{process_data_sources_chunked, save_reconciliation_results, update_job_status, update_job_progress, send_progress};
-pub use job_management::{JobProcessor, JobHandle, JobProgress, JobStatus};
 pub use types::*;
 
 // Re-export for backward compatibility
 use crate::database::Database;
 use crate::errors::AppResult;
-use uuid::Uuid;
 use std::sync::Arc;
+use uuid::Uuid;
 
-
-
-
-use crate::models::{
-    ReconciliationJob, NewReconciliationJob, UpdateReconciliationJob,
-    NewReconciliationResult,
-    DataSource, MatchType,
-};
-
+use crate::models::ReconciliationJob;
 
 /// Reconciliation service - Main entry point
 pub struct ReconciliationService {
@@ -44,23 +42,19 @@ pub struct ReconciliationService {
 // This file acts as a compatibility layer during refactoring
 
 pub use self::processing::*;
-pub use self::job_management::*;
 
 // Re-export for backward compatibility
 impl ReconciliationService {
     pub fn new(db: Database) -> Self {
         let job_processor = Arc::new(JobProcessor::new(5, 100)); // 5 concurrent jobs, 100 records per chunk
-        Self { 
-            db,
-            job_processor,
-        }
+        Self { db, job_processor }
     }
-    
+
     pub fn new_with_ws(db: Database, _ws_server: actix::Addr<crate::websocket::WsServer>) -> Self {
         let job_processor = Arc::new(JobProcessor::new(5, 100));
         Self { db, job_processor }
     }
-    
+
     /// Create a new reconciliation job
     pub async fn create_reconciliation_job(
         &self,
@@ -93,11 +87,7 @@ impl ReconciliationService {
         service::get_reconciliation_progress(self, job_id, user_id).await
     }
 
-    pub async fn cancel_reconciliation_job(
-        &self,
-        job_id: Uuid,
-        user_id: Uuid,
-    ) -> AppResult<()> {
+    pub async fn cancel_reconciliation_job(&self, job_id: Uuid, user_id: Uuid) -> AppResult<()> {
         service::cancel_reconciliation_job(self, job_id, user_id).await
     }
 
@@ -123,7 +113,15 @@ impl ReconciliationService {
         confidence_threshold: Option<f64>,
         _settings: Option<serde_json::Value>,
     ) -> AppResult<ReconciliationJob> {
-        service::update_reconciliation_job(self, job_id, name, description, confidence_threshold, _settings).await
+        service::update_reconciliation_job(
+            self,
+            job_id,
+            name,
+            description,
+            confidence_threshold,
+            _settings,
+        )
+        .await
     }
 
     pub async fn delete_reconciliation_job(&self, job_id: Uuid) -> AppResult<()> {
@@ -164,7 +162,14 @@ impl ReconciliationService {
         confidence_score: Option<f64>,
         reviewed_by: Option<&str>,
     ) -> AppResult<service::UpdatedMatch> {
-        service::update_match(self, user_id, match_id, status, confidence_score, reviewed_by).await
+        service::update_match(
+            self,
+            user_id,
+            match_id,
+            status,
+            confidence_score,
+            reviewed_by,
+        )
+        .await
     }
 }
-

@@ -1,16 +1,16 @@
 //! Enhanced Error Handling and Recovery
-//! 
+//!
 //! This module provides comprehensive error handling, recovery mechanisms,
 //! and centralized error tracking.
 
+use actix_web::{HttpResponse, ResponseError};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use actix_web::{HttpResponse, ResponseError};
 use thiserror::Error;
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
 use crate::errors::{AppError, AppResult};
 
@@ -74,9 +74,9 @@ pub struct CircuitBreaker {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum CircuitBreakerState {
-    Closed,    // Normal operation
-    Open,      // Circuit is open, failing fast
-    HalfOpen,  // Testing if service is back
+    Closed,   // Normal operation
+    Open,     // Circuit is open, failing fast
+    HalfOpen, // Testing if service is back
 }
 
 /// Error record
@@ -108,7 +108,7 @@ impl ErrorRecoveryService {
             error_history: Arc::new(RwLock::new(Vec::new())),
         }
     }
-    
+
     /// Execute operation with retry logic
     pub async fn execute_with_retry<F, T, E>(
         &self,
@@ -121,7 +121,7 @@ impl ErrorRecoveryService {
     {
         let mut attempt = 0;
         let mut last_error: Option<E> = None;
-        
+
         while attempt < self.config.max_retry_attempts {
             match operation().await {
                 Ok(result) => {
@@ -132,17 +132,13 @@ impl ErrorRecoveryService {
                 Err(error) => {
                     last_error = Some(error);
                     attempt += 1;
-                    
+
                     // Record the error
                     if let Some(ref err) = last_error {
-                        self.record_error(
-                            operation_id,
-                            "retry_error",
-                            &err.to_string(),
-                            attempt,
-                        ).await;
+                        self.record_error(operation_id, "retry_error", &err.to_string(), attempt)
+                            .await;
                     }
-                    
+
                     // Check if we should retry
                     if attempt < self.config.max_retry_attempts {
                         let delay = self.calculate_retry_delay(attempt);
@@ -151,7 +147,7 @@ impl ErrorRecoveryService {
                 }
             }
         }
-        
+
         // All retries failed
         let error_message = last_error
             .as_ref()
@@ -159,60 +155,60 @@ impl ErrorRecoveryService {
             .unwrap_or_else(|| "Unknown error".to_string());
         Err(AppError::Internal(format!(
             "Operation {} failed after {} attempts: {}",
-            operation_id,
-            self.config.max_retry_attempts,
-            error_message
+            operation_id, self.config.max_retry_attempts, error_message
         )))
     }
-    
+
     /// Check circuit breaker state
     pub async fn check_circuit_breaker(&self, service_name: &str) -> AppResult<()> {
         let mut circuit_breakers = self.circuit_breakers.write().await;
-        
+
         if let Some(circuit_breaker) = circuit_breakers.get_mut(service_name) {
             let now = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map_err(|_| AppError::Internal("System time is before UNIX epoch".to_string()))?
-                .as_secs() * 1000;
-            
+                .as_secs()
+                * 1000;
+
             match circuit_breaker.state {
                 CircuitBreakerState::Open => {
                     if now - circuit_breaker.last_failure > circuit_breaker.timeout_ms {
                         circuit_breaker.state = CircuitBreakerState::HalfOpen;
-                        return Ok(());
+                        Ok(())
                     } else {
-                        return Err(AppError::ServiceUnavailable(format!(
+                        Err(AppError::ServiceUnavailable(format!(
                             "Circuit breaker for {} is open",
                             service_name
-                        )));
+                        )))
                     }
                 }
                 CircuitBreakerState::HalfOpen => {
                     // Allow one request to test if service is back
-                    return Ok(());
+                    Ok(())
                 }
-                CircuitBreakerState::Closed => {
-                    return Ok(());
-                }
+                CircuitBreakerState::Closed => Ok(()),
             }
         } else {
             // Create new circuit breaker
-            circuit_breakers.insert(service_name.to_string(), CircuitBreaker {
-                service_name: service_name.to_string(),
-                failure_count: 0,
-                last_failure: 0,
-                state: CircuitBreakerState::Closed,
-                threshold: self.config.circuit_breaker_threshold,
-                timeout_ms: self.config.circuit_breaker_timeout_ms,
-            });
-            return Ok(());
+            circuit_breakers.insert(
+                service_name.to_string(),
+                CircuitBreaker {
+                    service_name: service_name.to_string(),
+                    failure_count: 0,
+                    last_failure: 0,
+                    state: CircuitBreakerState::Closed,
+                    threshold: self.config.circuit_breaker_threshold,
+                    timeout_ms: self.config.circuit_breaker_timeout_ms,
+                },
+            );
+            Ok(())
         }
     }
-    
+
     /// Record circuit breaker success
     pub async fn record_circuit_breaker_success(&self, service_name: &str) {
         let mut circuit_breakers = self.circuit_breakers.write().await;
-        
+
         if let Some(circuit_breaker) = circuit_breakers.get_mut(service_name) {
             match circuit_breaker.state {
                 CircuitBreakerState::HalfOpen => {
@@ -227,24 +223,24 @@ impl ErrorRecoveryService {
             }
         }
     }
-    
+
     /// Record circuit breaker failure
     pub async fn record_circuit_breaker_failure(&self, service_name: &str) {
         let mut circuit_breakers = self.circuit_breakers.write().await;
-        
+
         if let Some(circuit_breaker) = circuit_breakers.get_mut(service_name) {
             circuit_breaker.failure_count += 1;
             circuit_breaker.last_failure = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map(|d| d.as_secs() * 1000)
                 .unwrap_or(0);
-            
+
             if circuit_breaker.failure_count >= circuit_breaker.threshold {
                 circuit_breaker.state = CircuitBreakerState::Open;
             }
         }
     }
-    
+
     /// Calculate retry delay with exponential backoff
     fn calculate_retry_delay(&self, attempt: u32) -> u64 {
         if self.config.exponential_backoff {
@@ -254,13 +250,13 @@ impl ErrorRecoveryService {
             self.config.retry_delay_ms
         }
     }
-    
+
     /// Clear retry attempt
     async fn clear_retry_attempt(&self, operation_id: &str) {
         let mut retry_attempts = self.retry_attempts.write().await;
         retry_attempts.remove(operation_id);
     }
-    
+
     /// Record error
     async fn record_error(
         &self,
@@ -292,30 +288,31 @@ impl ErrorRecoveryService {
 
         let mut error_history = self.error_history.write().await;
         error_history.push(error_record);
-        
+
         // Keep only last 10000 errors
         let history_len = error_history.len();
         if history_len > 10000 {
             error_history.drain(0..history_len - 10000);
         }
     }
-    
+
     /// Get error statistics
     pub async fn get_error_statistics(&self) -> HashMap<String, usize> {
         let error_history = self.error_history.read().await;
         let mut stats = HashMap::new();
-        
+
         for error in error_history.iter() {
             *stats.entry(error.error_type.clone()).or_insert(0) += 1;
         }
-        
+
         stats
     }
-    
+
     /// Get circuit breaker status
     pub async fn get_circuit_breaker_status(&self) -> HashMap<String, CircuitBreakerState> {
         let circuit_breakers = self.circuit_breakers.read().await;
-        circuit_breakers.iter()
+        circuit_breakers
+            .iter()
             .map(|(name, cb)| (name.clone(), cb.state.clone()))
             .collect()
     }
@@ -334,34 +331,38 @@ impl GracefulDegradationService {
             degraded_services: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     /// Mark service as degraded
     pub async fn mark_service_degraded(&self, service_name: &str) {
         let mut degraded_services = self.degraded_services.write().await;
         degraded_services.insert(service_name.to_string(), true);
     }
-    
+
     /// Mark service as recovered
     pub async fn mark_service_recovered(&self, service_name: &str) {
         let mut degraded_services = self.degraded_services.write().await;
         degraded_services.insert(service_name.to_string(), false);
     }
-    
+
     /// Check if service is degraded
     pub async fn is_service_degraded(&self, service_name: &str) -> bool {
         let degraded_services = self.degraded_services.read().await;
-        degraded_services.get(service_name).copied().unwrap_or(false)
+        degraded_services
+            .get(service_name)
+            .copied()
+            .unwrap_or(false)
     }
-    
+
     /// Get fallback response
     pub fn get_fallback_response(&self, service_name: &str) -> Option<&String> {
         self.fallback_responses.get(service_name)
     }
-    
+
     /// Get degraded services
     pub async fn get_degraded_services(&self) -> Vec<String> {
         let degraded_services = self.degraded_services.read().await;
-        degraded_services.iter()
+        degraded_services
+            .iter()
             .filter(|(_, &degraded)| degraded)
             .map(|(name, _)| name.clone())
             .collect()
@@ -390,27 +391,27 @@ impl ErrorContext {
             metadata: HashMap::new(),
         }
     }
-    
+
     pub fn with_user_id(mut self, user_id: String) -> Self {
         self.user_id = Some(user_id);
         self
     }
-    
+
     pub fn with_request_id(mut self, request_id: String) -> Self {
         self.request_id = Some(request_id);
         self
     }
-    
+
     pub fn with_endpoint(mut self, endpoint: String) -> Self {
         self.endpoint = Some(endpoint);
         self
     }
-    
+
     pub fn with_method(mut self, method: String) -> Self {
         self.method = Some(method);
         self
     }
-    
+
     pub fn with_metadata(mut self, metadata: HashMap<String, serde_json::Value>) -> Self {
         self.metadata = metadata;
         self
@@ -422,34 +423,34 @@ impl ErrorContext {
 pub enum EnhancedError {
     #[error("Database connection failed: {0}")]
     DatabaseConnection(String),
-    
+
     #[error("External service unavailable: {0}")]
     ExternalServiceUnavailable(String),
-    
+
     #[error("Rate limit exceeded: {0}")]
     RateLimitExceeded(String),
-    
+
     #[error("Circuit breaker open: {0}")]
     CircuitBreakerOpen(String),
-    
+
     #[error("Graceful degradation active: {0}")]
     GracefulDegradation(String),
-    
+
     #[error("Retry limit exceeded: {0}")]
     RetryLimitExceeded(String),
-    
+
     #[error("Validation failed: {0}")]
     ValidationFailed(String),
-    
+
     #[error("Authentication failed: {0}")]
     AuthenticationFailed(String),
-    
+
     #[error("Authorization failed: {0}")]
     AuthorizationFailed(String),
-    
+
     #[error("Resource not found: {0}")]
     ResourceNotFound(String),
-    
+
     #[error("Internal server error: {0}")]
     InternalServerError(String),
 }
@@ -552,7 +553,7 @@ impl ResponseError for EnhancedError {
 /// Error recovery utilities
 pub mod recovery_utils {
     use super::*;
-    
+
     /// Retry operation with exponential backoff
     pub async fn retry_with_backoff<F, T, E>(
         operation: F,
@@ -565,7 +566,7 @@ pub mod recovery_utils {
     {
         let mut attempt = 0;
         let mut delay = initial_delay_ms;
-        
+
         while attempt < max_retries {
             match operation().await {
                 Ok(result) => return Ok(result),
@@ -580,10 +581,10 @@ pub mod recovery_utils {
                 }
             }
         }
-        
+
         unreachable!()
     }
-    
+
     /// Execute operation with timeout
     pub async fn execute_with_timeout<F, T>(
         operation: F,
@@ -596,7 +597,7 @@ pub mod recovery_utils {
             .await
             .map_err(|_| AppError::Timeout)?
     }
-    
+
     /// Execute operation with circuit breaker
     pub async fn execute_with_circuit_breaker<F, T>(
         service_name: &str,
@@ -608,14 +609,18 @@ pub mod recovery_utils {
     {
         // Check circuit breaker
         recovery_service.check_circuit_breaker(service_name).await?;
-        
+
         match operation.await {
             Ok(result) => {
-                recovery_service.record_circuit_breaker_success(service_name).await;
+                recovery_service
+                    .record_circuit_breaker_success(service_name)
+                    .await;
                 Ok(result)
             }
             Err(error) => {
-                recovery_service.record_circuit_breaker_failure(service_name).await;
+                recovery_service
+                    .record_circuit_breaker_failure(service_name)
+                    .await;
                 Err(error)
             }
         }

@@ -1,16 +1,17 @@
 //! Rate limiting middleware
 
-use actix_web::{
-    dev::{ServiceRequest, ServiceResponse},
-    Error, HttpMessage, body::EitherBody,
-};
 use actix_service::{Service, Transform};
+use actix_web::{
+    body::EitherBody,
+    dev::{ServiceRequest, ServiceResponse},
+    Error, HttpMessage,
+};
 use futures_util::future::{ok, Ready};
+use std::collections::{HashMap, VecDeque};
 use std::future::Future;
 use std::pin::Pin;
-use std::task::{Context, Poll};
-use std::collections::{HashMap, VecDeque};
 use std::sync::{Arc, Mutex};
+use std::task::{Context, Poll};
 use std::time::Instant;
 
 use super::metrics::RATE_LIMIT_BLOCKS;
@@ -45,24 +46,24 @@ where
     fn new_transform(&self, service: S) -> Self::Future {
         // Try to initialize Redis client for distributed rate limiting
         let redis_client = match std::env::var("REDIS_URL") {
-            Ok(redis_url) => {
-                match redis::Client::open(redis_url) {
-                    Ok(client) => {
-                        log::info!("Rate limiting using Redis for distributed tracking");
-                        Some(Arc::new(client))
-                    }
-                    Err(e) => {
-                        log::warn!("Failed to connect to Redis for rate limiting, falling back to in-memory: {}", e);
-                        None
-                    }
+            Ok(redis_url) => match redis::Client::open(redis_url) {
+                Ok(client) => {
+                    log::info!("Rate limiting using Redis for distributed tracking");
+                    Some(Arc::new(client))
                 }
-            }
+                Err(e) => {
+                    log::warn!("Failed to connect to Redis for rate limiting, falling back to in-memory: {}", e);
+                    None
+                }
+            },
             Err(_) => {
-                log::warn!("REDIS_URL not set, rate limiting using in-memory store (not distributed)");
+                log::warn!(
+                    "REDIS_URL not set, rate limiting using in-memory store (not distributed)"
+                );
                 None
             }
         };
-        
+
         ok(RateLimitService {
             service,
             max_requests: self.max_requests,
@@ -107,7 +108,14 @@ where
         Box::pin(async move {
             // Check if Redis is available for distributed rate limiting
             if let Some(redis_client) = redis_client {
-                match Self::check_redis_rate_limit(&redis_client, &client_id, max_requests, window_seconds).await {
+                match Self::check_redis_rate_limit(
+                    &redis_client,
+                    &client_id,
+                    max_requests,
+                    window_seconds,
+                )
+                .await
+                {
                     Ok(false) => {
                         // Rate limit exceeded
                         RATE_LIMIT_BLOCKS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -122,9 +130,17 @@ where
                         // Rate limit not exceeded, proceed
                     }
                     Err(e) => {
-                        log::warn!("Redis rate limiting failed, falling back to in-memory: {}", e);
+                        log::warn!(
+                            "Redis rate limiting failed, falling back to in-memory: {}",
+                            e
+                        );
                         // Fall back to in-memory rate limiting
-                        if !Self::check_memory_rate_limit(&store, &client_id, max_requests, window_seconds) {
+                        if !Self::check_memory_rate_limit(
+                            &store,
+                            &client_id,
+                            max_requests,
+                            window_seconds,
+                        ) {
                             RATE_LIMIT_BLOCKS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                             let response = actix_web::HttpResponse::TooManyRequests()
                                 .json(serde_json::json!({
@@ -137,7 +153,8 @@ where
                 }
             } else {
                 // Redis not available, use in-memory rate limiting
-                if !Self::check_memory_rate_limit(&store, &client_id, max_requests, window_seconds) {
+                if !Self::check_memory_rate_limit(&store, &client_id, max_requests, window_seconds)
+                {
                     RATE_LIMIT_BLOCKS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                     let response = actix_web::HttpResponse::TooManyRequests()
                         .json(serde_json::json!({
@@ -208,7 +225,9 @@ impl<S> RateLimitService<S> {
             e.into_inner()
         });
 
-        let entry = store.entry(client_id.to_string()).or_insert_with(|| VecDeque::new());
+        let entry = store
+            .entry(client_id.to_string())
+            .or_insert_with(VecDeque::new);
 
         // Remove expired entries
         while let Some(front) = entry.front() {
@@ -228,4 +247,3 @@ impl<S> RateLimitService<S> {
         }
     }
 }
-

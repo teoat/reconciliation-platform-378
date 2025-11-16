@@ -1,20 +1,20 @@
 //! Performance Monitoring Middleware
-//! 
+//!
 //! This module provides performance monitoring middleware for tracking
 //! request metrics, database performance, and system resources.
 
-use actix_web::{dev::ServiceRequest, Error, HttpMessage, Result};
 use actix_web::dev::{Service, ServiceResponse, Transform};
+use actix_web::{dev::ServiceRequest, Error, HttpMessage, Result};
 use futures::future::{ok, Ready};
 use futures::Future;
-use std::rc::Rc;
+use log::{error, warn};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::pin::Pin;
+use std::rc::Rc;
 use std::sync::Arc;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use log::{warn, error};
 
 use crate::services::performance::{PerformanceService, RequestMetrics};
 
@@ -117,7 +117,7 @@ impl PerformanceMiddleware {
     pub fn new(config: PerformanceMonitoringConfig) -> Self {
         Self { config }
     }
-    
+
     pub fn with_performance_service(_performance_service: Arc<PerformanceService>) -> Self {
         Self {
             config: PerformanceMonitoringConfig::default(),
@@ -169,7 +169,10 @@ where
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(
+        &self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
@@ -181,37 +184,51 @@ where
             let start_time = Instant::now();
             let method = req.method().to_string();
             let path = req.path().to_string();
-            let ip_address = req.connection_info().peer_addr().unwrap_or("unknown").to_string();
-            let user_agent = req.headers().get("User-Agent")
+            let ip_address = req
+                .connection_info()
+                .peer_addr()
+                .unwrap_or("unknown")
+                .to_string();
+            let user_agent = req
+                .headers()
+                .get("User-Agent")
                 .and_then(|h| h.to_str().ok())
                 .map(|s| s.to_string());
 
             // Extract user ID if available
-            let user_id = req.extensions()
+            let user_id = req
+                .extensions()
                 .get::<crate::services::auth::Claims>()
                 .map(|claims| claims.sub.clone());
 
             // Call the next service
             let res = service.call(req).await?;
-            
+
             let response_time = start_time.elapsed();
             let response_time_ms = response_time.as_millis() as u64;
             let status_code = res.status().as_u16();
 
             // Record request metric
             if state.config.enable_request_tracking {
-                record_request_metric(&state, RequestMetric {
-                    method: method.clone(),
-                    path: path.clone(),
-                    status_code,
-                    response_time_ms,
-                    request_size_bytes: None, // Would need to be calculated
-                    response_size_bytes: None, // Would need to be calculated
-                    user_id,
-                    ip_address: Some(ip_address),
-                    user_agent,
-                    timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(),
-                }).await;
+                record_request_metric(
+                    &state,
+                    RequestMetric {
+                        method: method.clone(),
+                        path: path.clone(),
+                        status_code,
+                        response_time_ms,
+                        request_size_bytes: None, // Would need to be calculated
+                        response_size_bytes: None, // Would need to be calculated
+                        user_id,
+                        ip_address: Some(ip_address),
+                        user_agent,
+                        timestamp: SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap_or_default()
+                            .as_secs(),
+                    },
+                )
+                .await;
             }
 
             // Check for slow requests
@@ -225,13 +242,16 @@ where
             }
 
             // Record performance metrics
-            state.performance_service.record_request(RequestMetrics {
-                method: method.to_string(),
-                path: path.to_string(),
-                status_code,
-                duration: response_time,
-                timestamp: Instant::now(),
-            }).await;
+            state
+                .performance_service
+                .record_request(RequestMetrics {
+                    method: method.to_string(),
+                    path: path.to_string(),
+                    status_code,
+                    duration: response_time,
+                    timestamp: Instant::now(),
+                })
+                .await;
 
             Ok(res)
         })
@@ -242,9 +262,12 @@ where
 async fn record_request_metric(state: &PerformanceMonitoringState, metric: RequestMetric) {
     let key = format!("{}:{}", metric.method, metric.path);
     let mut metrics = state.request_metrics.write().await;
-    
-    metrics.entry(key.clone()).or_insert_with(Vec::new).push(metric);
-    
+
+    metrics
+        .entry(key.clone())
+        .or_insert_with(Vec::new)
+        .push(metric);
+
     // Keep only last 1000 metrics per endpoint
     if let Some(metrics_vec) = metrics.get_mut(&key) {
         if metrics_vec.len() > 1000 {
@@ -254,7 +277,12 @@ async fn record_request_metric(state: &PerformanceMonitoringState, metric: Reque
 }
 
 /// Log slow request
-async fn log_slow_request(state: &PerformanceMonitoringState, method: &str, path: &str, response_time_ms: u64) {
+async fn log_slow_request(
+    state: &PerformanceMonitoringState,
+    method: &str,
+    path: &str,
+    response_time_ms: u64,
+) {
     warn!("SLOW REQUEST: {} {} - {}ms", method, path, response_time_ms);
 
     // In a real implementation, you'd send this to a monitoring system
@@ -262,8 +290,16 @@ async fn log_slow_request(state: &PerformanceMonitoringState, method: &str, path
 }
 
 /// Log error response
-async fn log_error_response(state: &PerformanceMonitoringState, method: &str, path: &str, status_code: u16) {
-    error!("ERROR RESPONSE: {} {} - Status: {}", method, path, status_code);
+async fn log_error_response(
+    state: &PerformanceMonitoringState,
+    method: &str,
+    path: &str,
+    status_code: u16,
+) {
+    error!(
+        "ERROR RESPONSE: {} {} - Status: {}",
+        method, path, status_code
+    );
 
     // In a real implementation, you'd send this to a monitoring system
     // or trigger an alert if the error rate is too high
@@ -282,10 +318,17 @@ impl DatabasePerformanceMonitor {
             query_metrics: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
-    pub async fn record_query(&self, query_hash: String, query_text: String, execution_time_ms: u64, rows_examined: Option<u64>, rows_returned: Option<u64>) {
+
+    pub async fn record_query(
+        &self,
+        query_hash: String,
+        query_text: String,
+        execution_time_ms: u64,
+        rows_examined: Option<u64>,
+        rows_returned: Option<u64>,
+    ) {
         let is_slow = execution_time_ms > self.slow_query_threshold_ms;
-        
+
         let metric = DatabaseMetric {
             query_hash: query_hash.clone(),
             query_text,
@@ -293,21 +336,30 @@ impl DatabasePerformanceMonitor {
             rows_examined,
             rows_returned,
             is_slow,
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
         };
-        
+
         let mut metrics = self.query_metrics.write().await;
-        metrics.entry(query_hash).or_insert_with(Vec::new).push(metric.clone());
-        
+        metrics
+            .entry(query_hash)
+            .or_insert_with(Vec::new)
+            .push(metric.clone());
+
         if is_slow {
-            warn!("SLOW QUERY: {} - {}ms", metric.query_text, execution_time_ms);
+            warn!(
+                "SLOW QUERY: {} - {}ms",
+                metric.query_text, execution_time_ms
+            );
         }
     }
-    
+
     pub async fn get_slow_queries(&self) -> Vec<DatabaseMetric> {
         let metrics = self.query_metrics.read().await;
         let mut slow_queries = Vec::new();
-        
+
         for query_metrics in metrics.values() {
             for metric in query_metrics {
                 if metric.is_slow {
@@ -315,34 +367,44 @@ impl DatabasePerformanceMonitor {
                 }
             }
         }
-        
+
         slow_queries.sort_by(|a, b| b.execution_time_ms.cmp(&a.execution_time_ms));
         slow_queries
     }
-    
+
     pub async fn get_query_statistics(&self) -> HashMap<String, QueryStatistics> {
         let metrics = self.query_metrics.read().await;
         let mut statistics = HashMap::new();
-        
+
         for (query_hash, query_metrics) in metrics.iter() {
             if !query_metrics.is_empty() {
-                let total_execution_time: u64 = query_metrics.iter().map(|m| m.execution_time_ms).sum();
+                let total_execution_time: u64 =
+                    query_metrics.iter().map(|m| m.execution_time_ms).sum();
                 let avg_execution_time = total_execution_time / query_metrics.len() as u64;
-                let max_execution_time = query_metrics.iter().map(|m| m.execution_time_ms).max().unwrap_or(0);
+                let max_execution_time = query_metrics
+                    .iter()
+                    .map(|m| m.execution_time_ms)
+                    .max()
+                    .unwrap_or(0);
                 let slow_query_count = query_metrics.iter().filter(|m| m.is_slow).count();
-                
-                statistics.insert(query_hash.clone(), QueryStatistics {
-                    query_hash: query_hash.clone(),
-                    execution_count: query_metrics.len(),
-                    total_execution_time_ms: total_execution_time,
-                    average_execution_time_ms: avg_execution_time,
-                    max_execution_time_ms: max_execution_time,
-                    slow_query_count,
-                    slow_query_percentage: (slow_query_count as f64 / query_metrics.len() as f64) * 100.0,
-                });
+
+                statistics.insert(
+                    query_hash.clone(),
+                    QueryStatistics {
+                        query_hash: query_hash.clone(),
+                        execution_count: query_metrics.len(),
+                        total_execution_time_ms: total_execution_time,
+                        average_execution_time_ms: avg_execution_time,
+                        max_execution_time_ms: max_execution_time,
+                        slow_query_count,
+                        slow_query_percentage: (slow_query_count as f64
+                            / query_metrics.len() as f64)
+                            * 100.0,
+                    },
+                );
             }
         }
-        
+
         statistics
     }
 }
@@ -364,43 +426,66 @@ pub struct SystemResourceMonitor {
     pub metrics: Arc<RwLock<HashMap<String, Vec<SystemMetric>>>>,
 }
 
+impl Default for SystemResourceMonitor {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl SystemResourceMonitor {
     pub fn new() -> Self {
         Self {
             metrics: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     pub async fn record_cpu_usage(&self, usage_percent: f64) {
-        self.record_metric("cpu", "usage_percent", usage_percent, "percent").await;
+        self.record_metric("cpu", "usage_percent", usage_percent, "percent")
+            .await;
     }
-    
+
     pub async fn record_memory_usage(&self, usage_percent: f64) {
-        self.record_metric("memory", "usage_percent", usage_percent, "percent").await;
+        self.record_metric("memory", "usage_percent", usage_percent, "percent")
+            .await;
     }
-    
+
     pub async fn record_disk_usage(&self, usage_percent: f64) {
-        self.record_metric("disk", "usage_percent", usage_percent, "percent").await;
+        self.record_metric("disk", "usage_percent", usage_percent, "percent")
+            .await;
     }
-    
+
     pub async fn record_network_usage(&self, bytes_sent: u64, bytes_received: u64) {
-        self.record_metric("network", "bytes_sent", bytes_sent as f64, "bytes").await;
-        self.record_metric("network", "bytes_received", bytes_received as f64, "bytes").await;
+        self.record_metric("network", "bytes_sent", bytes_sent as f64, "bytes")
+            .await;
+        self.record_metric("network", "bytes_received", bytes_received as f64, "bytes")
+            .await;
     }
-    
-    async fn record_metric(&self, metric_type: &str, metric_name: &str, metric_value: f64, unit: &str) {
+
+    async fn record_metric(
+        &self,
+        metric_type: &str,
+        metric_name: &str,
+        metric_value: f64,
+        unit: &str,
+    ) {
         let key = format!("{}:{}", metric_type, metric_name);
         let metric = SystemMetric {
             metric_type: metric_type.to_string(),
             metric_name: metric_name.to_string(),
             metric_value,
             unit: unit.to_string(),
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
         };
-        
+
         let mut metrics = self.metrics.write().await;
-        metrics.entry(key.clone()).or_insert_with(Vec::new).push(metric);
-        
+        metrics
+            .entry(key.clone())
+            .or_insert_with(Vec::new)
+            .push(metric);
+
         // Keep only last 1000 metrics per type
         if let Some(metrics_vec) = metrics.get_mut(&key) {
             if metrics_vec.len() > 1000 {
@@ -408,17 +493,17 @@ impl SystemResourceMonitor {
             }
         }
     }
-    
+
     pub async fn get_current_metrics(&self) -> HashMap<String, f64> {
         let metrics = self.metrics.read().await;
         let mut current_metrics = HashMap::new();
-        
+
         for (key, metric_vec) in metrics.iter() {
             if let Some(latest_metric) = metric_vec.last() {
                 current_metrics.insert(key.clone(), latest_metric.metric_value);
             }
         }
-        
+
         current_metrics
     }
 }
@@ -449,44 +534,63 @@ impl PerformanceAlerting {
             alerts: Arc::new(RwLock::new(Vec::new())),
         }
     }
-    
+
     pub async fn check_response_time_alert(&self, response_time_ms: u64) {
         if response_time_ms > self.config.alert_thresholds.max_response_time_ms {
             self.create_alert(
                 "high_response_time",
                 "high",
-                format!("Response time {}ms exceeds threshold of {}ms", response_time_ms, self.config.alert_thresholds.max_response_time_ms),
+                format!(
+                    "Response time {}ms exceeds threshold of {}ms",
+                    response_time_ms, self.config.alert_thresholds.max_response_time_ms
+                ),
                 self.config.alert_thresholds.max_response_time_ms as f64,
                 response_time_ms as f64,
-            ).await;
+            )
+            .await;
         }
     }
-    
+
     pub async fn check_cpu_usage_alert(&self, cpu_usage_percent: f64) {
         if cpu_usage_percent > self.config.alert_thresholds.max_cpu_usage_percent {
             self.create_alert(
                 "high_cpu_usage",
                 "medium",
-                format!("CPU usage {}% exceeds threshold of {}%", cpu_usage_percent, self.config.alert_thresholds.max_cpu_usage_percent),
+                format!(
+                    "CPU usage {}% exceeds threshold of {}%",
+                    cpu_usage_percent, self.config.alert_thresholds.max_cpu_usage_percent
+                ),
                 self.config.alert_thresholds.max_cpu_usage_percent,
                 cpu_usage_percent,
-            ).await;
+            )
+            .await;
         }
     }
-    
+
     pub async fn check_memory_usage_alert(&self, memory_usage_percent: f64) {
         if memory_usage_percent > self.config.alert_thresholds.max_memory_usage_percent {
             self.create_alert(
                 "high_memory_usage",
                 "high",
-                format!("Memory usage {}% exceeds threshold of {}%", memory_usage_percent, self.config.alert_thresholds.max_memory_usage_percent),
+                format!(
+                    "Memory usage {}% exceeds threshold of {}%",
+                    memory_usage_percent, self.config.alert_thresholds.max_memory_usage_percent
+                ),
                 self.config.alert_thresholds.max_memory_usage_percent,
                 memory_usage_percent,
-            ).await;
+            )
+            .await;
         }
     }
-    
-    async fn create_alert(&self, alert_type: &str, severity: &str, message: String, threshold_value: f64, current_value: f64) {
+
+    async fn create_alert(
+        &self,
+        alert_type: &str,
+        severity: &str,
+        message: String,
+        threshold_value: f64,
+        current_value: f64,
+    ) {
         let alert = PerformanceAlert {
             id: uuid::Uuid::new_v4().to_string(),
             alert_type: alert_type.to_string(),
@@ -494,28 +598,35 @@ impl PerformanceAlerting {
             message,
             threshold_value,
             current_value,
-            timestamp: SystemTime::now().duration_since(UNIX_EPOCH).unwrap_or_default().as_secs(),
+            timestamp: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs(),
             acknowledged: false,
             resolved: false,
         };
-        
+
         let mut alerts = self.alerts.write().await;
         alerts.push(alert.clone());
-        
+
         // Keep only last 1000 alerts
         if alerts.len() > 1000 {
             let len = alerts.len();
             alerts.drain(0..len - 1000);
         }
-        
+
         warn!("PERFORMANCE ALERT: {}", alert.message);
     }
-    
+
     pub async fn get_active_alerts(&self) -> Vec<PerformanceAlert> {
         let alerts = self.alerts.read().await;
-        alerts.iter().filter(|alert| !alert.resolved).cloned().collect()
+        alerts
+            .iter()
+            .filter(|alert| !alert.resolved)
+            .cloned()
+            .collect()
     }
-    
+
     pub async fn acknowledge_alert(&self, alert_id: &str) -> bool {
         let mut alerts = self.alerts.write().await;
         if let Some(alert) = alerts.iter_mut().find(|a| a.id == alert_id) {
@@ -525,7 +636,7 @@ impl PerformanceAlerting {
             false
         }
     }
-    
+
     pub async fn resolve_alert(&self, alert_id: &str) -> bool {
         let mut alerts = self.alerts.write().await;
         if let Some(alert) = alerts.iter_mut().find(|a| a.id == alert_id) {

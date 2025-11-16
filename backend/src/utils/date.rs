@@ -1,6 +1,6 @@
 //! Date and time utility functions
 
-use chrono::{DateTime, Utc, TimeZone};
+use chrono::{DateTime, TimeZone, Utc};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 /// Get current timestamp as Unix timestamp
@@ -23,12 +23,10 @@ pub fn current_utc() -> DateTime<Utc> {
 /// Convert Unix timestamp to UTC datetime
 /// Returns current time if timestamp is invalid
 pub fn timestamp_to_utc(timestamp: i64) -> DateTime<Utc> {
-    Utc.timestamp_opt(timestamp, 0)
-        .single()
-        .unwrap_or_else(|| {
-            log::warn!("Invalid timestamp {}, using current time", timestamp);
-            Utc::now()
-        })
+    Utc.timestamp_opt(timestamp, 0).single().unwrap_or_else(|| {
+        log::warn!("Invalid timestamp {}, using current time", timestamp);
+        Utc::now()
+    })
 }
 
 /// Convert UTC datetime to Unix timestamp

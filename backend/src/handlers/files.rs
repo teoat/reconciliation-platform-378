@@ -3,29 +3,34 @@
 use actix_web::{web, HttpRequest, HttpResponse, Result};
 use uuid::Uuid;
 
-use crate::errors::AppError;
-use crate::database::Database;
 use crate::config::Config;
-use crate::services::cache::MultiLevelCache;
+use crate::database::Database;
+use crate::errors::AppError;
 use crate::handlers::helpers::extract_user_id;
 use crate::handlers::types::ApiResponse;
+use crate::services::cache::MultiLevelCache;
 use crate::utils::check_project_permission;
 use futures_util::StreamExt;
 
 /// Configure file management routes
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
-    cfg
-
-        .route("/upload/resumable/init", web::post().to(init_resumable_upload))
-        .route("/upload/resumable/chunk", web::post().to(upload_resumable_chunk))
-        .route("/upload/resumable/complete", web::post().to(complete_resumable_upload))
-        .route("/{file_id}", web::get().to(get_file))
-        .route("/{file_id}", web::delete().to(delete_file))
-        .route("/{file_id}/preview", web::get().to(get_file_preview))
-        .route("/{file_id}/process", web::post().to(process_file));
+    cfg.route(
+        "/upload/resumable/init",
+        web::post().to(init_resumable_upload),
+    )
+    .route(
+        "/upload/resumable/chunk",
+        web::post().to(upload_resumable_chunk),
+    )
+    .route(
+        "/upload/resumable/complete",
+        web::post().to(complete_resumable_upload),
+    )
+    .route("/{file_id}", web::get().to(get_file))
+    .route("/{file_id}", web::delete().to(delete_file))
+    .route("/{file_id}/preview", web::get().to(get_file_preview))
+    .route("/{file_id}/process", web::post().to(process_file));
 }
-
-
 
 #[derive(serde::Deserialize)]
 struct InitResumableReq {
@@ -44,10 +49,8 @@ pub async fn init_resumable_upload(
     let user_id = extract_user_id(&http_req)?;
     check_project_permission(data.get_ref(), user_id, req.project_id)?;
 
-    let file_service = crate::services::file::FileService::new(
-        data.get_ref().clone(),
-        config.upload_path.clone(),
-    );
+    let file_service =
+        crate::services::file::FileService::new(data.get_ref().clone(), config.upload_path.clone());
 
     let meta = file_service
         .init_resumable_upload(req.project_id, req.filename.clone(), req.expected_size)
@@ -105,7 +108,9 @@ pub async fn upload_resumable_chunk(
         body.extend_from_slice(&bytes);
     }
 
-    file_service.upload_chunk(upload_id, chunk_index, &body).await?;
+    file_service
+        .upload_chunk(upload_id, chunk_index, &body)
+        .await?;
 
     Ok(HttpResponse::Ok().json(ApiResponse::<()> {
         success: true,
@@ -133,13 +138,16 @@ pub async fn complete_resumable_upload(
     let user_id = extract_user_id(&http_req)?;
     check_project_permission(data.get_ref(), user_id, req.project_id)?;
 
-    let file_service = crate::services::file::FileService::new(
-        data.get_ref().clone(),
-        config.upload_path.clone(),
-    );
+    let file_service =
+        crate::services::file::FileService::new(data.get_ref().clone(), config.upload_path.clone());
 
     let result = file_service
-        .complete_resumable_upload(req.project_id, req.upload_id, req.filename.clone(), req.total_chunks)
+        .complete_resumable_upload(
+            req.project_id,
+            req.upload_id,
+            req.filename.clone(),
+            req.total_chunks,
+        )
         .await?;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -157,17 +165,15 @@ pub async fn get_file(
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
-    let file_service = crate::services::file::FileService::new(
-        data.get_ref().clone(),
-        config.upload_path.clone(),
-    );
-    
+    let file_service =
+        crate::services::file::FileService::new(data.get_ref().clone(), config.upload_path.clone());
+
     let file_info = file_service.get_file(file_id.into_inner()).await?;
-    
+
     // ✅ SECURITY FIX: Check authorization before accessing file
     let user_id = extract_user_id(&http_req)?;
     check_project_permission(data.get_ref(), user_id, file_info.project_id)?;
-    
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(file_info),
@@ -183,10 +189,8 @@ pub async fn get_file_preview(
     data: web::Data<Database>,
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
-    let file_service = crate::services::file::FileService::new(
-        data.get_ref().clone(),
-        config.upload_path.clone(),
-    );
+    let file_service =
+        crate::services::file::FileService::new(data.get_ref().clone(), config.upload_path.clone());
 
     let file_info = file_service.get_file(file_id.into_inner()).await?;
 
@@ -221,26 +225,33 @@ pub async fn delete_file(
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     let file_id_val = file_id.into_inner();
-    
-    let file_service = crate::services::file::FileService::new(
-        data.get_ref().clone(),
-        config.upload_path.clone(),
-    );
-    
+
+    let file_service =
+        crate::services::file::FileService::new(data.get_ref().clone(), config.upload_path.clone());
+
     // Get file info first to check authorization
     let file_info = file_service.get_file(file_id_val).await?;
-    
+
     // ✅ SECURITY FIX: Check authorization before deleting file
     let user_id = extract_user_id(&http_req)?;
     check_project_permission(data.get_ref(), user_id, file_info.project_id)?;
-    
+
     file_service.delete_file(file_id_val).await?;
-    
+
     // ✅ CACHE INVALIDATION: Clear project and file caches after deletion
-    cache.delete(&format!("file:{}", file_id_val)).await.unwrap_or_default();
-    cache.delete(&format!("files:project:{}", file_info.project_id)).await.unwrap_or_default();
-    cache.delete(&format!("project:{}", file_info.project_id)).await.unwrap_or_default();
-    
+    cache
+        .delete(&format!("file:{}", file_id_val))
+        .await
+        .unwrap_or_default();
+    cache
+        .delete(&format!("files:project:{}", file_info.project_id))
+        .await
+        .unwrap_or_default();
+    cache
+        .delete(&format!("project:{}", file_info.project_id))
+        .await
+        .unwrap_or_default();
+
     Ok(HttpResponse::NoContent().finish())
 }
 
@@ -253,25 +264,29 @@ pub async fn process_file(
     config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     let file_id_val = file_id.into_inner();
-    
-    let file_service = crate::services::file::FileService::new(
-        data.get_ref().clone(),
-        config.upload_path.clone(),
-    );
-    
+
+    let file_service =
+        crate::services::file::FileService::new(data.get_ref().clone(), config.upload_path.clone());
+
     // Get file info first to check authorization
     let file_info = file_service.get_file(file_id_val).await?;
-    
+
     // ✅ SECURITY FIX: Check authorization before processing file
     let user_id = extract_user_id(&http_req)?;
     check_project_permission(data.get_ref(), user_id, file_info.project_id)?;
-    
+
     let processing_result = file_service.process_file(file_id_val).await?;
-    
+
     // ✅ CACHE INVALIDATION: Clear file and project caches after processing
-    cache.delete(&format!("file:{}", file_id_val)).await.unwrap_or_default();
-    cache.delete(&format!("project:{}", file_info.project_id)).await.unwrap_or_default();
-    
+    cache
+        .delete(&format!("file:{}", file_id_val))
+        .await
+        .unwrap_or_default();
+    cache
+        .delete(&format!("project:{}", file_info.project_id))
+        .await
+        .unwrap_or_default();
+
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(processing_result),

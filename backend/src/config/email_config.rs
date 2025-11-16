@@ -1,6 +1,6 @@
+use log::warn;
 use serde::{Deserialize, Serialize};
 use std::env;
-use log::warn;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EmailConfig {
@@ -24,13 +24,14 @@ impl EmailConfig {
                     587
                 }),
             smtp_username: env::var("SMTP_USERNAME").unwrap_or_default(),
-            smtp_password: env::var("SMTP_PASSWORD")
-                .unwrap_or_else(|_| {
-                    warn!("SMTP_PASSWORD not set - email features will be disabled");
-                    String::new()
-                }),
-            from_email: env::var("FROM_EMAIL").unwrap_or_else(|_| "noreply@reconciliation.app".to_string()),
-            from_name: env::var("FROM_NAME").unwrap_or_else(|_| "Reconciliation Platform".to_string()),
+            smtp_password: env::var("SMTP_PASSWORD").unwrap_or_else(|_| {
+                warn!("SMTP_PASSWORD not set - email features will be disabled");
+                String::new()
+            }),
+            from_email: env::var("FROM_EMAIL")
+                .unwrap_or_else(|_| "noreply@reconciliation.app".to_string()),
+            from_name: env::var("FROM_NAME")
+                .unwrap_or_else(|_| "Reconciliation Platform".to_string()),
         }
     }
 }

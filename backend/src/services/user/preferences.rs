@@ -2,20 +2,20 @@
 //!
 //! Handles user preferences and settings management.
 
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use diesel::prelude::*;
-use diesel::{QueryDsl, ExpressionMethods, RunQueryDsl};
-use diesel::upsert::excluded;
-use chrono::Utc;
-use std::sync::Arc;
-use async_trait::async_trait;
 use crate::services::user::PreferencesServiceTrait;
+use async_trait::async_trait;
+use chrono::Utc;
+use diesel::prelude::*;
+use diesel::upsert::excluded;
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use uuid::Uuid;
 
-use crate::database::{Database, transaction::with_transaction};
+use crate::database::{transaction::with_transaction, Database};
 use crate::errors::{AppError, AppResult};
-use crate::models::UserPreference;
 use crate::models::schema::user_preferences;
+use crate::models::UserPreference;
 
 /// Preferences service for managing user preferences
 pub struct PreferencesService {
@@ -111,7 +111,7 @@ impl PreferencesService {
         // Convert boolean preferences to strings upfront
         let notifications_enabled_str = preferences.notifications_enabled.map(|b| b.to_string());
         let email_notifications_str = preferences.email_notifications.map(|b| b.to_string());
-        
+
         // Use transaction to ensure all preference updates are atomic
         with_transaction(self.db.get_pool(), |tx| {
             // Define the preference mappings
@@ -160,16 +160,17 @@ impl PreferencesService {
     }
 
     /// Internal: Update a specific preference (atomic operation within transaction)
-    async fn update_preference_impl(
-        &self,
-        user_id: Uuid,
-        key: &str,
-        value: &str,
-    ) -> AppResult<()> {
+    async fn update_preference_impl(&self, user_id: Uuid, key: &str, value: &str) -> AppResult<()> {
         // Validate the key
         match key {
-            "theme" | "language" | "timezone" | "notifications_enabled" | "email_notifications" => {}
-            _ => return Err(AppError::Validation(format!("Invalid preference key: {}", key))),
+            "theme" | "language" | "timezone" | "notifications_enabled" | "email_notifications" => {
+            }
+            _ => {
+                return Err(AppError::Validation(format!(
+                    "Invalid preference key: {}",
+                    key
+                )))
+            }
         }
 
         // Use transaction for atomicity
@@ -208,12 +209,7 @@ impl PreferencesServiceTrait for PreferencesService {
         self.update_preferences_impl(user_id, preferences).await
     }
 
-    async fn update_preference(
-        &self,
-        user_id: Uuid,
-        key: &str,
-        value: &str,
-    ) -> AppResult<()> {
+    async fn update_preference(&self, user_id: Uuid, key: &str, value: &str) -> AppResult<()> {
         self.update_preference_impl(user_id, key, value).await
     }
 
@@ -239,24 +235,42 @@ impl PreferencesServiceTrait for PreferencesService {
                     settings.notifications.push = pref.preference_value.as_bool().unwrap_or(false);
                 }
                 "notifications.reconciliation_complete" => {
-                    settings.notifications.reconciliation_complete = pref.preference_value.as_bool().unwrap_or(true);
+                    settings.notifications.reconciliation_complete =
+                        pref.preference_value.as_bool().unwrap_or(true);
                 }
                 // Preferences
                 "preferences.theme" => {
-                    settings.preferences.theme = pref.preference_value.as_str().map(|s| s.to_string()).unwrap_or_else(|| "light".to_string());
+                    settings.preferences.theme = pref
+                        .preference_value
+                        .as_str()
+                        .map(|s| s.to_string())
+                        .unwrap_or_else(|| "light".to_string());
                 }
                 "preferences.language" => {
-                    settings.preferences.language = pref.preference_value.as_str().map(|s| s.to_string()).unwrap_or_else(|| "en".to_string());
+                    settings.preferences.language = pref
+                        .preference_value
+                        .as_str()
+                        .map(|s| s.to_string())
+                        .unwrap_or_else(|| "en".to_string());
                 }
                 "preferences.timezone" => {
-                    settings.preferences.timezone = pref.preference_value.as_str().map(|s| s.to_string()).unwrap_or_else(|| "UTC".to_string());
+                    settings.preferences.timezone = pref
+                        .preference_value
+                        .as_str()
+                        .map(|s| s.to_string())
+                        .unwrap_or_else(|| "UTC".to_string());
                 }
                 // Security
                 "security.two_factor_enabled" => {
-                    settings.security.two_factor_enabled = pref.preference_value.as_bool().unwrap_or(false);
+                    settings.security.two_factor_enabled =
+                        pref.preference_value.as_bool().unwrap_or(false);
                 }
                 "security.session_timeout" => {
-                    settings.security.session_timeout = pref.preference_value.as_i64().map(|v| v as i32).unwrap_or(3600);
+                    settings.security.session_timeout = pref
+                        .preference_value
+                        .as_i64()
+                        .map(|v| v as i32)
+                        .unwrap_or(3600);
                 }
                 _ => {} // Ignore unknown preferences
             }
@@ -277,16 +291,40 @@ impl PreferencesServiceTrait for PreferencesService {
             // Prepare preference updates
             let updates = vec![
                 // Notifications
-                ("notifications.email", Some(settings.notifications.email.to_string())),
-                ("notifications.push", Some(settings.notifications.push.to_string())),
-                ("notifications.reconciliation_complete", Some(settings.notifications.reconciliation_complete.to_string())),
+                (
+                    "notifications.email",
+                    Some(settings.notifications.email.to_string()),
+                ),
+                (
+                    "notifications.push",
+                    Some(settings.notifications.push.to_string()),
+                ),
+                (
+                    "notifications.reconciliation_complete",
+                    Some(settings.notifications.reconciliation_complete.to_string()),
+                ),
                 // Preferences
-                ("preferences.theme", Some(settings.preferences.theme.clone())),
-                ("preferences.language", Some(settings.preferences.language.clone())),
-                ("preferences.timezone", Some(settings.preferences.timezone.clone())),
+                (
+                    "preferences.theme",
+                    Some(settings.preferences.theme.clone()),
+                ),
+                (
+                    "preferences.language",
+                    Some(settings.preferences.language.clone()),
+                ),
+                (
+                    "preferences.timezone",
+                    Some(settings.preferences.timezone.clone()),
+                ),
                 // Security
-                ("security.two_factor_enabled", Some(settings.security.two_factor_enabled.to_string())),
-                ("security.session_timeout", Some(settings.security.session_timeout.to_string())),
+                (
+                    "security.two_factor_enabled",
+                    Some(settings.security.two_factor_enabled.to_string()),
+                ),
+                (
+                    "security.session_timeout",
+                    Some(settings.security.session_timeout.to_string()),
+                ),
             ];
 
             for (key, value) in updates {
@@ -303,7 +341,8 @@ impl PreferencesServiceTrait for PreferencesService {
                         .on_conflict((user_preferences::user_id, user_preferences::preference_key))
                         .do_update()
                         .set((
-                            user_preferences::preference_value.eq(excluded(user_preferences::preference_value)),
+                            user_preferences::preference_value
+                                .eq(excluded(user_preferences::preference_value)),
                             user_preferences::updated_at.eq(diesel::dsl::now),
                         ))
                         .execute(conn)

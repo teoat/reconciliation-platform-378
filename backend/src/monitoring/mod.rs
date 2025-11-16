@@ -2,5 +2,4 @@
 
 pub mod metrics;
 
-pub use metrics::{SecurityMetrics, PiiMasker};
-
+pub use metrics::{PiiMasker, SecurityMetrics};

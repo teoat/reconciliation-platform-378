@@ -3,8 +3,8 @@
 // ============================================================================
 // Provides structured error logging with correlation IDs for request tracing
 
+use serde::{Deserialize, Serialize};
 use std::time::{SystemTime, UNIX_EPOCH};
-use serde::{Serialize, Deserialize};
 
 /// Error correlation ID for request tracing
 pub type CorrelationId = String;
@@ -29,7 +29,7 @@ impl ErrorContext {
             .duration_since(UNIX_EPOCH)
             .unwrap_or_default()
             .as_secs();
-        
+
         Self {
             correlation_id: generate_correlation_id(),
             timestamp,
@@ -87,11 +87,8 @@ mod tests {
 
     #[test]
     fn test_error_context_creation() {
-        let ctx = ErrorContext::new(
-            "DatabaseError".to_string(),
-            "Connection failed".to_string()
-        );
-        
+        let ctx = ErrorContext::new("DatabaseError".to_string(), "Connection failed".to_string());
+
         assert_eq!(ctx.error_type, "DatabaseError");
         assert_eq!(ctx.error_message, "Connection failed");
         assert!(!ctx.correlation_id.is_empty());
@@ -101,10 +98,9 @@ mod tests {
     fn test_correlation_id_generation() {
         let id1 = generate_correlation_id();
         let id2 = generate_correlation_id();
-        
+
         assert_ne!(id1, id2);
         assert!(!id1.is_empty());
         assert!(!id2.is_empty());
     }
 }
-

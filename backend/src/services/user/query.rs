@@ -3,16 +3,16 @@
 //! Handles user search, filtering, and listing operations.
 
 use diesel::prelude::*;
-use diesel::{QueryDsl, ExpressionMethods, RunQueryDsl};
-use uuid::Uuid;
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use std::sync::Arc;
+use uuid::Uuid;
 
+use super::traits::{UserInfo, UserListResponse};
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
-use crate::models::schema::users;
 use crate::models::schema::projects;
+use crate::models::schema::users;
 use crate::services::auth::ValidationUtils;
-use super::traits::{UserListResponse, UserInfo};
 
 /// User query service for search and filtering
 pub struct UserQueryService {
@@ -25,7 +25,11 @@ impl UserQueryService {
     }
 
     /// List users with pagination
-    pub async fn list_users(&self, page: Option<i64>, per_page: Option<i64>) -> AppResult<UserListResponse> {
+    pub async fn list_users(
+        &self,
+        page: Option<i64>,
+        per_page: Option<i64>,
+    ) -> AppResult<UserListResponse> {
         let (page, per_page) = ValidationUtils::validate_pagination(page, per_page)?;
         let offset = (page - 1) * per_page;
 
@@ -53,7 +57,17 @@ impl UserQueryService {
             .order(users::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, Option<String>, Option<String>, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
+            .load::<(
+                Uuid,
+                String,
+                Option<String>,
+                Option<String>,
+                String,
+                bool,
+                chrono::DateTime<chrono::Utc>,
+                chrono::DateTime<chrono::Utc>,
+                Option<chrono::DateTime<chrono::Utc>>,
+            )>(&mut conn)
             .map_err(AppError::Database)?;
 
         // Get project counts for all users in one query
@@ -68,7 +82,12 @@ impl UserQueryService {
     }
 
     /// Search users
-    pub async fn search_users(&self, query: &str, page: Option<i64>, per_page: Option<i64>) -> AppResult<UserListResponse> {
+    pub async fn search_users(
+        &self,
+        query: &str,
+        page: Option<i64>,
+        per_page: Option<i64>,
+    ) -> AppResult<UserListResponse> {
         let (page, per_page) = ValidationUtils::validate_pagination(page, per_page)?;
         let offset = (page - 1) * per_page;
 
@@ -79,9 +98,10 @@ impl UserQueryService {
         // Get total count
         let total = users::table
             .filter(
-                users::email.ilike(&search_pattern)
+                users::email
+                    .ilike(&search_pattern)
                     .or(users::first_name.ilike(&search_pattern))
-                    .or(users::last_name.ilike(&search_pattern))
+                    .or(users::last_name.ilike(&search_pattern)),
             )
             .count()
             .get_result::<i64>(&mut conn)
@@ -90,9 +110,10 @@ impl UserQueryService {
         // Get users
         let users = users::table
             .filter(
-                users::email.ilike(&search_pattern)
+                users::email
+                    .ilike(&search_pattern)
                     .or(users::first_name.ilike(&search_pattern))
-                    .or(users::last_name.ilike(&search_pattern))
+                    .or(users::last_name.ilike(&search_pattern)),
             )
             .select((
                 users::id,
@@ -108,7 +129,17 @@ impl UserQueryService {
             .order(users::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, Option<String>, Option<String>, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
+            .load::<(
+                Uuid,
+                String,
+                Option<String>,
+                Option<String>,
+                String,
+                bool,
+                chrono::DateTime<chrono::Utc>,
+                chrono::DateTime<chrono::Utc>,
+                Option<chrono::DateTime<chrono::Utc>>,
+            )>(&mut conn)
             .map_err(AppError::Database)?;
 
         // Get project counts for all users in one query
@@ -123,7 +154,12 @@ impl UserQueryService {
     }
 
     /// Get users by role
-    pub async fn get_users_by_role(&self, role: &str, page: Option<i64>, per_page: Option<i64>) -> AppResult<UserListResponse> {
+    pub async fn get_users_by_role(
+        &self,
+        role: &str,
+        page: Option<i64>,
+        per_page: Option<i64>,
+    ) -> AppResult<UserListResponse> {
         let (page, per_page) = ValidationUtils::validate_pagination(page, per_page)?;
         let offset = (page - 1) * per_page;
 
@@ -158,7 +194,17 @@ impl UserQueryService {
             .order(users::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, Option<String>, Option<String>, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
+            .load::<(
+                Uuid,
+                String,
+                Option<String>,
+                Option<String>,
+                String,
+                bool,
+                chrono::DateTime<chrono::Utc>,
+                chrono::DateTime<chrono::Utc>,
+                Option<chrono::DateTime<chrono::Utc>>,
+            )>(&mut conn)
             .map_err(AppError::Database)?;
 
         // Get project counts for all users in one query
@@ -211,7 +257,17 @@ impl UserQueryService {
             .order(users::created_at.desc())
             .limit(per_page)
             .offset(offset)
-            .load::<(Uuid, String, Option<String>, Option<String>, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>(&mut conn)
+            .load::<(
+                Uuid,
+                String,
+                Option<String>,
+                Option<String>,
+                String,
+                bool,
+                chrono::DateTime<chrono::Utc>,
+                chrono::DateTime<chrono::Utc>,
+                Option<chrono::DateTime<chrono::Utc>>,
+            )>(&mut conn)
             .map_err(AppError::Database)?;
 
         // Get project counts for all users in one query
@@ -228,8 +284,20 @@ impl UserQueryService {
     /// Helper: Build user infos with project counts
     fn build_user_infos_with_project_counts(
         &self,
-        users: Vec<(Uuid, String, Option<String>, Option<String>, String, bool, chrono::DateTime<chrono::Utc>, chrono::DateTime<chrono::Utc>, Option<chrono::DateTime<chrono::Utc>>)>,
-        conn: &mut diesel::r2d2::PooledConnection<diesel::r2d2::ConnectionManager<diesel::PgConnection>>,
+        users: Vec<(
+            Uuid,
+            String,
+            Option<String>,
+            Option<String>,
+            String,
+            bool,
+            chrono::DateTime<chrono::Utc>,
+            chrono::DateTime<chrono::Utc>,
+            Option<chrono::DateTime<chrono::Utc>>,
+        )>,
+        conn: &mut diesel::r2d2::PooledConnection<
+            diesel::r2d2::ConnectionManager<diesel::PgConnection>,
+        >,
     ) -> AppResult<Vec<UserInfo>> {
         use diesel::dsl::count_star;
 
@@ -253,13 +321,28 @@ impl UserQueryService {
 
         // Build user infos with counts from map
         let mut user_infos = Vec::new();
-        for (id, email, first_name, last_name, status, email_verified, created_at, updated_at, last_login_at) in users {
+        for (
+            id,
+            email,
+            first_name,
+            last_name,
+            status,
+            email_verified,
+            created_at,
+            updated_at,
+            last_login_at,
+        ) in users
+        {
             let project_count = project_count_map.get(&id).copied().unwrap_or(0);
 
             user_infos.push(UserInfo {
                 id,
                 email: email.clone(),
-                name: Some(format!("{} {}", first_name.clone().unwrap_or_default(), last_name.clone().unwrap_or_default())),
+                name: Some(format!(
+                    "{} {}",
+                    first_name.clone().unwrap_or_default(),
+                    last_name.clone().unwrap_or_default()
+                )),
                 first_name: first_name.unwrap_or_default(),
                 last_name: last_name.unwrap_or_default(),
                 role: status,
@@ -274,4 +357,3 @@ impl UserQueryService {
         Ok(user_infos)
     }
 }
-

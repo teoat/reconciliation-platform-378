@@ -3,8 +3,8 @@
 // ============================================================================
 // Provides Result-based error handling to replace unwrap/expect
 
+use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter, Result as FmtResult};
-use serde::{Serialize, Deserialize};
 
 /// Standard application error types
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,7 +60,7 @@ impl<T> OptionExt<T> for Option<T> {
     fn ok_or_not_found(self, message: impl Into<String>) -> AppResult<T> {
         self.ok_or_else(|| AppError::NotFound(message.into()))
     }
-    
+
     fn ok_or_internal(self, message: impl Into<String>) -> AppResult<T> {
         self.ok_or_else(|| AppError::Internal(message.into()))
     }
@@ -71,11 +71,11 @@ pub trait ResultExt<T, E> {
     fn map_to_app_error(self) -> AppResult<T>
     where
         E: Display;
-    
+
     fn map_to_database_error(self) -> AppResult<T>
     where
         E: Display;
-    
+
     fn map_to_validation_error(self) -> AppResult<T>
     where
         E: Display;
@@ -88,14 +88,14 @@ impl<T, E> ResultExt<T, E> for Result<T, E> {
     {
         self.map_err(|e| AppError::Internal(format!("{}", e)))
     }
-    
+
     fn map_to_database_error(self) -> AppResult<T>
     where
         E: Display,
     {
         self.map_err(|e| AppError::Database(format!("{}", e)))
     }
-    
+
     fn map_to_validation_error(self) -> AppResult<T>
     where
         E: Display,
@@ -108,7 +108,9 @@ impl<T, E> ResultExt<T, E> for Result<T, E> {
 #[macro_export]
 macro_rules! safe_unwrap {
     ($expr:expr, $msg:expr) => {
-        $expr.map_err(|e| crate::utils::error_handling::AppError::Internal(format!("{}: {}", $msg, e)))?
+        $expr.map_err(|e| {
+            $crate::utils::error_handling::AppError::Internal(format!("{}: {}", $msg, e))
+        })?
     };
 }
 
@@ -116,7 +118,7 @@ macro_rules! safe_unwrap {
 #[macro_export]
 macro_rules! db_result {
     ($expr:expr) => {
-        $expr.map_err(|e| crate::utils::error_handling::AppError::Database(format!("{}", e)))
+        $expr.map_err(|e| $crate::utils::error_handling::AppError::Database(format!("{}", e)))
     };
 }
 
@@ -125,7 +127,9 @@ macro_rules! db_result {
 macro_rules! validate {
     ($condition:expr, $msg:expr) => {
         if !$condition {
-            return Err(crate::utils::error_handling::AppError::Validation($msg.into()));
+            return Err($crate::utils::error_handling::AppError::Validation(
+                $msg.into(),
+            ));
         }
     };
 }

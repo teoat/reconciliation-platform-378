@@ -3,12 +3,11 @@
 //! This module contains all the data structures used by the project service,
 //! including database query results and API response types.
 
-use diesel::prelude::*;
-use uuid::Uuid;
-use serde::{Serialize, Deserialize};
 use chrono::DateTime;
+use diesel::prelude::*;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 // Using serde_json::Value directly
-
 
 // Query result structs for Diesel queries
 #[derive(Queryable)]

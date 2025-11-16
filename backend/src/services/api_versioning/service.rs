@@ -1,15 +1,15 @@
 //! API versioning service implementation
 
 use crate::errors::{AppError, AppResult};
+use chrono::{DateTime, Utc};
+use semver::Version;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use chrono::{DateTime, Utc};
-use semver::Version;
 
-use crate::services::api_versioning::types::*;
-use crate::services::api_versioning::resolver::VersionResolver;
 use crate::services::api_versioning::migration::MigrationManager;
+use crate::services::api_versioning::resolver::VersionResolver;
+use crate::services::api_versioning::types::*;
 
 /// API versioning service
 pub struct ApiVersioningService {
@@ -27,7 +27,7 @@ impl ApiVersioningService {
             migration_manager: MigrationManager::new(),
             version_stats: Arc::new(RwLock::new(VersionStats::default())),
         };
-        
+
         service.initialize_default_versions().await;
         service
     }
@@ -40,14 +40,12 @@ impl ApiVersioningService {
             status: VersionStatus::Stable,
             deprecation_date: None,
             sunset_date: None,
-            changelog: vec![
-                VersionChange {
-                    change_type: ChangeType::Added,
-                    description: "Initial API release".to_string(),
-                    affected_endpoints: vec!["*".to_string()],
-                    severity: ChangeSeverity::Low,
-                }
-            ],
+            changelog: vec![VersionChange {
+                change_type: ChangeType::Added,
+                description: "Initial API release".to_string(),
+                affected_endpoints: vec!["*".to_string()],
+                severity: ChangeSeverity::Low,
+            }],
             breaking_changes: vec![],
             migration_guide: None,
         };
@@ -70,7 +68,7 @@ impl ApiVersioningService {
                     description: "Enhanced user management endpoints".to_string(),
                     affected_endpoints: vec!["/api/users".to_string()],
                     severity: ChangeSeverity::Medium,
-                }
+                },
             ],
             breaking_changes: vec![],
             migration_guide: None,
@@ -82,32 +80,37 @@ impl ApiVersioningService {
             status: VersionStatus::Stable,
             deprecation_date: None,
             sunset_date: None,
-            changelog: vec![
-                VersionChange {
-                    change_type: ChangeType::Changed,
-                    description: "Major API restructuring".to_string(),
-                    affected_endpoints: vec!["*".to_string()],
-                    severity: ChangeSeverity::Critical,
-                }
-            ],
-            breaking_changes: vec![
-                BreakingChange {
-                    endpoint: "/api/v1/users".to_string(),
-                    change_description: "User endpoint moved to /api/v2/users".to_string(),
-                    migration_steps: vec![
-                        "Update client to use new endpoint".to_string(),
-                        "Update authentication headers".to_string(),
-                    ],
-                    affected_fields: vec!["id".to_string(), "email".to_string()],
-                    alternative_endpoint: Some("/api/v2/users".to_string()),
-                }
-            ],
+            changelog: vec![VersionChange {
+                change_type: ChangeType::Changed,
+                description: "Major API restructuring".to_string(),
+                affected_endpoints: vec!["*".to_string()],
+                severity: ChangeSeverity::Critical,
+            }],
+            breaking_changes: vec![BreakingChange {
+                endpoint: "/api/v1/users".to_string(),
+                change_description: "User endpoint moved to /api/v2/users".to_string(),
+                migration_steps: vec![
+                    "Update client to use new endpoint".to_string(),
+                    "Update authentication headers".to_string(),
+                ],
+                affected_fields: vec!["id".to_string(), "email".to_string()],
+                alternative_endpoint: Some("/api/v2/users".to_string()),
+            }],
             migration_guide: Some("See migration guide for v2.0.0".to_string()),
         };
 
-        self.versions.write().await.insert("1.0.0".to_string(), v1_0_0);
-        self.versions.write().await.insert("1.1.0".to_string(), v1_1_0);
-        self.versions.write().await.insert("2.0.0".to_string(), v2_0_0);
+        self.versions
+            .write()
+            .await
+            .insert("1.0.0".to_string(), v1_0_0);
+        self.versions
+            .write()
+            .await
+            .insert("1.1.0".to_string(), v1_1_0);
+        self.versions
+            .write()
+            .await
+            .insert("2.0.0".to_string(), v2_0_0);
 
         self.initialize_endpoint_versions().await;
     }
@@ -118,14 +121,22 @@ impl ApiVersioningService {
             EndpointVersion {
                 endpoint: "/api/users".to_string(),
                 method: "GET".to_string(),
-                versions: vec!["1.0.0".to_string(), "1.1.0".to_string(), "2.0.0".to_string()],
+                versions: vec![
+                    "1.0.0".to_string(),
+                    "1.1.0".to_string(),
+                    "2.0.0".to_string(),
+                ],
                 default_version: "2.0.0".to_string(),
                 deprecated_versions: vec!["1.0.0".to_string()],
             },
             EndpointVersion {
                 endpoint: "/api/projects".to_string(),
                 method: "GET".to_string(),
-                versions: vec!["1.0.0".to_string(), "1.1.0".to_string(), "2.0.0".to_string()],
+                versions: vec![
+                    "1.0.0".to_string(),
+                    "1.1.0".to_string(),
+                    "2.0.0".to_string(),
+                ],
                 default_version: "2.0.0".to_string(),
                 deprecated_versions: vec![],
             },
@@ -153,7 +164,11 @@ impl ApiVersioningService {
     }
 
     /// Update API version
-    pub async fn update_version(&self, version: String, updated_version: ApiVersion) -> AppResult<()> {
+    pub async fn update_version(
+        &self,
+        version: String,
+        updated_version: ApiVersion,
+    ) -> AppResult<()> {
         self.versions.write().await.insert(version, updated_version);
         self.update_version_stats().await;
         Ok(())
@@ -174,7 +189,8 @@ impl ApiVersioningService {
     /// Get latest stable version
     pub async fn get_latest_stable_version(&self) -> AppResult<Option<ApiVersion>> {
         let versions = self.versions.read().await;
-        let stable_versions: Vec<_> = versions.values()
+        let stable_versions: Vec<_> = versions
+            .values()
             .filter(|v| matches!(v.status, VersionStatus::Stable))
             .cloned()
             .collect();
@@ -194,10 +210,14 @@ impl ApiVersioningService {
     }
 
     /// Check client compatibility
-    pub async fn check_client_compatibility(&self, client_version: &str, api_version: &str) -> AppResult<ClientCompatibility> {
+    pub async fn check_client_compatibility(
+        &self,
+        client_version: &str,
+        api_version: &str,
+    ) -> AppResult<ClientCompatibility> {
         let versions = self.versions.read().await;
         let api_version_info = versions.get(api_version);
-        
+
         let mut compatibility_issues = Vec::new();
         let mut is_compatible = true;
         let mut recommended_action = RecommendedAction::NoActionRequired;
@@ -257,7 +277,11 @@ impl ApiVersioningService {
     }
 
     /// Get endpoint version information
-    pub async fn get_endpoint_version(&self, method: &str, endpoint: &str) -> AppResult<Option<EndpointVersion>> {
+    pub async fn get_endpoint_version(
+        &self,
+        method: &str,
+        endpoint: &str,
+    ) -> AppResult<Option<EndpointVersion>> {
         let key = format!("{}:{}", method, endpoint);
         let endpoint_versions = self.endpoint_versions.read().await;
         Ok(endpoint_versions.get(&key).cloned())
@@ -266,15 +290,22 @@ impl ApiVersioningService {
     /// Add endpoint version mapping
     pub async fn add_endpoint_version(&self, endpoint_version: EndpointVersion) -> AppResult<()> {
         let key = format!("{}:{}", endpoint_version.method, endpoint_version.endpoint);
-        self.endpoint_versions.write().await.insert(key, endpoint_version);
+        self.endpoint_versions
+            .write()
+            .await
+            .insert(key, endpoint_version);
         Ok(())
     }
 
     /// Get supported versions for endpoint
-    pub async fn get_supported_versions(&self, method: &str, endpoint: &str) -> AppResult<Vec<String>> {
+    pub async fn get_supported_versions(
+        &self,
+        method: &str,
+        endpoint: &str,
+    ) -> AppResult<Vec<String>> {
         let key = format!("{}:{}", method, endpoint);
         let endpoint_versions = self.endpoint_versions.read().await;
-        
+
         if let Some(endpoint_version) = endpoint_versions.get(&key) {
             Ok(endpoint_version.versions.clone())
         } else {
@@ -283,19 +314,32 @@ impl ApiVersioningService {
     }
 
     /// Check if version is supported for endpoint
-    pub async fn is_version_supported(&self, method: &str, endpoint: &str, version: &str) -> AppResult<bool> {
+    pub async fn is_version_supported(
+        &self,
+        method: &str,
+        endpoint: &str,
+        version: &str,
+    ) -> AppResult<bool> {
         let supported_versions = self.get_supported_versions(method, endpoint).await?;
         Ok(supported_versions.contains(&version.to_string()))
     }
 
     /// Add migration strategy
     pub async fn add_migration_strategy(&self, strategy: MigrationStrategy) -> AppResult<()> {
-        self.migration_manager.add_migration_strategy(strategy).await
+        self.migration_manager
+            .add_migration_strategy(strategy)
+            .await
     }
 
     /// Get migration strategy
-    pub async fn get_migration_strategy(&self, from_version: &str, to_version: &str) -> AppResult<Option<MigrationStrategy>> {
-        self.migration_manager.get_migration_strategy(from_version, to_version).await
+    pub async fn get_migration_strategy(
+        &self,
+        from_version: &str,
+        to_version: &str,
+    ) -> AppResult<Option<MigrationStrategy>> {
+        self.migration_manager
+            .get_migration_strategy(from_version, to_version)
+            .await
     }
 
     /// List migration strategies
@@ -304,7 +348,12 @@ impl ApiVersioningService {
     }
 
     /// Deprecate API version
-    pub async fn deprecate_version(&self, version: &str, deprecation_date: DateTime<Utc>, sunset_date: Option<DateTime<Utc>>) -> AppResult<()> {
+    pub async fn deprecate_version(
+        &self,
+        version: &str,
+        deprecation_date: DateTime<Utc>,
+        sunset_date: Option<DateTime<Utc>>,
+    ) -> AppResult<()> {
         let mut versions = self.versions.write().await;
         if let Some(version_info) = versions.get_mut(version) {
             version_info.status = VersionStatus::Deprecated;
@@ -336,11 +385,11 @@ impl ApiVersioningService {
     async fn update_version_stats(&self) {
         let versions = self.versions.read().await;
         let endpoint_versions = self.endpoint_versions.read().await;
-        
+
         let mut stats = VersionStats::default();
         stats.total_versions = versions.len() as u32;
         stats.total_endpoints = endpoint_versions.len() as u32;
-        
+
         for version in versions.values() {
             match version.status {
                 VersionStatus::Stable => stats.active_versions += 1,
@@ -350,7 +399,7 @@ impl ApiVersioningService {
             }
             stats.breaking_changes_count += version.breaking_changes.len() as u32;
         }
-        
+
         *self.version_stats.write().await = stats;
     }
 
@@ -360,7 +409,11 @@ impl ApiVersioningService {
     }
 
     /// Compare versions
-    pub fn compare_versions(&self, version1: &str, version2: &str) -> AppResult<std::cmp::Ordering> {
+    pub fn compare_versions(
+        &self,
+        version1: &str,
+        version2: &str,
+    ) -> AppResult<std::cmp::Ordering> {
         VersionResolver::compare_versions(version1, version2)
     }
 
@@ -378,25 +431,31 @@ impl ApiVersioningService {
     pub async fn generate_version_docs(&self, version: &str) -> AppResult<String> {
         let versions = self.versions.read().await;
         let endpoint_versions = self.endpoint_versions.read().await;
-        
+
         if let Some(version_info) = versions.get(version) {
             let mut docs = format!("# API Version {}\n\n", version);
             docs.push_str(&format!("**Status:** {:?}\n", version_info.status));
-            docs.push_str(&format!("**Release Date:** {}\n\n", version_info.release_date));
-            
+            docs.push_str(&format!(
+                "**Release Date:** {}\n\n",
+                version_info.release_date
+            ));
+
             if let Some(deprecation_date) = version_info.deprecation_date {
                 docs.push_str(&format!("**Deprecation Date:** {}\n", deprecation_date));
             }
-            
+
             if let Some(sunset_date) = version_info.sunset_date {
                 docs.push_str(&format!("**Sunset Date:** {}\n", sunset_date));
             }
-            
+
             docs.push_str("\n## Changelog\n\n");
             for change in &version_info.changelog {
-                docs.push_str(&format!("- **{:?}** {} ({:?})\n", change.change_type, change.description, change.severity));
+                docs.push_str(&format!(
+                    "- **{:?}** {} ({:?})\n",
+                    change.change_type, change.description, change.severity
+                ));
             }
-            
+
             if !version_info.breaking_changes.is_empty() {
                 docs.push_str("\n## Breaking Changes\n\n");
                 for breaking_change in &version_info.breaking_changes {
@@ -408,17 +467,23 @@ impl ApiVersioningService {
                     }
                 }
             }
-            
+
             docs.push_str("\n## Supported Endpoints\n\n");
             for (_key, endpoint_version) in endpoint_versions.iter() {
                 if endpoint_version.versions.contains(&version.to_string()) {
-                    docs.push_str(&format!("- **{}** {}\n", endpoint_version.method, endpoint_version.endpoint));
+                    docs.push_str(&format!(
+                        "- **{}** {}\n",
+                        endpoint_version.method, endpoint_version.endpoint
+                    ));
                 }
             }
-            
+
             Ok(docs)
         } else {
-            Err(AppError::Validation(format!("Version {} not found", version)))
+            Err(AppError::Validation(format!(
+                "Version {} not found",
+                version
+            )))
         }
     }
 }
@@ -433,4 +498,3 @@ impl Default for ApiVersioningService {
         }
     }
 }
-

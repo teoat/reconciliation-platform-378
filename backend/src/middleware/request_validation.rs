@@ -9,16 +9,16 @@ use crate::errors::{AppError, AppResult};
 pub struct ValidationConfig {
     /// Maximum request body size (bytes)
     pub max_body_size: usize,
-    
+
     /// Maximum field length
     pub max_field_length: usize,
-    
+
     /// Enable SQL injection detection
     pub enable_sql_injection_detection: bool,
-    
+
     /// Enable XSS detection
     pub enable_xss_detection: bool,
-    
+
     /// Allowed content types
     pub allowed_content_types: Vec<String>,
 }
@@ -112,34 +112,57 @@ impl RequestValidator {
     /// Detect SQL injection patterns
     fn detect_sql_injection(&self, input: &str) -> bool {
         let dangerous_patterns = vec![
-            "--", "/*", "*/",
-            "xp_", "sp_", "exec",
-            "union", "select", "insert",
-            "update", "delete", "drop",
-            "create", "alter", "truncate",
-            ";", "'", "\"",
-            "or 1=1", "or '1'='1",
-            "admin'--", "admin'/*",
+            "--",
+            "/*",
+            "*/",
+            "xp_",
+            "sp_",
+            "exec",
+            "union",
+            "select",
+            "insert",
+            "update",
+            "delete",
+            "drop",
+            "create",
+            "alter",
+            "truncate",
+            ";",
+            "'",
+            "\"",
+            "or 1=1",
+            "or '1'='1",
+            "admin'--",
+            "admin'/*",
         ];
 
         let lower_input = input.to_lowercase();
-        dangerous_patterns.iter().any(|pattern| lower_input.contains(pattern))
+        dangerous_patterns
+            .iter()
+            .any(|pattern| lower_input.contains(pattern))
     }
 
     /// Detect XSS patterns
     fn detect_xss(&self, input: &str) -> bool {
-        let dangerous_patterns = vec![
-            "<script", "</script>",
+        let dangerous_patterns = [
+            "<script",
+            "</script>",
             "javascript:",
-            "onerror=", "onload=",
-            "<iframe", "</iframe>",
-            "eval(", "expression(",
-            "<img", "<svg",
+            "onerror=",
+            "onload=",
+            "<iframe",
+            "</iframe>",
+            "eval(",
+            "expression(",
+            "<img",
+            "<svg",
             "data:text/html",
         ];
 
         let lower_input = input.to_lowercase();
-        dangerous_patterns.iter().any(|pattern| lower_input.contains(pattern))
+        dangerous_patterns
+            .iter()
+            .any(|pattern| lower_input.contains(pattern))
     }
 
     /// Sanitize HTML input
@@ -147,9 +170,11 @@ impl RequestValidator {
         // Remove script tags
         let sanitized = input.replace("<script", "&lt;script");
         let sanitized = sanitized.replace("</script>", "&lt;/script&gt;");
-        
+
         // Remove event handlers
-        sanitized.replace("onerror", "on-error").replace("onload", "on-load")
+        sanitized
+            .replace("onerror", "on-error")
+            .replace("onload", "on-load")
     }
 
     /// Validate request body size
@@ -186,7 +211,7 @@ mod tests {
     #[test]
     fn test_sql_injection_detection() {
         let validator = RequestValidator::new(ValidationConfig::default());
-        
+
         assert!(validator.detect_sql_injection("'; DROP TABLE users; --"));
         assert!(validator.detect_sql_injection("admin'--"));
         assert!(!validator.detect_sql_injection("normal text"));
@@ -195,7 +220,7 @@ mod tests {
     #[test]
     fn test_xss_detection() {
         let validator = RequestValidator::new(ValidationConfig::default());
-        
+
         assert!(validator.detect_xss("<script>alert('xss')</script>"));
         assert!(validator.detect_xss("javascript:alert('xss')"));
         assert!(!validator.detect_xss("normal html"));
@@ -204,7 +229,7 @@ mod tests {
     #[test]
     fn test_email_validation() {
         let validator = RequestValidator::new(ValidationConfig::default());
-        
+
         assert!(validator.validate_email("test@example.com"));
         assert!(!validator.validate_email("invalid-email"));
     }
@@ -212,13 +237,11 @@ mod tests {
     #[tokio::test]
     async fn test_string_validation() {
         let validator = RequestValidator::new(ValidationConfig::default());
-        let result = validator.validate_string(
-            "<script>alert('xss')</script>",
-            "description"
-        ).unwrap();
-        
+        let result = validator
+            .validate_string("<script>alert('xss')</script>", "description")
+            .unwrap();
+
         assert!(!result.is_valid);
         assert!(result.violations.iter().any(|v| v.rule == "xss"));
     }
 }
-

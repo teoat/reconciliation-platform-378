@@ -1,14 +1,14 @@
 //! Metrics collection module for performance monitoring
-//! 
+//!
 //! This module handles Prometheus metrics collection, including counters,
 //! gauges, and histograms for request tracking, cache statistics, and connection monitoring.
 
+use prometheus::{Counter, Gauge, Histogram, HistogramOpts, Registry, TextEncoder};
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
-use prometheus::{Counter, Histogram, Gauge, Registry, TextEncoder, HistogramOpts};
 
 // Performance metrics
 lazy_static::lazy_static! {
@@ -118,7 +118,7 @@ pub struct MetricsCollector {
 impl MetricsCollector {
     pub fn new() -> Self {
         let registry = Registry::new();
-        
+
         // Register metrics - log errors but continue (graceful degradation)
         if let Err(e) = registry.register(Box::new(REQUEST_COUNTER.clone())) {
             log::warn!("Failed to register REQUEST_COUNTER metric: {}", e);
@@ -144,7 +144,7 @@ impl MetricsCollector {
         if let Err(e) = registry.register(Box::new(FILE_UPLOADS.clone())) {
             log::warn!("Failed to register FILE_UPLOADS metric: {}", e);
         }
-        
+
         Self {
             metrics: Arc::new(RwLock::new(HashMap::new())),
             cache_stats: Arc::new(RwLock::new(CacheStats {
@@ -156,17 +156,20 @@ impl MetricsCollector {
             registry,
         }
     }
-    
+
     pub async fn record_request(&self, request_metrics: RequestMetrics) {
         // Record in Prometheus
         REQUEST_COUNTER.inc();
         REQUEST_DURATION.observe(request_metrics.duration.as_secs_f64());
-        
+
         // Record in internal metrics
         let key = format!("{}:{}", request_metrics.method, request_metrics.path);
         let mut metrics = self.metrics.write().await;
-        metrics.entry(key.clone()).or_insert_with(Vec::new).push(request_metrics);
-        
+        metrics
+            .entry(key.clone())
+            .or_insert_with(Vec::new)
+            .push(request_metrics);
+
         // Keep only last 1000 requests per endpoint
         if let Some(requests) = metrics.get_mut(&key) {
             if requests.len() > 1000 {
@@ -174,54 +177,55 @@ impl MetricsCollector {
             }
         }
     }
-    
+
     pub async fn record_cache_hit(&self) {
         CACHE_HITS.inc();
         let mut stats = self.cache_stats.write().await;
         stats.hits += 1;
     }
-    
+
     pub async fn record_cache_miss(&self) {
         CACHE_MISSES.inc();
         let mut stats = self.cache_stats.write().await;
         stats.misses += 1;
     }
-    
+
     pub async fn record_cache_eviction(&self) {
         let mut stats = self.cache_stats.write().await;
         stats.evictions += 1;
     }
-    
+
     pub async fn update_active_connections(&self, count: u64) {
         ACTIVE_CONNECTIONS.set(count as f64);
     }
-    
+
     pub async fn update_database_connections(&self, count: u64) {
         DATABASE_CONNECTIONS.set(count as f64);
     }
-    
+
     pub async fn update_reconciliation_jobs(&self, count: u64) {
         RECONCILIATION_JOBS.set(count as f64);
     }
-    
+
     pub async fn update_file_uploads(&self, count: u64) {
         FILE_UPLOADS.set(count as f64);
     }
-    
+
     pub async fn get_prometheus_metrics(&self) -> String {
         let encoder = TextEncoder::new();
         let metric_families = self.registry.gather();
-        encoder.encode_to_string(&metric_families)
+        encoder
+            .encode_to_string(&metric_families)
             .unwrap_or_else(|e| {
                 log::error!("Failed to encode Prometheus metrics: {}", e);
                 "# Error encoding metrics\n".to_string()
             })
     }
-    
+
     pub fn get_cache_stats(&self) -> Arc<RwLock<CacheStats>> {
         self.cache_stats.clone()
     }
-    
+
     pub fn get_metrics(&self) -> Arc<RwLock<HashMap<String, Vec<RequestMetrics>>>> {
         self.metrics.clone()
     }
@@ -232,4 +236,3 @@ impl Default for MetricsCollector {
         Self::new()
     }
 }
-

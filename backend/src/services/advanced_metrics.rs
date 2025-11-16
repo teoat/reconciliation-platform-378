@@ -1,11 +1,11 @@
 //! Advanced Metrics Service
 // Establishment Business KPIs, SLA metrics, and custom metrics collection
 
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
 
 /// Metric types
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -55,6 +55,12 @@ pub struct AdvancedMetrics {
     sla_metrics: Arc<RwLock<HashMap<String, SLAMetric>>>,
 }
 
+impl Default for AdvancedMetrics {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AdvancedMetrics {
     pub fn new() -> Self {
         Self {
@@ -95,4 +101,3 @@ impl AdvancedMetrics {
         self.sla_metrics.read().await.clone()
     }
 }
-

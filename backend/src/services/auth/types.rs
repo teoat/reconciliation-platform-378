@@ -1,9 +1,9 @@
 //! Authentication types and data structures
 
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use chrono::DateTime;
 use chrono::Utc;
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 /// JWT claims structure
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -88,4 +88,3 @@ pub struct SessionInfo {
     pub expires_at: DateTime<Utc>,
     pub last_activity: DateTime<Utc>,
 }
-

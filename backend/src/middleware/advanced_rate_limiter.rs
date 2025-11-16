@@ -2,25 +2,25 @@
 //!
 //! Distributed Redis-backed rate limiting with per-user, per-IP, and per-endpoint limits
 
+use crate::errors::{AppError, AppResult};
+use redis::Client as RedisClient;
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant, SystemTime};
 use tokio::sync::RwLock;
-use redis::Client as RedisClient;
-use crate::errors::{AppError, AppResult};
 
 /// Rate limit configuration
 #[derive(Debug, Clone)]
 pub struct RateLimitConfig {
     /// Requests per minute
     pub requests_per_minute: u32,
-    
+
     /// Burst size (initial burst allowed)
     pub burst_size: u32,
-    
+
     /// Window size for rate limiting
     pub window_size: Duration,
-    
+
     /// Enable distributed limiting via Redis
     pub enable_distributed: bool,
 }
@@ -86,7 +86,7 @@ impl AdvancedRateLimiter {
     /// Check if request is allowed
     pub async fn is_allowed(&self, key: &RateLimitKey) -> AppResult<RateLimitResult> {
         let key_str = key.to_string();
-        
+
         if self.config.enable_distributed {
             self.check_redis_rate_limit(&key_str).await
         } else {
@@ -97,7 +97,9 @@ impl AdvancedRateLimiter {
     /// Check rate limit via Redis (distributed)
     async fn check_redis_rate_limit(&self, key: &str) -> AppResult<RateLimitResult> {
         if let Some(client) = &self.redis_client {
-            let mut conn = client.get_async_connection().await
+            let mut conn = client
+                .get_async_connection()
+                .await
                 .map_err(|e| AppError::Internal(format!("Redis connection failed: {}", e)))?;
 
             let window = self.config.window_size.as_secs() as usize;
@@ -139,7 +141,7 @@ impl AdvancedRateLimiter {
     async fn check_local_rate_limit(&self, key: &str) -> AppResult<RateLimitResult> {
         let mut cache = self.local_cache.write().await;
         let now = Instant::now();
-        
+
         if let Some((count, reset_at)) = cache.get_mut(key) {
             if now > *reset_at {
                 // Reset window
@@ -179,11 +181,13 @@ impl AdvancedRateLimiter {
     /// Reset rate limit for a key
     pub async fn reset(&self, key: &RateLimitKey) -> AppResult<()> {
         let key_str = key.to_string();
-        
+
         if let Some(client) = &self.redis_client {
-            let mut conn = client.get_async_connection().await
+            let mut conn = client
+                .get_async_connection()
+                .await
                 .map_err(|e| AppError::Internal(format!("Redis connection failed: {}", e)))?;
-            
+
             let redis_key = format!("ratelimit:{}", key_str);
             redis::cmd("DEL")
                 .arg(&redis_key)
@@ -191,10 +195,10 @@ impl AdvancedRateLimiter {
                 .await
                 .map_err(|e| AppError::Internal(format!("Redis DEL failed: {}", e)))?;
         }
-        
+
         let mut cache = self.local_cache.write().await;
         cache.remove(&key_str);
-        
+
         Ok(())
     }
 }
@@ -209,7 +213,7 @@ mod tests {
             requests_per_minute: 5,
             ..Default::default()
         };
-        
+
         let limiter = AdvancedRateLimiter::new(config, None);
         let key = RateLimitKey::IpAddress("127.0.0.1".to_string());
 
@@ -242,4 +246,3 @@ mod tests {
         assert!(result.allowed);
     }
 }
-

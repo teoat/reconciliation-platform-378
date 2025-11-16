@@ -2,10 +2,10 @@
 //!
 //! Detects slow queries, recommends indexes, and optimizes database access patterns.
 
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
 
 /// Query analysis result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -40,13 +40,13 @@ pub enum OptimizationLevel {
 pub struct QueryOptimizerConfig {
     /// Duration threshold to consider a query "slow" (default: 100ms)
     pub slow_query_threshold: Duration,
-    
+
     /// Maximum number of queries to analyze
     pub max_queries: usize,
-    
+
     /// Enable automatic index recommendations
     pub enable_index_recommendations: bool,
-    
+
     /// Enable query plan caching
     pub enable_query_plan_cache: bool,
 }
@@ -98,15 +98,15 @@ impl QueryOptimizer {
     /// Analyze a query execution
     pub async fn analyze_query(&self, query: &str, duration: Duration) -> QueryAnalysis {
         let is_slow = duration > self.config.slow_query_threshold;
-        
+
         // Update statistics
         {
             let mut stats = self.stats.write().await;
             stats.total_queries += 1;
-            
+
             if is_slow {
                 stats.slow_queries += 1;
-                
+
                 // Track slowest query
                 if let Some((_, prev_duration)) = &stats.slowest_query {
                     if duration > *prev_duration {
@@ -171,7 +171,7 @@ impl QueryOptimizer {
         if is_slow {
             let mut slow_queries = self.slow_queries.write().await;
             slow_queries.push(analysis.clone());
-            
+
             // Trim to max queries
             if slow_queries.len() > self.config.max_queries {
                 slow_queries.remove(0);
@@ -219,7 +219,7 @@ impl QueryOptimizer {
         // Check for WHERE clauses
         if let Some(start) = lower_query.find("where") {
             let where_clause = &lower_query[start + 5..];
-            
+
             // Look for column names in WHERE
             for column in self.extract_column_names(where_clause) {
                 recommendations.push(format!(
@@ -256,10 +256,11 @@ impl QueryOptimizer {
     /// Extract column names from a SQL fragment (simple parser)
     fn extract_column_names(&self, sql: &str) -> Vec<String> {
         let mut columns = Vec::new();
-        
+
         // Simple extraction - look for patterns like "column = " or "column >"
         for token in sql.split_whitespace() {
-            if let Some(column) = token.strip_suffix("=")
+            if let Some(column) = token
+                .strip_suffix("=")
                 .or_else(|| token.strip_suffix(">"))
                 .or_else(|| token.strip_suffix("<"))
                 .or_else(|| token.strip_suffix("!="))
@@ -267,14 +268,14 @@ impl QueryOptimizer {
                 columns.push(column.trim_matches('\'').to_string());
             }
         }
-        
+
         columns
     }
 
     /// Extract JOIN keys (simple parser)
     fn extract_join_keys(&self, sql: &str) -> Vec<String> {
         let mut keys = Vec::new();
-        
+
         // Look for "ON table.column = table.column" patterns
         let pattern = match regex::Regex::new(r"(\w+)\.(\w+)\s*=\s*(\w+)\.(\w+)") {
             Ok(p) => p,
@@ -283,7 +284,7 @@ impl QueryOptimizer {
                 return keys;
             }
         };
-        
+
         for cap in pattern.captures_iter(sql) {
             if let Some(key) = cap.get(2) {
                 keys.push(key.as_str().to_string());
@@ -292,7 +293,7 @@ impl QueryOptimizer {
                 keys.push(key.as_str().to_string());
             }
         }
-        
+
         keys
     }
 
@@ -322,7 +323,9 @@ mod tests {
         let optimizer = QueryOptimizer::new(QueryOptimizerConfig::default());
 
         let slow_duration = Duration::from_millis(150);
-        let analysis = optimizer.analyze_query("SELECT * FROM users", slow_duration).await;
+        let analysis = optimizer
+            .analyze_query("SELECT * FROM users", slow_duration)
+            .await;
 
         assert!(analysis.is_slow);
         assert!(analysis.duration > Duration::from_millis(100));
@@ -332,13 +335,17 @@ mod tests {
     async fn test_optimization_suggestions() {
         let optimizer = QueryOptimizer::new(QueryOptimizerConfig::default());
 
-        let analysis = optimizer.analyze_query(
-            "SELECT * FROM users WHERE id = 1",
-            Duration::from_millis(50)
-        ).await;
+        let analysis = optimizer
+            .analyze_query(
+                "SELECT * FROM users WHERE id = 1",
+                Duration::from_millis(50),
+            )
+            .await;
 
         // Should suggest avoiding SELECT *
-        assert!(analysis.optimization_suggestions.iter()
+        assert!(analysis
+            .optimization_suggestions
+            .iter()
             .any(|s| s.contains("SELECT *")));
     }
 
@@ -346,8 +353,7 @@ mod tests {
     fn test_extract_column_names() {
         let optimizer = QueryOptimizer::new(QueryOptimizerConfig::default());
         let columns = optimizer.extract_column_names("id = 1 AND name = 'test'");
-        
+
         assert!(!columns.is_empty());
     }
 }
-

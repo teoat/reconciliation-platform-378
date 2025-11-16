@@ -25,17 +25,23 @@ impl FileValidator {
 
         // Check for valid characters
         if filename.contains("..") || filename.contains("/") || filename.contains("\\") {
-            return Err(AppError::Validation("Filename contains invalid characters".to_string()));
+            return Err(AppError::Validation(
+                "Filename contains invalid characters".to_string(),
+            ));
         }
 
         // Check file extension
         if let Some(extension) = filename.split('.').next_back() {
             let ext_with_dot = format!(".{}", extension);
             if !self.file_extension_regex.is_match(&ext_with_dot) {
-                return Err(AppError::Validation("Unsupported file extension".to_string()));
+                return Err(AppError::Validation(
+                    "Unsupported file extension".to_string(),
+                ));
             }
         } else {
-            return Err(AppError::Validation("File must have an extension".to_string()));
+            return Err(AppError::Validation(
+                "File must have an extension".to_string(),
+            ));
         }
 
         Ok(())
@@ -47,12 +53,12 @@ impl FileValidator {
         }
 
         if size > max_size {
-            return Err(AppError::Validation(
-                format!("File size exceeds maximum allowed size of {} bytes", max_size)
-            ));
+            return Err(AppError::Validation(format!(
+                "File size exceeds maximum allowed size of {} bytes",
+                max_size
+            )));
         }
 
         Ok(())
     }
 }
-

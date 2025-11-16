@@ -1,20 +1,22 @@
 //! Authentication Middleware
-//! 
+//!
 //! This module provides authentication middleware for protecting routes
 //! and managing user sessions.
 
-use actix_web::{dev::ServiceRequest, Error, HttpMessage, HttpResponse, Result, body::BoxBody};
 use actix_web::dev::{Service, ServiceResponse, Transform};
+use actix_web::{body::BoxBody, dev::ServiceRequest, Error, HttpMessage, HttpResponse, Result};
 use futures::future::{ok, Ready};
 use futures::Future;
-use std::rc::Rc;
 use std::pin::Pin;
+use std::rc::Rc;
 use std::sync::Arc;
 
 use crate::errors::{AppError, AppResult};
-use crate::services::auth::{AuthService, Claims};
-use crate::services::security_monitor::{SecurityMonitor, SecurityEvent, SecurityEventType, SecuritySeverity};
 use crate::monitoring::SecurityMetrics;
+use crate::services::auth::{AuthService, Claims};
+use crate::services::security_monitor::{
+    SecurityEvent, SecurityEventType, SecurityMonitor, SecuritySeverity,
+};
 
 /// Authentication middleware configuration
 #[derive(Debug, Clone)]
@@ -31,7 +33,11 @@ impl Default for AuthMiddlewareConfig {
         Self {
             require_auth: true,
             allowed_roles: vec![],
-            skip_paths: vec!["/health".to_string(), "/api/auth/login".to_string(), "/api/auth/register".to_string()],
+            skip_paths: vec![
+                "/health".to_string(),
+                "/api/auth/login".to_string(),
+                "/api/auth/register".to_string(),
+            ],
             token_header: "Authorization".to_string(),
             token_prefix: "Bearer ".to_string(),
         }
@@ -56,16 +62,23 @@ pub struct AuthMiddleware {
 }
 
 impl AuthMiddleware {
-    pub fn new(auth_service: Arc<AuthService>, config: AuthMiddlewareConfig, security_metrics: Arc<SecurityMetrics>) -> Self {
-        Self { 
-            auth_service, 
-            config, 
+    pub fn new(
+        auth_service: Arc<AuthService>,
+        config: AuthMiddlewareConfig,
+        security_metrics: Arc<SecurityMetrics>,
+    ) -> Self {
+        Self {
+            auth_service,
+            config,
             security_metrics,
             security_monitor: None,
         }
     }
 
-    pub fn with_auth_service(auth_service: Arc<AuthService>, security_metrics: Arc<SecurityMetrics>) -> Self {
+    pub fn with_auth_service(
+        auth_service: Arc<AuthService>,
+        security_metrics: Arc<SecurityMetrics>,
+    ) -> Self {
         Self {
             auth_service,
             config: AuthMiddlewareConfig::default(),
@@ -121,7 +134,10 @@ where
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(
+        &self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
@@ -131,7 +147,12 @@ where
 
         Box::pin(async move {
             // Check if path should be skipped
-            if state.config.skip_paths.iter().any(|path| req.path().starts_with(path)) {
+            if state
+                .config
+                .skip_paths
+                .iter()
+                .any(|path| req.path().starts_with(path))
+            {
                 return service.call(req).await;
             }
 
@@ -140,7 +161,7 @@ where
                 Ok(token) => token,
                 Err(_) => {
                     let ip = get_client_ip_from_req(&req);
-                    
+
                     // Record security metric
                     state.security_metrics.record_auth_denied();
 
@@ -153,12 +174,21 @@ where
                             timestamp: chrono::Utc::now().to_rfc3339(),
                             source_ip: Some(ip.clone()),
                             user_id: None,
-                            description: format!("Authentication denied: missing token on {}", req.path()),
+                            description: format!(
+                                "Authentication denied: missing token on {}",
+                                req.path()
+                            ),
                             metadata: {
                                 let mut meta = std::collections::HashMap::new();
                                 meta.insert("path".to_string(), req.path().to_string());
-                                meta.insert("method".to_string(), req.method().as_str().to_string());
-                                meta.insert("user_agent".to_string(), get_user_agent_from_req(&req));
+                                meta.insert(
+                                    "method".to_string(),
+                                    req.method().as_str().to_string(),
+                                );
+                                meta.insert(
+                                    "user_agent".to_string(),
+                                    get_user_agent_from_req(&req),
+                                );
                                 meta
                             },
                         };
@@ -166,16 +196,31 @@ where
                     }
 
                     // Audit log for missing authentication
-                    let logger = crate::services::structured_logging::StructuredLogging::new("auth".to_string());
+                    let logger = crate::services::structured_logging::StructuredLogging::new(
+                        "auth".to_string(),
+                    );
                     let mut fields = std::collections::HashMap::new();
                     fields.insert("event_type".to_string(), serde_json::json!("auth_denied"));
                     fields.insert("reason".to_string(), serde_json::json!("missing_token"));
                     fields.insert("path".to_string(), serde_json::json!(req.path()));
-                    fields.insert("method".to_string(), serde_json::json!(req.method().as_str()));
+                    fields.insert(
+                        "method".to_string(),
+                        serde_json::json!(req.method().as_str()),
+                    );
                     fields.insert("ip_address".to_string(), serde_json::json!(ip));
-                    fields.insert("user_agent".to_string(), serde_json::json!(get_user_agent_from_req(&req)));
-                    fields.insert("timestamp".to_string(), serde_json::json!(chrono::Utc::now().to_rfc3339()));
-                    logger.log(crate::services::structured_logging::LogLevel::Warn, "Authentication denied: missing token", fields);
+                    fields.insert(
+                        "user_agent".to_string(),
+                        serde_json::json!(get_user_agent_from_req(&req)),
+                    );
+                    fields.insert(
+                        "timestamp".to_string(),
+                        serde_json::json!(chrono::Utc::now().to_rfc3339()),
+                    );
+                    logger.log(
+                        crate::services::structured_logging::LogLevel::Warn,
+                        "Authentication denied: missing token",
+                        fields,
+                    );
 
                     let (req, _payload) = req.into_parts();
                     return Ok(ServiceResponse::new(
@@ -185,7 +230,7 @@ where
                                 "error": "Authentication required",
                                 "message": "Valid authentication token is required"
                             }))
-                            .map_into_boxed_body()
+                            .map_into_boxed_body(),
                     ));
                 }
             };
@@ -195,7 +240,7 @@ where
                 Ok(claims) => claims,
                 Err(_) => {
                     let ip = get_client_ip_from_req(&req);
-                    
+
                     // Record security metric
                     state.security_metrics.record_auth_denied();
 
@@ -208,17 +253,26 @@ where
                             timestamp: chrono::Utc::now().to_rfc3339(),
                             source_ip: Some(ip.clone()),
                             user_id: None,
-                            description: format!("Authentication denied: invalid token on {}", req.path()),
+                            description: format!(
+                                "Authentication denied: invalid token on {}",
+                                req.path()
+                            ),
                             metadata: {
                                 let mut meta = std::collections::HashMap::new();
                                 meta.insert("path".to_string(), req.path().to_string());
-                                meta.insert("method".to_string(), req.method().as_str().to_string());
-                                meta.insert("user_agent".to_string(), get_user_agent_from_req(&req));
+                                meta.insert(
+                                    "method".to_string(),
+                                    req.method().as_str().to_string(),
+                                );
+                                meta.insert(
+                                    "user_agent".to_string(),
+                                    get_user_agent_from_req(&req),
+                                );
                                 meta
                             },
                         };
                         let _ = monitor.record_event(event).await;
-                        
+
                         // Check for brute force attack
                         if let Ok(is_brute_force) = monitor.detect_brute_force(&ip, false).await {
                             if is_brute_force {
@@ -229,16 +283,31 @@ where
                     }
 
                     // Audit log for invalid token
-                    let logger = crate::services::structured_logging::StructuredLogging::new("auth".to_string());
+                    let logger = crate::services::structured_logging::StructuredLogging::new(
+                        "auth".to_string(),
+                    );
                     let mut fields = std::collections::HashMap::new();
                     fields.insert("event_type".to_string(), serde_json::json!("auth_denied"));
                     fields.insert("reason".to_string(), serde_json::json!("invalid_token"));
                     fields.insert("path".to_string(), serde_json::json!(req.path()));
-                    fields.insert("method".to_string(), serde_json::json!(req.method().as_str()));
+                    fields.insert(
+                        "method".to_string(),
+                        serde_json::json!(req.method().as_str()),
+                    );
                     fields.insert("ip_address".to_string(), serde_json::json!(ip));
-                    fields.insert("user_agent".to_string(), serde_json::json!(get_user_agent_from_req(&req)));
-                    fields.insert("timestamp".to_string(), serde_json::json!(chrono::Utc::now().to_rfc3339()));
-                    logger.log(crate::services::structured_logging::LogLevel::Warn, "Authentication denied: invalid token", fields);
+                    fields.insert(
+                        "user_agent".to_string(),
+                        serde_json::json!(get_user_agent_from_req(&req)),
+                    );
+                    fields.insert(
+                        "timestamp".to_string(),
+                        serde_json::json!(chrono::Utc::now().to_rfc3339()),
+                    );
+                    logger.log(
+                        crate::services::structured_logging::LogLevel::Warn,
+                        "Authentication denied: invalid token",
+                        fields,
+                    );
 
                     let (req, _payload) = req.into_parts();
                     return Ok(ServiceResponse::new(
@@ -248,13 +317,15 @@ where
                                 "error": "Invalid token",
                                 "message": "Authentication token is invalid or expired"
                             }))
-                            .map_into_boxed_body()
+                            .map_into_boxed_body(),
                     ));
                 }
             };
 
             // Check role permissions
-            if !state.config.allowed_roles.is_empty() && !state.config.allowed_roles.contains(&claims.role) {
+            if !state.config.allowed_roles.is_empty()
+                && !state.config.allowed_roles.contains(&claims.role)
+            {
                 let (req, _payload) = req.into_parts();
                 return Ok(ServiceResponse::new(
                     req,
@@ -263,7 +334,7 @@ where
                             "error": "Insufficient permissions",
                             "message": "You don't have permission to access this resource"
                         }))
-                        .map_into_boxed_body()
+                        .map_into_boxed_body(),
                 ));
             }
 
@@ -278,17 +349,23 @@ where
 
 /// Extract token from request headers
 fn extract_token(req: &ServiceRequest, config: &AuthMiddlewareConfig) -> AppResult<String> {
-    let auth_header = req.headers()
+    let auth_header = req
+        .headers()
         .get(&config.token_header)
         .and_then(|h| h.to_str().ok())
-        .ok_or(AppError::Unauthorized("Missing Authorization header".to_string()))?;
+        .ok_or(AppError::Unauthorized(
+            "Missing Authorization header".to_string(),
+        ))?;
 
     if !auth_header.starts_with(&config.token_prefix) {
         return Err(AppError::Unauthorized("Invalid token".to_string()));
     }
 
-    let token = auth_header.strip_prefix(&config.token_prefix)
-        .ok_or(AppError::Unauthorized("Missing Authorization header".to_string()))?;
+    let token = auth_header
+        .strip_prefix(&config.token_prefix)
+        .ok_or(AppError::Unauthorized(
+            "Missing Authorization header".to_string(),
+        ))?;
 
     Ok(token.to_string())
 }
@@ -302,17 +379,26 @@ impl RoleBasedAccessControl {
     pub fn new(required_roles: Vec<String>) -> Self {
         Self { required_roles }
     }
-    
+
     pub fn admin_only() -> Self {
         Self::new(vec!["admin".to_string(), "super_admin".to_string()])
     }
-    
+
     pub fn manager_or_above() -> Self {
-        Self::new(vec!["manager".to_string(), "admin".to_string(), "super_admin".to_string()])
+        Self::new(vec![
+            "manager".to_string(),
+            "admin".to_string(),
+            "super_admin".to_string(),
+        ])
     }
-    
+
     pub fn analyst_or_above() -> Self {
-        Self::new(vec!["analyst".to_string(), "manager".to_string(), "admin".to_string(), "super_admin".to_string()])
+        Self::new(vec![
+            "analyst".to_string(),
+            "manager".to_string(),
+            "admin".to_string(),
+            "super_admin".to_string(),
+        ])
     }
 }
 
@@ -350,7 +436,10 @@ where
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(
+        &self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
@@ -360,14 +449,14 @@ where
 
         Box::pin(async move {
             // Get claims from request extensions
-            let claims_opt = req.extensions().get::<Claims>().map(|c| Claims { 
-                sub: c.sub.clone(), 
-                email: c.email.clone(), 
-                role: c.role.clone(), 
-                exp: c.exp, 
-                iat: c.iat 
+            let claims_opt = req.extensions().get::<Claims>().map(|c| Claims {
+                sub: c.sub.clone(),
+                email: c.email.clone(),
+                role: c.role.clone(),
+                exp: c.exp,
+                iat: c.iat,
             });
-            
+
             let claims: Claims = match claims_opt {
                 Some(c) => c,
                 None => {
@@ -379,8 +468,8 @@ where
                                 "error": "Unauthorized",
                                 "message": "Missing Authorization header"
                             }))
-                            .map_into_boxed_body()
-                    ))
+                            .map_into_boxed_body(),
+                    ));
                 }
             };
 
@@ -395,7 +484,7 @@ where
                             "required_roles": required_roles,
                             "user_role": claims.role
                         }))
-                        .map_into_boxed_body()
+                        .map_into_boxed_body(),
                 ));
             }
 
@@ -412,21 +501,23 @@ pub struct PermissionBasedAccessControl {
 
 impl PermissionBasedAccessControl {
     pub fn new(required_permissions: Vec<String>) -> Self {
-        Self { required_permissions }
+        Self {
+            required_permissions,
+        }
     }
-    
+
     pub fn users_manage() -> Self {
         Self::new(vec!["users:manage".to_string()])
     }
-    
+
     pub fn projects_manage() -> Self {
         Self::new(vec!["projects:manage".to_string()])
     }
-    
+
     pub fn reconciliation_manage() -> Self {
         Self::new(vec!["reconciliation:manage".to_string()])
     }
-    
+
     pub fn analytics_view() -> Self {
         Self::new(vec!["analytics:view".to_string()])
     }
@@ -466,7 +557,10 @@ where
     type Error = Error;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
-    fn poll_ready(&self, cx: &mut std::task::Context<'_>) -> std::task::Poll<Result<(), Self::Error>> {
+    fn poll_ready(
+        &self,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Result<(), Self::Error>> {
         self.service.poll_ready(cx)
     }
 
@@ -488,7 +582,7 @@ where
                                 "error": "Unauthorized",
                                 "message": "Missing Authorization header"
                             }))
-                            .map_into_boxed_body()
+                            .map_into_boxed_body(),
                     ));
                 }
             };
@@ -503,7 +597,12 @@ where
             // Check if user has required permissions
             // This is a simplified implementation - in reality, you'd check against stored permissions
             let user_permissions = match claims.role.as_str() {
-                "admin" => vec!["users:manage", "projects:manage", "reconciliation:manage", "analytics:view"],
+                "admin" => vec![
+                    "users:manage",
+                    "projects:manage",
+                    "reconciliation:manage",
+                    "analytics:view",
+                ],
                 "manager" => vec!["projects:manage", "reconciliation:manage", "analytics:view"],
                 "analyst" => vec!["reconciliation:manage", "analytics:view"],
                 "viewer" => vec!["analytics:view"],

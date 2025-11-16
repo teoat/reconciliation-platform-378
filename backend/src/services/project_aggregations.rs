@@ -16,7 +16,9 @@ pub struct ProjectAggregationService {
 }
 
 impl ProjectAggregationService {
-    pub fn new(db: Database) -> Self { Self { db } }
+    pub fn new(db: Database) -> Self {
+        Self { db }
+    }
 
     pub async fn aggregates(&self, project_id: Uuid) -> AppResult<ProjectAggregates> {
         // Delegate to AnalyticsService to avoid duplication
@@ -28,5 +30,3 @@ impl ProjectAggregationService {
         })
     }
 }
-
-

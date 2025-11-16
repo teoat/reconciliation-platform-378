@@ -1,13 +1,13 @@
 //! Offline Data Persistence Service
-//! 
+//!
 //! Handles local storage, auto-save, and recovery for offline functionality
 
+use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use tokio::sync::RwLock;
 use std::sync::Arc;
+use tokio::sync::RwLock;
+use uuid::Uuid;
 
 /// Offline data storage service
 pub struct OfflinePersistenceService {
@@ -57,7 +57,7 @@ impl OfflinePersistenceService {
             auto_save_interval: std::time::Duration::from_millis(5000),
         }
     }
-    
+
     /// Store data locally
     pub async fn store_data(
         &self,
@@ -68,7 +68,7 @@ impl OfflinePersistenceService {
         project_id: Option<Uuid>,
     ) -> Result<(), OfflineError> {
         let mut storage = self.storage.write().await;
-        
+
         let stored_data = StoredData {
             id: key.to_string(),
             data: data.clone(),
@@ -80,21 +80,21 @@ impl OfflinePersistenceService {
             version: 1,
             is_synced: false,
         };
-        
+
         storage.insert(key.to_string(), stored_data);
-        
+
         // Persist to browser storage (in frontend)
         self.persist_to_browser_storage(key, &data).await?;
-        
+
         Ok(())
     }
-    
+
     /// Retrieve data from local storage
     pub async fn get_data(&self, key: &str) -> Result<Option<StoredData>, OfflineError> {
         let storage = self.storage.read().await;
         Ok(storage.get(key).cloned())
     }
-    
+
     /// Update existing data
     pub async fn update_data(
         &self,
@@ -102,58 +102,60 @@ impl OfflinePersistenceService {
         data: serde_json::Value,
     ) -> Result<(), OfflineError> {
         let mut storage = self.storage.write().await;
-        
+
         if let Some(existing) = storage.get_mut(key) {
             existing.data = data.clone();
             existing.updated_at = Utc::now();
             existing.version += 1;
             existing.is_synced = false;
-            
+
             // Persist to browser storage
             self.persist_to_browser_storage(key, &data).await?;
         }
-        
+
         Ok(())
     }
-    
+
     /// Mark data as synced
     pub async fn mark_synced(&self, key: &str) -> Result<(), OfflineError> {
         let mut storage = self.storage.write().await;
-        
+
         if let Some(data) = storage.get_mut(key) {
             data.is_synced = true;
         }
-        
+
         Ok(())
     }
-    
+
     /// Get all unsynced data
     pub async fn get_unsynced_data(&self) -> Vec<StoredData> {
         let storage = self.storage.read().await;
-        storage.values()
+        storage
+            .values()
             .filter(|data| !data.is_synced)
             .cloned()
             .collect()
     }
-    
+
     /// Clear old data
     pub async fn cleanup_old_data(&self, max_age_hours: i64) -> Result<usize, OfflineError> {
         let mut storage = self.storage.write().await;
         let cutoff = Utc::now() - chrono::Duration::hours(max_age_hours);
-        
-        let keys_to_remove: Vec<String> = storage.iter()
+
+        let keys_to_remove: Vec<String> = storage
+            .iter()
             .filter(|(_, data)| data.updated_at < cutoff && data.is_synced)
             .map(|(key, _)| key.clone())
             .collect();
-        
+
         for key in &keys_to_remove {
             storage.remove(key);
             self.remove_from_browser_storage(key).await?;
         }
-        
+
         Ok(keys_to_remove.len())
     }
-    
+
     /// Auto-save data (called periodically)
     pub async fn auto_save(&self, key: &str, data: serde_json::Value) -> Result<(), OfflineError> {
         if let Some(existing) = self.get_data(key).await? {
@@ -163,37 +165,38 @@ impl OfflinePersistenceService {
         }
         Ok(())
     }
-    
+
     /// Recover data after reconnection
     pub async fn recover_unsynced_data(&self) -> Result<Vec<StoredData>, OfflineError> {
         let unsynced = self.get_unsynced_data().await;
-        
+
         // Try to sync each item
         for data in &unsynced {
             match self.sync_data_to_server(data).await {
                 Ok(_) => {
                     self.mark_synced(&data.id).await?;
-                },
+                }
                 Err(e) => {
                     log::warn!("Failed to sync data {}: {}", data.id, e);
                 }
             }
         }
-        
+
         Ok(unsynced)
     }
-    
+
     /// Show recovery prompt to user
     pub async fn show_recovery_prompt(&self) -> Result<RecoveryPrompt, OfflineError> {
         let unsynced = self.get_unsynced_data().await;
-        
+
         if unsynced.is_empty() {
             return Ok(RecoveryPrompt::NoData);
         }
-        
+
         let prompt = RecoveryPrompt::DataFound {
             count: unsynced.len(),
-            items: unsynced.iter()
+            items: unsynced
+                .iter()
                 .map(|data| RecoveryItem {
                     id: data.id.clone(),
                     data_type: data.data_type.clone(),
@@ -204,12 +207,12 @@ impl OfflinePersistenceService {
                 })
                 .collect(),
         };
-        
+
         Ok(prompt)
     }
-    
+
     // Private helper methods
-    
+
     async fn persist_to_browser_storage(
         &self,
         key: &str,
@@ -220,12 +223,12 @@ impl OfflinePersistenceService {
         log::debug!("Persisting data to browser storage: {}", key);
         Ok(())
     }
-    
+
     async fn remove_from_browser_storage(&self, key: &str) -> Result<(), OfflineError> {
         log::debug!("Removing data from browser storage: {}", key);
         Ok(())
     }
-    
+
     async fn sync_data_to_server(&self, data: &StoredData) -> Result<(), OfflineError> {
         // In a real implementation, this would make HTTP requests to sync data
         log::debug!("Syncing data to server: {}", data.id);
@@ -257,13 +260,13 @@ pub struct RecoveryItem {
 pub enum OfflineError {
     #[error("Storage error: {0}")]
     Storage(String),
-    
+
     #[error("Serialization error: {0}")]
     Serialization(#[from] serde_json::Error),
-    
+
     #[error("Sync error: {0}")]
     Sync(String),
-    
+
     #[error("Browser storage error: {0}")]
     BrowserStorage(String),
 }
@@ -289,7 +292,7 @@ impl AutoSaveManager {
             timers: Arc::new(RwLock::new(HashMap::new())),
         }
     }
-    
+
     /// Start auto-saving for a data key
     pub async fn start_auto_save(
         &self,
@@ -299,7 +302,7 @@ impl AutoSaveManager {
         if !self.config.enabled {
             return Ok(());
         }
-        
+
         let service = Arc::clone(&self.service);
         let interval = std::time::Duration::from_millis(self.config.interval_ms);
         let key_clone = key.clone();
@@ -319,29 +322,29 @@ impl AutoSaveManager {
 
         let mut timers = self.timers.write().await;
         timers.insert(key, handle);
-        
+
         Ok(())
     }
-    
+
     /// Stop auto-saving for a data key
     pub async fn stop_auto_save(&self, key: &str) -> Result<(), OfflineError> {
         let mut timers = self.timers.write().await;
-        
+
         if let Some(handle) = timers.remove(key) {
             handle.abort();
         }
-        
+
         Ok(())
     }
-    
+
     /// Stop all auto-save timers
     pub async fn stop_all_auto_save(&self) -> Result<(), OfflineError> {
         let mut timers = self.timers.write().await;
-        
+
         for (_, handle) in timers.drain() {
             handle.abort();
         }
-        
+
         Ok(())
     }
 }

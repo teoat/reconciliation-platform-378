@@ -1,16 +1,15 @@
 //! Middleware Tests
-//! 
+//!
 //! Comprehensive tests for all middleware components
 
 use actix_web::{test, web, App, HttpResponse};
-use serde_json::json;
-use reconciliation_backend::middleware::{
-    SecurityMiddleware, SecurityMiddlewareConfig,
-    AuthMiddleware
-};
-use reconciliation_backend::database::Database;
 use reconciliation_backend::config::Config;
+use reconciliation_backend::database::Database;
+use reconciliation_backend::middleware::{
+    AuthMiddleware, SecurityMiddleware, SecurityMiddlewareConfig,
+};
 use reconciliation_backend::services::AuthService;
+use serde_json::json;
 
 /// Test Security Middleware
 #[tokio::test]
@@ -29,17 +28,17 @@ async fn test_security_middleware_headers() {
         enable_csp: true,
     };
 
-    let app = test::init_service(
-        App::new()
-            .wrap(SecurityMiddleware::new(config))
-            .route("/test", web::get().to(|| async { HttpResponse::Ok().finish() }))
-    ).await;
+    let app = test::init_service(App::new().wrap(SecurityMiddleware::new(config)).route(
+        "/test",
+        web::get().to(|| async { HttpResponse::Ok().finish() }),
+    ))
+    .await;
 
     let req = test::TestRequest::get().uri("/test").to_request();
     let resp = test::call_service(&app, req).await;
 
     assert!(resp.status().is_success());
-    
+
     // Check security headers are present
     let headers = resp.headers();
     assert!(headers.contains_key("x-content-type-options"));
@@ -50,12 +49,16 @@ async fn test_security_middleware_headers() {
 #[tokio::test]
 async fn test_auth_middleware_no_token() {
     let auth_service = AuthService::new("test_secret".to_string(), 3600);
-    
+
     let app = test::init_service(
         App::new()
             .wrap(AuthMiddleware::with_auth_service(auth_service))
-            .route("/protected", web::get().to(|| async { HttpResponse::Ok().finish() }))
-    ).await;
+            .route(
+                "/protected",
+                web::get().to(|| async { HttpResponse::Ok().finish() }),
+            ),
+    )
+    .await;
 
     let req = test::TestRequest::get().uri("/protected").to_request();
     let resp = test::call_service(&app, req).await;
@@ -68,15 +71,19 @@ async fn test_auth_middleware_no_token() {
 #[tokio::test]
 async fn test_auth_middleware_valid_token() {
     let auth_service = AuthService::new("test_secret".to_string(), 3600);
-    
+
     // Create a valid token
     // This is a simplified test - actual implementation would require user setup
-    
+
     let app = test::init_service(
         App::new()
             .wrap(AuthMiddleware::with_auth_service(auth_service.clone()))
-            .route("/protected", web::get().to(|| async { HttpResponse::Ok().finish() }))
-    ).await;
+            .route(
+                "/protected",
+                web::get().to(|| async { HttpResponse::Ok().finish() }),
+            ),
+    )
+    .await;
 
     // Note: In a real scenario, we'd need to create a valid JWT token
     // For now, this tests the structure
@@ -104,21 +111,21 @@ async fn test_security_middleware_cors() {
         enable_csp: true,
     };
 
-    let app = test::init_service(
-        App::new()
-            .wrap(SecurityMiddleware::new(config))
-            .route("/test", web::get().to(|| async { HttpResponse::Ok().finish() }))
-    ).await;
+    let app = test::init_service(App::new().wrap(SecurityMiddleware::new(config)).route(
+        "/test",
+        web::get().to(|| async { HttpResponse::Ok().finish() }),
+    ))
+    .await;
 
     let req = test::TestRequest::get()
         .uri("/test")
         .insert_header(("Origin", "http://example.com"))
         .to_request();
-    
+
     let resp = test::call_service(&app, req).await;
 
     assert!(resp.status().is_success());
-    
+
     // Check CORS headers
     let headers = resp.headers();
     if let Some(origin) = headers.get("access-control-allow-origin") {
@@ -143,17 +150,17 @@ async fn test_security_middleware_csp() {
         enable_csp: true,
     };
 
-    let app = test::init_service(
-        App::new()
-            .wrap(SecurityMiddleware::new(config))
-            .route("/test", web::get().to(|| async { HttpResponse::Ok().finish() }))
-    ).await;
+    let app = test::init_service(App::new().wrap(SecurityMiddleware::new(config)).route(
+        "/test",
+        web::get().to(|| async { HttpResponse::Ok().finish() }),
+    ))
+    .await;
 
     let req = test::TestRequest::get().uri("/test").to_request();
     let resp = test::call_service(&app, req).await;
 
     assert!(resp.status().is_success());
-    
+
     // Check CSP header is present
     let headers = resp.headers();
     if config.enable_csp {
@@ -179,21 +186,20 @@ async fn test_security_middleware_hsts() {
         enable_csp: true,
     };
 
-    let app = test::init_service(
-        App::new()
-            .wrap(SecurityMiddleware::new(config))
-            .route("/test", web::get().to(|| async { HttpResponse::Ok().finish() }))
-    ).await;
+    let app = test::init_service(App::new().wrap(SecurityMiddleware::new(config)).route(
+        "/test",
+        web::get().to(|| async { HttpResponse::Ok().finish() }),
+    ))
+    .await;
 
     let req = test::TestRequest::get().uri("/test").to_request();
     let resp = test::call_service(&app, req).await;
 
     assert!(resp.status().is_success());
-    
+
     // Check HSTS header
     let headers = resp.headers();
     if let Some(hsts) = headers.get("strict-transport-security") {
         assert!(hsts.len() > 0);
     }
 }
-

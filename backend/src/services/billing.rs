@@ -1,10 +1,9 @@
 // Billing Service - Handles subscription payments and invoicing
 // Integration with payment providers (Stripe)
 
-
-use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
 use crate::models::subscription::{Subscription, SubscriptionTier, UsageMetrics};
+use chrono::{DateTime, Duration, Utc};
+use uuid::Uuid;
 // use stripe::{Client, CheckoutSession, CheckoutSessionCreateParams, Subscription as StripeSubscription};
 
 #[derive(Debug)]
@@ -125,7 +124,10 @@ impl BillingService {
         immediately: bool,
     ) -> Result<(), BillingError> {
         // In production, this would cancel the Stripe subscription
-        info!("Cancelling subscription {} immediately: {}", subscription_id, immediately);
+        info!(
+            "Cancelling subscription {} immediately: {}",
+            subscription_id, immediately
+        );
         Ok(())
     }
 
@@ -139,15 +141,12 @@ impl BillingService {
     }
 
     /// Get usage metrics for a user
-    pub async fn get_usage_metrics(
-        &self,
-        _user_id: Uuid,
-    ) -> Result<UsageMetrics, BillingError> {
+    pub async fn get_usage_metrics(&self, _user_id: Uuid) -> Result<UsageMetrics, BillingError> {
         // Mock usage metrics - in production, this would query actual usage
         Ok(UsageMetrics {
             reconciliation_count: 45,
             reconciliation_limit: Some(100),
-            storage_bytes: 5_000_000_000, // 5 GB
+            storage_bytes: 5_000_000_000,        // 5 GB
             storage_limit_bytes: 10_000_000_000, // 10 GB
             project_count: 3,
             project_limit: Some(5),
@@ -176,8 +175,6 @@ impl BillingService {
     }
 }
 
-
-
 #[derive(Debug)]
 pub enum WebhookEvent {
     PaymentSucceeded { subscription_id: Uuid },
@@ -186,4 +183,3 @@ pub enum WebhookEvent {
     InvoicePaid { invoice_id: String },
     InvoicePaymentFailed { invoice_id: String },
 }
-

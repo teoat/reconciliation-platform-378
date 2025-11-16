@@ -3,13 +3,13 @@
 //! Provides initialization and configuration helpers for the application,
 //! including resilience manager, database, cache, and service setup.
 
-use std::sync::Arc;
-use actix_web::web;
 use crate::config::Config;
 use crate::database::Database;
-use crate::services::cache::MultiLevelCache;
-use crate::services::resilience::{ResilienceManager, ResilienceConfig};
 use crate::errors::AppResult;
+use crate::services::cache::MultiLevelCache;
+use crate::services::resilience::{ResilienceConfig, ResilienceManager};
+use actix_web::web;
+use std::sync::Arc;
 
 /// Application startup configuration
 pub struct AppStartup {
@@ -36,20 +36,15 @@ impl AppStartup {
         log::info!("Resilience manager initialized");
 
         // Initialize database with resilience
-        let database = Database::new_with_resilience(
-            &config.database_url,
-            resilience.clone(),
-        )
-        .await?;
+        let database =
+            Database::new_with_resilience(&config.database_url, resilience.clone()).await?;
         log::info!("Database initialized with circuit breaker protection");
 
         // Initialize cache with resilience
-        let cache = Arc::new(
-            MultiLevelCache::new_with_resilience(
-                &config.redis_url,
-                resilience.clone(),
-            )?
-        );
+        let cache = Arc::new(MultiLevelCache::new_with_resilience(
+            &config.redis_url,
+            resilience.clone(),
+        )?);
         log::info!("Cache initialized with circuit breaker protection");
 
         Ok(Self {
@@ -85,7 +80,7 @@ impl AppStartup {
 /// Helper to create resilience config from environment
 pub fn resilience_config_from_env() -> ResilienceConfig {
     use std::env;
-    
+
     ResilienceConfig {
         database: crate::services::resilience::CircuitBreakerServiceConfig {
             failure_threshold: env::var("DB_CIRCUIT_BREAKER_FAILURE_THRESHOLD")
@@ -161,4 +156,3 @@ pub fn resilience_config_from_env() -> ResilienceConfig {
         },
     }
 }
-

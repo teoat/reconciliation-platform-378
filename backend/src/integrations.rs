@@ -25,18 +25,22 @@ fn initialize_sentry(config: &MonitoringConfig) -> Option<sentry::ClientInitGuar
         log::warn!("⚠️  Sentry DSN not configured - error tracking disabled");
         return None;
     }
-    
+
     let dsn: sentry::types::Dsn = config.sentry_dsn.parse().ok()?;
-    
+
     let guard = sentry::init((
         dsn,
         sentry::ClientOptions {
             release: Some(env!("CARGO_PKG_VERSION").to_string().into()),
-            environment: Some(std::env::var("ENVIRONMENT").unwrap_or_else(|_| "development".to_string()).into()),
+            environment: Some(
+                std::env::var("ENVIRONMENT")
+                    .unwrap_or_else(|_| "development".to_string())
+                    .into(),
+            ),
             ..Default::default()
         },
     ));
-    
+
     log::info!("✅ Sentry initialized");
     Some(guard)
 }
@@ -46,9 +50,12 @@ fn initialize_prometheus(config: &MonitoringConfig) -> Option<prometheus::Regist
         log::warn!("⚠️  Metrics disabled");
         return None;
     }
-    
+
     let registry = Registry::new();
-    log::info!("✅ Prometheus metrics initialized on port {}", config.prometheus_port);
+    log::info!(
+        "✅ Prometheus metrics initialized on port {}",
+        config.prometheus_port
+    );
     Some(registry)
 }
 

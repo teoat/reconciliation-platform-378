@@ -3,21 +3,21 @@
 //! Prevents cascade failures by stopping requests to failing services,
 //! allowing them time to recover.
 
+use crate::errors::{AppError, AppResult};
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
-use serde::{Deserialize, Serialize};
-use crate::errors::{AppError, AppResult};
 
 /// Circuit breaker states
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum CircuitState {
     /// Normal operation - requests pass through
     Closed,
-    
+
     /// Failing - requests are rejected immediately
     Open,
-    
+
     /// Testing if service has recovered
     HalfOpen,
 }
@@ -27,13 +27,13 @@ pub enum CircuitState {
 pub struct CircuitBreakerConfig {
     /// Number of failures before opening circuit
     pub failure_threshold: usize,
-    
+
     /// Number of successes before closing circuit
     pub success_threshold: usize,
-    
+
     /// Timeout before attempting half-open state
     pub timeout: Duration,
-    
+
     /// Enable fallback on failure
     pub enable_fallback: bool,
 }
@@ -101,9 +101,9 @@ impl CircuitBreaker {
         if !self.is_request_allowed().await {
             let mut stats = self.stats.write().await;
             stats.total_requests += 1;
-            
+
             return Err(AppError::ServiceUnavailable(
-                "Circuit breaker is open. Service unavailable.".to_string()
+                "Circuit breaker is open. Service unavailable.".to_string(),
             ));
         }
 
@@ -124,13 +124,13 @@ impl CircuitBreaker {
                 self.record_failure().await;
                 stats.total_failures += 1;
                 stats.last_failure = Some(Instant::now());
-                
+
                 // If fallback enabled, return a fallback response
                 if self.config.enable_fallback {
                     log::warn!("Circuit breaker detected failure. Using fallback.");
                     return self.get_fallback_response().await;
                 }
-                
+
                 Err(e)
             }
         }
@@ -138,11 +138,11 @@ impl CircuitBreaker {
 
     /// Check if request should be allowed
     async fn is_request_allowed(&self) -> bool {
-        let state = self.state.read().await.clone();
-        
+        let state = *self.state.read().await;
+
         match state {
             CircuitState::Closed => true,
-            
+
             CircuitState::Open => {
                 // Check if timeout has passed
                 let last_change = self.last_state_change.read().await;
@@ -155,7 +155,7 @@ impl CircuitBreaker {
                     false
                 }
             }
-            
+
             CircuitState::HalfOpen => true,
         }
     }
@@ -163,31 +163,31 @@ impl CircuitBreaker {
     /// Record a successful operation
     async fn record_success(&self) {
         let mut state = self.state.write().await;
-        
+
         match *state {
             CircuitState::Closed => {
                 // Reset failure count on success
                 let mut failures = self.failure_count.write().await;
                 *failures = 0;
             }
-            
+
             CircuitState::HalfOpen => {
                 let mut successes = self.success_count.write().await;
                 *successes += 1;
-                
+
                 // If we have enough successes, close the circuit
                 if *successes >= self.config.success_threshold {
                     *state = CircuitState::Closed;
                     *successes = 0;
                     *self.failure_count.write().await = 0;
                     *self.last_state_change.write().await = Instant::now();
-                    
+
                     // Update stats
                     let mut stats = self.stats.write().await;
                     stats.state = CircuitState::Closed;
                 }
             }
-            
+
             CircuitState::Open => {
                 // Should not happen in open state
             }
@@ -197,32 +197,32 @@ impl CircuitBreaker {
     /// Record a failed operation
     async fn record_failure(&self) {
         let mut state = self.state.write().await;
-        
+
         match *state {
             CircuitState::Closed | CircuitState::HalfOpen => {
                 let mut failures = self.failure_count.write().await;
                 *failures += 1;
-                
+
                 // Update stats
                 let mut stats = self.stats.write().await;
                 stats.failure_count = *failures;
-                
+
                 // If we exceed the threshold, open the circuit
                 if *failures >= self.config.failure_threshold {
                     *state = CircuitState::Open;
                     *self.last_state_change.write().await = Instant::now();
-                    
+
                     stats.state = CircuitState::Open;
                     stats.failure_count = 0;
                     stats.success_count = 0;
-                    
+
                     log::error!(
                         "Circuit breaker opened after {} failures",
                         self.config.failure_threshold
                     );
                 }
             }
-            
+
             CircuitState::Open => {
                 // Already open, no-op
             }
@@ -236,11 +236,11 @@ impl CircuitBreaker {
             *state = CircuitState::HalfOpen;
             *self.last_state_change.write().await = Instant::now();
             *self.success_count.write().await = 0;
-            
+
             // Update stats
             let mut stats = self.stats.write().await;
             stats.state = CircuitState::HalfOpen;
-            
+
             log::info!("Circuit breaker transitioning to half-open state");
         }
     }
@@ -249,7 +249,7 @@ impl CircuitBreaker {
     async fn get_fallback_response<T>(&self) -> AppResult<T> {
         // In a real implementation, this would return a cached or default response
         Err(AppError::ServiceUnavailable(
-            "Service unavailable. Fallback not implemented.".to_string()
+            "Service unavailable. Fallback not implemented.".to_string(),
         ))
     }
 
@@ -270,7 +270,7 @@ impl CircuitBreaker {
         *self.failure_count.write().await = 0;
         *self.success_count.write().await = 0;
         *self.last_state_change.write().await = Instant::now();
-        
+
         let mut stats = self.stats.write().await;
         stats.state = CircuitState::Closed;
         stats.failure_count = 0;
@@ -329,7 +329,7 @@ mod tests {
         // Attempt request should trigger half-open
         cb.is_request_allowed().await;
         tokio::time::sleep(Duration::from_millis(10)).await;
-        
+
         // State should be half-open or closed
         let state = cb.get_state().await;
         assert!(state == CircuitState::HalfOpen || state == CircuitState::Closed);
@@ -360,4 +360,3 @@ mod tests {
         assert_eq!(cb.get_state().await, CircuitState::Closed);
     }
 }
-

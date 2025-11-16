@@ -1,9 +1,7 @@
 //! System monitoring module for performance tracking
-//! 
+//!
 //! This module handles system-level monitoring including CPU usage, memory usage,
 //! and system resource tracking.
-
-
 
 /// System monitoring service
 pub struct SystemMonitor;
@@ -12,7 +10,7 @@ impl SystemMonitor {
     pub fn new() -> Self {
         Self
     }
-    
+
     /// Get memory usage as a fraction (0.0 - 1.0)
     pub fn get_memory_usage(&self) -> f64 {
         // Linux implementation using /proc/meminfo; returns fraction used (0.0 - 1.0)
@@ -40,7 +38,7 @@ impl SystemMonitor {
         }
         0.0
     }
-    
+
     /// Get CPU usage as a fraction (0.0 - 1.0)
     pub fn get_cpu_usage(&self) -> f64 {
         // Approximate CPU utilization using deltas from /proc/stat first line.
@@ -55,8 +53,11 @@ impl SystemMonitor {
                     if first_line.starts_with("cpu ") {
                         let mut parts = first_line.split_whitespace();
                         let _cpu = parts.next(); // "cpu"
-                        // user nice system idle iowait irq softirq steal guest guest_nice
-                        let vals: Vec<u64> = parts.take(10).filter_map(|s| s.parse::<u64>().ok()).collect();
+                                                 // user nice system idle iowait irq softirq steal guest guest_nice
+                        let vals: Vec<u64> = parts
+                            .take(10)
+                            .filter_map(|s| s.parse::<u64>().ok())
+                            .collect();
                         if vals.len() >= 4 {
                             let idle = vals[3] + vals.get(4).copied().unwrap_or(0); // idle + iowait
                             let total: u64 = vals.iter().sum();
@@ -87,7 +88,7 @@ impl SystemMonitor {
         }
         0.0
     }
-    
+
     /// Get comprehensive system metrics
     pub fn get_system_metrics(&self) -> SystemMetrics {
         SystemMetrics {
@@ -111,4 +112,3 @@ impl Default for SystemMonitor {
         Self::new()
     }
 }
-

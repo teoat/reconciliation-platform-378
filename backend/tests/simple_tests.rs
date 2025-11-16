@@ -11,7 +11,7 @@ mod tests {
             "name": "Test Project",
             "id": 1
         });
-        
+
         assert_eq!(data["name"], "Test Project");
         assert_eq!(data["id"], 1);
     }
@@ -30,4 +30,3 @@ mod tests {
         assert_eq!(s.contains("World"), true);
     }
 }
-

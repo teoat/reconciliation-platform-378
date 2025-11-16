@@ -3,7 +3,7 @@
 //! This module contains default languages, locales, and translations data.
 
 use crate::services::internationalization_models::{
-    Language, Locale, NumberFormat, CurrencyFormat, CurrencyPosition, TimezoneInfo, Translation
+    CurrencyFormat, CurrencyPosition, Language, Locale, NumberFormat, TimezoneInfo, Translation,
 };
 use chrono::Utc;
 

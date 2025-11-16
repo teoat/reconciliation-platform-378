@@ -1,5 +1,5 @@
 //! Error handling module for the Reconciliation Backend
-//! 
+//!
 //! This module provides comprehensive error handling with proper error types,
 //! error conversion, and standardized error responses.
 
@@ -9,7 +9,8 @@ use std::fmt;
 use std::sync::OnceLock;
 
 // Shared error translation service instance
-static ERROR_TRANSLATOR: OnceLock<crate::services::error_translation::ErrorTranslationService> = OnceLock::new();
+static ERROR_TRANSLATOR: OnceLock<crate::services::error_translation::ErrorTranslationService> =
+    OnceLock::new();
 
 fn get_error_translator() -> &'static crate::services::error_translation::ErrorTranslationService {
     ERROR_TRANSLATOR.get_or_init(crate::services::error_translation::ErrorTranslationService::new)
@@ -26,7 +27,8 @@ fn translate_error_code(code: &str, default_message: &str) -> (String, String) {
         resource_type: None,
         resource_id: None,
     };
-    let friendly = translator.translate_error(code, empty_context, Some(default_message.to_string()));
+    let friendly =
+        translator.translate_error(code, empty_context, Some(default_message.to_string()));
     (friendly.title, friendly.message)
 }
 
@@ -164,16 +166,17 @@ impl ResponseError for AppError {
                     code: friendly.code,
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Connection(_) => {
-                let (title, message) = translate_error_code("CONNECTION_ERROR", "Unable to connect to database");
+                let (title, message) =
+                    translate_error_code("CONNECTION_ERROR", "Unable to connect to database");
                 HttpResponse::ServiceUnavailable().json(ErrorResponse {
                     error: title,
                     message,
                     code: "CONNECTION_ERROR".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Authentication(msg) => {
                 let (title, _) = translate_error_code("UNAUTHORIZED", msg);
                 HttpResponse::Unauthorized().json(ErrorResponse {
@@ -182,7 +185,7 @@ impl ResponseError for AppError {
                     code: "AUTHENTICATION_ERROR".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Authorization(msg) => {
                 let (title, _) = translate_error_code("FORBIDDEN", msg);
                 HttpResponse::Forbidden().json(ErrorResponse {
@@ -191,7 +194,7 @@ impl ResponseError for AppError {
                     code: "AUTHORIZATION_ERROR".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Validation(msg) | AppError::ValidationError(msg) => {
                 let (title, _) = translate_error_code("VALIDATION_ERROR", msg);
                 HttpResponse::BadRequest().json(ErrorResponse {
@@ -200,7 +203,7 @@ impl ResponseError for AppError {
                     code: "VALIDATION_ERROR".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::File(msg) => {
                 let (title, _) = translate_error_code("FILE_ERROR", msg);
                 HttpResponse::BadRequest().json(ErrorResponse {
@@ -209,7 +212,7 @@ impl ResponseError for AppError {
                     code: "FILE_ERROR".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Config(msg) => {
                 let (title, message) = translate_error_code("CONFIG_ERROR", msg);
                 HttpResponse::InternalServerError().json(ErrorResponse {
@@ -218,43 +221,47 @@ impl ResponseError for AppError {
                     code: "CONFIG_ERROR".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Redis(_) => {
-                let (title, message) = translate_error_code("REDIS_ERROR", "Cache service unavailable");
+                let (title, message) =
+                    translate_error_code("REDIS_ERROR", "Cache service unavailable");
                 HttpResponse::ServiceUnavailable().json(ErrorResponse {
                     error: title,
                     message,
                     code: "REDIS_ERROR".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Jwt(_) => {
-                let (title, message) = translate_error_code("INVALID_TOKEN", "Invalid or expired token");
+                let (title, message) =
+                    translate_error_code("INVALID_TOKEN", "Invalid or expired token");
                 HttpResponse::Unauthorized().json(ErrorResponse {
                     error: title,
                     message,
                     code: "JWT_ERROR".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Io(_) => {
-                let (title, message) = translate_error_code("IO_ERROR", "File system error occurred");
+                let (title, message) =
+                    translate_error_code("IO_ERROR", "File system error occurred");
                 HttpResponse::InternalServerError().json(ErrorResponse {
                     error: title,
                     message,
                     code: "IO_ERROR".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Serialization(_) => {
-                let (title, message) = translate_error_code("SERIALIZATION_ERROR", "Invalid data format");
+                let (title, message) =
+                    translate_error_code("SERIALIZATION_ERROR", "Invalid data format");
                 HttpResponse::BadRequest().json(ErrorResponse {
                     error: title,
                     message,
                     code: "SERIALIZATION_ERROR".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Internal(msg) | AppError::InternalServerError(msg) => {
                 let (title, _) = translate_error_code("INTERNAL_ERROR", msg);
                 HttpResponse::InternalServerError().json(ErrorResponse {
@@ -263,7 +270,7 @@ impl ResponseError for AppError {
                     code: "INTERNAL_ERROR".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::NotFound(msg) => {
                 let (title, _) = translate_error_code("NOT_FOUND", msg);
                 HttpResponse::NotFound().json(ErrorResponse {
@@ -272,7 +279,7 @@ impl ResponseError for AppError {
                     code: "NOT_FOUND".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Conflict(msg) => {
                 let (title, _) = translate_error_code("CONFLICT", msg);
                 HttpResponse::Conflict().json(ErrorResponse {
@@ -281,7 +288,7 @@ impl ResponseError for AppError {
                     code: "CONFLICT".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::BadRequest(msg) => {
                 let (title, _) = translate_error_code("BAD_REQUEST", msg);
                 HttpResponse::BadRequest().json(ErrorResponse {
@@ -290,7 +297,7 @@ impl ResponseError for AppError {
                     code: "BAD_REQUEST".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Unauthorized(msg) => {
                 let (title, _) = translate_error_code("UNAUTHORIZED", msg);
                 HttpResponse::Unauthorized().json(ErrorResponse {
@@ -299,7 +306,7 @@ impl ResponseError for AppError {
                     code: "UNAUTHORIZED".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Forbidden(msg) => {
                 let (title, _) = translate_error_code("FORBIDDEN", msg);
                 HttpResponse::Forbidden().json(ErrorResponse {
@@ -308,7 +315,7 @@ impl ResponseError for AppError {
                     code: "FORBIDDEN".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::ServiceUnavailable(msg) => {
                 let (title, _) = translate_error_code("SERVICE_UNAVAILABLE", msg);
                 HttpResponse::ServiceUnavailable().json(ErrorResponse {
@@ -317,34 +324,41 @@ impl ResponseError for AppError {
                     code: "SERVICE_UNAVAILABLE".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::RateLimitExceeded => {
-                let (title, message) = translate_error_code("RATE_LIMIT_EXCEEDED", "Too many requests, please try again later");
+                let (title, message) = translate_error_code(
+                    "RATE_LIMIT_EXCEEDED",
+                    "Too many requests, please try again later",
+                );
                 HttpResponse::TooManyRequests().json(ErrorResponse {
                     error: title,
                     message,
                     code: "RATE_LIMIT_EXCEEDED".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::CsrfTokenMissing => {
-                let (title, message) = translate_error_code("CSRF_TOKEN_MISSING", "CSRF token is required for this request");
+                let (title, message) = translate_error_code(
+                    "CSRF_TOKEN_MISSING",
+                    "CSRF token is required for this request",
+                );
                 HttpResponse::BadRequest().json(ErrorResponse {
                     error: title,
                     message,
                     code: "CSRF_TOKEN_MISSING".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::CsrfTokenInvalid => {
-                let (title, message) = translate_error_code("CSRF_TOKEN_INVALID", "Invalid CSRF token provided");
+                let (title, message) =
+                    translate_error_code("CSRF_TOKEN_INVALID", "Invalid CSRF token provided");
                 HttpResponse::BadRequest().json(ErrorResponse {
                     error: title,
                     message,
                     code: "CSRF_TOKEN_INVALID".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Timeout => {
                 let (title, message) = translate_error_code("TIMEOUT", "The request timed out");
                 HttpResponse::RequestTimeout().json(ErrorResponse {
@@ -353,7 +367,7 @@ impl ResponseError for AppError {
                     code: "TIMEOUT".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Alert(msg) => {
                 let (title, message) = translate_error_code("ALERT", msg);
                 HttpResponse::InternalServerError().json(ErrorResponse {
@@ -362,7 +376,7 @@ impl ResponseError for AppError {
                     code: "ALERT".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::Offline(msg) => {
                 let (title, message) = translate_error_code("OFFLINE", msg);
                 HttpResponse::ServiceUnavailable().json(ErrorResponse {
@@ -371,7 +385,7 @@ impl ResponseError for AppError {
                     code: "OFFLINE".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
             AppError::OptimisticUpdate(msg) => {
                 let (title, message) = translate_error_code("OPTIMISTIC_UPDATE", msg);
                 HttpResponse::Conflict().json(ErrorResponse {
@@ -380,7 +394,7 @@ impl ResponseError for AppError {
                     code: "OPTIMISTIC_UPDATE".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            },
+            }
         }
     }
 }

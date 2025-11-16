@@ -2,11 +2,11 @@
 //!
 //! This module contains Diesel model definitions and database operations.
 
+use bigdecimal::BigDecimal;
+use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use bigdecimal::BigDecimal;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
 
 pub mod schema;
 pub mod subscription;
@@ -14,20 +14,11 @@ pub mod subscription;
 // Note: We use serde_json::Value directly for JSONB fields
 // Diesel natively supports this without custom wrappers
 
-
-
 // Using serde_json::Value directly instead of custom JsonValue
-
-
-
-
 
 // JsonValue trait implementations are handled in schema.rs
 
-
-
 pub type NumericValue = BigDecimal;
-
 
 /// Match type enumeration
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -40,7 +31,7 @@ pub enum MatchType {
 
 impl std::str::FromStr for MatchType {
     type Err = String;
-    
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "exact" => Ok(MatchType::Exact),
@@ -76,7 +67,7 @@ pub enum ProjectStatus {
 
 impl std::str::FromStr for ProjectStatus {
     type Err = String;
-    
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
             "active" => Ok(ProjectStatus::Active),
@@ -180,8 +171,6 @@ pub struct UpdateUserPreference {
     pub updated_at: Option<DateTime<Utc>>,
 }
 
-
-
 /// Project model
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = crate::models::schema::projects)]
@@ -243,8 +232,6 @@ pub struct NewReconciliationRecord {
     pub confidence: Option<f64>,
     pub audit_trail: serde_json::Value,
 }
-
-
 
 /// Reconciliation job model
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]

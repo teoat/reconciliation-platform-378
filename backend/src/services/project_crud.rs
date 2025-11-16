@@ -3,19 +3,19 @@
 //! This module contains the basic Create, Read, Update, Delete operations
 //! for projects, including validation and database transactions.
 
-use diesel::prelude::*;
-use uuid::Uuid;
-use chrono::Utc;
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
+use crate::models::schema::{data_sources, reconciliation_jobs};
 use crate::models::{
-    Project, NewProject, UpdateProject, ProjectStatus,
     schema::{projects, users},
+    NewProject, Project, ProjectStatus, UpdateProject,
 };
-use crate::models::schema::{reconciliation_jobs, data_sources};
 use crate::services::project_models::{
-    CreateProjectRequest, UpdateProjectRequest, ProjectInfo, ProjectQueryResult,
+    CreateProjectRequest, ProjectInfo, ProjectQueryResult, UpdateProjectRequest,
 };
+use chrono::Utc;
+use diesel::prelude::*;
+use uuid::Uuid;
 
 /// Project service CRUD operations
 pub struct ProjectCrudOps {
@@ -31,7 +31,9 @@ impl ProjectCrudOps {
     pub async fn create_project(&self, request: CreateProjectRequest) -> AppResult<ProjectInfo> {
         // Validate input
         if request.name.trim().is_empty() {
-            return Err(AppError::Validation("Project name cannot be empty".to_string()));
+            return Err(AppError::Validation(
+                "Project name cannot be empty".to_string(),
+            ));
         }
 
         if request.name.len() > 255 {
@@ -52,7 +54,8 @@ impl ProjectCrudOps {
 
         // Determine status
         let status = request.status.unwrap_or_else(|| "active".to_string());
-        let status_enum: ProjectStatus = status.parse()
+        let status_enum: ProjectStatus = status
+            .parse()
             .map_err(|e| AppError::Validation(format!("Invalid project status: {}", e)))?;
 
         // Create project
@@ -75,7 +78,8 @@ impl ProjectCrudOps {
                 .map_err(AppError::Database)?;
 
             Ok(())
-        }).await?;
+        })
+        .await?;
 
         // Get created project with additional info
         self.get_project_by_id(project_id).await
@@ -143,7 +147,11 @@ impl ProjectCrudOps {
     }
 
     /// Update project
-    pub async fn update_project(&self, project_id: Uuid, request: UpdateProjectRequest) -> AppResult<ProjectInfo> {
+    pub async fn update_project(
+        &self,
+        project_id: Uuid,
+        request: UpdateProjectRequest,
+    ) -> AppResult<ProjectInfo> {
         let mut conn = self.db.get_connection()?;
 
         // Check if project exists
@@ -155,7 +163,9 @@ impl ProjectCrudOps {
         // Validate name if provided
         if let Some(ref name) = request.name {
             if name.trim().is_empty() {
-                return Err(AppError::Validation("Project name cannot be empty".to_string()));
+                return Err(AppError::Validation(
+                    "Project name cannot be empty".to_string(),
+                ));
             }
 
             if name.len() > 255 {
@@ -165,7 +175,8 @@ impl ProjectCrudOps {
 
         // Validate status if provided
         if let Some(ref status) = request.status {
-            let _: ProjectStatus = status.parse()
+            let _: ProjectStatus = status
+                .parse()
                 .map_err(|e| AppError::Validation(format!("Invalid project status: {}", e)))?;
         }
 
@@ -179,19 +190,24 @@ impl ProjectCrudOps {
 
         // Build update query manually to handle JsonValue properly
         // Check if there's anything to update
-        if update_data.name.is_none() 
-            && update_data.description.is_none() 
-            && update_data.settings.is_none() 
-            && update_data.status.is_none() {
+        if update_data.name.is_none()
+            && update_data.description.is_none()
+            && update_data.settings.is_none()
+            && update_data.status.is_none()
+        {
             // Nothing to update, just return the current project
             return self.get_project_by_id(project_id).await;
         }
-        
+
         diesel::update(projects::table.filter(projects::id.eq(project_id)))
             .set((
                 update_data.name.map(|name| projects::name.eq(name)),
-                update_data.description.map(|desc| projects::description.eq(desc)),
-                update_data.settings.map(|settings| projects::settings.eq(settings)),
+                update_data
+                    .description
+                    .map(|desc| projects::description.eq(desc)),
+                update_data
+                    .settings
+                    .map(|settings| projects::settings.eq(settings)),
                 update_data.status.map(|status| projects::status.eq(status)),
             ))
             .execute(&mut conn)
@@ -248,4 +264,3 @@ impl ProjectCrudOps {
         self.update_project(project_id, update_request).await
     }
 }
-

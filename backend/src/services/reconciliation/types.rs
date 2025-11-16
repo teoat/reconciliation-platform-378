@@ -1,10 +1,10 @@
 //! Types and data structures for reconciliation service
 
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 use chrono::DateTime;
 use chrono::Utc;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use uuid::Uuid;
 
 use crate::models::MatchType;
 
@@ -118,4 +118,3 @@ pub struct ReconciliationResultDetail {
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
-

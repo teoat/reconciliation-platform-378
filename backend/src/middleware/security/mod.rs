@@ -1,17 +1,17 @@
 //! Security middleware module
-//! 
+//!
 //! Provides security headers, CSRF protection, and rate limiting
 
-pub mod headers;
 pub mod csrf;
-pub mod rate_limit;
+pub mod headers;
 pub mod metrics;
+pub mod rate_limit;
 
 // Re-exports
-pub use headers::{SecurityHeadersMiddleware, SecurityHeadersConfig, CspNonce};
 pub use csrf::CsrfProtectionMiddleware;
-pub use rate_limit::RateLimitMiddleware;
+pub use headers::{CspNonce, SecurityHeadersConfig, SecurityHeadersMiddleware};
 pub use metrics::*;
+pub use rate_limit::RateLimitMiddleware;
 
 // Configuration
 #[derive(Clone)]
@@ -31,8 +31,10 @@ impl Default for SecurityConfig {
     }
 }
 
-pub fn configure_security_middleware(cfg: &mut actix_web::web::ServiceConfig, _config: SecurityConfig) {
+pub fn configure_security_middleware(
+    cfg: &mut actix_web::web::ServiceConfig,
+    _config: SecurityConfig,
+) {
     // Note: ServiceConfig cannot apply wrap globally; keep for compatibility.
     let _ = cfg;
 }
-

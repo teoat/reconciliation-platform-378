@@ -1,27 +1,32 @@
 //! User management handlers module
 
 use actix_web::{web, HttpResponse, Result};
-use uuid::Uuid;
 use std::sync::Arc;
 use std::time::Duration;
+use uuid::Uuid;
 
 use crate::errors::AppError;
+use crate::handlers::types::{ApiResponse, SearchQueryParams, UserQueryParams};
 use crate::services::cache::MultiLevelCache;
 use crate::services::user::UserService;
-use crate::handlers::types::{UserQueryParams, SearchQueryParams, ApiResponse};
 
 /// Configure user management routes
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
-    cfg
-        .route("", web::get().to(get_users))
+    cfg.route("", web::get().to(get_users))
         .route("", web::post().to(create_user))
         .route("/search", web::get().to(search_users))
         .route("/statistics", web::get().to(get_user_statistics))
         .route("/{user_id}", web::get().to(get_user))
         .route("/{user_id}", web::put().to(update_user))
         .route("/{user_id}", web::delete().to(delete_user))
-        .route("/{user_id}/preferences", web::get().to(get_user_preferences))
-        .route("/{user_id}/preferences", web::put().to(update_user_preferences));
+        .route(
+            "/{user_id}/preferences",
+            web::get().to(get_user_preferences),
+        )
+        .route(
+            "/{user_id}/preferences",
+            web::put().to(update_user_preferences),
+        );
 }
 
 /// Get users endpoint
@@ -31,20 +36,26 @@ pub async fn get_users(
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
     // Try cache first (10 minute TTL)
-    let cache_key = format!("users:page:{}:per_page:{}", 
-        query.page.unwrap_or(1), 
+    let cache_key = format!(
+        "users:page:{}:per_page:{}",
+        query.page.unwrap_or(1),
         query.per_page.unwrap_or(10)
     );
     if let Ok(Some(cached)) = cache.get::<serde_json::Value>(&cache_key).await {
         return Ok(HttpResponse::Ok().json(cached));
     }
-    
-    let response = user_service.as_ref().list_users(query.page, query.per_page).await?;
-    
+
+    let response = user_service
+        .as_ref()
+        .list_users(query.page, query.per_page)
+        .await?;
+
     // Cache for 10 minutes
     let response_json = serde_json::to_value(&response)?;
-    let _ = cache.set(&cache_key, &response_json, Some(Duration::from_secs(600))).await;
-    
+    let _ = cache
+        .set(&cache_key, &response_json, Some(Duration::from_secs(600)))
+        .await;
+
     Ok(HttpResponse::Ok().json(response))
 }
 
@@ -54,7 +65,7 @@ pub async fn create_user(
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
     let user_info = user_service.as_ref().create_user(req.into_inner()).await?;
-    
+
     Ok(HttpResponse::Created().json(user_info))
 }
 
@@ -63,8 +74,11 @@ pub async fn get_user(
     user_id: web::Path<Uuid>,
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
-    let user_info = user_service.as_ref().get_user_by_id(user_id.into_inner()).await?;
-    
+    let user_info = user_service
+        .as_ref()
+        .get_user_by_id(user_id.into_inner())
+        .await?;
+
     Ok(HttpResponse::Ok().json(user_info))
 }
 
@@ -76,13 +90,19 @@ pub async fn update_user(
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
     let user_id_val = user_id.into_inner();
-    
-    let user_info = user_service.as_ref().update_user(user_id_val, req.into_inner()).await?;
-    
+
+    let user_info = user_service
+        .as_ref()
+        .update_user(user_id_val, req.into_inner())
+        .await?;
+
     // ✅ CACHE INVALIDATION: Clear cache after user update
-    cache.delete(&format!("user:{}", user_id_val)).await.unwrap_or_default();
+    cache
+        .delete(&format!("user:{}", user_id_val))
+        .await
+        .unwrap_or_default();
     cache.delete("users:*").await.unwrap_or_default();
-    
+
     Ok(HttpResponse::Ok().json(user_info))
 }
 
@@ -91,8 +111,11 @@ pub async fn delete_user(
     user_id: web::Path<Uuid>,
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
-    user_service.as_ref().delete_user(user_id.into_inner()).await?;
-    
+    user_service
+        .as_ref()
+        .delete_user(user_id.into_inner())
+        .await?;
+
     Ok(HttpResponse::NoContent().finish())
 }
 
@@ -101,12 +124,15 @@ pub async fn search_users(
     query: web::Query<SearchQueryParams>,
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
-    let response = user_service.as_ref().search_users(
-        query.q.as_deref().unwrap_or(""), 
-        query.page.map(|p| p as i64), 
-        query.per_page.map(|p| p as i64)
-    ).await?;
-    
+    let response = user_service
+        .as_ref()
+        .search_users(
+            query.q.as_deref().unwrap_or(""),
+            query.page.map(|p| p as i64),
+            query.per_page.map(|p| p as i64),
+        )
+        .await?;
+
     Ok(HttpResponse::Ok().json(response))
 }
 
@@ -130,7 +156,10 @@ pub async fn get_user_preferences(
     user_id: web::Path<Uuid>,
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
-    let preferences = user_service.as_ref().get_user_preferences(user_id.into_inner()).await?;
+    let preferences = user_service
+        .as_ref()
+        .get_user_preferences(user_id.into_inner())
+        .await?;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -147,7 +176,10 @@ pub async fn update_user_preferences(
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
     let user_id_val = user_id.into_inner();
-    let preferences = user_service.as_ref().update_user_preferences(user_id_val, req.into_inner()).await?;
+    let preferences = user_service
+        .as_ref()
+        .update_user_preferences(user_id_val, req.into_inner())
+        .await?;
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,

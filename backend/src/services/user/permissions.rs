@@ -2,14 +2,14 @@
 //!
 //! Handles role and permission management for users.
 
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
-use std::sync::Arc;
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
+use uuid::Uuid;
 
+use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::models::schema::users;
-use crate::database::Database;
 use diesel::prelude::*;
 
 /// Permission service for managing user roles and permissions
@@ -40,7 +40,7 @@ impl std::fmt::Display for Role {
 
 impl std::str::FromStr for Role {
     type Err = String;
-    
+
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(Role {
             id: s.to_string(),
@@ -58,13 +58,13 @@ impl PermissionService {
     /// Internal: Get user's role
     async fn get_user_role_impl(&self, user_id: Uuid) -> AppResult<String> {
         let mut conn = self.db.get_connection()?;
-        
+
         let role = users::table
             .filter(users::id.eq(user_id))
             .select(users::status)
             .first::<String>(&mut conn)
             .map_err(AppError::Database)?;
-        
+
         Ok(role)
     }
 
@@ -73,29 +73,29 @@ impl PermissionService {
         // Validate role format
         if !self.is_valid_role(role) {
             return Err(AppError::Validation(
-                "Invalid role. Must be one of: user, admin, manager, viewer".to_string()
+                "Invalid role. Must be one of: user, admin, manager, viewer".to_string(),
             ));
         }
 
         let mut conn = self.db.get_connection()?;
-        
+
         // Check if user exists
         let count = users::table
             .filter(users::id.eq(user_id))
             .count()
             .get_result::<i64>(&mut conn)
             .map_err(AppError::Database)?;
-        
+
         if count == 0 {
             return Err(AppError::NotFound("User not found".to_string()));
         }
-        
+
         // Update role
         diesel::update(users::table.filter(users::id.eq(user_id)))
             .set(users::status.eq(role))
             .execute(&mut conn)
             .map_err(AppError::Database)?;
-        
+
         Ok(())
     }
 
@@ -107,12 +107,10 @@ impl PermissionService {
     /// Get permissions for a role
     pub fn get_role_permissions(&self, role: &str) -> Vec<Permission> {
         match role {
-            "admin" => vec![
-                Permission {
-                    resource: "*".to_string(),
-                    action: "*".to_string(),
-                },
-            ],
+            "admin" => vec![Permission {
+                resource: "*".to_string(),
+                action: "*".to_string(),
+            }],
             "manager" => vec![
                 Permission {
                     resource: "projects".to_string(),
@@ -167,7 +165,7 @@ impl PermissionService {
     ) -> AppResult<bool> {
         let role = self.get_user_role_impl(user_id).await?;
         let permissions = self.get_role_permissions(&role);
-        
+
         // Check for wildcard permissions
         for permission in &permissions {
             if permission.resource == "*" && permission.action == "*" {
@@ -180,7 +178,7 @@ impl PermissionService {
                 return Ok(true);
             }
         }
-        
+
         Ok(false)
     }
 
@@ -189,9 +187,9 @@ impl PermissionService {
         if !self.is_valid_role(role_id) {
             return Err(AppError::Validation("Invalid role".to_string()));
         }
-        
+
         let permissions = self.get_role_permissions(role_id);
-        
+
         Ok(Role {
             id: role_id.to_string(),
             name: role_id.to_string(),
@@ -219,12 +217,7 @@ impl super::traits::PermissionServiceTrait for PermissionService {
         self.get_role_permissions(role)
     }
 
-    async fn has_permission(
-        &self,
-        user_id: Uuid,
-        resource: &str,
-        action: &str,
-    ) -> AppResult<bool> {
+    async fn has_permission(&self, user_id: Uuid, resource: &str, action: &str) -> AppResult<bool> {
         self.has_permission_impl(user_id, resource, action).await
     }
 
@@ -232,5 +225,3 @@ impl super::traits::PermissionServiceTrait for PermissionService {
         self.get_role(role_id)
     }
 }
-
-
