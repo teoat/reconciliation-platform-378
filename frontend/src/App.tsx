@@ -9,6 +9,7 @@ import { initializeMemoryMonitoring } from './utils/memoryOptimization';
 import AppShell from './components/layout/AppShell';
 import AuthPage from './pages/AuthPage';
 import ToastContainer from './components/ui/ToastContainer';
+import { APP_CONFIG } from './config/AppConfig';
 
 // Lazy load route components for better performance
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -44,8 +45,9 @@ const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
 };
 
 function App() {
+  // Use unified config from AppConfig (SSOT)
   const wsConfig = {
-    url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:2000',
+    url: APP_CONFIG.WS_URL || 'ws://localhost:2000',
     reconnectInterval: 5000,
     maxReconnectAttempts: 5,
     heartbeatInterval: 30000,

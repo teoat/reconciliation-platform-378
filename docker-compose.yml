@@ -157,7 +157,7 @@ services:
       - reconciliation-network
     depends_on:
       backend:
-        condition: service_healthy
+        condition: service_started
       logstash:
         condition: service_started
       apm-server:

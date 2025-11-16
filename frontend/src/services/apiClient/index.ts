@@ -662,8 +662,10 @@ export const delete_ = apiClient.delete.bind(apiClient);
 export { WebSocketClient };
 
 // Create a default WebSocket client instance
+// Use unified config from AppConfig (SSOT)
+import { APP_CONFIG } from '../../config/AppConfig';
 const defaultWebSocketConfig = {
-  url: process.env.WEBSOCKET_URL || 'ws://localhost:3001',
+  url: APP_CONFIG.WS_URL || 'ws://localhost:2000',
   options: {
     autoConnect: false,
     reconnection: true,

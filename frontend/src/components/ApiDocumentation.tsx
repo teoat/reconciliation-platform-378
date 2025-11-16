@@ -405,7 +405,7 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
               <div className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Connection</h3>
                 <code className="text-sm bg-gray-100 p-2 rounded block mb-4">
-                  {process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws'}
+                  {import.meta.env.VITE_WS_URL || 'ws://localhost:2000'}
                 </code>
 
                 <div className="space-y-4">
@@ -414,7 +414,7 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
                       Connection with Authentication
                     </h4>
                     <code className="text-sm bg-gray-100 p-2 rounded block">
-                      ws://localhost:8080/ws?token={'{your_token}'}
+                      ws://localhost:2000?token={'{your_token}'}
                     </code>
                   </div>
 

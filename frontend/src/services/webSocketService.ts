@@ -3,6 +3,7 @@ import { logger } from '@/services/logger';
 // Implements real-time updates, live collaboration, and presence management
 
 import React from 'react';
+import { APP_CONFIG } from '../config/AppConfig';
 
 // WebSocket message interfaces
 export interface WebSocketMessage {
@@ -234,8 +235,9 @@ class WebSocketService {
   }
 
   constructor() {
+    // Use unified config from AppConfig (SSOT)
     this.config = {
-      url: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:2000',
+      url: APP_CONFIG.WS_URL || 'ws://localhost:2000',
       reconnectInterval: 5000,
       maxReconnectAttempts: 10,
       pingInterval: 30000,
