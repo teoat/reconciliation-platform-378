@@ -126,12 +126,33 @@ export class MemoryLeakDetector {
    * Clear all tracked resources (use in test cleanup)
    */
   static cleanup(): void {
+    // Remove event listeners before clearing internal structures
+    for (const [targetKey, listeners] of this.activeListeners.entries()) {
+      try {
+        const [type, ...rest] = targetKey.split('|');
+        const id = rest.join('|');
+        const target = (globalThis as any).__MLD_EVENT_TARGETS__?.get(id);
+        if (target && typeof target.removeEventListener === 'function') {
+          for (const listener of listeners) {
+            target.removeEventListener(type, listener as EventListener);
+          }
+        }
+      } catch {
+        // ignore best-effort cleanup failures
+      }
+    }
     this.activeListeners.clear();
+
+    // Clear timers
     this.activeIntervals.forEach((id) => clearInterval(id));
     this.activeIntervals.clear();
     this.activeTimeouts.forEach((id) => clearTimeout(id));
     this.activeTimeouts.clear();
-    this.activeSubscriptions.forEach((sub) => sub.unsubscribe());
+
+    // Unsubscribe subscriptions
+    this.activeSubscriptions.forEach((sub) => {
+      try { sub.unsubscribe(); } catch { /* ignore */ }
+    });
     this.activeSubscriptions.clear();
   }
 
