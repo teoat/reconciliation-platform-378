@@ -121,22 +121,30 @@ App → ErrorBoundary → ReduxProvider → WebSocketProvider → AuthProvider �
 
 ## 📖 Documentation
 
-### **Essential Guides**
+### **Getting Started**
 
-- **[START_HERE.md](./START_HERE.md)** - Quick start guide
-- **[8_LAYER_QUANTUM_AUDIT_EXECUTION_REPORT.md](./8_LAYER_QUANTUM_AUDIT_EXECUTION_REPORT.md)** - Complete audit report
-- **[EXECUTION_COMPLETE_SUMMARY.md](./EXECUTION_COMPLETE_SUMMARY.md)** - Execution summary
+- **[QUICK_START.md](./QUICK_START.md)** - Quick start guide for new users
+- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Comprehensive deployment guide (Docker, Kubernetes, Terraform)
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Contribution guidelines
 
-### **API Documentation**
+### **Operations & Maintenance**
 
-- **REST API**: See `/api-docs` in application
-- **WebSocket API**: Real-time event documentation
+- **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[docs/SUPPORT_MAINTENANCE_GUIDE.md](./docs/SUPPORT_MAINTENANCE_GUIDE.md)** - Operations, monitoring, and maintenance
+- **[docs/INCIDENT_RESPONSE_RUNBOOKS.md](./docs/INCIDENT_RESPONSE_RUNBOOKS.md)** - Incident response procedures
+- **[docs/GO_LIVE_CHECKLIST.md](./docs/GO_LIVE_CHECKLIST.md)** - Production go-live checklist
 
-### **Deployment**
+### **Architecture & APIs**
 
-- **Docker**: `docker-compose up --build`
-- **Kubernetes**: See `k8s/` directory
-- **Terraform**: See `terraform/` directory
+- **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - System architecture and design
+- **[docs/API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md)** - REST/WebSocket API reference
+- **[docs/INFRASTRUCTURE.md](./docs/INFRASTRUCTURE.md)** - Infrastructure topology
+
+### **Additional Resources**
+
+- **[docs/README.md](./docs/README.md)** - Complete documentation index
+- **[docs/UAT_PLAN.md](./docs/UAT_PLAN.md)** - User acceptance testing
+- **[docs/SECURITY_AUDIT_REPORT.md](./docs/SECURITY_AUDIT_REPORT.md)** - Security audit findings
 
 ---
 

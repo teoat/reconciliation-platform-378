@@ -1,5 +1,5 @@
 # Master Documentation Index
-**Last Updated:** 2025-01-XX  
+**Last Updated:** January 2025  
 **Purpose:** Single source of truth for all project documentation
 
 ---
@@ -7,66 +7,53 @@
 ## 📚 Core Documentation
 
 ### Getting Started
-- **README.md** - Main project documentation and quick start
-- **docs/QUICK_START.md** - Quick start guide
-- **docs/DEPLOYMENT_GUIDE.md** - Deployment instructions
+- **[../README.md](../README.md)** - Main project documentation and quick start
+- **[QUICK_START.md](QUICK_START.md)** - Quick start guide  
+- **[../DEPLOYMENT_GUIDE.md](../DEPLOYMENT_GUIDE.md)** - Comprehensive deployment instructions (includes Docker, Kubernetes, Terraform)
 
-### Project Status & Tracking
-- **docs/PROJECT_STATUS.md** - Current project status (consolidated)
-- **MASTER_TODO_CONSOLIDATED.md** - Single source of truth for todos
-- **docs/COMPLETION_HISTORY.md** - Consolidated completion history
-- **docs/DOCUMENTATION_DIAGNOSTICS.md** - Documentation analysis & consolidation plan ⭐ **NEW**
-- **docs/NEXT_STEPS_COMPLETION_SUMMARY.md** - Completion summary for next steps ⭐ **NEW**
+### Operations & Support
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[SUPPORT_MAINTENANCE_GUIDE.md](SUPPORT_MAINTENANCE_GUIDE.md)** - Maintenance operations
+- **[INCIDENT_RESPONSE_RUNBOOKS.md](INCIDENT_RESPONSE_RUNBOOKS.md)** - Incident response procedures
 
-### Comprehensive Reports
-- **OMEGA_7_VECTOR_AUDIT_REPORT.md** - Complete 7-vector audit (945 lines)
-- **docs/DIAGNOSTIC_RESULTS.md** - Consolidated diagnostic results
-- **docs/DOCUMENTATION_DIAGNOSTICS.md** - Documentation analysis & consolidation ⭐ **NEW**
-- **MASTER_IMPROVEMENT_ORCHESTRATION.md** - Improvement orchestration plan
+### Architecture & Engineering
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and design
+- **[INFRASTRUCTURE.md](INFRASTRUCTURE.md)** - Infrastructure topology
+- **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** - REST/WebSocket API reference
 
-### Agent Plans
-- **AGENT_1_STABILITY.md** - Stability & error handling plan
-- **AGENT_2_SECURITY.md** - Security improvement plan
-- **AGENT_3_ACCESSIBILITY_QUALITY.md** - Accessibility & code quality plan
+### Testing & Quality
+- **[UAT_PLAN.md](UAT_PLAN.md)** - User acceptance testing plan
+- **[UAT_SUMMARY.md](UAT_SUMMARY.md)** - UAT results and summary
+- **[USER_TRAINING_GUIDE.md](USER_TRAINING_GUIDE.md)** - End-user training materials
 
 ---
 
-## 📋 TODO & Task Tracking
-
-### Master TODO
-- **CONSOLIDATED_MASTER_TODO.md** - Single source of truth
-- **P2_TODOS_FINAL_STATUS.md** - P2 todos completion status (keep)
-- **MASTER_TODO_ORCHESTRATION.md** - Task orchestration plan
-
-**Note:** All other TODO completion files archived in `docs/archive/consolidated/`
+## 🔒 Security & Configuration
+- **[SECRETS_MANAGEMENT.md](SECRETS_MANAGEMENT.md)** - Secrets management guide
+- **[SECURITY_AUDIT_REPORT.md](SECURITY_AUDIT_REPORT.md)** - Security audit findings
+- **[SSOT_GUIDANCE.md](SSOT_GUIDANCE.md)** - Configuration governance
 
 ---
 
-## 📊 Reports & Analysis
-
-### Audit Reports
-- **OMEGA_7_VECTOR_AUDIT_REPORT.md** - Comprehensive audit
-- **docs/DIAGNOSTIC_RESULTS.md** - Consolidated diagnostics
-
-### Completion Reports
-- **docs/COMPLETION_HISTORY.md** - Consolidated completion history
-
-**Note:** All other completion/summary/report files archived in `docs/archive/consolidated/`
+## 📦 Additional Resources
+- **[GO_LIVE_CHECKLIST.md](GO_LIVE_CHECKLIST.md)** - Production go-live checklist
+- **[DOCKER_BUILD_GUIDE.md](DOCKER_BUILD_GUIDE.md)** - Docker build instructions
+- **[QUICK-REFERENCE-COMMANDS.md](QUICK-REFERENCE-COMMANDS.md)** - Command reference
+- **[project-history.md](project-history.md)** - Project milestones and history
 
 ---
 
-## 🛠️ Technical Guides
+## 📂 Legacy Documentation
 
-### Setup & Configuration
-- **TEST_COVERAGE_SETUP.md** - Test coverage configuration
-- **CI_CD_SETUP.md** - CI/CD setup guide
-- **SECURITY_STORAGE_AUDIT.md** - Storage security audit
-- **SECURITY_BEST_PRACTICES_IMPLEMENTED.md** - Security practices
+All legacy analysis, completion reports, and agent coordination documents have been archived for historical reference:
 
-### Implementation Guides
-- **REFACTORING_GUIDE.md** - Code refactoring guidelines
-- **TEST_COVERAGE_IMPROVEMENT_PLAN.md** - Coverage improvement plan
-- **TYPE_SAFETY_IMPROVEMENTS.md** - Type safety improvements
+- **[archive/README.md](archive/README.md)** - Archive index and explanation
+- **archive/** - Contains 75+ legacy documents including:
+  - Agent coordination reports (AGENT_*.md)
+  - Completion status documents (*_COMPLETE*.md, *_COMPLETION*.md)
+  - Diagnostic reports (DIAGNOSTIC_*.md, *_DIAGNOSTIC*.md)
+  - Implementation progress tracking (IMPLEMENTATION_*.md)
+  - Feature development records (frenly-*.md, onboarding-*.md, meta-agent-*.md)
 
 ---
 
@@ -74,63 +61,58 @@
 
 ```
 /
-├── README.md (main)
-├── CONSOLIDATED_MASTER_TODO.md (todo tracking)
-├── OMEGA_7_VECTOR_AUDIT_REPORT.md (comprehensive audit)
-├── MASTER_IMPROVEMENT_ORCHESTRATION.md (improvements)
-├── docs/
-│   ├── PROJECT_STATUS.md (consolidated status)
-│   ├── COMPLETION_HISTORY.md (consolidated history)
-│   ├── DIAGNOSTIC_RESULTS.md (consolidated diagnostics)
-│   ├── QUICK_START.md
-│   ├── DEPLOYMENT_GUIDE.md
-│   └── archive/
-│       └── consolidated/ (duplicate files archived)
-└── [Agent Plans] (AGENT_*.md files)
+├── README.md (main project overview)
+├── DEPLOYMENT_GUIDE.md (comprehensive deployment)
+├── CONTRIBUTING.md (contribution guidelines)
+├── QUICK_START.md (quick start guide)
+└── docs/
+    ├── README.md (documentation index)
+    ├── ARCHITECTURE.md (system design)
+    ├── API_DOCUMENTATION.md (API reference)
+    ├── TROUBLESHOOTING.md (common issues)
+    ├── SUPPORT_MAINTENANCE_GUIDE.md (operations)
+    ├── UAT_PLAN.md (testing plan)
+    ├── INFRASTRUCTURE.md (infrastructure)
+    └── archive/ (legacy documents - 75+ files)
+        └── README.md (archive index)
 ```
 
 ---
 
 ## 🔍 Finding Information
 
-### Project Status
-→ `docs/PROJECT_STATUS.md`
+### Deployment & Setup
+→ [../DEPLOYMENT_GUIDE.md](../DEPLOYMENT_GUIDE.md)
 
-### TODO Tracking
-→ `CONSOLIDATED_MASTER_TODO.md`
+### Troubleshooting
+→ [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 
-### Comprehensive Audit
-→ `OMEGA_7_VECTOR_AUDIT_REPORT.md`
+### Architecture & Design
+→ [ARCHITECTURE.md](ARCHITECTURE.md)
 
-### Completion History
-→ `docs/COMPLETION_HISTORY.md`
+### API Reference
+→ [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
 
-### Diagnostic Results
-→ `docs/DIAGNOSTIC_RESULTS.md`
+### Operations & Maintenance
+→ [SUPPORT_MAINTENANCE_GUIDE.md](SUPPORT_MAINTENANCE_GUIDE.md)
 
 ---
 
-## 📝 Consolidation Notes
+## 📝 Recent Consolidation (January 2025)
 
-**Consolidated Files:**
-- P2 TODO files → `P2_TODOS_FINAL_STATUS.md` (kept)
-- All completion files → `docs/COMPLETION_HISTORY.md`
-- All diagnostic files → `docs/DIAGNOSTIC_RESULTS.md`
-- All status/summary files → `docs/PROJECT_STATUS.md`
-- Documentation diagnostics → `docs/DOCUMENTATION_DIAGNOSTICS.md` ⭐ **NEW**
+**Changes Made:**
+- ✅ Merged DOCKER_DEPLOYMENT.md into DEPLOYMENT_GUIDE.md
+- ✅ Archived 75+ legacy analysis and completion documents
+- ✅ Created docs/archive/ with explanatory README
+- ✅ Updated all cross-references to active documentation
+- ✅ Improved documentation navigation and clarity
 
-**Archived Files:**
-- All duplicate files moved to `docs/archive/consolidated/`
-- 150+ duplicate documentation files archived
-- 23% reduction in total documentation files (164 → 126)
-
-**Recent Updates (January 2025):**
-- ✅ Created comprehensive documentation diagnostics report
-- ✅ Completed critical frontend TODOs (onboarding API integration)
-- ✅ Completed all P1 TODOs (EmptyStateGuidance + Onboarding Analytics)
-- ✅ Updated master documentation index
-- ✅ Consolidated duplicate documentation files
-- ✅ Created next steps completion summary
+**Archived Document Categories:**
+- Agent coordination reports (AGENT_*.md)
+- Completion status documents (*_COMPLETE*.md, *_COMPLETION*.md)
+- Diagnostic reports (DIAGNOSTIC_*.md)
+- Implementation tracking (IMPLEMENTATION_*.md)
+- Feature development records (frenly-*.md, onboarding-*.md)
 
 ---
 
