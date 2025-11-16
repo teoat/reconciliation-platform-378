@@ -24,16 +24,14 @@ interface UseWebSocketIntegrationReturn {
 }
 
 export const useWebSocketIntegration = (): UseWebSocketIntegrationReturn => {
-  const { isConnected, sendMessage: wsSendMessage, lastMessage } = useWebSocket()
+  const { isConnected, sendMessage: wsSendMessage, on, off } = useWebSocket()
   const [progress, setProgress] = useState<ReconciliationProgress | null>(null)
   const [subscribedJobs, setSubscribedJobs] = useState<Set<string>>(new Set())
 
   // Handle incoming messages
   useEffect(() => {
-    if (lastMessage) {
+    const handleMessage = (data: any) => {
       try {
-        const data = JSON.parse(lastMessage.data)
-        
         switch (data.type) {
           case 'job_progress_update':
             if (subscribedJobs.has(data.job_id)) {
@@ -74,7 +72,15 @@ export const useWebSocketIntegration = (): UseWebSocketIntegrationReturn => {
         logger.error('Error parsing WebSocket message:', error)
       }
     }
-  }, [lastMessage, subscribedJobs])
+
+    // Register event listener
+    on('message', handleMessage)
+    
+    // Cleanup
+    return () => {
+      off('message', handleMessage)
+    }
+  }, [on, off, subscribedJobs])
 
   const subscribeToJob = useCallback((jobId: string) => {
     if (isConnected) {

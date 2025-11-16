@@ -299,7 +299,7 @@ const Settings: React.FC = () => {
             <FeatureGate
               featureId="onboarding-analytics"
               requiredRole={['admin']}
-              userRole={(user as { role?: string })?.role || 'user'}
+              userRole={((user as { role?: string })?.role || 'user') as 'admin' | 'analyst' | 'viewer'}
               showUnavailable={false}
             >
               <button
@@ -490,7 +490,7 @@ const Settings: React.FC = () => {
             <FeatureGate
               featureId="onboarding-analytics-dashboard"
               requiredRole={['admin']}
-              userRole={(user as { role?: string })?.role || 'user'}
+              userRole={((user as { role?: string })?.role || 'user') as 'admin' | 'analyst' | 'viewer'}
               fallback={
                 <div className="text-center py-8 text-gray-500">
                   <p>Analytics dashboard is only available to administrators.</p>

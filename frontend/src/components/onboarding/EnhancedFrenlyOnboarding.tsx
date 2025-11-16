@@ -110,7 +110,7 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
           const response = await apiClient.getCurrentUser();
           
           if (response.data) {
-            const user = response.data;
+            const user = response.data as any;
             const roleMap: Record<string, UserRole> = {
               'admin': 'admin',
               'administrator': 'admin',
@@ -191,8 +191,9 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
               try {
                 const { apiClient } = await import('../../services/apiClient');
                 const response = await apiClient.getProjects(1, 1);
-                if (response.data && response.data.projects && response.data.projects.length > 0) {
-                  const latestProject = response.data.projects[0];
+                const data = response.data as any;
+                if (data && data.projects && data.projects.length > 0) {
+                  const latestProject = data.projects[0];
                   setCreatedProjectId(latestProject.id);
                   return true;
                 }
@@ -601,8 +602,8 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
               className="w-full bg-gray-200 rounded-full h-2"
               role="progressbar"
               aria-valuenow={Math.round(progress)}
-              aria-valuemin="0"
-              aria-valuemax="100"
+              aria-valuemin={0}
+              aria-valuemax={100}
               aria-label={`Onboarding progress: ${Math.round(progress)}%`}
               title={`Progress: ${Math.round(progress)}%`}
             >

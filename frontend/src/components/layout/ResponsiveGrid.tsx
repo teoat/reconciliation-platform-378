@@ -344,7 +344,6 @@ export const ResponsiveVisibility: React.FC<ResponsiveVisibilityProps> = ({
 export {
   ResponsiveGrid as Grid,
   ResponsiveContainer as Container,
-  CardGrid,
   ResponsiveFlex as Flex,
   ResponsiveText as Text,
   ResponsiveSpacing as Spacing,

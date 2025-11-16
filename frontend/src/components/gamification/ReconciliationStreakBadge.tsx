@@ -44,7 +44,9 @@ export const ReconciliationStreakBadge: React.FC<ReconciliationStreakBadgeProps>
                 {streak.currentStreak} Day Streak
               </span>
               {streak.streakProtected && (
-                <Shield className="h-4 w-4 text-blue-500" title="Streak Protected" />
+                <span title="Streak Protected">
+                  <Shield className="h-4 w-4 text-blue-500" />
+                </span>
               )}
             </div>
             <div className="text-sm text-gray-600">

@@ -36,12 +36,12 @@ function adaptReconciliationRecord(record: DataManagementRecord): Reconciliation
     projectId: record.reconciliationId, // Map reconciliationId to projectId
     sourceId: firstSource?.id || record.id,
     targetId: record.batchId,
-    sourceSystem: firstSource?.system || 'unknown',
+    sourceSystem: firstSource?.systemName || 'unknown',
     targetSystem: 'reconciliation',
-    amount: firstSource?.amount || 0,
-    currency: firstSource?.currency || 'USD',
-    transactionDate: firstSource?.date || new Date().toISOString(),
-    description: firstSource?.description || '',
+    amount: (firstSource?.data as any)?.amount || 0,
+    currency: (firstSource?.data as any)?.currency || 'USD',
+    transactionDate: (firstSource?.data as any)?.date || new Date().toISOString(),
+    description: (firstSource?.data as any)?.description || '',
     status: record.status as any, // Status types are compatible
     matchType: undefined,
     confidence: record.confidence,

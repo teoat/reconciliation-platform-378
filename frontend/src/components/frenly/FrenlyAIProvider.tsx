@@ -58,9 +58,9 @@ export const FrenlyAIProvider: React.FC<FrenlyAIProviderProps> = ({
   const [isTutorialActive, setIsTutorialActive] = useState(false)
   const [showTips, setShowTips] = useState(enableTips)
   const [currentPage, setCurrentPage] = useState('dashboard')
-  const [personality, setPersonality] = useState({
-    mood: 'happy' as const,
-    energy: 'medium' as const,
+  const [personality, setPersonality] = useState<FrenlyAIContextType['personality']>({
+    mood: 'happy',
+    energy: 'medium',
     helpfulness: 8
   })
 
