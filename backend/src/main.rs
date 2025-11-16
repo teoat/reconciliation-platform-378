@@ -13,14 +13,23 @@ use reconciliation_backend::{
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Print to stderr immediately (before logging init) for debugging
+    eprintln!("🚀 Backend starting...");
+    
     // Initialize logging
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+    log::info!("Logging initialized");
 
     // Load configuration
+    log::info!("Loading configuration...");
     let config = match Config::from_env() {
-        Ok(cfg) => cfg,
+        Ok(cfg) => {
+            log::info!("Configuration loaded successfully");
+            cfg
+        },
         Err(e) => {
             eprintln!("Failed to load configuration: {}", e);
+            log::error!("Configuration error: {}", e);
             std::process::exit(1);
         }
     };

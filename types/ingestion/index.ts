@@ -202,3 +202,28 @@ export interface TableData {
   [key: string]: ColumnValue;
 }
 
+export interface SortConfig {
+  field: string;
+  direction: 'asc' | 'desc';
+}
+
+export interface FilterConfig {
+  field: string;
+  operator:
+    | 'equals'
+    | 'contains'
+    | 'startsWith'
+    | 'endsWith'
+    | 'greaterThan'
+    | 'lessThan'
+    | 'between';
+  value: ColumnValue;
+  value2?: ColumnValue;
+}
+
+export interface PaginationConfig {
+  page: number;
+  pageSize: number;
+  totalRecords: number;
+}
+
