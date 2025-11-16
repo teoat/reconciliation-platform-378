@@ -391,13 +391,17 @@ export function detectPerformanceRegression<T>(
 ): () => Promise<void> {
   return async () => {
   return async () => {
-    PerformanceMonitor.clear(); // Clear previous measurements
-    const startTime = performance.now();
+  return async () => {
+    const now = (typeof performance !== 'undefined' && typeof performance.now === 'function')
+      ? () => performance.now()
+      : () => Date.now();
+
+    const startTime = now();
 
     try {
       await testFn();
     } finally {
-      const duration = performance.now() - startTime;
+      const duration = now() - startTime;
       PerformanceMonitor.measure('test-execution', duration);
 
       const { hasRegressions, details } = PerformanceMonitor.checkRegressions();
