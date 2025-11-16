@@ -388,7 +388,7 @@ dev-debug.log
 # Note: docs/archive/ is intentionally committed for historical reference
 backup_*/
 archived/
-archive/
+/archive/
 *.archived
 
 # ============================================================================
