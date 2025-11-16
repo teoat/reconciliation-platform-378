@@ -1,5 +1,5 @@
 // Column type inference utilities
-import type { DataRow, ColumnInfo, ColumnValue } from '../../types/ingestion';
+import type { DataRow, ColumnInfo } from '../../types/ingestion';
 
 /**
  * Infers column types from data
@@ -55,3 +55,26 @@ export const inferColumnTypes = (data: DataRow[]): ColumnInfo[] => {
   });
 };
 
+/**
+ * Detects if a column is likely an ID field
+ */
+export const isIdColumn = (columnName: string): boolean => {
+  const lower = columnName.toLowerCase();
+  return lower.includes('id') || lower === 'id' || lower.endsWith('_id');
+};
+
+/**
+ * Detects if a column is likely a date field
+ */
+export const isDateColumn = (columnName: string): boolean => {
+  const lower = columnName.toLowerCase();
+  return lower.includes('date') || lower.includes('time') || lower.includes('created') || lower.includes('updated');
+};
+
+/**
+ * Detects if a column is likely a numeric field
+ */
+export const isNumericColumn = (columnName: string): boolean => {
+  const lower = columnName.toLowerCase();
+  return lower.includes('amount') || lower.includes('price') || lower.includes('cost') || lower.includes('total') || lower.includes('quantity');
+};

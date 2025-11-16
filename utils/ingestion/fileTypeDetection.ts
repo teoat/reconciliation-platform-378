@@ -4,10 +4,7 @@ import type { UploadedFile } from '../../types/ingestion';
 /**
  * Detects file type based on filename and MIME type
  */
-export const detectFileType = (
-  fileName: string,
-  mimeType: string
-): UploadedFile['fileType'] => {
+export const detectFileType = (fileName: string, mimeType: string): UploadedFile['fileType'] => {
   const name = fileName.toLowerCase();
   const mime = mimeType.toLowerCase();
 
@@ -68,3 +65,17 @@ export const detectFileType = (
   return 'other';
 };
 
+/**
+ * Gets file extension from filename
+ */
+export const getFileExtension = (fileName: string): string => {
+  const parts = fileName.split('.');
+  return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+};
+
+/**
+ * Checks if file type is supported
+ */
+export const isSupportedFileType = (fileType: UploadedFile['fileType']): boolean => {
+  return fileType !== 'other';
+};

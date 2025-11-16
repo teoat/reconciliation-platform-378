@@ -117,7 +117,13 @@
 - [ ] Extract useMatchingRules
 - [ ] Extract useConflictResolution
 
-#### Phase 5: Pages ⏳
+#### Phase 5: Pages 🚧
+- [x] Import types from extracted type files ✅
+- [x] Import utilities from extracted utility files ✅
+- [x] Import components from component files ✅
+- [x] Remove duplicate utility functions ✅
+- [ ] Replace inline component code with imported components
+- [ ] Extract and use custom hooks
 - [ ] Refactor IngestionPage.tsx to ~500 lines
 - [ ] Refactor ReconciliationPage.tsx to ~500 lines
 
@@ -165,16 +171,19 @@
 - Documentation complete
 - Ready for deployment
 
-### Refactoring: 🚧 **30% COMPLETE**
+### Refactoring: 🚧 **60% COMPLETE**
 - Phase 1 (Types): ✅ 100% complete (350 lines removed)
 - Phase 2 (Utils): ✅ 100% complete (utility functions extracted)
-- Phase 3-6: ⏳ 0% complete
-- Foundation ready for implementation
+- Phase 3 (Components): ✅ 100% complete (all components existed)
+- Phase 4 (Hooks): ⏳ 0% complete
+- Phase 5 (Pages): 🚧 30% complete (~250 lines removed, utilities integrated)
+- Phase 6 (Testing): ⏳ 0% complete
+- Foundation complete, integration in progress
 
-### Combined: 🚧 **~70% COMPLETE**
+### Combined: 🚧 **~80% COMPLETE**
 - Logstash: 100% ✅
-- Refactoring: 30% 🚧 (Phases 1-2 complete: types extracted, utilities created)
-- **Weighted Average**: ~70% (Logstash was critical, refactoring progressing well)
+- Refactoring: 60% 🚧 (Phases 1-3 complete, Phase 5 in progress: ~600 lines removed)
+- **Weighted Average**: ~80% (Logstash was critical, refactoring progressing well)
 
 ---
 
@@ -221,6 +230,6 @@
 ---
 
 **Last Updated**: January 2025  
-**Next Review**: After Phase 2 completion  
-**Overall Status**: 🚧 **65% Complete** - Critical fixes done, Phase 1 refactoring complete (350 lines removed)
+**Next Review**: After hook extraction  
+**Overall Status**: 🚧 **80% Complete** - Foundation complete, integration in progress (~600 lines removed)
 

@@ -96,3 +96,7 @@ pub use advanced_metrics::AdvancedMetrics;
 // Resilience patterns
 pub mod resilience;
 pub use resilience::{ResilienceManager, graceful_degradation};
+
+// Password management
+pub mod password_manager;
+pub use password_manager::{PasswordManager, PasswordEntry, RotationSchedule, PasswordRotationScheduler};
