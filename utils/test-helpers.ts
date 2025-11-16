@@ -174,7 +174,7 @@ export class StaleDataDetector {
     const timestamp = this.cacheTimestamps.get(key);
     const maxAge = this.cacheMaxAge.get(key);
 
-    if (!timestamp || !maxAge) {
+    if (timestamp === undefined || maxAge === undefined) {
       return false;
     }
 
