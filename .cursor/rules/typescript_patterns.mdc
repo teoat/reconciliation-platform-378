@@ -175,10 +175,13 @@ alwaysApply: true
   - Follow [SSOT Guidance](mdc:docs/SSOT_GUIDANCE.md)
 
 - **Security:**
-  - See [security.mdc](mdc:.cursor/rules/security.mdc) for comprehensive security patterns
-  - Always validate user input
+  - **IMPORTANT**: See [security.mdc](mdc:.cursor/rules/security.mdc) for comprehensive security patterns
+  - Always validate user input (see security.mdc for validation patterns)
+  - Mask PII in logs (see security.mdc for logging security)
   - Use HTTPS in production
   - Never commit secrets to version control
   - Implement proper authentication and authorization
+  - Escape user input to prevent XSS (see security.mdc)
+  - Use CSRF tokens for state-changing operations (see security.mdc)
 
 Follow [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) for general rule formatting guidelines.

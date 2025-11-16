@@ -1,0 +1,94 @@
+---
+description: Code review guidelines and best practices for the reconciliation platform.
+globs: **/*
+alwaysApply: true
+---
+
+- **Review Checklist:**
+  - ✅ Code follows project patterns and conventions
+  - ✅ Tests are included and passing
+  - ✅ Documentation is updated if needed
+  - ✅ No security vulnerabilities
+  - ✅ Performance considerations addressed
+  - ✅ Error handling is appropriate
+  - ✅ No hardcoded secrets or credentials
+  - ✅ Code is readable and maintainable
+
+- **What to Review:**
+  - **Functionality**: Does the code do what it's supposed to?
+  - **Correctness**: Are there bugs or edge cases?
+  - **Security**: Any security vulnerabilities?
+  - **Performance**: Will this impact performance?
+  - **Maintainability**: Is the code easy to understand and modify?
+  - **Testing**: Are there adequate tests?
+  - **Documentation**: Is documentation updated?
+
+- **Security Review:**
+  - Check for SQL injection vulnerabilities
+  - Verify input validation
+  - Ensure secrets aren't hardcoded
+  - Check authentication/authorization
+  - Verify error messages don't leak information
+  - See [security.mdc](mdc:.cursor/rules/security.mdc) for comprehensive security patterns
+
+- **Code Quality:**
+  - Follows SSOT principles (no duplication)
+  - Proper error handling
+  - Type safety (TypeScript strict mode, Rust types)
+  - Consistent naming conventions
+  - Appropriate comments (explain why, not what)
+
+- **Approval Criteria:**
+  - All CI checks pass
+  - At least one approval (required for protected branches)
+  - Code owner approval (required for master/main)
+  - All review comments addressed
+  - All conversations resolved (protected branches)
+
+- **Review Process:**
+  1. **Author**: Create PR with clear description
+  2. **Reviewer**: Review within 24-48 hours
+  3. **Author**: Address comments and update PR
+  4. **Reviewer**: Re-review if significant changes
+  5. **Approval**: Merge when approved and checks pass
+
+- **Review Comments:**
+  - Be constructive and respectful
+  - Explain the reasoning behind suggestions
+  - Suggest alternatives when possible
+  - Acknowledge good practices
+  - Focus on code, not the person
+
+- **Common Issues to Look For:**
+  - **Duplication**: Code that could be reused
+  - **Complexity**: Overly complex logic
+  - **Naming**: Unclear or misleading names
+  - **Error Handling**: Missing or inappropriate error handling
+  - **Testing**: Missing or inadequate tests
+  - **Performance**: Inefficient algorithms or queries
+  - **Security**: Vulnerabilities or unsafe patterns
+
+- **PR Guidelines:**
+  - Keep PRs small and focused (single feature/fix)
+  - Write descriptive titles and descriptions
+  - Link related issues
+  - Include screenshots for UI changes
+  - Document breaking changes
+  - Update CHANGELOG if needed
+
+- **Best Practices:**
+  - Review promptly (within 24-48 hours)
+  - Approve when satisfied, don't nitpick
+  - Request changes only for important issues
+  - Use suggestions for minor improvements
+  - Be open to feedback as an author
+  - Learn from reviews
+
+- **Automated Checks:**
+  - Linting (ESLint, clippy)
+  - Type checking (TypeScript, Rust compiler)
+  - Tests (unit, integration)
+  - Security scanning
+  - Build verification
+
+Follow [git_workflow.mdc](mdc:.cursor/rules/git_workflow.mdc) for PR workflow and [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) for general rule formatting guidelines.

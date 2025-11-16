@@ -83,12 +83,10 @@ export async function waitForBackend(
 
 /**
  * Skip test if backend is not available
- * Use in test.beforeEach or test.beforeAll
+ * Returns true if test should be skipped
  */
-export function skipIfBackendUnavailable(status: BackendHealthStatus) {
-  if (!status.isRunning) {
-    test.skip();
-  }
+export function shouldSkipTest(status: BackendHealthStatus): boolean {
+  return !status.isRunning;
 }
 
 /**
