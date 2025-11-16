@@ -1,5 +1,5 @@
 // Lightweight logger utility with environment-aware behavior
-
+import { logger } from '../services/logger';
 import { LogLevel } from '../types';
 import { ErrorType, ErrorSeverity } from '../utils/errorHandler';
 import { Metadata } from '@/types/metadata';
@@ -39,11 +39,7 @@ class ConsoleDestination implements LogDestination {
   async write(entry: LogEntry): Promise<void> {
     // Only log to console in development
     if (!this.isDevelopment) {
-      // In production, only log errors
-      if (entry.level === 'error') {
-        // Use // console.error but format for production
-        // console.error(`[Error] ${entry.message}`, this.sanitizeForProduction(entry.context))
-      }
+      // In production, errors are handled by other destinations
       return;
     }
 
@@ -61,17 +57,17 @@ class ConsoleDestination implements LogDestination {
   private getLogMethod(level: LogLevel): (...args: unknown[]) => void {
     switch (level) {
       case 'debug':
-        return;
+        return console.debug;
       case 'info':
-        return;
+        return console.info;
       case 'warn':
-        return; // console.warn
+        return console.warn;
       case 'error':
-        return; // console.error
+        return console.error;
       case 'trace':
-        return;
+        return console.trace;
       default:
-        return;
+        return console.log;
     }
   }
 
@@ -119,7 +115,7 @@ class LocalStorageDestination implements LogDestination {
 
       localStorage.setItem(this.storageKey, JSON.stringify(logs));
     } catch (error) {
-      // console.error('Failed to write to localStorage:', error)
+      // logger.error('Failed to write to localStorage:', error)
     }
   }
 
@@ -185,7 +181,7 @@ class ApiDestination implements LogDestination {
         }),
       });
     } catch (error) {
-      // console.error('Failed to send logs to API:', error)
+      // logger.error('Failed to send logs to API:', error)
       // Re-add failed logs to batch
       this.batch.unshift(...batchToSend);
     }
@@ -413,7 +409,7 @@ class Logger {
     this.destinations.forEach((destination) => {
       if (destination.enabled) {
         destination.write(entry).catch((error) => {
-          // console.error(`Failed to write to destination ${destination.name}:`, error)
+          // logger.error(`Failed to write to destination ${destination.name}:`, error)
         });
       }
     });

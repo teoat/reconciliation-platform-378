@@ -70,7 +70,7 @@ export const MonitoringDashboard: React.FC = () => {
       const response = await fetch('/api/monitoring/metrics');
       if (response.ok) {
         const data = await response.json();
-        setMetrics(data);
+        setMetrics(data || null);
       } else {
         throw new Error(`Failed to fetch metrics: ${response.status}`);
       }
@@ -86,7 +86,7 @@ export const MonitoringDashboard: React.FC = () => {
       const response = await fetch('/api/monitoring/alerts');
       if (response.ok) {
         const data = await response.json();
-        setAlerts(data);
+        setAlerts(Array.isArray(data) ? data : []);
       } else {
         throw new Error(`Failed to fetch alerts: ${response.status}`);
       }
@@ -102,7 +102,7 @@ export const MonitoringDashboard: React.FC = () => {
       const response = await fetch('/api/monitoring/logs');
       if (response.ok) {
         const data = await response.json();
-        setLogs(data);
+        setLogs(Array.isArray(data) ? data : []);
       } else {
         throw new Error(`Failed to fetch logs: ${response.status}`);
       }

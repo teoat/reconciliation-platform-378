@@ -160,6 +160,13 @@ pub async fn login(
         ));
     }
 
+    // Set user's master key in password manager (use their login password)
+    // This allows the user to decrypt their stored passwords using their login password
+    if let Some(password_manager) = http_req.app_data::<web::Data<Arc<crate::services::password_manager::PasswordManager>>>() {
+        password_manager.set_user_master_key(user.id, &req.password).await;
+        log::debug!("Set password manager master key for user: {}", user.id);
+    }
+
     // Generate token
     let token = auth_service.as_ref().generate_token(&user)?;
 
@@ -286,7 +293,17 @@ pub async fn refresh_token(
 }
 
 /// Logout endpoint
-pub async fn logout() -> Result<HttpResponse, AppError> {
+pub async fn logout(
+    http_req: HttpRequest,
+) -> Result<HttpResponse, AppError> {
+    // Clear user's master key from password manager on logout
+    if let Ok(user_id) = crate::handlers::helpers::extract_user_id(&http_req) {
+        if let Some(password_manager) = http_req.app_data::<web::Data<Arc<crate::services::password_manager::PasswordManager>>>() {
+            password_manager.clear_user_master_key(user_id).await;
+            log::debug!("Cleared password manager master key for user: {}", user_id);
+        }
+    }
+    
     // In a stateless JWT implementation, logout is handled client-side
     // by removing the token. For enhanced security, you could implement
     // a token blacklist using Redis.
@@ -536,6 +553,22 @@ pub async fn google_oauth(
         return Err(AppError::Authentication(
             "Account is deactivated".to_string(),
         ));
+    }
+
+    // For OAuth users, derive master key from email + server secret
+    // This allows OAuth users to use password manager without a password
+    if let Some(password_manager) = http_req.app_data::<web::Data<Arc<crate::services::password_manager::PasswordManager>>>() {
+        // Derive master key from email + server secret (or JWT secret as fallback)
+        let server_secret = std::env::var("JWT_SECRET")
+            .unwrap_or_else(|_| "default-oauth-secret".to_string());
+        let derived_key = format!("{}:{}", email, server_secret);
+        // Hash the derived key for security using SHA-256
+        use sha2::{Digest, Sha256};
+        let mut hasher = Sha256::new();
+        hasher.update(derived_key.as_bytes());
+        let master_key = format!("{:x}", hasher.finalize());
+        password_manager.set_user_master_key(user.id, &master_key).await;
+        log::debug!("Set OAuth-derived password manager master key for user: {}", user.id);
     }
 
     // Generate token

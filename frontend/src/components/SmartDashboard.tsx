@@ -100,6 +100,17 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
   if (!dashboardData) return null
 
   const { user_metrics, prioritized_projects, smart_insights, next_actions } = dashboardData
+  
+  // Safe access with fallbacks
+  const userMetrics = user_metrics ?? {
+    overall_score: 0,
+    productivity_trend: 'stable' as const,
+    project_completion_rate: 0,
+    average_task_time: 0
+  }
+  const projects = prioritized_projects ?? []
+  const insights = smart_insights ?? []
+  const actions = next_actions ?? []
 
   return (
     <div className="p-6 space-y-6">
@@ -122,7 +133,7 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
             <div>
               <p className="text-sm font-medium text-gray-600">Productivity Score</p>
               <p className="text-2xl font-bold text-gray-900">
-                {Math.round(user_metrics.overall_score * 100)}%
+                {Math.round((userMetrics.overall_score ?? 0) * 100)}%
               </p>
             </div>
             <div className="p-3 bg-blue-100 rounded-full">
@@ -130,13 +141,13 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
             </div>
           </div>
           <div className="mt-4 flex items-center">
-            {user_metrics.productivity_trend === 'increasing' ? (
+            {userMetrics.productivity_trend === 'increasing' ? (
               <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
             ) : (
               <TrendingDown className="w-4 h-4 text-gray-400 mr-1" />
             )}
             <span className="text-sm text-gray-600 capitalize">
-              {user_metrics.productivity_trend}
+              {userMetrics.productivity_trend ?? 'stable'}
             </span>
           </div>
         </div>
@@ -146,7 +157,7 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
             <div>
               <p className="text-sm font-medium text-gray-600">Completion Rate</p>
               <p className="text-2xl font-bold text-gray-900">
-                {Math.round(user_metrics.project_completion_rate * 100)}%
+                {Math.round((userMetrics.project_completion_rate ?? 0) * 100)}%
               </p>
             </div>
             <div className="p-3 bg-green-100 rounded-full">
@@ -157,7 +168,7 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
                 className="bg-green-500 h-2 rounded-full" 
-                style={{ width: `${user_metrics.project_completion_rate * 100}%` }}
+                style={{ width: `${(userMetrics.project_completion_rate ?? 0) * 100}%` }}
               ></div>
             </div>
           </div>
@@ -168,7 +179,7 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
             <div>
               <p className="text-sm font-medium text-gray-600">Avg Task Time</p>
               <p className="text-2xl font-bold text-gray-900">
-                {user_metrics.average_task_time.toFixed(1)}h
+                {(userMetrics.average_task_time ?? 0).toFixed(1)}h
               </p>
             </div>
             <div className="p-3 bg-yellow-100 rounded-full">
@@ -185,7 +196,7 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
             <div>
               <p className="text-sm font-medium text-gray-600">Active Projects</p>
               <p className="text-2xl font-bold text-gray-900">
-                {prioritized_projects.length}
+                {projects.length}
               </p>
             </div>
             <div className="p-3 bg-purple-100 rounded-full">
@@ -210,7 +221,7 @@ const SmartDashboard = ({ project }: SmartDashboardProps) => {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {prioritized_projects.map((project, index) => (
+              {projects.map((project, index) => (
                 <div key={project.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">

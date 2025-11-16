@@ -1,5 +1,5 @@
 /**
- * Onboarding Analytics Dashboard
+import { logger } from '../../services/logger'; * Onboarding Analytics Dashboard
  * 
  * Provides comprehensive analytics visualization for onboarding:
  * - Step completion rates
@@ -53,7 +53,7 @@ export const OnboardingAnalyticsDashboard: React.FC<OnboardingAnalyticsDashboard
       processAnalyticsData(allAnalytics);
       setIsLoading(false);
     } catch (error) {
-      console.error('Failed to load analytics:', error);
+      logger.error('Failed to load analytics:', error);
       setIsLoading(false);
     }
   };

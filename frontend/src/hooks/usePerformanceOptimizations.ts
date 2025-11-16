@@ -1,5 +1,5 @@
 /**
- * Performance Optimization Hooks
+import { logger } from '../services/logger'; * Performance Optimization Hooks
  * 
  * Reusable hooks for optimizing React component performance
  * Use these to prevent unnecessary re-renders and improve app responsiveness
@@ -201,7 +201,7 @@ export function usePerformanceMeasure(componentName: string): void {
     const renderTime = endTime - startTime.current;
     
     if (renderTime > 16) { // Slower than 60fps
-      console.warn(
+      logger.warn(
         `[Performance] ${componentName} render #${renderCount.current} took ${renderTime.toFixed(2)}ms`
       );
     }

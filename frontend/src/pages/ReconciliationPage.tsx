@@ -469,7 +469,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
               </Button>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900" id="page-title">
-                  {project.name}
+                  {project?.name ?? 'Unknown Project'}
                 </h1>
                 <p className="text-sm text-gray-500">Reconciliation Management</p>
               </div>
@@ -559,22 +559,22 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <MetricCard
                 title="Data Sources"
-                value={dataSources.length}
+                value={dataSources?.length ?? 0}
                 icon={<FileText className="w-6 h-6" />}
               />
               <MetricCard
                 title="Processed Files"
-                value={dataSources.filter((ds) => ds.status === 'processed').length}
+                value={dataSources?.filter((ds) => ds?.status === 'processed').length ?? 0}
                 icon={<CheckCircle className="w-6 h-6" />}
               />
               <MetricCard
                 title="Active Jobs"
-                value={jobs.filter((job) => job.status === 'running').length}
+                value={jobs?.filter((job) => job?.status === 'running').length ?? 0}
                 icon={<Clock className="w-6 h-6" />}
               />
               <MetricCard
                 title="Total Matches"
-                value={matches.length}
+                value={matches?.length ?? 0}
                 icon={<Users className="w-6 h-6" />}
               />
             </div>
@@ -622,7 +622,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
                   </Button>
                 </div>
                 <DataTable
-                  data={dataSources}
+                  data={dataSources ?? []}
                   columns={dataSourceColumns}
                   emptyMessage="No data sources uploaded yet"
                 />
@@ -711,14 +711,14 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
                   <Button
                     variant="primary"
                     onClick={handleStartReconciliation}
-                    disabled={dataSources.length === 0}
+                    disabled={!dataSources || dataSources.length === 0}
                   >
                     <Play className="h-4 w-4 mr-2" />
                     Start New Job
                   </Button>
                 </div>
                 <DataTable
-                  data={jobs}
+                  data={jobs ?? []}
                   columns={jobColumns}
                   emptyMessage="No reconciliation jobs yet"
                 />
@@ -750,7 +750,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
                   </Button>
                 </div>
                 <DataTable
-                  data={matches}
+                  data={matches ?? []}
                   columns={matchColumns}
                   virtualized
                   virtualRowHeight={48}

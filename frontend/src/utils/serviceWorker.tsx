@@ -276,7 +276,7 @@ export const ServiceWorkerProvider: React.FC<ServiceWorkerProviderProps> = ({
           await registration.update();
         }
       } catch (error) {
-        console.error('Failed to check for service worker updates:', error);
+        logger.error('Failed to check for service worker updates:', { error });
       }
     }, finalConfig.updateInterval);
 

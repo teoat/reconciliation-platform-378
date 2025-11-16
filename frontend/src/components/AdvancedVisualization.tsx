@@ -34,7 +34,7 @@ interface ChartData {
     | 'radar'
     | 'funnel'
     | 'gauge';
-  data: any[];
+  data: Record<string, unknown>[];
   config: {
     title: string;
     xAxis?: string;
@@ -45,8 +45,8 @@ interface ChartData {
     animation?: boolean;
     interactive?: boolean;
     drillDown?: boolean;
-    filters?: any[];
-    thresholds?: any[];
+    filters?: Record<string, unknown>[];
+    thresholds?: Record<string, unknown>[];
   };
   insights: string[];
   drillDownData?: ChartData[];
@@ -60,7 +60,7 @@ interface ChartData {
 }
 
 interface VisualizationDashboardProps {
-  project: any;
+  project: Record<string, unknown> | null;
   onProgressUpdate?: (step: string) => void;
 }
 

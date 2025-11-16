@@ -1,5 +1,5 @@
 /**
- * Enhanced Frenly Onboarding Component
+import { logger } from '../../services/logger'; * Enhanced Frenly Onboarding Component
  *
  * Enhanced version of FrenlyOnboarding with:
  * - User role detection
@@ -95,7 +95,7 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
           setCurrentStep(lastStep);
         }
       } catch (error) {
-        console.error('Failed to load onboarding progress:', error);
+        logger.error('Failed to load onboarding progress:', error);
       }
     }
   }, []);

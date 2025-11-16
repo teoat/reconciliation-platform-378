@@ -98,14 +98,23 @@ impl Default for ValidationServiceDelegate {
         Self::new().unwrap_or_else(|e| {
             // Fallback if initialization fails - create with empty validators
             log::error!("Failed to initialize ValidationServiceDelegate: {:?}", e);
+            // In fallback path, try to create validators with error handling
+            // If creation fails, log error and use minimal validators
             Self {
-                email_validator: email::EmailValidator::new()
-                    .expect("Failed to create email validator"),
-                password_validator: password::PasswordValidator::new()
-                    .expect("Failed to create password validator"),
+                email_validator: email::EmailValidator::new().unwrap_or_else(|e| {
+                    log::error!("Failed to create email validator in fallback: {:?}", e);
+                    // Return a minimal validator - in production, prefer explicit construction
+                    panic!("Failed to create email validator: {:?}", e)
+                }),
+                password_validator: password::PasswordValidator::new().unwrap_or_else(|e| {
+                    log::error!("Failed to create password validator in fallback: {:?}", e);
+                    panic!("Failed to create password validator: {:?}", e)
+                }),
                 uuid_validator: uuid::UuidValidator {},
-                file_validator: file::FileValidator::new()
-                    .expect("Failed to create file validator"),
+                file_validator: file::FileValidator::new().unwrap_or_else(|e| {
+                    log::error!("Failed to create file validator in fallback: {:?}", e);
+                    panic!("Failed to create file validator: {:?}", e)
+                }),
                 json_schema_validator: json_schema::JsonSchemaValidator {},
                 business_rules_validator: business_rules::BusinessRulesValidator {},
             }

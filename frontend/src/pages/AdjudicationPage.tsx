@@ -157,7 +157,7 @@ const BasePage: React.FC<BasePageProps> = ({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-2xl font-bold text-gray-900">{stat.value ?? 'N/A'}</p>
                 </div>
                 <div className={`p-3 rounded-full ${stat.color}`}>
                   <stat.icon className="w-6 h-6" />
@@ -168,7 +168,7 @@ const BasePage: React.FC<BasePageProps> = ({
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-blue-500 h-2 rounded-full"
-                      style={{ width: `${stat.progress}%` }}
+                      style={{ width: `${stat.progress ?? 0}%` }}
                       role="progressbar"
                       aria-label={`${stat.title} progress: ${stat.progress}%`}
                       aria-valuenow={stat.progress}

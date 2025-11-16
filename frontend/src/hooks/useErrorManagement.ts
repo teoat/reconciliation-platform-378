@@ -152,7 +152,7 @@ export const useErrorManagement = (
         localStorage.setItem('errorHistory', JSON.stringify(updatedHistory));
       }
     } catch (e) {
-      console.warn('Failed to update error history:', e);
+      logger.warn('Failed to update error history:', e);
     }
   }, []);
 
@@ -162,7 +162,7 @@ export const useErrorManagement = (
     try {
       localStorage.removeItem('errorHistory');
     } catch (e) {
-      console.warn('Failed to clear error history:', e);
+      logger.warn('Failed to clear error history:', e);
     }
   }, []);
 
@@ -241,7 +241,7 @@ export const useErrorManagement = (
           setErrorHistory(parsedHistory.slice(0, maxHistoryItems));
         }
       } catch (e) {
-        console.warn('Failed to load error history:', e);
+        logger.warn('Failed to load error history:', e);
       }
     }
   }, [enableErrorHistory, maxHistoryItems]);

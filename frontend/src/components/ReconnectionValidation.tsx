@@ -138,10 +138,14 @@ export const ReconnectionValidation: React.FC<ReconnectionValidationProps> = ({
                       <div className="flex-1">
                         <div className="font-medium">{inconsistency.field}</div>
                         <div className="text-sm mt-1">{inconsistency.description}</div>
-                        {inconsistency.expected !== undefined && inconsistency.actual !== undefined && (
+                        {(inconsistency.expected !== undefined || inconsistency.actual !== undefined) && (
                           <div className="text-xs mt-2 space-y-1">
-                            <div><strong>Expected:</strong> {JSON.stringify(inconsistency.expected)}</div>
-                            <div><strong>Actual:</strong> {JSON.stringify(inconsistency.actual)}</div>
+                            {inconsistency.expected !== undefined && (
+                              <div><strong>Expected:</strong> {JSON.stringify(inconsistency.expected ?? 'N/A')}</div>
+                            )}
+                            {inconsistency.actual !== undefined && (
+                              <div><strong>Actual:</strong> {JSON.stringify(inconsistency.actual ?? 'N/A')}</div>
+                            )}
                           </div>
                         )}
                       </div>

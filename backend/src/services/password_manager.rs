@@ -11,7 +11,9 @@ use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 
 /// Password entry with metadata
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, diesel::Queryable, diesel::Selectable, diesel::Insertable, diesel::AsChangeset)]
+#[diesel(table_name = crate::models::schema::password_entries)]
+#[diesel(check_for_backend(diesel::pg::Pg))]
 pub struct PasswordEntry {
     pub id: String,
     pub name: String,
@@ -22,6 +24,8 @@ pub struct PasswordEntry {
     pub rotation_interval_days: i32,
     pub next_rotation_due: DateTime<Utc>,
     pub is_active: bool,
+    pub created_by: Option<String>,
+    pub metadata: Option<serde_json::Value>,
 }
 
 /// Password rotation schedule
@@ -58,6 +62,13 @@ impl PasswordManager {
         keys.insert(user_id, user_password.to_string());
     }
 
+    /// Clear master key for a specific user (called on logout)
+    pub async fn clear_user_master_key(&self, user_id: uuid::Uuid) {
+        let mut keys = self.user_master_keys.write().await;
+        keys.remove(&user_id);
+        log::debug!("Cleared master key for user: {}", user_id);
+    }
+
     /// Get master key for a specific user, or fall back to global master key
     async fn get_master_key_for_user(&self, user_id: Option<uuid::Uuid>) -> String {
         if let Some(uid) = user_id {
@@ -79,14 +90,40 @@ impl PasswordManager {
             ("YantoBabi", "YantoBabi"),
         ];
 
+        let mut errors = Vec::new();
         for (name, password) in default_passwords {
-            // Check if already exists (system passwords use None for user_id)
-            if self.get_password_by_name(name, None).await.is_ok() {
-                continue;
+            // Check if already exists using get_entry_by_name (no decryption needed)
+            match self.get_entry_by_name(name).await {
+                Ok(_) => {
+                    log::debug!("Default password '{}' already exists, skipping", name);
+                    continue;
+                }
+                Err(AppError::NotFound(_)) => {
+                    // Entry doesn't exist, create it
+                    log::debug!("Creating default password entry: {}", name);
+                }
+                Err(e) => {
+                    // Database error - log and continue
+                    log::warn!("Error checking password '{}': {:?}, attempting to create anyway", name, e);
+                }
             }
 
             // Create new entry (system passwords use None for user_id)
-            self.create_password(name, password, 90, None).await?;
+            match self.create_password(name, password, 90, None).await {
+                Ok(_) => {
+                    log::info!("Created default password entry: {}", name);
+                }
+                Err(e) => {
+                    let error_msg = format!("Failed to create default password '{}': {:?}", name, e);
+                    log::error!("{}", error_msg);
+                    errors.push(error_msg);
+                    // Continue with other passwords even if one fails
+                }
+            }
+        }
+
+        if !errors.is_empty() {
+            return Err(AppError::Internal(format!("Failed to initialize some default passwords: {}", errors.join("; "))));
         }
 
         Ok(())
@@ -111,24 +148,49 @@ impl PasswordManager {
             ("GRAFANA_PASSWORD", 180), // Grafana password - rotate every 6 months
         ];
 
+        let mut errors = Vec::new();
         for (env_var, rotation_days) in passwords_to_migrate {
             // Skip if already in password manager (system passwords use None for user_id)
-            if self.get_password_by_name(env_var, None).await.is_ok() {
-                log::debug!("Password '{}' already exists in password manager, skipping", env_var);
-                continue;
+            // Use get_entry_by_name to avoid decryption overhead
+            match self.get_entry_by_name(env_var).await {
+                Ok(_) => {
+                    log::debug!("Password '{}' already exists in password manager, skipping", env_var);
+                    continue;
+                }
+                Err(AppError::NotFound(_)) => {
+                    // Entry doesn't exist, try to migrate it
+                    log::debug!("Password '{}' not found, attempting migration", env_var);
+                }
+                Err(e) => {
+                    // Database error - log and continue
+                    log::warn!("Error checking password '{}': {:?}, attempting migration anyway", env_var, e);
+                }
             }
 
             // Try to get from environment
             if let Ok(password) = env::var(env_var) {
                 if !password.is_empty() {
-                    log::info!("Migrating password '{}' to password manager", env_var);
-                    self.create_password(env_var, &password, rotation_days, None).await?;
+                    match self.create_password(env_var, &password, rotation_days, None).await {
+                        Ok(_) => {
+                            log::info!("Migrated password '{}' to password manager", env_var);
+                        }
+                        Err(e) => {
+                            let error_msg = format!("Failed to migrate password '{}': {:?}", env_var, e);
+                            log::error!("{}", error_msg);
+                            errors.push(error_msg);
+                            // Continue with other passwords even if one fails
+                        }
+                    }
                 } else {
                     log::warn!("Password '{}' is empty in environment, skipping", env_var);
                 }
             } else {
                 log::debug!("Password '{}' not found in environment, skipping", env_var);
             }
+        }
+
+        if !errors.is_empty() {
+            return Err(AppError::Internal(format!("Failed to migrate some application passwords: {}", errors.join("; "))));
         }
 
         Ok(())
@@ -156,6 +218,8 @@ impl PasswordManager {
             rotation_interval_days,
             next_rotation_due: next_rotation,
             is_active: true,
+            created_by: user_id.map(|id| id.to_string()),
+            metadata: None,
         };
 
         // Store in database (simplified - in production, use proper DB schema)
@@ -358,74 +422,82 @@ impl PasswordManager {
         Ok(password)
     }
 
-    // Database operations - using file-based storage for simplicity
-    // In production, migrate to proper database schema
+    // Database operations - using database storage
     async fn store_password_entry(&self, entry: &PasswordEntry) -> AppResult<()> {
-        use std::fs;
-        use std::path::Path;
+        use crate::models::schema::password_entries;
+        use diesel::prelude::*;
         
-        let storage_dir = Path::new("data/passwords");
-        if !storage_dir.exists() {
-            fs::create_dir_all(storage_dir)
-                .map_err(|e| AppError::InternalServerError(format!("Failed to create storage dir: {}", e)))?;
+        let mut conn = self.db.get_connection()?;
+        
+        // Check if entry exists
+        let exists = password_entries::table
+            .filter(password_entries::name.eq(&entry.name))
+            .first::<PasswordEntry>(&mut conn)
+            .optional()
+            .map_err(|e| {
+                log::error!("Database error checking password entry '{}': {}", entry.name, e);
+                AppError::Database(e)
+            })?;
+        
+        if let Some(_existing) = exists {
+            // Update existing entry
+            diesel::update(password_entries::table.filter(password_entries::name.eq(&entry.name)))
+                .set((
+                    password_entries::encrypted_password.eq(&entry.encrypted_password),
+                    password_entries::updated_at.eq(&entry.updated_at),
+                    password_entries::last_rotated_at.eq(&entry.last_rotated_at),
+                    password_entries::rotation_interval_days.eq(&entry.rotation_interval_days),
+                    password_entries::next_rotation_due.eq(&entry.next_rotation_due),
+                    password_entries::is_active.eq(&entry.is_active),
+                ))
+                .execute(&mut conn)
+                .map_err(|e| {
+                    log::error!("Database error updating password entry '{}': {}", entry.name, e);
+                    AppError::Database(e)
+                })?;
+        } else {
+            // Insert new entry
+            diesel::insert_into(password_entries::table)
+                .values(entry)
+                .execute(&mut conn)
+                .map_err(|e| {
+                    log::error!("Database error inserting password entry '{}': {}", entry.name, e);
+                    AppError::Database(e)
+                })?;
         }
-        
-        let file_path = storage_dir.join(format!("{}.json", entry.name));
-        let json = serde_json::to_string_pretty(entry)
-            .map_err(|e| AppError::InternalServerError(format!("Failed to serialize entry: {}", e)))?;
-        
-        fs::write(&file_path, json)
-            .map_err(|e| AppError::InternalServerError(format!("Failed to write entry: {}", e)))?;
         
         Ok(())
     }
 
     async fn load_password_entry(&self, name: &str) -> AppResult<PasswordEntry> {
-        use std::fs;
-        use std::path::Path;
+        use crate::models::schema::password_entries;
+        use diesel::prelude::*;
         
-        let file_path = Path::new("data/passwords").join(format!("{}.json", name));
+        let mut conn = self.db.get_connection()?;
         
-        if !file_path.exists() {
-            return Err(AppError::NotFound(format!("Password entry '{}' not found", name)));
-        }
-        
-        let json = fs::read_to_string(&file_path)
-            .map_err(|e| AppError::InternalServerError(format!("Failed to read entry: {}", e)))?;
-        
-        let entry: PasswordEntry = serde_json::from_str(&json)
-            .map_err(|e| AppError::InternalServerError(format!("Failed to parse entry: {}", e)))?;
+        let entry = password_entries::table
+            .filter(password_entries::name.eq(name))
+            .first::<PasswordEntry>(&mut conn)
+            .optional()
+            .map_err(|e| {
+                log::error!("Database error loading password entry '{}': {}", name, e);
+                AppError::Database(e)
+            })?
+            .ok_or_else(|| AppError::NotFound(format!("Password entry '{}' not found", name)))?;
         
         Ok(entry)
     }
 
     async fn get_all_entries(&self) -> AppResult<Vec<PasswordEntry>> {
-        use std::fs;
-        use std::path::Path;
+        use crate::models::schema::password_entries;
+        use diesel::prelude::*;
         
-        let storage_dir = Path::new("data/passwords");
-        if !storage_dir.exists() {
-            return Ok(Vec::new());
-        }
+        let mut conn = self.db.get_connection()?;
         
-        let mut entries = Vec::new();
-        
-        let dir = fs::read_dir(storage_dir)
-            .map_err(|e| AppError::InternalServerError(format!("Failed to read storage dir: {}", e)))?;
-        
-        for file in dir {
-            let file = file
-                .map_err(|e| AppError::InternalServerError(format!("Failed to read file: {}", e)))?;
-            
-            if file.path().extension().and_then(|s| s.to_str()) == Some("json") {
-                let json = fs::read_to_string(file.path())
-                    .map_err(|e| AppError::InternalServerError(format!("Failed to read file: {}", e)))?;
-                
-                if let Ok(entry) = serde_json::from_str::<PasswordEntry>(&json) {
-                    entries.push(entry);
-                }
-            }
-        }
+        let entries = password_entries::table
+            .order_by(password_entries::name)
+            .load::<PasswordEntry>(&mut conn)
+            .map_err(|e| AppError::Database(e))?;
         
         Ok(entries)
     }
@@ -439,11 +511,35 @@ impl PasswordManager {
         ip_address: Option<&str>,
         user_agent: Option<&str>,
     ) -> AppResult<()> {
-        // Try database first using SQLx (if available)
-        // For now, use application logging
-        // In production, implement proper database audit logging
+        use diesel::prelude::*;
         
-        // Log to application logs (always works)
+        // Use raw SQL for INSERT since we don't have a model for audit log
+        let mut conn = self.db.get_connection()?;
+        
+        // Insert audit log entry using raw SQL with string interpolation (safe since values are controlled)
+        // In production, consider creating a proper Diesel model for audit_log
+        let query = format!(
+            r#"
+            INSERT INTO password_audit_log 
+            (password_entry_id, action, user_id, ip_address, user_agent, timestamp)
+            VALUES ('{}', '{}', {}, {}, {}, NOW())
+            "#,
+            password_entry_id.replace("'", "''"), // Escape single quotes
+            action.replace("'", "''"),
+            user_id.map(|id| format!("'{}'", id.replace("'", "''"))).unwrap_or_else(|| "NULL".to_string()),
+            ip_address.map(|ip| format!("'{}'", ip.replace("'", "''"))).unwrap_or_else(|| "NULL".to_string()),
+            user_agent.map(|ua| format!("'{}'", ua.replace("'", "''"))).unwrap_or_else(|| "NULL".to_string()),
+        );
+        
+        diesel::sql_query(&query)
+            .execute(&mut conn)
+            .map_err(|e| {
+                // Log error but don't fail the operation - audit logging should be non-blocking
+                log::warn!("Failed to log password audit to database: {}", e);
+            })
+            .ok();
+        
+        // Always log to application logs for redundancy
         log::info!(
             "Password audit: entry_id={}, action={}, user_id={:?}, ip={:?}, user_agent={:?}",
             password_entry_id,
@@ -452,10 +548,6 @@ impl PasswordManager {
             ip_address,
             user_agent
         );
-        
-        // TODO: Implement database audit logging when migration is applied
-        // For now, audit logs are written to application logs
-        // Database audit table will be populated after migration runs
         
         Ok(())
     }

@@ -46,6 +46,15 @@ async fn main() -> std::io::Result<()> {
         }
     };
 
+    // Run database migrations before initializing services
+    log::info!("Running database migrations...");
+    if let Err(e) = reconciliation_backend::database_migrations::run_migrations(&config.database_url) {
+        log::error!("Failed to run database migrations: {}", e);
+        eprintln!("Failed to run database migrations: {}", e);
+        std::process::exit(1);
+    }
+    log::info!("Database migrations completed successfully");
+
     // Load resilience configuration from environment (or use defaults)
     let resilience_config = resilience_config_from_env();
 
@@ -92,7 +101,7 @@ async fn main() -> std::io::Result<()> {
         .unwrap_or_else(|_| {
             log::warn!("PASSWORD_MASTER_KEY not set, using default (CHANGE IN PRODUCTION!)");
             "default-master-key-change-in-production".to_string()
-        });
+        }); // Safe: Default value for development
     
     let password_manager = Arc::new(PasswordManager::new(
         Arc::new(database.clone()),

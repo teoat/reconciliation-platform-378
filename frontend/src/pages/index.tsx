@@ -159,7 +159,7 @@ export const BasePage: React.FC<BasePageProps> = ({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-2xl font-bold text-gray-900">{stat.value ?? 'N/A'}</p>
                 </div>
                 <div className={`p-3 rounded-full ${stat.color}`}>
                   <stat.icon className="w-6 h-6" />
@@ -174,7 +174,7 @@ export const BasePage: React.FC<BasePageProps> = ({
                   ) : (
                     <div className="w-4 h-4 mr-1" />
                   )}
-                  <span className="text-sm text-gray-600">{stat.trend.value}</span>
+                  <span className="text-sm text-gray-600">{stat.trend?.value ?? 'N/A'}</span>
                 </div>
               )}
               {stat.progress !== undefined && (
@@ -182,7 +182,7 @@ export const BasePage: React.FC<BasePageProps> = ({
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-blue-500 h-2 rounded-full"
-                      style={{ width: `${stat.progress}%` }}
+                      style={{ width: `${stat.progress ?? 0}%` }}
                     ></div>
                   </div>
                 </div>
