@@ -1,5 +1,5 @@
 /**
- * Service Degraded Banner Component
+import { logger } from '../../services/logger'; * Service Degraded Banner Component
  * Displays when circuit breakers are open or services are degraded
  * Essential for Agent 5 Enhancement 1: Fallback UI Components
  */
@@ -71,7 +71,7 @@ export const ServiceDegradedBanner: React.FC<ServiceDegradedBannerProps> = ({
     try {
       await onRetry();
     } catch (error) {
-      console.error('Retry failed:', error);
+      logger.error('Retry failed:', { error: { error } });
     } finally {
       setIsRetrying(false);
     }

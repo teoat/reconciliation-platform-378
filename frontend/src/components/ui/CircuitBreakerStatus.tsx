@@ -1,5 +1,5 @@
 /**
- * Circuit Breaker Status Component
+import { logger } from '../../services/logger'; * Circuit Breaker Status Component
  * Visual indicator for service health and circuit breaker state
  * Essential for Agent 5 Enhancement 1: Fallback UI Components
  */
@@ -66,7 +66,7 @@ export const CircuitBreakerStatus: React.FC<CircuitBreakerStatusProps> = ({
     try {
       await onRetry();
     } catch (error) {
-      console.error('Retry failed:', error);
+      logger.error('Retry failed:', { error: { error } });
     } finally {
       setIsRetrying(false);
     }

@@ -1,5 +1,5 @@
 /**
- * Fallback Content Component
+import { logger } from '../../services/logger'; * Fallback Content Component
  * Displays cached/fallback content when services are degraded
  * Essential for Agent 5 Enhancement 1: Fallback UI Components
  */
@@ -74,7 +74,7 @@ export const FallbackContent: React.FC<FallbackContentProps> = ({
     try {
       await onRefresh();
     } catch (error) {
-      console.error('Refresh failed:', error);
+      logger.error('Refresh failed:', { error: { error } });
     } finally {
       setIsRefreshing(false);
     }

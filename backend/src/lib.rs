@@ -35,6 +35,7 @@ pub mod services {
     pub mod monitoring;
     pub mod offline_persistence;
     pub mod optimistic_ui;
+    pub mod password_manager;
     pub mod performance;
     pub mod project;
     pub mod project_aggregations;

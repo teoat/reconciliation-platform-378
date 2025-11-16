@@ -13,8 +13,20 @@ use reconciliation_backend::{
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    // Set up panic handler to capture panics
+    std::panic::set_hook(Box::new(|panic_info| {
+        eprintln!("PANIC: {:?}", panic_info);
+        eprintln!("Location: {:?}", panic_info.location());
+        if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+            eprintln!("Message: {}", s);
+        } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
+            eprintln!("Message: {}", s);
+        }
+    }));
+
     // Print to stderr immediately (before logging init) for debugging
     eprintln!("🚀 Backend starting...");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
 
     // Initialize logging
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
@@ -59,16 +71,47 @@ async fn main() -> std::io::Result<()> {
         config.port
     );
 
-    // Initialize query optimizer after startup
+    // Initialize query optimizer after startup (non-blocking, don't fail if it errors)
     let query_optimizer = QueryOptimizer::new();
     if let Ok(indexes) = query_optimizer.optimize_reconciliation_queries().await {
         log::info!("Generated {} query optimization indexes", indexes.len());
+    } else {
+        log::warn!("Query optimizer initialization failed, continuing without optimization");
     }
 
     // Extract cloneable components for use in HttpServer closure
     let database = app_startup.database().clone();
     let cache = app_startup.cache().clone();
     let resilience = app_startup.resilience().clone();
+
+    // Initialize password manager
+    use std::sync::Arc;
+    use reconciliation_backend::services::password_manager::PasswordManager;
+    
+    let master_key = std::env::var("PASSWORD_MASTER_KEY")
+        .unwrap_or_else(|_| {
+            log::warn!("PASSWORD_MASTER_KEY not set, using default (CHANGE IN PRODUCTION!)");
+            "default-master-key-change-in-production".to_string()
+        });
+    
+    let password_manager = Arc::new(PasswordManager::new(
+        Arc::new(database.clone()),
+        master_key,
+    ));
+    
+    // Initialize default passwords on startup
+    if let Err(e) = password_manager.initialize_default_passwords().await {
+        log::warn!("Failed to initialize default passwords: {:?}", e);
+    } else {
+        log::info!("Default passwords initialized: AldiBabi, AldiAnjing, YantoAnjing, YantoBabi");
+    }
+    
+    // Initialize all application passwords from environment (migration)
+    if let Err(e) = password_manager.initialize_application_passwords().await {
+        log::warn!("Failed to initialize application passwords: {:?}", e);
+    } else {
+        log::info!("Application passwords migrated to password manager");
+    }
 
     use actix_web::{web, HttpServer};
 
@@ -83,6 +126,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(database.clone()))
             .app_data(web::Data::new(cache.clone()))
             .app_data(web::Data::new(resilience.clone()))
+            .app_data(web::Data::from(password_manager.clone()))
             // Configure routes
             .configure(handlers::configure_routes)
     })

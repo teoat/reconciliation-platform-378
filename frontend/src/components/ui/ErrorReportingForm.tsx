@@ -1,5 +1,5 @@
 /**
- * Error Reporting Form Component
+import { logger } from '../../services/logger'; * Error Reporting Form Component
  * Accessible form for reporting errors to support
  * Essential for Agent 5 Enhancement 2: Enhanced Error Display
  */
@@ -96,7 +96,7 @@ export const ErrorReportingForm: React.FC<ErrorReportingFormProps> = ({
         await onSubmit(formData);
       }
     } catch (error) {
-      console.error('Failed to submit error report:', error);
+      logger.error('Failed to submit error report:', { error: { error } });
     } finally {
       setIsSubmitting(false);
     }

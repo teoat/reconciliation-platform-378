@@ -1,5 +1,5 @@
 /**
- * PWA Utilities for Service Worker Registration and Management
+import { logger } from '../services/logger'; * PWA Utilities for Service Worker Registration and Management
  */
 
 interface ServiceWorkerMessage {
@@ -40,7 +40,7 @@ class PWAUtils {
    */
   async registerServiceWorker(): Promise<void> {
     if (!('serviceWorker' in navigator)) {
-      // console.warn('Service Worker not supported');
+      // logger.warn('Service Worker not supported');
       return;
     }
 
@@ -75,7 +75,7 @@ class PWAUtils {
         this.handleServiceWorkerMessage(event.data);
       });
     } catch (error) {
-      // console.error('Service Worker registration failed:', error);
+      // logger.error('Service Worker registration failed:', error);
     }
   }
 

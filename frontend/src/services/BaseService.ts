@@ -84,7 +84,7 @@ export class PersistenceService extends BaseService {
       const data = Array.from(this.data.entries());
       localStorage.setItem(this.storageKey, JSON.stringify(data));
     } catch (error) {
-      console.error(`Failed to save ${this.storageKey}:`, error);
+      logger.error(`Failed to save ${this.storageKey}:`, { error });
     }
   }
 
@@ -96,7 +96,7 @@ export class PersistenceService extends BaseService {
         this.data = new Map(data);
       }
     } catch (error) {
-      console.error(`Failed to load ${this.storageKey}:`, error);
+      logger.error(`Failed to load ${this.storageKey}:`, { error });
     }
   }
 }

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
+import { logger } from '../services/logger';
 
 // ============================================================================
 // TYPES AND INTERFACES
@@ -66,7 +67,7 @@ export const registerServiceWorker = async (
   config: Partial<ServiceWorkerConfig> = {}
 ): Promise<ServiceWorkerRegistration | null> => {
   if (!('serviceWorker' in navigator)) {
-    console.warn('Service workers are not supported in this browser');
+    logger.warn('Service workers are not supported in this browser');
     return null;
   }
 
@@ -81,7 +82,7 @@ export const registerServiceWorker = async (
       scope: finalConfig.scope,
     });
 
-    console.log('Service worker registered successfully:', registration);
+    logger.info('Service worker registered successfully:', { registration });
 
     // Handle updates
     registration.addEventListener('updatefound', () => {
@@ -90,7 +91,7 @@ export const registerServiceWorker = async (
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
             // New version available
-            console.log('New service worker version available');
+            logger.info('New service worker version available');
           }
         });
       }
@@ -98,7 +99,7 @@ export const registerServiceWorker = async (
 
     return registration;
   } catch (error) {
-    console.error('Service worker registration failed:', error);
+    logger.error('Service worker registration failed:', { error });
     return null;
   }
 };
@@ -113,7 +114,7 @@ export const unregisterServiceWorker = async (): Promise<void> => {
     await registration.unregister();
   }
 
-  console.log('Service workers unregistered');
+  logger.info('Service workers unregistered');
 };
 
 export const updateServiceWorker = async (): Promise<void> => {

@@ -37,6 +37,8 @@ pub struct RotationSchedule {
 pub struct PasswordManager {
     db: Arc<Database>,
     master_key: Arc<RwLock<String>>,
+    // Per-user master keys (derived from user's login password)
+    user_master_keys: Arc<RwLock<std::collections::HashMap<uuid::Uuid, String>>>,
 }
 
 impl PasswordManager {
@@ -45,7 +47,27 @@ impl PasswordManager {
         Self {
             db,
             master_key: Arc::new(RwLock::new(master_key)),
+            user_master_keys: Arc::new(RwLock::new(std::collections::HashMap::new())),
         }
+    }
+
+    /// Set master key for a specific user (derived from their login password)
+    pub async fn set_user_master_key(&self, user_id: uuid::Uuid, user_password: &str) {
+        let mut keys = self.user_master_keys.write().await;
+        // Use the user's password directly as their master key
+        keys.insert(user_id, user_password.to_string());
+    }
+
+    /// Get master key for a specific user, or fall back to global master key
+    async fn get_master_key_for_user(&self, user_id: Option<uuid::Uuid>) -> String {
+        if let Some(uid) = user_id {
+            let keys = self.user_master_keys.read().await;
+            if let Some(key) = keys.get(&uid) {
+                return key.clone();
+            }
+        }
+        // Fall back to global master key
+        self.master_key.read().await.clone()
     }
 
     /// Initialize with default passwords
@@ -58,13 +80,55 @@ impl PasswordManager {
         ];
 
         for (name, password) in default_passwords {
-            // Check if already exists
-            if self.get_password_by_name(name).await.is_ok() {
+            // Check if already exists (system passwords use None for user_id)
+            if self.get_password_by_name(name, None).await.is_ok() {
                 continue;
             }
 
-            // Create new entry
-            self.create_password(name, password, 90).await?;
+            // Create new entry (system passwords use None for user_id)
+            self.create_password(name, password, 90, None).await?;
+        }
+
+        Ok(())
+    }
+
+    /// Initialize all application passwords from environment variables
+    /// This migrates existing passwords to the password manager
+    pub async fn initialize_application_passwords(&self) -> AppResult<()> {
+        use std::env;
+        
+        // List of all passwords to migrate
+        let passwords_to_migrate = vec![
+            ("DB_PASSWORD", 180), // Database password - rotate every 6 months
+            ("JWT_SECRET", 90),   // JWT secret - rotate every 3 months
+            ("JWT_REFRESH_SECRET", 90),
+            ("REDIS_PASSWORD", 180), // Redis password - rotate every 6 months
+            ("CSRF_SECRET", 90),  // CSRF secret - rotate every 3 months
+            ("SMTP_PASSWORD", 90), // SMTP password - rotate every 3 months
+            ("STRIPE_SECRET_KEY", 90), // Stripe secret - rotate every 3 months
+            ("STRIPE_WEBHOOK_SECRET", 90),
+            ("API_KEY", 180), // API key - rotate every 6 months
+            ("GRAFANA_PASSWORD", 180), // Grafana password - rotate every 6 months
+        ];
+
+        for (env_var, rotation_days) in passwords_to_migrate {
+            // Skip if already in password manager (system passwords use None for user_id)
+            if self.get_password_by_name(env_var, None).await.is_ok() {
+                log::debug!("Password '{}' already exists in password manager, skipping", env_var);
+                continue;
+            }
+
+            // Try to get from environment
+            if let Ok(password) = env::var(env_var) {
+                if !password.is_empty() {
+                    log::info!("Migrating password '{}' to password manager", env_var);
+                    self.create_password(env_var, &password, rotation_days, None).await?;
+                } else {
+                    log::warn!("Password '{}' is empty in environment, skipping", env_var);
+                }
+            } else {
+                log::debug!("Password '{}' not found in environment, skipping", env_var);
+            }
         }
 
         Ok(())
@@ -76,8 +140,9 @@ impl PasswordManager {
         name: &str,
         password: &str,
         rotation_interval_days: i32,
+        user_id: Option<uuid::Uuid>,
     ) -> AppResult<PasswordEntry> {
-        let encrypted = self.encrypt_password(password).await?;
+        let encrypted = self.encrypt_password(password, user_id).await?;
         let now = Utc::now();
         let next_rotation = now + chrono::Duration::days(rotation_interval_days as i64);
 
@@ -100,9 +165,9 @@ impl PasswordManager {
     }
 
     /// Get password by name
-    pub async fn get_password_by_name(&self, name: &str) -> AppResult<String> {
+    pub async fn get_password_by_name(&self, name: &str, user_id: Option<uuid::Uuid>) -> AppResult<String> {
         let entry = self.load_password_entry(name).await?;
-        self.decrypt_password(&entry.encrypted_password).await
+        self.decrypt_password(&entry.encrypted_password, user_id).await
     }
 
     /// Get password entry by name
@@ -111,7 +176,7 @@ impl PasswordManager {
     }
 
     /// Rotate a password
-    pub async fn rotate_password(&self, name: &str, new_password: Option<&str>) -> AppResult<PasswordEntry> {
+    pub async fn rotate_password(&self, name: &str, new_password: Option<&str>, user_id: Option<uuid::Uuid>) -> AppResult<PasswordEntry> {
         let mut entry = self.load_password_entry(name).await?;
 
         // Generate new password if not provided
@@ -120,8 +185,8 @@ impl PasswordManager {
             None => self.generate_secure_password(16).await?,
         };
 
-        // Encrypt new password
-        entry.encrypted_password = self.encrypt_password(&new_pass).await?;
+        // Encrypt new password with user's master key
+        entry.encrypted_password = self.encrypt_password(&new_pass, user_id).await?;
         entry.last_rotated_at = Some(Utc::now());
         entry.updated_at = Utc::now();
         entry.next_rotation_due = Utc::now() + chrono::Duration::days(entry.rotation_interval_days as i64);
@@ -140,7 +205,7 @@ impl PasswordManager {
 
         for entry in entries {
             if entry.next_rotation_due <= now && entry.is_active {
-                self.rotate_password(&entry.name, None).await?;
+                self.rotate_password(&entry.name, None, None).await?;
                 rotated.push(entry.name);
             }
         }
@@ -198,46 +263,81 @@ impl PasswordManager {
 
     // Private helper methods
 
-    async fn encrypt_password(&self, password: &str) -> AppResult<String> {
+    /// Encrypt password with optional user-specific master key
+    async fn encrypt_password(&self, password: &str, user_id: Option<uuid::Uuid>) -> AppResult<String> {
+        use aes_gcm::{
+            aead::{Aead, AeadCore, KeyInit},
+            Aes256Gcm,
+        };
         use base64::engine::{general_purpose, Engine};
+        use sha2::{Digest, Sha256};
         
-        let master_key = self.master_key.read().await;
+        let master_key = self.get_master_key_for_user(user_id).await;
         
-        // Simple XOR encryption with master key (for development)
-        // In production, use proper AES-GCM or ChaCha20-Poly1305
-        let key_bytes = master_key.as_bytes();
-        let password_bytes = password.as_bytes();
+        // Derive 256-bit key from master key using SHA-256
+        let mut hasher = Sha256::new();
+        hasher.update(master_key.as_bytes());
+        let key_bytes = hasher.finalize();
         
-        let encrypted: Vec<u8> = password_bytes
-            .iter()
-            .enumerate()
-            .map(|(i, &byte)| byte ^ key_bytes[i % key_bytes.len()])
-            .collect();
+        // Initialize AES-GCM cipher
+        let cipher = Aes256Gcm::new_from_slice(&key_bytes)
+            .map_err(|e| AppError::InternalServerError(format!("Failed to initialize cipher: {}", e)))?;
         
-        // Encode to base64 for storage
-        let encoded = general_purpose::STANDARD.encode(&encrypted);
+        // Generate random nonce (12 bytes for GCM)
+        let nonce = Aes256Gcm::generate_nonce(&mut rand::thread_rng());
+        
+        // Encrypt password
+        let ciphertext = cipher
+            .encrypt(&nonce, password.as_bytes())
+            .map_err(|e| AppError::InternalServerError(format!("Failed to encrypt password: {}", e)))?;
+        
+        // Combine nonce and ciphertext, then encode to base64
+        let mut combined = nonce.to_vec();
+        combined.extend_from_slice(&ciphertext);
+        let encoded = general_purpose::STANDARD.encode(&combined);
+        
         Ok(encoded)
     }
 
-    async fn decrypt_password(&self, encrypted: &str) -> AppResult<String> {
+    /// Decrypt password with optional user-specific master key
+    async fn decrypt_password(&self, encrypted: &str, user_id: Option<uuid::Uuid>) -> AppResult<String> {
+        use aes_gcm::{
+            aead::{Aead, KeyInit},
+            Aes256Gcm, Nonce,
+        };
         use base64::engine::{general_purpose, Engine};
+        use sha2::{Digest, Sha256};
         
-        let master_key = self.master_key.read().await;
+        let master_key = self.get_master_key_for_user(user_id).await;
         
         // Decode from base64
-        let encrypted_bytes = general_purpose::STANDARD
+        let combined = general_purpose::STANDARD
             .decode(encrypted)
             .map_err(|e| AppError::InternalServerError(format!("Failed to decode password: {}", e)))?;
         
-        // XOR decrypt with master key
-        let key_bytes = master_key.as_bytes();
-        let decrypted: Vec<u8> = encrypted_bytes
-            .iter()
-            .enumerate()
-            .map(|(i, &byte)| byte ^ key_bytes[i % key_bytes.len()])
-            .collect();
+        if combined.len() < 12 {
+            return Err(AppError::InternalServerError("Invalid encrypted data format".to_string()));
+        }
         
-        let password = String::from_utf8(decrypted)
+        // Extract nonce (first 12 bytes) and ciphertext (rest)
+        let nonce = Nonce::from_slice(&combined[..12]);
+        let ciphertext = &combined[12..];
+        
+        // Derive key from master key
+        let mut hasher = Sha256::new();
+        hasher.update(master_key.as_bytes());
+        let key_bytes = hasher.finalize();
+        
+        // Initialize AES-GCM cipher
+        let cipher = Aes256Gcm::new_from_slice(&key_bytes)
+            .map_err(|e| AppError::InternalServerError(format!("Failed to initialize cipher: {}", e)))?;
+        
+        // Decrypt password
+        let plaintext = cipher
+            .decrypt(nonce, ciphertext.as_ref())
+            .map_err(|e| AppError::InternalServerError(format!("Failed to decrypt password: {}", e)))?;
+        
+        let password = String::from_utf8(plaintext)
             .map_err(|e| AppError::InternalServerError(format!("Invalid password encoding: {}", e)))?;
         
         Ok(password)
@@ -328,6 +428,36 @@ impl PasswordManager {
         }
         
         Ok(entries)
+    }
+    
+    /// Log audit event for password access
+    pub async fn log_audit(
+        &self,
+        password_entry_id: &str,
+        action: &str,
+        user_id: Option<&str>,
+        ip_address: Option<&str>,
+        user_agent: Option<&str>,
+    ) -> AppResult<()> {
+        // Try database first using SQLx (if available)
+        // For now, use application logging
+        // In production, implement proper database audit logging
+        
+        // Log to application logs (always works)
+        log::info!(
+            "Password audit: entry_id={}, action={}, user_id={:?}, ip={:?}, user_agent={:?}",
+            password_entry_id,
+            action,
+            user_id,
+            ip_address,
+            user_agent
+        );
+        
+        // TODO: Implement database audit logging when migration is applied
+        // For now, audit logs are written to application logs
+        // Database audit table will be populated after migration runs
+        
+        Ok(())
     }
 }
 

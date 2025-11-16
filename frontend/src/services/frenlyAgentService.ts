@@ -6,6 +6,7 @@
  */
 
 import { FrenlyGuidanceAgent, MessageContext, GeneratedMessage } from '../../../agents/guidance/FrenlyGuidanceAgent';
+import { logger } from './logger';
 
 // Import NLU service directly
 let nluService: any = null;
@@ -60,7 +61,7 @@ class FrenlyAgentService {
       await this.agent.initialize();
       await this.agent.start();
     } catch (error) {
-      console.error('Failed to initialize FrenlyGuidanceAgent:', error);
+      logger.error('Failed to initialize FrenlyGuidanceAgent:', { error });
     }
   }
 
@@ -89,7 +90,7 @@ class FrenlyAgentService {
             reject(new Error('Failed to generate message'));
           }
         } catch (error) {
-          console.error('Error generating message:', error);
+          logger.error('Error generating message:', { error });
           reject(error);
         } finally {
           this.requestDebounce.delete(debounceKey);
@@ -111,7 +112,7 @@ class FrenlyAgentService {
     try {
       await this.agent.recordFeedback(userId, messageId, feedback);
     } catch (error) {
-      console.error('Error recording feedback:', error);
+      logger.error('Error recording feedback:', { error });
       throw error;
     }
   }
@@ -128,7 +129,7 @@ class FrenlyAgentService {
       // Use agent's handleUserQuery method
       return await this.agent.handleUserQuery(userId, query, context);
     } catch (error) {
-      console.error('Error handling user query:', error);
+      logger.error('Error handling user query:', { error });
       
       // Fallback to NLU service directly
       try {
@@ -145,7 +146,7 @@ class FrenlyAgentService {
           context: context || { userId },
         };
       } catch (fallbackError) {
-        console.error('Fallback NLU error:', fallbackError);
+        logger.error('Fallback NLU error:', { error: fallbackError });
         throw error;
       }
     }
@@ -158,7 +159,7 @@ class FrenlyAgentService {
     try {
       await this.agent.trackInteraction(userId, action, messageId);
     } catch (error) {
-      console.error('Error tracking interaction:', error);
+      logger.error('Error tracking interaction:', { error });
       throw error;
     }
   }
@@ -185,7 +186,7 @@ class FrenlyAgentService {
       await this.agent.stop();
       await this.agent.cleanup();
     } catch (error) {
-      console.error('Error shutting down FrenlyAgentService:', error);
+      logger.error('Error shutting down FrenlyAgentService:', { error });
     }
   }
 }

@@ -1,5 +1,5 @@
 import { lazy, ComponentType } from 'react';
-
+import { logger } from '../services/logger';
 /**
  * Dynamic import utilities for heavy components
  * These components are loaded only when needed to reduce initial bundle size
@@ -41,7 +41,7 @@ export function createDynamicImport<T extends ComponentType<any>>(
     try {
       return await importFn();
     } catch (error) {
-      // console.error('Failed to load component:', error);
+      // logger.error('Failed to load component:', error);
       // Return a fallback component or re-throw
       if (fallback) {
         return { default: fallback };

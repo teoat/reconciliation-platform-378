@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-
+import { logger } from '../services/logger';
 /**
  * Advanced Code Splitting Strategies
  * Implements intelligent lazy loading for large components and features
@@ -80,7 +80,7 @@ export const LazyAdvancedVisualization = lazy(() => import('../components/Advanc
 // ============================================================================
 
 export function handleCodeSplittingError(error: Error, componentName: string): void {
-  // console.error(`Failed to load component ${componentName}:`, error);
+  // logger.error(`Failed to load component ${componentName}:`, error);
 
   // Send to monitoring service
   if (typeof window !== 'undefined' && (window as any).Sentry) {

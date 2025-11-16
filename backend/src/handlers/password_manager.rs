@@ -1,11 +1,13 @@
 //! Password Manager API Handlers
 
-use actix_web::{web, HttpResponse, Responder};
+use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
+// Import directly from password_manager module
 use crate::services::password_manager::{PasswordManager, PasswordEntry, RotationSchedule};
 use crate::errors::AppResult;
+use crate::handlers::helpers::{extract_user_id, get_client_ip, get_user_agent};
 
 /// Request to create a password
 #[derive(Debug, Deserialize)]
@@ -52,8 +54,25 @@ pub struct RotationScheduleResponse {
 /// Get all passwords (metadata only)
 pub async fn list_passwords(
     password_manager: web::Data<Arc<PasswordManager>>,
+    req: HttpRequest,
 ) -> AppResult<impl Responder> {
+    // Extract user info for audit logging
+    let user_id = extract_user_id(&req).ok().map(|id| id.to_string());
+    let ip_address = get_client_ip(&req);
+    let user_agent = get_user_agent(&req);
+    
     let entries = password_manager.list_passwords().await?;
+    
+    // Log access (async, don't block on errors)
+    if let Some(entry) = entries.first() {
+        let _ = password_manager.log_audit(
+            &entry.id,
+            "list",
+            user_id.as_deref(),
+            Some(&ip_address),
+            Some(&user_agent),
+        ).await;
+    }
     
     Ok(HttpResponse::Ok().json(PasswordListResponse {
         passwords: entries,
@@ -64,9 +83,31 @@ pub async fn list_passwords(
 pub async fn get_password(
     password_manager: web::Data<Arc<PasswordManager>>,
     path: web::Path<String>,
+    req: HttpRequest,
 ) -> AppResult<impl Responder> {
     let name = path.into_inner();
-    let entry = password_manager.get_entry_by_name(&name).await?;
+    
+    // Extract user info for audit logging and master key
+    let user_id_uuid = extract_user_id(&req).ok();
+    let user_id = user_id_uuid.map(|id| id.to_string());
+    let ip_address = get_client_ip(&req);
+    let user_agent = get_user_agent(&req);
+    
+    // Get decrypted password using user's master key
+    let decrypted_password = password_manager.get_password_by_name(&name, user_id_uuid).await?;
+    let mut entry = password_manager.get_entry_by_name(&name).await?;
+    
+    // Replace encrypted password with decrypted one for response
+    entry.encrypted_password = decrypted_password;
+    
+    // Log access
+    password_manager.log_audit(
+        &entry.id,
+        "read",
+        user_id.as_deref(),
+        Some(&ip_address),
+        Some(&user_agent),
+    ).await?;
     
     Ok(HttpResponse::Ok().json(PasswordResponse {
         success: true,
@@ -79,11 +120,29 @@ pub async fn get_password(
 pub async fn create_password(
     password_manager: web::Data<Arc<PasswordManager>>,
     req: web::Json<CreatePasswordRequest>,
+    http_req: HttpRequest,
 ) -> AppResult<impl Responder> {
+    // Extract user info for audit logging
+    let user_id = extract_user_id(&http_req).ok().map(|id| id.to_string());
+    let ip_address = get_client_ip(&http_req);
+    let user_agent = get_user_agent(&http_req);
+    
     let rotation_interval = req.rotation_interval_days.unwrap_or(90);
+    // Extract user ID for master key
+    let user_id_uuid = extract_user_id(&http_req).ok();
+    
     let entry = password_manager
-        .create_password(&req.name, &req.password, rotation_interval)
+        .create_password(&req.name, &req.password, rotation_interval, user_id_uuid)
         .await?;
+    
+    // Log creation
+    password_manager.log_audit(
+        &entry.id,
+        "create",
+        user_id.as_deref(),
+        Some(&ip_address),
+        Some(&user_agent),
+    ).await?;
     
     Ok(HttpResponse::Created().json(PasswordResponse {
         success: true,
@@ -96,11 +155,29 @@ pub async fn create_password(
 pub async fn rotate_password(
     password_manager: web::Data<Arc<PasswordManager>>,
     req: web::Json<RotatePasswordRequest>,
+    http_req: HttpRequest,
 ) -> AppResult<impl Responder> {
+    // Extract user info for audit logging
+    let user_id = extract_user_id(&http_req).ok().map(|id| id.to_string());
+    let ip_address = get_client_ip(&http_req);
+    let user_agent = get_user_agent(&http_req);
+    
     let new_password = req.new_password.as_deref();
+    // Extract user ID for master key
+    let user_id_uuid = extract_user_id(&http_req).ok();
+    
     let entry = password_manager
-        .rotate_password(&req.name, new_password)
+        .rotate_password(&req.name, new_password, user_id_uuid)
         .await?;
+    
+    // Log rotation
+    password_manager.log_audit(
+        &entry.id,
+        "rotate",
+        user_id.as_deref(),
+        Some(&ip_address),
+        Some(&user_agent),
+    ).await?;
     
     Ok(HttpResponse::Ok().json(PasswordResponse {
         success: true,

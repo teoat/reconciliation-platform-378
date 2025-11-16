@@ -1,5 +1,5 @@
 /**
- * Error Code Display Component
+import { logger } from '../../services/logger'; * Error Code Display Component
  * Displays error codes with screen reader support
  * Essential for Agent 5 Enhancement 2: Enhanced Error Display
  */
@@ -51,7 +51,7 @@ export const ErrorCodeDisplay: React.FC<ErrorCodeDisplayProps> = ({
         setCopiedItem(null);
       }, 2000);
     } catch (error) {
-      console.error('Failed to copy:', error);
+      logger.error('Failed to copy:', { error: { error } });
     }
   };
 

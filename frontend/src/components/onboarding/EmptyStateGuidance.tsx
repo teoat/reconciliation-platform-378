@@ -1,5 +1,5 @@
 /**
- * Empty State Guidance Component
+import { logger } from '../services/logger'; * Empty State Guidance Component
  * 
  * Provides contextual guidance when users encounter empty states.
  * Includes one-click setup options and guided first actions.
@@ -256,7 +256,7 @@ export const EmptyStateGuidance: React.FC<EmptyStateGuidanceProps> = ({
         onActionComplete(action.id);
       }
     } catch (error) {
-      console.error('Action failed:', error);
+      logger.error('Action failed:', error);
     } finally {
       setActionLoading(null);
     }

@@ -9,6 +9,7 @@ import { AlertCircle, X, RefreshCw, HelpCircle, ChevronDown, ChevronUp } from 'l
 import { ErrorCodeDisplay } from './ErrorCodeDisplay';
 // Import ariaLiveRegionsService - service exists and provides announcement functionality
 import { ariaLiveRegionsService } from '../../services/ariaLiveRegionsService';
+import { logger } from '../../services/logger';
 
 export interface ErrorRecoveryAction {
   label: string;
@@ -72,7 +73,7 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
       }
     } catch (recoveryError) {
       // Handle recovery error
-      console.error('Recovery action failed:', recoveryError);
+      logger.error('Recovery action failed:', { error: recoveryError });
       // Optionally surface a user-friendly error message for recovery failures
       // This could be passed via a prop like onRecoveryError
     } finally {

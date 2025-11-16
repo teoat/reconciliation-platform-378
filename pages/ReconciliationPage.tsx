@@ -261,6 +261,7 @@ const ReconciliationPage = ({ project, onProgressUpdate }: ReconciliationPagePro
               <button
                 onClick={() => setShowRecordModal(false)}
                 className="text-gray-400 hover:text-gray-600"
+                aria-label="Close modal"
               >
                 ×
               </button>

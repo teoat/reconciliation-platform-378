@@ -1,5 +1,5 @@
 'use client'
-
+import { logger } from '../services/logger';
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react'
 import { MessageCircle } from 'lucide-react'
 import { X } from 'lucide-react'
@@ -133,7 +133,7 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
         autoHide: agentMessage.type === 'greeting' ? 5000 : undefined,
       };
     } catch (error) {
-      console.error('Error generating contextual message:', error);
+      logger.error('Error generating contextual message:', error);
       // Fallback to default message
       return createDefaultMessage();
     }
@@ -385,7 +385,7 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
                       try {
                         await frenlyAgentService.recordFeedback(userId, state.activeMessage.id, 'dismissed');
                       } catch (error) {
-                        console.error('Error recording feedback:', error);
+                        logger.error('Error recording feedback:', error);
                       }
                     }
                   }

@@ -16,25 +16,20 @@ pub mod reconciliation;
 pub mod settings;
 pub mod users;
 
-// Placeholder modules for future implementation
-#[allow(unused_imports)]
-mod system {
-    pub fn configure_routes(_cfg: &mut actix_web::web::ServiceConfig) {}
-}
-#[allow(unused_imports)]
-mod monitoring {
-    pub fn configure_routes(_cfg: &mut actix_web::web::ServiceConfig) {}
-}
-#[allow(unused_imports)]
-mod sync {
-    pub fn configure_routes(_cfg: &mut actix_web::web::ServiceConfig) {}
-}
+// System handlers
+pub mod system;
+
+// Monitoring handlers
+pub mod monitoring;
+
+// Sync handlers
+pub mod sync;
 
 // Health check handlers
 pub mod health;
 
 // Password manager handlers
-// pub mod password_manager; // Temporarily disabled due to build issues
+pub mod password_manager;
 
 // Re-export types for backward compatibility
 pub use helpers::{extract_user_id, get_client_ip, get_user_agent, mask_email};
@@ -69,7 +64,7 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         // Offline and sync routes
         .service(web::scope("/api/sync").configure(sync::configure_routes))
         // Password manager routes
-        // .service(web::scope("/api/passwords").configure(password_manager::configure_routes)) // Temporarily disabled
+        .service(web::scope("/api/passwords").configure(password_manager::configure_routes))
         // Health check routes (from existing health.rs)
         .configure(health::configure_health_routes);
 }

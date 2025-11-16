@@ -1,5 +1,5 @@
 /**
- * Correlation ID Integration Example
+import { logger } from '../services/logger'; * Correlation ID Integration Example
  * Complete example showing correlation ID extraction and display
  * Ready for Agent 1's correlation ID implementation
  */
@@ -37,10 +37,10 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
         {
           onSuccess: (data) => {
             setData(data);
-            console.log('Success:', data);
+            logger.info('Success:', data);
           },
           onError: (extracted) => {
-            console.log('Error with correlation ID:', extracted.correlationId);
+            logger.info('Error with correlation ID:', extracted.correlationId);
           },
         }
       );
@@ -73,8 +73,8 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
           extracted.correlationId
         );
         
-        console.log('Correlation ID:', extracted.correlationId);
-        console.log('Error Code:', extracted.errorCode);
+        logger.info('Correlation ID:', extracted.correlationId);
+        logger.info('Error Code:', extracted.errorCode);
         
         return;
       }
@@ -102,14 +102,14 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
         response.headers.get('X-Correlation-ID') ||
         undefined;
       
-      console.log('Correlation ID from headers:', correlationId);
+      logger.info('Correlation ID from headers:', correlationId);
       
       if (!response.ok) {
         const extracted = await extractErrorFromFetchResponseAsync(response);
         
         // Verify correlation ID was extracted
         if (correlationId && extracted.correlationId === correlationId) {
-          console.log('✅ Correlation ID matches!');
+          logger.info('✅ Correlation ID matches!');
         }
         
         actions.setError(extracted.error, extracted.errorCode, extracted.correlationId);
@@ -171,7 +171,7 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
           <ErrorHistory
             errors={state.errorHistory}
             onErrorSelect={(error) => {
-              console.log('Selected error with correlation ID:', error.correlationId);
+              logger.info('Selected error with correlation ID:', error.correlationId);
             }}
             onErrorDismiss={actions.removeFromHistory}
             maxItems={10}

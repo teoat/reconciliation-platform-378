@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react'
-import { MessageCircle } from 'lucide-react'
+import { logger } from '../services/logger';import { MessageCircle } from 'lucide-react'
 import { X } from 'lucide-react'
 import { Minimize2 } from 'lucide-react'
 import { Lightbulb } from 'lucide-react'
@@ -226,7 +226,7 @@ const FrenlyAI: React.FC = () => {
 
       return frenlyMessage;
     } catch (error) {
-      console.error('Error generating contextual message:', error);
+      logger.error('Error generating contextual message:', error);
       // Fallback to default message
       return {
         id: Math.random().toString(36).substr(2, 9),
@@ -315,7 +315,7 @@ const FrenlyAI: React.FC = () => {
                       try {
                         await frenlyAgentService.recordFeedback(userId, state.activeMessage.id, 'dismissed');
                       } catch (error) {
-                        console.error('Error recording feedback:', error);
+                        logger.error('Error recording feedback:', error);
                       }
                     }
                   }

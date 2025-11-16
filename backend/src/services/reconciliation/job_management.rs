@@ -84,7 +84,7 @@ impl JobHandle {
             if let Some(status) = active_jobs.get_mut(&self.job_id) {
                 // Calculate percentage from progress (0-100)
                 let percentage = if progress.total_records.map(|t| t > 0).unwrap_or(false) {
-                    (progress.processed_records as f64 / progress.total_records.unwrap() as f64
+                    (progress.processed_records as f64 / progress.total_records.unwrap_or(1) as f64
                         * 100.0) as i32
                 } else {
                     progress.progress

@@ -88,10 +88,11 @@ pub async fn login(
     };
 
     // Verify password
-    if !auth_service
+    let password_valid = auth_service
         .as_ref()
-        .verify_password(&req.password, &user.password_hash)?
-    {
+        .verify_password(&req.password, &user.password_hash)?;
+    
+    if !password_valid {
         // Log security event for failed authentication
         if let Some(monitor) = security_monitor.as_ref() {
             let event = SecurityEvent {
@@ -440,11 +441,16 @@ pub async fn resend_verification(
 /// Google OAuth endpoint
 pub async fn google_oauth(
     req: web::Json<GoogleOAuthRequest>,
-    _http_req: HttpRequest,
+    http_req: HttpRequest,
     auth_service: web::Data<Arc<AuthService>>,
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
-    // Verify Google ID token
+    // Get Google OAuth client ID from environment (for validation)
+    let google_client_id = std::env::var("GOOGLE_CLIENT_ID")
+        .ok()
+        .filter(|id| !id.is_empty());
+
+    // Verify Google ID token using Google's tokeninfo endpoint
     let client = reqwest::Client::new();
     let verify_url = format!(
         "https://oauth2.googleapis.com/tokeninfo?id_token={}",
@@ -453,6 +459,7 @@ pub async fn google_oauth(
 
     let response = client
         .get(&verify_url)
+        .timeout(std::time::Duration::from_secs(10))
         .send()
         .await
         .map_err(|e| AppError::Internal(format!("Failed to verify Google token: {}", e)))?;
@@ -468,15 +475,45 @@ pub async fn google_oauth(
         .await
         .map_err(|e| AppError::Internal(format!("Failed to parse Google response: {}", e)))?;
 
+    // Validate audience (client ID) if configured
+    if let Some(ref client_id) = google_client_id {
+        if let Some(aud) = token_info["aud"].as_str() {
+            if aud != client_id {
+                return Err(AppError::Authentication(
+                    "Token audience mismatch".to_string(),
+                ));
+            }
+        }
+    }
+
+    // Validate token expiration
+    if let Some(exp) = token_info["exp"].as_i64() {
+        let now = chrono::Utc::now().timestamp();
+        if exp < now {
+            return Err(AppError::Authentication(
+                "Google token has expired".to_string(),
+            ));
+        }
+    }
+
     // Extract user information from Google token
     let email = token_info["email"]
         .as_str()
         .ok_or_else(|| AppError::Authentication("Email not found in Google token".to_string()))?
         .to_string();
 
-    let first_name = token_info["given_name"].as_str().unwrap_or("").to_string();
+    // Verify email is verified by Google
+    if let Some(email_verified) = token_info["email_verified"].as_bool() {
+        if !email_verified {
+            return Err(AppError::Authentication(
+                "Google email is not verified".to_string(),
+            ));
+        }
+    }
 
+    let first_name = token_info["given_name"].as_str().unwrap_or("").to_string();
     let last_name = token_info["family_name"].as_str().unwrap_or("").to_string();
+    let picture = token_info["picture"].as_str().map(|s| s.to_string());
 
     // Create or get user
     let create_oauth_request = CreateOAuthUserRequest {

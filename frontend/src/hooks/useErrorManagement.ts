@@ -8,6 +8,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { ErrorHistoryItem, ErrorReport } from '../components/ui';
 import { useErrorRecovery } from './useErrorRecovery';
 import { getUserFriendlyError, formatErrorForReporting } from '../utils/errorMessages';
+import { logger } from '../services/logger';
 
 export interface ErrorManagementOptions {
   component?: string;
@@ -132,7 +133,7 @@ export const useErrorManagement = (
         localStorage.setItem('errorHistory', JSON.stringify(updatedHistory));
       } catch (e) {
         // Silently fail if localStorage is unavailable
-        console.warn('Failed to persist error history:', e);
+        logger.warn('Failed to persist error history:', { error: e });
       }
     },
     [component, action, maxHistoryItems]
@@ -207,7 +208,7 @@ export const useErrorManagement = (
       // Optionally clear error after successful report
       // clearError();
     } catch (error) {
-      console.error('Failed to submit error report:', error);
+      logger.error('Failed to submit error report:', { error });
       throw error;
     }
   }, [currentError, component, action, errorCode, correlationId]);

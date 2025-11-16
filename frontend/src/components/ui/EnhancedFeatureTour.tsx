@@ -1,5 +1,5 @@
 /**
- * Enhanced Feature Tour Component
+import { logger } from '../../services/logger'; * Enhanced Feature Tour Component
  *
  * Enhanced version of FeatureTour with:
  * - Step validation
@@ -76,7 +76,7 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
             setCurrentStep(lastStep);
           }
         } catch (error) {
-          console.error('Failed to load tour progress:', error);
+          logger.error('Failed to load tour progress:', { error: { error } });
         }
       }
     }
@@ -266,7 +266,7 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
       try {
         await Promise.resolve(currentStepData.action());
       } catch (error) {
-        console.error('Tour action failed:', error);
+        logger.error('Tour action failed:', { error: { error } });
       }
     }
 

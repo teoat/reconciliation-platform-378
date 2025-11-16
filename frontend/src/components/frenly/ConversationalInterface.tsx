@@ -1,5 +1,5 @@
 /**
- * Conversational Interface Component
+import { logger } from '../services/logger'; * Conversational Interface Component
  * 
  * Provides a multi-turn conversational interface for interacting with FrenlyGuidanceAgent.
  */
@@ -119,7 +119,7 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
       // Track interaction
       await frenlyAgentService.trackInteraction(userId, 'message_sent', agentMessage.id);
     } catch (error) {
-      console.error('Error handling query:', error);
+      logger.error('Error handling query:', error);
       
       const errorMessage: ConversationMessage = {
         id: `error_${Date.now()}`,
