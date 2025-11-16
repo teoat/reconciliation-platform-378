@@ -26,7 +26,7 @@
 ### 🔌 API Documentation
 - **[API Documentation](./api/API_DOCUMENTATION.md)** - Complete API reference
 - **[API Reference](./api/API_REFERENCE.md)** - API endpoints and usage
-- **[Correlation ID Integration](./api/)** - Integration guides
+- **[Correlation ID Guide](./api/CORRELATION_ID_GUIDE.md)** - Correlation ID integration guide
 
 ### 🚀 Deployment
 - **[Deployment Guide](./DEPLOYMENT.md)** - Consolidated deployment guide
@@ -41,6 +41,11 @@
 - **[Password Manager](./features/password-manager/)** - Password manager documentation
 - **[Onboarding](./features/onboarding/)** - Onboarding feature docs
 - **[Meta-Agent](./features/meta-agent/)** - Meta-agent orchestration
+
+### 🛠️ Development Tools
+- **[MCP Setup Guide](./development/MCP_SETUP_GUIDE.md)** - Complete MCP server setup and configuration
+- **[Playwright MCP Setup](./development/PLAYWRIGHT_MCP_SETUP.md)** - Browser automation with Playwright MCP
+- **[Cursor Optimization Guide](./development/CURSOR_OPTIMIZATION_GUIDE.md)** - Cursor IDE optimization
 - **[Frenly AI](./features/frenly-ai/)** - Frenly AI optimization
 - **[Error Handling](./features/error-handling/)** - Error handling components
 
@@ -61,11 +66,9 @@
 - **[Test Cases](./testing/test-cases/)** - Test case documentation
 
 ### 💻 Development
-- **[MCP Implementation](./development/MCP_IMPLEMENTATION_GUIDE.md)** - MCP server guide
-- **[MCP Installation](./development/MCP_INSTALLATION_GUIDE.md)** - MCP installation
-- **[MCP Optimization](./development/MCP_OPTIMIZATION_REPORT.md)** - MCP optimization
-- **[MCP Server Proposal](./development/MCP_SERVER_PROPOSAL.md)** - MCP proposal
-- **[Cursor Optimization](./development/CURSOR_OPTIMIZATION_GUIDE.md)** - Cursor IDE optimization
+- **[MCP Setup Guide](./development/MCP_SETUP_GUIDE.md)** - Complete MCP server setup and configuration (✅ Consolidated)
+- **[Playwright MCP Setup](./development/PLAYWRIGHT_MCP_SETUP.md)** - Browser automation with Playwright MCP
+- **[Cursor Optimization Guide](./development/CURSOR_OPTIMIZATION_GUIDE.md)** - Cursor IDE optimization
 - **[Quick Reference Commands](./development/QUICK-REFERENCE-COMMANDS.md)** - Common commands
 
 ### 📊 Project Management
@@ -173,9 +176,10 @@ Brief description
 ## 📊 Documentation Statistics
 
 - **Total Active Docs**: ~40 organized files
-- **Archived Docs**: ~20+ historical files
+- **Archived Docs**: ~30+ historical files (includes Phase 1 consolidation)
 - **Categories**: 10 main categories
-- **Last Consolidation**: January 2025
+- **Last Consolidation**: January 2025 (Phase 1 Complete)
+- **Consolidation Status**: See [Documentation Cleanup Summary](./DOCUMENTATION_CLEANUP_COMPLETE.md)
 
 ---
 

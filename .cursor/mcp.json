@@ -7,21 +7,25 @@
 		},
 		"postgres": {
 			"command": "npx",
-			"args": ["-y", "@modelcontextprotocol/server-postgres"],
+			"args": [
+				"-y",
+				"@modelcontextprotocol/server-postgres",
+				"postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app"
+			],
 			"env": {
-				"POSTGRES_CONNECTION_STRING": "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app"
+				"PGHOST": "localhost",
+				"PGPORT": "5432",
+				"PGDATABASE": "reconciliation_app",
+				"PGUSER": "postgres",
+				"PGPASSWORD": "postgres_pass"
 			}
 		},
-		"git": {
+		"playwright": {
 			"command": "npx",
-			"args": ["-y", "@modelcontextprotocol/server-git", "--repository", "/Users/Arief/Documents/GitHub/reconciliation-platform-378"],
-			"env": {}
-		},
-		"prometheus": {
-			"command": "npx",
-			"args": ["-y", "@modelcontextprotocol/server-prometheus"],
+			"args": ["-y", "@executeautomation/playwright-mcp-server"],
 			"env": {
-				"PROMETHEUS_URL": "http://localhost:9090"
+				"PLAYWRIGHT_BROWSERS_PATH": "0",
+				"PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "0"
 			}
 		},
 		"reconciliation-platform": {

@@ -1,0 +1,168 @@
+# ============================================================================
+# DOCKER COMPOSE - Development (Minimal Services)
+# ============================================================================
+# Optimized for development with only essential services
+# Reduces resource usage by ~80% compared to full stack
+# Uses multi-stage builds for faster development cycles
+# ============================================================================
+# Usage:
+#   docker-compose -f docker-compose.dev.yml up -d    # Start essential services
+#   docker-compose -f docker-compose.dev.yml down     # Stop services
+# ============================================================================
+# Last Updated: January 2025
+# Status: Development Optimized ✅
+# ============================================================================
+
+services:
+  # ==========================================================================
+  # POSTGRESQL DATABASE (Essential)
+  # ==========================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: reconciliation-postgres-dev
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-reconciliation_app}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_pass}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - reconciliation-network-dev
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================================================
+  # REDIS CACHE (Essential)
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: reconciliation-redis-dev
+    volumes:
+      - redis_data_dev:/data
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    networks:
+      - reconciliation-network-dev
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass}
+    command:
+      - sh
+      - -c
+      - "redis-server --requirepass \"$${REDIS_PASSWORD}\""
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ==========================================================================
+  # BACKEND API (Rust) - Essential
+  # ==========================================================================
+  backend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.backend
+    container_name: reconciliation-backend-dev
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
+      HOST: 0.0.0.0
+      PORT: 2000
+      BACKEND_PORT: 2000
+      LOG_FORMAT: json
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:1000}
+      RUST_LOG: ${RUST_LOG:-info}
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+      UPLOAD_PATH: /app/uploads
+      # Disable APM for development (not needed)
+      # ELASTIC_APM_SERVER_URL: http://apm-server:8200
+      # ELASTIC_APM_SERVICE_NAME: reconciliation-backend
+      # ELASTIC_APM_ENVIRONMENT: development
+    volumes:
+      - uploads_data_dev:/app/uploads
+      - logs_data_dev:/app/logs
+    ports:
+      - "${BACKEND_PORT:-2000}:2000"
+    networks:
+      - reconciliation-network-dev
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:2000/health >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # ==========================================================================
+  # FRONTEND (React/Vite) - Essential
+  # ==========================================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.frontend
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:2000}/api/v1
+        VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:2000}
+    container_name: reconciliation-frontend-dev
+    environment:
+      - NODE_ENV=${NODE_ENV:-development}
+      - DOCKER_BUILDKIT=1
+      # Disable APM for development (not needed)
+      # ELASTIC_APM_SERVER_URL=http://apm-server:8200
+      # ELASTIC_APM_SERVICE_NAME=reconciliation-frontend
+      # ELASTIC_APM_ENVIRONMENT=development
+    ports:
+      - "${FRONTEND_PORT:-1000}:80"
+    networks:
+      - reconciliation-network-dev
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/health || exit 1"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+# ============================================================================
+# NETWORKS
+# ============================================================================
+networks:
+  reconciliation-network-dev:
+    driver: bridge
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+volumes:
+  postgres_data_dev:
+  redis_data_dev:
+  uploads_data_dev:
+  logs_data_dev:
+

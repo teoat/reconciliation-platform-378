@@ -81,7 +81,7 @@ impl PasswordManager {
     pub async fn get_or_create_oauth_master_key(
         &self,
         user_id: uuid::Uuid,
-        email: &str,
+        _email: &str,
     ) -> AppResult<String> {
         // Check if OAuth master key exists
         let key_name = format!("oauth_master_key_{}", user_id);

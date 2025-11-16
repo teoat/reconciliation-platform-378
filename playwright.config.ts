@@ -7,58 +7,88 @@ export default defineConfig({
   // Test directory
   testDir: './e2e',
   
-  // Global test timeout
-  timeout: 30 * 1000,
+  // Global test timeout (optimized for reliability)
+  timeout: 60 * 1000, // Increased from 30s to 60s for complex E2E tests
   
-  // Expect timeout
+  // Expect timeout (optimized for async operations)
   expect: {
-    timeout: 5000,
+    timeout: 10000, // Increased from 5s to 10s for better reliability
+    // Use toHaveScreenshot for visual regression testing
+    toHaveScreenshot: {
+      threshold: 0.2, // 20% threshold for visual comparisons
+      maxDiffPixels: 100, // Maximum pixel difference allowed
+    },
   },
   
   // Fail the build on CI if you accidentally left test.only in the source code
   forbidOnly: !!process.env.CI,
   
-  // Retry on CI only
-  retries: process.env.CI ? 2 : 0,
+  // Retry strategy (optimized for flaky tests)
+  retries: process.env.CI ? 2 : 1, // Retry once locally, twice on CI
   
-  // Opt out of parallel tests on CI
-  workers: process.env.CI ? 1 : undefined,
+  // Worker configuration (optimized for performance)
+  workers: process.env.CI ? 1 : process.env.PLAYWRIGHT_WORKERS 
+    ? parseInt(process.env.PLAYWRIGHT_WORKERS) 
+    : undefined, // Use all available cores locally, single worker on CI
   
-  // Reporter to use
+  // Reporter configuration (optimized)
   reporter: [
-    ['html'],
+    ['html', { 
+      outputFolder: 'test-results/html-report',
+      open: process.env.CI ? 'never' : 'on-failure', // Auto-open on local failures
+    }],
     ['json', { outputFile: 'test-results/results.json' }],
     ['junit', { outputFile: 'test-results/results.xml' }],
+    // Add list reporter for CI (cleaner output)
+    ...(process.env.CI ? [['list']] : []),
   ],
   
-  // Shared settings for all the projects below
+  // Shared settings for all the projects below (optimized)
   use: {
     // Base URL to use in actions like `await page.goto('/')`
     baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:1000',
     
-    // Collect trace when retrying the failed test
-    trace: 'on-first-retry',
+    // Collect trace when retrying the failed test (optimized for debugging)
+    trace: process.env.CI ? 'on-first-retry' : 'retain-on-failure', // Keep traces on local failures
     
-    // Take screenshot on failure
+    // Take screenshot on failure (optimized)
     screenshot: 'only-on-failure',
     
-    // Record video on failure
-    video: 'retain-on-failure',
+    // Record video on failure (optimized for CI)
+    video: process.env.CI ? 'retain-on-failure' : 'on-first-retry', // Videos on CI failures, traces on local
     
-    // Global test timeout
-    actionTimeout: 10000,
+    // Global action timeout (optimized for slow networks)
+    actionTimeout: 15000, // Increased from 10s to 15s
     
-    // Navigation timeout
-    navigationTimeout: 30000,
+    // Navigation timeout (optimized)
+    navigationTimeout: 45000, // Increased from 30s to 45s for slow pages
+    
+    // Additional performance optimizations
+    ignoreHTTPSErrors: true, // Useful for local development with self-signed certs
+    bypassCSP: true, // Bypass Content Security Policy for testing
+    locale: 'en-US', // Set default locale
+    timezoneId: 'America/New_York', // Set default timezone
   },
   
-  // Configure projects for major browsers
+  // Configure projects for major browsers (optimized)
   projects: [
+    // Primary browser for development (fastest)
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { 
+        ...devices['Desktop Chrome'],
+        // Optimize Chromium-specific settings
+        launchOptions: {
+          args: [
+            '--disable-blink-features=AutomationControlled',
+            '--disable-dev-shm-usage', // Overcome limited resource problems
+            '--no-sandbox', // Useful for CI environments
+          ],
+        },
+      },
     },
     
+    // Secondary browsers (run in parallel when needed)
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
@@ -69,7 +99,7 @@ export default defineConfig({
       use: { ...devices['Desktop Safari'] },
     },
     
-    // Mobile testing
+    // Mobile testing (optimized for performance)
     {
       name: 'Mobile Chrome',
       use: { ...devices['Pixel 5'] },

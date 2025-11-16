@@ -1,5 +1,6 @@
 #!/bin/sh
-set -e
+# Don't exit on error - let the binary handle its own errors
+set +e
 
 # Print environment for debugging
 echo "🚀 Starting backend with environment:" >&2
@@ -41,6 +42,7 @@ echo "✅ Binary found and executable" >&2
 
 # Run the backend with explicit output redirection
 echo "▶️  Executing binary..." >&2
-# Use exec to replace shell, but ensure output is visible
+# Use exec to replace shell - this ensures signals are handled correctly
+# The binary will handle its own logging
 exec /app/reconciliation-backend
 

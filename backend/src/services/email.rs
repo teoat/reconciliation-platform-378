@@ -217,9 +217,10 @@ Reconciliation Platform Team
     }
 
     /// Internal email sending implementation
-    async fn send_email_internal(&self, to: &str, subject: &str, body: &str) -> AppResult<()> {
+    async fn send_email_internal(&self, to: &str, subject: &str, _body: &str) -> AppResult<()> {
         // Get SMTP password from password manager if available
-        let smtp_password = self.get_smtp_password().await;
+        // Reserved for future use when email sending is fully implemented
+        let _smtp_password = self.get_smtp_password().await;
         
         // In production, integrate with lettre or similar
         // For now, log the email would be sent

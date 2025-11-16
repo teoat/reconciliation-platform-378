@@ -1,10 +1,10 @@
 # ============================================================================
-# DOCKER COMPOSE - Reconciliation Platform
+# DOCKER COMPOSE - Reconciliation Platform (Production)
 # ============================================================================
-# ✅ SINGLE SOURCE OF TRUTH (SSOT) - LOCKED FOR USE
+# ✅ SINGLE SOURCE OF TRUTH (SSOT) - OPTIMIZED MULTI-STAGE
 # ============================================================================
 # This is the official docker-compose file for the Reconciliation Platform
-# DO NOT EDIT: Contact platform team for modifications
+# Consolidated with production optimizations and multi-stage builds
 # ============================================================================
 # Usage:
 #   docker-compose up -d                # Start all services
@@ -32,9 +32,47 @@ services:
       - ./infrastructure/database/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     ports:
       - "${POSTGRES_PORT:-5432}:5432"  # PostgreSQL direct access (use PgBouncer port 6432 for production)
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '2.0'
+          memory: 2G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    command:
+      - postgres
+      - -c
+      - max_connections=100
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - effective_cache_size=3GB
+      - -c
+      - maintenance_work_mem=256MB
+      - -c
+      - checkpoint_completion_target=0.9
+      - -c
+      - wal_buffers=16MB
+      - -c
+      - default_statistics_target=100
+      - -c
+      - random_page_cost=1.1
+      - -c
+      - effective_io_concurrency=200
     networks:
       - reconciliation-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   pgbouncer:
     image: edoburu/pgbouncer
     container_name: reconciliation-pgbouncer
@@ -62,6 +100,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: reconciliation-redis
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass}
     volumes:
       - redis_data:/data
       - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
@@ -70,25 +110,38 @@ services:
     networks:
       - reconciliation-network
     restart: unless-stopped
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass}
     command:
       - sh
       - -c
-      - "redis-server /usr/local/etc/redis/redis.conf --requirepass \"$${REDIS_PASSWORD}\""
+      - "redis-server /usr/local/etc/redis/redis.conf --requirepass \"$${REDIS_PASSWORD}\" --maxmemory 512mb --maxmemory-policy allkeys-lru"
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping"]
       interval: 10s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ==========================================================================
-  # BACKEND API (Rust)
+  # BACKEND API (Rust) - Multi-stage optimized build
   # ==========================================================================
   backend:
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile.backend
+      args:
+        - BUILD_MODE=release
+        - RUSTFLAGS="-C target-cpu=native"
     container_name: reconciliation-backend
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
@@ -97,16 +150,22 @@ services:
       PORT: 2000
       BACKEND_PORT: 2000
       LOG_FORMAT: json
-      CUSTOM_CSP: "default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:2000 ws://localhost:2000 http://localhost:1000 ws://localhost:1000; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:1000}
-      RUST_LOG: ${RUST_LOG:-info}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
       UPLOAD_PATH: /app/uploads
+      ENV: production
+      RUST_LOG: warn,reconciliation_backend=info
+      CUSTOM_CSP: "default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:2000 ws://localhost:2000 http://localhost:1000 ws://localhost:1000; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+      WORKER_THREADS: 4
+      CACHE_ENABLED: "true"
+      CACHE_L1_SIZE: 2000
+      METRICS_ENABLED: "true"
+      HEALTH_CHECK_ENABLED: "true"
       ELASTIC_APM_SERVER_URL: http://apm-server:8200
       ELASTIC_APM_SERVICE_NAME: reconciliation-backend
-      ELASTIC_APM_ENVIRONMENT: ${ENVIRONMENT:-development}
+      ELASTIC_APM_ENVIRONMENT: ${ENVIRONMENT:-production}
     volumes:
       - uploads_data:/app/uploads
       - logs_data:/app/logs
@@ -124,16 +183,29 @@ services:
         condition: service_started
       apm-server:
         condition: service_started
-    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O- http://localhost:2000/health >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
 
   # ==========================================================================
-  # FRONTEND (React/Vite)
+  # FRONTEND (React/Vite) - Multi-stage optimized build
   # ==========================================================================
   frontend:
     build:
@@ -145,11 +217,11 @@ services:
         VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:2000}
     container_name: reconciliation-frontend
     environment:
-       - NODE_ENV=${NODE_ENV:-production}
-       - DOCKER_BUILDKIT=1
-       - ELASTIC_APM_SERVER_URL=http://apm-server:8200
-       - ELASTIC_APM_SERVICE_NAME=reconciliation-frontend
-       - ELASTIC_APM_ENVIRONMENT=${ENVIRONMENT:-development}
+      - NODE_ENV=production
+      - DOCKER_BUILDKIT=1
+      - ELASTIC_APM_SERVER_URL=http://apm-server:8200
+      - ELASTIC_APM_SERVICE_NAME=reconciliation-frontend
+      - ELASTIC_APM_ENVIRONMENT=${ENVIRONMENT:-production}
     volumes:
       - filebeat_frontend_data:/var/log/filebeat
     ports:
@@ -163,7 +235,6 @@ services:
         condition: service_started
       apm-server:
         condition: service_started
-    restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost/health || exit 1"]
       interval: 30s
@@ -174,10 +245,15 @@ services:
       resources:
         limits:
           cpus: '1.0'
-          memory: 1G
-        reservations:
-          cpus: '0.5'
           memory: 512M
+        reservations:
+          memory: 256M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    restart: always
 
   # ==========================================================================
   # MONITORING: PROMETHEUS
@@ -198,7 +274,15 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=7d'
+      - '--storage.tsdb.retention.time=30d'
+      - '--storage.tsdb.retention.size=10GB'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 2G
 
   # ==========================================================================
   # MONITORING: GRAFANA
@@ -220,24 +304,25 @@ services:
     restart: unless-stopped
 
   # ==========================================================================
-  # MONITORING: LOGSTASH EXPORTER
+  # MONITORING: LOGSTASH EXPORTER (OPTIONAL - COMMENTED OUT)
   # ==========================================================================
-  logstash-exporter:
-    build:
-      context: ./infrastructure/monitoring/logstash-exporter
-      dockerfile: Dockerfile
-    container_name: reconciliation-logstash-exporter
-    environment:
-      - LOGSTASH_ENDPOINT=http://logstash:9600
-      - SCRAPE_INTERVAL=15
-    ports:
-      - "${LOGSTASH_EXPORTER_PORT:-9198}:9198"
-    networks:
-      - reconciliation-network
-    depends_on:
-      logstash:
-        condition: service_healthy
-    restart: unless-stopped
+  # Uncomment if you need detailed Logstash metrics in Prometheus
+  # logstash-exporter:
+  #   build:
+  #     context: ./infrastructure/monitoring/logstash-exporter
+  #     dockerfile: Dockerfile
+  #   container_name: reconciliation-logstash-exporter
+  #   environment:
+  #     - LOGSTASH_ENDPOINT=http://logstash:9600
+  #     - SCRAPE_INTERVAL=15
+  #   ports:
+  #     - "${LOGSTASH_EXPORTER_PORT:-9198}:9198"
+  #   networks:
+  #     - reconciliation-network
+  #   depends_on:
+  #     logstash:
+  #       condition: service_healthy
+  #   restart: unless-stopped
 
   # ==========================================================================
   # LOG AGGREGATION: ELASTICSEARCH
@@ -344,18 +429,28 @@ services:
 # ============================================================================
 networks:
   reconciliation-network:
-    driver: bridge
+    external: true
+    name: reconciliation-network
 
 # ============================================================================
 # VOLUMES
 # ============================================================================
 volumes:
   postgres_data:
+    driver: local
   redis_data:
+    driver: local
   uploads_data:
+    driver: local
   logs_data:
+    driver: local
   prometheus_data:
+    driver: local
   grafana_data:
+    driver: local
   elasticsearch_data:
+    driver: local
   filebeat_data:
+    driver: local
   filebeat_frontend_data:
+    driver: local

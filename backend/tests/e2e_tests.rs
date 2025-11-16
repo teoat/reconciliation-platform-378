@@ -17,15 +17,15 @@ use uuid::Uuid;
 use reconciliation_backend::errors::{AppError, AppResult};
 use reconciliation_backend::handlers::*;
 use reconciliation_backend::middleware::{
-    AuthMiddleware, AuthMiddlewareConfig, LoggingConfig, LoggingMiddleware, PerformanceMiddleware,
-    PerformanceMonitoringConfig, SecurityMiddleware, SecurityMiddlewareConfig,
+    auth::AuthMiddlewareConfig, LoggingConfig, LoggingMiddleware, PerformanceMiddleware,
+    PerformanceMonitoringConfig,
 };
+use reconciliation_backend::services::auth::middleware::SecurityMiddleware;
 use reconciliation_backend::services::{
     AnalyticsService, AuthService, FileService, ProjectService, ReconciliationService, UserService,
 };
 
-mod test_utils;
-use test_utils::*;
+use crate::test_utils::*;
 
 /// Test suite for complete user workflows
 #[cfg(test)]
