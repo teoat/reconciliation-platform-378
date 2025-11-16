@@ -2,6 +2,8 @@ import { useState, useCallback } from 'react';
 import { DataRow, ColumnInfo } from '../../types/ingestion';
 import { sortByProperty, filterByProperty, paginate } from '../../utils/common/filteringSorting';
 
+export type FilterOperator = 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'greaterThan' | 'lessThan' | 'between';
+
 export interface DataPreviewState {
   data: DataRow[];
   columns: ColumnInfo[];
@@ -16,8 +18,8 @@ export interface DataPreviewState {
   sortDirection: 'asc' | 'desc';
   filters: Array<{
     field: string;
-    value: any;
-    operator: 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'greaterThan' | 'lessThan';
+    value: unknown;
+    operator: FilterOperator;
   }>;
   isLoading: boolean;
   error: string | null;
@@ -79,7 +81,7 @@ export const useDataPreview = () => {
           filteredData,
           filter.field,
           filter.value,
-          filter.operator as any
+          filter.operator
         );
       });
 
@@ -146,7 +148,7 @@ export const useDataPreview = () => {
     setState((prev) => {
       const newFilters = [
         ...prev.filters.filter((f) => f.field !== field),
-        { field, value, operator: operator as any },
+        { field, value, operator: operator as FilterOperator },
       ];
 
       let filteredData = prev.data;
@@ -155,7 +157,7 @@ export const useDataPreview = () => {
           filteredData,
           filter.field,
           filter.value,
-          filter.operator as any
+          filter.operator
         );
       });
 
@@ -188,7 +190,7 @@ export const useDataPreview = () => {
           filteredData,
           filter.field,
           filter.value,
-          filter.operator as any
+          filter.operator
         );
       });
 

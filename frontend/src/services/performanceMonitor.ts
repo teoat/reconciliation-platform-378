@@ -526,8 +526,8 @@ export class PerformanceOptimizer {
 
 // Export singleton instances
 export const performanceMonitor = new PerformanceMonitor({
-  enabled: process.env.NODE_ENV === 'production',
-  debug: process.env.NODE_ENV === 'development',
+  enabled: import.meta.env.PROD,
+  debug: import.meta.env.DEV,
 });
 
 export const performanceOptimizer = PerformanceOptimizer.getInstance();

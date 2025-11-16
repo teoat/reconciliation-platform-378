@@ -18,7 +18,7 @@ export const createRequestInterceptor = (): RequestInterceptor => ({
     config.headers['X-Request-Timestamp'] = Date.now().toString();
 
     // Log request in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       logger.info(`[API Request] ${config.method || 'GET'} ${config.url || ''}`, {
         requestId,
         headers: config.headers,
@@ -39,7 +39,7 @@ export const createRequestInterceptor = (): RequestInterceptor => ({
 export const createResponseInterceptor = (): ResponseInterceptor => ({
   onResponse: async (response: Response & { url?: string; status?: number; headers?: Headers }): Promise<Response> => {
     // Log response in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       const requestId = response.headers.get('X-Request-ID');
       const requestTimestamp = response.headers.get('X-Request-Timestamp');
       const duration = requestTimestamp 
@@ -59,7 +59,7 @@ export const createResponseInterceptor = (): ResponseInterceptor => ({
 
   onResponseError: async (error: ApiError): Promise<never> => {
     // Log response error in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       logger.error('[API Response Error]', {
         message: error.message,
         statusCode: error.statusCode,

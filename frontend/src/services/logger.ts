@@ -34,7 +34,7 @@ export interface LogDestination {
 class ConsoleDestination implements LogDestination {
   name = 'console';
   enabled = true;
-  private readonly isDevelopment = process.env.NODE_ENV === 'development';
+    private readonly isDevelopment = import.meta?.env?.DEV === true;
 
   async write(entry: LogEntry): Promise<void> {
     // Only log to console in development

@@ -10,9 +10,14 @@
 // Environment-agnostic configuration reading
 const getEnvVar = (key: string, fallback: string): string => {
   // Priority 1: Vite environment variables (import.meta.env.VITE_*)
-  // This is the correct way for Vite - accessed directly, not via window
-  if (typeof import !== 'undefined' && import.meta?.env?.[key]) {
-    return import.meta.env[key] as string;
+  // This is the correct way for Vite - accessed directly
+  // import.meta is always available in ES modules, so we can access it directly
+  try {
+    if (import.meta?.env?.[key]) {
+      return import.meta.env[key] as string;
+    }
+  } catch (e) {
+    // import.meta not available (shouldn't happen in ES modules, but handle gracefully)
   }
   
   // Priority 2: Try NEXT_PUBLIC_ prefix (for backward compatibility during migration)

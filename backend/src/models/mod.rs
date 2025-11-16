@@ -112,6 +112,9 @@ pub struct User {
     pub email_verified_at: Option<DateTime<Utc>>,
     pub last_login_at: Option<DateTime<Utc>>,
     pub last_active_at: Option<DateTime<Utc>>,
+    pub password_expires_at: Option<DateTime<Utc>>,
+    pub password_last_changed: Option<DateTime<Utc>>,
+    pub password_history: Option<serde_json::Value>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -127,6 +130,9 @@ pub struct NewUser {
     pub password_hash: String,
     pub status: String,
     pub email_verified: bool,
+    pub password_expires_at: Option<DateTime<Utc>>,
+    pub password_last_changed: Option<DateTime<Utc>>,
+    pub password_history: Option<serde_json::Value>,
 }
 
 /// Update user model
@@ -141,6 +147,9 @@ pub struct UpdateUser {
     pub email_verified: Option<bool>,
     pub last_login_at: Option<DateTime<Utc>>,
     pub last_active_at: Option<DateTime<Utc>>,
+    pub password_expires_at: Option<DateTime<Utc>>,
+    pub password_last_changed: Option<DateTime<Utc>>,
+    pub password_history: Option<serde_json::Value>,
 }
 
 /// User preference model

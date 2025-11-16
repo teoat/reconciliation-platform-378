@@ -86,7 +86,7 @@ export class ErrorBoundary extends Component<Props, State> {
     }
 
     // Log error to console in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       logger.error('ErrorBoundary caught an error:', error, errorInfo);
     }
 
@@ -94,7 +94,7 @@ export class ErrorBoundary extends Component<Props, State> {
     this.props.onError?.(error, errorInfo);
 
     // Log to external service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       // Try to use Sentry if available (using dynamic import with explicit error handling)
       try {
         // Use dynamic import with better error handling for missing module
@@ -157,7 +157,7 @@ export class ErrorBoundary extends Component<Props, State> {
               contact support if the problem persists.
             </p>
 
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <div className="mb-6 p-4 bg-gray-100 rounded-lg text-left">
                 <h3 className="text-sm font-medium text-gray-900 mb-2">Error Details:</h3>
                 <pre className="text-xs text-gray-600 whitespace-pre-wrap">
@@ -201,7 +201,7 @@ export const useErrorHandler = () => {
     logger.error('Error caught by useErrorHandler:', error, errorInfo);
 
     // Log to external service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       // Send to error tracking service
       logger.error('Production error:', error, errorInfo);
     }
@@ -328,7 +328,7 @@ export const setupGlobalErrorHandling = () => {
     logger.error('Unhandled promise rejection:', event.reason);
 
     // Log to external service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       logger.error('Production unhandled rejection:', event.reason);
     }
 
@@ -340,7 +340,7 @@ export const setupGlobalErrorHandling = () => {
     logger.error('Global error:', event.error);
 
     // Log to external service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (import.meta.env.PROD) {
       logger.error('Production global error:', event.error);
     }
   });

@@ -405,7 +405,7 @@ class SecureStorage {
       }
     } catch (error) {
       // Silently fail in production to avoid exposing errors
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         logger.warn('Storage error:', error)
       }
     }
@@ -418,7 +418,7 @@ class SecureStorage {
       }
       return localStorage.getItem(key)
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         logger.warn('Storage read error:', error)
       }
       return null
@@ -433,7 +433,7 @@ class SecureStorage {
         localStorage.removeItem(key)
       }
     } catch (error) {
-      if (process.env.NODE_ENV === 'development') {
+      if (import.meta.env.DEV) {
         logger.warn('Storage remove error:', error)
       }
     }

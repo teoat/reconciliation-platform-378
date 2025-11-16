@@ -108,7 +108,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   // State management
   const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
   const [projectStats, setProjectStats] = useState<ProjectStats[]>([]);
-  const [userActivityStats, setUserActivityStats] = useState<UserActivityStats[]>([]);
+  const [, setUserActivityStats] = useState<UserActivityStats[]>([]);
   const [reconciliationStats, setReconciliationStats] = useState<ReconciliationStats | null>(null);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -128,23 +128,23 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       setError(null);
 
       // Load dashboard metrics
-      const dashboardResponse = await apiClient.get<any>('/analytics/dashboard');
+      const dashboardResponse = await apiClient.get<Record<string, unknown>>('/analytics/dashboard');
       if (dashboardResponse.error) {
         throw new Error(String(dashboardResponse.error));
       }
       if (dashboardResponse.data) {
-        // Adapt API response to component types
-        const data = dashboardResponse.data as any;
+        // Adapt API response to component types with null safety
+        const data = dashboardResponse.data as Record<string, unknown>;
         const adaptedData: DashboardMetrics = {
-          total_projects: data.total_projects,
-          total_users: data.total_users,
+          total_projects: typeof data.total_projects === 'number' ? data.total_projects : 0,
+          total_users: typeof data.total_users === 'number' ? data.total_users : 0,
           total_files: 0, // Not in API response
-          total_reconciliation_jobs: data.total_reconciliation_jobs,
-          active_jobs: data.active_jobs,
-          completed_jobs: data.completed_jobs,
-          failed_jobs: dashboardResponse.data.failed_jobs,
+          total_reconciliation_jobs: typeof data.total_reconciliation_jobs === 'number' ? data.total_reconciliation_jobs : 0,
+          active_jobs: typeof data.active_jobs === 'number' ? data.active_jobs : 0,
+          completed_jobs: typeof data.completed_jobs === 'number' ? data.completed_jobs : 0,
+          failed_jobs: typeof data.failed_jobs === 'number' ? data.failed_jobs : 0,
           total_records_processed: 0, // Not in API response
-          total_matches_found: dashboardResponse.data.total_matches,
+          total_matches_found: typeof data.total_matches === 'number' ? data.total_matches : 0,
           average_confidence_score: 0, // Not in API response
           average_processing_time: 0, // Not in API response
           system_uptime: 99.9, // Not in API response
@@ -154,24 +154,24 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       }
 
       // Load reconciliation stats
-      const reconciliationResponse = await apiClient.get<any>('/analytics/reconciliation-stats');
+      const reconciliationResponse = await apiClient.get<Record<string, unknown>>('/analytics/reconciliation-stats');
       if (reconciliationResponse.error) {
         throw new Error(String(reconciliationResponse.error));
       }
       if (reconciliationResponse.data) {
-        const data = reconciliationResponse.data as any;
-        // Adapt API response to component types
+        const data = reconciliationResponse.data as Record<string, unknown>;
+        // Adapt API response to component types with null safety
         const adaptedStats: ReconciliationStats = {
-          total_jobs: data.total_jobs,
+          total_jobs: typeof data.total_jobs === 'number' ? data.total_jobs : 0,
           active_jobs: 0, // Not in API response
-          completed_jobs: data.completed_jobs,
-          failed_jobs: data.failed_jobs,
+          completed_jobs: typeof data.completed_jobs === 'number' ? data.completed_jobs : 0,
+          failed_jobs: typeof data.failed_jobs === 'number' ? data.failed_jobs : 0,
           queued_jobs: 0, // Not in API response
           total_records_processed: 0, // Not in API response
-          total_matches_found: reconciliationResponse.data.total_matches,
-          total_unmatched_records: reconciliationResponse.data.total_unmatched,
-          average_confidence_score: reconciliationResponse.data.average_confidence_score,
-          average_processing_time: reconciliationResponse.data.average_processing_time_ms,
+          total_matches_found: typeof data.total_matches === 'number' ? data.total_matches : 0,
+          total_unmatched_records: typeof data.total_unmatched === 'number' ? data.total_unmatched : 0,
+          average_confidence_score: typeof data.average_confidence_score === 'number' ? data.average_confidence_score : 0,
+          average_processing_time: typeof data.average_processing_time_ms === 'number' ? data.average_processing_time_ms : 0,
           success_rate: 0, // Calculated
           throughput_per_hour: 0, // Calculated
         };
@@ -180,12 +180,13 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       // Load project stats if projectId is provided
       if (projectId) {
-        const projectResponse = await apiClient.get<any>(`/projects/${projectId}/stats`);
+        const projectResponse = await apiClient.get<ProjectStats[]>(`/projects/${projectId}/stats`);
         if (projectResponse.error) {
           throw new Error(String(projectResponse.error));
         }
-        if (projectResponse.data) {
-          // Placeholder - project stats API may return different structure
+        if (projectResponse.data && Array.isArray(projectResponse.data)) {
+          setProjectStats(projectResponse.data);
+        } else {
           setProjectStats([]);
         }
       }
@@ -323,8 +324,9 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     return 'text-red-600';
   };
 
-  // Get trend icon
-  const getTrendIcon = (current: number, previous: number) => {
+  // Get trend icon (for future use)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _getTrendIcon = (current: number, previous: number) => {
     if (current > previous) return <TrendingUp className="w-4 h-4 text-green-500" />;
     if (current < previous) return <TrendingDown className="w-4 h-4 text-red-500" />;
     return <Activity className="w-4 h-4 text-gray-500" />;

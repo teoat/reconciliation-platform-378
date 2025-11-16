@@ -11,6 +11,7 @@ import { AlertCircle } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import { passwordSchema } from '../utils/passwordValidation'
+import { logger } from '../services/logger'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -114,7 +115,10 @@ const AuthPage: React.FC = () => {
     if (!googleClientId) {
       // Log warning in production if Google OAuth is expected but not configured
       if (import.meta.env.PROD) {
-        console.warn('VITE_GOOGLE_CLIENT_ID is not set. Google OAuth will be disabled.')
+        logger.warn('VITE_GOOGLE_CLIENT_ID is not set. Google OAuth will be disabled.', {
+          component: 'AuthPage',
+          category: 'oauth',
+        })
       }
       return // Skip if no Google Client ID is configured
     }

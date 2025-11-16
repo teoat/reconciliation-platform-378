@@ -190,7 +190,7 @@ import { useState } from 'react';
  * usePerformanceMeasure('MyComponent');
  */
 export function usePerformanceMeasure(componentName: string): void {
-  if (process.env.NODE_ENV !== 'development') return;
+  if (!import.meta.env.DEV) return;
   
   const renderCount = useRef(0);
   const startTime = useRef(performance.now());

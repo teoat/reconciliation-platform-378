@@ -19,8 +19,6 @@ import {
 } from 'lucide-react';
 import { useData } from './DataProvider';
 import type { BackendProject } from '../services/apiClient/types';
-import type { ReconciliationData } from './data/types';
-import type { ReconciliationRecord } from '@/types/index';
 
 // Custom Report Interfaces
 interface ReportFilter {
@@ -288,13 +286,14 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       const cashflowData = getCashflowData();
 
       // Apply filters
-      let data: ReconciliationRecord[] = [];
+      // Note: Using unknown[] to handle different ReconciliationRecord type definitions
+      let data: unknown[] = [];
       switch (report.dataSource) {
         case 'reconciliation':
-          data = reconciliationData?.records ?? [];
+          data = (reconciliationData?.records ?? []) as unknown[];
           break;
         case 'cashflow':
-          data = cashflowData?.records ?? [];
+          data = (cashflowData?.records ?? []) as unknown[];
           break;
         case 'projects':
           data = []; // Would fetch project data
@@ -351,9 +350,10 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
           case 'sum':
             if (metric.field) {
               metricsData[metric.id] = data.reduce(
-                (sum, record) => {
-                  const fieldValue = (record as unknown as Record<string, unknown>)[metric.field!];
-                  return sum + (Number(fieldValue) || 0);
+                (sum: number, record: unknown) => {
+                  const recordObj = record as Record<string, unknown>;
+                  const fieldValue = recordObj?.[metric.field!];
+                  return sum + (typeof fieldValue === 'number' ? fieldValue : Number(fieldValue) || 0);
                 },
                 0
               );
@@ -363,8 +363,9 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
             if (metric.field) {
               const values = data
                 .map((record) => {
-                  const fieldValue = (record as unknown as Record<string, unknown>)[metric.field!];
-                  return Number(fieldValue) || 0;
+                  const recordObj = record as unknown as Record<string, unknown>;
+                  const fieldValue = recordObj?.[metric.field!];
+                  return typeof fieldValue === 'number' ? fieldValue : Number(fieldValue) || 0;
                 })
                 .filter((v) => v > 0);
               metricsData[metric.id] =

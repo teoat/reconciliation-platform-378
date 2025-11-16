@@ -238,7 +238,7 @@ export const performanceMonitoring = {
 
   // Bundle analysis
   bundleAnalysis: {
-    enabled: process.env.NODE_ENV === 'development',
+    enabled: import.meta.env.DEV,
     outputPath: './bundle-analysis',
   },
 
@@ -256,7 +256,7 @@ export const performanceMonitoring = {
 
 // Bundle size analyzer
 export const analyzeBundleSize = async () => {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     try {
       const { BundleAnalyzerPlugin } = await import('webpack-bundle-analyzer');
       return BundleAnalyzerPlugin;
@@ -270,7 +270,7 @@ export const analyzeBundleSize = async () => {
 
 // Tree shaking analyzer
 export const analyzeTreeShaking = () => {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     logger.info('Tree shaking analysis enabled');
     return {
       usedExports: true,
@@ -282,7 +282,7 @@ export const analyzeTreeShaking = () => {
 
 // Code splitting analyzer
 export const analyzeCodeSplitting = () => {
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     logger.info('Code splitting analysis enabled');
     return {
       chunks: 'all',

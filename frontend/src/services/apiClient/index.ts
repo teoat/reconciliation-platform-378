@@ -626,7 +626,7 @@ export class ApiClient {
       authInterceptor.error(error, config)
     );
 
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       this.interceptorManager.addRequestInterceptor((config) => loggingInterceptor.request(config));
       this.interceptorManager.addResponseInterceptor((response, config) =>
         loggingInterceptor.response(response, config)

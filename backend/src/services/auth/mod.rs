@@ -236,10 +236,40 @@ impl EnhancedAuthService {
         // Hash new password
         let password_hash = PasswordManager::hash_password(new_password)?;
 
-        // Update user's password
+        // Get user to check password history
+        let user = users::table
+            .filter(users::id.eq(reset_token.user_id))
+            .first::<crate::models::User>(&mut conn)
+            .map_err(AppError::Database)?;
+
+        // Update password history (keep last 5)
+        let mut password_history = if let Some(history) = &user.password_history {
+            serde_json::from_value::<Vec<String>>(history.clone()).unwrap_or_default()
+        } else {
+            Vec::new()
+        };
+        
+        // Add current password hash to history
+        password_history.insert(0, user.password_hash.clone());
+        password_history.truncate(5);
+        
+        let password_history_json = serde_json::to_value(password_history)
+            .map_err(|e| AppError::Internal(format!("Failed to serialize password history: {}", e)))?;
+
+        // Calculate new expiration (90 days from now)
+        let now = chrono::Utc::now();
+        let password_expires_at = now + chrono::Duration::days(90);
+
+        // Update user's password with history and expiration
         diesel::update(users::table)
             .filter(users::id.eq(reset_token.user_id))
-            .set(users::password_hash.eq(&password_hash))
+            .set((
+                users::password_hash.eq(&password_hash),
+                users::password_last_changed.eq(now),
+                users::password_expires_at.eq(password_expires_at),
+                users::password_history.eq(password_history_json),
+                users::updated_at.eq(now),
+            ))
             .execute(&mut conn)
             .map_err(AppError::Database)?;
 

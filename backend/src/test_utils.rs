@@ -60,14 +60,19 @@ impl TestUser {
     }
     
     pub fn to_new_user(&self, password_hash: String) -> NewUser {
+        let now = chrono::Utc::now();
+        let password_expires_at = now + chrono::Duration::days(90);
         NewUser {
-            id: self.id,
             email: self.email.clone(),
+            username: None,
+            first_name: Some(self.first_name.clone()),
+            last_name: Some(self.last_name.clone()),
             password_hash,
-            first_name: self.first_name.clone(),
-            last_name: self.last_name.clone(),
-            role: self.role.to_string(),
-            is_active: true,
+            status: self.role.to_string(),
+            email_verified: true,
+            password_expires_at: Some(password_expires_at),
+            password_last_changed: Some(now),
+            password_history: Some(serde_json::json!([])),
         }
     }
 }

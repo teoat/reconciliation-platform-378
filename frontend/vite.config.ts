@@ -4,12 +4,14 @@ import { resolve } from 'path';
 import { cspNoncePlugin } from './vite-plugin-csp-nonce';
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const isProduction = mode === 'production';
+  return {
   base: process.env.VITE_BASE_PATH || '/',
   plugins: [
     react(),
     // CSP nonce injection for production builds
-    cspNoncePlugin({ enabled: process.env.NODE_ENV === 'production' }),
+    cspNoncePlugin({ enabled: isProduction }),
   ],
   server: {
     port: 1000,
@@ -66,12 +68,10 @@ export default defineConfig({
           // Vendor chunks - split by library size and usage
           // IMPORTANT: React-dependent libraries must be bundled with React or loaded after
           if (id.includes('node_modules')) {
-            // Split React and React DOM for better caching
-            if (id.includes('react') && !id.includes('react-dom')) {
-              return 'react-core';
-            }
-            if (id.includes('react-dom')) {
-              return 'react-dom-vendor';
+            // CRITICAL: Bundle React and ReactDOM together to prevent initialization errors
+            // ReactDOM must have React fully loaded before it can access React internals
+            if (id.includes('react') || id.includes('react-dom')) {
+              return 'react-vendor';
             }
             // Redux depends on React's useSyncExternalStore, so bundle with React
             if (
@@ -79,15 +79,15 @@ export default defineConfig({
               id.includes('react-redux') ||
               id.includes('redux')
             ) {
-              return 'react-core'; // Bundle with React core to ensure React loads first
+              return 'react-vendor'; // Bundle with React to ensure React loads first
             }
             // use-sync-external-store is a shim for React.useSyncExternalStore - must bundle with React
             if (id.includes('use-sync-external-store')) {
-              return 'react-core'; // Bundle with React core to ensure React loads first
+              return 'react-vendor'; // Bundle with React to ensure React loads first
             }
             // React Router also depends on React, bundle it too to ensure proper load order
             if (id.includes('react-router')) {
-              return 'react-core'; // Bundle with React core to avoid dependency issues
+              return 'react-vendor'; // Bundle with React to avoid dependency issues
             }
             // UI libraries - group for better caching
             if (
@@ -263,9 +263,9 @@ export default defineConfig({
   // Performance optimizations
   define: {
     // Remove development-only code in production
-    __DEV__: JSON.stringify(process.env.NODE_ENV === 'development'),
+    __DEV__: JSON.stringify(!isProduction),
     // Provide process.env.NODE_ENV for compatibility with code expecting it
-    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
+    'process.env.NODE_ENV': JSON.stringify(mode || 'development'),
   },
   // CSS optimizations
   css: {
@@ -276,4 +276,5 @@ export default defineConfig({
       generateScopedName: '[name]__[local]___[hash:base64:5]',
     },
   },
+  };
 });

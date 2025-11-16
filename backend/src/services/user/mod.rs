@@ -86,6 +86,11 @@ impl UserService {
 
         // Hash password
         let password_hash = self.auth_service.hash_password(&request.password)?;
+        
+        // Set password expiration (90 days from now, configurable)
+        let now = chrono::Utc::now();
+        let password_expires_at = now + chrono::Duration::days(90);
+        let password_last_changed = now;
 
         // Determine role
         let role = request.role.unwrap_or_else(|| "user".to_string());
@@ -106,6 +111,9 @@ impl UserService {
             last_name: Some(ValidationUtils::sanitize_string(&request.last_name)),
             status: role.clone(),
             email_verified: true,
+            password_expires_at: Some(password_expires_at),
+            password_last_changed: Some(password_last_changed),
+            password_history: Some(serde_json::json!([])), // Empty history for new users
         };
 
         let created_user_id = with_transaction(self.db.get_pool(), |tx| {
@@ -164,6 +172,8 @@ impl UserService {
 
         // Create user - check if exists inside transaction to prevent race condition
         let sanitized_email = ValidationUtils::sanitize_string(&request.email);
+        let now = chrono::Utc::now();
+        let password_expires_at = now + chrono::Duration::days(90);
         let new_user = NewUser {
             email: sanitized_email.clone(),
             password_hash,
@@ -172,6 +182,9 @@ impl UserService {
             last_name: Some(ValidationUtils::sanitize_string(&request.last_name)),
             status: role.clone(),
             email_verified: true,
+            password_expires_at: Some(password_expires_at),
+            password_last_changed: Some(now),
+            password_history: Some(serde_json::json!([])), // Empty history for new users
         };
 
         let result = with_transaction(self.db.get_pool(), |tx| {
@@ -347,6 +360,9 @@ impl UserService {
                 email_verified: request.is_active,
                 last_login_at: None,
                 last_active_at: None,
+                password_expires_at: None,
+                password_last_changed: None,
+                password_history: None,
             };
 
             // Update user

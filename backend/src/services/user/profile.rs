@@ -112,6 +112,9 @@ impl ProfileService {
             email_verified: None,
             last_login_at: None,
             last_active_at: None,
+            password_expires_at: None,
+            password_last_changed: None,
+            password_history: None,
         };
 
         // Update user

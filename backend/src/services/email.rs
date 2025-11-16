@@ -217,14 +217,18 @@ Reconciliation Platform Team
     }
 
     /// Internal email sending implementation
-    async fn send_email_internal(&self, to: &str, subject: &str, _body: &str) -> AppResult<()> {
+    async fn send_email_internal(&self, to: &str, subject: &str, body: &str) -> AppResult<()> {
+        // Get SMTP password from password manager if available
+        let smtp_password = self.get_smtp_password().await;
+        
         // In production, integrate with lettre or similar
         // For now, log the email would be sent
         log::info!(
-            "Email would be sent from {} to {} with subject: {}",
+            "Email would be sent from {} to {} with subject: {} (using password manager: {})",
             self.from_email,
             to,
-            subject
+            subject,
+            self.password_manager.is_some()
         );
 
         // In production with lettre:
@@ -241,7 +245,7 @@ Reconciliation Platform Team
         let mailer = SmtpTransport::relay(&self.smtp_host)
             .map_err(|e| AppError::Internal(format!("Failed to create SMTP transport: {}", e)))?
             .port(self.smtp_port)
-            .credentials((&self.smtp_user, &self.smtp_password))
+            .credentials((&self.smtp_user, &smtp_password))
             .build();
 
         mailer.send(&email)

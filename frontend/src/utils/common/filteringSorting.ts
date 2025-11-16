@@ -5,19 +5,14 @@ import { EnhancedReconciliationRecord } from '../../types/reconciliation';
 /**
  * Generic filter function for arrays
  */
+export type FilterOperator = 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'greaterThan' | 'lessThan' | 'between';
+
 export const filterByProperty = <T>(
   items: T[],
   property: keyof T,
-  value: any,
-  operator:
-    | 'equals'
-    | 'contains'
-    | 'startsWith'
-    | 'endsWith'
-    | 'greaterThan'
-    | 'lessThan'
-    | 'between' = 'equals',
-  value2?: any
+  value: unknown,
+  operator: FilterOperator = 'equals',
+  value2?: unknown
 ): T[] => {
   return items.filter((item) => {
     const itemValue = item[property];
@@ -50,7 +45,7 @@ export const sortByProperty = <T>(
   items: T[],
   property: keyof T,
   direction: 'asc' | 'desc' = 'asc',
-  transform?: (value: any) => any
+  transform?: (value: unknown) => unknown
 ): T[] => {
   return [...items].sort((a, b) => {
     let aValue = a[property];
@@ -85,16 +80,9 @@ export const advancedFilter = <T>(
   items: T[],
   filters: Array<{
     property: keyof T;
-    value: any;
-    operator?:
-      | 'equals'
-      | 'contains'
-      | 'startsWith'
-      | 'endsWith'
-      | 'greaterThan'
-      | 'lessThan'
-      | 'between';
-    value2?: any;
+    value: unknown;
+    operator?: FilterOperator;
+    value2?: unknown;
   }>
 ): T[] => {
   return items.filter((item) => {

@@ -279,6 +279,9 @@ pub async fn refresh_token(
         email_verified_at: None,
         last_login_at: None,
         last_active_at: None,
+        password_expires_at: None,
+        password_last_changed: None,
+        password_history: None,
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
     };
@@ -584,20 +587,29 @@ pub async fn google_oauth(
         ));
     }
 
-    // For OAuth users, derive master key from email + server secret
+    // For OAuth users, get or create OAuth master key from password manager
     // This allows OAuth users to use password manager without a password
     if let Some(password_manager) = http_req.app_data::<web::Data<Arc<crate::services::password_manager::PasswordManager>>>() {
-        // Derive master key from email + server secret (or JWT secret as fallback)
-        let server_secret = std::env::var("JWT_SECRET")
-            .unwrap_or_else(|_| "default-oauth-secret".to_string());
-        let derived_key = format!("{}:{}", email, server_secret);
-        // Hash the derived key for security using SHA-256
-        use sha2::{Digest, Sha256};
-        let mut hasher = Sha256::new();
-        hasher.update(derived_key.as_bytes());
-        let master_key = format!("{:x}", hasher.finalize());
-        password_manager.set_user_master_key(user.id, &master_key).await;
-        log::debug!("Set OAuth-derived password manager master key for user: {}", user.id);
+        match password_manager.get_or_create_oauth_master_key(user.id, &email).await {
+            Ok(master_key) => {
+                // Store the master key in memory for this session
+                password_manager.set_user_master_key(user.id, &master_key).await;
+                log::debug!("Set OAuth master key from password manager for user: {}", user.id);
+            }
+            Err(e) => {
+                log::warn!("Failed to get/create OAuth master key for user {}: {:?}", user.id, e);
+                // Fallback: derive master key from email + server secret (legacy method)
+                let server_secret = std::env::var("JWT_SECRET")
+                    .unwrap_or_else(|_| "default-oauth-secret".to_string());
+                let derived_key = format!("{}:{}", email, server_secret);
+                use sha2::{Digest, Sha256};
+                let mut hasher = Sha256::new();
+                hasher.update(derived_key.as_bytes());
+                let master_key = format!("{:x}", hasher.finalize());
+                password_manager.set_user_master_key(user.id, &master_key).await;
+                log::debug!("Set OAuth-derived password manager master key (fallback) for user: {}", user.id);
+            }
+        }
     }
 
     // Generate token

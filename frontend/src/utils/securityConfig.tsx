@@ -265,7 +265,7 @@ export function securityMiddleware(_req: any, res: any, next: any) {
   res.locals.cspNonce = nonce
   
   // Update CSP header with nonce
-  const cspPolicy = getCSPPolicy(process.env.NODE_ENV as 'development' | 'production')
+  const cspPolicy = getCSPPolicy(import.meta.env.DEV ? 'development' : 'production')
   const cspHeader = buildCSPHeader(cspPolicy, nonce)
   res.setHeader('Content-Security-Policy', cspHeader)
 

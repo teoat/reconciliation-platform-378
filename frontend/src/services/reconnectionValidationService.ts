@@ -179,10 +179,10 @@ class ReconnectionValidationService {
     }
   }
 
-  public async validateData(
+  public async validateData<T = unknown>(
     key: string,
-    getCurrentData: () => any,
-    getServerData: () => Promise<any>,
+    getCurrentData: () => T,
+    getServerData: () => Promise<T>,
     metadata: {
       userId?: string;
       projectId?: string;

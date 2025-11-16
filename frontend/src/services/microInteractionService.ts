@@ -547,12 +547,16 @@ class MicroInteractionService {
     })
   }
 
-  private getValueFromContext(field: string, context: Partial<InteractionContext>): any {
+  private getValueFromContext(field: string, context: Partial<InteractionContext>): unknown {
     const fieldParts = field.split('.')
-    let value = context as any
+    let value: unknown = context
     
     for (const part of fieldParts) {
-      value = value?.[part]
+      if (value && typeof value === 'object' && part in value) {
+        value = (value as Record<string, unknown>)[part]
+      } else {
+        return undefined
+      }
     }
     
     return value

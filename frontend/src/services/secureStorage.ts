@@ -29,12 +29,15 @@ class EncryptionService {
     const envKey = import.meta.env.VITE_STORAGE_KEY;
     
     // Development fallback (not secure, but allows development)
-    const isDevelopment = import.meta.env.MODE === 'development' || import.meta.env.PROD !== true;
+    const isDevelopment = import.meta.env.DEV;
     const fallbackKey = isDevelopment ? 'dev-storage-key-not-secure-change-in-production' : undefined;
     
     if (!envKey || envKey === 'default-key-change-in-production') {
       if (isDevelopment && fallbackKey) {
-        console.warn('VITE_STORAGE_KEY is not set. Using development fallback. This is NOT secure for production.');
+        logger.warn('VITE_STORAGE_KEY is not set. Using development fallback. This is NOT secure for production.', {
+          component: 'EncryptionService',
+          category: 'security',
+        });
         this.key = fallbackKey;
         return;
       }

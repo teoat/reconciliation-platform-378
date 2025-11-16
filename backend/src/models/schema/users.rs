@@ -20,6 +20,9 @@ diesel::table! {
         email_verified_at -> Nullable<Timestamptz>,
         last_login_at -> Nullable<Timestamptz>,
         last_active_at -> Nullable<Timestamptz>,
+        password_expires_at -> Nullable<Timestamptz>,
+        password_last_changed -> Nullable<Timestamptz>,
+        password_history -> Nullable<Jsonb>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }

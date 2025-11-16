@@ -664,7 +664,7 @@ export const store = configureStore({
         ignoredPaths: ['_persist'],
       },
     }),
-  devTools: process.env.NODE_ENV !== 'production',
+  devTools: import.meta.env.DEV,
 });
 
 export const persistor = persistStore(store);

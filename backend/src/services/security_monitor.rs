@@ -94,11 +94,13 @@ pub struct AlertRule {
 
 #[derive(Debug, Clone)]
 enum AlertCondition {
+    #[allow(dead_code)]
     EventCount {
         event_type: SecurityEventType,
         threshold: usize,
         window: Duration,
     },
+    #[allow(dead_code)]
     AnomalyScore {
         threshold: f64,
     },
@@ -106,9 +108,13 @@ enum AlertCondition {
 
 #[derive(Debug, Clone)]
 enum AlertAction {
+    #[allow(dead_code)]
     Log,
+    #[allow(dead_code)]
     NotifyEmail(String),
+    #[allow(dead_code)]
     NotifySlack(String),
+    #[allow(dead_code)]
     BlockIp(String),
 }
 

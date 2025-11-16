@@ -58,8 +58,48 @@ impl PasswordManager {
     /// Set master key for a specific user (derived from their login password)
     pub async fn set_user_master_key(&self, user_id: uuid::Uuid, user_password: &str) {
         let mut keys = self.user_master_keys.write().await;
-        // Use the user's password directly as their master key
-        keys.insert(user_id, user_password.to_string());
+        // Derive master key from password using PBKDF2 for better security
+        // This avoids storing plaintext password in memory
+        use pbkdf2::pbkdf2_hmac;
+        use sha2::Sha256;
+        use base64::engine::{general_purpose, Engine};
+        
+        let mut master_key = [0u8; 32];
+        pbkdf2_hmac::<Sha256>(
+            user_password.as_bytes(),
+            user_id.to_string().as_bytes(), // Salt with user ID
+            100000, // Iterations
+            &mut master_key,
+        );
+        
+        let encoded_key = general_purpose::STANDARD.encode(master_key);
+        keys.insert(user_id, encoded_key);
+        log::debug!("Set derived master key for user: {}", user_id);
+    }
+    
+    /// Get or create OAuth master key for a user
+    pub async fn get_or_create_oauth_master_key(
+        &self,
+        user_id: uuid::Uuid,
+        email: &str,
+    ) -> AppResult<String> {
+        // Check if OAuth master key exists
+        let key_name = format!("oauth_master_key_{}", user_id);
+        match self.get_password_by_name(&key_name, None).await {
+            Ok(key) => {
+                log::debug!("Retrieved existing OAuth master key for user: {}", user_id);
+                Ok(key)
+            }
+            Err(AppError::NotFound(_)) => {
+                // Generate new master key
+                let master_key = self.generate_secure_password(32).await?;
+                // Store encrypted with system master key (user_id = None)
+                self.create_password(&key_name, &master_key, 0, None).await?;
+                log::info!("Created new OAuth master key for user: {}", user_id);
+                Ok(master_key)
+            }
+            Err(e) => Err(e),
+        }
     }
 
     /// Clear master key for a specific user (called on logout)
@@ -79,6 +119,33 @@ impl PasswordManager {
         }
         // Fall back to global master key
         self.master_key.read().await.clone()
+    }
+    
+    /// Check and rotate user passwords that have expired
+    pub async fn check_and_rotate_user_passwords(&self, db: Arc<crate::database::Database>) -> AppResult<Vec<uuid::Uuid>> {
+        use crate::models::schema::users;
+        use diesel::prelude::*;
+        
+        let mut conn = db.get_connection()?;
+        let now = chrono::Utc::now();
+        
+        // Get users with expired passwords
+        let expired_users: Vec<(uuid::Uuid, String)> = users::table
+            .filter(users::password_expires_at.is_not_null())
+            .filter(users::password_expires_at.lt(now))
+            .filter(users::status.eq("active"))
+            .select((users::id, users::email))
+            .load::<(uuid::Uuid, String)>(&mut conn)
+            .map_err(AppError::Database)?;
+        
+        let mut expired_user_ids = Vec::new();
+        for (user_id, email) in expired_users {
+            log::warn!("User {} ({}) has expired password", user_id, email);
+            expired_user_ids.push(user_id);
+            // In production, send password reset email here
+        }
+        
+        Ok(expired_user_ids)
     }
 
     /// Initialize with default passwords

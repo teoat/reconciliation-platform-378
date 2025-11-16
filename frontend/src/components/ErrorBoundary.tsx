@@ -328,7 +328,7 @@ const DefaultErrorFallback: React.FC<DefaultErrorFallbackProps> = ({
           )}
         </div>
 
-        {process.env.NODE_ENV === 'development' && error.context && (
+        {import.meta.env.DEV && error.context && (
           <details className="mt-4">
             <summary className="text-sm text-gray-500 cursor-pointer hover:text-gray-700">
               Debug Information

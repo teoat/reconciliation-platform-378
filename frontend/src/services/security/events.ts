@@ -30,7 +30,7 @@ export class SecurityEventLogger {
       this.securityEvents = this.securityEvents.slice(-1000);
     }
 
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       logger.warn('Security Event:', fullEvent);
     }
 
