@@ -1,61 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Upload, FileText, Eye, Trash2 } from 'lucide-react';
 import { useData } from '../components/DataProvider';
 import { ApiService } from '../services/ApiService';
-import { useProjectFiles } from '../hooks/useFileReconciliation';
 import { useToast } from '../hooks/useToast';
-import { logger } from '../services/logger';
 import { apiClient } from '../services/apiClient';
-import { useToast } from '../hooks/useToast';
+import { PageConfig, StatsCard, ActionConfig } from '../../types/common';
+import { UploadedFile } from '../../types/ingestion';
 
 import { Modal } from '../components/ui/Modal';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
-import {
-  LoadingSpinnerComponent,
-  LoadingState,
-  SkeletonText,
-} from '../components/LoadingComponents';
+import { LoadingSpinnerComponent, SkeletonText } from '../components/LoadingComponents';
 import { logger } from '../services/logger';
-
-// Interfaces (shared with main index.tsx)
-export interface UploadedFile {
-  id: string;
-  name: string;
-  size: string;
-  type: string;
-  status: string;
-  uploaded_at?: string;
-}
-
-export interface PageConfig {
-  title: string;
-  description: string;
-  icon: React.ComponentType<any>;
-  path: string;
-  showStats?: boolean;
-  showFilters?: boolean;
-  showActions?: boolean;
-}
-
-export interface StatsCard {
-  title: string;
-  value: string | number;
-  icon: React.ComponentType<any>;
-  color: string;
-  trend?: {
-    direction: 'up' | 'down' | 'neutral';
-    value: string;
-  };
-  progress?: number;
-}
-
-export interface ActionConfig {
-  label: string;
-  icon: React.ComponentType<any>;
-  onClick: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
-  loading?: boolean;
-}
 
 // BasePage component (simplified for this extraction)
 interface BasePageProps {
@@ -226,10 +181,11 @@ const IngestionPageContent: React.FC = () => {
         uploadedFiles.push({
           id: result.id,
           name: result.name || file.name,
-          size: `${(file.size / 1024 / 1024).toFixed(2)} MB`,
+          size: file.size,
           type: file.type || 'Unknown',
-          status: result.status || 'processing',
-          uploaded_at: result.uploaded_at,
+          status: (result.status as UploadedFile['status']) || 'processing',
+          progress: 0,
+          fileType: 'other',
         });
       }
       setFiles((prev) => [...prev, ...uploadedFiles]);
@@ -402,7 +358,7 @@ const IngestionPageContent: React.FC = () => {
                       <div>
                         <h3 className="font-medium text-gray-900">{file.name}</h3>
                         <p className="text-sm text-gray-600">
-                          {file.size} • {file.type}
+                          {(file.size / 1024 / 1024).toFixed(2)} MB • {file.type}
                         </p>
                       </div>
                     </div>
@@ -455,7 +411,9 @@ const IngestionPageContent: React.FC = () => {
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Size</p>
-                <p className="text-sm text-gray-900">{previewFile.size}</p>
+                <p className="text-sm text-gray-900">
+                  {(previewFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Type</p>

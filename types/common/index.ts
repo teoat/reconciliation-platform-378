@@ -96,6 +96,36 @@ export interface Color {
   a?: number;
 }
 
+// UI Component Types (shared across pages)
+export interface PageConfig {
+  title: string;
+  description: string;
+  icon: React.ComponentType<any>;
+  path: string;
+  showStats?: boolean;
+  showFilters?: boolean;
+  showActions?: boolean;
+}
+
+export interface StatsCard {
+  title: string;
+  value: string | number;
+  icon: React.ComponentType<any>;
+  color: string;
+  trend?: {
+    direction: 'up' | 'down' | 'neutral';
+    value: string;
+  };
+  progress?: number;
+}
+
+export interface ActionConfig {
+  label: string;
+  icon: React.ComponentType<any>;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary' | 'danger';
+  loading?: boolean;
+}
+
 // Re-export Metadata for convenience
 export type { Metadata } from '../../frontend/src/types/metadata';
-

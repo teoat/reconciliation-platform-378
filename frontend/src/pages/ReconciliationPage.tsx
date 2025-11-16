@@ -491,7 +491,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       {/* Navigation Tabs */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="navigation-tabs">
         <div className="border-b border-gray-200">
-          <nav
+          <div
             className="-mb-px flex space-x-8"
             role="tablist"
             aria-label="Reconciliation workflow tabs"
@@ -526,7 +526,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
                 {tab.label}
               </button>
             ))}
-          </nav>
+          </div>
         </div>
       </div>
 
@@ -644,10 +644,14 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
                 <h3 className="text-lg font-semibold mb-4">Reconciliation Settings</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="matching-threshold"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Matching Threshold
                     </label>
                     <input
+                      id="matching-threshold"
                       type="range"
                       min="0.1"
                       max="1"
@@ -671,10 +675,14 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label
+                      htmlFor="auto-approve"
+                      className="block text-sm font-medium text-gray-700 mb-2"
+                    >
                       Auto-approve matches
                     </label>
                     <input
+                      id="auto-approve"
                       type="checkbox"
                       checked={reconciliationSettings.autoApprove}
                       onChange={(e) =>
@@ -788,10 +796,14 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
         <div className="p-6">
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label
+                htmlFor="notification-email"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
                 Notification Email
               </label>
               <input
+                id="notification-email"
                 type="email"
                 value={reconciliationSettings.notificationEmail}
                 onChange={(e) =>
