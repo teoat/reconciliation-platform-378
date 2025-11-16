@@ -253,7 +253,10 @@ export class PerformanceMonitor {
    * Set performance threshold for a measurement
    */
   static setThreshold(key: string, maxDurationMs: number): void {
-    this.thresholds.set(key, maxDurationMs);
+    if (!Number.isFinite(maxDurationMs) || maxDurationMs < 0) {
+      throw new Error(`Invalid threshold for "${key}": ${maxDurationMs}`);
+    }
+    this.thresholds.set(key, Math.floor(maxDurationMs));
   }
 
   /**
