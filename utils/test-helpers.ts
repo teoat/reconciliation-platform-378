@@ -238,10 +238,15 @@ export class PerformanceMonitor {
    * Record a performance measurement
    */
   static measure(key: string, durationMs: number): void {
+    const MAX_SAMPLES = 200; // cap to prevent unbounded growth
     if (!this.measurements.has(key)) {
       this.measurements.set(key, []);
     }
-    this.measurements.get(key)!.push(durationMs);
+    const arr = this.measurements.get(key)!;
+    arr.push(durationMs);
+    if (arr.length > MAX_SAMPLES) {
+      arr.shift(); // drop oldest sample
+    }
   }
 
   /**
