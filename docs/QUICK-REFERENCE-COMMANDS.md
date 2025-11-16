@@ -286,12 +286,12 @@ npm run performance:ci-check
 
 ## 🔗 Related Documentation
 
-- **Performance Optimization**: See `PERFORMANCE-OPTIMIZATION-SUMMARY.md`
-- **Database Optimization**: See `backend/README-QUERY-OPTIMIZATION.md`
-- **Deployment Guide**: See `docs/DEPLOYMENT.md` (if exists)
-- **Agent Coordination**: See `docs/AGENT_COORDINATION.md` (if exists)
+- **Deployment Guide**: See [../DEPLOYMENT_GUIDE.md](../DEPLOYMENT_GUIDE.md)
+- **Troubleshooting**: See [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+- **Support & Maintenance**: See [SUPPORT_MAINTENANCE_GUIDE.md](SUPPORT_MAINTENANCE_GUIDE.md)
+- **API Documentation**: See [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
 
 ---
 
-**Last Updated**: Quick reference for S-grade performance targets and common workflows.
+**Last Updated**: January 2025 - Quick reference for common workflows and commands.
 
