@@ -19,11 +19,32 @@ export class MemoryLeakDetector {
   /**
    * Track an event listener for cleanup verification
    */
-  static trackListener(target: string, listener: EventListener): void {
-    if (!this.activeListeners.has(target)) {
-      this.activeListeners.set(target, new Set());
+  // Utility registry to keep weak associations to real targets
+  const _eventTargetsRegistry: WeakMap<EventTarget, string> = new WeakMap();
+  function getTargetId(target: EventTarget): string {
+    let id = _eventTargetsRegistry.get(target);
+    if (!id) {
+      id = `t_${Math.random().toString(36).slice(2)}`;
+      _eventTargetsRegistry.set(target, id);
+      // expose for cleanup best-effort
+      (globalThis as any).__MLD_EVENT_TARGETS__ ??= new Map<string, EventTarget>();
+      (globalThis as any).__MLD_EVENT_TARGETS__.set(id, target);
     }
-    this.activeListeners.get(target)!.add(listener);
+    return id;
+  }
+
+  // Store by composite key: `${type}|${id}`
+  static trackListener(target: EventTarget, type: string, listener: EventListener): void {
+    const id = getTargetId(target);
+    const key = `${type}|${id}`;
+    if (!this.activeListeners.has(key)) {
+      this.activeListeners.set(key, new Set());
+    }
+    this.activeListeners.get(key)!.add(listener);
+    // Also attach to target for symmetry if desired by tests
+    if (typeof (target as any).addEventListener === 'function') {
+      (target as any).addEventListener(type, listener);
+    }
   }
 
   /**
