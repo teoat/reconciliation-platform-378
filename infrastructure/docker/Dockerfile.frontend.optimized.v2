@@ -1,0 +1,124 @@
+# ==============================================================================
+# Stage 1: Install dependencies
+# ==============================================================================
+FROM node:20-alpine AS deps
+WORKDIR /app/frontend
+
+# Copy package files
+COPY frontend/package*.json ./
+
+# Install dependencies with optimizations
+RUN npm ci --only=production --no-audit --no-fund && \
+    npm cache clean --force
+
+# ==============================================================================
+# Stage 2: Build application
+# ==============================================================================
+FROM node:20-alpine AS builder
+WORKDIR /app/frontend
+
+# Build arguments for environment variables
+ARG VITE_API_URL
+ARG VITE_WS_URL
+ARG NODE_ENV=production
+
+# Set environment variables
+ENV VITE_API_URL=${VITE_API_URL} \
+    VITE_WS_URL=${VITE_WS_URL} \
+    NODE_ENV=${NODE_ENV}
+
+# Copy dependencies from previous stage
+COPY --from=deps /app/frontend/node_modules ./node_modules
+
+# Copy package files
+COPY frontend/package*.json ./
+
+# Install dev dependencies for build
+RUN npm install --no-audit --no-fund
+
+# Copy source code
+COPY frontend/ .
+
+# Build production bundle
+RUN npm run build && \
+    # Remove source maps for smaller size
+    find dist -name '*.map' -delete
+
+# ==============================================================================
+# Stage 3: Production runtime (nginx)
+# ==============================================================================
+FROM nginx:1.27-alpine
+LABEL maintainer="Reconciliation Platform Team"
+LABEL description="Optimized production frontend for reconciliation platform"
+
+# Copy built assets
+COPY --from=builder /app/frontend/dist /usr/share/nginx/html
+
+# Create optimized nginx configuration
+RUN cat > /etc/nginx/conf.d/default.conf <<'EOF'
+server {
+    listen 80;
+    server_name _;
+    root /usr/share/nginx/html;
+    index index.html;
+    
+    # Gzip compression
+    gzip on;
+    gzip_vary on;
+    gzip_proxied any;
+    gzip_comp_level 6;
+    gzip_types text/plain text/css text/xml text/javascript 
+               application/json application/javascript application/xml+rss 
+               application/xml application/x-font-ttf font/opentype 
+               image/svg+xml image/x-icon;
+    
+    # Logging
+    access_log /var/log/nginx/access.log;
+    error_log /var/log/nginx/error.log warn;
+    
+    # Security headers
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "DENY" always;
+    add_header X-XSS-Protection "1; mode=block" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    
+    # CSP header (development-friendly, tighten in production)
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' http://localhost:2000 ws://localhost:2000; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" always;
+    
+    # SPA routing
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+    
+    # Static assets caching
+    location ~* \.(?:js|css|woff2?|ttf|otf|eot)$ {
+        expires 1y;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+        access_log off;
+    }
+    
+    # Images caching
+    location ~* \.(?:jpg|jpeg|gif|png|ico|svg|webp)$ {
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+        access_log off;
+    }
+    
+    # Deny access to hidden files
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+}
+EOF
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD wget -q --spider http://localhost/ || exit 1
+
+EXPOSE 80
+
+# Run nginx
+CMD ["nginx", "-g", "daemon off;"]
+

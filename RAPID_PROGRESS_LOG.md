@@ -7,7 +7,7 @@
 
 ---
 
-## ✅ Completed (11 TODOs in ~8 hours)
+## ✅ Completed (14 TODOs in ~12 hours)
 
 | TODO | Task | Impact | Status |
 |------|------|--------|--------|
@@ -20,10 +20,13 @@
 | TODO-004 | Audit XSS risks | +2 Security | ✅ |
 | TODO-005 | DOMPurify setup | +3 Security | ✅ |
 | TODO-006 | Security headers | +2 Security | ✅ |
-| TODO-038 | Database indexes | +10 Performance | ✅ (pending apply) |
+| TODO-032 | Code splitting | +8 Performance | ✅ |
+| TODO-033 | Optimize dependencies | +5 Performance | ✅ |
+| TODO-044 | Docker optimization | +5 Performance | ✅ |
+| TODO-038 | Database indexes | +10 Performance | ⏸️ (pending schema) |
 | **Dockerfile cleanup** | Moved to .deployment/ | +4 Maintainability | ✅ |
 
-**Total**: +45 points potential (22 applied, 23 pending)
+**Total**: +63 points (53 applied, 10 pending schema)
 
 ---
 
