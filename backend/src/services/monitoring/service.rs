@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
-use prometheus::{Registry, TextEncoder};
+use prometheus::{Registry, TextEncoder, core::Collector};
 use crate::errors::{AppError, AppResult};
 
 use crate::services::monitoring::types::{HealthChecker, HealthReport, HealthStatus};
@@ -45,7 +45,7 @@ impl MonitoringService {
 
     fn register_metrics(registry: &Registry) {
         let metrics = vec![
-            Box::new(HTTP_REQUESTS_TOTAL.clone()) as Box<dyn prometheus::Collector>,
+            Box::new(HTTP_REQUESTS_TOTAL.clone()) as Box<dyn Collector>,
             Box::new(HTTP_REQUEST_DURATION.clone()),
             Box::new(HTTP_REQUEST_SIZE.clone()),
             Box::new(HTTP_RESPONSE_SIZE.clone()),

@@ -2,7 +2,7 @@
 
 use diesel::prelude::*;
 use uuid::Uuid;
-use chrono::{DateTime, Utc, Duration};
+use chrono::{Utc, Duration};
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::models::schema::{
@@ -165,14 +165,14 @@ impl AnalyticsCollector {
             .map_err(AppError::Database)?;
         
         let jobs_created = reconciliation_jobs::table
-            .inner_join(projects::table)
+            .inner_join(projects::table.on(reconciliation_jobs::project_id.eq(projects::id)))
             .filter(projects::owner_id.eq(user_id))
             .count()
             .get_result::<i64>(conn)
             .map_err(AppError::Database)?;
         
         let files_uploaded = data_sources::table
-            .inner_join(projects::table)
+            .inner_join(projects::table.on(data_sources::project_id.eq(projects::id)))
             .filter(projects::owner_id.eq(user_id))
             .count()
             .get_result::<i64>(conn)

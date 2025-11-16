@@ -2,26 +2,27 @@
 // Manual migration execution for Diesel
 
 use diesel::migration::MigrationVersion;
-use diesel::{Connection, PgConnection, RunQueryDsl};
+use diesel::{Connection, PgConnection};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use std::fs;
 use log::{info, error};
-use diesel::result::QueryResult;
 
-pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
 /// Run all pending migrations
-pub fn run_migrations(database_url: &str) -> Result<(), Box<dyn std::error::Error>> {
-    let mut conn = PgConnection::establish(database_url)?;
+pub fn run_migrations(database_url: &str) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+    let mut conn = PgConnection::establish(database_url)
+        .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
     
     info!("Running database migrations...");
 
     // Apply all migrations
-    conn.run_pending_migrations(MIGRATIONS)
-        .map_err(|e| {
+    match conn.run_pending_migrations(MIGRATIONS) {
+        Ok(_) => {},
+        Err(e) => {
             error!("Migration failed: {}", e);
-            e
-        })?;
+            return Err(format!("Migration error: {}", e).into());
+        }
+    }
 
     info!("All migrations applied successfully!");
     
@@ -29,8 +30,12 @@ pub fn run_migrations(database_url: &str) -> Result<(), Box<dyn std::error::Erro
 }
 
 /// Get migration version
-pub fn migration_version(database_url: &str) -> QueryResult<Vec<MigrationVersion>> {
-    let mut conn = PgConnection::establish(database_url)?;
-    conn.version()
+pub fn migration_version(database_url: &str) -> Result<Vec<MigrationVersion<'static>>, Box<dyn std::error::Error + Send + Sync>> {
+    let mut conn = PgConnection::establish(database_url)
+        .map_err(|e| Box::new(e) as Box<dyn std::error::Error + Send + Sync>)?;
+    // Get applied migrations using Diesel migration harness
+    let applied = conn.applied_migrations()
+        .map_err(|e| format!("Migration version error: {}", e))?;
+    Ok(applied)
 }
 

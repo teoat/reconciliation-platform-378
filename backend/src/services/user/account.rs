@@ -6,7 +6,6 @@
 use diesel::prelude::*;
 use uuid::Uuid;
 use std::sync::Arc;
-use async_trait::async_trait;
 
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
@@ -30,11 +29,13 @@ impl UserAccountService {
 
         let update_data = UpdateUser {
             email: None,
+            username: None,
             first_name: None,
             last_name: None,
-            role: None,
-            is_active: None,
-            last_login: Some(chrono::Utc::now()),
+            status: None,
+            email_verified: None,
+            last_login_at: Some(chrono::Utc::now()),
+            last_active_at: Some(chrono::Utc::now()),
         };
 
         diesel::update(users::table.filter(users::id.eq(user_id)))

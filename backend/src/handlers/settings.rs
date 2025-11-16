@@ -2,7 +2,6 @@
 
 use actix_web::{web, HttpResponse, Result};
 use uuid::Uuid;
-use std::sync::Arc;
 use std::time::Duration;
 
 use crate::errors::AppError;

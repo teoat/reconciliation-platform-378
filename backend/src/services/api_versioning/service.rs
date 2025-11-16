@@ -410,7 +410,7 @@ impl ApiVersioningService {
             }
             
             docs.push_str("\n## Supported Endpoints\n\n");
-            for (key, endpoint_version) in endpoint_versions.iter() {
+            for (_key, endpoint_version) in endpoint_versions.iter() {
                 if endpoint_version.versions.contains(&version.to_string()) {
                     docs.push_str(&format!("- **{}** {}\n", endpoint_version.method, endpoint_version.endpoint));
                 }

@@ -18,7 +18,6 @@ pub use validation::ValidationUtils;
 pub use middleware::{SecurityMiddleware, CorsConfig};
 
 use crate::errors::{AppError, AppResult};
-use crate::models::User;
 
 /// Authentication service
 ///
@@ -52,7 +51,7 @@ impl AuthService {
     }
 
     /// Generate a JWT token for a user
-    pub fn generate_token(&self, user: &User) -> AppResult<String> {
+    pub fn generate_token(&self, user: &crate::models::User) -> AppResult<String> {
         self.jwt_manager.generate_token(user)
     }
 
@@ -124,7 +123,7 @@ impl EnhancedAuthService {
         Ok(SessionInfo {
             user_id: user.id,
             email: user.email.clone(),
-            role: user.role.clone(),
+            role: user.status.clone(), // Role stored in status field
             created_at: now,
             expires_at,
             last_activity: now,
@@ -182,8 +181,6 @@ impl EnhancedAuthService {
             user_id: user.id,
             token_hash,
             expires_at,
-            ip_address: None,
-            user_agent: None,
         };
 
         diesel::insert_into(password_reset_tokens::table)
@@ -299,7 +296,7 @@ impl EnhancedAuthService {
     pub async fn generate_email_verification_token(
         &self,
         user_id: uuid::Uuid,
-        email: &str,
+        _email: &str,
         db: &crate::database::Database,
     ) -> AppResult<String> {
         use diesel::prelude::*;
@@ -326,7 +323,6 @@ impl EnhancedAuthService {
         let new_token = NewEmailVerificationToken {
             user_id,
             token_hash,
-            email: email.to_string(),
             expires_at,
         };
 
@@ -346,7 +342,6 @@ impl EnhancedAuthService {
     ) -> AppResult<()> {
         use diesel::prelude::*;
         use crate::models::schema::email_verification_tokens;
-        use crate::models::schema::users;
         use crate::models::{EmailVerificationToken, UpdateEmailVerificationToken};
         use sha2::{Sha256, Digest};
 
@@ -365,7 +360,7 @@ impl EnhancedAuthService {
             })?;
 
         // Check if already verified
-        if verification_token.verified_at.is_some() {
+        if verification_token.used_at.is_some() {
             return Err(AppError::Authentication("Email already verified".to_string()));
         }
 
@@ -381,19 +376,13 @@ impl EnhancedAuthService {
         diesel::update(email_verification_tokens::table)
             .filter(email_verification_tokens::id.eq(verification_token.id))
             .set(UpdateEmailVerificationToken {
-                verified_at: Some(now),
+                used_at: Some(now),
             })
             .execute(&mut conn)
             .map_err(AppError::Database)?;
 
-        // Update user email if different
-        if !verification_token.email.is_empty() {
-            diesel::update(users::table)
-                .filter(users::id.eq(verification_token.user_id))
-                .set(users::email.eq(&verification_token.email))
-                .execute(&mut conn)
-                .map_err(AppError::Database)?;
-        }
+        // Email verification doesn't change email - it just verifies the existing one
+        // No need to update email field
 
         Ok(())
     }

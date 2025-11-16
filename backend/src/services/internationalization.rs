@@ -34,24 +34,9 @@ pub struct CurrencyFormat {
     pub symbol_spacing: bool,
 }
 
-/// Currency symbol position
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
-pub enum CurrencyPosition {
-    Before,
-    After,
-}
 
-/// Translation entry
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Translation {
-    pub key: String,
-    pub language_code: String,
-    pub value: String,
-    pub context: Option<String>,
-    pub plural_forms: Option<HashMap<String, String>>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-}
+
+
 
 /// Translation request
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -73,15 +58,7 @@ pub struct TranslationResponse {
     pub alternatives: Vec<String>,
 }
 
-/// Timezone information
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TimezoneInfo {
-    pub code: String, // IANA timezone code (e.g., "America/New_York", "Europe/London")
-    pub name: String, // Display name
-    pub offset_seconds: i32,
-    pub is_dst: bool,
-    pub dst_offset_seconds: Option<i32>,
-}
+
 
 /// Localization context
 #[derive(Debug, Clone, Serialize, Deserialize)]

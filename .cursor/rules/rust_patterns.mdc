@@ -1,0 +1,150 @@
+---
+description: Rust-specific coding patterns and best practices for the reconciliation platform backend.
+globs: backend/**/*.rs
+alwaysApply: true
+---
+
+- **Error Handling Pattern:**
+  - Use `AppError` enum for all error types
+  - Return `AppResult<T>` instead of `Result<T, E>`
+  - Always provide context with `?` operator or `.map_err()`
+  ```rust
+  // ✅ DO: Use AppResult
+  pub fn process_data() -> AppResult<Data> {
+      let result = some_operation()?;
+      Ok(result)
+  }
+  
+  // ❌ DON'T: Use generic Result
+  pub fn process_data() -> Result<Data, Box<dyn std::error::Error>> {
+      // ...
+  }
+  ```
+
+- **Database Operations:**
+  - Use Diesel ORM for type-safe queries
+  - Use SQLx for migrations and raw queries
+  - Always use transactions for multi-step operations
+  ```rust
+  // ✅ DO: Use transactions
+  conn.transaction(|conn| {
+      diesel::insert_into(users::table)
+          .values(&new_user)
+          .execute(conn)?;
+      diesel::insert_into(profiles::table)
+          .values(&new_profile)
+          .execute(conn)?;
+      Ok(())
+  })
+  ```
+
+- **Async Patterns:**
+  - Use `async fn` for handlers
+  - Prefer `.await` over blocking operations
+  - Use `tokio::spawn` for concurrent operations
+  ```rust
+  // ✅ DO: Async handlers
+  pub async fn get_user(id: i32) -> AppResult<User> {
+      let user = db::get_user(id).await?;
+      Ok(user)
+  }
+  ```
+
+- **Logging:**
+  - Use structured logging with JSON format
+  - Mask PII in logs (emails, tokens, etc.)
+  - Use appropriate log levels (error, warn, info, debug)
+  ```rust
+  // ✅ DO: Structured logging
+  log::info!(
+      "User authenticated",
+      user_id = user.id,
+      timestamp = %Utc::now()
+  );
+  ```
+
+- **Middleware:**
+  - Use Actix-Web middleware for cross-cutting concerns
+  - Implement custom middleware for auth, logging, CORS
+  - Keep middleware focused and composable
+  ```rust
+  // ✅ DO: Composable middleware
+  App::new()
+      .wrap(Logger::default())
+      .wrap(Cors::default())
+      .wrap(AuthMiddleware)
+  ```
+
+- **Function Signatures:**
+  - **CRITICAL**: Function parameter lists should end with `)` not `})`
+  - Check for mismatched closing delimiters
+  - Use proper Rust formatting
+  ```rust
+  // ✅ DO: Correct closing parenthesis
+  pub fn example_function(param: String) -> AppResult<()> {
+      // ...
+  }
+  
+  // ❌ DON'T: Mismatched delimiters
+  pub fn example_function(param: String}) -> AppResult<()> {
+      // ...
+  }
+  ```
+
+- **Type Safety:**
+  - Prefer strong types over primitives
+  - Use `Option<T>` for nullable values
+  - Use `Result<T, E>` for fallible operations
+  ```rust
+  // ✅ DO: Strong types
+  pub struct UserId(i32);
+  pub struct Email(String);
+  
+  // ❌ DON'T: Primitive types
+  pub fn get_user(id: i32, email: String) -> AppResult<User> {
+      // ...
+  }
+  ```
+
+- **Code Organization:**
+  - One responsibility per module
+  - Group related functions together
+  - Use `mod.rs` for module organization
+  ```rust
+  // ✅ DO: Organized modules
+  // services/user_service.rs
+  pub mod user_service {
+      pub async fn create() -> AppResult<User> { }
+      pub async fn get() -> AppResult<User> { }
+  }
+  ```
+
+- **Testing:**
+  - Write unit tests for business logic
+  - Use integration tests for API endpoints
+  - Mock external dependencies
+  ```rust
+  // ✅ DO: Test structure
+  #[cfg(test)]
+  mod tests {
+      use super::*;
+      
+      #[tokio::test]
+      async fn test_user_creation() {
+          // ...
+      }
+  }
+  ```
+
+- **Performance:**
+  - Use connection pooling for databases
+  - Cache frequently accessed data
+  - Use `Arc` for shared immutable data
+  - Avoid unnecessary clones
+  ```rust
+  // ✅ DO: Efficient data sharing
+  let shared_config = Arc::new(config);
+  let config_clone = Arc::clone(&shared_config);
+  ```
+
+Follow [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) for general rule formatting guidelines.

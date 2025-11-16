@@ -3,7 +3,7 @@
 //! This module contains the WebSocket session actor and related connection handling.
 
 use actix_web_actors::ws;
-use actix::{Actor, StreamHandler, Handler, Addr, AsyncContext};
+use actix::{Actor, StreamHandler, Handler, Addr, AsyncContext, ActorContext};
 use uuid::Uuid;
 use std::collections::HashSet;
 use std::sync::Arc;

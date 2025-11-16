@@ -17,23 +17,22 @@ pub use types::FuzzyAlgorithmType;
 pub use processing::{process_data_sources_chunked, save_reconciliation_results, update_job_status, update_job_progress, send_progress};
 pub use job_management::{JobProcessor, JobHandle, JobProgress, JobStatus};
 pub use types::*;
-use service::*;
 
 // Re-export for backward compatibility
 use crate::database::Database;
-use crate::errors::{AppError, AppResult};
+use crate::errors::AppResult;
 use uuid::Uuid;
 use std::sync::Arc;
-use tokio::sync::{RwLock, mpsc};
-use chrono::Utc;
-use diesel::{RunQueryDsl, QueryDsl, ExpressionMethods, OptionalExtension};
+
+
+
 
 use crate::models::{
     ReconciliationJob, NewReconciliationJob, UpdateReconciliationJob,
-    ReconciliationResult, NewReconciliationResult,
+    NewReconciliationResult,
     DataSource, MatchType,
 };
-use crate::models::schema::{reconciliation_jobs, reconciliation_results, data_sources};
+
 
 /// Reconciliation service - Main entry point
 pub struct ReconciliationService {
@@ -44,7 +43,6 @@ pub struct ReconciliationService {
 // Include all service methods from original file
 // This file acts as a compatibility layer during refactoring
 
-pub use self::matching::*;
 pub use self::processing::*;
 pub use self::job_management::*;
 

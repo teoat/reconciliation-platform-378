@@ -57,6 +57,7 @@ impl Default for LoggingConfig {
             max_body_size: 1024,
             sensitive_headers: vec!["authorization".to_string(), "cookie".to_string()],
             sensitive_fields: vec!["password".to_string(), "token".to_string(), "secret".to_string()],
+            pii_patterns: vec![],
         }
     }
 }
@@ -174,7 +175,7 @@ where
                 .map(|claims| claims.sub.clone());
 
             // Extract request body if configured
-            let request_body = if state.config.include_body && state.config.enable_request_logging {
+            let request_body: Option<String> = if state.config.include_body && state.config.enable_request_logging {
                 // Try to peek at request body for logging (non-consuming)
                 None // Request body extraction would require consuming the request
             } else {
@@ -236,7 +237,7 @@ fn mask_sensitive_data(data: &str, sensitive_patterns: &[String]) -> String {
         r"\b\d{3}[-.]?\d{3}[-.]?\d{4}\b", // Phone
     ];
 
-    for pattern in pii_patterns.iter().chain(sensitive_patterns) {
+    for pattern in pii_patterns.iter().copied().chain(sensitive_patterns.iter().map(|s| s.as_str())) {
         if let Ok(regex) = regex::Regex::new(pattern) {
             masked = regex.replace_all(&masked, "***MASKED***").to_string();
         }

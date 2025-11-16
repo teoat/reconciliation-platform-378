@@ -1,0 +1,220 @@
+---
+description: Security best practices and patterns for the reconciliation platform.
+globs: **/*.{rs,ts,tsx,js}
+alwaysApply: true
+---
+
+- **Input Validation:**
+  - Validate and sanitize all user inputs
+  - Use type-safe validation (Zod, serde validation)
+  - Reject suspicious patterns (SQL injection, XSS)
+  ```rust
+  // ✅ DO: Validate input
+  pub fn create_user(email: String) -> AppResult<User> {
+      if !is_valid_email(&email) {
+          return Err(AppError::ValidationError("Invalid email format"));
+      }
+      // ...
+  }
+  ```
+
+- **Authentication:**
+  - Use JWT tokens with secure storage
+  - Implement token expiration and refresh
+  - Hash passwords with bcrypt (cost factor 12+)
+  - Never log passwords or tokens
+  ```rust
+  // ✅ DO: Secure password hashing
+  use bcrypt::{hash, verify, DEFAULT_COST};
+  
+  let hashed = hash(password, DEFAULT_COST)?;
+  let is_valid = verify(password, &hashed)?;
+  ```
+
+- **Authorization:**
+  - Implement role-based access control (RBAC)
+  - Check permissions at API boundaries
+  - Use middleware for authorization
+  - Fail securely (deny by default)
+  ```rust
+  // ✅ DO: Check authorization
+  pub async fn delete_project(
+      user: &User,
+      project_id: i32
+  ) -> AppResult<()> {
+      if !user.can_delete_project(project_id) {
+          return Err(AppError::Forbidden);
+      }
+      // ...
+  }
+  ```
+
+- **XSS Prevention:**
+  - Escape user input in HTML
+  - Use React's built-in escaping
+  - Avoid `dangerouslySetInnerHTML`
+  - Use Content Security Policy (CSP)
+  ```typescript
+  // ✅ DO: Safe rendering
+  <div>{userInput}</div>  // Automatically escaped
+  
+  // ❌ DON'T: Unsafe HTML
+  <div dangerouslySetInnerHTML={{ __html: userInput }} />
+  ```
+
+- **SQL Injection Prevention:**
+  - Use parameterized queries (Diesel, SQLx)
+  - Never concatenate user input into SQL
+  - Use ORM query builders
+  ```rust
+  // ✅ DO: Parameterized query
+  diesel::select(users::table)
+      .filter(users::email.eq(&email))
+      .first::<User>(conn)?;
+  
+  // ❌ DON'T: String concatenation
+  let query = format!("SELECT * FROM users WHERE email = '{}'", email);
+  ```
+
+- **CSRF Protection:**
+  - Use CSRF tokens for state-changing operations
+  - Validate origin/referer headers
+  - Use SameSite cookies
+  ```typescript
+  // ✅ DO: CSRF token
+  const csrfToken = getCsrfToken();
+  await fetch('/api/update', {
+    method: 'POST',
+    headers: {
+      'X-CSRF-Token': csrfToken,
+    },
+  });
+  ```
+
+- **Secrets Management:**
+  - Never commit secrets to version control
+  - Use environment variables for secrets
+  - Use secret management services in production
+  - Rotate secrets regularly
+  ```rust
+  // ✅ DO: Environment variables
+  let db_password = std::env::var("DATABASE_PASSWORD")
+      .expect("DATABASE_PASSWORD must be set");
+  
+  // ❌ DON'T: Hardcoded secrets
+  let db_password = "my_secret_password";
+  ```
+
+- **Error Handling:**
+  - Don't expose internal errors to users
+  - Log errors securely (mask PII)
+  - Use generic error messages for users
+  - Return appropriate HTTP status codes
+  ```rust
+  // ✅ DO: Secure error handling
+  match result {
+      Ok(data) => Ok(data),
+      Err(AppError::DatabaseError(e)) => {
+          log::error!("Database error: {}", e);
+          Err(AppError::InternalError)  // Generic to user
+      },
+      Err(e) => Err(e),
+  }
+  ```
+
+- **Logging Security:**
+  - Mask PII in logs (emails, tokens, passwords)
+  - Use structured logging
+  - Don't log sensitive data
+  - Set appropriate log levels
+  ```rust
+  // ✅ DO: Mask PII in logs
+  log::info!(
+      "User authenticated",
+      user_id = user.id,
+      email = mask_email(&user.email)  // "u***@example.com"
+  );
+  ```
+
+- **HTTPS and Headers:**
+  - Always use HTTPS in production
+  - Set security headers (HSTS, CSP, X-Frame-Options)
+  - Use secure cookies (HttpOnly, Secure, SameSite)
+  ```rust
+  // ✅ DO: Security headers
+  .wrap(
+      Cors::default()
+          .allowed_origin("https://example.com")
+          .supports_credentials(true)
+  )
+  ```
+
+- **Dependency Security:**
+  - Regularly update dependencies
+  - Use `cargo audit` (Rust) and `npm audit` (TypeScript)
+  - Review security advisories
+  - Pin dependency versions
+  ```bash
+  # ✅ DO: Security audits
+  cargo audit          # Rust
+  npm audit            # TypeScript
+  ```
+
+- **API Security:**
+  - Rate limit API endpoints
+  - Validate request size limits
+  - Use API keys for external access
+  - Implement request signing for sensitive operations
+  ```rust
+  // ✅ DO: Rate limiting
+  .wrap(RateLimiter::new(
+      RateLimiterConfig::default()
+          .max_requests(100)
+          .per_second(10)
+  ))
+  ```
+
+- **File Upload Security:**
+  - Validate file types and sizes
+  - Scan files for malware
+  - Store uploads outside web root
+  - Use unique filenames
+  ```typescript
+  // ✅ DO: Validate uploads
+  if (!ALLOWED_TYPES.includes(file.type)) {
+    throw new Error('Invalid file type');
+  }
+  if (file.size > MAX_FILE_SIZE) {
+    throw new Error('File too large');
+  }
+  ```
+
+- **Session Security:**
+  - Use secure session storage
+  - Implement session timeout
+  - Invalidate sessions on logout
+  - Regenerate session IDs after login
+  ```typescript
+  // ✅ DO: Secure session
+  sessionStorage.setItem('token', token);  // Not localStorage
+  // Set expiration
+  setTimeout(() => {
+    sessionStorage.removeItem('token');
+  }, SESSION_TIMEOUT);
+  ```
+
+- **Security Testing:**
+  - Test for common vulnerabilities (OWASP Top 10)
+  - Run security scanners
+  - Perform penetration testing
+  - Review code for security issues
+  ```rust
+  // ✅ DO: Security test
+  #[test]
+  fn test_sql_injection_prevention() {
+      let malicious = "'; DROP TABLE users; --";
+      assert!(validate_input(malicious).is_err());
+  }
+  ```
+
+Follow [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) for general rule formatting guidelines.

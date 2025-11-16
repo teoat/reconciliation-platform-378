@@ -59,9 +59,9 @@ pub fn start_of_day(dt: DateTime<Utc>) -> DateTime<Utc> {
         .and_hms_opt(0, 0, 0)
         .ok_or_else(|| {
             log::warn!("Failed to create start of day for datetime, using original datetime");
-            dt
+            dt.naive_utc()
         })
-        .unwrap_or_else(|e| e)
+        .unwrap_or_else(|_| dt.naive_utc())
         .and_utc()
 }
 
@@ -71,9 +71,9 @@ pub fn end_of_day(dt: DateTime<Utc>) -> DateTime<Utc> {
         .and_hms_opt(23, 59, 59)
         .ok_or_else(|| {
             log::warn!("Failed to create end of day for datetime, using original datetime");
-            dt
+            dt.naive_utc()
         })
-        .unwrap_or_else(|e| e)
+        .unwrap_or_else(|_| dt.naive_utc())
         .and_utc()
 }
 

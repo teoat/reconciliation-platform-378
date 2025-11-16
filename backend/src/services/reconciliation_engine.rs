@@ -3,9 +3,12 @@
 
 use diesel::{RunQueryDsl, QueryDsl, ExpressionMethods, OptionalExtension};
 use uuid::Uuid;
+use bigdecimal::BigDecimal;
+use std::sync::Arc;
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::utils::string::levenshtein_distance;
+use crate::services::resilience::ResilienceManager;
 
 use crate::models::DataSource;
 use crate::models::schema::data_sources;
@@ -50,11 +53,11 @@ impl RecordExtractor {
     ) -> AppResult<Vec<serde_json::Value>> {
         // Use resilience manager for database operations
         let data_source = resilience.execute_database(async {
-            let conn = db.get_connection_async().await?;
-            
+            let mut conn = db.get_connection_async().await?;
+
             Ok::<_, AppError>(data_sources::table
                 .filter(data_sources::id.eq(data_source_id))
-                .first::<DataSource>(&mut *conn)
+                .first::<DataSource>(&mut conn)
                 .optional()
                 .map_err(AppError::Database)?)
         }).await?;
@@ -189,6 +192,9 @@ impl ResultStorage {
         job_id: Uuid,
         results: Vec<MatchResult>,
     ) -> AppResult<()> {
+        use bigdecimal::BigDecimal;
+        use std::str::FromStr;
+        
         let mut conn = db.get_connection()?;
         
         // Batch insert results
@@ -200,9 +206,12 @@ impl ResultStorage {
                     record_a_id: Uuid::new_v4(), // Would map to actual record ID
                     record_b_id: Some(Uuid::new_v4()),
                     match_type: result.match_type.clone(),
-                    confidence_score: Some(result.confidence),
-                    status: "matched".to_string(),
-                    notes: Some("".to_string()),
+                    confidence_score: Some(BigDecimal::from_str(&result.confidence.to_string())
+                        .unwrap_or_else(|_| BigDecimal::from(0))),
+                    match_details: None,
+                    status: None,
+                    notes: None,
+                    reviewed_by: None,
                 })
                 .execute(&mut conn)
                 .map_err(AppError::Database)?;
@@ -221,7 +230,7 @@ impl ResultStorage {
         // Use resilience manager for database operations
         for result in results {
             resilience.execute_database(async {
-                let conn = db.get_connection_async().await?;
+                let mut conn = db.get_connection_async().await?;
                 
                 diesel::insert_into(crate::models::schema::reconciliation_results::table)
                     .values(crate::models::NewReconciliationResult {
@@ -229,11 +238,17 @@ impl ResultStorage {
                         record_a_id: Uuid::new_v4(), // Would map to actual record ID
                         record_b_id: Some(Uuid::new_v4()),
                         match_type: result.match_type.clone(),
-                        confidence_score: Some(result.confidence),
-                        status: "matched".to_string(),
+                        confidence_score: {
+                            use std::str::FromStr;
+                            Some(bigdecimal::BigDecimal::from_str(&result.confidence.to_string())
+                                .unwrap_or_else(|_| bigdecimal::BigDecimal::from(0)))
+                        },
+                        match_details: None,
+                        status: Some("matched".to_string()),
                         notes: Some("".to_string()),
+                        reviewed_by: None,
                     })
-                    .execute(&mut *conn)
+                    .execute(&mut conn)
                     .map_err(AppError::Database)?;
                 
                 Ok::<_, AppError>(())

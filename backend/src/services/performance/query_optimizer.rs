@@ -50,70 +50,9 @@ impl QueryOptimizer {
     }
     
     pub async fn optimize_reconciliation_queries(&self) -> AppResult<Vec<String>> {
-        let optimizations = vec![
-            // Add indexes for reconciliation_records table
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_reconciliation_records_project_id 
-             ON reconciliation_records(project_id)",
-            
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_reconciliation_records_amount 
-             ON reconciliation_records(amount)",
-            
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_reconciliation_records_date 
-             ON reconciliation_records(transaction_date)",
-            
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_reconciliation_records_status 
-             ON reconciliation_records(status)",
-            
-            // Add composite indexes for common query patterns
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_reconciliation_records_project_amount 
-             ON reconciliation_records(project_id, amount)",
-            
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_reconciliation_records_project_date 
-             ON reconciliation_records(project_id, transaction_date)",
-            
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_reconciliation_records_project_status 
-             ON reconciliation_records(project_id, status)",
-            
-            // Add indexes for reconciliation_jobs table
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_reconciliation_jobs_project_id 
-             ON reconciliation_jobs(project_id)",
-            
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_reconciliation_jobs_status 
-             ON reconciliation_jobs(status)",
-            
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_reconciliation_jobs_created_at 
-             ON reconciliation_jobs(created_at)",
-            
-            // Add indexes for reconciliation_matches table
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_reconciliation_matches_job_id 
-             ON reconciliation_matches(job_id)",
-            
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_reconciliation_matches_confidence 
-             ON reconciliation_matches(confidence_score)",
-            
-            // Add indexes for users table
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_email 
-             ON users(email)",
-            
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_users_active 
-             ON users(is_active)",
-            
-            // Add indexes for projects table
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_projects_owner_id 
-             ON projects(owner_id)",
-            
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_projects_active 
-             ON projects(is_active)",
-            
-            // Add indexes for files table
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_files_project_id 
-             ON files(project_id)",
-            
-            "CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_files_status 
-             ON files(status)",
-        ];
-        
-        Ok(optimizations.into_iter().map(|s| s.to_string()).collect())
+        // Index creation is now handled by database migrations.
+        // This function is kept for now to avoid breaking changes, but it will be deprecated.
+        Ok(Vec::new())
     }
     
     pub async fn analyze_query_performance(&self, query: &str, duration: Duration) -> QueryAnalysis {
@@ -238,9 +177,5 @@ impl QueryOptimizer {
     }
 }
 
-impl Default for QueryOptimizer {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+
 

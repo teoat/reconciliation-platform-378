@@ -187,3 +187,14 @@ diesel::table! {
         updated_at -> Timestamptz,
     }
 }
+
+// Joinable relationships for auth schema
+diesel::joinable!(audit_logs -> users (user_id));
+diesel::joinable!(account_lockouts -> users (user_id));
+diesel::joinable!(api_keys -> users (user_id));
+diesel::joinable!(email_verification_tokens -> users (user_id));
+diesel::joinable!(password_reset_tokens -> users (user_id));
+diesel::joinable!(two_factor_auth -> users (user_id));
+diesel::joinable!(user_roles -> users (user_id));
+diesel::joinable!(user_roles -> roles (role_id));
+diesel::joinable!(user_sessions -> users (user_id));

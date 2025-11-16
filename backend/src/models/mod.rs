@@ -6,63 +6,17 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use bigdecimal::BigDecimal;
 use uuid::Uuid;
-use chrono::{DateTime, Utc, NaiveDate};
+use chrono::{DateTime, Utc};
 
 pub mod schema;
 pub mod subscription;
 
-// Import table DSLs for use in table_name attributes
-use crate::models::schema::users::dsl::users;
-use crate::models::schema::projects::dsl::projects;
-use crate::models::schema::reconciliation_records::dsl::reconciliation_records;
-use crate::models::schema::reconciliation_jobs::dsl::reconciliation_jobs;
-use crate::models::schema::data_sources::dsl::data_sources;
-use crate::models::schema::reconciliation_results::dsl::reconciliation_results;
-use crate::models::schema::audit_logs::dsl::audit_logs;
-use crate::models::schema::uploaded_files::dsl::uploaded_files;
-use crate::models::schema::password_reset_tokens::dsl::password_reset_tokens;
-use crate::models::schema::email_verification_tokens::dsl::email_verification_tokens;
-use crate::models::schema::api_keys::dsl::api_keys;
-use crate::models::schema::roles::dsl::roles;
-use crate::models::schema::user_roles::dsl::user_roles;
-use crate::models::schema::user_sessions::dsl::user_sessions;
-use crate::models::schema::account_lockouts::dsl::account_lockouts;
-use crate::models::schema::failed_login_attempts::dsl::failed_login_attempts;
-use crate::models::schema::ip_access_control::dsl::ip_access_control;
-use crate::models::schema::security_events::dsl::security_events;
-use crate::models::schema::two_factor_auth::dsl::two_factor_auth;
-use crate::models::schema::user_activities::dsl::user_activities;
-use crate::models::schema::user_dashboards::dsl::user_dashboards;
-use crate::models::schema::user_devices::dsl::user_devices;
-use crate::models::schema::user_feature_usage::dsl::user_feature_usage;
-use crate::models::schema::user_feedback::dsl::user_feedback;
-use crate::models::schema::user_learning_progress::dsl::user_learning_progress;
-use crate::models::schema::user_preferences::dsl::user_preferences;
-use crate::models::schema::user_presence::dsl::user_presence;
-use crate::models::schema::user_teams::dsl::user_teams;
-use crate::models::schema::user_workspaces::dsl::user_workspaces;
-use crate::models::schema::project_members::dsl::project_members;
-use crate::models::schema::collaboration_comments::dsl::collaboration_comments;
-use crate::models::schema::collaboration_participants::dsl::collaboration_participants;
-use crate::models::schema::collaboration_sessions::dsl::collaboration_sessions;
-use crate::models::schema::field_locks::dsl::field_locks;
-use crate::models::schema::ingestion_jobs::dsl::ingestion_jobs;
-use crate::models::schema::realtime_events::dsl::realtime_events;
-use crate::models::schema::user_analytics_summary::dsl::user_analytics_summary;
-use crate::models::schema::user_notification_history::dsl::user_notification_history;
-use crate::models::schema::performance_alerts::dsl::performance_alerts;
-use crate::models::schema::performance_metrics::dsl::performance_metrics;
-use crate::models::schema::reconciliation_performance::dsl::reconciliation_performance;
-use crate::models::schema::application_errors::dsl::application_errors;
-use crate::models::schema::cache_invalidations::dsl::cache_invalidations;
-use crate::models::schema::cache_statistics::dsl::cache_statistics;
-use crate::models::schema::file_processing_metrics::dsl::file_processing_metrics;
-use crate::models::schema::query_performance::dsl::query_performance;
-use crate::models::schema::request_metrics::dsl::request_metrics;
-use crate::models::schema::system_metrics::dsl::system_metrics;
-use crate::models::schema::system_resources::dsl::system_resources;
+// Note: We use serde_json::Value directly for JSONB fields
+// Diesel natively supports this without custom wrappers
 
-pub use schema::types::JsonValue;
+
+
+// Using serde_json::Value directly instead of custom JsonValue
 
 
 
@@ -70,11 +24,7 @@ pub use schema::types::JsonValue;
 
 // JsonValue trait implementations are handled in schema.rs
 
-impl From<JsonValue> for serde_json::Value {
-    fn from(json_value: JsonValue) -> Self {
-        json_value.0
-    }
-}
+
 
 pub type NumericValue = BigDecimal;
 
@@ -157,7 +107,7 @@ impl std::fmt::Display for ProjectStatus {
 pub use crate::services::auth::UserRole;
 
 /// User model
-#[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
+#[derive(Queryable, Selectable, Identifiable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = crate::models::schema::users)]
 pub struct User {
     pub id: Uuid,
@@ -203,13 +153,13 @@ pub struct UpdateUser {
 }
 
 /// User preference model
-#[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
+#[derive(Queryable, Selectable, Identifiable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = crate::models::schema::user_preferences)]
 pub struct UserPreference {
     pub id: Uuid,
     pub user_id: Uuid,
     pub preference_key: String,
-    pub preference_value: Option<String>,
+    pub preference_value: serde_json::Value,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -220,14 +170,13 @@ pub struct UserPreference {
 pub struct NewUserPreference {
     pub user_id: Uuid,
     pub preference_key: String,
-    pub preference_value: Option<String>,
+    pub preference_value: serde_json::Value,
 }
 
 /// Update user preference model
-#[derive(Deserialize, Debug, AsChangeset)]
-#[diesel(table_name = crate::models::schema::user_preferences)]
+#[derive(Deserialize, Debug)]
 pub struct UpdateUserPreference {
-    pub preference_value: Option<String>,
+    pub preference_value: serde_json::Value,
     pub updated_at: Option<DateTime<Utc>>,
 }
 
@@ -242,8 +191,8 @@ pub struct Project {
     pub description: Option<String>,
     pub owner_id: Uuid,
     pub status: String,
-    pub settings: JsonValue,
-    pub metadata: Option<JsonValue>,
+    pub settings: serde_json::Value,
+    pub metadata: Option<serde_json::Value>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -256,8 +205,8 @@ pub struct NewProject {
     pub description: Option<String>,
     pub owner_id: Uuid,
     pub status: String,
-    pub settings: JsonValue,
-    pub metadata: Option<JsonValue>,
+    pub settings: serde_json::Value,
+    pub metadata: Option<serde_json::Value>,
 }
 
 /// Reconciliation record model
@@ -272,16 +221,15 @@ pub struct ReconciliationRecord {
     pub amount: Option<f64>,
     pub transaction_date: Option<chrono::NaiveDate>,
     pub description: Option<String>,
-    pub source_data: String,
-    pub matching_results: String,
+    pub source_data: serde_json::Value,
+    pub matching_results: serde_json::Value,
     pub confidence: Option<f64>,
-    pub audit_trail: String,
+    pub audit_trail: serde_json::Value,
     pub created_at: DateTime<Utc>,
 }
 
 /// New reconciliation record model for inserts
-#[derive(Insertable, Deserialize)]
-#[diesel(table_name = crate::models::schema::reconciliation_records)]
+#[derive(Deserialize)]
 pub struct NewReconciliationRecord {
     pub project_id: Uuid,
     pub ingestion_job_id: Uuid,
@@ -290,45 +238,17 @@ pub struct NewReconciliationRecord {
     pub amount: Option<f64>,
     pub transaction_date: Option<chrono::NaiveDate>,
     pub description: Option<String>,
-    pub source_data: String,
-    pub matching_results: String,
+    pub source_data: serde_json::Value,
+    pub matching_results: serde_json::Value,
     pub confidence: Option<f64>,
-    pub audit_trail: String,
+    pub audit_trail: serde_json::Value,
 }
 
-/// Reconciliation match model
-#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = reconciliation_matches)]
-pub struct ReconciliationMatch {
-    pub id: Uuid,
-    pub project_id: Uuid,
-    pub record_a_id: Uuid,
-    pub record_b_id: Option<Uuid>,
-    pub match_type: String,
-    pub confidence_score: Option<BigDecimal>,
-    pub status: String,
-    pub notes: Option<String>,
-    pub created_by: Option<Uuid>,
-    pub created_at: DateTime<Utc>,
-    pub updated_at: DateTime<Utc>,
-}
 
-/// New reconciliation match model for inserts
-#[derive(Insertable, Deserialize)]
-#[diesel(table_name = reconciliation_matches)]
-pub struct NewReconciliationMatch {
-    pub project_id: Uuid,
-    pub record_a_id: Uuid,
-    pub record_b_id: Uuid,
-    pub match_type: String,
-    pub confidence_score: Option<BigDecimal>,
-    pub notes: Option<String>,
-    pub created_by: Option<Uuid>,
-}
 
 /// Reconciliation job model
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = reconciliation_jobs)]
+#[diesel(table_name = crate::models::schema::reconciliation_jobs)]
 pub struct ReconciliationJob {
     pub id: Uuid,
     pub project_id: Uuid,
@@ -340,31 +260,40 @@ pub struct ReconciliationJob {
     pub created_by: Uuid,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
-    pub settings: Option<JsonValue>,
-    pub confidence_threshold: Option<f64>,
+    pub settings: Option<serde_json::Value>,
+    pub confidence_threshold: Option<BigDecimal>,
     pub progress: Option<i32>,
     pub total_records: Option<i32>,
     pub processed_records: Option<i32>,
     pub matched_records: Option<i32>,
     pub unmatched_records: Option<i32>,
+    pub processing_time_ms: Option<i32>,
 }
 
 /// New reconciliation job model for inserts
 #[derive(Insertable, Deserialize)]
-#[diesel(table_name = reconciliation_jobs)]
+#[diesel(table_name = crate::models::schema::reconciliation_jobs)]
 pub struct NewReconciliationJob {
     pub project_id: Uuid,
     pub name: String,
     pub description: Option<String>,
     pub status: String,
+    pub started_at: Option<DateTime<Utc>>,
+    pub completed_at: Option<DateTime<Utc>>,
     pub created_by: Uuid,
-    pub settings: Option<JsonValue>,
-    pub confidence_threshold: Option<f64>,
+    pub settings: Option<serde_json::Value>,
+    pub confidence_threshold: Option<BigDecimal>,
+    pub progress: Option<i32>,
+    pub total_records: Option<i32>,
+    pub processed_records: Option<i32>,
+    pub matched_records: Option<i32>,
+    pub unmatched_records: Option<i32>,
+    pub processing_time_ms: Option<i32>,
 }
 
 /// Update reconciliation job model for updates
 #[derive(AsChangeset, Deserialize)]
-#[diesel(table_name = reconciliation_jobs)]
+#[diesel(table_name = crate::models::schema::reconciliation_jobs)]
 pub struct UpdateReconciliationJob {
     pub name: Option<String>,
     pub description: Option<String>,
@@ -380,19 +309,19 @@ pub struct UpdateReconciliationJob {
 
 /// Data source model
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = data_sources)]
+#[diesel(table_name = crate::models::schema::data_sources)]
 pub struct DataSource {
     pub id: Uuid,
     pub project_id: Uuid,
     pub name: String,
     pub description: Option<String>,
     pub source_type: String,
-    pub connection_config: Option<JsonValue>,
+    pub connection_config: Option<serde_json::Value>,
     pub file_path: Option<String>,
     pub file_size: Option<i64>,
     pub file_hash: Option<String>,
     pub record_count: Option<i32>,
-    pub schema: Option<JsonValue>,
+    pub schema: Option<serde_json::Value>,
     pub status: String,
     pub uploaded_at: Option<DateTime<Utc>>,
     pub processed_at: Option<DateTime<Utc>>,
@@ -403,18 +332,18 @@ pub struct DataSource {
 
 /// New data source model for inserts
 #[derive(Insertable, Deserialize)]
-#[diesel(table_name = data_sources)]
+#[diesel(table_name = crate::models::schema::data_sources)]
 pub struct NewDataSource {
     pub project_id: Uuid,
     pub name: String,
     pub description: Option<String>,
     pub source_type: String,
-    pub connection_config: Option<JsonValue>,
+    pub connection_config: Option<serde_json::Value>,
     pub file_path: Option<String>,
     pub file_size: Option<i64>,
     pub file_hash: Option<String>,
     pub record_count: Option<i32>,
-    pub schema: Option<JsonValue>,
+    pub schema: Option<serde_json::Value>,
     pub status: String,
     pub uploaded_at: Option<DateTime<Utc>>,
     pub processed_at: Option<DateTime<Utc>>,
@@ -422,18 +351,17 @@ pub struct NewDataSource {
 }
 
 /// Update data source model for updates
-#[derive(AsChangeset, Deserialize)]
-#[diesel(table_name = data_sources)]
+#[derive(Deserialize)]
 pub struct UpdateDataSource {
     pub name: Option<String>,
     pub description: Option<String>,
     pub source_type: Option<String>,
-    pub connection_config: Option<JsonValue>,
+    pub connection_config: Option<serde_json::Value>,
     pub file_path: Option<String>,
     pub file_size: Option<i64>,
     pub file_hash: Option<String>,
     pub record_count: Option<i32>,
-    pub schema: Option<JsonValue>,
+    pub schema: Option<serde_json::Value>,
     pub status: Option<String>,
     pub uploaded_at: Option<DateTime<Utc>>,
     pub processed_at: Option<DateTime<Utc>>,
@@ -441,15 +369,15 @@ pub struct UpdateDataSource {
 }
 
 /// Reconciliation result model
-#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = reconciliation_results)]
+#[derive(Queryable, Selectable, Identifiable, Serialize, Deserialize, Debug, Clone)]
+#[diesel(table_name = crate::models::schema::reconciliation_results)]
 pub struct ReconciliationResult {
     pub id: Uuid,
     pub job_id: Uuid,
     pub record_a_id: Uuid,
     pub record_b_id: Option<Uuid>,
     pub match_type: String,
-    pub confidence_score: Option<f64>,
+    pub confidence_score: Option<BigDecimal>,
     pub match_details: Option<serde_json::Value>,
     pub status: Option<String>,
     pub updated_at: Option<DateTime<Utc>>,
@@ -460,57 +388,60 @@ pub struct ReconciliationResult {
 
 /// New reconciliation result model for inserts
 #[derive(Insertable, Deserialize)]
-#[diesel(table_name = reconciliation_results)]
+#[diesel(table_name = crate::models::schema::reconciliation_results)]
 pub struct NewReconciliationResult {
     pub job_id: Uuid,
     pub record_a_id: Uuid,
     pub record_b_id: Option<Uuid>,
     pub match_type: String,
-    pub confidence_score: Option<f64>,
+    pub confidence_score: Option<BigDecimal>,
     pub match_details: Option<serde_json::Value>,
+    pub status: Option<String>,
+    pub notes: Option<String>,
+    pub reviewed_by: Option<Uuid>,
 }
 
 /// Audit log model
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = audit_logs)]
+#[diesel(table_name = crate::models::schema::audit_logs)]
 pub struct AuditLog {
     pub id: Uuid,
     pub user_id: Option<Uuid>,
     pub action: String,
     pub resource_type: String,
     pub resource_id: Option<Uuid>,
-    pub old_values: Option<JsonValue>,
-    pub new_values: Option<JsonValue>,
+    pub old_values: Option<serde_json::Value>,
+    pub new_values: Option<serde_json::Value>,
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
 /// New audit log model for inserts
-#[derive(Insertable, Deserialize)]
-#[diesel(table_name = audit_logs)]
+#[derive(Deserialize)]
 pub struct NewAuditLog {
     pub user_id: Option<Uuid>,
     pub action: String,
     pub resource_type: String,
     pub resource_id: Option<Uuid>,
-    pub old_values: Option<JsonValue>,
-    pub new_values: Option<JsonValue>,
+    pub old_values: Option<serde_json::Value>,
+    pub new_values: Option<serde_json::Value>,
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
 }
 
 /// Uploaded file model
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = uploaded_files)]
+#[diesel(table_name = crate::models::schema::uploaded_files)]
 pub struct UploadedFile {
     pub id: Uuid,
     pub project_id: Uuid,
     pub filename: String,
     pub original_filename: String,
-    pub file_size: i64,
-    pub content_type: String,
     pub file_path: String,
+    pub file_size: i64,
+    pub content_type: Option<String>,
+    pub file_hash: Option<String>,
     pub status: String,
     pub uploaded_by: Uuid,
     pub created_at: DateTime<Utc>,
@@ -519,14 +450,15 @@ pub struct UploadedFile {
 
 /// New uploaded file model for inserts
 #[derive(Insertable, Deserialize)]
-#[diesel(table_name = uploaded_files)]
+#[diesel(table_name = crate::models::schema::uploaded_files)]
 pub struct NewUploadedFile {
     pub project_id: Uuid,
     pub filename: String,
     pub original_filename: String,
-    pub file_size: i64,
-    pub content_type: String,
     pub file_path: String,
+    pub file_size: i64,
+    pub content_type: Option<String>,
+    pub file_hash: Option<String>,
     pub status: String,
     pub uploaded_by: Uuid,
 }
@@ -563,88 +495,82 @@ impl From<User> for UserResponse {
 }
 
 /// Update project model for updates
-#[derive(AsChangeset, Deserialize)]
-#[diesel(table_name = projects)]
+#[derive(Deserialize)]
 pub struct UpdateProject {
     pub name: Option<String>,
     pub description: Option<String>,
-    pub settings: Option<JsonValue>,
+    pub settings: Option<serde_json::Value>,
     pub status: Option<String>,
-    pub is_active: Option<bool>,
 }
 
 /// Passwora reset token model
 
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = password_reset_tokens)]
+#[diesel(table_name = crate::models::schema::password_reset_tokens)]
 pub struct PasswordResetToken {
     pub id: Uuid,
     pub user_id: Uuid,
     pub token_hash: String,
     pub expires_at: DateTime<Utc>,
     pub used_at: Option<DateTime<Utc>>,
-    pub ip_address: Option<String>,
-    pub user_agent: Option<String>,
+    pub is_active: bool,
     pub created_at: DateTime<Utc>,
 }
 
 /// New password reset token for inserts
 #[derive(Insertable)]
-#[diesel(table_name = password_reset_tokens)]
+#[diesel(table_name = crate::models::schema::password_reset_tokens)]
 pub struct NewPasswordResetToken {
     pub user_id: Uuid,
     pub token_hash: String,
     pub expires_at: DateTime<Utc>,
-    pub ip_address: Option<String>,
-    pub user_agent: Option<String>,
 }
 
 /// Update password reset token for updates
-#[derive(AsChangeset, Deserialize)]
-#[diesel(table_name = password_reset_tokens)]
+#[derive(Deserialize, AsChangeset)]
+#[diesel(table_name = crate::models::schema::password_reset_tokens)]
 pub struct UpdatePasswordResetToken {
     pub used_at: Option<DateTime<Utc>>,
 }
 
 /// Email verification token model
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = email_verification_tokens)]
+#[diesel(table_name = crate::models::schema::email_verification_tokens)]
 pub struct EmailVerificationToken {
     pub id: Uuid,
     pub user_id: Uuid,
     pub token_hash: String,
-    pub email: String,
     pub expires_at: DateTime<Utc>,
-    pub verified_at: Option<DateTime<Utc>>,
+    pub used_at: Option<DateTime<Utc>>,
+    pub is_active: bool,
     pub created_at: DateTime<Utc>,
 }
 
 /// New email verification token for inserts
 #[derive(Insertable)]
-#[diesel(table_name = email_verification_tokens)]
+#[diesel(table_name = crate::models::schema::email_verification_tokens)]
 pub struct NewEmailVerificationToken {
     pub user_id: Uuid,
     pub token_hash: String,
-    pub email: String,
     pub expires_at: DateTime<Utc>,
 }
 
 /// Update email verification token for updates
-#[derive(AsChangeset, Deserialize)]
-#[diesel(table_name = email_verification_tokens)]
+#[derive(Deserialize, AsChangeset)]
+#[diesel(table_name = crate::models::schema::email_verification_tokens)]
 pub struct UpdateEmailVerificationToken {
-    pub verified_at: Option<DateTime<Utc>>,
+    pub used_at: Option<DateTime<Utc>>,
 }
 
 /// Two factor authentication model
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = two_factor_auth)]
+#[diesel(table_name = crate::models::schema::two_factor_auth)]
 pub struct TwoFactorAuth {
     pub id: Uuid,
     pub user_id: Uuid,
     pub method: String,
     pub secret: Option<String>,
-    pub backup_codes: Option<JsonValue>,
+    pub backup_codes: Option<serde_json::Value>,
     pub is_enabled: bool,
     pub last_used_at: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
@@ -653,28 +579,27 @@ pub struct TwoFactorAuth {
 
 /// New two factor auth for inserts
 #[derive(Insertable)]
-#[diesel(table_name = two_factor_auth)]
+#[diesel(table_name = crate::models::schema::two_factor_auth)]
 pub struct NewTwoFactorAuth {
     pub user_id: Uuid,
     pub method: String,
     pub secret: Option<String>,
-    pub backup_codes: Option<JsonValue>,
+    pub backup_codes: Option<serde_json::Value>,
     pub is_enabled: bool,
 }
 
 /// Update two factor auth for updates
-#[derive(AsChangeset, Deserialize)]
-#[diesel(table_name = two_factor_auth)]
+#[derive(Deserialize)]
 pub struct UpdateTwoFactorAuth {
     pub secret: Option<String>,
-    pub backup_codes: Option<JsonValue>,
+    pub backup_codes: Option<serde_json::Value>,
     pub is_enabled: Option<bool>,
     pub last_used_at: Option<DateTime<Utc>>,
 }
 
 /// User session model
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
-#[diesel(table_name = user_sessions)]
+#[diesel(table_name = crate::models::schema::user_sessions)]
 pub struct UserSession {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -682,7 +607,7 @@ pub struct UserSession {
     pub refresh_token: Option<String>,
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
-    pub device_info: Option<JsonValue>,
+    pub device_info: Option<serde_json::Value>,
     pub is_active: bool,
     pub expires_at: DateTime<Utc>,
     pub last_activity: DateTime<Utc>,
@@ -692,21 +617,22 @@ pub struct UserSession {
 
 /// New user session for inserts
 #[derive(Insertable)]
-#[diesel(table_name = user_sessions)]
+#[diesel(table_name = crate::models::schema::user_sessions)]
 pub struct NewUserSession {
     pub user_id: Uuid,
     pub session_token: String,
     pub refresh_token: Option<String>,
-    pub ip_address: Option<String>,
+    // pub ip_address: Option<String>, // TODO: Fix IP address type for Inet
     pub user_agent: Option<String>,
-    pub device_info: Option<JsonValue>,
+    pub device_info: Option<serde_json::Value>,
     pub is_active: bool,
     pub expires_at: DateTime<Utc>,
+    pub last_activity: DateTime<Utc>,
 }
 
 /// Update user session for updates
-#[derive(AsChangeset, Deserialize)]
-#[diesel(table_name = user_sessions)]
+#[derive(Deserialize, AsChangeset)]
+#[diesel(table_name = crate::models::schema::user_sessions)]
 pub struct UpdateUserSession {
     pub is_active: Option<bool>,
     pub last_activity: Option<DateTime<Utc>>,
@@ -719,7 +645,7 @@ pub struct ProjectResponse {
     pub name: String,
     pub description: Option<String>,
     pub owner_id: Uuid,
-    pub settings: Option<JsonValue>,
+    pub settings: Option<serde_json::Value>,
     pub is_active: bool,
     pub created_at: DateTime<Utc>,
 }
@@ -731,8 +657,8 @@ impl From<Project> for ProjectResponse {
             name: project.name,
             description: project.description,
             owner_id: project.owner_id,
-            settings: project.settings,
-            is_active: project.is_active,
+            settings: Some(project.settings),
+            is_active: true, // TODO: Add is_active field to Project struct
             created_at: project.created_at,
         }
     }

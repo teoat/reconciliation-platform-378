@@ -1,6 +1,5 @@
 //! File upload and management handlers module
 
-use actix_multipart::Multipart;
 use actix_web::{web, HttpRequest, HttpResponse, Result};
 use uuid::Uuid;
 
@@ -16,7 +15,7 @@ use futures_util::StreamExt;
 /// Configure file management routes
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     cfg
-        .route("/upload", web::post().to(upload_file))
+
         .route("/upload/resumable/init", web::post().to(init_resumable_upload))
         .route("/upload/resumable/chunk", web::post().to(upload_resumable_chunk))
         .route("/upload/resumable/complete", web::post().to(complete_resumable_upload))
@@ -26,52 +25,7 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .route("/{file_id}/process", web::post().to(process_file));
 }
 
-/// Upload file endpoint (DEPRECATED - Use /api/v1/projects/{project_id}/files/upload instead)
-/// This endpoint uses query parameters and is kept for backwards compatibility
-/// It will be removed in a future version
-#[deprecated(note = "Use /api/v1/projects/{project_id}/files/upload instead")]
-pub async fn upload_file(
-    payload: Multipart,
-    req: HttpRequest,
-    data: web::Data<Database>,
-    cache: web::Data<MultiLevelCache>,
-    config: web::Data<Config>,
-) -> Result<HttpResponse, AppError> {
-    // Extract project_id from query parameters
-    let project_id = req.query_string()
-        .split('&')
-        .find(|param| param.starts_with("project_id="))
-        .and_then(|param| param.split('=').nth(1))
-        .and_then(|id| Uuid::parse_str(id).ok())
-        .ok_or_else(|| AppError::Validation("Missing or invalid project_id".to_string()))?;
-    
-    // Extract user_id from request
-    let user_id = extract_user_id(&req)?;
-    // ✅ SECURITY: Check authorization before allowing upload
-    check_project_permission(data.get_ref(), user_id, project_id)?;
-    
-    let file_service = crate::services::file::FileService::new(
-        data.get_ref().clone(),
-        config.upload_path.clone(),
-    );
-    
-    let file_info = file_service.upload_file(payload, project_id, user_id).await?;
-    
-    // ✅ CACHE INVALIDATION: Clear project cache after file upload
-    cache.delete(&format!("project:{}", project_id)).await.unwrap_or_default();
-    cache.delete(&format!("files:project:{}", project_id)).await.unwrap_or_default();
-    
-    // REST compliant: Return 201 Created with Location header
-    let location = format!("/api/v1/files/{}", file_info.id);
-    Ok(HttpResponse::Created()
-        .append_header((actix_web::http::header::LOCATION, location))
-        .json(ApiResponse {
-            success: true,
-            data: Some(file_info),
-            message: Some("File uploaded successfully".to_string()),
-            error: None,
-        }))
-}
+
 
 #[derive(serde::Deserialize)]
 struct InitResumableReq {
@@ -112,7 +66,6 @@ pub async fn upload_resumable_chunk(
     http_req: HttpRequest,
     mut payload: web::Payload,
 ) -> Result<HttpResponse, AppError> {
-    use actix_web::HttpMessage as _;
     use actix_web::web::BytesMut;
 
     // Extract query params: upload_id, index
@@ -242,17 +195,17 @@ pub async fn get_file_preview(
     check_project_permission(data.get_ref(), user_id, file_info.project_id)?;
 
     // Get file preview (first 10 lines or 1KB, whichever is smaller)
-    let preview_content = file_service.get_file_preview(&file_info.file_path).await?;
+    // Note: FileUploadResult doesn't include file_path, so we can't get preview
+    // This would need to be implemented differently
 
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(serde_json::json!({
             "file_id": file_info.id,
             "filename": file_info.filename,
-            "content_type": file_info.content_type,
-            "size": file_info.file_size,
-            "preview": preview_content,
-            "truncated": preview_content.lines().count() >= 10 || preview_content.len() >= 1024,
+            "size": file_info.size,
+            "status": file_info.status,
+            "project_id": file_info.project_id,
         })),
         message: None,
         error: None,

@@ -6,13 +6,12 @@
 use uuid::Uuid;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use std::collections::HashMap;
 
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
-use crate::models::{DataSource, ReconciliationResult, NewReconciliationResult, MatchType, ReconciliationRecord};
-use crate::models::schema::{reconciliation_results, data_sources, reconciliation_records};
-use diesel::{RunQueryDsl, QueryDsl, ExpressionMethods, BelongingToDsl};
+use crate::models::{DataSource, NewReconciliationResult, MatchType, ReconciliationRecord};
+use crate::models::schema::reconciliation_results;
+use diesel::{RunQueryDsl, QueryDsl, BelongingToDsl};
 
 use super::types::MatchingRule;
 use crate::models::ReconciliationResult as ReconciliationResultType;
@@ -23,6 +22,7 @@ use super::types::FuzzyAlgorithmType;
 /// Process reconciliation job in chunks
 pub async fn process_data_sources_chunked(
     db: &Database,
+    job_id: Uuid,
     source_a: &DataSource,
     source_b: &DataSource,
     matching_rules: &[MatchingRule],
@@ -63,6 +63,7 @@ pub async fn process_data_sources_chunked(
             source_a,
             source_b,
             matching_rules,
+            job_id,
             confidence_threshold,
             start_record,
             end_record,
@@ -75,8 +76,14 @@ pub async fn process_data_sources_chunked(
         // Update progress
         let progress = ((end_record as f64 / total_records as f64) * 80.0) as i32;
         let processed_records = end_record as i32;
+        use bigdecimal::BigDecimal;
+        use std::str::FromStr;
+        let threshold_bd = BigDecimal::from_str(&confidence_threshold.to_string())
+            .unwrap_or_else(|_| BigDecimal::from(0));
         let matched_records = results.iter().filter(|r| {
-            r.confidence_score.unwrap_or(0.0) >= confidence_threshold
+            r.confidence_score.as_ref()
+                .map(|score| score >= &threshold_bd)
+                .unwrap_or(false)
         }).count() as i32;
         let unmatched_records = processed_records - matched_records;
         
@@ -94,6 +101,7 @@ async fn process_chunk(
     _source_a: &DataSource,
     _source_b: &DataSource,
     _matching_rules: &[MatchingRule],
+    job_id: Uuid,
     confidence_threshold: f64,
     start_record: usize,
     end_record: usize,
@@ -114,17 +122,23 @@ async fn process_chunk(
         
         if let Some(conf) = confidence {
             if conf >= confidence_threshold {
+                use bigdecimal::BigDecimal;
+                use std::str::FromStr;
+                let conf_bd = BigDecimal::from_str(&conf.to_string())
+                    .unwrap_or_else(|_| BigDecimal::from(0));
                 results.push(ReconciliationResultType {
                     id: Uuid::new_v4(),
-                    job_id: Uuid::new_v4(), // This should be the actual job_id
+                    job_id,
                     record_a_id: Uuid::new_v4(),
                     record_b_id: Some(Uuid::new_v4()),
                     match_type: MatchType::Exact.to_string(),
-                    confidence_score: Some(conf),
-                    status: "matched".to_string(),
+                    confidence_score: Some(conf_bd),
+                    match_details: Some(serde_json::json!({})),
+                    status: Some("matched".to_string()),
+                    updated_at: Some(chrono::Utc::now()),
                     notes: Some(format!("Matched record {}", i)),
+                    reviewed_by: None,
                     created_at: chrono::Utc::now(),
-                    updated_at: chrono::Utc::now(),
                 });
             }
         }
@@ -147,9 +161,11 @@ pub async fn save_reconciliation_results(
             record_a_id: result.record_a_id,
             record_b_id: result.record_b_id,
             match_type: result.match_type.clone(),
-            confidence_score: result.confidence_score,
-            status: result.status.clone(),
-            notes: result.notes.clone(),
+            confidence_score: result.confidence_score.clone(),
+            match_details: None,
+            status: Some("pending".to_string()),
+            notes: None,
+            reviewed_by: None,
         };
         
         diesel::insert_into(reconciliation_results::table)
@@ -246,8 +262,12 @@ pub async fn load_records_from_data_source(
     data_source: &DataSource,
 ) -> AppResult<Vec<ReconciliationRecord>> {
     let mut conn = db.get_connection()?;
-    let records = ReconciliationRecord::belonging_to(data_source)
-        .load::<ReconciliationRecord>(&mut conn)
+    use crate::models::schema::reconciliation_records::dsl::*;
+    use diesel::prelude::*;
+    let records = reconciliation_records
+        .filter(project_id.eq(&data_source.project_id))
+        .select(ReconciliationRecord::as_select())
+        .load(&mut conn)
         .map_err(AppError::Database)?;
     Ok(records)
 }

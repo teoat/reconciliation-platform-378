@@ -8,7 +8,7 @@ use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use crate::errors::AppResult;
-use actix_web::{dev::ServiceRequest, Error, HttpMessage, Result as ActixResult};
+use actix_web::{dev::ServiceRequest, Error};
 use actix_web::dev::{Service, ServiceResponse, Transform};
 use futures::future::{ok, Ready};
 use futures::Future;

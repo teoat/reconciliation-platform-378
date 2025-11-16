@@ -1,0 +1,184 @@
+---
+description: TypeScript and React patterns for the reconciliation platform frontend.
+globs: frontend/**/*.{ts,tsx}, components/**/*.{ts,tsx}, pages/**/*.{ts,tsx}
+alwaysApply: true
+---
+
+- **Type Safety:**
+  - Use TypeScript strict mode (enabled)
+  - Define interfaces for all data structures
+  - Avoid `any` type - use `unknown` if type is truly unknown
+  ```typescript
+  // ✅ DO: Strong typing
+  interface User {
+    id: number;
+    email: string;
+    createdAt: Date;
+  }
+  
+  // ❌ DON'T: Any types
+  function getUser(id: any): any {
+    // ...
+  }
+  ```
+
+- **State Management:**
+  - Use Redux Toolkit for global state
+  - Use React hooks for local component state
+  - Keep state normalized and minimal
+  ```typescript
+  // ✅ DO: Redux Toolkit pattern
+  const userSlice = createSlice({
+    name: 'user',
+    initialState,
+    reducers: {
+      setUser: (state, action: PayloadAction<User>) => {
+        state.user = action.payload;
+      }
+    }
+  });
+  ```
+
+- **API Service Pattern:**
+  - **IMPORTANT**: Check if services use static methods or instance methods
+  - Be consistent across all API services
+  - Use static methods for stateless services
+  ```typescript
+  // ✅ DO: Consistent static pattern
+  export class AuthApiService {
+    static async authenticate(credentials: Credentials): Promise<AuthResponse> {
+      // ...
+    }
+  }
+  
+  // Usage:
+  const response = await AuthApiService.authenticate(credentials);
+  
+  // ❌ DON'T: Mix static and instance
+  const service = new AuthApiService();
+  service.authenticate(credentials); // Error if static
+  ```
+
+- **Component Structure:**
+  - Use functional components with hooks
+  - Extract reusable logic into custom hooks
+  - Keep components focused and small
+  ```typescript
+  // ✅ DO: Functional component with hooks
+  export const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
+    const user = useUser(userId);
+    const { updateUser } = useUserActions();
+    
+    return <div>{/* ... */}</div>;
+  };
+  ```
+
+- **Styling:**
+  - Use Tailwind CSS utility classes
+  - Create reusable component variants
+  - Keep styles co-located with components
+  ```typescript
+  // ✅ DO: Tailwind utilities
+  <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+    Submit
+  </button>
+  ```
+
+- **Error Handling:**
+  - Use try-catch for async operations
+  - Provide user-friendly error messages
+  - Log errors for debugging
+  ```typescript
+  // ✅ DO: Proper error handling
+  try {
+    const data = await fetchUserData();
+    return data;
+  } catch (error) {
+    console.error('Failed to fetch user:', error);
+    toast.error('Unable to load user data');
+    throw error;
+  }
+  ```
+
+- **ARIA Attributes:**
+  - Use proper ARIA syntax in JSX
+  - Don't wrap expressions in quotes
+  - Use boolean attributes correctly
+  ```typescript
+  // ✅ DO: Correct ARIA syntax
+  <div aria-label={user.name} aria-hidden={!isVisible}>
+    Content
+  </div>
+  
+  // ❌ DON'T: Quotes around expressions
+  <div aria-label="{user.name}">
+    Content
+  </div>
+  ```
+
+- **Type Naming:**
+  - Use PascalCase for types and interfaces
+  - Use descriptive names
+  - Avoid abbreviations
+  ```typescript
+  // ✅ DO: Clear naming
+  interface UserProfileData {
+    userId: number;
+    displayName: string;
+  }
+  
+  // ❌ DON'T: Abbreviations
+  interface UPD {
+    uid: number;
+    dn: string;
+  }
+  ```
+
+- **Import Organization:**
+  - Group imports: external, internal, types
+  - Use absolute imports when configured
+  - Avoid circular dependencies
+  ```typescript
+  // ✅ DO: Organized imports
+  import React, { useState, useEffect } from 'react';
+  import { useDispatch } from 'react-redux';
+  
+  import { UserService } from '@/services/userService';
+  import { User } from '@/types/user';
+  
+  import type { UserProfileProps } from './types';
+  ```
+
+- **Testing:**
+  - Write unit tests for utilities
+  - Use React Testing Library for components
+  - Mock API calls in tests
+  ```typescript
+  // ✅ DO: Component testing
+  describe('UserProfile', () => {
+    it('renders user information', () => {
+      render(<UserProfile userId={1} />);
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+  });
+  ```
+
+- **Performance:**
+  - Use `React.memo` for expensive components
+  - Use `useMemo` and `useCallback` appropriately
+  - Lazy load routes and heavy components
+  ```typescript
+  // ✅ DO: Memoization
+  const ExpensiveComponent = React.memo(({ data }) => {
+    const processed = useMemo(() => processData(data), [data]);
+    return <div>{processed}</div>;
+  });
+  ```
+
+- **SSOT Principles:**
+  - One implementation per feature
+  - One location per concept
+  - One responsibility per file
+  - Follow [SSOT Guidance](mdc:docs/SSOT_GUIDANCE.md)
+
+Follow [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) for general rule formatting guidelines.

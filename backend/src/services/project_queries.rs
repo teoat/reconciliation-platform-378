@@ -39,7 +39,7 @@ impl ProjectQueryOps {
 
         // Get projects with owner info
         let projects_with_owner = projects::table
-            .inner_join(users::table)
+            .inner_join(users::table.on(projects::owner_id.eq(users::id)))
             .select((
                 projects::id,
                 projects::name,
@@ -89,7 +89,7 @@ impl ProjectQueryOps {
                     owner_id: result.owner_id,
                     owner_email: result.owner_email,
                     status: result.project_status,
-                    settings: result.settings,
+                    settings: Some(result.settings),
                     created_at: result.created_at,
                     updated_at: result.updated_at,
                     job_count: job_count_map.get(&result.project_id).copied().unwrap_or(0),
@@ -178,7 +178,7 @@ impl ProjectQueryOps {
                     owner_id: result.owner_id,
                     owner_email: result.owner_email,
                     status: result.project_status,
-                    settings: result.settings,
+                    settings: Some(result.settings),
                     created_at: result.created_at,
                     updated_at: result.updated_at,
                     job_count: job_count_map.get(&result.project_id).copied().unwrap_or(0),
@@ -217,7 +217,7 @@ impl ProjectQueryOps {
 
         // Get projects with additional info
         let projects_with_info = projects::table
-            .inner_join(users::table)
+            .inner_join(users::table.on(projects::owner_id.eq(users::id)))
             .filter(
                 projects::name.ilike(&search_pattern)
                     .or(projects::description.ilike(&search_pattern))
@@ -292,7 +292,7 @@ impl ProjectQueryOps {
                     owner_id: result.owner_id,
                     owner_email: result.owner_email,
                     status: result.project_status,
-                    settings: result.settings,
+                    settings: Some(result.settings),
                     created_at: result.created_at,
                     updated_at: result.updated_at,
                     job_count,
@@ -353,7 +353,7 @@ impl ProjectQueryOps {
 
         // Get recent projects with simplified query
         let recent_projects = projects::table
-            .inner_join(users::table)
+            .inner_join(users::table.on(projects::owner_id.eq(users::id)))
             .select((
                 projects::id,
                 projects::name,
@@ -392,7 +392,7 @@ impl ProjectQueryOps {
                 owner_id: result.owner_id,
                 owner_email: result.owner_email,
                 status: result.project_status,
-                settings: result.settings,
+                settings: Some(result.settings),
                 created_at: result.created_at,
                 updated_at: result.updated_at,
                 job_count,

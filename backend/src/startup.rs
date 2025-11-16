@@ -9,7 +9,7 @@ use crate::config::Config;
 use crate::database::Database;
 use crate::services::cache::MultiLevelCache;
 use crate::services::resilience::{ResilienceManager, ResilienceConfig};
-use crate::errors::{AppError, AppResult};
+use crate::errors::AppResult;
 
 /// Application startup configuration
 pub struct AppStartup {

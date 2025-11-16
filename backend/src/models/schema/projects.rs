@@ -183,10 +183,10 @@ diesel::table! {
         amount -> Nullable<Float8>,
         transaction_date -> Nullable<Date>,
         description -> Nullable<Text>,
-        source_data -> Text,
-        matching_results -> Text,
+        source_data -> Jsonb,
+        matching_results -> Jsonb,
         confidence -> Nullable<Float8>,
-        audit_trail -> Text,
+        audit_trail -> Jsonb,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }
@@ -228,8 +228,34 @@ diesel::table! {
         file_hash -> Nullable<Varchar>,
         #[max_length = 50]
         status -> Varchar,
-        uploaded_by -> Uuid,
-        created_at -> Timestamptz,
-        updated_at -> Timestamptz,
-    }
-}
+         uploaded_by -> Uuid,
+         created_at -> Timestamptz,
+         updated_at -> Timestamptz,
+     }
+ }
+
+// Joinable relationships for projects schema
+diesel::joinable!(projects -> users (owner_id));
+diesel::joinable!(project_members -> projects (project_id));
+diesel::joinable!(project_members -> users (user_id));
+diesel::joinable!(reconciliation_jobs -> projects (project_id));
+diesel::joinable!(reconciliation_jobs -> users (created_by));
+diesel::joinable!(reconciliation_records -> projects (project_id));
+diesel::joinable!(reconciliation_records -> reconciliation_jobs (ingestion_job_id));
+diesel::joinable!(reconciliation_results -> reconciliation_jobs (job_id));
+diesel::joinable!(uploaded_files -> projects (project_id));
+diesel::joinable!(uploaded_files -> users (uploaded_by));
+
+// Allow tables to appear in same query
+diesel::allow_tables_to_appear_in_same_query!(projects, users);
+diesel::allow_tables_to_appear_in_same_query!(projects, project_members);
+diesel::allow_tables_to_appear_in_same_query!(projects, reconciliation_jobs);
+diesel::allow_tables_to_appear_in_same_query!(projects, reconciliation_records);
+diesel::allow_tables_to_appear_in_same_query!(projects, reconciliation_results);
+diesel::allow_tables_to_appear_in_same_query!(projects, uploaded_files);
+diesel::allow_tables_to_appear_in_same_query!(users, project_members);
+diesel::allow_tables_to_appear_in_same_query!(users, reconciliation_jobs);
+diesel::allow_tables_to_appear_in_same_query!(users, uploaded_files);
+diesel::allow_tables_to_appear_in_same_query!(reconciliation_results, reconciliation_jobs);
+diesel::allow_tables_to_appear_in_same_query!(audit_logs, users);
+diesel::allow_tables_to_appear_in_same_query!(data_sources, projects);

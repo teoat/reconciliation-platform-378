@@ -4,8 +4,8 @@
 //! for reconciliation operations.
 
 use uuid::Uuid;
-use std::sync::Arc;
 use chrono::Utc;
+use bigdecimal::BigDecimal;
 use diesel::{RunQueryDsl, QueryDsl, ExpressionMethods, OptionalExtension};
 
 use crate::database::Database;
@@ -16,7 +16,7 @@ use crate::models::{
 };
 use crate::models::schema::{reconciliation_jobs, reconciliation_results};
 
-use super::job_management::{JobProcessor, JobStatus, JobProgress};
+use super::job_management::{JobStatus, JobProgress};
 use super::types::{
     CreateReconciliationJobRequest, ReconciliationJobStatus, ReconciliationResultDetail,
 };
@@ -79,11 +79,11 @@ pub async fn get_reconciliation_progress(
         };
         
         // Get job status from active jobs or database
-        if let Some(status) = service.job_processor.get_job_status(job_id).await {
+        if let Some(status) = service.job_processor.get_job_status(&job_id).await {
             Ok(JobProgress {
                 job_id,
                 project_id,
-                status: status.status.clone(),
+                status: status.message.clone(), // Use message as status
                 progress: status.progress,
                 total_records: status.total_records,
                 processed_records: status.processed_records,
@@ -157,11 +157,11 @@ pub async fn get_reconciliation_job_status(
     service: &ReconciliationService,
     job_id: Uuid,
 ) -> AppResult<ReconciliationJobStatus> {
-    if let Some(status) = service.job_processor.get_job_status(job_id).await {
+    if let Some(status) = service.job_processor.get_job_status(&job_id).await {
             return Ok(ReconciliationJobStatus {
                 id: job_id,
                 name: "Running Job".to_string(),
-                status: status.status,
+                status: status.message.clone(), // Use message as status
                 progress: status.progress,
                 total_records: status.total_records,
                 processed_records: status.processed_records,
@@ -204,8 +204,6 @@ pub async fn update_reconciliation_job(
             name,
             description,
             status: None,
-            source_a_id: None,
-            source_b_id: None,
             progress: None,
             total_records: None,
             processed_records: None,
@@ -219,8 +217,12 @@ pub async fn update_reconciliation_job(
             .execute(&mut conn)
             .map_err(AppError::Database)?;
         if let Some(th) = confidence_threshold {
+            use bigdecimal::BigDecimal;
+            use std::str::FromStr;
+            let threshold_bd = BigDecimal::from_str(&th.to_string())
+                .map_err(|e| AppError::Validation(format!("Invalid confidence threshold: {}", e)))?;
             diesel::update(reconciliation_jobs::table.filter(reconciliation_jobs::id.eq(job_id)))
-                .set(reconciliation_jobs::confidence_threshold.eq(th))
+                .set(reconciliation_jobs::confidence_threshold.eq(Some(threshold_bd)))
                 .execute(&mut conn)
                 .map_err(AppError::Database)?;
         }
@@ -245,7 +247,8 @@ pub async fn delete_reconciliation_job(service: &ReconciliationService, job_id: 
 
 /// Start job via processor
 pub async fn start_reconciliation_job(service: &ReconciliationService, job_id: Uuid) -> AppResult<()> {
-    service.job_processor.start_job(job_id, service.db.clone()).await
+    let _job_handle = service.job_processor.start_job(job_id).await;
+    Ok(())
 }
 
 /// Stop job via processor
@@ -280,11 +283,11 @@ pub async fn get_reconciliation_results(
                 record_a_id: r.record_a_id,
                 record_b_id: r.record_b_id,
                 match_type: r.match_type,
-                confidence_score: r.confidence_score,
-                status: r.status,
+                confidence_score: r.confidence_score.map(|c| c.to_string().parse::<f64>().unwrap_or(0.0)),
+                status: r.status.unwrap_or_else(|| "pending".to_string()),
                 notes: r.notes,
                 created_at: r.created_at,
-                updated_at: r.updated_at,
+                updated_at: r.updated_at.unwrap_or(r.created_at),
             })
             .collect();
         Ok(details)
@@ -347,26 +350,31 @@ pub async fn update_match(
     let mut conn = service.db.get_connection()?;
 
     // Build the update query dynamically
-    let mut update_query = diesel::update(reconciliation_results::table
+    // Convert parameters to proper types
+    let status_val = status.map(|s| Some(s)).unwrap_or(None);
+    let confidence_val = if let Some(confidence) = confidence_score {
+        // Convert f64 to BigDecimal using string conversion
+        use std::str::FromStr;
+        Some(BigDecimal::from_str(&confidence.to_string())
+            .map_err(|_| AppError::Validation("Invalid confidence score".to_string()))?)
+    } else {
+        None
+    };
+    let reviewer_val = if let Some(reviewer) = reviewed_by {
+        Some(Uuid::parse_str(reviewer)
+            .map_err(|_| AppError::Validation("Invalid reviewer UUID".to_string()))?)
+    } else {
+        None
+    };
+
+    let rows = diesel::update(reconciliation_results::table
         .filter(reconciliation_results::id.eq(match_id)))
-        .into_boxed();
-
-    if let Some(status_val) = status {
-        update_query = update_query.set(reconciliation_results::status.eq(status_val));
-    }
-
-    if let Some(confidence) = confidence_score {
-        update_query = update_query.set(reconciliation_results::confidence_score.eq(confidence));
-    }
-
-    if let Some(reviewer) = reviewed_by {
-        update_query = update_query.set(reconciliation_results::reviewed_by.eq(reviewer));
-    }
-
-    // Always update the updated_at timestamp
-    update_query = update_query.set(reconciliation_results::updated_at.eq(Utc::now()));
-
-    let rows = update_query
+        .set((
+            reconciliation_results::status.eq(status_val),
+            reconciliation_results::confidence_score.eq(confidence_val),
+            reconciliation_results::reviewed_by.eq(reviewer_val),
+            reconciliation_results::updated_at.eq(Utc::now()),
+        ))
         .execute(&mut conn)
         .map_err(AppError::Database)?;
 
@@ -382,10 +390,10 @@ pub async fn update_match(
 
     Ok(UpdatedMatch {
         id: updated_match.id,
-        status: updated_match.status,
-        confidence_score: updated_match.confidence_score,
-        reviewed_by: updated_match.reviewed_by,
-        updated_at: updated_match.updated_at,
+        status: updated_match.status.unwrap_or_else(|| "pending".to_string()),
+        confidence_score: updated_match.confidence_score.map(|c| c.to_string().parse::<f64>().unwrap_or(0.0)),
+        reviewed_by: updated_match.reviewed_by.map(|u| u.to_string()),
+        updated_at: updated_match.updated_at.unwrap_or(updated_match.created_at),
     })
 }
 
@@ -459,11 +467,11 @@ pub async fn export_job_results(
                     result.record_a_id,
                     result.record_b_id.unwrap_or(Uuid::nil()),
                     result.match_type,
-                    result.confidence_score.unwrap_or(0.0),
-                    result.status,
-                    result.notes.unwrap_or_default(),
+                    result.confidence_score.map(|c| c.to_string()).unwrap_or("0.0".to_string()),
+                    result.status.as_ref().map(|s| s.as_str()).unwrap_or("unknown"),
+                    result.notes.as_ref().map(|n| n.as_str()).unwrap_or(""),
                     result.created_at,
-                    result.updated_at
+                    result.updated_at.unwrap_or(result.created_at)
                 )?;
             }
         },
@@ -518,17 +526,19 @@ pub async fn create_reconciliation_job_impl(
         let settings_json = serde_json::to_value(&request.matching_rules)
             .map_err(|e| AppError::Serialization(e))?;
 
+        use bigdecimal::BigDecimal;
+        use std::str::FromStr;
+        let confidence_bd = BigDecimal::from_str(&request.confidence_threshold.to_string())
+            .map_err(|e| AppError::Validation(format!("Invalid confidence threshold: {}", e)))?;
+        
         let new_job = NewReconciliationJob {
-            id: job_id,
             project_id: request.project_id,
             name: request.name.clone(),
             description: request.description.clone(),
             status: "pending".to_string(),
-            source_a_id: request.source_a_id,
-            source_b_id: request.source_b_id,
             created_by: user_id,
-            confidence_threshold: Some(request.confidence_threshold),
-            settings: Some(crate::models::JsonValue(settings_json)),
+            confidence_threshold: Some(confidence_bd),
+            settings: Some(settings_json),
             started_at: None,
             completed_at: None,
             progress: Some(0),

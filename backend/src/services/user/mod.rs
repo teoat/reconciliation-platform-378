@@ -33,8 +33,7 @@ pub use traits::*;
 use diesel::prelude::*;
 use diesel::{QueryDsl, ExpressionMethods, RunQueryDsl};
 use uuid::Uuid;
-use chrono::Utc;
-use serde::{Deserialize, Serialize};
+
 use std::sync::Arc;
 use async_trait::async_trait;
 
@@ -97,11 +96,11 @@ impl UserService {
         let new_user = NewUser {
             email: sanitized_email.clone(),
             password_hash,
-            first_name: ValidationUtils::sanitize_string(&request.first_name),
-            last_name: ValidationUtils::sanitize_string(&request.last_name),
-            role: Some(role.clone()),
-            is_active: Some(true),
-            last_login: None,
+            username: None,
+            first_name: Some(ValidationUtils::sanitize_string(&request.first_name)),
+            last_name: Some(ValidationUtils::sanitize_string(&request.last_name)),
+            status: role.clone(),
+            email_verified: true,
         };
 
         let created_user_id = with_transaction(self.db.get_pool(), |tx| {
@@ -158,11 +157,11 @@ impl UserService {
         let new_user = NewUser {
             email: sanitized_email.clone(),
             password_hash,
-            first_name: ValidationUtils::sanitize_string(&request.first_name),
-            last_name: ValidationUtils::sanitize_string(&request.last_name),
-            role: Some(role.clone()),
-            is_active: Some(true),
-            last_login: None,
+            username: None,
+            first_name: Some(ValidationUtils::sanitize_string(&request.first_name)),
+            last_name: Some(ValidationUtils::sanitize_string(&request.last_name)),
+            status: role.clone(),
+            email_verified: true,
         };
 
         let result = with_transaction(self.db.get_pool(), |tx| {
@@ -239,13 +238,14 @@ impl UserService {
         Ok(UserInfo {
             id: user.id,
             email: user.email,
-            first_name: user.first_name,
-            last_name: user.last_name,
-            role: user.role,
-            is_active: user.is_active,
+            name: user.first_name.as_ref().and_then(|f| user.last_name.as_ref().map(|l| format!("{} {}", f, l))),
+            first_name: user.first_name.unwrap_or_default(),
+            last_name: user.last_name.unwrap_or_default(),
+            role: user.status.clone(),
+            is_active: user.email_verified,
             created_at: user.created_at,
             updated_at: user.updated_at,
-            last_login: user.last_login,
+            last_login: user.last_login_at,
             project_count,
         })
     }
@@ -310,11 +310,13 @@ impl UserService {
             // Prepare update
             let update_data = UpdateUser {
                 email: request.email.map(|e| ValidationUtils::sanitize_string(&e)),
+                username: None,
                 first_name: request.first_name.map(|f| ValidationUtils::sanitize_string(&f)),
                 last_name: request.last_name.map(|l| ValidationUtils::sanitize_string(&l)),
-                role: request.role,
-                is_active: request.is_active,
-                last_login: None, // Don't update last_login here
+                status: request.role,
+                email_verified: request.is_active,
+                last_login_at: None,
+                last_active_at: None,
             };
 
             // Update user

@@ -1,8 +1,9 @@
 //! Analytics handlers module
 
-use actix_web::{web, HttpRequest, HttpResponse, Result};
+use actix_web::{web, HttpResponse, Result};
 use uuid::Uuid;
 use std::time::Duration;
+use std::sync::Arc;
 
 use crate::errors::AppError;
 use crate::database::Database;
@@ -24,8 +25,8 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 /// Get dashboard data
 pub async fn get_dashboard_data(
     data: web::Data<Database>,
-    cache: web::Data<MultiLevelCache>,
-    resilience: web::Data<ResilienceManager>,
+    cache: web::Data<Arc<MultiLevelCache>>,
+    resilience: web::Data<Arc<ResilienceManager>>,
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     let analytics_service = crate::services::analytics::AnalyticsService::new_with_resilience(
@@ -47,10 +48,10 @@ pub async fn get_dashboard_data(
 /// Get project statistics
 pub async fn get_project_stats(
     project_id: web::Path<Uuid>,
-    http_req: HttpRequest,
+    http_req: actix_web::HttpRequest,
     data: web::Data<Database>,
-    cache: web::Data<MultiLevelCache>,
-    resilience: web::Data<ResilienceManager>,
+    cache: web::Data<Arc<MultiLevelCache>>,
+    resilience: web::Data<Arc<ResilienceManager>>,
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
@@ -61,7 +62,7 @@ pub async fn get_project_stats(
     
     // Try cache first (30 minute TTL - expensive aggregation)
     let cache_key = format!("stats:project:{}", project_id_val);
-    if let Ok(Some(cached)) = cache.get::<serde_json::Value>(&cache_key).await {
+    if let Ok(Some(cached)) = cache.get_ref().get::<serde_json::Value>(&cache_key).await {
         return Ok(HttpResponse::Ok().json(ApiResponse {
             success: true,
             data: Some(cached),
@@ -75,12 +76,12 @@ pub async fn get_project_stats(
         cache.get_ref().clone(),
         resilience.get_ref().clone(),
     );
-    
+
     let project_stats = analytics_service.get_project_stats(project_id_val).await?;
     
     // Cache stats for 30 minutes (expensive aggregation)
     let stats_json = serde_json::to_value(&project_stats)?;
-    let _ = cache.set(&cache_key, &stats_json, Some(Duration::from_secs(1800))).await;
+    let _ = cache.get_ref().set(&cache_key, &stats_json, Some(Duration::from_secs(1800))).await;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -94,8 +95,8 @@ pub async fn get_project_stats(
 pub async fn get_user_activity(
     user_id: web::Path<Uuid>,
     data: web::Data<Database>,
-    cache: web::Data<MultiLevelCache>,
-    resilience: web::Data<ResilienceManager>,
+    cache: web::Data<Arc<MultiLevelCache>>,
+    resilience: web::Data<Arc<ResilienceManager>>,
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     let analytics_service = crate::services::analytics::AnalyticsService::new_with_resilience(
@@ -103,7 +104,7 @@ pub async fn get_user_activity(
         cache.get_ref().clone(),
         resilience.get_ref().clone(),
     );
-    
+
     let user_activity = analytics_service.get_user_activity_stats(user_id.into_inner()).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -117,8 +118,8 @@ pub async fn get_user_activity(
 /// Get reconciliation statistics
 pub async fn get_reconciliation_stats(
     data: web::Data<Database>,
-    cache: web::Data<MultiLevelCache>,
-    resilience: web::Data<ResilienceManager>,
+    cache: web::Data<Arc<MultiLevelCache>>,
+    resilience: web::Data<Arc<ResilienceManager>>,
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     let analytics_service = crate::services::analytics::AnalyticsService::new_with_resilience(
@@ -126,7 +127,7 @@ pub async fn get_reconciliation_stats(
         cache.get_ref().clone(),
         resilience.get_ref().clone(),
     );
-    
+
     let reconciliation_stats = analytics_service.get_reconciliation_stats().await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {

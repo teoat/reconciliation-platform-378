@@ -236,8 +236,8 @@ impl ErrorRecoveryService {
             circuit_breaker.failure_count += 1;
             circuit_breaker.last_failure = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .map_err(|_| AppError::Internal("System time is before UNIX epoch".to_string()))?
-                .as_secs() * 1000;
+                .map(|d| d.as_secs() * 1000)
+                .unwrap_or(0);
             
             if circuit_breaker.failure_count >= circuit_breaker.threshold {
                 circuit_breaker.state = CircuitBreakerState::Open;
@@ -273,8 +273,8 @@ impl ErrorRecoveryService {
             id: Uuid::new_v4().to_string(),
             timestamp: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
-                .map_err(|_| AppError::Internal("System time is before UNIX epoch".to_string()))?
-                .as_secs(),
+                .map(|d| d.as_secs())
+                .unwrap_or(0),
             error_type: error_type.to_string(),
             error_message: error_message.to_string(),
             stack_trace: None,

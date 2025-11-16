@@ -7,12 +7,10 @@ use uuid::Uuid;
 use std::sync::Arc;
 
 use crate::errors::AppError;
-use crate::services::auth::{AuthService, LoginRequest, RegisterRequest, ChangePasswordRequest, GoogleOAuthRequest, AuthResponse};
+use crate::services::auth::{AuthService, LoginRequest, RegisterRequest, ChangePasswordRequest, GoogleOAuthRequest};
 use crate::services::user::{UserService, CreateOAuthUserRequest};
 use crate::services::security_monitor::{SecurityMonitor, SecurityEvent, SecurityEventType, SecuritySeverity};
 use crate::handlers::helpers::{mask_email, get_client_ip, get_user_agent};
-use crate::handlers::types::ApiResponse;
-use crate::errors::ErrorResponse;
 
 /// Configure authentication routes
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
@@ -125,7 +123,7 @@ pub async fn login(
     }
     
     // Check if user is active
-    if !user.is_active {
+    if user.status != "active" {
         return Err(AppError::Authentication("Account is deactivated".to_string()));
     }
     
@@ -143,9 +141,9 @@ pub async fn login(
             email: user.email,
             first_name: user.first_name.unwrap_or_default(),
             last_name: user.last_name.unwrap_or_default(),
-            role: user.role.unwrap_or_else(|| "user".to_string()),
-            is_active: user.is_active,
-            last_login: user.last_login,
+            role: "user".to_string(), // TODO: Implement proper role fetching
+            is_active: user.status == "active",
+            last_login: user.last_login_at,
         },
         expires_at: (chrono::Utc::now().timestamp() + auth_service.as_ref().get_expiration()) as usize,
     };
@@ -169,24 +167,10 @@ pub async fn register(
     };
     
     let user_info = user_service.as_ref().create_user(create_request).await?;
-    
-    // Generate token
-    let user = user_service.as_ref().get_user_by_id(user_info.id).await?;
-    let token = auth_service.as_ref().generate_token(&crate::models::User {
-        id: user.id,
-        email: user.email,
-        password_hash: String::new(), // Not needed for token generation
-        name: user.name,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        role: user.role,
-        permissions: user.permissions,
-        preferences: user.preferences,
-        is_active: user.is_active,
-        last_login: user.last_login,
-        created_at: user.created_at,
-        updated_at: user.updated_at,
-    })?;
+
+    // Generate token - we need to get the User struct, not UserInfo
+    let user = user_service.as_ref().get_user_by_email(&user_info.email).await?;
+    let token = auth_service.as_ref().generate_token(&user)?;
     
     // Create response
     let auth_response = crate::services::auth::AuthResponse {
@@ -235,18 +219,18 @@ pub async fn refresh_token(
     // In a real implementation, you'd fetch the full user from the database
     let user = crate::models::User {
         id: user_id,
-        email: claims.email,
+        email: claims.email.clone(),
+        username: None,
+        first_name: None,
+        last_name: None,
         password_hash: String::new(),
-        name: String::new(),
-        first_name: Some(String::new()),
-        last_name: Some(String::new()),
-        role: Some(claims.role),
-        permissions: None,
-        preferences: None,
-        is_active: true,
-        last_login: None,
-        created_at: Some(chrono::Utc::now()),
-        updated_at: Some(chrono::Utc::now()),
+        status: "active".to_string(),
+        email_verified: true,
+        email_verified_at: None,
+        last_login_at: None,
+        last_active_at: None,
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
     };
     
     let new_token = auth_service.as_ref().generate_token(&user)?;
@@ -398,7 +382,7 @@ pub async fn resend_verification(
 /// Google OAuth endpoint
 pub async fn google_oauth(
     req: web::Json<GoogleOAuthRequest>,
-    http_req: HttpRequest,
+    _http_req: HttpRequest,
     auth_service: web::Data<Arc<AuthService>>,
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
@@ -451,7 +435,7 @@ pub async fn google_oauth(
     let user = user_service.as_ref().get_user_by_email(&email).await?;
     
     // Check if user is active
-    if !user.is_active {
+    if user.status != "active" {
         return Err(AppError::Authentication("Account is deactivated".to_string()));
     }
     
@@ -496,10 +480,9 @@ pub async fn get_current_user(
             "email": user.email,
             "first_name": user.first_name,
             "last_name": user.last_name,
-            "role": user.role,
+            "role": "user", // TODO: Implement proper role fetching
             "is_active": user.is_active,
-            "created_at": user.created_at,
-            "last_login": user.last_login
+            "last_login": user.last_login.map(|dt| dt.to_rfc3339())
         })),
         message: None,
         error: None,

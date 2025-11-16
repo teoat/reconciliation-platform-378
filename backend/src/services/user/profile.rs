@@ -7,7 +7,7 @@ use diesel::{QueryDsl, ExpressionMethods, RunQueryDsl};
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use async_trait::async_trait;
+
 
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
@@ -27,8 +27,8 @@ pub struct ProfileService {
 pub struct UserProfile {
     pub id: Uuid,
     pub email: String,
-    pub first_name: String,
-    pub last_name: String,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
 }
 
 impl ProfileService {
@@ -48,7 +48,7 @@ impl ProfileService {
                 users::first_name,
                 users::last_name,
             ))
-            .first::<(Uuid, String, String, String)>(&mut conn)
+            .first::<(Uuid, String, Option<String>, Option<String>)>(&mut conn)
             .map_err(AppError::Database)?;
         
         Ok(UserProfile {
@@ -71,7 +71,7 @@ impl ProfileService {
                 users::first_name,
                 users::last_name,
             ))
-            .first::<(Uuid, String, String, String)>(&mut conn)
+            .first::<(Uuid, String, Option<String>, Option<String>)>(&mut conn)
             .map_err(AppError::Database)?;
         
         Ok(UserProfile {
@@ -118,11 +118,13 @@ impl ProfileService {
         // Prepare update
         let update_data = UpdateUser {
             email: email.map(|e| ValidationUtils::sanitize_string(&e)),
+            username: None,
             first_name: first_name.map(|f| ValidationUtils::sanitize_string(&f)),
             last_name: last_name.map(|l| ValidationUtils::sanitize_string(&l)),
-            role: None,
-            is_active: None,
-            last_login: None,
+            status: None,
+            email_verified: None,
+            last_login_at: None,
+            last_active_at: None,
         };
         
         // Update user

@@ -62,7 +62,7 @@ impl BillingService {
         tier: SubscriptionTier,
         billing_cycle: &str, // "monthly" or "yearly"
     ) -> Result<CheckoutSessionResponse, BillingError> {
-        let amount = if billing_cycle == "yearly" {
+        let _amount = if billing_cycle == "yearly" {
             tier.price_per_year()
         } else {
             tier.price_per_month()
@@ -88,7 +88,7 @@ impl BillingService {
         user_id: Uuid,
         tier: SubscriptionTier,
         billing_cycle: &str,
-        payment_method_id: Option<String>,
+        _payment_method_id: Option<String>,
     ) -> Result<Subscription, BillingError> {
         if !self.stripe_secret_key.is_empty() {
             // Would integrate with Stripe here
@@ -132,7 +132,7 @@ impl BillingService {
     /// Process subscription renewal
     pub async fn renew_subscription(
         &self,
-        subscription_id: Uuid,
+        _subscription_id: Uuid,
     ) -> Result<Subscription, BillingError> {
         // In production, this would create a new Stripe invoice
         Err(BillingError::NotImplemented)
@@ -141,7 +141,7 @@ impl BillingService {
     /// Get usage metrics for a user
     pub async fn get_usage_metrics(
         &self,
-        user_id: Uuid,
+        _user_id: Uuid,
     ) -> Result<UsageMetrics, BillingError> {
         // Mock usage metrics - in production, this would query actual usage
         Ok(UsageMetrics {
@@ -157,8 +157,8 @@ impl BillingService {
     /// Check if user has access to a feature
     pub async fn check_feature_access(
         &self,
-        user_id: Uuid,
-        feature: &str,
+        _user_id: Uuid,
+        _feature: &str,
     ) -> Result<bool, BillingError> {
         // In production, this would check the user's subscription tier
         Ok(true)
@@ -167,8 +167,8 @@ impl BillingService {
     /// Handle webhook from payment provider
     pub async fn handle_webhook(
         &self,
-        payload: &[u8],
-        signature: &str,
+        _payload: &[u8],
+        _signature: &str,
     ) -> Result<WebhookEvent, BillingError> {
         // In production, this would verify the webhook signature
         // and process events like payment_succeeded, subscription_cancelled, etc.

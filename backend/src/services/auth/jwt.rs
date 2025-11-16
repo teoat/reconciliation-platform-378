@@ -8,6 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use uuid::Uuid;
 
 /// JWT token manager
+#[derive(Clone)]
 pub struct JwtManager {
     secret: String,
     expiration: i64,
@@ -35,7 +36,7 @@ impl JwtManager {
         let claims = Claims {
             sub: user.id.to_string(),
             email: user.email.clone(),
-            role: user.role.clone(),
+            role: user.status.clone(), // Role stored in status field
             exp,
             iat: now,
         };

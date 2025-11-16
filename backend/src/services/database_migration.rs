@@ -8,7 +8,7 @@ use diesel_migrations::MigrationHarness;
 use std::collections::HashMap;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
-use crate::database_migrations;
+
 
 /// Database migration service
 pub struct DatabaseMigrationService {
@@ -92,8 +92,8 @@ impl DatabaseMigrationService {
     /// Rollback last migration
     pub async fn rollback_last_migration(&mut self) -> Result<MigrationResult, MigrationError> {
         let start_time = std::time::Instant::now();
-        let mut applied = Vec::new();
-        let mut failed = Vec::new();
+        let applied = Vec::new();
+        let failed = Vec::new();
         let mut warnings = Vec::new();
 
         log::info!("Rolling back last migration...");

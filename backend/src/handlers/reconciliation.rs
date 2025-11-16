@@ -48,7 +48,7 @@ pub async fn batch_resolve_conflicts(
     req: web::Json<BatchResolveRequest>,
     http_req: HttpRequest,
     data: web::Data<Database>,
-    cache: web::Data<MultiLevelCache>,
+    _cache: web::Data<MultiLevelCache>,
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;
@@ -244,9 +244,11 @@ pub async fn delete_reconciliation_job(
     let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
     
     reconciliation_service.delete_reconciliation_job(job_id_val).await?;
-    
-    let _ = cache.invalidate_job_cache(job_id_val, project_id).await;
-    
+
+    if let Some(pid) = project_id {
+        let _ = cache.invalidate_job_cache(job_id_val, pid).await;
+    }
+
     Ok(HttpResponse::NoContent().finish())
 }
 
@@ -271,9 +273,11 @@ pub async fn start_reconciliation_job(
     );
     
     reconciliation_service.start_reconciliation_job(job_id_val).await?;
-    
-    let _ = cache.invalidate_job_cache(job_id_val, project_id).await;
-    
+
+    if let Some(pid) = project_id {
+        let _ = cache.invalidate_job_cache(job_id_val, pid).await;
+    }
+
     Ok(HttpResponse::Ok().json(ApiResponse::<()> {
         success: true,
         data: None,
@@ -299,9 +303,11 @@ pub async fn stop_reconciliation_job(
     let reconciliation_service = crate::services::reconciliation::ReconciliationService::new(data.get_ref().clone());
     
     reconciliation_service.stop_reconciliation_job(job_id_val).await?;
-    
-    let _ = cache.invalidate_job_cache(job_id_val, project_id).await;
-    
+
+    if let Some(pid) = project_id {
+        let _ = cache.invalidate_job_cache(job_id_val, pid).await;
+    }
+
     Ok(HttpResponse::Ok().json(ApiResponse::<()> {
         success: true,
         data: None,

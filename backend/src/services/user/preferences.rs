@@ -80,18 +80,20 @@ impl PreferencesService {
 
         for pref in user_prefs {
             match pref.preference_key.as_str() {
-                "theme" => preferences.theme = pref.preference_value,
-                "language" => preferences.language = pref.preference_value,
-                "timezone" => preferences.timezone = pref.preference_value,
+                "theme" => {
+                    preferences.theme = pref.preference_value.as_str().map(|s| s.to_string());
+                }
+                "language" => {
+                    preferences.language = pref.preference_value.as_str().map(|s| s.to_string());
+                }
+                "timezone" => {
+                    preferences.timezone = pref.preference_value.as_str().map(|s| s.to_string());
+                }
                 "notifications_enabled" => {
-                    if let Some(val) = pref.preference_value {
-                        preferences.notifications_enabled = val.parse::<bool>().ok();
-                    }
+                    preferences.notifications_enabled = pref.preference_value.as_bool();
                 }
                 "email_notifications" => {
-                    if let Some(val) = pref.preference_value {
-                        preferences.email_notifications = val.parse::<bool>().ok();
-                    }
+                    preferences.email_notifications = pref.preference_value.as_bool();
                 }
                 _ => {} // Ignore unknown preferences
             }
@@ -231,40 +233,30 @@ impl PreferencesServiceTrait for PreferencesService {
             match pref.preference_key.as_str() {
                 // Notifications
                 "notifications.email" => {
-                    if let Some(val) = pref.preference_value {
-                        settings.notifications.email = val.parse::<bool>().unwrap_or(false);
-                    }
+                    settings.notifications.email = pref.preference_value.as_bool().unwrap_or(false);
                 }
                 "notifications.push" => {
-                    if let Some(val) = pref.preference_value {
-                        settings.notifications.push = val.parse::<bool>().unwrap_or(false);
-                    }
+                    settings.notifications.push = pref.preference_value.as_bool().unwrap_or(false);
                 }
                 "notifications.reconciliation_complete" => {
-                    if let Some(val) = pref.preference_value {
-                        settings.notifications.reconciliation_complete = val.parse::<bool>().unwrap_or(true);
-                    }
+                    settings.notifications.reconciliation_complete = pref.preference_value.as_bool().unwrap_or(true);
                 }
                 // Preferences
                 "preferences.theme" => {
-                    settings.preferences.theme = pref.preference_value.unwrap_or_else(|| "light".to_string());
+                    settings.preferences.theme = pref.preference_value.as_str().map(|s| s.to_string()).unwrap_or_else(|| "light".to_string());
                 }
                 "preferences.language" => {
-                    settings.preferences.language = pref.preference_value.unwrap_or_else(|| "en".to_string());
+                    settings.preferences.language = pref.preference_value.as_str().map(|s| s.to_string()).unwrap_or_else(|| "en".to_string());
                 }
                 "preferences.timezone" => {
-                    settings.preferences.timezone = pref.preference_value.unwrap_or_else(|| "UTC".to_string());
+                    settings.preferences.timezone = pref.preference_value.as_str().map(|s| s.to_string()).unwrap_or_else(|| "UTC".to_string());
                 }
                 // Security
                 "security.two_factor_enabled" => {
-                    if let Some(val) = pref.preference_value {
-                        settings.security.two_factor_enabled = val.parse::<bool>().unwrap_or(false);
-                    }
+                    settings.security.two_factor_enabled = pref.preference_value.as_bool().unwrap_or(false);
                 }
                 "security.session_timeout" => {
-                    if let Some(val) = pref.preference_value {
-                        settings.security.session_timeout = val.parse::<i32>().unwrap_or(3600);
-                    }
+                    settings.security.session_timeout = pref.preference_value.as_i64().map(|v| v as i32).unwrap_or(3600);
                 }
                 _ => {} // Ignore unknown preferences
             }
@@ -300,11 +292,12 @@ impl PreferencesServiceTrait for PreferencesService {
             for (key, value) in updates {
                 if let Some(val) = value {
                     // Upsert preference
+                    let json_val = serde_json::Value::String(val);
                     diesel::insert_into(user_preferences::table)
                         .values((
                             user_preferences::user_id.eq(user_id),
                             user_preferences::preference_key.eq(key),
-                            user_preferences::preference_value.eq(val),
+                            user_preferences::preference_value.eq(json_val),
                             user_preferences::updated_at.eq(diesel::dsl::now),
                         ))
                         .on_conflict((user_preferences::user_id, user_preferences::preference_key))

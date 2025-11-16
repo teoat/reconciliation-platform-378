@@ -121,18 +121,21 @@ where
             // Cache successful GET responses
             if method == "GET" && response.status().is_success() {
                 let cache_key = format!("cache:{}:{}", method, path);
+                let status = response.status();
                 let (req, res) = response.into_parts();
                 match actix_web::body::to_bytes(res.into_body()).await {
                     Ok(bytes) => {
                         if let Ok(body) = serde_json::from_slice::<serde_json::Value>(&bytes) {
                             let _ = cache_service.set(&cache_key, &body, Some(Duration::from_secs(60))).await;
                         }
-                        let res = HttpResponse::Ok().body(bytes);
+                        let res = HttpResponse::build(status).body(bytes);
                         return Ok(ServiceResponse::new(req, res.map_into_boxed_body()));
                     }
                     Err(e) => {
-                        log::warn!("Failed to read response body for caching: {}", e);
-                        // Continue without caching if body read fails
+                        log::warn!("Failed to read response body for caching: {:?}", e);
+                        // Continue without caching if body read fails - reconstruct response
+                        let res = HttpResponse::build(status).finish();
+                        return Ok(ServiceResponse::new(req, res.map_into_boxed_body()));
                     }
                 }
             }

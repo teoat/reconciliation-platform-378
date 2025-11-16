@@ -1,7 +1,6 @@
 //! Health check implementations
 
 use std::time::Instant;
-use log;
 
 use crate::services::monitoring::types::{HealthChecker, HealthCheck, HealthStatus};
 use crate::services::monitoring::metrics::{SYSTEM_MEMORY_USAGE, SYSTEM_CPU_USAGE, SYSTEM_DISK_USAGE};

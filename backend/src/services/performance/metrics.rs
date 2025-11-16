@@ -10,8 +10,6 @@ use tokio::sync::RwLock;
 use serde::{Deserialize, Serialize};
 use prometheus::{Counter, Histogram, Gauge, Registry, TextEncoder, HistogramOpts};
 
-use crate::errors::AppResult;
-
 // Performance metrics
 lazy_static::lazy_static! {
     pub static ref REQUEST_COUNTER: Counter = Counter::new(

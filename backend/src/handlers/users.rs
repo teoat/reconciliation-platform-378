@@ -112,7 +112,7 @@ pub async fn search_users(
 
 /// Get user statistics endpoint
 pub async fn get_user_statistics(
-    req: actix_web::HttpRequest,
+    _req: actix_web::HttpRequest,
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
     let stats = user_service.as_ref().get_user_statistics().await?;

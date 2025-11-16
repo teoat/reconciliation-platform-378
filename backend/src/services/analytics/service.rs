@@ -8,8 +8,7 @@ use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::services::cache::MultiLevelCache;
 use crate::services::resilience::ResilienceManager;
-use crate::models::schema::{users, projects, reconciliation_jobs, audit_logs};
-use crate::models::Project;
+use crate::models::schema::{reconciliation_jobs, users, audit_logs};
 use crate::models::User;
 
 use crate::services::analytics::types::*;
@@ -167,13 +166,18 @@ impl AnalyticsService {
             .map_err(|e| AppError::Internal(format!("Database connection error: {}", e)))?
         };
         
-        // Get project info
-        let project = projects::table
-            .filter(projects::id.eq(project_id))
-            .first::<Project>(&mut conn)
-            .map_err(AppError::Database)?;
-        
-        let project_name = project.name;
+        // Get project info using raw SQL to avoid trait issues
+        #[derive(QueryableByName)]
+        struct ProjectName {
+            #[diesel(sql_type = diesel::sql_types::Text)]
+            name: String,
+        }
+
+        let project_name: String = diesel::sql_query("SELECT name FROM projects WHERE id = $1")
+            .bind::<diesel::sql_types::Uuid, _>(project_id)
+            .get_result::<ProjectName>(&mut conn)
+            .map_err(AppError::Database)?
+            .name;
         
         // Get project counts
         let (total_jobs, completed_jobs, failed_jobs, total_data_sources) =

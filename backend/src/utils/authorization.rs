@@ -37,8 +37,8 @@ pub fn check_project_permission(
             .map_err(AppError::Database)?;
         
         if let Some(u) = user {
-            // Check if user owns the project or is an admin
-            if u.role == "admin" || p.owner_id == user_id {
+            // Check if user owns the project or is an admin (role stored in status field)
+            if u.status == "admin" || p.owner_id == user_id {
                 return Ok(());
             }
         }
@@ -72,7 +72,7 @@ pub fn check_admin_permission(
         .map_err(AppError::Database)?;
     
     match user {
-        Some(u) if u.role == "admin" => Ok(()),
+        Some(u) if u.status == "admin" => Ok(()),
         _ => {
             // Record auth denied
             crate::middleware::security::AUTH_DENIED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

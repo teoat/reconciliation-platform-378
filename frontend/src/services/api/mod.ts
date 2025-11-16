@@ -301,16 +301,10 @@ export class ApiService {
 
   static async healthCheck() {
     try {
-      const response = await apiClient.healthCheck();
-      if (!response.success || response.error) {
-<<<<<<< Current (Your changes)
-        throw new Error(getErrorMessageFromApiError(response.error));
-=======
-        const errorMessage = typeof response.error === 'string' 
-          ? response.error 
-          : response.error?.message || 'Health check failed';
-        throw new Error(errorMessage);
->>>>>>> Incoming (Background Agent changes)
+        const response = await apiClient.healthCheck();
+        if (!response.success || response.error) {
+          const errorMessage = getErrorMessageFromApiError(response.error);
+          throw new Error(errorMessage);
       }
       return response.data;
     } catch (error) {

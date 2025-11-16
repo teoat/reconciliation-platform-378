@@ -1,6 +1,6 @@
 //! File validation
 
-use crate::errors::{AppError, AppResult};
+use crate::errors::AppError;
 use regex::Regex;
 
 pub struct FileValidator {

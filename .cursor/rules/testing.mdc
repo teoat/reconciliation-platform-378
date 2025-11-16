@@ -1,0 +1,196 @@
+---
+description: Testing patterns and best practices for Rust backend and TypeScript/React frontend.
+globs: **/*test*.{rs,ts,tsx}, **/__tests__/**/*, **/*.spec.{ts,tsx}
+alwaysApply: true
+---
+
+- **Test Organization:**
+  - Unit tests: Co-located with source files (`mod tests`)
+  - Integration tests: `tests/` directory (Rust) or `__tests__/` (TypeScript)
+  - E2E tests: `e2e/` directory with Playwright
+  ```rust
+  // ✅ DO: Rust unit test structure
+  #[cfg(test)]
+  mod tests {
+      use super::*;
+      
+      #[tokio::test]
+      async fn test_user_creation() {
+          // Arrange
+          let user = create_test_user();
+          
+          // Act
+          let result = create_user(user).await;
+          
+          // Assert
+          assert!(result.is_ok());
+      }
+  }
+  ```
+
+- **Rust Testing Patterns:**
+  - Use `#[tokio::test]` for async tests
+  - Use test fixtures for common setup
+  - Mock external dependencies
+  - Use `assert!`, `assert_eq!`, `assert_matches!` appropriately
+  ```rust
+  // ✅ DO: Async test with setup
+  #[tokio::test]
+  async fn test_api_endpoint() {
+      let app = create_test_app().await;
+      let response = app.get("/api/users").await;
+      assert_eq!(response.status(), 200);
+  }
+  ```
+
+- **TypeScript/React Testing:**
+  - Use React Testing Library for component tests
+  - Use Vitest for unit tests
+  - Mock API calls with MSW or similar
+  - Test user interactions, not implementation details
+  ```typescript
+  // ✅ DO: Component testing
+  import { render, screen, fireEvent } from '@testing-library/react';
+  
+  describe('UserProfile', () => {
+    it('renders user information', () => {
+      render(<UserProfile userId={1} />);
+      expect(screen.getByText('John Doe')).toBeInTheDocument();
+    });
+    
+    it('handles user interactions', async () => {
+      render(<UserProfile userId={1} />);
+      const button = screen.getByRole('button', { name: /save/i });
+      fireEvent.click(button);
+      await waitFor(() => {
+        expect(screen.getByText('Saved!')).toBeInTheDocument();
+      });
+    });
+  });
+  ```
+
+- **Test Data Management:**
+  - Use factories or builders for test data
+  - Create reusable test fixtures
+  - Use faker libraries for realistic data
+  ```rust
+  // ✅ DO: Test data factory
+  fn create_test_user() -> User {
+      User {
+          id: Uuid::new_v4(),
+          email: "test@example.com".to_string(),
+          name: "Test User".to_string(),
+          created_at: Utc::now(),
+      }
+  }
+  ```
+
+- **Mocking and Stubs:**
+  - Mock external services (databases, APIs)
+  - Use dependency injection for testability
+  - Create test doubles for complex dependencies
+  ```typescript
+  // ✅ DO: Mock API service
+  vi.mock('@/services/api', () => ({
+    AuthApiService: {
+      authenticate: vi.fn().mockResolvedValue({ token: 'test-token' }),
+    },
+  }));
+  ```
+
+- **Integration Testing:**
+  - Test complete workflows end-to-end
+  - Use test databases (separate from production)
+  - Clean up test data after tests
+  ```rust
+  // ✅ DO: Integration test with cleanup
+  #[tokio::test]
+  async fn test_user_workflow() {
+      let db = setup_test_db().await;
+      
+      // Test workflow
+      let user = create_user(&db, test_data()).await?;
+      let updated = update_user(&db, user.id, changes()).await?;
+      
+      // Cleanup
+      cleanup_test_data(&db).await?;
+  }
+  ```
+
+- **E2E Testing:**
+  - Use Playwright for browser automation
+  - Test critical user journeys
+  - Use page object pattern
+  ```typescript
+  // ✅ DO: E2E test with page objects
+  test('user can login and view dashboard', async ({ page }) => {
+    const loginPage = new LoginPage(page);
+    await loginPage.goto();
+    await loginPage.login('user@example.com', 'password');
+    
+    const dashboard = new DashboardPage(page);
+    await expect(dashboard.title).toBeVisible();
+  });
+  ```
+
+- **Test Coverage:**
+  - Aim for >80% coverage on critical paths
+  - Focus on business logic, not trivial code
+  - Use coverage tools: `cargo tarpaulin` (Rust), `vitest --coverage` (TypeScript)
+  ```bash
+  # ✅ DO: Generate coverage reports
+  cargo tarpaulin --out Html  # Rust
+  npm run test:coverage       # TypeScript
+  ```
+
+- **Performance Testing:**
+  - Test API response times
+  - Load test critical endpoints
+  - Benchmark database queries
+  ```rust
+  // ✅ DO: Performance test
+  #[tokio::test]
+  async fn test_query_performance() {
+      let start = Instant::now();
+      let results = db.query_large_dataset().await?;
+      let duration = start.elapsed();
+      
+      assert!(duration.as_millis() < 1000, "Query too slow");
+  }
+  ```
+
+- **Security Testing:**
+  - Test input validation
+  - Test authentication/authorization
+  - Test for SQL injection, XSS vulnerabilities
+  ```rust
+  // ✅ DO: Security test
+  #[tokio::test]
+  async fn test_sql_injection_prevention() {
+      let malicious_input = "'; DROP TABLE users; --";
+      let result = search_users(malicious_input).await;
+      
+      // Should sanitize and not execute malicious SQL
+      assert!(result.is_ok());
+  }
+  ```
+
+- **Test Naming:**
+  - Use descriptive test names
+  - Follow pattern: `test_<what>_<when>_<expected>`
+  - Group related tests in describe blocks
+  ```rust
+  // ✅ DO: Descriptive test names
+  #[test]
+  fn test_user_creation_fails_when_email_invalid() {
+      // ...
+  }
+  ```
+
+- **Test Maintenance:**
+  - Keep tests up-to-date with code changes
+  - Remove obsolete tests
+  - Refactor tests when patterns change
+  - Document complex test scenarios
+
+Follow [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) for general rule formatting guidelines.

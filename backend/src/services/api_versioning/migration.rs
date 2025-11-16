@@ -1,6 +1,6 @@
 //! API version migration utilities
 
-use crate::errors::{AppError, AppResult};
+use crate::errors::AppResult;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;

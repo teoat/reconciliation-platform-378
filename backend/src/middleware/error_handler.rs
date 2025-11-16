@@ -102,7 +102,7 @@ where
                     let json_body = serde_json::to_string(&error_response).unwrap_or_else(|_| String::from_utf8_lossy(&body).to_string());
                     let new_res = actix_web::HttpResponse::build(status)
                         .content_type("application/json")
-                        .header(CORRELATION_ID_HEADER, &correlation_id)
+                        .append_header((CORRELATION_ID_HEADER, correlation_id.as_str()))
                         .body(json_body);
                     
                     return Ok(ServiceResponse::new(req, new_res));
@@ -110,7 +110,7 @@ where
                 
                 // If not ErrorResponse JSON, rebuild response with original body
                 let new_res = actix_web::HttpResponse::build(status)
-                    .header(CORRELATION_ID_HEADER, &correlation_id)
+                    .append_header((CORRELATION_ID_HEADER, correlation_id.as_str()))
                     .body(body);
                 
                 return Ok(ServiceResponse::new(req, new_res));

@@ -7,7 +7,8 @@ use diesel::prelude::*;
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
 use chrono::DateTime;
-use crate::models::JsonValue;
+// Using serde_json::Value directly
+
 
 // Query result structs for Diesel queries
 #[derive(Queryable)]
@@ -17,7 +18,7 @@ pub struct ProjectQueryResult {
     pub project_description: Option<String>,
     pub owner_id: Uuid,
     pub project_status: String,
-    pub settings: Option<JsonValue>,
+    pub settings: serde_json::Value,
     pub created_at: DateTime<chrono::Utc>,
     pub updated_at: DateTime<chrono::Utc>,
     pub owner_email: String,
@@ -30,7 +31,7 @@ pub struct ProjectWithStatsResult {
     pub description: Option<String>,
     pub owner_id: Uuid,
     pub status: String,
-    pub settings: Option<JsonValue>,
+    pub settings: Option<serde_json::Value>,
     pub created_at: DateTime<chrono::Utc>,
     pub updated_at: DateTime<chrono::Utc>,
     pub owner_email: String,
@@ -180,7 +181,7 @@ pub struct CreateProjectRequest {
     pub description: Option<String>,
     pub owner_id: Uuid,
     pub status: Option<String>,
-    pub settings: Option<JsonValue>,
+    pub settings: Option<serde_json::Value>,
 }
 
 /// Project update request
@@ -189,7 +190,7 @@ pub struct UpdateProjectRequest {
     pub name: Option<String>,
     pub description: Option<String>,
     pub status: Option<String>,
-    pub settings: Option<JsonValue>,
+    pub settings: Option<serde_json::Value>,
 }
 
 /// Project list response
@@ -210,7 +211,7 @@ pub struct ProjectInfo {
     pub owner_id: Uuid,
     pub owner_email: String,
     pub status: String,
-    pub settings: Option<JsonValue>,
+    pub settings: Option<serde_json::Value>,
     pub created_at: DateTime<chrono::Utc>,
     pub updated_at: DateTime<chrono::Utc>,
     pub job_count: i64,

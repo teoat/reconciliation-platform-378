@@ -11,7 +11,6 @@
 
 use crate::database::Database;
 use crate::errors::{AppResult, AppError};
-use serde::Serialize;
 use uuid::Uuid;
 use crate::services::auth::ValidationUtils;
 use diesel::prelude::*;
@@ -170,7 +169,7 @@ impl ProjectService {
                     owner_id: result.owner_id,
                     owner_email: result.owner_email,
                     status: result.project_status,
-                    settings: result.settings,
+                    settings: Some(result.settings),
                     created_at: result.created_at,
                     updated_at: result.updated_at,
                     job_count,
@@ -270,7 +269,7 @@ impl ProjectService {
                 owner_id: result.owner_id,
                 owner_email: result.owner_email,
                 status: result.project_status,
-                settings: result.settings,
+                settings: Some(result.settings),
                 created_at: result.created_at,
                 updated_at: result.updated_at,
                 job_count,

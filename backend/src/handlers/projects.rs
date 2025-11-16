@@ -9,10 +9,11 @@ use crate::errors::AppError;
 use crate::database::Database;
 use crate::config::Config;
 use crate::services::cache::MultiLevelCache;
-use crate::models::JsonValue;
+
 use crate::handlers::types::{SearchQueryParams, CreateProjectRequest, UpdateProjectRequest, CreateDataSourceRequest, ApiResponse, FileUploadRequest};
-use crate::errors::ErrorResponse;
-use crate::models::{Project, UploadedFile};
+// Using serde_json::Value directly
+
+
 use crate::handlers::helpers::extract_user_id;
 use crate::utils::check_project_permission;
 
@@ -104,7 +105,7 @@ pub async fn create_project(
         // Enforce server-side owner assignment: caller unless admin provides explicit owner_id
         owner_id: if is_admin { req.owner_id } else { caller_user_id },
         status: req.status.clone(),
-        settings: req.settings.as_ref().map(|s| JsonValue(s.clone())),
+        settings: req.settings.clone(),
     };
     let project = project_service.create_project(request).await?;
     
@@ -178,7 +179,7 @@ pub async fn update_project(
         name: req.name.clone(),
         description: req.description.clone(),
         status: req.status.clone(),
-        settings: req.settings.as_ref().map(|s| JsonValue(s.clone())),
+        settings: req.settings.clone(),
     };
     let project = project_service.update_project(project_id, request).await?;
     
@@ -282,7 +283,7 @@ pub async fn create_data_source(
         req.file_path.clone(),
         req.file_size,
         req.file_hash.clone(),
-        req.schema.as_ref().map(|s| JsonValue(s.clone())),
+            req.schema.clone(),
     ).await?;
     
     // ✅ CACHE INVALIDATION: Clear project and data sources cache after creation

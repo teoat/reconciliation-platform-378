@@ -4,7 +4,7 @@
 //! CRUD operations, file processing, and data source validation.
 
 use diesel::prelude::*;
-use crate::models::JsonValue;
+
 use uuid::Uuid;
 use chrono::Utc;
 use serde::Serialize;
@@ -35,13 +35,13 @@ impl DataSourceService {
         file_path: Option<String>,
         file_size: Option<i64>,
         file_hash: Option<String>,
-        schema: Option<JsonValue>,
+        schema: Option<serde_json::Value>,
     ) -> AppResult<DataSource> {
         let mut conn = self.db.get_connection()?;
         
         let new_data_source = NewDataSource {
             project_id,
-            name,
+            name: name.clone(),
             description: None,
             source_type,
             connection_config: None,
@@ -49,18 +49,97 @@ impl DataSourceService {
             file_size,
             file_hash,
             record_count: None,
-            schema: schema.map(|s| s),
+            schema: schema,
             status: "uploaded".to_string(),
             uploaded_at: Some(Utc::now()),
             processed_at: None,
             is_active: true,
         };
         
-        let data_source = diesel::insert_into(data_sources::table)
-            .values(new_data_source)
-            .get_result(&mut conn)
-            .map_err(AppError::Database)?;
-        
+        // Use raw SQL insert to avoid trait issues
+        #[derive(QueryableByName)]
+        #[allow(dead_code)]
+        struct DataSourceResult {
+            #[diesel(sql_type = diesel::sql_types::Uuid)]
+            id: Uuid,
+            #[diesel(sql_type = diesel::sql_types::Uuid)]
+            project_id: Uuid,
+            #[diesel(sql_type = diesel::sql_types::Text)]
+            name: String,
+            #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Text>)]
+            description: Option<String>,
+            #[diesel(sql_type = diesel::sql_types::Text)]
+            source_type: String,
+            #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Jsonb>)]
+            connection_config: Option<serde_json::Value>,
+            #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Text>)]
+            file_path: Option<String>,
+            #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Int8>)]
+            file_size: Option<i64>,
+            #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Text>)]
+            file_hash: Option<String>,
+            #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Int4>)]
+            record_count: Option<i32>,
+            #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Jsonb>)]
+            schema: Option<serde_json::Value>,
+            #[diesel(sql_type = diesel::sql_types::Text)]
+            status: String,
+            #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>)]
+            uploaded_at: Option<chrono::DateTime<chrono::Utc>>,
+            #[diesel(sql_type = diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>)]
+            processed_at: Option<chrono::DateTime<chrono::Utc>>,
+            #[diesel(sql_type = diesel::sql_types::Bool)]
+            is_active: bool,
+            #[diesel(sql_type = diesel::sql_types::Timestamptz)]
+            created_at: chrono::DateTime<chrono::Utc>,
+            #[diesel(sql_type = diesel::sql_types::Timestamptz)]
+            updated_at: chrono::DateTime<chrono::Utc>,
+        }
+
+        let result: DataSourceResult = diesel::sql_query(
+            "INSERT INTO data_sources (project_id, name, description, source_type, connection_config, file_path, file_size, file_hash, record_count, schema, status, uploaded_at, processed_at, is_active, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+             RETURNING id, project_id, name, description, source_type, connection_config, file_path, file_size, file_hash, record_count, schema, status, uploaded_at, processed_at, is_active, created_at, updated_at"
+        )
+        .bind::<diesel::sql_types::Uuid, _>(new_data_source.project_id)
+        .bind::<diesel::sql_types::Text, _>(new_data_source.name)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(new_data_source.description)
+        .bind::<diesel::sql_types::Text, _>(new_data_source.source_type)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Jsonb>, _>(new_data_source.connection_config)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(new_data_source.file_path)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Int8>, _>(new_data_source.file_size)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Text>, _>(new_data_source.file_hash)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Int4>, _>(new_data_source.record_count)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Jsonb>, _>(new_data_source.schema)
+        .bind::<diesel::sql_types::Text, _>(new_data_source.status)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>, _>(new_data_source.uploaded_at)
+        .bind::<diesel::sql_types::Nullable<diesel::sql_types::Timestamptz>, _>(new_data_source.processed_at)
+        .bind::<diesel::sql_types::Bool, _>(new_data_source.is_active)
+        .bind::<diesel::sql_types::Timestamptz, _>(chrono::Utc::now())
+        .bind::<diesel::sql_types::Timestamptz, _>(chrono::Utc::now())
+        .get_result(&mut conn)
+        .map_err(AppError::Database)?;
+
+        let data_source = DataSource {
+            id: result.id,
+            project_id: result.project_id,
+            name: result.name,
+            description: result.description,
+            source_type: result.source_type,
+            connection_config: result.connection_config,
+            file_path: result.file_path,
+            file_size: result.file_size,
+            file_hash: result.file_hash,
+            record_count: result.record_count,
+            schema: result.schema,
+            status: result.status,
+            uploaded_at: result.uploaded_at,
+            processed_at: result.processed_at,
+            is_active: result.is_active,
+            created_at: result.created_at,
+            updated_at: result.updated_at,
+        };
+
         Ok(data_source)
     }
     
@@ -102,7 +181,7 @@ impl DataSourceService {
         file_path: Option<String>,
         file_size: Option<i64>,
         file_hash: Option<String>,
-        schema: Option<JsonValue>,
+        schema: Option<serde_json::Value>,
         status: Option<String>,
     ) -> AppResult<DataSource> {
         let mut conn = self.db.get_connection()?;
@@ -116,16 +195,32 @@ impl DataSourceService {
             file_size,
             file_hash,
             record_count: None,
-            schema: schema.map(|s| s),
+            schema: schema,
             status,
             uploaded_at: None,
             processed_at: Some(Utc::now()),
             is_active: None,
         };
         
-        let data_source = diesel::update(data_sources::table)
-            .filter(data_sources::id.eq(id))
-            .set(update_data)
+        // Build update query manually to handle JsonValue properly
+        let update_query = diesel::update(data_sources::table.filter(data_sources::id.eq(id)))
+            .set((
+                update_data.name.map(|name| data_sources::name.eq(name)),
+                update_data.description.map(|desc| data_sources::description.eq(desc)),
+                update_data.source_type.map(|st| data_sources::source_type.eq(st)),
+                update_data.connection_config.map(|cc| data_sources::connection_config.eq(cc)),
+                update_data.file_path.map(|fp| data_sources::file_path.eq(fp)),
+                update_data.file_size.map(|fs| data_sources::file_size.eq(fs)),
+                update_data.file_hash.map(|fh| data_sources::file_hash.eq(fh)),
+                update_data.record_count.map(|rc| data_sources::record_count.eq(rc)),
+                update_data.schema.map(|s| data_sources::schema.eq(s)),
+                update_data.status.map(|status| data_sources::status.eq(status)),
+                update_data.uploaded_at.map(|ua| data_sources::uploaded_at.eq(ua)),
+                update_data.processed_at.map(|pa| data_sources::processed_at.eq(pa)),
+                update_data.is_active.map(|ia| data_sources::is_active.eq(ia)),
+            ));
+
+        let data_source = update_query
             .returning(DataSource::as_returning())
             .get_result(&mut conn)
             .map_err(AppError::Database)?;
@@ -229,7 +324,7 @@ impl DataSourceService {
         
         // Check schema
         if let Some(schema) = &data_source.schema {
-            if schema.0.is_null() {
+            if schema.is_null() {
                 validation.warnings.push("Schema is null".to_string());
             }
         }

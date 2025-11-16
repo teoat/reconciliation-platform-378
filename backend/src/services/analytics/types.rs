@@ -3,7 +3,8 @@
 use serde::{Serialize, Deserialize};
 use uuid::Uuid;
 use chrono::{DateTime, Utc};
-use crate::models::JsonValue;
+// Using serde_json::Value directly
+
 
 /// Dashboard data
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -29,7 +30,7 @@ pub struct ActivityItemQueryResult {
     pub resource_type: String,
     pub user_email: Option<String>,
     pub created_at: DateTime<Utc>,
-    pub old_values: Option<JsonValue>,
+    pub old_values: Option<serde_json::Value>,
 }
 
 /// Activity item
@@ -40,7 +41,7 @@ pub struct ActivityItem {
     pub resource_type: String,
     pub user_email: Option<String>,
     pub timestamp: DateTime<Utc>,
-    pub details: Option<JsonValue>,
+    pub details: Option<serde_json::Value>,
 }
 
 /// Performance metrics

@@ -2,7 +2,7 @@
 //!
 //! Handles user statistics and analytics operations.
 
-use diesel::prelude::*;
+
 use diesel::{QueryDsl, ExpressionMethods, RunQueryDsl};
 use std::sync::Arc;
 

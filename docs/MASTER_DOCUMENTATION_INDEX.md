@@ -24,6 +24,11 @@
 - **docs/DOCUMENTATION_DIAGNOSTICS.md** - Documentation analysis & consolidation ⭐ **NEW**
 - **MASTER_IMPROVEMENT_ORCHESTRATION.md** - Improvement orchestration plan
 
+### Roadmaps & Planning
+- **docs/AUDIT_AND_DEPLOYMENT_ROADMAP.md** - ⭐ **CONSOLIDATED** Comprehensive audit framework + Docker/K8s deployment roadmap (unified, minimal)
+- **docs/ROADMAP_V5.md** - Comprehensive v5.0 roadmap (AI-powered, enterprise features, analytics, multi-tenancy)
+- **docs/FINAL_ROADMAP_AND_MAINTENANCE.md** - Maintenance roadmap
+
 ### Agent Plans
 - **AGENT_1_STABILITY.md** - Stability & error handling plan
 - **AGENT_2_SECURITY.md** - Security improvement plan
@@ -68,6 +73,10 @@
 - **TEST_COVERAGE_IMPROVEMENT_PLAN.md** - Coverage improvement plan
 - **TYPE_SAFETY_IMPROVEMENTS.md** - Type safety improvements
 
+### AI Analysis Prompts
+- **docs/prompts/meta-agent-diagnostic-prompt.md** - Meta-agent detection and analysis framework
+- **Note:** Ultimate audit prompt and deployment roadmap consolidated into `docs/AUDIT_AND_DEPLOYMENT_ROADMAP.md`
+
 ---
 
 ## 📁 Documentation Structure
@@ -108,6 +117,10 @@
 ### Diagnostic Results
 → `docs/DIAGNOSTIC_RESULTS.md`
 
+### Audit & Deployment
+→ `docs/AUDIT_AND_DEPLOYMENT_ROADMAP.md` (consolidated audit + deployment)
+→ `docs/prompts/meta-agent-diagnostic-prompt.md` (meta-agent detection)
+
 ---
 
 ## 📝 Consolidation Notes
@@ -125,6 +138,16 @@
 - 23% reduction in total documentation files (164 → 126)
 
 **Recent Updates (January 2025):**
+- ✅ **ULTIMATE COMPREHENSIVE** Audit & Deployment roadmap → `docs/AUDIT_AND_DEPLOYMENT_ROADMAP.md` (v4.0 with self-learning, SSOT, tree shaking, 20-vector assessment) ⭐ **NEW**
+- ✅ Combined with Ultimate Comprehensive Audit Prompt v3.0 (self-learning capabilities)
+- ✅ Added Code Quality Best Practices (SSOT, tree shaking, complexity management)
+- ✅ Added 20-Vector Health Assessment (6 new vectors: AI/ML, Sustainability, Event-Driven, Edge/IoT, Zero Trust, Business Value)
+- ✅ Added Tiered Error Handling & Intelligent Fallback System
+- ✅ Added comprehensive error detection scripts for all services (backend, frontend, database, redis)
+- ✅ Added automated error correction functions (missing modules, config errors)
+- ✅ Integrated error detection into Docker and Kubernetes deployment phases
+- ✅ Original files archived to `docs/archive/consolidated/`
+- ✅ Created v5.0 roadmap (AI-powered, enterprise features, analytics, multi-tenancy, global scale)
 - ✅ Created comprehensive documentation diagnostics report
 - ✅ Completed critical frontend TODOs (onboarding API integration)
 - ✅ Completed all P1 TODOs (EmptyStateGuidance + Onboarding Analytics)

@@ -3,8 +3,7 @@
 //! This module handles system-level monitoring including CPU usage, memory usage,
 //! and system resource tracking.
 
-use crate::errors::AppResult;
-use std::time::Duration;
+
 
 /// System monitoring service
 pub struct SystemMonitor;

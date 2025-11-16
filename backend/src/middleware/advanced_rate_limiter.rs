@@ -100,55 +100,33 @@ impl AdvancedRateLimiter {
             let mut conn = client.get_async_connection().await
                 .map_err(|e| AppError::Internal(format!("Redis connection failed: {}", e)))?;
 
-            // Use Redis sliding window
-            let window = self.config.window_size.as_secs();
+            let window = self.config.window_size.as_secs() as usize;
             let now = SystemTime::now()
                 .duration_since(SystemTime::UNIX_EPOCH)
                 .unwrap_or_else(|_| {
                     log::error!("System time is before Unix epoch");
                     std::time::Duration::ZERO
                 })
-                .as_secs();
-            
-            let _window_start = now - window;
+                .as_micros();
+
             let redis_key = format!("ratelimit:{}", key);
 
-            // Use Redis MULTI/EXEC for atomic operations
-            let _cmd = redis::cmd("MULTI");
-            let _ = _cmd.query_async::<_, ()>(&mut conn).await;
-
-            // Get current count
-            let _count: i32 = redis::cmd("GET")
-                .arg(&redis_key)
+            let (count,): (i32,) = redis::pipe()
+                .atomic()
+                .zrembyscore(&redis_key, 0, (now - (window as u128 * 1_000_000)) as i64)
+                .zadd(&redis_key, now as i64, now as i64)
+                .expire(&redis_key, window)
+                .zcard(&redis_key)
                 .query_async(&mut conn)
                 .await
-                .unwrap_or(0);
+                .map_err(|e| AppError::Internal(format!("Redis pipeline failed: {}", e)))?;
 
-            // Increment count
-            redis::cmd("INCR")
-                .arg(&redis_key)
-                .query_async::<_, ()>(&mut conn)
-                .await
-                .map_err(|e| AppError::Internal(format!("Redis INCR failed: {}", e)))?;
+            let remaining = self.config.requests_per_minute.saturating_sub(count as u32);
+            let allowed = count as u32 <= self.config.requests_per_minute;
 
-            // Set expiry if first request
-            redis::cmd("EXPIRE")
-                .arg(&redis_key)
-                .arg(window as usize)
-                .query_async::<_, ()>(&mut conn)
-                .await
-                .map_err(|e| AppError::Internal(format!("Redis EXPIRE failed: {}", e)))?;
-
-            // Execute
-            redis::cmd("EXEC")
-                .query_async::<_, ()>(&mut conn)
-                .await
-                .map_err(|e| AppError::Internal(format!("Redis EXEC failed: {}", e)))?;
-
-            // For now, return allowed (simplified implementation)
             Ok(RateLimitResult {
-                allowed: true,
-                remaining: self.config.requests_per_minute - 1,
+                allowed,
+                remaining,
                 reset_at: Instant::now() + self.config.window_size,
             })
         } else {

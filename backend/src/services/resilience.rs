@@ -5,8 +5,7 @@
 
 use std::sync::Arc;
 use std::time::Duration;
-use futures::Future;
-use crate::errors::{AppError, AppResult};
+use crate::errors::AppResult;
 use crate::middleware::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
 use serde::{Deserialize, Serialize};
 
@@ -87,24 +86,24 @@ impl ResilienceManager {
         Self {
             database_circuit_breaker: Arc::new(CircuitBreaker::new(
                 CircuitBreakerConfig {
-                    failure_threshold: config.database.failure_threshold,
-                    success_threshold: config.database.success_threshold,
+                    failure_threshold: config.database.failure_threshold as usize,
+                    success_threshold: config.database.success_threshold as usize,
                     timeout: Duration::from_secs(config.database.timeout_seconds),
                     enable_fallback: config.database.enable_fallback,
                 }
             )),
             cache_circuit_breaker: Arc::new(CircuitBreaker::new(
                 CircuitBreakerConfig {
-                    failure_threshold: config.cache.failure_threshold,
-                    success_threshold: config.cache.success_threshold,
+                    failure_threshold: config.cache.failure_threshold as usize,
+                    success_threshold: config.cache.success_threshold as usize,
                     timeout: Duration::from_secs(config.cache.timeout_seconds),
                     enable_fallback: config.cache.enable_fallback,
                 }
             )),
             api_circuit_breaker: Arc::new(CircuitBreaker::new(
                 CircuitBreakerConfig {
-                    failure_threshold: config.api.failure_threshold,
-                    success_threshold: config.api.success_threshold,
+                    failure_threshold: config.api.failure_threshold as usize,
+                    success_threshold: config.api.success_threshold as usize,
                     timeout: Duration::from_secs(config.api.timeout_seconds),
                     enable_fallback: config.api.enable_fallback,
                 }
@@ -337,7 +336,6 @@ impl Default for ResilienceManager {
 /// Graceful degradation utilities
 pub mod graceful_degradation {
     use super::*;
-    use serde_json::Value;
 
     /// Execute operation with graceful degradation
     /// Returns fallback value if operation fails

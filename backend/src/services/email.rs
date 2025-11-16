@@ -162,7 +162,7 @@ Reconciliation Platform Team
     }
     
     /// Internal email sending implementation
-    async fn send_email_internal(&self, to: &str, subject: &str, body: &str) -> AppResult<()> {
+    async fn send_email_internal(&self, to: &str, subject: &str, _body: &str) -> AppResult<()> {
         // In production, integrate with lettre or similar
         // For now, log the email would be sent
         log::info!(

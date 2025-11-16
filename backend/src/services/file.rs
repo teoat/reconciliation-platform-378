@@ -263,9 +263,10 @@ impl FileService {
             project_id,
             filename: filename.clone(),
             original_filename: filename.clone(), // For now, using same as filename
-            file_size: total_size,
-            content_type: "application/octet-stream".to_string(), // Default content type
             file_path: format!("uploads/{}/{}", project_id, filename),
+            file_size: total_size,
+            content_type: Some("application/octet-stream".to_string()), // Default content type
+            file_hash: None, // Will be calculated later if needed
             status: "uploaded".to_string(),
             uploaded_by: _user_id,
         };
@@ -276,18 +277,20 @@ impl FileService {
             
             if let Some(ref resilience) = self.resilience {
                 // Use async database connection with circuit breaker
-                let conn = resilience.execute_database(async {
+                let mut conn = resilience.execute_database(async {
                     self.db.get_connection_async().await
                 }).await?;
                 
                 diesel::insert_into(uploaded_files)
                     .values(&new_file)
+                    .returning(UploadedFile::as_returning())
                     .get_result(&mut *conn)
                     .map_err(|e| AppError::Internal(format!("Failed to save file record: {}", e)))?
             } else {
                 // Fallback to direct connection
                 diesel::insert_into(uploaded_files)
                     .values(&new_file)
+                    .returning(UploadedFile::as_returning())
                     .get_result(&mut self.db.get_connection()?)
                     .map_err(|e| AppError::Internal(format!("Failed to save file record: {}", e)))?
             }
@@ -314,13 +317,13 @@ impl FileService {
         let file_info: UploadedFile = {
             if let Some(ref resilience) = self.resilience {
                 // Use async database connection with circuit breaker
-                let conn = resilience.execute_database(async {
+                let mut conn = resilience.execute_database(async {
                     self.db.get_connection_async().await
                 }).await?;
-                
+
                 schema::uploaded_files::table
                     .find(file_id)
-                    .first(&mut *conn)
+                    .first(&mut conn)
                     .map_err(AppError::Database)?
             } else {
                 // Fallback to direct connection
@@ -342,12 +345,12 @@ impl FileService {
         // Delete the database record with resilience if available
         if let Some(ref resilience) = self.resilience {
             // Use async database connection with circuit breaker
-            let conn = resilience.execute_database(async {
+            let mut conn = resilience.execute_database(async {
                 self.db.get_connection_async().await
             }).await?;
-            
+
             diesel::delete(schema::uploaded_files::table.find(file_id))
-                .execute(&mut *conn)
+                .execute(&mut conn)
                 .map_err(AppError::Database)?;
         } else {
             // Fallback to direct connection

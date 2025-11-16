@@ -258,9 +258,10 @@ impl UserQueryService {
 
             user_infos.push(UserInfo {
                 id,
-                email,
-                first_name,
-                last_name,
+                email: email.clone(),
+                name: Some(format!("{} {}", first_name.clone().unwrap_or_default(), last_name.clone().unwrap_or_default())),
+                first_name: first_name.unwrap_or_default(),
+                last_name: last_name.unwrap_or_default(),
                 role: status,
                 is_active: email_verified,
                 created_at,

@@ -32,7 +32,7 @@ impl RateLimitMiddleware {
 
 impl<S, B> Transform<S, ServiceRequest> for RateLimitMiddleware
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + Clone + 'static,
     S::Future: 'static,
     B: 'static,
 {
@@ -83,7 +83,7 @@ pub struct RateLimitService<S> {
 
 impl<S, B> Service<ServiceRequest> for RateLimitService<S>
 where
-    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error>,
+    S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + Clone + 'static,
     S::Future: 'static,
     B: 'static,
 {
@@ -101,6 +101,8 @@ where
         let max_requests = self.max_requests;
         let window_seconds = self.window_seconds;
         let redis_client = self.redis_client.clone();
+        let store = self.store.clone();
+        let service = self.service.clone();
 
         Box::pin(async move {
             // Check if Redis is available for distributed rate limiting
@@ -122,7 +124,7 @@ where
                     Err(e) => {
                         log::warn!("Redis rate limiting failed, falling back to in-memory: {}", e);
                         // Fall back to in-memory rate limiting
-                        if !Self::check_memory_rate_limit(&self.store, &client_id, max_requests, window_seconds) {
+                        if !Self::check_memory_rate_limit(&store, &client_id, max_requests, window_seconds) {
                             RATE_LIMIT_BLOCKS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                             let response = actix_web::HttpResponse::TooManyRequests()
                                 .json(serde_json::json!({
@@ -135,7 +137,7 @@ where
                 }
             } else {
                 // Redis not available, use in-memory rate limiting
-                if !Self::check_memory_rate_limit(&self.store, &client_id, max_requests, window_seconds) {
+                if !Self::check_memory_rate_limit(&store, &client_id, max_requests, window_seconds) {
                     RATE_LIMIT_BLOCKS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                     let response = actix_web::HttpResponse::TooManyRequests()
                         .json(serde_json::json!({
@@ -146,7 +148,7 @@ where
                 }
             }
 
-            let fut = self.service.call(req);
+            let fut = service.call(req);
             fut.await.map(|res| res.map_into_left_body())
         })
     }

@@ -1,23 +1,8 @@
 {
 	"mcpServers": {
-		"task-master-ai": {
-			"command": "npx",
-			"args": ["-y", "task-master-ai"],
-			"env": {
-				"ANTHROPIC_API_KEY": "YOUR_ANTHROPIC_API_KEY_HERE",
-				"PERPLEXITY_API_KEY": "YOUR_PERPLEXITY_API_KEY_HERE",
-				"OPENAI_API_KEY": "YOUR_OPENAI_KEY_HERE",
-				"GOOGLE_API_KEY": "YOUR_GOOGLE_KEY_HERE",
-				"XAI_API_KEY": "YOUR_XAI_KEY_HERE",
-				"OPENROUTER_API_KEY": "YOUR_OPENROUTER_KEY_HERE",
-				"MISTRAL_API_KEY": "YOUR_MISTRAL_KEY_HERE",
-				"AZURE_OPENAI_API_KEY": "YOUR_AZURE_KEY_HERE",
-				"OLLAMA_API_KEY": "YOUR_OLLAMA_API_KEY_HERE"
-			}
-		},
 		"filesystem": {
 			"command": "npx",
-			"args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/Arief/Desktop/378"],
+			"args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/Arief/Documents/GitHub/reconciliation-platform-378"],
 			"env": {}
 		},
 		"postgres": {
@@ -29,29 +14,8 @@
 		},
 		"git": {
 			"command": "npx",
-			"args": ["-y", "@modelcontextprotocol/server-git", "--repository", "/Users/Arief/Desktop/378"],
+			"args": ["-y", "@modelcontextprotocol/server-git", "--repository", "/Users/Arief/Documents/GitHub/reconciliation-platform-378"],
 			"env": {}
-		},
-		"docker": {
-			"command": "npx",
-			"args": ["-y", "@modelcontextprotocol/server-docker"],
-			"env": {
-				"DOCKER_HOST": "unix:///var/run/docker.sock"
-			}
-		},
-		"github": {
-			"command": "npx",
-			"args": ["-y", "@modelcontextprotocol/server-github"],
-			"env": {
-				"GITHUB_PERSONAL_ACCESS_TOKEN": "YOUR_GITHUB_TOKEN_HERE"
-			}
-		},
-		"brave-search": {
-			"command": "npx",
-			"args": ["-y", "@modelcontextprotocol/server-brave-search"],
-			"env": {
-				"BRAVE_API_KEY": "YOUR_BRAVE_API_KEY_HERE"
-			}
 		},
 		"prometheus": {
 			"command": "npx",
@@ -59,6 +23,23 @@
 			"env": {
 				"PROMETHEUS_URL": "http://localhost:9090"
 			}
+		},
+		"reconciliation-platform": {
+			"command": "node",
+			"args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/index.js"],
+			"env": {
+				"NODE_ENV": "development"
+			}
+		},
+		"playwright": {
+			"command": "npx",
+			"args": ["-y", "@modelcontextprotocol/server-playwright"],
+			"env": {}
+		},
+		"memory": {
+			"command": "npx",
+			"args": ["-y", "@modelcontextprotocol/server-memory"],
+			"env": {}
 		}
 	}
 }

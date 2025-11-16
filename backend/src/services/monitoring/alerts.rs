@@ -4,10 +4,10 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 
 use crate::errors::{AppError, AppResult};
-use crate::services::monitoring::types::{AlertDefinition, AlertInstance, AlertSeverity, AlertStatus, NotificationChannel};
+use crate::services::monitoring::types::{AlertDefinition, AlertInstance, AlertSeverity, AlertStatus};
 
 /// Alert manager
 pub struct AlertManager {
@@ -54,6 +54,7 @@ impl AlertManager {
         let definition = self.get_alert_definition(alert_id).await
             .ok_or_else(|| AppError::ValidationError("Alert definition not found".to_string()))?;
 
+        let message_clone = message.clone();
         let alert_instance = AlertInstance {
             id: Uuid::new_v4(),
             alert_id: alert_id.to_string(),
@@ -68,7 +69,7 @@ impl AlertManager {
         self.active_alerts.write().await.insert(alert_id, alert_instance);
 
         // Send notifications
-        self.send_notifications(&definition, &message).await?;
+        self.send_notifications(&definition, &message_clone).await?;
 
         Ok(alert_id)
     }

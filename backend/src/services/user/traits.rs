@@ -101,6 +101,7 @@ pub trait PreferencesServiceTrait: Send + Sync {
 pub struct UserInfo {
     pub id: Uuid,
     pub email: String,
+    pub name: Option<String>,
     pub first_name: String,
     pub last_name: String,
     pub role: String,

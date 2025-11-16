@@ -4,7 +4,7 @@
 //! dependency checks, and system metrics.
 
 use actix_web::{web, HttpResponse, Result};
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 use std::sync::Arc;
 
 use crate::errors::AppError;
@@ -62,9 +62,9 @@ pub async fn get_resilience_status(
     
     let database_status = CircuitBreakerStatus {
         state: format!("{:?}", db_stats.state),
-        failures: db_stats.failure_count,
-        successes: db_stats.success_count,
-        total_requests: db_stats.failure_count + db_stats.success_count,
+        failures: db_stats.failure_count as u64,
+        successes: db_stats.success_count as u64,
+        total_requests: (db_stats.failure_count + db_stats.success_count) as u64,
         success_rate: if db_stats.failure_count + db_stats.success_count > 0 {
             (db_stats.success_count as f64) / ((db_stats.failure_count + db_stats.success_count) as f64) * 100.0
         } else {
@@ -74,9 +74,9 @@ pub async fn get_resilience_status(
     
     let cache_status = CircuitBreakerStatus {
         state: format!("{:?}", cache_stats.state),
-        failures: cache_stats.failure_count,
-        successes: cache_stats.success_count,
-        total_requests: cache_stats.failure_count + cache_stats.success_count,
+        failures: cache_stats.failure_count as u64,
+        successes: cache_stats.success_count as u64,
+        total_requests: (cache_stats.failure_count + cache_stats.success_count) as u64,
         success_rate: if cache_stats.failure_count + cache_stats.success_count > 0 {
             (cache_stats.success_count as f64) / ((cache_stats.failure_count + cache_stats.success_count) as f64) * 100.0
         } else {
@@ -86,9 +86,9 @@ pub async fn get_resilience_status(
     
     let api_status = CircuitBreakerStatus {
         state: format!("{:?}", api_stats.state),
-        failures: api_stats.failure_count,
-        successes: api_stats.success_count,
-        total_requests: api_stats.failure_count + api_stats.success_count,
+        failures: api_stats.failure_count as u64,
+        successes: api_stats.success_count as u64,
+        total_requests: (api_stats.failure_count + api_stats.success_count) as u64,
         success_rate: if api_stats.failure_count + api_stats.success_count > 0 {
             (api_stats.success_count as f64) / ((api_stats.failure_count + api_stats.success_count) as f64) * 100.0
         } else {

@@ -3,7 +3,6 @@
 //! This module contains all matching algorithm implementations including
 //! exact matching, fuzzy matching, and contains matching.
 
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::models::MatchType;
@@ -103,64 +102,7 @@ impl FuzzyMatchingAlgorithm {
     }
     
     fn jaro_winkler(&self, s1: &str, s2: &str) -> f64 {
-        // Simplified Jaro-Winkler implementation
-        let jaro = self.jaro(s1, s2);
-        let prefix_len = self.common_prefix_length(s1, s2).min(4);
-        let winkler = 0.1 * prefix_len as f64 * (1.0 - jaro);
-        
-        jaro + winkler
-    }
-    
-    fn jaro(&self, s1: &str, s2: &str) -> f64 {
-        if s1 == s2 {
-            return 1.0;
-        }
-        
-        let s1_len = s1.chars().count();
-        let s2_len = s2.chars().count();
-        
-        if s1_len == 0 || s2_len == 0 {
-            return 0.0;
-        }
-        
-        let match_window = ((s1_len.max(s2_len) / 2) - 1).max(0);
-        let s1_matches = vec![false; s1_len];
-        let s2_matches = vec![false; s2_len];
-        
-        let mut matches = 0;
-        let mut transpositions = 0;
-        
-        // Simplified Jaro calculation
-        for (i, c1) in s1.chars().enumerate() {
-            let start = i.saturating_sub(match_window);
-            let end = (i + match_window + 1).min(s2_len);
-            
-            for j in start..end {
-                if !s2_matches[j] && c1 == s2.chars().nth(j).unwrap_or('\0') {
-                    // Match found
-                    matches += 1;
-                    break;
-                }
-            }
-        }
-        
-        if matches == 0 {
-            return 0.0;
-        }
-        
-        // Simplified similarity calculation
-        let similarity = (matches as f64 / s1_len as f64 + 
-                          matches as f64 / s2_len as f64 + 
-                          (matches - transpositions) as f64 / matches as f64) / 3.0;
-        
-        similarity.min(1.0)
-    }
-    
-    fn common_prefix_length(&self, s1: &str, s2: &str) -> usize {
-        s1.chars()
-            .zip(s2.chars())
-            .take_while(|(a, b)| a == b)
-            .count()
+        strsim::jaro_winkler(s1, s2)
     }
 }
 

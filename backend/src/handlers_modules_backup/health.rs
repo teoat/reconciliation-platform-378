@@ -21,7 +21,8 @@ pub async fn health_check(
     };
     
     Ok(HttpResponse::build(
-        actix_web::http::StatusCode::from_u16(status_code).unwrap()
+            actix_web::http::StatusCode::from_u16(status_code)
+        .unwrap_or_else(|_| actix_web::http::StatusCode::INTERNAL_SERVER_ERROR)
     )
     .json(json!({
         "status": health_report.overall_status.to_string(),

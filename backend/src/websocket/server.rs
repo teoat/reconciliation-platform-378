@@ -2,9 +2,9 @@
 //!
 //! This module contains the WebSocket server actor that manages all connections.
 
-use actix::{Actor, Handler, Message, Addr};
+use actix::{Actor, Handler, Addr};
 use std::collections::HashMap;
-use uuid::Uuid;
+
 use tokio::sync::RwLock;
 use std::sync::Arc;
 

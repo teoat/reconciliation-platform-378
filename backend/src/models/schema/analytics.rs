@@ -50,7 +50,13 @@ diesel::table! {
         sent_at -> Timestamptz,
         delivered_at -> Nullable<Timestamptz>,
         read_at -> Nullable<Timestamptz>,
-        metadata -> Nullable<Jsonb>,
-        created_at -> Timestamptz,
-    }
-}
+         metadata -> Nullable<Jsonb>,
+         created_at -> Timestamptz,
+     }
+ }
+
+// Joinable relationships for analytics schema
+diesel::joinable!(realtime_events -> users (user_id));
+diesel::joinable!(realtime_events -> projects (project_id));
+diesel::joinable!(user_analytics_summary -> users (user_id));
+diesel::joinable!(user_notification_history -> users (user_id));

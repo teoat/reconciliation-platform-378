@@ -12,8 +12,8 @@ use chrono::{DateTime, Utc};
 pub struct JobProcessor {
     pub max_concurrent_jobs: usize,
     pub chunk_size: usize,
-    active_jobs: Arc<RwLock<HashMap<Uuid, JobStatus>>>,
-    job_queue: Arc<RwLock<Vec<Uuid>>>,
+    pub active_jobs: Arc<RwLock<HashMap<Uuid, JobStatus>>>,
+    pub job_queue: Arc<RwLock<Vec<Uuid>>>,
 }
 
 impl JobProcessor {
@@ -55,6 +55,17 @@ impl JobProcessor {
         let mut active_jobs = self.active_jobs.write().await;
         active_jobs.remove(job_id);
     }
+
+    pub async fn stop_job(&self, job_id: Uuid) -> Result<(), crate::errors::AppError> {
+        let mut active_jobs = self.active_jobs.write().await;
+        if let Some(mut status) = active_jobs.remove(&job_id) {
+            status.message = "Cancelled".to_string();
+            status.progress = 0;
+            Ok(())
+        } else {
+            Err(crate::errors::AppError::NotFound(format!("Job {} not found", job_id)))
+        }
+    }
 }
 
 /// Handle for tracking job progress
@@ -68,7 +79,13 @@ impl JobHandle {
         if let Some(processor) = self.processor.upgrade() {
             let mut active_jobs = processor.write().await;
             if let Some(status) = active_jobs.get_mut(&self.job_id) {
-                status.update(&progress.phase, progress.percentage, &progress.message);
+                // Calculate percentage from progress (0-100)
+                let percentage = if progress.total_records.map(|t| t > 0).unwrap_or(false) {
+                    (progress.processed_records as f64 / progress.total_records.unwrap() as f64 * 100.0) as i32
+                } else {
+                    progress.progress
+                };
+                status.update(&progress.status, percentage, &progress.current_phase);
             }
         }
     }

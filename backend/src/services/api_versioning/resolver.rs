@@ -3,8 +3,6 @@
 use crate::errors::{AppError, AppResult};
 use semver::{Version, VersionReq};
 
-use crate::services::api_versioning::types::*;
-
 /// Version resolver utility
 pub struct VersionResolver;
 

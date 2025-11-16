@@ -16,6 +16,7 @@ pub use service::ApiVersioningService;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::Utc;
 
     #[tokio::test]
     async fn test_api_versioning() {

@@ -121,7 +121,7 @@ pub struct UpdateReconciliationJobRequest {
 }
 
 // File upload DTOs
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct FileUploadRequest {
     pub name: String,
     pub description: Option<String>,

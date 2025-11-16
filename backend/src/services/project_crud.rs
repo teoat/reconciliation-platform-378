@@ -13,7 +13,6 @@ use crate::models::{
     schema::{projects, users},
 };
 use crate::models::schema::{reconciliation_jobs, data_sources};
-use crate::services::auth::ValidationUtils;
 use crate::services::project_models::{
     CreateProjectRequest, UpdateProjectRequest, ProjectInfo, ProjectQueryResult,
 };
@@ -65,7 +64,8 @@ impl ProjectCrudOps {
             description: request.description.map(|d| d.trim().to_string()),
             owner_id: request.owner_id,
             status: status_enum.to_string(),
-            settings: request.settings,
+            settings: request.settings.unwrap_or_else(|| serde_json::json!({})),
+            metadata: None,
         };
 
         crate::database::transaction::with_transaction(self.db.get_pool(), |tx| {
@@ -87,7 +87,7 @@ impl ProjectCrudOps {
 
         // Get project with owner info
         let result = projects::table
-            .inner_join(users::table)
+            .inner_join(users::table.on(projects::owner_id.eq(users::id)))
             .filter(projects::id.eq(project_id))
             .select((
                 projects::id,
@@ -133,7 +133,7 @@ impl ProjectCrudOps {
             owner_id: result.owner_id,
             owner_email: result.owner_email,
             status: result.project_status,
-            settings: result.settings,
+            settings: Some(result.settings),
             created_at: result.created_at,
             updated_at: result.updated_at,
             job_count,
@@ -169,18 +169,31 @@ impl ProjectCrudOps {
                 .map_err(|e| AppError::Validation(format!("Invalid project status: {}", e)))?;
         }
 
-        // Prepare update
+        // Prepare update - use serde_json::Value directly
         let update_data = UpdateProject {
             name: request.name.map(|n| n.trim().to_string()),
             description: request.description.map(|d| d.trim().to_string()),
             status: request.status,
             settings: request.settings,
-            is_active: None, // Not updating is_active in this function
         };
 
-        // Update project
+        // Build update query manually to handle JsonValue properly
+        // Check if there's anything to update
+        if update_data.name.is_none() 
+            && update_data.description.is_none() 
+            && update_data.settings.is_none() 
+            && update_data.status.is_none() {
+            // Nothing to update, just return the current project
+            return self.get_project_by_id(project_id).await;
+        }
+        
         diesel::update(projects::table.filter(projects::id.eq(project_id)))
-            .set(&update_data)
+            .set((
+                update_data.name.map(|name| projects::name.eq(name)),
+                update_data.description.map(|desc| projects::description.eq(desc)),
+                update_data.settings.map(|settings| projects::settings.eq(settings)),
+                update_data.status.map(|status| projects::status.eq(status)),
+            ))
             .execute(&mut conn)
             .map_err(AppError::Database)?;
 

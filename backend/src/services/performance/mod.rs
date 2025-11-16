@@ -16,10 +16,7 @@ pub use monitoring::{SystemMonitor, SystemMetrics};
 
 pub use query_optimizer::{QueryOptimizer, QueryAnalysis, OptimizationImpact, OptimizationLevel};
 
-use std::collections::HashMap;
-use std::sync::Arc;
 use std::time::Duration;
-use tokio::sync::RwLock;
 use serde_json;
 use crate::errors::AppResult;
 
@@ -70,14 +67,15 @@ impl PerformanceService {
     }
     
     pub async fn get_metrics(&self) -> PerformanceMetrics {
-        let metrics = self.metrics_collector.get_metrics().read().await;
-        let cache_stats = self.metrics_collector.get_cache_stats().read().await;
-        
+        // Clone the data immediately to avoid lifetime issues
+        let metrics_data = (*self.metrics_collector.get_metrics().read().await).clone();
+        let cache_stats_data = (*self.metrics_collector.get_cache_stats().read().await).clone();
+
         let mut total_requests = 0;
         let mut total_duration = Duration::ZERO;
         let mut error_count = 0;
-        
-        for requests in metrics.values() {
+
+        for requests in metrics_data.values() {
             total_requests += requests.len() as u64;
             for request in requests {
                 total_duration += request.duration;
@@ -86,7 +84,7 @@ impl PerformanceService {
                 }
             }
         }
-        
+
         let average_response_time = if total_requests > 0 {
             total_duration.as_secs_f64() / total_requests as f64
         } else {
@@ -99,8 +97,8 @@ impl PerformanceService {
             0.0
         };
         
-        let cache_hit_rate = if cache_stats.hits + cache_stats.misses > 0 {
-            cache_stats.hits as f64 / (cache_stats.hits + cache_stats.misses) as f64
+        let cache_hit_rate = if cache_stats_data.hits + cache_stats_data.misses > 0 {
+            cache_stats_data.hits as f64 / (cache_stats_data.hits + cache_stats_data.misses) as f64
         } else {
             0.0
         };
@@ -111,8 +109,14 @@ impl PerformanceService {
             request_count: total_requests,
             average_response_time,
             error_rate,
-            active_connections: metrics::ACTIVE_CONNECTIONS.get() as u64,
-            database_connections: metrics::DATABASE_CONNECTIONS.get() as u64,
+            active_connections: {
+                let val = metrics::ACTIVE_CONNECTIONS.get();
+                val as u64
+            },
+            database_connections: {
+                let val = metrics::DATABASE_CONNECTIONS.get();
+                val as u64
+            },
             cache_hit_rate,
             memory_usage: system_metrics.memory_usage,
             cpu_usage: system_metrics.cpu_usage,
@@ -125,14 +129,15 @@ impl PerformanceService {
     }
     
     pub async fn get_comprehensive_metrics(&self) -> AppResult<serde_json::Value> {
-        let metrics_map = self.metrics_collector.get_metrics().read().await;
-        let cache_stats = self.metrics_collector.get_cache_stats().read().await;
-        
+        // Clone the data immediately to avoid lifetime issues
+        let metrics_data = (*self.metrics_collector.get_metrics().read().await).clone();
+        let cache_stats_data = (*self.metrics_collector.get_cache_stats().read().await).clone();
+
         // Calculate average response time
         let mut total_duration = Duration::new(0, 0);
         let mut request_count = 0u64;
-        
-        for requests in metrics_map.values() {
+
+        for requests in metrics_data.values() {
             for request in requests {
                 total_duration += request.duration;
                 request_count += 1;
@@ -149,9 +154,9 @@ impl PerformanceService {
         let error_rate = 0.0; // Placeholder - would need to track error responses
         
         // Calculate cache hit rate
-        let total_cache_requests = cache_stats.hits + cache_stats.misses;
+        let total_cache_requests = cache_stats_data.hits + cache_stats_data.misses;
         let cache_hit_rate = if total_cache_requests > 0 {
-            cache_stats.hits as f64 / total_cache_requests as f64
+            cache_stats_data.hits as f64 / total_cache_requests as f64
         } else {
             0.0
         };
@@ -162,23 +167,28 @@ impl PerformanceService {
         // Get Prometheus metrics
         let prometheus_metrics = self.get_prometheus_metrics().await;
         
+        // Extract metric values before json! macro (can't use blocks in json! macro)
+        let active_connections = metrics::ACTIVE_CONNECTIONS.get() as u64;
+        let database_connections = metrics::DATABASE_CONNECTIONS.get() as u64;
+        let timestamp = chrono::Utc::now().to_rfc3339();
+        
         let comprehensive_metrics = serde_json::json!({
             "performance": {
                 "request_count": request_count,
                 "average_response_time": average_response_time,
                 "error_rate": error_rate,
-                "active_connections": metrics::ACTIVE_CONNECTIONS.get() as u64,
-                "database_connections": metrics::DATABASE_CONNECTIONS.get() as u64,
+                "active_connections": active_connections,
+                "database_connections": database_connections,
                 "cache_hit_rate": cache_hit_rate,
                 "memory_usage": system_metrics.memory_usage,
                 "cpu_usage": system_metrics.cpu_usage,
-                "timestamp": chrono::Utc::now().to_rfc3339()
+                "timestamp": timestamp
             },
             "cache": {
-                "hits": cache_stats.hits,
-                "misses": cache_stats.misses,
-                "evictions": cache_stats.evictions,
-                "size": cache_stats.size,
+                "hits": cache_stats_data.hits,
+                "misses": cache_stats_data.misses,
+                "evictions": cache_stats_data.evictions,
+                "size": cache_stats_data.size,
                 "hit_rate": cache_hit_rate
             },
             "prometheus": prometheus_metrics,
