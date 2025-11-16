@@ -343,7 +343,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4">
+      <div className="bg-red-50 border border-red-200 rounded-md p-4" data-testid="analytics-dashboard-error">
         <div className="flex">
           <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
           <div className="text-sm text-red-700">{error}</div>
@@ -361,7 +361,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="analytics-dashboard">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

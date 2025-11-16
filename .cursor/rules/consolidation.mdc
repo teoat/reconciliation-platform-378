@@ -1,0 +1,89 @@
+---
+description: Guidelines for preventing code and documentation duplication, using shared libraries, and maintaining consolidation
+globs: scripts/**/*.sh, **/*.sh, **/*.md
+alwaysApply: true
+---
+
+- **Shell Script Function Consolidation:**
+  - **ALWAYS** source shared function library in new scripts:
+    ```bash
+    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    source "$SCRIPT_DIR/lib/common-functions.sh"
+    ```
+  - **NEVER** define duplicate functions - use shared library instead
+  - **BEFORE** creating new function, check `scripts/lib/common-functions.sh`
+  - If similar function exists, extend the shared version rather than duplicating
+
+- **Shared Function Library:**
+  - Location: `scripts/lib/common-functions.sh`
+  - Contains: logging, validation, health checks, backup, deployment utilities
+  - **All new scripts MUST source this library**
+  - Add new common functions to library when pattern emerges (3+ occurrences)
+
+- **Available Shared Functions:**
+  - **Logging**: `log_info()`, `log_success()`, `log_warning()`, `log_error()`
+  - **Validation**: `check_command()`, `check_docker()`, `check_prerequisites()`, `validate_file_exists()`, `validate_port()`
+  - **Health Checks**: `check_endpoint()`, `health_check()`
+  - **Backup**: `backup_postgresql()`, `list_backups()`, `cleanup_old_backups()`
+  - **Deployment**: `verify_deployment()`
+  - **Utilities**: `check_root()`, `send_notification()`, `get_script_dir()`
+
+- **Script Consolidation Rules:**
+  - **One primary script per purpose**: Keep main deployment/backup scripts, archive duplicates
+  - **Archive unused scripts**: Move to `archive/scripts/unused/` if no longer needed
+  - **Archive duplicate scripts**: Move to `archive/scripts/duplicates/` if functionality exists elsewhere
+  - **Before creating new script**: Check if similar script exists, consider extending instead
+
+- **Documentation Consolidation:**
+  - **Status/Completion Reports**: Archive to `archive/docs/completion-reports/` after 30 days
+  - **Diagnostic Reports**: Archive to `archive/docs/diagnostics/` after 90 days
+  - **Feature Status**: Archive to `archive/docs/feature-status/[feature]/` when superseded
+  - **Before creating new doc**: Check `docs/README.md` for existing documentation
+  - **Use PROJECT_STATUS.md**: For current status instead of creating new status files
+
+- **Preventing Duplication:**
+  ```bash
+  # ✅ DO: Source shared library
+  source "$(dirname "$0")/lib/common-functions.sh"
+  log_info "Starting deployment"
+  check_prerequisites
+  
+  # ❌ DON'T: Define duplicate functions
+  log_info() {
+      echo "[INFO] $1"  # Duplicate - use shared library
+  }
+  ```
+
+- **New Script Checklist:**
+  - [ ] Sources `scripts/lib/common-functions.sh`
+  - [ ] Uses shared logging functions (not custom definitions)
+  - [ ] Uses shared validation functions
+  - [ ] No duplicate function definitions
+  - [ ] Follows naming conventions
+  - [ ] Includes error handling
+
+- **Archive Organization:**
+  - `archive/scripts/unused/` - Unused scripts (kept for reference)
+  - `archive/scripts/duplicates/` - Duplicate scripts (functionality exists elsewhere)
+  - `archive/docs/completion-reports/` - Status/completion reports
+  - `archive/docs/diagnostics/` - Diagnostic reports
+  - `archive/docs/feature-status/` - Feature-specific status reports
+
+- **Maintenance Process:**
+  - **Monthly**: Archive status/completion reports older than 30 days
+  - **Quarterly**: Review archived files, update shared library
+  - **When duplicates found**: Move to archive, update shared library if needed
+  - Reference [CONSOLIDATION_MAINTENANCE.md](mdc:docs/operations/CONSOLIDATION_MAINTENANCE.md) for detailed process
+
+- **Code Review Checklist:**
+  - Check for duplicate function definitions
+  - Verify script sources shared library
+  - Ensure no duplicate documentation exists
+  - Verify proper archive organization
+
+- **Related Documentation:**
+  - [DUPLICATE_FUNCTIONS_DIAGNOSTIC.md](mdc:DUPLICATE_FUNCTIONS_DIAGNOSTIC.md) - Function duplication analysis
+  - [DOCUMENTATION_DUPLICATES_DIAGNOSTIC.md](mdc:DOCUMENTATION_DUPLICATES_DIAGNOSTIC.md) - Documentation analysis
+  - [CONSOLIDATION_SUMMARY.md](mdc:CONSOLIDATION_SUMMARY.md) - Overall consolidation summary
+  - [CONSOLIDATION_MAINTENANCE.md](mdc:docs/operations/CONSOLIDATION_MAINTENANCE.md) - Maintenance process
+  - [scripts/lib/common-functions.sh](mdc:scripts/lib/common-functions.sh) - Shared function library

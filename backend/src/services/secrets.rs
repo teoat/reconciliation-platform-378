@@ -1,110 +1,114 @@
-//! AWS Secrets Manager integration for secure secret storage
+//! Secrets Service - Environment Variable Reader
 //!
-//! Provides secure access to secrets stored in AWS Secrets Manager
-
-use aws_config::{BehaviorVersion, Region};
-use aws_sdk_secretsmanager::Client as SecretsManagerClient;
-use std::sync::Arc;
-use std::time::Duration;
-use tokio::sync::RwLock;
+//! Provides simple access to secrets stored in environment variables.
+//! Follows 12-Factor App principles for configuration management.
 
 use crate::errors::{AppError, AppResult};
 
-/// Secrets manager service for secure secret retrieval
-#[derive(Clone)]
-pub struct SecretsManager {
-    client: SecretsManagerClient,
-    cache: Arc<RwLock<std::collections::HashMap<String, (String, std::time::Instant)>>>,
-    ttl: Duration,
-}
+/// Secrets service for reading environment variables
+/// 
+/// This service provides a simple, standard way to access application secrets
+/// from environment variables. All secrets should be set in .env files (git-ignored).
+pub struct SecretsService;
 
-impl SecretsManager {
-    /// Create a new secrets manager
-    pub async fn new(region: impl Into<String>) -> AppResult<Self> {
-        let region = Region::new(region.into());
-        let config = aws_config::defaults(BehaviorVersion::latest())
-            .region(region)
-            .load()
-            .await;
-
-        let client = SecretsManagerClient::new(&config);
-
-        Ok(Self {
-            client,
-            cache: Arc::new(RwLock::new(std::collections::HashMap::new())),
-            ttl: Duration::from_secs(300), // 5 minute cache TTL
+impl SecretsService {
+    /// Get a secret value from environment variable
+    /// 
+    /// # Arguments
+    /// * `name` - The name of the environment variable
+    /// 
+    /// # Returns
+    /// * `Ok(String)` - The secret value if found
+    /// * `Err(AppError::NotFound)` - If the environment variable is not set
+    pub fn get_secret(name: &str) -> AppResult<String> {
+        std::env::var(name).map_err(|_| {
+            AppError::NotFound(format!(
+                "Secret '{}' not found in environment variables. Please set it in your .env file.",
+                name
+            ))
         })
     }
 
-    /// Get a secret value by name
-    pub async fn get_secret(&self, secret_name: &str) -> AppResult<String> {
-        // Check cache first
-        {
-            let cache = self.cache.read().await;
-            if let Some((value, cached_at)) = cache.get(secret_name) {
-                if cached_at.elapsed() < self.ttl {
-                    return Ok(value.clone());
-                }
-            }
-        }
-
-        // Fetch from AWS Secrets Manager
-        let response = self
-            .client
-            .get_secret_value()
-            .secret_id(secret_name)
-            .send()
-            .await
-            .map_err(|e| {
-                AppError::InternalServerError(format!(
-                    "Failed to get secret {}: {}",
-                    secret_name, e
-                ))
-            })?;
-
-        let secret_value = response
-            .secret_string()
-            .ok_or_else(|| {
-                AppError::InternalServerError(format!("Secret {} is empty", secret_name))
-            })?
-            .to_string();
-
-        // Update cache
-        {
-            let mut cache = self.cache.write().await;
-            cache.insert(
-                secret_name.to_string(),
-                (secret_value.clone(), std::time::Instant::now()),
-            );
-        }
-
-        Ok(secret_value)
+    /// Get JWT secret from environment
+    /// 
+    /// In production, JWT_SECRET must be set or the application will fail to start.
+    pub fn get_jwt_secret() -> AppResult<String> {
+        Self::get_secret("JWT_SECRET")
     }
 
-    /// Get JWT secret
-    pub async fn get_jwt_secret(&self) -> AppResult<String> {
-        self.get_secret("production/jwt_secret").await
+    /// Get JWT refresh secret from environment
+    pub fn get_jwt_refresh_secret() -> AppResult<String> {
+        Self::get_secret("JWT_REFRESH_SECRET")
     }
 
-    /// Get database URL
-    pub async fn get_database_url(&self) -> AppResult<String> {
-        self.get_secret("production/database_url").await
+    /// Get database URL from environment
+    /// 
+    /// In production, DATABASE_URL must be set or the application will fail to start.
+    pub fn get_database_url() -> AppResult<String> {
+        Self::get_secret("DATABASE_URL")
     }
 
-    /// Clear the cache
-    pub async fn clear_cache(&self) {
-        let mut cache = self.cache.write().await;
-        cache.clear();
+    /// Get database password from environment (if not in DATABASE_URL)
+    pub fn get_database_password() -> AppResult<String> {
+        Self::get_secret("DB_PASSWORD")
+    }
+
+    /// Get Redis password from environment
+    pub fn get_redis_password() -> AppResult<String> {
+        Self::get_secret("REDIS_PASSWORD")
+    }
+
+    /// Get CSRF secret from environment
+    pub fn get_csrf_secret() -> AppResult<String> {
+        Self::get_secret("CSRF_SECRET")
+    }
+
+    /// Get SMTP password from environment
+    pub fn get_smtp_password() -> AppResult<String> {
+        Self::get_secret("SMTP_PASSWORD")
+    }
+
+    /// Get Stripe secret key from environment
+    pub fn get_stripe_secret_key() -> AppResult<String> {
+        Self::get_secret("STRIPE_SECRET_KEY")
+    }
+
+    /// Get Stripe webhook secret from environment
+    pub fn get_stripe_webhook_secret() -> AppResult<String> {
+        Self::get_secret("STRIPE_WEBHOOK_SECRET")
+    }
+
+    /// Get API key from environment
+    pub fn get_api_key() -> AppResult<String> {
+        Self::get_secret("API_KEY")
+    }
+
+    /// Get Grafana password from environment
+    pub fn get_grafana_password() -> AppResult<String> {
+        Self::get_secret("GRAFANA_PASSWORD")
+    }
+
+    /// Get Google OAuth client ID from environment
+    pub fn get_google_client_id() -> AppResult<String> {
+        Self::get_secret("GOOGLE_CLIENT_ID")
+    }
+
+    /// Get Google OAuth client secret from environment
+    pub fn get_google_client_secret() -> AppResult<String> {
+        Self::get_secret("GOOGLE_CLIENT_SECRET")
     }
 }
 
-/// Default secrets manager (fallback to environment variables)
+/// Legacy compatibility: DefaultSecretsManager
+/// 
+/// This is kept for backward compatibility but delegates to SecretsService.
+/// New code should use SecretsService directly.
 pub struct DefaultSecretsManager;
 
 impl DefaultSecretsManager {
     /// Get secret from environment variable with fallback
     pub fn get_secret(&self, secret_name: &str, fallback: impl Into<String>) -> String {
-        std::env::var(secret_name).unwrap_or_else(|_| fallback.into())
+        SecretsService::get_secret(secret_name).unwrap_or_else(|_| fallback.into())
     }
 
     /// Get JWT secret
@@ -113,7 +117,7 @@ impl DefaultSecretsManager {
         // In production, fail if JWT_SECRET is not set
         #[cfg(not(debug_assertions))]
         {
-            std::env::var("JWT_SECRET").unwrap_or_else(|_| {
+            SecretsService::get_jwt_secret().unwrap_or_else(|_| {
                 panic!("JWT_SECRET environment variable must be set in production");
             })
         }
@@ -129,7 +133,7 @@ impl DefaultSecretsManager {
     pub fn get_database_url(&self) -> String {
         #[cfg(not(debug_assertions))]
         {
-            std::env::var("DATABASE_URL").unwrap_or_else(|_| {
+            SecretsService::get_database_url().unwrap_or_else(|_| {
                 panic!("DATABASE_URL environment variable must be set in production");
             })
         }

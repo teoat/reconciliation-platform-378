@@ -11,13 +11,15 @@ pub struct BillingConfig {
 
 impl BillingConfig {
     pub fn from_env() -> Result<Self, String> {
-        // Return Result instead of panicking for better error handling
-        let stripe_secret_key = env::var("STRIPE_SECRET_KEY")
-            .map_err(|_| "Missing required environment variable: STRIPE_SECRET_KEY".to_string())?;
+        // Use SecretsService for consistent secret access
+        let stripe_secret_key = crate::services::secrets::SecretsService::get_stripe_secret_key()
+            .map_err(|e| format!("STRIPE_SECRET_KEY: {}", e))?;
+        let stripe_webhook_secret = crate::services::secrets::SecretsService::get_stripe_webhook_secret()
+            .map_err(|e| format!("STRIPE_WEBHOOK_SECRET: {}", e))?;
+        
+        // Publishable key is not a secret, can use env::var
         let stripe_publishable_key = env::var("STRIPE_PUBLISHABLE_KEY")
             .map_err(|_| "Missing required environment variable: STRIPE_PUBLISHABLE_KEY".to_string())?;
-        let stripe_webhook_secret = env::var("STRIPE_WEBHOOK_SECRET")
-            .map_err(|_| "Missing required environment variable: STRIPE_WEBHOOK_SECRET".to_string())?;
 
         Ok(Self {
             stripe_secret_key,

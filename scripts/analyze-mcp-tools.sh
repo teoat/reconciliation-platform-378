@@ -17,7 +17,6 @@ echo ""
 # These are approximate based on typical MCP server implementations
 # Format: server_name:tool_count
 TOOL_COUNTS="
-task-master-ai:35
 filesystem:8
 postgres:6
 git:12
@@ -71,8 +70,7 @@ if [ "$TOTAL_TOOLS" -gt "$MAX_TOOLS" ]; then
     echo ""
     echo "💡 Optimization Recommendations:"
     echo ""
-    echo "High Priority (Keep - ~77 tools):"
-    echo "  ✅ task-master-ai (35 tools) - Essential for project management"
+    echo "High Priority (Keep - ~42 tools):"
     echo "  ✅ reconciliation-platform (16 tools) - Custom project tools"
     echo "  ✅ filesystem (8 tools) - Core file operations"
     echo "  ✅ git (12 tools) - Version control essential"
@@ -86,13 +84,13 @@ if [ "$TOTAL_TOOLS" -gt "$MAX_TOOLS" ]; then
     echo "Low Priority (Can Remove - saves ~21 tools):"
     echo "  ❌ sqlite (6 tools) - Redundant if using postgres"
     echo "  ❌ puppeteer (5 tools) - Nice to have, not essential"
-    echo "  ❌ memory (4 tools) - Can use task-master for context"
+    echo "  ❌ memory (4 tools) - Optional context management"
     echo "  ❌ fetch (3 tools) - Can use custom server or curl"
     echo "  ❌ brave-search (3 tools) - Nice to have, not essential"
     echo ""
-    echo "Suggested Optimized Configuration (77 tools):"
-    echo "  - Keep: task-master-ai, reconciliation-platform, filesystem, git, postgres"
-    echo "  - Total: 35 + 16 + 8 + 12 + 6 = 77 tools ✅"
+    echo "Suggested Optimized Configuration (42 tools):"
+    echo "  - Keep: reconciliation-platform, filesystem, git, postgres"
+    echo "  - Total: 16 + 8 + 12 + 6 = 42 tools ✅"
 else
     echo "✅ Current configuration is within limits"
 fi

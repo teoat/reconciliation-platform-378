@@ -160,12 +160,9 @@ pub async fn login(
         ));
     }
 
-    // Set user's master key in password manager (use their login password)
-    // This allows the user to decrypt their stored passwords using their login password
-    if let Some(password_manager) = http_req.app_data::<web::Data<Arc<crate::services::password_manager::PasswordManager>>>() {
-        password_manager.set_user_master_key(user.id, &req.password).await;
-        log::debug!("Set password manager master key for user: {}", user.id);
-    }
+    // Password manager master key is now separate from login password
+    // Users must set a separate master password for password manager
+    // See: docs/architecture/PASSWORD_SYSTEM_ORCHESTRATION.md
 
     // Generate token
     let token = auth_service.as_ref().generate_token(&user)?;
@@ -297,15 +294,11 @@ pub async fn refresh_token(
 
 /// Logout endpoint
 pub async fn logout(
-    http_req: HttpRequest,
+    _http_req: HttpRequest,
 ) -> Result<HttpResponse, AppError> {
-    // Clear user's master key from password manager on logout
-    if let Ok(user_id) = crate::handlers::helpers::extract_user_id(&http_req) {
-        if let Some(password_manager) = http_req.app_data::<web::Data<Arc<crate::services::password_manager::PasswordManager>>>() {
-            password_manager.clear_user_master_key(user_id).await;
-            log::debug!("Cleared password manager master key for user: {}", user_id);
-        }
-    }
+    // Password manager master keys are no longer stored in memory
+    // No cleanup needed on logout
+    // See: docs/architecture/PASSWORD_SYSTEM_ORCHESTRATION.md
     
     // In a stateless JWT implementation, logout is handled client-side
     // by removing the token. For enhanced security, you could implement
@@ -376,7 +369,7 @@ pub async fn request_password_reset(
 /// Confirm password reset
 pub async fn confirm_password_reset(
     req: web::Json<crate::services::auth::PasswordResetConfirmation>,
-    http_req: HttpRequest,
+    _http_req: HttpRequest,
     data: web::Data<crate::database::Database>,
     auth_service: web::Data<Arc<AuthService>>,
     config: web::Data<crate::config::Config>,
@@ -396,7 +389,7 @@ pub async fn confirm_password_reset(
     let token_hash = format!("{:x}", hasher.finalize());
     
     let mut conn = data.get_connection()?;
-    let reset_token = password_reset_tokens::table
+    let _reset_token = password_reset_tokens::table
         .filter(password_reset_tokens::token_hash.eq(&token_hash))
         .first::<crate::models::PasswordResetToken>(&mut conn)
         .ok();
@@ -405,13 +398,9 @@ pub async fn confirm_password_reset(
         .confirm_password_reset(&req.token, &req.new_password, &data)
         .await?;
 
-    // Clear password manager master key if user_id is available
-    if let Some(token) = reset_token {
-        if let Some(password_manager) = http_req.app_data::<web::Data<Arc<crate::services::password_manager::PasswordManager>>>() {
-            password_manager.clear_user_master_key(token.user_id).await;
-            log::info!("Cleared password manager master key after password reset for user: {}", token.user_id);
-        }
-    }
+    // Password manager master keys are no longer stored in memory
+    // No cleanup needed after password reset
+    // See: docs/architecture/PASSWORD_SYSTEM_ORCHESTRATION.md
 
     Ok(
         HttpResponse::Ok().json(crate::handlers::types::ApiResponse::<()> {
@@ -489,7 +478,7 @@ pub async fn resend_verification(
 /// Google OAuth endpoint
 pub async fn google_oauth(
     req: web::Json<GoogleOAuthRequest>,
-    http_req: HttpRequest,
+    _http_req: HttpRequest,
     auth_service: web::Data<Arc<AuthService>>,
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
@@ -587,30 +576,9 @@ pub async fn google_oauth(
         ));
     }
 
-    // For OAuth users, get or create OAuth master key from password manager
-    // This allows OAuth users to use password manager without a password
-    if let Some(password_manager) = http_req.app_data::<web::Data<Arc<crate::services::password_manager::PasswordManager>>>() {
-        match password_manager.get_or_create_oauth_master_key(user.id, &email).await {
-            Ok(master_key) => {
-                // Store the master key in memory for this session
-                password_manager.set_user_master_key(user.id, &master_key).await;
-                log::debug!("Set OAuth master key from password manager for user: {}", user.id);
-            }
-            Err(e) => {
-                log::warn!("Failed to get/create OAuth master key for user {}: {:?}", user.id, e);
-                // Fallback: derive master key from email + server secret (legacy method)
-                let server_secret = std::env::var("JWT_SECRET")
-                    .unwrap_or_else(|_| "default-oauth-secret".to_string());
-                let derived_key = format!("{}:{}", email, server_secret);
-                use sha2::{Digest, Sha256};
-                let mut hasher = Sha256::new();
-                hasher.update(derived_key.as_bytes());
-                let master_key = format!("{:x}", hasher.finalize());
-                password_manager.set_user_master_key(user.id, &master_key).await;
-                log::debug!("Set OAuth-derived password manager master key (fallback) for user: {}", user.id);
-            }
-        }
-    }
+    // OAuth users don't need password manager integration
+    // They can set a master password separately if they want to use password manager
+    // See: docs/architecture/PASSWORD_SYSTEM_ORCHESTRATION.md
 
     // Generate token
     let token = auth_service.as_ref().generate_token(&user)?;

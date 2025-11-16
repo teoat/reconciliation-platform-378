@@ -8,6 +8,7 @@ alwaysApply: true
   - Use `AppError` enum for all error types
   - Return `AppResult<T>` instead of `Result<T, E>`
   - Always provide context with `?` operator or `.map_err()`
+  - See [security.mdc](mdc:.cursor/rules/security.mdc) for security-related error handling (masking PII, not exposing internal errors)
   ```rust
   // ✅ DO: Use AppResult
   pub fn process_data() -> AppResult<Data> {
@@ -54,6 +55,7 @@ alwaysApply: true
   - Use structured logging with JSON format
   - Mask PII in logs (emails, tokens, etc.)
   - Use appropriate log levels (error, warn, info, debug)
+  - See [security.mdc](mdc:.cursor/rules/security.mdc) for comprehensive logging security patterns
   ```rust
   // ✅ DO: Structured logging
   log::info!(
@@ -120,21 +122,10 @@ alwaysApply: true
   ```
 
 - **Testing:**
+  - See [testing.mdc](mdc:.cursor/rules/testing.mdc) for comprehensive testing patterns
   - Write unit tests for business logic
   - Use integration tests for API endpoints
   - Mock external dependencies
-  ```rust
-  // ✅ DO: Test structure
-  #[cfg(test)]
-  mod tests {
-      use super::*;
-      
-      #[tokio::test]
-      async fn test_user_creation() {
-          // ...
-      }
-  }
-  ```
 
 - **Performance:**
   - Use connection pooling for databases

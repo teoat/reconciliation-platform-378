@@ -126,21 +126,13 @@ async fn main() -> std::io::Result<()> {
         log::info!("Default passwords initialized: AldiBabi, AldiAnjing, YantoAnjing, YantoBabi");
     }
     
-    // Initialize all application passwords from environment (migration)
-    if let Err(e) = password_manager.initialize_application_passwords().await {
-        log::warn!("Failed to initialize application passwords: {:?}", e);
-    } else {
-        log::info!("Application passwords migrated to password manager");
-    }
+    // Application secrets are now managed via environment variables (.env)
+    // No longer using password manager for application secrets
+    // See: docs/architecture/PASSWORD_SYSTEM_ORCHESTRATION.md
 
-    // Update config from password manager (after password manager is initialized)
-    // This allows us to use passwords from password manager without circular dependency
-    if let Err(e) = config.update_from_password_manager(Arc::clone(&password_manager)).await {
-        log::warn!("Failed to update config from password manager: {:?}", e);
-        log::warn!("Continuing with environment variable values");
-    } else {
-        log::info!("Configuration updated from password manager");
-    }
+    // Configuration now uses environment variables directly
+    // Application secrets are no longer stored in password manager
+    // See: docs/architecture/PASSWORD_SYSTEM_ORCHESTRATION.md
 
     use actix_web::{web, HttpServer};
 

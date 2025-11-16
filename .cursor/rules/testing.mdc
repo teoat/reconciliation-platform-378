@@ -4,6 +4,24 @@ globs: **/*test*.{rs,ts,tsx}, **/__tests__/**/*, **/*.spec.{ts,tsx}
 alwaysApply: true
 ---
 
+## Quick Reference
+
+**Test Organization:**
+- Unit tests: Co-located with source (`mod tests` in Rust, `__tests__/` in TypeScript)
+- Integration tests: `tests/` directory (Rust) or `__tests__/` (TypeScript)
+- E2E tests: `e2e/` directory with Playwright
+
+**Common Patterns:**
+- Rust: Use `#[tokio::test]` for async tests
+- TypeScript: Use React Testing Library for components, Vitest for unit tests
+- Mock external dependencies (APIs, databases)
+- Use test factories/builders for test data
+- Aim for >80% coverage on critical paths
+
+**Test Naming:** `test_<what>_<when>_<expected>` (Rust) or descriptive `it()` blocks (TypeScript)
+
+---
+
 - **Test Organization:**
   - Unit tests: Co-located with source files (`mod tests`)
   - Integration tests: `tests/` directory (Rust) or `__tests__/` (TypeScript)

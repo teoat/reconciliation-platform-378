@@ -30,6 +30,7 @@ export const cspConfig = {
       'ws://localhost:*', // WebSocket for development
       'wss://*', // WebSocket for production
       'https://api.*', // API endpoints
+      'http://localhost:8200', // APM monitoring (Elastic APM)
     ],
     'media-src': [
       "'self'",
@@ -72,6 +73,7 @@ export const cspConfig = {
       'wss://localhost:*',
       'http://localhost:*',
       'https://localhost:*',
+      'http://localhost:8200', // APM monitoring (Elastic APM)
     ],
     'media-src': [
       "'self'",

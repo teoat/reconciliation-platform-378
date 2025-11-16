@@ -4,6 +4,26 @@ globs: **/*.{rs,ts,tsx,js}
 alwaysApply: true
 ---
 
+## Quick Reference
+
+**Critical Security Patterns:**
+- ✅ Always validate and sanitize user input
+- ✅ Use parameterized queries (never string concatenation)
+- ✅ Hash passwords with bcrypt (cost 12+)
+- ✅ Mask PII in logs
+- ✅ Use HTTPS in production
+- ✅ Never commit secrets to version control
+- ✅ Use JWT tokens with expiration
+- ✅ Implement rate limiting on APIs
+
+**Common Vulnerabilities to Prevent:**
+- SQL Injection → Use ORM/parameterized queries
+- XSS → Escape user input, avoid `dangerouslySetInnerHTML`
+- CSRF → Use CSRF tokens, validate origin
+- Secrets Exposure → Use environment variables, never hardcode
+
+---
+
 - **Input Validation:**
   - Validate and sanitize all user inputs
   - Use type-safe validation (Zod, serde validation)

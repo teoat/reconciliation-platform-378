@@ -1,0 +1,122 @@
+---
+description: Git workflow, branching conventions, and commit message standards for the reconciliation platform.
+globs: **/*
+alwaysApply: true
+---
+
+- **Branch Naming Conventions:**
+  - **Feature branches**: `feature/description` or `feat/description`
+  - **Bug fixes**: `fix/description`
+  - **Hotfixes**: `hotfix/description` (from master/main)
+  - **AI experiments**: `copilot/description`
+  - Use kebab-case, descriptive names
+  ```bash
+  # ✅ DO: Good branch names
+  feature/user-authentication
+  fix/login-error-handling
+  hotfix/critical-security-patch
+  copilot/api-optimization
+  
+  # ❌ DON'T: Bad branch names
+  feature1
+  fix-bug
+  new-feature
+  ```
+
+- **Branch Protection:**
+  - **master/main**: Strict protection (PR required, approvals, signed commits)
+  - **develop/dev/staging**: Moderate protection (PR required, basic checks)
+  - **feature/fix/hotfix/copilot**: Permissive (warnings only)
+  - See [GitHub Rulesets](mdc:.github/rulesets/README.md) for details
+
+- **Commit Message Format:**
+  - Use conventional commits format
+  - Sign commits with `-s` flag
+  - Format: `<type>(<scope>): <subject>`
+  ```bash
+  # ✅ DO: Conventional commits
+  git commit -s -m "feat(auth): Add JWT token refresh"
+  git commit -s -m "fix(api): Handle null response in user endpoint"
+  git commit -s -m "docs(readme): Update installation instructions"
+  
+  # Types: feat, fix, docs, style, refactor, test, chore
+  # ❌ DON'T: Vague messages
+  git commit -m "fix stuff"
+  git commit -m "update"
+  ```
+
+- **Commit Types:**
+  - `feat`: New feature
+  - `fix`: Bug fix
+  - `docs`: Documentation changes
+  - `style`: Code style changes (formatting, no logic change)
+  - `refactor`: Code refactoring
+  - `test`: Adding or updating tests
+  - `chore`: Maintenance tasks (dependencies, config)
+
+- **Workflow Patterns:**
+  - **Feature Development**:
+    ```bash
+    git checkout develop
+    git pull
+    git checkout -b feature/my-feature
+    # ... make changes ...
+    git commit -s -m "feat: Add feature"
+    git push origin feature/my-feature
+    # Create PR to develop
+    ```
+  
+  - **Hotfix to Production**:
+    ```bash
+    git checkout master
+    git pull
+    git checkout -b hotfix/critical-fix
+    # ... make fix ...
+    git commit -s -m "fix: Critical bug"
+    git push origin hotfix/critical-fix
+    # Create PR to master (requires approval)
+    ```
+
+- **Merge Strategy:**
+  - Use **linear history** for protected branches (master/main)
+  - Rebase feature branches before merging
+  - Squash commits when appropriate
+  ```bash
+  # ✅ DO: Rebase before merge
+  git checkout feature/my-feature
+  git rebase develop
+  git push --force-with-lease origin feature/my-feature
+  
+  # ❌ DON'T: Merge commits on protected branches
+  git merge develop  # Creates merge commit
+  ```
+
+- **Pull Request Guidelines:**
+  - Keep PRs small and focused (single feature/fix)
+  - Write descriptive PR titles and descriptions
+  - Link related issues
+  - Ensure all checks pass before requesting review
+  - Respond to review comments promptly
+  - Resolve all conversations before merging
+
+- **Tagging Releases:**
+  - Use semantic versioning: `v1.0.0`, `v1.1.0`, `v2.0.0`
+  - Tags are immutable once created
+  - Create tags from master/main only
+  ```bash
+  # ✅ DO: Create release tag
+  git checkout master
+  git pull
+  git tag -a v1.0.0 -m "Release v1.0.0"
+  git push origin v1.0.0
+  ```
+
+- **Best Practices:**
+  - Always pull latest before creating branch
+  - Keep branches up-to-date with base branch
+  - Delete merged branches after merge
+  - Use `--force-with-lease` instead of `--force`
+  - Review changes with `git diff` before committing
+  - Use `git status` frequently to track changes
+
+Follow [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) for general rule formatting guidelines.

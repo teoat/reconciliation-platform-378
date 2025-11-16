@@ -1,0 +1,174 @@
+---
+description: API design patterns and REST conventions for the reconciliation platform.
+globs: backend/**/*.rs, frontend/**/*.{ts,tsx}
+alwaysApply: true
+---
+
+- **RESTful API Conventions:**
+  - Use standard HTTP methods: GET, POST, PUT, DELETE, PATCH
+  - Use plural nouns for resources
+  - Use nested resources for relationships
+  - Return appropriate HTTP status codes
+  ```rust
+  // ✅ DO: RESTful endpoints
+  GET    /api/projects           // List projects
+  GET    /api/projects/{id}      // Get project
+  POST   /api/projects           // Create project
+  PUT    /api/projects/{id}      // Update project
+  DELETE /api/projects/{id}      // Delete project
+  
+  // Nested resources
+  GET    /api/projects/{id}/members
+  POST   /api/projects/{id}/members
+  ```
+
+- **Endpoint Naming:**
+  - Use kebab-case for multi-word endpoints
+  - Be consistent across all endpoints
+  - Use verbs for actions: `/api/auth/login`, `/api/files/upload`
+  ```rust
+  // ✅ DO: Consistent naming
+  /api/auth/login
+  /api/auth/refresh-token
+  /api/projects/{id}/archive
+  /api/reconciliation-jobs/{id}/cancel
+  
+  // ❌ DON'T: Inconsistent naming
+  /api/auth/login
+  /api/auth/refreshToken
+  /api/projects/{id}/Archive
+  ```
+
+- **HTTP Status Codes:**
+  - `200 OK`: Successful GET, PUT, PATCH
+  - `201 Created`: Successful POST (resource created)
+  - `204 No Content`: Successful DELETE
+  - `400 Bad Request`: Invalid request data
+  - `401 Unauthorized`: Missing or invalid authentication
+  - `403 Forbidden`: Authenticated but not authorized
+  - `404 Not Found`: Resource doesn't exist
+  - `409 Conflict`: Resource conflict (e.g., duplicate)
+  - `422 Unprocessable Entity`: Validation errors
+  - `500 Internal Server Error`: Server error
+  ```rust
+  // ✅ DO: Appropriate status codes
+  Ok(HttpResponse::Created().json(created_resource))
+  Err(AppError::NotFound("Project not found"))
+  Err(AppError::ValidationError("Invalid email format"))
+  ```
+
+- **Request/Response Patterns:**
+  - Use consistent request/response structures
+  - Include metadata in responses (pagination, timestamps)
+  - Use DTOs (Data Transfer Objects) for API boundaries
+  ```rust
+  // ✅ DO: Consistent response structure
+  {
+    "data": { ... },
+    "meta": {
+      "timestamp": "2025-01-15T10:30:00Z",
+      "version": "1.0.0"
+    }
+  }
+  
+  // Paginated responses
+  {
+    "data": [...],
+    "pagination": {
+      "page": 1,
+      "per_page": 20,
+      "total": 100,
+      "total_pages": 5
+    }
+  }
+  ```
+
+- **Error Response Format:**
+  - Consistent error structure across all endpoints
+  - Include error code, message, and details
+  - Don't expose internal errors to clients
+  ```rust
+  // ✅ DO: Consistent error format
+  {
+    "error": {
+      "code": "VALIDATION_ERROR",
+      "message": "Invalid input data",
+      "details": {
+        "email": ["Invalid email format"],
+        "password": ["Password too short"]
+      }
+    }
+  }
+  
+  // ❌ DON'T: Expose internal errors
+  {
+    "error": "Database connection failed: Connection timeout at..."
+  }
+  ```
+
+- **Authentication:**
+  - Use JWT tokens in Authorization header
+  - Include token refresh mechanism
+  - Support API keys for service-to-service calls
+  ```rust
+  // ✅ DO: JWT authentication
+  Authorization: Bearer <access_token>
+  
+  // Token refresh
+  POST /api/auth/refresh
+  {
+    "refresh_token": "..."
+  }
+  ```
+
+- **API Versioning:**
+  - Use URL versioning: `/api/v1/`, `/api/v2/`
+  - Maintain backward compatibility when possible
+  - Document breaking changes
+  ```rust
+  // ✅ DO: Versioned endpoints
+  /api/v1/projects
+  /api/v2/projects  // New version with breaking changes
+  ```
+
+- **Rate Limiting:**
+  - Implement rate limiting on all public endpoints
+  - Return appropriate headers: `X-RateLimit-Limit`, `X-RateLimit-Remaining`
+  - Use 429 Too Many Requests when limit exceeded
+  ```rust
+  // ✅ DO: Rate limiting headers
+  X-RateLimit-Limit: 100
+  X-RateLimit-Remaining: 95
+  X-RateLimit-Reset: 1642234567
+  ```
+
+- **Request Validation:**
+  - Validate all input data
+  - Return 422 with validation errors
+  - Use type-safe validation (serde, Zod)
+  ```rust
+  // ✅ DO: Validate requests
+  #[derive(Deserialize, Validate)]
+  pub struct CreateProjectRequest {
+      #[validate(length(min = 1, max = 100))]
+      pub name: String,
+      #[validate(email)]
+      pub owner_email: String,
+  }
+  ```
+
+- **Documentation:**
+  - Document all endpoints with OpenAPI/Swagger
+  - Include request/response examples
+  - Document error codes and responses
+  - Keep API documentation up-to-date
+
+- **Best Practices:**
+  - Use HTTPS in production
+  - Implement CORS properly
+  - Support content negotiation (JSON, XML if needed)
+  - Use pagination for list endpoints
+  - Include request IDs for tracing
+  - Log all API requests (mask PII)
+
+Follow [security.mdc](mdc:.cursor/rules/security.mdc) for API security patterns and [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) for general rule formatting guidelines.

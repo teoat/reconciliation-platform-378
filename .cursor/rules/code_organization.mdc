@@ -1,0 +1,74 @@
+---
+description: Code organization principles and SSOT (Single Source of Truth) patterns for the reconciliation platform.
+globs: **/*
+alwaysApply: true
+---
+
+- **SSOT Principles:**
+  - **One implementation per feature** - Never duplicate functionality
+  - **One location per concept** - Each concept has exactly one authoritative source
+  - **One responsibility per file** - Each file serves one clear purpose
+  - **One way to do things** - Consistent patterns across the codebase
+  - **One truth source** - No conflicting information or implementations
+  - Follow [SSOT Guidance](mdc:docs/architecture/SSOT_GUIDANCE.md) for detailed principles
+
+- **Directory Structure:**
+  - Frontend: `frontend/src/` with `components/`, `services/`, `hooks/`, `types/`, `utils/`
+  - Backend: `backend/src/` with `handlers/`, `services/`, `models/`, `middleware/`, `utils/`
+  - Documentation: `docs/` organized by category (`api/`, `architecture/`, `deployment/`, etc.)
+  - Scripts: `scripts/` with shared functions in `scripts/lib/`
+  - **Never create duplicate directories** at root level (e.g., `components/`, `services/` at root)
+
+- **Rust Code Organization:**
+  - One responsibility per module
+  - Group related functions together
+  - Use `mod.rs` for module organization
+  ```rust
+  // ✅ DO: Organized modules
+  // services/user_service.rs
+  pub mod user_service {
+      pub async fn create() -> AppResult<User> { }
+      pub async fn get() -> AppResult<User> { }
+  }
+  ```
+
+- **TypeScript Code Organization:**
+  - Group imports: external, internal, types
+  - Use absolute imports when configured (`@/` prefix)
+  - Avoid circular dependencies
+  - Co-locate related files (component + types + styles)
+  ```typescript
+  // ✅ DO: Organized imports
+  import React, { useState } from 'react';
+  import { useDispatch } from 'react-redux';
+  
+  import { UserService } from '@/services/userService';
+  import { User } from '@/types/user';
+  
+  import type { UserProfileProps } from './types';
+  ```
+
+- **File Naming:**
+  - Rust: `snake_case.rs` for files, `PascalCase` for modules
+  - TypeScript: `PascalCase.tsx` for components, `camelCase.ts` for utilities
+  - Documentation: `UPPER_SNAKE_CASE.md` for guides, `kebab-case.md` for features
+
+- **Module Boundaries:**
+  - Keep modules focused on a single domain or feature
+  - Use clear module boundaries (public vs private)
+  - Minimize cross-module dependencies
+  - Prefer composition over deep inheritance
+
+- **Code Duplication:**
+  - Extract common patterns into shared utilities
+  - Use shared function library (`scripts/lib/common-functions.sh`) for scripts
+  - Create reusable components/services rather than copying code
+  - Reference existing implementations before creating new ones
+
+- **Documentation Organization:**
+  - One document per topic (no duplicates)
+  - Archive outdated docs to `docs/archive/`
+  - Cross-reference related documentation
+  - Keep documentation in `docs/` directory (SSOT location)
+
+Follow [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) for general rule formatting guidelines.

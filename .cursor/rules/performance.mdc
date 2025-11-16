@@ -1,0 +1,152 @@
+---
+description: Performance optimization patterns for Rust backend and TypeScript/React frontend.
+globs: **/*.{rs,ts,tsx}
+alwaysApply: true
+---
+
+- **Database Query Optimization:**
+  - Use connection pooling (limit pool size appropriately)
+  - Use indexes on frequently queried columns
+  - Avoid N+1 queries (use eager loading, batch queries)
+  - Use transactions for multi-step operations
+  - Cache frequently accessed data
+  ```rust
+  // ✅ DO: Connection pooling
+  let pool = PgPoolOptions::new()
+      .max_connections(20)
+      .acquire_timeout(Duration::from_secs(5))
+      .build(database_url)
+      .await?;
+  
+  // ✅ DO: Batch queries
+  let users = diesel::select(users::table)
+      .filter(users::id.eq_any(&user_ids))
+      .load::<User>(conn)?;
+  
+  // ❌ DON'T: N+1 queries
+  for id in user_ids {
+      let user = get_user(id).await?;  // Separate query per iteration
+  }
+  ```
+
+- **Backend Performance:**
+  - Use async/await for I/O operations
+  - Use `Arc` for shared immutable data
+  - Avoid unnecessary clones
+  - Use streaming for large responses
+  - Implement caching strategies (Redis, in-memory)
+  ```rust
+  // ✅ DO: Efficient data sharing
+  let shared_config = Arc::new(config);
+  let config_clone = Arc::clone(&shared_config);
+  
+  // ✅ DO: Streaming large responses
+  HttpResponse::Ok()
+      .content_type("application/json")
+      .streaming(data_stream)
+  ```
+
+- **Frontend Performance:**
+  - Use code splitting and lazy loading
+  - Implement virtual scrolling for long lists
+  - Use `React.memo` for expensive components
+  - Use `useMemo` and `useCallback` appropriately
+  - Optimize bundle size (tree shaking, minification)
+  ```typescript
+  // ✅ DO: Code splitting
+  const Dashboard = lazy(() => import('./Dashboard'));
+  
+  // ✅ DO: Memoization
+  const ExpensiveComponent = React.memo(({ data }) => {
+    const processed = useMemo(() => processData(data), [data]);
+    return <div>{processed}</div>;
+  });
+  
+  // ✅ DO: Virtual scrolling
+  <VirtualList
+    items={largeList}
+    itemHeight={50}
+    renderItem={({ item }) => <ListItem data={item} />}
+  />
+  ```
+
+- **Caching Strategies:**
+  - **Backend**: Cache database queries, API responses
+  - **Frontend**: Cache API responses, use service workers
+  - Set appropriate TTL (Time To Live)
+  - Invalidate cache on updates
+  ```rust
+  // ✅ DO: Cache with TTL
+  cache.set_with_ttl(
+      "user:123",
+      user_data,
+      Duration::from_secs(300)  // 5 minutes
+  );
+  ```
+
+- **API Response Optimization:**
+  - Use pagination for list endpoints
+  - Implement field selection (only return needed fields)
+  - Use compression (gzip, brotli)
+  - Minimize response payload size
+  ```rust
+  // ✅ DO: Pagination
+  GET /api/projects?page=1&per_page=20
+  
+  // ✅ DO: Field selection
+  GET /api/projects?fields=id,name,status
+  ```
+
+- **Image and Asset Optimization:**
+  - Compress images before serving
+  - Use appropriate image formats (WebP, AVIF)
+  - Implement lazy loading for images
+  - Use CDN for static assets
+  ```typescript
+  // ✅ DO: Lazy load images
+  <img
+    src={imageUrl}
+    loading="lazy"
+    alt="Description"
+  />
+  ```
+
+- **Monitoring and Profiling:**
+  - Monitor API response times
+  - Track database query performance
+  - Use profiling tools (cargo flamegraph, React DevTools Profiler)
+  - Set up performance budgets
+  ```bash
+  # ✅ DO: Profile Rust code
+  cargo flamegraph --bin backend
+  
+  # ✅ DO: Analyze bundle size
+  npm run build -- --analyze
+  ```
+
+- **Performance Testing:**
+  - Load test critical endpoints
+  - Benchmark database queries
+  - Test with realistic data volumes
+  - Monitor memory usage
+  ```rust
+  // ✅ DO: Performance test
+  #[tokio::test]
+  async fn test_query_performance() {
+      let start = Instant::now();
+      let results = db.query_large_dataset().await?;
+      let duration = start.elapsed();
+      
+      assert!(duration.as_millis() < 1000, "Query too slow");
+  }
+  ```
+
+- **Best Practices:**
+  - Measure before optimizing
+  - Focus on bottlenecks (80/20 rule)
+  - Use async operations for I/O
+  - Avoid premature optimization
+  - Monitor production performance
+  - Set performance budgets and alerts
+
+Follow [testing.mdc](mdc:.cursor/rules/testing.mdc) for performance testing patterns and [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) for general rule formatting guidelines.

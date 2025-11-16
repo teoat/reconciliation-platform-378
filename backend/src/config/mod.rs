@@ -21,12 +21,22 @@ pub struct Config {
 }
 
 impl Config {
+    /// Load configuration from environment variables
+    /// 
+    /// Validates required configuration values and fails fast if missing.
+    /// Use SecretsService for accessing secrets.
     pub fn from_env() -> Result<Self, crate::errors::AppError> {
         dotenvy::dotenv().ok();
 
+        // Validate required secrets using SecretsService
+        let jwt_secret = crate::services::secrets::SecretsService::get_jwt_secret()
+            .map_err(|e| crate::errors::AppError::Config(format!("JWT_SECRET: {}", e)))?;
+        
+        let database_url = crate::services::secrets::SecretsService::get_database_url()
+            .map_err(|e| crate::errors::AppError::Config(format!("DATABASE_URL: {}", e)))?;
+
         Ok(Config {
-            database_url: env::var("DATABASE_URL")
-                .map_err(|_| crate::errors::AppError::Config("DATABASE_URL not set".to_string()))?,
+            database_url,
             host: env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string()),
             port: env::var("PORT")
                 .unwrap_or_else(|_| "2000".to_string())
@@ -35,8 +45,7 @@ impl Config {
 
             redis_url: env::var("REDIS_URL")
                 .unwrap_or_else(|_| "redis://localhost:6379".to_string()),
-            jwt_secret: env::var("JWT_SECRET")
-                .map_err(|_| crate::errors::AppError::Config("JWT_SECRET not set".to_string()))?,
+            jwt_secret,
             jwt_expiration: env::var("JWT_EXPIRATION")
                 .unwrap_or_else(|_| "86400".to_string())
                 .parse()
@@ -62,7 +71,11 @@ impl Config {
     }
 
     /// Load configuration from password manager
-    /// This is the preferred method for production environments
+    /// 
+    /// ⚠️ DEPRECATED: Application secrets should now use environment variables.
+    /// This method is kept for backward compatibility but should not be used for new code.
+    /// Use `Config::from_env()` instead.
+    #[deprecated(note = "Use Config::from_env() instead. Application secrets should be in environment variables.")]
     pub async fn from_password_manager(
         password_manager: std::sync::Arc<crate::services::password_manager::PasswordManager>,
     ) -> Result<Self, crate::errors::AppError> {
@@ -183,7 +196,11 @@ impl Config {
     }
 
     /// Update config values from password manager (called after password manager is initialized)
-    /// This allows us to use password manager without circular dependency
+    /// 
+    /// ⚠️ DEPRECATED: Application secrets should now use environment variables.
+    /// This method is kept for backward compatibility but should not be used.
+    /// Configuration now reads directly from environment variables.
+    #[deprecated(note = "Application secrets should be in environment variables. This method is no longer needed.")]
     pub async fn update_from_password_manager(
         &mut self,
         password_manager: std::sync::Arc<crate::services::password_manager::PasswordManager>,

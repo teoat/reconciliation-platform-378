@@ -15,50 +15,45 @@ This guide documents the optimized Cursor IDE configuration for the Reconciliati
 
 ### Current Active Servers
 
-1. **task-master-ai** - Task management and project planning
-   - **Status**: ✅ Active
-   - **API Keys Required**: Multiple (Anthropic, Perplexity, OpenAI, etc.)
-   - **Location**: `.cursor/mcp.json`
-
-2. **filesystem** - File system operations
+1. **filesystem** - File system operations
    - **Status**: ✅ Active (Path Fixed)
    - **Path**: `/Users/Arief/Documents/GitHub/reconciliation-platform-378`
    - **Note**: Previously pointing to wrong directory, now corrected
 
-3. **postgres** - PostgreSQL database operations
+2. **postgres** - PostgreSQL database operations
    - **Status**: ✅ Active
    - **Connection**: `postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app`
 
-4. **git** - Git repository operations
+3. **git** - Git repository operations
    - **Status**: ✅ Active (Path Fixed)
    - **Repository**: `/Users/Arief/Documents/GitHub/reconciliation-platform-378`
 
-5. **docker** - Docker container management
+4. **docker** - Docker container management
    - **Status**: ✅ Active
    - **Socket**: `unix:///var/run/docker.sock`
 
-6. **github** - GitHub API integration
+5. **github** - GitHub API integration
    - **Status**: ⚠️ Requires API Token
    - **Token**: Set `GITHUB_PERSONAL_ACCESS_TOKEN` in `.cursor/mcp.json`
 
-7. **brave-search** - Web search capabilities
+6. **brave-search** - Web search capabilities
    - **Status**: ⚠️ Requires API Key
    - **Key**: Set `BRAVE_API_KEY` in `.cursor/mcp.json`
 
-8. **prometheus** - Metrics and monitoring
+7. **prometheus** - Metrics and monitoring
    - **Status**: ✅ Active
    - **URL**: `http://localhost:9090`
 
-9. **reconciliation-platform** - Custom MCP server
+8. **reconciliation-platform** - Custom MCP server
    - **Status**: ⚠️ Requires Build
    - **Location**: `mcp-server/`
    - **Build Command**: `cd mcp-server && npm install && npm run build`
 
-10. **sqlite** - SQLite database operations
+9. **sqlite** - SQLite database operations
     - **Status**: ✅ Active (Optional)
     - **DB Path**: `./data/reconciliation.db`
 
-11. **puppeteer** - Browser automation
+10. **puppeteer** - Browser automation
     - **Status**: ✅ Active
     - **Use Case**: E2E testing, screenshots, PDF generation
 
@@ -81,13 +76,6 @@ Edit `.cursor/mcp.json` and replace placeholder values:
 ```json
 {
   "mcpServers": {
-    "task-master-ai": {
-      "env": {
-        "ANTHROPIC_API_KEY": "sk-ant-...",
-        "PERPLEXITY_API_KEY": "pplx-...",
-        // ... other keys
-      }
-    },
     "github": {
       "env": {
         "GITHUB_PERSONAL_ACCESS_TOKEN": "ghp_..."
@@ -121,16 +109,6 @@ After making changes to `.cursor/mcp.json`, restart Cursor IDE to load the new c
    - Rule improvement triggers
    - Pattern recognition guidelines
    - Continuous improvement process
-
-3. **taskmaster/dev_workflow.mdc** (423 lines)
-   - Taskmaster development workflow
-   - Task breakdown process
-   - Implementation guidelines
-
-4. **taskmaster/taskmaster.mdc** (557 lines)
-   - Complete Taskmaster tool reference
-   - MCP and CLI command documentation
-   - Tag management system
 
 ### Rule Optimization Tips
 
@@ -240,7 +218,6 @@ After making changes to `.cursor/mcp.json`, restart Cursor IDE to load the new c
 
 ## 🔗 Related Documentation
 
-- [Taskmaster Documentation](.cursor/rules/taskmaster/taskmaster.mdc)
 - [MCP Server Proposal](docs/MCP_SERVER_PROPOSAL.md)
 - [Master Documentation](MASTER_DOCUMENTATION.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
@@ -249,11 +226,11 @@ After making changes to `.cursor/mcp.json`, restart Cursor IDE to load the new c
 
 ## 💡 Tips for Maximum Efficiency
 
-1. **Use Taskmaster**: Leverage the task-master-ai MCP server for project management
-2. **Custom MCP Server**: Build and use the custom reconciliation-platform server for project-specific operations
-3. **Rule Examples**: Always include real code examples from your codebase
-4. **Regular Updates**: Review and update rules quarterly or after major refactors
-5. **Selective Servers**: Only enable MCP servers you actually use to reduce overhead
+1. **Custom MCP Server**: Build and use the custom reconciliation-platform server for project-specific operations
+2. **Rule Examples**: Always include real code examples from your codebase
+3. **Regular Updates**: Review and update rules quarterly or after major refactors
+4. **Selective Servers**: Only enable MCP servers you actually use to reduce overhead
+5. **Code Organization**: Follow SSOT principles and code organization rules
 
 ---
 

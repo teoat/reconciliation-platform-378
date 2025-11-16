@@ -1,42 +1,106 @@
-# 378 Reconciliation Platform - API Documentation
+# API Reference - 378 Reconciliation Platform
+
+**Last Updated**: January 2025  
+**Status**: Production Ready  
+**Version**: 1.0.0
+
+---
+
+## Table of Contents
+
+1. [Overview](#overview)
+2. [Base URLs](#base-urls)
+3. [Authentication](#authentication)
+4. [Rate Limiting](#rate-limiting)
+5. [Error Handling](#error-handling)
+6. [Endpoints](#endpoints)
+   - [Authentication](#authentication-endpoints)
+   - [User Management](#user-management)
+   - [Project Management](#project-management)
+   - [File Management](#file-management)
+   - [Data Sources](#data-sources)
+   - [Reconciliation Jobs](#reconciliation-jobs)
+   - [Analytics](#analytics)
+   - [System](#system)
+7. [WebSocket API](#websocket-api)
+8. [SDKs & Libraries](#sdks--libraries)
+9. [Examples](#examples)
+10. [Support](#support)
+
+---
 
 ## Overview
 
 The 378 Reconciliation Platform provides a comprehensive REST API for data reconciliation, project management, and user administration. This API enables seamless integration with external systems and provides real-time data processing capabilities.
 
-## Base URL
+---
+
+## Base URLs
 
 ```
 Production: https://api.378reconciliation.com
 Development: http://localhost:8080
 ```
 
+---
+
 ## Authentication
 
-The API uses JWT (JSON Web Token) authentication. Include the token in the Authorization header:
+The API uses JWT (JSON Web Token) authentication with refresh tokens. Include the access token in the Authorization header on every request:
 
 ```
-Authorization: Bearer <your_jwt_token>
+Authorization: Bearer <access_token>
 ```
 
-### Getting a Token
+### Authentication Flow
 
-```bash
-curl -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{
+1. `POST /api/auth/login` → returns access and refresh tokens
+2. Use the access token on subsequent requests
+3. `POST /api/auth/refresh` with the refresh token to rotate credentials
+4. `POST /api/auth/logout` to invalidate tokens
+
+### Sample Login Response
+
+```json
+{
+  "access_token": "<jwt>",
+  "refresh_token": "<jwt>",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "user": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
     "email": "user@example.com",
-    "password": "your_password"
-  }'
+    "role": "analyst",
+    "permissions": ["reconciliation:read", "reconciliation:write"]
+  }
+}
 ```
+
+### Optional Authentication Endpoints
+
+- `POST /api/auth/register` – create a new user
+- `POST /api/auth/change-password` – change password (accepts `{ "current_password", "new_password" }`)
+- `POST /api/auth/password-reset` – request password reset token
+- `POST /api/auth/password-reset/confirm` – confirm reset with token + new password
+- `GET /api/auth/me` – fetch the current authenticated user profile
+
+---
 
 ## Rate Limiting
 
-- **Rate Limit**: 100 requests per hour per user
-- **Headers**: 
-  - `X-RateLimit-Limit`: Maximum requests allowed
-  - `X-RateLimit-Remaining`: Remaining requests in current window
-  - `X-RateLimit-Reset`: Time when the rate limit resets
+- **Authentication endpoints**: 10 requests/minute
+- **General API endpoints**: 100 requests/minute
+- **File upload and bulk endpoints**: 20 requests/minute
+
+Rate limit headers are included on every response:
+
+```
+X-RateLimit-Limit: 100
+X-RateLimit-Remaining: 94
+X-RateLimit-Reset: 1736443200
+```
+
+---
 
 ## Error Handling
 
@@ -44,27 +108,30 @@ All errors follow a consistent format:
 
 ```json
 {
-  "error": "error_code",
-  "message": "Human readable error message",
-  "details": "Additional error details",
-  "timestamp": "2024-01-01T00:00:00Z"
+  "error": "VALIDATION_ERROR",
+  "message": "Email address is invalid",
+  "details": { "field": "email" },
+  "timestamp": "2025-01-01T12:00:00Z",
+  "request_id": "req_01HFZ6B1AVX9N9K2D7D4GZ7F9A"
 }
 ```
 
-### Common Error Codes
+### Error Codes
 
-| Code | Status | Description |
-|------|--------|-------------|
-| `VALIDATION_ERROR` | 400 | Request validation failed |
-| `UNAUTHORIZED` | 401 | Authentication required |
-| `FORBIDDEN` | 403 | Insufficient permissions |
-| `NOT_FOUND` | 404 | Resource not found |
-| `RATE_LIMIT_EXCEEDED` | 429 | Rate limit exceeded |
-| `INTERNAL_ERROR` | 500 | Internal server error |
+| Code                  | Status | Meaning                                |
+|-----------------------|--------|----------------------------------------|
+| `VALIDATION_ERROR`    | 400    | Input failed validation                |
+| `UNAUTHORIZED`        | 401    | Missing or invalid credentials         |
+| `FORBIDDEN`           | 403    | Lacking the required role/permission   |
+| `NOT_FOUND`           | 404    | Referenced resource does not exist     |
+| `RATE_LIMIT_EXCEEDED` | 429    | Slow down; retry after reset           |
+| `INTERNAL_ERROR`      | 500    | Unexpected server-side failure         |
 
-## API Endpoints
+---
 
-### Authentication
+## Endpoints
+
+### Authentication Endpoints
 
 #### POST /api/auth/register
 
@@ -155,6 +222,8 @@ Refresh access token.
   }
 }
 ```
+
+---
 
 ### User Management
 
@@ -249,6 +318,21 @@ Delete user account (Admin only).
   "message": "User deleted successfully"
 }
 ```
+
+#### GET /api/users/search
+
+Search users by name/email.
+
+**Query Parameters:**
+- `q`: Search query
+- `page`: Page number
+- `per_page`: Items per page
+
+#### GET /api/users/statistics
+
+Aggregate platform-wide user statistics (Admin/reporting).
+
+---
 
 ### Project Management
 
@@ -376,6 +460,24 @@ Delete project.
 }
 ```
 
+#### GET /api/projects/{project_id}/data-sources
+
+List project data sources.
+
+#### POST /api/projects/{project_id}/data-sources
+
+Create data source for project.
+
+#### GET /api/projects/{project_id}/reconciliation-jobs
+
+List reconciliation jobs scoped to project.
+
+#### POST /api/projects/{project_id}/reconciliation-jobs
+
+Create reconciliation job for project.
+
+---
+
 ### File Management
 
 #### POST /api/files/upload
@@ -384,7 +486,7 @@ Upload a file to a project.
 
 **Request:** Multipart form data
 - `file`: The file to upload
-- `project_id`: Project ID
+- `project_id`: Project ID (query parameter)
 
 **Response:**
 ```json
@@ -431,7 +533,7 @@ Get file details.
 
 #### POST /api/files/{id}/process
 
-Process uploaded file.
+Kick off ingestion pipeline.
 
 **Response:**
 ```json
@@ -447,7 +549,7 @@ Process uploaded file.
 
 #### DELETE /api/files/{id}
 
-Delete file.
+Remove file and associated staging data.
 
 **Response:**
 ```json
@@ -456,6 +558,24 @@ Delete file.
   "message": "File deleted successfully"
 }
 ```
+
+#### GET /api/ingestion/jobs
+
+Track ingestion jobs (status, metrics).
+
+#### POST /api/ingestion/jobs/{job_id}/cancel
+
+Abort an active ingestion job.
+
+#### GET /api/storage/files
+
+List stored assets (S3/GCS abstraction).
+
+#### GET /api/storage/files/{file_id}/download
+
+Stream/download a stored file.
+
+---
 
 ### Data Sources
 
@@ -535,6 +655,8 @@ Delete data source.
 }
 ```
 
+---
+
 ### Reconciliation Jobs
 
 #### GET /api/reconciliation/jobs
@@ -573,9 +695,17 @@ Get list of reconciliation jobs.
 }
 ```
 
+#### GET /api/reconciliation/jobs/active
+
+Active jobs snapshot.
+
+#### GET /api/reconciliation/jobs/queued
+
+Queued jobs snapshot.
+
 #### POST /api/reconciliation/jobs
 
-Create a new reconciliation job.
+Create a new reconciliation job (also available through project-scoped path).
 
 **Request Body:**
 ```json
@@ -631,9 +761,17 @@ Get reconciliation job details.
 }
 ```
 
+#### PUT /api/reconciliation/jobs/{id}
+
+Update job metadata/settings.
+
+#### DELETE /api/reconciliation/jobs/{id}
+
+Delete job.
+
 #### POST /api/reconciliation/jobs/{id}/start
 
-Start reconciliation job.
+Start processing.
 
 **Response:**
 ```json
@@ -645,7 +783,7 @@ Start reconciliation job.
 
 #### POST /api/reconciliation/jobs/{id}/stop
 
-Stop reconciliation job.
+Halt processing.
 
 **Response:**
 ```json
@@ -657,7 +795,7 @@ Stop reconciliation job.
 
 #### GET /api/reconciliation/jobs/{id}/results
 
-Get reconciliation results.
+Review matches, confidence, approval status.
 
 **Query Parameters:**
 - `page` (optional): Page number
@@ -708,9 +846,17 @@ Get reconciliation results.
 }
 ```
 
+#### GET /api/reconciliation/jobs/{id}/progress
+
+Poll for progress metrics.
+
+#### GET /api/reconciliation/jobs/{id}/statistics
+
+Summary metrics for a single job.
+
 #### POST /api/reconciliation/jobs/{id}/results/{result_id}/approve
 
-Approve reconciliation result.
+Approve a result.
 
 **Response:**
 ```json
@@ -722,7 +868,7 @@ Approve reconciliation result.
 
 #### POST /api/reconciliation/jobs/{id}/results/{result_id}/reject
 
-Reject reconciliation result.
+Reject with reason.
 
 **Request Body:**
 ```json
@@ -740,6 +886,19 @@ Export reconciliation results.
 - `status` (optional): Filter by status
 
 **Response:** File download
+
+#### GET /api/reconciliation/summary/{project_id}
+
+Aggregated stats for a project.
+
+### Matching Strategies
+
+Supported matching strategies:
+- **Exact match**: Amount/date/external ID
+- **Fuzzy matching**: Adjustable thresholds
+- **Machine-learning assisted**: Comparisons with anomaly detection and confidence scoring
+
+---
 
 ### Analytics
 
@@ -804,34 +963,19 @@ Get project analytics.
 }
 ```
 
-#### GET /api/analytics/reconciliation
+#### GET /api/analytics/users/{user_id}/activity
 
-Get reconciliation analytics.
+User activity timeline.
 
-**Response:**
-```json
-{
-  "success": true,
-  "data": {
-    "total_jobs": 100,
-    "completed_jobs": 95,
-    "failed_jobs": 5,
-    "pending_jobs": 0,
-    "running_jobs": 0,
-    "total_records_processed": 100000,
-    "total_matches": 95000,
-    "total_unmatched": 5000,
-    "average_confidence_score": 0.82,
-    "average_processing_time_ms": 300000,
-    "jobs_by_month": [
-      {
-        "month": "2024-01",
-        "count": 25
-      }
-    ]
-  }
-}
-```
+#### GET /api/analytics/reconciliation/stats
+
+Fleet-wide reconciliation metrics.
+
+#### POST /api/analytics/reports
+
+Generate scheduled or on-demand reports.
+
+---
 
 ### System
 
@@ -848,9 +992,21 @@ Health check endpoint.
 }
 ```
 
+#### GET /health/live
+
+Liveness endpoint.
+
+#### GET /health/ready
+
+Readiness endpoint.
+
+#### GET /api/system/health
+
+High-level system health JSON.
+
 #### GET /api/system/status
 
-Get system status.
+Operational status summary.
 
 **Response:**
 ```json
@@ -866,7 +1022,7 @@ Get system status.
 
 #### GET /api/system/metrics
 
-Get system metrics (Admin only).
+Detailed runtime metrics (JSON) - Admin only.
 
 **Response:**
 ```json
@@ -885,6 +1041,77 @@ Get system metrics (Admin only).
   }
 }
 ```
+
+#### GET /metrics
+
+Prometheus metrics (plain text).
+
+#### GET /metrics/summary
+
+Prometheus metrics (JSON format).
+
+---
+
+### Security & Audit
+
+#### GET /api/security/events
+
+Security event feed.
+
+#### GET /api/security/audit-logs
+
+Audit log traversal.
+
+#### GET /api/security/config
+
+Current password/session policies.
+
+---
+
+### Webhooks & Integrations
+
+#### GET /api/webhooks
+
+List configured webhooks.
+
+#### POST /api/webhooks
+
+Create/update webhook endpoint.
+
+#### POST /api/webhooks/{webhook_id}/test
+
+Fire a test payload.
+
+#### GET /api/webhooks/{webhook_id}/logs
+
+Inspect delivery attempts.
+
+#### GET /api/marketplace/integrations
+
+Discover marketplace integrations.
+
+#### POST /api/marketplace/integrations/{id}/install
+
+Install/configure integration.
+
+### Webhook Payload Schema
+
+```json
+{
+  "event": "reconciliation.completed",
+  "timestamp": "2025-01-01T10:30:00Z",
+  "data": {
+    "project_id": "123e4567-e89b-12d3-a456-426614174000",
+    "matched_records": 950,
+    "unmatched_records": 50,
+    "processing_time_ms": 420000
+  },
+  "webhook_id": "wh_abc123",
+  "signature": "sha256=..."
+}
+```
+
+---
 
 ## WebSocket API
 
@@ -915,26 +1142,22 @@ All WebSocket messages follow this format:
 ### Message Types
 
 #### Connection Events
-
 - `connect`: User connected
 - `disconnect`: User disconnected
 - `reconnect`: User reconnected
 
 #### Reconciliation Events
-
 - `reconciliation:progress`: Job progress update
 - `reconciliation:completed`: Job completed
 - `reconciliation:error`: Job error
 
 #### Collaboration Events
-
 - `collaboration:user_joined`: User joined project
 - `collaboration:user_left`: User left project
 - `collaboration:cursor_update`: Cursor position update
 - `collaboration:selection_update`: Selection update
 
 #### Notification Events
-
 - `notification:new`: New notification
 - `notification:read`: Notification read
 
@@ -972,7 +1195,14 @@ ws.onerror = function(error) {
 };
 ```
 
-## SDKs and Libraries
+### Server-Sent Events (when enabled)
+
+- Endpoint: `GET /api/events/stream`
+- Uses the same token and emits the same payload schema as WebSockets
+
+---
+
+## SDKs & Libraries
 
 ### JavaScript/TypeScript
 
@@ -980,19 +1210,16 @@ ws.onerror = function(error) {
 npm install @378reconciliation/sdk
 ```
 
-```javascript
+```typescript
 import { ReconciliationClient } from '@378reconciliation/sdk';
 
 const client = new ReconciliationClient({
   baseUrl: 'http://localhost:8080',
-  token: 'your_jwt_token'
+  token: process.env.API_TOKEN!
 });
 
 // Create a project
-const project = await client.projects.create({
-  name: 'My Project',
-  description: 'Project description'
-});
+const projects = await client.projects.list({ status: 'active' });
 
 // Upload a file
 const file = await client.files.upload(project.id, fileData);
@@ -1038,6 +1265,8 @@ job = client.reconciliation.create_job(
 )
 ```
 
+---
+
 ## Examples
 
 ### Complete Reconciliation Workflow
@@ -1046,63 +1275,56 @@ job = client.reconciliation.create_job(
 # 1. Authenticate
 TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"user@example.com","password":"password"}' \
-  | jq -r '.data.token')
+  -d '{"email":"user@example.com","password":"Password123!"}' \
+  | jq -r '.access_token')
 
-# 2. Create project
+# 2. Create a project
 PROJECT_ID=$(curl -s -X POST http://localhost:8080/api/projects \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"name":"Reconciliation Project","description":"Test project"}' \
-  | jq -r '.data.id')
+  -d '{"name":"Quarterly Reconciliation","description":"Q4 close"}' \
+  | jq -r '.id')
 
-# 3. Upload files
-FILE1_ID=$(curl -s -X POST http://localhost:8080/api/files/upload \
+# 3. Upload source data
+FILE_ID=$(curl -s -X POST http://localhost:8080/api/files/upload?project_id=$PROJECT_ID \
   -H "Authorization: Bearer $TOKEN" \
-  -F "file=@source1.csv" \
-  -F "project_id=$PROJECT_ID" \
+  -F "file=@./data/source.csv" \
   | jq -r '.data.id')
 
-FILE2_ID=$(curl -s -X POST http://localhost:8080/api/files/upload \
-  -H "Authorization: Bearer $TOKEN" \
-  -F "file=@source2.csv" \
-  -F "project_id=$PROJECT_ID" \
-  | jq -r '.data.id')
-
-# 4. Create data sources
-SOURCE_ID=$(curl -s -X POST http://localhost:8080/api/data-sources \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"name\":\"Source 1\",\"source_type\":\"csv\",\"project_id\":\"$PROJECT_ID\",\"file_id\":\"$FILE1_ID\"}" \
-  | jq -r '.data.id')
-
-TARGET_ID=$(curl -s -X POST http://localhost:8080/api/data-sources \
-  -H "Authorization: Bearer $TOKEN" \
-  -H "Content-Type: application/json" \
-  -d "{\"name\":\"Source 2\",\"source_type\":\"csv\",\"project_id\":\"$PROJECT_ID\",\"file_id\":\"$FILE2_ID\"}" \
-  | jq -r '.data.id')
-
-# 5. Create reconciliation job
+# 4. Launch reconciliation
 JOB_ID=$(curl -s -X POST http://localhost:8080/api/reconciliation/jobs \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d "{\"name\":\"Test Job\",\"project_id\":\"$PROJECT_ID\",\"source_data_source_id\":\"$SOURCE_ID\",\"target_data_source_id\":\"$TARGET_ID\"}" \
+  -d "{\"name\":\"Q4 vs ERP\",\"project_id\":\"$PROJECT_ID\",\"source_data_source_id\":\"$FILE_ID\",\"target_data_source_id\":\"$FILE_ID\"}" \
   | jq -r '.data.id')
 
-# 6. Start job
-curl -s -X POST http://localhost:8080/api/reconciliation/jobs/$JOB_ID/start \
+# 5. Start job
+curl -X POST http://localhost:8080/api/reconciliation/jobs/$JOB_ID/start \
   -H "Authorization: Bearer $TOKEN"
 
-# 7. Monitor progress
-curl -s -X GET http://localhost:8080/api/reconciliation/jobs/$JOB_ID \
+# 6. Monitor progress
+curl -X GET http://localhost:8080/api/reconciliation/jobs/$JOB_ID \
   -H "Authorization: Bearer $TOKEN" \
   | jq '.data.status'
 
-# 8. Get results
-curl -s -X GET http://localhost:8080/api/reconciliation/jobs/$JOB_ID/results \
+# 7. Get results
+curl -X GET http://localhost:8080/api/reconciliation/jobs/$JOB_ID/results \
   -H "Authorization: Bearer $TOKEN" \
   | jq '.data.results'
 ```
+
+---
+
+## Support
+
+For API support and questions:
+
+- **Email**: api-support@378reconciliation.com
+- **Documentation**: https://docs.378reconciliation.com
+- **Status Page**: https://status.378reconciliation.com
+- **Issue Tracker**: GitHub Issues (`reconciliation-platform-378`)
+
+---
 
 ## Changelog
 
@@ -1115,11 +1337,3 @@ curl -s -X GET http://localhost:8080/api/reconciliation/jobs/$JOB_ID/results \
 - Reconciliation job processing
 - Analytics and reporting
 - WebSocket real-time updates
-
-## Support
-
-For API support and questions:
-
-- **Email**: api-support@378reconciliation.com
-- **Documentation**: https://docs.378reconciliation.com
-- **Status Page**: https://status.378reconciliation.com

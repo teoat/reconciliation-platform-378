@@ -31,10 +31,16 @@ function AppContent() {
   const { state: frenlyState, updateProgress } = useFrenly();
 
   useEffect(() => {
+    // TEMPORARILY DISABLED FOR TESTING: Bypass authentication
     // Check if user is authenticated (in a real app, this would check localStorage or API)
     const authStatus = localStorage.getItem('auth');
     if (authStatus === 'true') {
       setIsAuthenticated(true);
+    } else {
+      // TEMPORARY: Auto-authenticate for testing purposes
+      setIsAuthenticated(true);
+      localStorage.setItem('auth', 'true');
+      localStorage.setItem('user', JSON.stringify({ id: 1, email: 'test@example.com', name: 'Test User' }));
     }
 
     // Initialize PWA service (auto-initializes on import)

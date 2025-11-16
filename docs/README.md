@@ -24,16 +24,11 @@
 - **[Backend Architecture](./architecture/backend/)** - Backend architecture guides
 
 ### 🔌 API Documentation
-- **[API Documentation](./api/API_DOCUMENTATION.md)** - Complete API reference
-- **[API Reference](./api/API_REFERENCE.md)** - API endpoints and usage
+- **[API Reference](./api/API_REFERENCE.md)** - Complete API reference and endpoints
 - **[Correlation ID Guide](./api/CORRELATION_ID_GUIDE.md)** - Correlation ID integration guide
 
 ### 🚀 Deployment
-- **[Deployment Guide](./DEPLOYMENT.md)** - Consolidated deployment guide
-- **[Docker Build Guide](./deployment/DOCKER_BUILD_GUIDE.md)** - Docker build instructions
-- **[Docker Deployment](./deployment/DOCKER_DEPLOYMENT.md)** - Docker deployment guide
-- **[Docker Optimization](./deployment/docker/OPTIMIZATION_GUIDE.md)** - Docker optimization
-- **[Deployment Status](./deployment/DEPLOYMENT_STATUS.md)** - Current deployment status
+- **[Deployment Guide](./deployment/DEPLOYMENT_GUIDE.md)** - Complete deployment guide (Docker, Kubernetes, optimization)
 - **[Go-Live Checklist](./deployment/GO_LIVE_CHECKLIST.md)** - Production go-live checklist
 - **[Deployment Scripts](./deployment/scripts/README.md)** - Deployment automation
 
@@ -43,11 +38,9 @@
 - **[Meta-Agent](./features/meta-agent/)** - Meta-agent orchestration
 
 ### 🛠️ Development Tools
-- **[MCP Setup Guide](./development/MCP_SETUP_GUIDE.md)** - Complete MCP server setup and configuration
-- **[Playwright MCP Setup](./development/PLAYWRIGHT_MCP_SETUP.md)** - Browser automation with Playwright MCP
+- **[MCP Setup Guide](./development/MCP_SETUP_GUIDE.md)** - Complete MCP server setup (includes Playwright)
 - **[Cursor Optimization Guide](./development/CURSOR_OPTIMIZATION_GUIDE.md)** - Cursor IDE optimization
-- **[Frenly AI](./features/frenly-ai/)** - Frenly AI optimization
-- **[Error Handling](./features/error-handling/)** - Error handling components
+- **[Error Handling Guide](./architecture/backend/ERROR_HANDLING_GUIDE.md)** - Backend error handling patterns
 
 ### 🔧 Operations
 - **[Troubleshooting](./operations/TROUBLESHOOTING.md)** - Common issues and solutions
@@ -66,8 +59,7 @@
 - **[Test Cases](./testing/test-cases/)** - Test case documentation
 
 ### 💻 Development
-- **[MCP Setup Guide](./development/MCP_SETUP_GUIDE.md)** - Complete MCP server setup and configuration (✅ Consolidated)
-- **[Playwright MCP Setup](./development/PLAYWRIGHT_MCP_SETUP.md)** - Browser automation with Playwright MCP
+- **[MCP Setup Guide](./development/MCP_SETUP_GUIDE.md)** - Complete MCP server setup (includes Playwright)
 - **[Cursor Optimization Guide](./development/CURSOR_OPTIMIZATION_GUIDE.md)** - Cursor IDE optimization
 - **[Quick Reference Commands](./development/QUICK-REFERENCE-COMMANDS.md)** - Common commands
 
@@ -99,8 +91,8 @@ Historical documentation and completion summaries:
 
 ### Essential Reading
 1. **[Architecture](./architecture/ARCHITECTURE.md)** - Understand the system
-2. **[API Documentation](./api/API_DOCUMENTATION.md)** - API reference
-3. **[Deployment Guide](./DEPLOYMENT.md)** - Deploy the system
+2. **[API Reference](./api/API_REFERENCE.md)** - Complete API reference
+3. **[Deployment Guide](./deployment/DEPLOYMENT_GUIDE.md)** - Deploy the system
 4. **[Troubleshooting](./operations/TROUBLESHOOTING.md)** - Solve problems
 
 ### For Developers
@@ -175,11 +167,11 @@ Brief description
 
 ## 📊 Documentation Statistics
 
-- **Total Active Docs**: ~40 organized files
-- **Archived Docs**: ~30+ historical files (includes Phase 1 consolidation)
+- **Total Active Docs**: ~35 organized files
+- **Archived Docs**: ~30+ historical files
 - **Categories**: 10 main categories
-- **Last Consolidation**: January 2025 (Phase 1 Complete)
-- **Consolidation Status**: See [Documentation Cleanup Summary](./DOCUMENTATION_CLEANUP_COMPLETE.md)
+- **Last Consolidation**: January 2025
+- **Consolidation Status**: See [Documentation Metadata](./archive/DOCUMENTATION_METADATA.md)
 
 ---
 
@@ -194,8 +186,8 @@ Brief description
 ## 🆘 Need Help?
 
 - **Troubleshooting**: See [Troubleshooting Guide](./operations/TROUBLESHOOTING.md)
-- **API Questions**: See [API Documentation](./api/API_DOCUMENTATION.md)
-- **Deployment Issues**: See [Deployment Guide](./DEPLOYMENT.md)
+- **API Questions**: See [API Reference](./api/API_REFERENCE.md)
+- **Deployment Issues**: See [Deployment Guide](./deployment/DEPLOYMENT_GUIDE.md)
 - **Contributing**: See [Contributing Guide](./getting-started/CONTRIBUTING.md)
 
 ---

@@ -56,6 +56,11 @@ impl PasswordManager {
     }
 
     /// Set master key for a specific user (derived from their login password)
+    /// 
+    /// ⚠️ DEPRECATED: Master keys should be separate from login passwords.
+    /// This method is kept for backward compatibility but should not be used.
+    /// Users should set a separate master password for password manager.
+    #[deprecated(note = "Master keys should be separate from login passwords. Use set_master_password() instead.")]
     pub async fn set_user_master_key(&self, user_id: uuid::Uuid, user_password: &str) {
         let mut keys = self.user_master_keys.write().await;
         // Derive master key from password using PBKDF2 for better security
@@ -78,6 +83,11 @@ impl PasswordManager {
     }
     
     /// Get or create OAuth master key for a user
+    /// 
+    /// ⚠️ DEPRECATED: OAuth users don't need password manager integration.
+    /// This method is kept for backward compatibility but should not be used.
+    /// OAuth users can set a master password separately if they want password manager.
+    #[deprecated(note = "OAuth users don't need password manager. This method is no longer needed.")]
     pub async fn get_or_create_oauth_master_key(
         &self,
         user_id: uuid::Uuid,
@@ -103,6 +113,10 @@ impl PasswordManager {
     }
 
     /// Clear master key for a specific user (called on logout)
+    /// 
+    /// ⚠️ DEPRECATED: Master keys are no longer stored in memory.
+    /// This method is kept for backward compatibility but does nothing.
+    #[deprecated(note = "Master keys are no longer stored in memory. This method is no longer needed.")]
     pub async fn clear_user_master_key(&self, user_id: uuid::Uuid) {
         let mut keys = self.user_master_keys.write().await;
         keys.remove(&user_id);
@@ -197,7 +211,11 @@ impl PasswordManager {
     }
 
     /// Initialize all application passwords from environment variables
-    /// This migrates existing passwords to the password manager
+    /// 
+    /// ⚠️ DEPRECATED: Application secrets should now use environment variables directly.
+    /// This method is kept for backward compatibility but should not be used.
+    /// Application secrets are managed via .env files, not password manager.
+    #[deprecated(note = "Application secrets should be in environment variables. This method is no longer needed.")]
     pub async fn initialize_application_passwords(&self) -> AppResult<()> {
         use std::env;
         

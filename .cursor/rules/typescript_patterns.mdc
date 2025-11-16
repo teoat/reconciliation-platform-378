@@ -88,6 +88,7 @@ alwaysApply: true
   - Use try-catch for async operations
   - Provide user-friendly error messages
   - Log errors for debugging
+  - See [security.mdc](mdc:.cursor/rules/security.mdc) for security-related error handling (not exposing internal errors, masking PII)
   ```typescript
   // ✅ DO: Proper error handling
   try {
@@ -150,18 +151,10 @@ alwaysApply: true
   ```
 
 - **Testing:**
+  - See [testing.mdc](mdc:.cursor/rules/testing.mdc) for comprehensive testing patterns
   - Write unit tests for utilities
   - Use React Testing Library for components
   - Mock API calls in tests
-  ```typescript
-  // ✅ DO: Component testing
-  describe('UserProfile', () => {
-    it('renders user information', () => {
-      render(<UserProfile userId={1} />);
-      expect(screen.getByText('John Doe')).toBeInTheDocument();
-    });
-  });
-  ```
 
 - **Performance:**
   - Use `React.memo` for expensive components
@@ -180,5 +173,12 @@ alwaysApply: true
   - One location per concept
   - One responsibility per file
   - Follow [SSOT Guidance](mdc:docs/SSOT_GUIDANCE.md)
+
+- **Security:**
+  - See [security.mdc](mdc:.cursor/rules/security.mdc) for comprehensive security patterns
+  - Always validate user input
+  - Use HTTPS in production
+  - Never commit secrets to version control
+  - Implement proper authentication and authorization
 
 Follow [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) for general rule formatting guidelines.

@@ -16,7 +16,7 @@ const Dashboard: React.FC = () => {
   }, [fetchProjects]);
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="max-w-6xl mx-auto" data-testid="dashboard">
       <h1 className="text-3xl font-bold text-gray-900 mb-8">Reconciliation Platform Dashboard</h1>
 
       {/* System Status */}
@@ -78,7 +78,18 @@ const Dashboard: React.FC = () => {
             <span className="ml-2">Loading projects...</span>
           </div>
         ) : error ? (
-          <div className="text-red-600 p-4 bg-red-50 rounded">Error: {error}</div>
+          <div className="text-red-600 p-4 bg-red-50 rounded" data-testid="dashboard-error">
+            <div className="flex items-center justify-between">
+              <span>Error: {error}</span>
+              <button
+                onClick={() => fetchProjects()}
+                className="ml-4 text-sm text-red-700 hover:text-red-900 underline"
+                aria-label="Retry loading projects"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
         ) : projects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {projects.map((project) => (

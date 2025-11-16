@@ -305,7 +305,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="min-h-screen bg-gray-50 p-6" data-testid="user-management">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">

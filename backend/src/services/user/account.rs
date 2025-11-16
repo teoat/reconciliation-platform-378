@@ -126,10 +126,11 @@ impl UserAccountService {
             .execute(&mut conn)
             .map_err(AppError::Database)?;
 
-        // Update password manager master key if provided
-        if let Some(pm) = password_manager {
-            pm.set_user_master_key(user_id, new_password).await;
-            log::info!("Updated password manager master key for user: {}", user_id);
+        // Password manager master keys are now separate from login passwords
+        // Users must set a separate master password for password manager
+        // See: docs/architecture/PASSWORD_SYSTEM_ORCHESTRATION.md
+        if password_manager.is_some() {
+            log::debug!("Password manager provided but master key update skipped (deprecated)");
         }
 
         Ok(())
