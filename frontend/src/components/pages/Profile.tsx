@@ -73,9 +73,9 @@ const Profile: React.FC = () => {
       });
 
       if (!response.success) {
-        const errorMsg = response.error || response.message || 'Failed to update profile';
-        setError(errorMsg);
-        toast.error(errorMsg);
+        const errorMsg = (response.error && typeof response.error === 'object' && 'message' in response.error ? response.error.message : response.error) || response.message || 'Failed to update profile';
+        setError(errorMsg as string);
+        toast.error(errorMsg as string);
       } else {
         toast.success('Profile updated successfully');
         setIsEditing(false);
