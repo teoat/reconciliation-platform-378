@@ -80,6 +80,10 @@ WORKDIR /app
 COPY --from=builder --chown=appuser:appuser /tmp/reconciliation-backend /app/reconciliation-backend
 COPY --from=builder --chown=appuser:appuser /app/backend/migrations /app/migrations
 
+# Copy entrypoint script
+COPY infrastructure/docker/entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
 # Switch to non-root user
 USER appuser
 

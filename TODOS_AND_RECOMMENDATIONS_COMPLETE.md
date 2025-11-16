@@ -89,12 +89,12 @@
 - [x] Create directory structure
 - [x] Update pages to use extracted types ✅ **COMPLETE**
 
-#### Phase 2: Utils ⏳
-- [ ] Extract data transformation utilities
-- [ ] Extract validation utilities
-- [ ] Extract quality metrics utilities
-- [ ] Extract reconciliation matching utilities
-- [ ] Extract filtering/sorting utilities
+#### Phase 2: Utils ✅
+- [x] Extract data transformation utilities ✅
+- [x] Extract validation utilities ✅
+- [x] Extract quality metrics utilities ✅
+- [x] Extract reconciliation matching utilities ✅
+- [x] Extract filtering/sorting utilities ✅
 
 #### Phase 3: Components ⏳
 - [ ] Extract DataQualityPanel
@@ -165,15 +165,16 @@
 - Documentation complete
 - Ready for deployment
 
-### Refactoring: 🚧 **20% COMPLETE**
+### Refactoring: 🚧 **30% COMPLETE**
 - Phase 1 (Types): ✅ 100% complete (350 lines removed)
-- Phase 2-6: ⏳ 0% complete
+- Phase 2 (Utils): ✅ 100% complete (utility functions extracted)
+- Phase 3-6: ⏳ 0% complete
 - Foundation ready for implementation
 
-### Combined: 🚧 **~65% COMPLETE**
+### Combined: 🚧 **~70% COMPLETE**
 - Logstash: 100% ✅
-- Refactoring: 20% 🚧 (Phase 1 complete, 350 lines removed)
-- **Weighted Average**: ~65% (Logstash was critical, refactoring progressing)
+- Refactoring: 30% 🚧 (Phases 1-2 complete: types extracted, utilities created)
+- **Weighted Average**: ~70% (Logstash was critical, refactoring progressing well)
 
 ---
 
