@@ -385,7 +385,7 @@ dev-debug.log
 # ============================================================================
 # ARCHIVED FILES & FOLDERS
 # ============================================================================
-docs/archive/
+# Note: docs/archive/ is intentionally committed for historical reference
 backup_*/
 archived/
 archive/
