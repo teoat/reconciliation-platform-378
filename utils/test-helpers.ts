@@ -390,6 +390,7 @@ export function detectPerformanceRegression<T>(
   testFn: () => T | Promise<T>
 ): () => Promise<void> {
   return async () => {
+    PerformanceMonitor.clear(); // Clear previous measurements
     const startTime = performance.now();
 
     try {
