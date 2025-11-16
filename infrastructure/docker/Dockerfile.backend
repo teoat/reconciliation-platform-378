@@ -97,6 +97,6 @@ ENV RUST_LOG=info \
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD wget -q -O- http://localhost:2000/api/health || exit 1
 
-# Start application with explicit output
-CMD ["/app/reconciliation-backend"]
+# Start application via entrypoint script
+ENTRYPOINT ["/app/entrypoint.sh"]
 
