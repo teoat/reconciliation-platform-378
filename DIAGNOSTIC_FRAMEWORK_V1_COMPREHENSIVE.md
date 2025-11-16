@@ -899,4 +899,723 @@ ls -lh dist/*.js | awk '{print $5, $9}' | sort -h -r
 
 ---
 
+## 11. Git History & Code Churn 📈
+
+### Overview
+Analyze repository history to identify hotspots, code ownership, and maintenance patterns.
+
+### What to Analyze
+
+#### A. Code Churn
+- Files changed frequently
+- Hotspot analysis
+- Unstable modules
+- High churn areas
+
+#### B. Commit Quality
+- Large commits (>500 lines)
+- Unclear commit messages
+- Missing commit conventions
+- Incomplete commits
+
+#### C. Branch Management
+- Stale branches
+- Unmerged branches
+- Branch naming conventions
+- Long-lived feature branches
+
+#### D. Code Ownership
+- Files with many authors
+- Orphaned code (no recent changes)
+- Knowledge concentration
+- Bus factor risk
+
+### Commands to Run
+
+```bash
+# Find high-churn files
+git log --pretty=format: --name-only | \
+  sort | uniq -c | sort -rg | head -20
+
+# Find large commits
+git log --pretty=format:"%h %an %s" --shortstat | \
+  grep "insertions\|deletions" | \
+  awk '{print $1,$4}' | sort -k2 -rn | head -20
+
+# Find stale branches
+git branch -r --sort=-committerdate | head -20
+git branch -r --merged main | grep -v main
+
+# Find code ownership
+git shortlog -sn --all
+
+# Find files with many authors
+for file in $(find src -name "*.ts"); do
+  echo "$file: $(git log --format='%an' -- $file | sort -u | wc -l)"
+done | sort -t: -k2 -rn | head -20
+
+# Find orphaned code (no commits in 6 months)
+git log --since="6 months ago" --name-only --pretty=format: | \
+  sort -u > recent_files.txt
+find src -name "*.ts" > all_files.txt
+comm -23 all_files.txt recent_files.txt
+
+# Find commit patterns
+git log --format="%ai" | awk '{print $1}' | sort | uniq -c
+
+# Check commit message quality
+git log --pretty=format:"%s" | \
+  grep -v "^[A-Z]" | head -20  # Non-capitalized commits
+```
+
+### Expected Findings
+- High-churn files needing refactoring (5-10 files)
+- Stale branches to delete (10-20 branches)
+- Knowledge concentration risks (bus factor <3)
+- Commit quality issues (inconsistent messages)
+
+### Priority
+🟡 **MEDIUM** - High churn files, stale branches  
+🟢 **LOW** - Commit message quality, branch naming  
+📋 **TRACK** - Code ownership, bus factor
+
+### Estimated Time
+- Git history analysis: 1-2 hours
+- Branch cleanup: 1-2 hours
+- Documentation of findings: 1-2 hours
+
+---
+
+## 12. Environment & Configuration 🔧
+
+### Overview
+Audit environment variables, configuration files, and feature flags for consistency and security.
+
+### What to Analyze
+
+#### A. Environment Variables
+- Missing .env.example
+- Undocumented variables
+- Inconsistent naming
+- Secrets in code
+
+#### B. Configuration Files
+- Duplicate configurations
+- Inconsistent formats
+- Missing validation
+- Environment-specific configs
+
+#### C. Feature Flags
+- Unused feature flags
+- Permanent flags (technical debt)
+- Missing documentation
+- Flag debt
+
+### Commands to Run
+
+```bash
+# Find all environment variables used
+grep -rh "process\.env\." src/ | \
+  sed 's/.*process\.env\.\([A-Z_]*\).*/\1/' | \
+  sort -u
+
+# Compare with .env.example
+comm -23 <(grep "^[A-Z]" .env | cut -d= -f1 | sort) \
+         <(grep "^[A-Z]" .env.example | cut -d= -f1 | sort)
+
+# Find hard-coded config values
+grep -r "http://localhost" src/
+grep -r "https://api\." src/
+
+# Find feature flags
+grep -r "featureFlag\|feature_flag\|isEnabled" src/
+
+# List all config files
+find . -name "*.config.*" -o -name ".*rc"
+
+# Check for environment-specific configs
+find . -name "*.dev.*" -o -name "*.prod.*" -o -name "*.staging.*"
+
+# Find secrets that might be hardcoded
+grep -ri "password\s*=\|api.*key\s*=\|secret\s*=" src/ --exclude-dir=node_modules
+```
+
+### Expected Findings
+- Missing environment documentation (10-20 vars)
+- Hard-coded configuration (5-10 instances)
+- Unused feature flags (3-5 flags)
+- Configuration inconsistencies
+
+### Priority
+🟠 **HIGH** - Missing env docs, hardcoded secrets  
+🟡 **MEDIUM** - Hard-coded values, duplicate configs  
+🟢 **LOW** - Config cleanup, flag debt
+
+### Estimated Time
+- Configuration audit: 1-2 hours
+- Documentation updates: 2-4 hours
+- Cleanup: 2-4 hours
+
+---
+
+## 13. Docker & Container Analysis 🐳
+
+### Overview
+Optimize Docker images and containers for size, security, and performance.
+
+### What to Analyze
+
+#### A. Image Size
+- Large Docker images (>1GB)
+- Unnecessary layers
+- Unoptimized base images
+- Cache inefficiencies
+
+#### B. Security
+- Vulnerable base images
+- Running as root
+- Exposed ports
+- Secrets in images
+
+#### C. Multi-stage Builds
+- Missing multi-stage builds
+- Inefficient stages
+- Unused stages
+- Build cache optimization
+
+#### D. Compose Configuration
+- Resource limits
+- Health checks
+- Network configuration
+- Volume management
+
+### Commands to Run
+
+```bash
+# Check image sizes
+docker images --format "table {{.Repository}}\t{{.Tag}}\t{{.Size}}" | \
+  sort -k3 -rh
+
+# Scan for vulnerabilities
+docker scan reconciliation-platform:latest
+# Or use Trivy
+trivy image reconciliation-platform:latest
+
+# Analyze layers
+docker history reconciliation-platform:latest
+docker history reconciliation-platform:latest --no-trunc
+
+# Check for root user
+docker inspect reconciliation-platform:latest | \
+  grep -A5 "User"
+
+# Find secrets in images
+docker history reconciliation-platform:latest --no-trunc | \
+  grep -i "secret\|password\|key"
+
+# Check health of running containers
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+
+# Resource usage
+docker stats --no-stream
+
+# Check for best practices
+docker run --rm -i hadolint/hadolint < Dockerfile
+
+# Analyze docker-compose
+docker-compose config --quiet
+```
+
+### Expected Findings
+- Large image sizes (>500MB)
+- Security vulnerabilities (5-10 per image)
+- Missing health checks
+- Resource optimization opportunities (20-40% reduction possible)
+
+### Priority
+🔴 **CRITICAL** - Security vulnerabilities, secrets in images  
+🟠 **HIGH** - Images >1GB, running as root  
+🟡 **MEDIUM** - Missing health checks, resource limits  
+🟢 **LOW** - Image optimization, multi-stage improvements
+
+### Estimated Time
+- Security scanning: 30 minutes
+- Image optimization: 4-8 hours
+- Configuration updates: 2-4 hours
+- Testing: 2-4 hours
+
+---
+
+## 14. License Compliance 📄
+
+### Overview
+Ensure all dependencies comply with license requirements and avoid legal issues.
+
+### What to Analyze
+
+#### A. Dependency Licenses
+- GPL dependencies (copyleft risk)
+- Incompatible licenses
+- Missing license info
+- Commercial license issues
+
+#### B. Code Attribution
+- Missing copyright notices
+- Third-party code attribution
+- License file completeness
+
+### Commands to Run
+
+```bash
+# List all dependency licenses
+npx license-checker --summary
+
+# Find GPL dependencies
+npx license-checker --onlyAllow "MIT;Apache-2.0;BSD;ISC"
+
+# Generate license report
+npx license-checker --csv > licenses.csv
+npx license-checker --json > licenses.json
+
+# Find unlicensed code
+find src -name "*.ts" ! -exec grep -l "Copyright\|License" {} \;
+
+# Check Cargo licenses
+cargo license --json
+cargo license --tsv > cargo-licenses.tsv
+
+# Generate attribution file
+npx license-report --output=table --only=prod > LICENSES.md
+
+# Check for license conflicts
+npx legally --licenses licenses.json
+
+# Scan for copyleft licenses
+license-checker --production | grep -i "gpl\|lgpl\|agpl"
+```
+
+### Expected Findings
+- License compliance issues (2-5 packages)
+- GPL contamination risk (0-2 packages)
+- Missing attributions (10-20 files)
+- License conflicts (0-3 conflicts)
+
+### Priority
+🔴 **CRITICAL** - GPL issues, license conflicts  
+🟠 **HIGH** - Missing licenses, incompatible licenses  
+🟡 **MEDIUM** - Attribution updates, documentation  
+🟢 **LOW** - License file organization
+
+### Estimated Time
+- License scanning: 30 minutes
+- Conflict resolution: 2-4 hours
+- Attribution updates: 2-4 hours
+- Documentation: 1-2 hours
+
+---
+
+## 15. Accessibility Compliance ♿
+
+### Overview
+Ensure application meets WCAG standards for accessibility and inclusivity.
+
+### What to Analyze
+
+#### A. WCAG Compliance
+- Missing ARIA labels
+- Color contrast issues (<4.5:1 for text)
+- Keyboard navigation
+- Screen reader support
+
+#### B. Semantic HTML
+- Improper heading hierarchy
+- Missing alt text
+- Form label associations
+- Landmark regions
+
+#### C. Focus Management
+- Focus traps
+- Focus order
+- Visible focus indicators
+- Skip links
+
+### Tools & Commands
+
+```bash
+# Accessibility audit
+npx lighthouse https://your-app.com \
+  --only-categories=accessibility --view
+
+# Find missing alt text
+grep -r "<img" src/ | grep -v "alt="
+
+# Find missing ARIA labels
+grep -r "button\|input" src/ | grep -v "aria-label"
+
+# Axe-core automated testing
+npm install --save-dev @axe-core/cli
+axe https://your-app.com --save results.json
+
+# Pa11y CI testing
+npx pa11y-ci --sitemap http://localhost:3000/sitemap.xml
+
+# Check for proper heading hierarchy
+grep -rn "<h[1-6]" src/ | awk -F: '{print $1":"$2}'
+
+# Find forms without labels
+grep -r "<input" src/ | grep -v "aria-label\|<label"
+```
+
+### Manual Testing Checklist
+
+```markdown
+## Keyboard Navigation
+- [ ] All interactive elements reachable via Tab
+- [ ] Logical tab order
+- [ ] Visible focus indicators
+- [ ] Skip links present
+- [ ] No keyboard traps
+
+## Screen Reader
+- [ ] Proper heading hierarchy (h1 -> h2 -> h3)
+- [ ] Images have alt text
+- [ ] Forms have labels
+- [ ] ARIA landmarks used correctly
+- [ ] Live regions for dynamic content
+
+## Visual
+- [ ] Color contrast >= 4.5:1 (text)
+- [ ] Color contrast >= 3:1 (UI elements)
+- [ ] Text resizable to 200%
+- [ ] No content lost at 400% zoom
+- [ ] No reliance on color alone
+
+## Content
+- [ ] Link text is descriptive
+- [ ] Error messages are clear
+- [ ] Form validation is helpful
+- [ ] Time limits are adjustable
+```
+
+### Expected Findings
+- WCAG violations (20-50 issues typical for first audit)
+- Missing ARIA attributes (10-30 elements)
+- Keyboard accessibility issues (5-15 issues)
+- Color contrast problems (5-10 issues)
+
+### Priority
+🔴 **CRITICAL** - Blocking accessibility issues (keyboard traps, no alt text on critical images)  
+🟠 **HIGH** - WCAG AA violations (contrast, missing labels)  
+🟡 **MEDIUM** - WCAG AAA improvements, best practices  
+🟢 **LOW** - Enhanced accessibility features
+
+### Estimated Time
+- Automated testing: 1 hour
+- Manual testing: 4-8 hours
+- Fixing critical issues: 8-16 hours
+- Fixing medium issues: 4-8 hours
+- Testing & validation: 4-8 hours
+
+---
+
+## 📋 Comprehensive Diagnostic Checklist
+
+### Phase 1: Quick Wins (1-2 hours)
+- [ ] Dependency outdated check
+- [ ] Security audit (npm/cargo)
+- [ ] Find unused dependencies
+- [ ] Check for hard-coded secrets
+- [ ] Environment variable audit
+
+### Phase 2: Code Quality (4-6 hours)
+- [ ] Complexity analysis
+- [ ] Dead code detection
+- [ ] Code duplication scan
+- [ ] Import/export analysis
+- [ ] Circular dependency check
+
+### Phase 3: Performance (4-6 hours)
+- [ ] Bundle analysis
+- [ ] Database query analysis
+- [ ] API performance testing
+- [ ] Frontend performance audit
+- [ ] Docker image optimization
+
+### Phase 4: Testing & Documentation (6-8 hours)
+- [ ] Test coverage analysis
+- [ ] Find untested critical paths
+- [ ] API documentation review
+- [ ] Code comment audit
+- [ ] Accessibility testing
+
+### Phase 5: Deep Analysis (8-12 hours)
+- [ ] Git history analysis
+- [ ] Code ownership mapping
+- [ ] License compliance check
+- [ ] Configuration audit
+- [ ] Security penetration testing
+
+---
+
+## 🎯 Recommended Execution Order
+
+### Week 1: Critical & Security
+1. Security vulnerabilities (npm/cargo audit)
+2. Dependency outdated check
+3. Hard-coded secrets scan
+4. Database schema analysis
+5. API security audit
+
+### Week 2: Performance & Quality
+1. Bundle size analysis
+2. Code complexity audit
+3. Dead code detection
+4. Circular dependency check
+5. Database performance
+
+### Week 3: Testing & Documentation
+1. Test coverage analysis
+2. API documentation review
+3. Accessibility audit
+4. Configuration audit
+5. License compliance
+
+### Week 4: Optimization & Cleanup
+1. Git history analysis
+2. Code ownership mapping
+3. Docker optimization
+4. Build performance
+5. Final cleanup
+
+---
+
+## 🔧 Automation Opportunities
+
+### CI/CD Integration
+
+```yaml
+# .github/workflows/code-health-checks.yml
+name: Code Health Checks
+
+on: [push, pull_request]
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Security audit
+        run: |
+          npm audit
+          cargo audit
+      
+      - name: Test coverage
+        run: npm run test:coverage
+      
+      - name: Dependency check
+        run: npx depcheck
+      
+      - name: Dead code detection
+        run: npx ts-prune
+      
+      - name: Docker scan
+        run: docker scan app:latest
+```
+
+### Scheduled Jobs
+- **Daily**: Dependency audit, security scans
+- **Weekly**: Test coverage, dead code detection, bundle analysis
+- **Monthly**: License compliance, accessibility audit
+- **Quarterly**: Deep security audit, architecture review
+
+---
+
+## 📊 Expected Deliverables
+
+For each diagnostic area, produce:
+
+### 1. Summary Report
+- Findings count by severity
+- Critical issues highlighted
+- Quick wins identified
+- Overall health score
+
+### 2. Detailed Report
+- File-by-file breakdown
+- Specific recommendations
+- Code examples
+- Remediation steps with time estimates
+
+### 3. Action Plan
+- Prioritized task list
+- Time estimates per task
+- Risk assessment
+- Success criteria
+- Assigned owners
+
+### 4. Metrics Dashboard
+- Before/after comparisons
+- Progress tracking
+- Trend analysis over time
+- Health score calculation
+
+---
+
+## 📈 Success Metrics
+
+Track these metrics over time to measure improvement:
+
+| Metric | Current Baseline | Target | Measurement Frequency |
+|--------|-----------------|--------|---------------------|
+| **Code Quality Score** | TBD | 85+/100 | Weekly |
+| **Test Coverage** | TBD | 80%+ | Daily |
+| **Security Score** | TBD | 95+/100 | Daily |
+| **Bundle Size** | TBD | <2MB | Per PR |
+| **Build Time** | TBD | <2min | Per build |
+| **Technical Debt** | TBD | <20 issues | Weekly |
+| **Dependency Freshness** | TBD | 95%+ current | Weekly |
+| **API Response Time (P95)** | TBD | <200ms | Real-time |
+| **Accessibility Score** | TBD | 95+/100 | Weekly |
+| **License Compliance** | TBD | 100% | Monthly |
+
+---
+
+## 💰 Cost-Benefit Analysis
+
+### Estimated Investment
+
+| Phase | Time Required | Team Size | Total Hours |
+|-------|--------------|-----------|-------------|
+| Phase 1: Quick Wins | 1-2 hours | 1 dev | 2h |
+| Phase 2: Code Quality | 4-6 hours | 1-2 devs | 8h |
+| Phase 3: Performance | 4-6 hours | 1-2 devs | 8h |
+| Phase 4: Testing & Docs | 6-8 hours | 1-2 devs | 12h |
+| Phase 5: Deep Analysis | 8-12 hours | 2-3 devs | 20h |
+| **Total** | **23-34 hours** | **2-3 devs** | **50h** |
+
+### Expected Benefits
+
+- **Reduced Bugs**: 40-60% reduction in production issues
+- **Faster Development**: 20-30% improvement in velocity
+- **Lower Maintenance**: 30-50% reduction in maintenance time
+- **Better Performance**: 30-50% improvement in load times
+- **Higher Quality**: 25-40% improvement in code quality metrics
+- **Improved Security**: 80-95% reduction in vulnerabilities
+
+### ROI Timeline
+
+- **Week 1**: Quick wins provide immediate value (security fixes, quick optimizations)
+- **Month 1**: Code quality improvements increase development velocity
+- **Quarter 1**: Performance optimizations improve user experience
+- **Year 1**: Reduced technical debt lowers maintenance costs significantly
+
+---
+
+## 🚀 Getting Started
+
+### Immediate Actions (Today)
+
+1. **Run security audits**
+   ```bash
+   npm audit
+   cargo audit
+   ```
+
+2. **Check dependency freshness**
+   ```bash
+   npm outdated
+   cargo outdated
+   ```
+
+3. **Generate initial reports**
+   ```bash
+   npm run test:coverage
+   npx ts-prune
+   ```
+
+### This Week
+
+1. Review all generated reports
+2. Create prioritized action items
+3. Assign ownership for each area
+4. Set up automated CI/CD checks
+5. Schedule regular review meetings
+
+### This Month
+
+1. Execute Phase 1 & 2 (Security & Code Quality)
+2. Document all findings
+3. Track metrics weekly
+4. Begin Phase 3 (Performance)
+
+---
+
+## 📞 Support & Resources
+
+### Tools Reference
+
+- **Security**: npm audit, cargo audit, Snyk, Semgrep
+- **Quality**: ESLint, Prettier, SonarQube, ts-prune
+- **Performance**: Lighthouse, webpack-bundle-analyzer
+- **Testing**: Jest, Playwright, cargo-tarpaulin
+- **Accessibility**: axe-core, Pa11y, Lighthouse
+
+### Documentation
+
+- [ESLint Rules](https://eslint.org/docs/rules/)
+- [Rust Clippy Lints](https://rust-lang.github.io/rust-clippy/)
+- [WCAG Guidelines](https://www.w3.org/WAI/WCAG21/quickref/)
+- [OWASP Top 10](https://owasp.org/www-project-top-ten/)
+
+### Community
+
+- Stack Overflow for specific questions
+- GitHub Discussions for tool-specific issues
+- Web accessibility slack channels
+- Rust community forums
+
+---
+
+## 🎯 Summary
+
+This V1 Diagnostic Framework provides **15 comprehensive areas** for codebase health assessment:
+
+1. ✅ Dependency & Package Analysis
+2. ✅ Code Quality & Complexity
+3. ✅ Security Vulnerabilities
+4. ✅ Performance & Optimization
+5. ✅ Testing Coverage & Quality
+6. ✅ Dead Code Detection
+7. ✅ Import/Export Analysis
+8. ✅ Database & Schema Analysis
+9. ✅ API Consistency & Documentation
+10. ✅ Build & Bundle Analysis
+11. ✅ Git History & Code Churn
+12. ✅ Environment & Configuration
+13. ✅ Docker & Container Analysis
+14. ✅ License Compliance
+15. ✅ Accessibility Compliance
+
+### Key Takeaways
+
+- **Comprehensive Coverage**: 15 diagnostic areas cover all aspects of code health
+- **Actionable Commands**: 200+ ready-to-use commands
+- **Clear Priorities**: Risk-based prioritization (Critical → High → Medium → Low)
+- **Time Estimates**: Realistic time allocations for planning
+- **Automation Ready**: CI/CD integration examples included
+- **Measurable Results**: Clear success metrics and KPIs
+
+---
+
+**Status**: ✅ **COMPLETE - V1 Framework**  
+**Total Diagnostic Areas**: 15  
+**Total Commands**: 200+  
+**Estimated Total Time**: 40-60 hours  
+**Recommended Team Size**: 2-3 developers  
+**Timeline**: 4 weeks for complete audit
+
+---
+
+*This Diagnostic Framework V1 provides a foundational approach to comprehensive codebase health assessment with practical, actionable guidance for immediate implementation.*
 

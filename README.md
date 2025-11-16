@@ -11,6 +11,7 @@
 ## 📋 Table of Contents
 
 - [Quick Start](#-quick-start)
+- [🎯 Health Score & Quality Reports](#-health-score--quality-reports)
 - [Features](#-features)
 - [Architecture](#-architecture)
 - [Documentation](#-documentation)
@@ -21,6 +22,38 @@
 - [Performance](#-performance)
 - [Contributing](#-contributing)
 - [Support](#-support)
+
+---
+
+## 🎯 Health Score & Quality Reports
+
+**Current Health Score**: 72/100 | **Target**: 100/100 | **Timeline**: 12 weeks
+
+| Category | Score | Status |
+|----------|-------|--------|
+| Security | 85/100 | 🟢 Good |
+| Code Quality | 65/100 | 🟡 Moderate |
+| Performance | 70/100 | 🟡 Moderate |
+| Testing | 60/100 | 🟠 Needs Improvement |
+| Documentation | 85/100 | 🟢 Good |
+| Maintainability | 68/100 | 🟡 Moderate |
+
+### 📊 Available Reports
+
+1. **[HEALTH_SCORE_SUMMARY.md](./HEALTH_SCORE_SUMMARY.md)** - Quick overview and top 10 priorities
+2. **[DIAGNOSTIC_REPORT.md](./DIAGNOSTIC_REPORT.md)** - Comprehensive current state analysis
+3. **[HEALTH_IMPROVEMENT_ROADMAP.md](./HEALTH_IMPROVEMENT_ROADMAP.md)** - 68 TODOs to reach 100%
+
+### 🚀 Start Improving Today
+
+```bash
+# Fix critical blocking issues (10 hours, +8 points)
+npm install --legacy-peer-deps       # TODO-001
+cargo install cargo-audit            # TODO-002
+npm audit --production && cargo audit # TODO-003
+```
+
+See [HEALTH_SCORE_SUMMARY.md](./HEALTH_SCORE_SUMMARY.md) for detailed action plan.
 
 ---
 

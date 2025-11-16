@@ -1,0 +1,10 @@
+# Backup files
+backups/
+*.tar.gz
+*.backup
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp

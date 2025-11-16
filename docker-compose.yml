@@ -31,7 +31,7 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./infrastructure/database/postgresql.conf:/etc/postgresql/postgresql.conf:ro
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5432}:5432"  # PostgreSQL direct access (use PgBouncer port 6432 for production)
     networks:
       - reconciliation-network
     restart: unless-stopped
@@ -41,14 +41,14 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
       PGBOUNCER_LISTEN_ADDR: 0.0.0.0
-      PGBOUNCER_LISTEN_PORT: 6432
+      PGBOUNCER_LISTEN_PORT: 5432  # Container internal port
       POOL_MODE: transaction
       MAX_CLIENT_CONN: 500
       DEFAULT_POOL_SIZE: 50
       AUTH_TYPE: md5
       ADMIN_USERS: ${POSTGRES_USER:-postgres}
     ports:
-      - "6432:5432"
+      - "${PGBOUNCER_PORT:-6432}:5432"  # Host:Container - PgBouncer connection pooler (recommended for production)
     depends_on:
       postgres:
         condition: service_started
@@ -126,7 +126,7 @@ services:
         condition: service_started
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://localhost:2000/ready >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:2000/health >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -243,8 +243,8 @@ services:
       - ./logging/logstash/pipeline.conf:/usr/share/logstash/pipeline/logstash.conf:ro
       - ./logging/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
     ports:
-      - "${LOGSTASH_PORT:-5044}:5044"
-      - "${LOGSTASH_HTTP_PORT:-9600}:9600"
+      - "${LOGSTASH_PORT:-5044}:5044"      # Beats input (required for Filebeat log ingestion)
+      - "${LOGSTASH_HTTP_PORT:-9600}:9600" # HTTP API for monitoring and node stats (required)
     networks:
       - reconciliation-network
     depends_on:

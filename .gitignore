@@ -407,3 +407,16 @@ __tests__/
 test-results/
 coverage/
 .nyc_output/
+# Repository Cleanup
+dist/
+.next/
+target/
+*.log
+coverage/
+.tarpaulin/
+*.profraw
+reports/*.json
+.DS_Store
+node_modules/
+.env.local
+.env.*.local

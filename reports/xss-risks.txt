@@ -1,0 +1,6 @@
+frontend/src/utils/securityAudit.tsx:292:  const hasInlineScripts = Array.from(scripts).some(script => script.innerHTML.trim() !== '')
+frontend/src/utils/securityAudit.tsx:315:    return htmlElement.innerHTML.includes('<script') || htmlElement.innerHTML.includes('javascript:')
+frontend/src/utils/securityAudit.tsx:327:  const hasEvalUsage = document.documentElement.innerHTML.includes('eval(')
+frontend/src/utils/inputValidation.ts:51:  return div.innerHTML
+frontend/src/utils/security.tsx:14:  return div.innerHTML
+frontend/src/utils/security.tsx:23:  return div.innerHTML

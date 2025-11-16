@@ -61,5 +61,6 @@ COPY infrastructure/filebeat/filebeat-frontend.yml /etc/filebeat/filebeat.yml
 
 # Use default nginx config suitable for static files; custom prod config is intended for /etc/nginx/nginx.conf and requires SSL certs
 EXPOSE 80
-CMD ["/bin/sh", "-c", "nginx -g 'daemon off;' & filebeat -e -c /etc/filebeat/filebeat.yml"]
+# Run nginx only (Filebeat removed for performance - use external log collection)
+CMD ["nginx", "-g", "daemon off;"]
 
