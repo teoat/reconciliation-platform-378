@@ -1,0 +1,95 @@
+# Logstash Alert Rules for Prometheus
+# These alerts monitor Logstash health, performance, and resource usage
+
+groups:
+  - name: logstash
+    interval: 30s
+    rules:
+      # Alert: Logstash Exporter Down
+      - alert: LogstashExporterDown
+        expr: up{job="logstash"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: logstash
+        annotations:
+          summary: "Logstash exporter is down"
+          description: "Logstash exporter has been down for more than 1 minute. Logstash metrics are not being collected."
+
+      # Alert: Logstash High Heap Usage
+      - alert: LogstashHighHeapUsage
+        expr: logstash_jvm_memory_used_bytes{area="heap"} / logstash_jvm_memory_max_bytes{area="heap"} * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: logstash
+        annotations:
+          summary: "Logstash heap usage is high"
+          description: "Logstash heap usage is {{ $value | humanizePercentage }} (threshold: 80%). Current usage: {{ $value | humanize }}."
+
+      # Alert: Logstash Critical Heap Usage
+      - alert: LogstashCriticalHeapUsage
+        expr: logstash_jvm_memory_used_bytes{area="heap"} / logstash_jvm_memory_max_bytes{area="heap"} * 100 > 90
+        for: 2m
+        labels:
+          severity: critical
+          service: logstash
+        annotations:
+          summary: "Logstash heap usage is critical"
+          description: "Logstash heap usage is {{ $value | humanizePercentage }} (threshold: 90%). Immediate action required to prevent OOM."
+
+      # Alert: Logstash Queue Full
+      - alert: LogstashQueueFull
+        expr: logstash_pipeline_queue_events_count > 1000
+        for: 5m
+        labels:
+          severity: warning
+          service: logstash
+        annotations:
+          summary: "Logstash queue is backing up"
+          description: "Logstash queue has {{ $value }} events (threshold: 1000). Pipeline may be unable to keep up with input rate."
+
+      # Alert: Logstash No Events Processed
+      - alert: LogstashNoEventsProcessed
+        expr: rate(logstash_pipeline_events_in_total[10m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+          service: logstash
+        annotations:
+          summary: "Logstash is not processing events"
+          description: "No events have been processed by Logstash in the last 10 minutes. Check input sources (Filebeat)."
+
+      # Alert: Logstash High Error Rate
+      - alert: LogstashHighErrorRate
+        expr: rate(logstash_pipeline_events_filtered_total[5m]) > 100
+        for: 5m
+        labels:
+          severity: warning
+          service: logstash
+        annotations:
+          summary: "Logstash has high error/filter rate"
+          description: "Logstash is filtering {{ $value | humanize }} events per second. Check pipeline configuration and input data."
+
+      # Alert: Logstash Pipeline Down
+      - alert: LogstashPipelineDown
+        expr: logstash_pipeline_events_in_total == 0 and logstash_pipeline_events_out_total == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: logstash
+        annotations:
+          summary: "Logstash pipeline appears to be down"
+          description: "Logstash pipeline has processed no events in the last 5 minutes. Pipeline may be stopped or misconfigured."
+
+      # Alert: Logstash High CPU Usage
+      - alert: LogstashHighCPUUsage
+        expr: rate(process_cpu_seconds_total{job="logstash"}[5m]) * 100 > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: logstash
+        annotations:
+          summary: "Logstash CPU usage is high"
+          description: "Logstash CPU usage is {{ $value | humanize }}% (threshold: 80%). Consider optimizing pipeline configuration."
+

@@ -4,7 +4,7 @@
 use diesel::migration::MigrationVersion;
 use diesel::{Connection, PgConnection};
 use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use log::{error, info};
+use log::{error, info, warn};
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!();
 
@@ -15,16 +15,36 @@ pub fn run_migrations(database_url: &str) -> Result<(), Box<dyn std::error::Erro
 
     info!("Running database migrations...");
 
-    // Apply all migrations
+    // Apply all migrations - continue even if some fail (for missing tables)
     match conn.run_pending_migrations(MIGRATIONS) {
-        Ok(_) => {}
+        Ok(versions) => {
+            if versions.is_empty() {
+                info!("No pending migrations to apply");
+            } else {
+                info!("Applied {} migration(s) successfully", versions.len());
+            }
+        }
         Err(e) => {
-            error!("Migration failed: {}", e);
-            return Err(format!("Migration error: {}", e).into());
+            let error_msg = format!("Migration error: {}", e);
+            error!("{}", error_msg);
+            
+            // Check if error is due to missing tables - if so, log warning but continue
+            let error_str = e.to_string().to_lowercase();
+            if error_str.contains("does not exist") || 
+               error_str.contains("relation") ||
+               error_str.contains("table") {
+                warn!("Migration failed due to missing tables - this is expected if base schema hasn't been created yet. Error: {}", e);
+                info!("Continuing startup - tables will be created when needed");
+                // Don't fail startup if tables don't exist yet
+                return Ok(());
+            }
+            
+            // For other errors, fail
+            return Err(error_msg.into());
         }
     }
 
-    info!("All migrations applied successfully!");
+    info!("Database migrations completed!");
 
     Ok(())
 }

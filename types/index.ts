@@ -247,32 +247,8 @@ export interface ProjectAnalytics {
   predictions: PredictiveAnalytics;
 }
 
-// Performance and Quality Metrics
-export interface PerformanceMetrics {
-  processingTime: number;
-  throughput: number;
-  errorRate: number;
-  successRate: number;
-}
-
-export interface QualityMetrics {
-  accuracy: number;
-  completeness: number;
-  consistency: number;
-  validity: number;
-}
-
-export interface TrendAnalysis {
-  period: string;
-  direction: 'up' | 'down' | 'stable';
-  magnitude: number;
-}
-
-export interface PredictiveAnalytics {
-  forecast: number[];
-  confidence: number;
-  factors: string[];
-}
+// Performance and Quality Metrics - Re-exported from types/project
+export type { PerformanceMetrics, QualityMetrics, TrendAnalysis, PredictiveAnalytics } from './project';
 
 // ============================================================================
 // DATA INGESTION TYPES

@@ -91,7 +91,7 @@ mod unit_tests {
     #[tokio::test]
     async fn test_utility_functions() {
         use crate::utils::string;
-        use crate::utils::validation;
+        use crate::services::validation::ValidationServiceDelegate;
 
         // Test string utilities
         assert_eq!(string::truncate_string("Hello World", 5), "He...");
@@ -101,11 +101,12 @@ mod unit_tests {
         assert_eq!(string::to_title_case("HELLO WORLD"), "Hello World");
 
         // Test UUID validation
+        let validator = ValidationServiceDelegate::default();
         let valid_uuid = Uuid::new_v4();
-        assert!(validation::validate_uuid(&valid_uuid.to_string()).is_ok());
+        assert!(validator.validate_uuid(&valid_uuid.to_string()).is_ok());
 
         let invalid_uuid = "not-a-uuid";
-        assert!(validation::validate_uuid(invalid_uuid).is_err());
+        assert!(validator.validate_uuid(invalid_uuid).is_err());
     }
 
     /// Test performance utilities

@@ -41,5 +41,6 @@ echo "✅ Binary found and executable" >&2
 
 # Run the backend with explicit output redirection
 echo "▶️  Executing binary..." >&2
-exec /app/reconciliation-backend 2>&1
+# Use exec to replace shell, but ensure output is visible
+exec /app/reconciliation-backend
 

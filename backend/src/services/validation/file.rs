@@ -14,6 +14,10 @@ impl FileValidator {
         })
     }
 
+    pub fn with_regex(file_extension_regex: Regex) -> Self {
+        Self { file_extension_regex }
+    }
+
     pub fn validate_filename(&self, filename: &str) -> Result<(), AppError> {
         if filename.is_empty() {
             return Err(AppError::Validation("Filename is required".to_string()));

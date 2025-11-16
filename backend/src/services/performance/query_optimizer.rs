@@ -100,7 +100,7 @@ impl QueryOptimizer {
 
     fn estimate_optimization_impact(&self, query: &str, duration: Duration) -> OptimizationImpact {
         let mut impact_score = 0;
-        let mut impact_level = OptimizationLevel::Low;
+        let _impact_level = OptimizationLevel::Low;
 
         // More aggressive scoring for queries >50ms (P95 target)
         if duration > Duration::from_millis(1000) {
@@ -140,7 +140,7 @@ impl QueryOptimizer {
         }
     }
 
-    fn calculate_improvement_percentage(&self, duration: Duration, score: u32) -> f64 {
+    fn calculate_improvement_percentage(&self, _duration: Duration, score: u32) -> f64 {
         match score {
             0 => 0.0,
             1..=2 => 20.0, // Medium impact: 20% improvement

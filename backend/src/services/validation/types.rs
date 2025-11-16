@@ -26,9 +26,12 @@ pub struct CustomValidationError {
 /// Input validation service (backward compatibility wrapper)
 #[derive(Clone)]
 pub struct ValidationService {
+    #[allow(dead_code)]
     email_regex: Regex,
     phone_regex: Regex,
+    #[allow(dead_code)]
     password_regex: Regex,
+    #[allow(dead_code)]
     file_extension_regex: Regex,
 }
 

@@ -184,7 +184,7 @@ impl MonitoringService {
         USER_ACTIONS_TOTAL.inc();
     }
 
-    pub fn record_user_action_with_details(&self, action: &str, details: &str) {
+    pub fn record_user_action_with_details(&self, _action: &str, _details: &str) {
         USER_ACTIONS_TOTAL.inc();
         // Log additional details if needed
     }

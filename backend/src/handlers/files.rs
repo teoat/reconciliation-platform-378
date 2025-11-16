@@ -33,7 +33,7 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 }
 
 #[derive(serde::Deserialize)]
-struct InitResumableReq {
+pub struct InitResumableReq {
     project_id: Uuid,
     filename: String,
     expected_size: Option<i64>,
@@ -121,7 +121,7 @@ pub async fn upload_resumable_chunk(
 }
 
 #[derive(serde::Deserialize)]
-struct CompleteResumableReq {
+pub struct CompleteResumableReq {
     project_id: Uuid,
     upload_id: Uuid,
     filename: String,

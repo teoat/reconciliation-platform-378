@@ -9,8 +9,8 @@ export interface RetryOptions {
   baseDelay?: number
   maxDelay?: number
   backoffMultiplier?: number
-  retryable?: (error: any) => boolean
-  onRetry?: (attempt: number, error: any) => void
+  retryable?: (error: unknown) => boolean
+  onRetry?: (attempt: number, error: unknown) => void
 }
 
 export class EnhancedRetryService {
@@ -39,7 +39,7 @@ export class EnhancedRetryService {
       onRetry
     } = options
 
-    let lastError: any
+    let lastError: unknown
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
@@ -92,7 +92,7 @@ export class EnhancedRetryService {
       onRetry
     } = options
 
-    let lastError: any
+    let lastError: unknown
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
@@ -129,7 +129,7 @@ export class EnhancedRetryService {
   /**
    * Check if an error is retryable
    */
-  isRetryableError(error: any): boolean {
+  isRetryableError(error: unknown): boolean {
     // Network errors
     if (error instanceof TypeError && error.message.includes('fetch')) {
       return true

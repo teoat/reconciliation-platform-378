@@ -12,6 +12,7 @@ use uuid::Uuid;
 /// Offline data storage service
 pub struct OfflinePersistenceService {
     storage: Arc<RwLock<HashMap<String, StoredData>>>,
+    #[allow(dead_code)]
     auto_save_interval: std::time::Duration,
 }
 
@@ -158,7 +159,7 @@ impl OfflinePersistenceService {
 
     /// Auto-save data (called periodically)
     pub async fn auto_save(&self, key: &str, data: serde_json::Value) -> Result<(), OfflineError> {
-        if let Some(existing) = self.get_data(key).await? {
+        if let Some(_existing) = self.get_data(key).await? {
             self.update_data(key, data).await?;
         } else {
             self.store_data(key, data, "auto_save", None, None).await?;
@@ -216,7 +217,7 @@ impl OfflinePersistenceService {
     async fn persist_to_browser_storage(
         &self,
         key: &str,
-        data: &serde_json::Value,
+        _data: &serde_json::Value,
     ) -> Result<(), OfflineError> {
         // In a real implementation, this would use web_sys to access localStorage
         // For now, we'll just log the action

@@ -259,6 +259,8 @@ export default defineConfig({
   define: {
     // Remove development-only code in production
     __DEV__: JSON.stringify(process.env.NODE_ENV === 'development'),
+    // Provide process.env.NODE_ENV for compatibility with code expecting it
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'development'),
   },
   // CSS optimizations
   css: {

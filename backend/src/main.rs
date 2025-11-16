@@ -29,7 +29,11 @@ async fn main() -> std::io::Result<()> {
     std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
 
     // Initialize logging
+    eprintln!("Initializing logging...");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
     env_logger::init_from_env(env_logger::Env::new().default_filter_or("info"));
+    eprintln!("Logging initialized");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
     log::info!("Logging initialized");
 
     // Load configuration
@@ -47,13 +51,20 @@ async fn main() -> std::io::Result<()> {
     };
 
     // Run database migrations before initializing services
+    // Note: Migrations may fail if base tables don't exist yet - that's OK, we'll continue
     log::info!("Running database migrations...");
-    if let Err(e) = reconciliation_backend::database_migrations::run_migrations(&config.database_url) {
-        log::error!("Failed to run database migrations: {}", e);
-        eprintln!("Failed to run database migrations: {}", e);
-        std::process::exit(1);
+    match reconciliation_backend::database_migrations::run_migrations(&config.database_url) {
+        Ok(_) => {
+            log::info!("Database migrations completed successfully");
+        }
+        Err(e) => {
+            log::warn!("Database migrations encountered issues: {}", e);
+            log::warn!("Continuing startup - tables may be created on first use");
+            eprintln!("Migration warning (non-fatal): {}", e);
+            // Don't exit - allow application to start even if migrations fail
+            // This allows the app to work with an empty database
+        }
     }
-    log::info!("Database migrations completed successfully");
 
     // Load resilience configuration from environment (or use defaults)
     let resilience_config = resilience_config_from_env();

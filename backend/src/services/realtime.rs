@@ -122,7 +122,7 @@ impl NotificationService {
         }
     }
 
-    pub async fn broadcast_update(&self, user_id: &str, update: RealtimeUpdate) {
+    pub async fn broadcast_update(&self, user_id: &str, _update: RealtimeUpdate) {
         let subscribers = self.subscribers.read().await;
         if let Some(user_subscribers) = subscribers.get(user_id) {
             for &websocket_id in user_subscribers {

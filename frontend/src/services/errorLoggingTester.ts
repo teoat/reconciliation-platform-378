@@ -17,7 +17,7 @@ export interface ErrorLoggingTest {
 export interface ErrorLoggingTestResult {
   success: boolean;
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
   timestamp: Date;
   duration: number;
   errors?: string[];
@@ -31,7 +31,7 @@ export interface LogEntry {
   level: 'debug' | 'info' | 'warn' | 'error' | 'fatal';
   message: string;
   timestamp: Date;
-  context?: any;
+  context?: Record<string, unknown>;
   stackTrace?: string;
   userId?: string;
   sessionId?: string;
@@ -43,7 +43,7 @@ export interface TransmissionTest {
   success: boolean;
   latency: number;
   timestamp: Date;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export interface StorageTest {
@@ -51,7 +51,7 @@ export interface StorageTest {
   success: boolean;
   size: number;
   timestamp: Date;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export interface MonitoringTest {
@@ -59,7 +59,7 @@ export interface MonitoringTest {
   success: boolean;
   threshold?: number;
   timestamp: Date;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export interface ErrorLoggingConfig {
@@ -929,7 +929,7 @@ export class ErrorLoggingTester {
   private async captureLogEntryWithContext(
     level: LogEntry['level'],
     message: string,
-    context: any
+    context: Record<string, unknown>
   ): Promise<LogEntry> {
     // Mock implementation
     const logEntry: LogEntry = {

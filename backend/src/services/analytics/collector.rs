@@ -13,6 +13,7 @@ use crate::services::analytics::types::*;
 
 /// Data collector for analytics
 pub struct AnalyticsCollector {
+    #[allow(dead_code)]
     db: Database,
 }
 

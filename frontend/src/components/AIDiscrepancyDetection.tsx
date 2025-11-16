@@ -456,6 +456,14 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
               key={detection.id}
               className="flex items-center justify-between p-4 border border-secondary-200 rounded-lg hover:bg-secondary-50 cursor-pointer"
               onClick={() => handleDetectionClick(detection)}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleDetectionClick(detection);
+                }
+              }}
+              role="button"
+              tabIndex={0}
             >
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">

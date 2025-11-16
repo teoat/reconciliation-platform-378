@@ -291,7 +291,7 @@ impl ErrorTranslationService {
                 "NOT_FOUND",
                 Some("The requested item was not found".to_string()),
             ),
-            diesel::result::Error::DatabaseError(kind, info) => match kind {
+            diesel::result::Error::DatabaseError(kind, _info) => match kind {
                 diesel::result::DatabaseErrorKind::UniqueViolation => (
                     "DUPLICATE_ENTRY",
                     Some(format!(

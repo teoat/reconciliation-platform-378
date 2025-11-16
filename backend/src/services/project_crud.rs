@@ -60,7 +60,7 @@ impl ProjectCrudOps {
 
         // Create project
         let project_id = Uuid::new_v4();
-        let now = Utc::now();
+        let _now = Utc::now();
 
         let new_project = NewProject {
             name: request.name.trim().to_string(),
@@ -155,7 +155,7 @@ impl ProjectCrudOps {
         let mut conn = self.db.get_connection()?;
 
         // Check if project exists
-        let existing_project = projects::table
+        let _existing_project = projects::table
             .filter(projects::id.eq(project_id))
             .first::<Project>(&mut conn)
             .map_err(AppError::Database)?;

@@ -430,8 +430,8 @@ pub mod graceful_degradation {
     /// Execute operation with cached fallback
     pub async fn execute_with_cached_fallback<F, T>(
         operation: F,
-        cache_key: &str,
-        ttl_seconds: u64,
+        _cache_key: &str,
+        _ttl_seconds: u64,
     ) -> AppResult<T>
     where
         F: std::future::Future<Output = AppResult<T>>,

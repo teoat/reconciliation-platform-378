@@ -53,16 +53,35 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
   const errorMessage = error instanceof Error ? error.message : error;
   const errorTitle = title || (error instanceof Error ? error.name : 'Error');
 
-  // Announce error to screen readers
+  // Announce error to screen readers with enhanced context
   React.useEffect(() => {
     if (error) {
-      ariaLiveRegionsService.announceError(errorMessage, {
+      // Build comprehensive announcement message
+      let announcement = `${severity === 'error' ? 'Error' : severity === 'warning' ? 'Warning' : 'Information'}: ${errorTitle}`;
+      
+      if (errorMessage && errorMessage !== errorTitle) {
+        announcement += `. ${errorMessage}`;
+      }
+      
+      if (context) {
+        announcement += `. Context: ${context}`;
+      }
+      
+      if (recoveryActions.length > 0) {
+        announcement += `. ${recoveryActions.length} recovery option${recoveryActions.length > 1 ? 's' : ''} available`;
+      }
+      
+      if (suggestions.length > 0) {
+        announcement += `. ${suggestions.length} suggestion${suggestions.length > 1 ? 's' : ''} available`;
+      }
+
+      ariaLiveRegionsService.announceError(announcement, {
         componentId: errorId,
         action: 'error-displayed',
-        currentState: { severity, context },
+        currentState: { severity, context, hasRecoveryActions: recoveryActions.length > 0, hasSuggestions: suggestions.length > 0 },
       });
     }
-  }, [error, errorMessage, severity, context, errorId]);
+  }, [error, errorMessage, errorTitle, severity, context, errorId, recoveryActions.length, suggestions.length]);
 
   const handleRecovery = async (action: ErrorRecoveryAction) => {
     setIsRecovering(true);
@@ -83,13 +102,13 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
 
   const severityClasses = {
     error: 'bg-red-50 border-red-200 text-red-800',
-    warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+    warning: 'bg-warning-50 border-warning-200 text-warning-800', // Using warning-800 for better contrast
     info: 'bg-blue-50 border-blue-200 text-blue-800',
   };
 
   const iconColors = {
     error: 'text-red-600',
-    warning: 'text-yellow-600',
+    warning: 'text-warning-700', // Using warning-700 for WCAG AA compliance (4.5:1+)
     info: 'text-blue-600',
   };
 
@@ -115,7 +134,8 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
                   type="button"
                   onClick={() => setIsExpanded(!isExpanded)}
                   className="text-sm font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded"
-                  aria-expanded={isExpanded}
+                  // eslint-disable-next-line jsx-a11y/aria-props
+                  aria-expanded={isExpanded ? 'true' : 'false'}
                   aria-controls={errorId ? `error-details-${errorId}` : 'error-details'}
                 >
                   {isExpanded ? (

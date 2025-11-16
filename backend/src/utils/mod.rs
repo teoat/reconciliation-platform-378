@@ -9,7 +9,6 @@ pub mod error_handling;
 pub mod error_logging;
 pub mod file;
 pub mod string;
-pub mod validation;
 
 pub use authorization::{
     check_admin_permission, check_job_access, check_job_permission, check_project_permission,

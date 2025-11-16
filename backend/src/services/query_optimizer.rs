@@ -76,6 +76,7 @@ pub struct QueryOptimizer {
     config: QueryOptimizerConfig,
     slow_queries: Arc<RwLock<Vec<QueryAnalysis>>>,
     stats: Arc<RwLock<QueryStats>>,
+    #[allow(dead_code)]
     query_plan_cache: Arc<RwLock<std::collections::HashMap<String, String>>>,
 }
 

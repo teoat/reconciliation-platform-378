@@ -2,21 +2,17 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- Content Security Policy - CDN scripts removed, using npm packages instead -->
+    <!-- Development: Allows unsafe-eval for React dev tools, unsafe-inline for styles -->
+    <!-- Production: Should use nonces (see CSP utility functions) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: https:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' ws: wss: http://localhost:* https://localhost:*; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" />
     <title>Reconciliation Platform</title>
   </head>
   <body>
-    <!-- External libraries loaded from CDN for better caching and reduced bundle size -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="https://unpkg.com/axios@1.6.0/dist/axios.min.js"></script>
-    <script src="https://unpkg.com/lucide@0.294.0/dist/umd/lucide.js"></script>
-    <script>
-      // Make libraries available globally
-      window.io = io;
-      window.axios = axios;
-      window.lucide = lucide;
-    </script>
+    <!-- Libraries are now imported via npm packages (socket.io-client, axios, lucide-react) -->
+    <!-- This improves security, version control, and eliminates CSP issues with CDN scripts -->
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

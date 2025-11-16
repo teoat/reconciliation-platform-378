@@ -65,7 +65,7 @@ where
     }
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        let secret = self.secret.clone();
+        let _secret = self.secret.clone();
         let method = req.method().clone();
         let path = req.path().to_string();
 

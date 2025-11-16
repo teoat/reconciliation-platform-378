@@ -146,7 +146,7 @@ impl Database {
                     }
                     return Ok(conn);
                 }
-                Err(e) if retry_count < max_retries => {
+                Err(_e) if retry_count < max_retries => {
                     retry_count += 1;
                     // Exponential backoff: 10ms, 20ms, 40ms
                     let delay_ms = 10 * 2_u64.pow(retry_count - 1);

@@ -85,6 +85,80 @@ code {
 
 /* Focus visible for better accessibility */
 :focus-visible {
-  outline: 2px solid #3b82f6;
-  outline-offset: 2px;
+  outline: 3px solid #3b82f6;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* Enhanced focus indicators for interactive elements */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid #3b82f6;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Reduced motion support - respect user preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Keep essential animations but make them instant */
+  .progress-bar {
+    transition: width 0.01ms linear;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  :focus-visible {
+    outline: 4px solid #000000;
+    outline-offset: 4px;
+  }
+
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 4px solid #000000;
+    outline-offset: 4px;
+    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* Accessibility: Ensure text colors meet WCAG AA contrast requirements */
+/* Use these utility classes for accessible text colors */
+.text-primary-accessible {
+  color: #2563eb; /* primary-600 - WCAG AA compliant (5.17:1) */
+}
+
+.text-warning-accessible {
+  color: #b45309; /* warning-700 - WCAG AA compliant (4.5:1+) */
+}
+
+/* Override low-contrast text colors in high contrast mode */
+@media (prefers-contrast: high) {
+  .text-blue-500,
+  .text-primary-500 {
+    color: #2563eb; /* Force to primary-600 */
+  }
+  
+  .text-yellow-500,
+  .text-amber-500,
+  .text-warning-500,
+  .text-warning-600 {
+    color: #b45309; /* Force to warning-700 for WCAG AA compliance */
+  }
 }

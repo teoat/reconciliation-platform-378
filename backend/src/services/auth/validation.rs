@@ -1,6 +1,6 @@
 //! Validation utilities
 
-use crate::errors::{AppError, AppResult};
+use crate::errors::AppResult;
 
 /// Validation utilities
 pub struct ValidationUtils;
@@ -8,12 +8,14 @@ pub struct ValidationUtils;
 impl ValidationUtils {
     /// Validate email format
     pub fn validate_email(email: &str) -> AppResult<()> {
-        crate::utils::validation::validate_email(email).map_err(AppError::Validation)
+        let validator = crate::services::validation::ValidationServiceDelegate::default();
+        validator.validate_email(email)
     }
 
     /// Validate password strength
     pub fn validate_password(password: &str) -> AppResult<()> {
-        crate::utils::validation::validate_password(password).map_err(AppError::Validation)
+        let validator = crate::services::validation::ValidationServiceDelegate::default();
+        validator.validate_password(password)
     }
 
     /// Sanitize string

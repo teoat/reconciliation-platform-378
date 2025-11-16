@@ -10,21 +10,21 @@ pub struct BillingConfig {
 }
 
 impl BillingConfig {
-    pub fn from_env() -> Self {
-        // Fail fast for required secrets to avoid insecure defaults
+    pub fn from_env() -> Result<Self, String> {
+        // Return Result instead of panicking for better error handling
         let stripe_secret_key = env::var("STRIPE_SECRET_KEY")
-            .expect("Missing required environment variable: STRIPE_SECRET_KEY");
+            .map_err(|_| "Missing required environment variable: STRIPE_SECRET_KEY".to_string())?;
         let stripe_publishable_key = env::var("STRIPE_PUBLISHABLE_KEY")
-            .expect("Missing required environment variable: STRIPE_PUBLISHABLE_KEY");
+            .map_err(|_| "Missing required environment variable: STRIPE_PUBLISHABLE_KEY".to_string())?;
         let stripe_webhook_secret = env::var("STRIPE_WEBHOOK_SECRET")
-            .expect("Missing required environment variable: STRIPE_WEBHOOK_SECRET");
+            .map_err(|_| "Missing required environment variable: STRIPE_WEBHOOK_SECRET".to_string())?;
 
-        Self {
+        Ok(Self {
             stripe_secret_key,
             stripe_publishable_key,
             stripe_webhook_secret,
             default_currency: env::var("DEFAULT_CURRENCY").unwrap_or_else(|_| "usd".to_string()),
-        }
+        })
     }
 }
 

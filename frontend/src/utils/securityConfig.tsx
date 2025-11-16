@@ -89,7 +89,7 @@ export const cspConfig = {
     'default-src': ["'self'"],
     'script-src': [
       "'self'",
-      "'nonce-{nonce}'", // Use nonces for inline scripts
+      "'nonce-{nonce}'", // Use nonces for inline scripts (replaces unsafe-inline)
     ],
     'style-src': [
       "'self'",

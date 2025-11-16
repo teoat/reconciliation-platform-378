@@ -102,7 +102,7 @@ pub async fn batch_resolve_conflicts(
 
 /// Get reconciliation jobs (global scope - all projects)
 pub async fn get_reconciliation_jobs(
-    data: web::Data<Database>,
+    _data: web::Data<Database>,
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
     // For now, return empty list - implement full listing if needed
@@ -204,7 +204,7 @@ pub async fn update_reconciliation_match(
     match_id: web::Path<Uuid>,
     req: web::Json<serde_json::Value>,
     http_req: HttpRequest,
-    data: web::Data<Database>,
+    _data: web::Data<Database>,
     reconciliation_service: web::Data<crate::services::reconciliation::ReconciliationService>,
 ) -> Result<HttpResponse, AppError> {
     let user_id = extract_user_id(&http_req)?;

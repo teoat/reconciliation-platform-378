@@ -86,7 +86,7 @@ pub struct SecurityMonitor {
 }
 
 #[derive(Debug, Clone)]
-struct AlertRule {
+pub struct AlertRule {
     name: String,
     condition: AlertCondition,
     action: AlertAction,
@@ -185,7 +185,7 @@ impl SecurityMonitor {
 
         // Count failures in window
         let now = SystemTime::now();
-        let window_start = now - self.config.brute_force_window;
+        let _window_start = now - self.config.brute_force_window;
 
         let events = self.events.read().await;
         let failure_count = events
@@ -234,8 +234,8 @@ impl SecurityMonitor {
     /// Count recent similar events
     async fn count_recent_events(&self, event: &SecurityEvent) -> usize {
         let events = self.events.read().await;
-        let window = Duration::from_secs(600); // 10 minutes
-        let now = Instant::now();
+        let _window = Duration::from_secs(600); // 10 minutes
+        let _now = Instant::now();
 
         events
             .iter()
@@ -253,7 +253,7 @@ impl SecurityMonitor {
             let should_trigger = match &rule.condition {
                 AlertCondition::EventCount {
                     event_type,
-                    threshold,
+                    threshold: _,
                     window: _,
                 } => {
                     std::mem::discriminant(&event.event_type) == std::mem::discriminant(event_type)

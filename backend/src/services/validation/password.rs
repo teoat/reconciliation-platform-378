@@ -16,6 +16,10 @@ impl PasswordValidator {
         })
     }
 
+    pub fn with_regex(password_regex: Regex) -> Self {
+        Self { password_regex }
+    }
+
     pub fn validate(&self, password: &str) -> AppResult<()> {
         if password.is_empty() {
             return Err(AppError::Validation("Password is required".to_string()));

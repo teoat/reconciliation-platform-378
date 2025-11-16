@@ -5,7 +5,7 @@ import { logger } from '@/services/logger'
 export interface OfflineData {
   id: string
   type: 'form' | 'upload' | 'reconciliation' | 'workflow' | 'settings'
-  data: any
+  data: unknown
   timestamp: Date
   version: number
   projectId?: string
@@ -119,7 +119,7 @@ class OfflineDataService {
   public saveData(
     id: string,
     type: OfflineData['type'],
-    data: any,
+    data: unknown,
     options: {
       projectId?: string
       userId?: string
@@ -443,7 +443,7 @@ class OfflineDataService {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: unknown): void {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
       callbacks.forEach(callback => callback(data))
@@ -461,7 +461,7 @@ class OfflineDataService {
 export const useOfflineData = () => {
   const service = OfflineDataService.getInstance()
 
-  const saveData = (id: string, type: OfflineData['type'], data: any, options?: any) => {
+  const saveData = (id: string, type: OfflineData['type'], data: unknown, options?: Record<string, unknown>) => {
     return service.saveData(id, type, data, options)
   }
 

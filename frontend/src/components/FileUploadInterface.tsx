@@ -92,6 +92,7 @@ import { Square as StopIcon } from 'lucide-react'
 import { Loader2 } from 'lucide-react'
 import { apiClient } from '../services/apiClient'
 import { useWebSocketIntegration } from '../hooks/useWebSocketIntegration'
+import { FileUploadDropzone, FileStatusBadge, FileFilters, FileIcon } from './fileUpload'
 
 // Types
 interface FileInfo {
@@ -427,40 +428,7 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
     return true
   })
 
-  // Get file icon
-  const getFileIcon = (contentType: string) => {
-    if (contentType.includes('csv')) return <FileText className="w-5 h-5" />
-    if (contentType.includes('excel') || contentType.includes('spreadsheet')) return <FileSpreadsheet className="w-5 h-5" />
-    if (contentType.includes('pdf')) return <FileText className="w-5 h-5" />
-    if (contentType.includes('image')) return <FileImage className="w-5 h-5" />
-    if (contentType.includes('video')) return <FileVideo className="w-5 h-5" />
-    if (contentType.includes('audio')) return <FileAudio className="w-5 h-5" />
-    return <File className="w-5 h-5" />
-  }
 
-  // Get status color
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'uploading': return 'text-blue-600 bg-blue-100'
-      case 'uploaded': return 'text-green-600 bg-green-100'
-      case 'processing': return 'text-yellow-600 bg-yellow-100'
-      case 'completed': return 'text-green-600 bg-green-100'
-      case 'failed': return 'text-red-600 bg-red-100'
-      default: return 'text-gray-600 bg-gray-100'
-    }
-  }
-
-  // Get status icon
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'uploading': return <Loader2 className="w-4 h-4 animate-spin" />
-      case 'uploaded': return <CheckCircle className="w-4 h-4" />
-      case 'processing': return <Activity className="w-4 h-4" />
-      case 'completed': return <CheckCircle className="w-4 h-4" />
-      case 'failed': return <XCircle className="w-4 h-4" />
-      default: return <AlertCircle className="w-4 h-4" />
-    }
-  }
 
   // Format file size
   const formatFileSize = (bytes: number) => {
@@ -499,45 +467,17 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
       </div>
 
       {/* Drag and Drop Zone */}
-      <div
-        ref={dropZoneRef}
+      <FileUploadDropzone
+        dragActive={dragActive}
+        maxFileSize={maxFileSize}
+        allowedTypes={allowedTypes}
+        multiple={multiple}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
-        className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-          dragActive 
-            ? 'border-blue-400 bg-blue-50' 
-            : 'border-gray-300 hover:border-gray-400'
-        }`}
-      >
-        <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
-          Drop files here or click to upload
-        </h3>
-        <p className="text-gray-600 mb-4">
-          Support for CSV, Excel files up to {Math.round(maxFileSize / 1024 / 1024)}MB
-        </p>
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-blue-600 bg-blue-100 hover:bg-blue-200"
-        >
-          <Upload className="w-4 h-4 mr-2" />
-          Choose Files
-        </button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple={multiple}
-          accept={allowedTypes.join(',')}
-          onChange={(e) => {
-            if (e.target.files) {
-              handleFiles(Array.from(e.target.files))
-            }
-          }}
-          className="hidden"
-        />
-      </div>
+        onFileSelect={handleFiles}
+      />
 
       {/* Upload Progress */}
       {uploadingFiles.size > 0 && (
@@ -569,6 +509,8 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
             <button
               onClick={() => setError(null)}
               className="ml-auto text-red-400 hover:text-red-600"
+              aria-label="Close error message"
+              title="Close error message"
             >
               <X className="w-4 h-4" />
             </button>
@@ -577,31 +519,12 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
       )}
 
       {/* Filters */}
-      <div className="flex items-center space-x-4">
-        <div className="flex-1">
-          <div className="relative">
-            <FileSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-            <input
-              type="text"
-              placeholder="Search files..."
-              value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-            />
-          </div>
-        </div>
-        <select
-          value={filters.status}
-          onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value }))}
-          className="px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-        >
-          <option value="">All Statuses</option>
-          <option value="uploaded">Uploaded</option>
-          <option value="processing">Processing</option>
-          <option value="completed">Completed</option>
-          <option value="failed">Failed</option>
-        </select>
-      </div>
+      <FileFilters
+        search={filters.search}
+        status={filters.status}
+        onSearchChange={(search) => setFilters(prev => ({ ...prev, search }))}
+        onStatusChange={(status) => setFilters(prev => ({ ...prev, status }))}
+      />
 
       {/* Files List */}
       <div className="bg-white shadow rounded-lg">
@@ -633,16 +556,13 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-4 flex-1">
                     <div className="flex-shrink-0">
-                      {getFileIcon(file.content_type)}
+                      <FileIcon contentType={file.content_type} />
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-3">
                         <h4 className="text-lg font-medium text-gray-900 truncate">{file.filename}</h4>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getStatusColor(file.status)}`}>
-                          {getStatusIcon(file.status)}
-                          <span className="ml-1 capitalize">{file.status}</span>
-                        </span>
+                        <FileStatusBadge status={file.status} />
                       </div>
                       
                       <div className="mt-1 flex items-center space-x-6 text-sm text-gray-500">
@@ -783,6 +703,8 @@ const UploadModal: React.FC<UploadModalProps> = ({
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
+            aria-label="Close upload modal"
+            title="Close upload modal"
           >
             <X className="w-6 h-6" />
           </button>
@@ -796,13 +718,15 @@ const UploadModal: React.FC<UploadModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700">Select Files</label>
+            <label htmlFor="file-upload-input" className="block text-sm font-medium text-gray-700">Select Files</label>
             <input
+              id="file-upload-input"
               type="file"
               multiple={multiple}
               accept={allowedTypes.join(',')}
               onChange={handleFileSelect}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              aria-label="Select files to upload"
             />
             <p className="mt-1 text-xs text-gray-500">
               Max file size: {Math.round(maxFileSize / 1024 / 1024)}MB
@@ -827,12 +751,14 @@ const UploadModal: React.FC<UploadModalProps> = ({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700">Description</label>
+            <label htmlFor="file-description-textarea" className="block text-sm font-medium text-gray-700">Description</label>
             <textarea
+              id="file-description-textarea"
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={3}
               className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Enter a description for the uploaded files"
             />
           </div>
 

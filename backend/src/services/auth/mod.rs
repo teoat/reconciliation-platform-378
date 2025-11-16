@@ -86,9 +86,12 @@ impl AuthService {
 /// Provides extended authentication features including session management,
 /// password reset, and email verification.
 pub struct EnhancedAuthService {
+    #[allow(dead_code)]
     jwt_secret: String,
+    #[allow(dead_code)]
     jwt_expiration: i64,
     session_timeout: i64,
+    #[allow(dead_code)]
     password_reset_timeout: i64,
     session_rotation_interval: i64,
 }

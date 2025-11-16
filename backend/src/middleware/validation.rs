@@ -210,7 +210,7 @@ async fn validate_login_request(
 
 /// Validate create project request
 async fn validate_create_project_request(
-    validation_service: &ValidationService,
+    _validation_service: &ValidationService,
     req: &mut ServiceRequest,
 ) -> Result<(), AppError> {
     let body = extract_json_body(req).await?;
@@ -258,7 +258,7 @@ async fn validate_create_project_request(
 
 /// Validate file upload request
 async fn validate_file_upload_request(
-    validation_service: &ValidationService,
+    _validation_service: &ValidationService,
     req: &mut ServiceRequest,
 ) -> Result<(), AppError> {
     // Check if request has multipart data
@@ -368,7 +368,7 @@ async fn validate_create_job_request(
 
 /// Validate update project request
 async fn validate_update_project_request(
-    validation_service: &ValidationService,
+    _validation_service: &ValidationService,
     req: &mut ServiceRequest,
 ) -> Result<(), AppError> {
     let body = extract_json_body(req).await?;

@@ -99,7 +99,7 @@ impl ConflictResolver {
         data_type: &str,
         local_data: &serde_json::Value,
         server_data: &serde_json::Value,
-        user_id: Uuid,
+        _user_id: Uuid,
     ) -> ConflictResolution {
         let strategy = self
             .strategies
@@ -266,7 +266,7 @@ impl OptimisticUpdateManager {
         &self,
         id: &str,
         operation: &UpdateOperation,
-        data: &serde_json::Value,
+        _data: &serde_json::Value,
     ) -> Result<(), OptimisticUpdateError> {
         // In a real implementation, this would update the local state
         log::debug!("Applying optimistic update: {} {:?}", id, operation);
@@ -339,7 +339,7 @@ impl OptimisticUpdateManager {
     /// Handle conflict resolution
     pub async fn handle_conflict(
         &self,
-        id: &str,
+        _id: &str,
         local_data: &serde_json::Value,
         server_data: &serde_json::Value,
         user_id: Uuid,

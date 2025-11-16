@@ -3,7 +3,6 @@
 //! Handles database migrations for production deployment
 
 use chrono::{DateTime, Utc};
-use diesel::migration::Migration;
 use diesel::prelude::*;
 use diesel_migrations::MigrationHarness;
 use serde::{Deserialize, Serialize};
@@ -212,6 +211,7 @@ impl DatabaseMigrationService {
 
     // Private helper methods
 
+    #[allow(dead_code)]
     async fn get_current_version(&self) -> Result<Option<String>, MigrationError> {
         // In a real implementation, this would query the migrations table
         // For now, return a mock version

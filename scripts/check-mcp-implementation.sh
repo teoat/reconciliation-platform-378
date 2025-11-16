@@ -174,8 +174,8 @@ echo ""
 # Check 8: Documentation
 echo "8️⃣  Checking Documentation..."
 DOC_FILES=(
-    "docs/CURSOR_OPTIMIZATION_GUIDE.md"
-    "docs/MCP_OPTIMIZATION_REPORT.md"
+    "docs/development/CURSOR_OPTIMIZATION_GUIDE.md"
+    "docs/development/MCP_OPTIMIZATION_REPORT.md"
     ".cursor/QUICK_REFERENCE.md"
     ".cursor/MCP_CONFIGURATION_UPDATE.md"
 )

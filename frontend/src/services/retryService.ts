@@ -7,15 +7,15 @@ export interface RetryConfig {
   maxDelay: number // milliseconds
   backoffMultiplier: number
   jitter: boolean
-  retryCondition: (error: any) => boolean
-  onRetry?: (attempt: number, error: any) => void
-  onMaxRetriesReached?: (error: any) => void
+  retryCondition: (error: unknown) => boolean
+  onRetry?: (attempt: number, error: unknown) => void
+  onMaxRetriesReached?: (error: unknown) => void
 }
 
 export interface RetryResult<T> {
   success: boolean
   data?: T
-  error?: any
+  error?: unknown
   attempts: number
   totalTime: number
 }
@@ -63,16 +63,23 @@ class RetryService {
     }
   }
 
-  private isRetryableError(error: any): boolean {
+  private isRetryableError(error: unknown): boolean {
+    // Type guard for error objects
+    if (typeof error !== 'object' || error === null) {
+      return false
+    }
+
+    const err = error as Record<string, unknown>
+
     // Network errors
-    if (error.code === 'NETWORK_ERROR' || error.code === 'TIMEOUT_ERROR') {
+    if (err.code === 'NETWORK_ERROR' || err.code === 'TIMEOUT_ERROR') {
       return true
     }
 
     // HTTP status codes that should be retried
-    if (error.status) {
+    if (typeof err.status === 'number') {
       const retryableStatuses = [408, 429, 500, 502, 503, 504]
-      return retryableStatuses.includes(error.status)
+      return retryableStatuses.includes(err.status)
     }
 
     // Specific error messages
@@ -85,7 +92,7 @@ class RetryService {
       'rate limit'
     ]
 
-    const errorMessage = error.message?.toLowerCase() || ''
+    const errorMessage = (typeof err.message === 'string' ? err.message : '').toLowerCase()
     return retryableMessages.some(msg => errorMessage.includes(msg))
   }
 
@@ -114,7 +121,7 @@ class RetryService {
   ): Promise<RetryResult<T>> {
     const finalConfig = { ...this.defaultConfig, ...config }
     const startTime = Date.now()
-    let lastError: any
+    let lastError: unknown
 
     // Check circuit breaker
     if (circuitBreakerKey && !this.isCircuitBreakerOpen(circuitBreakerKey)) {

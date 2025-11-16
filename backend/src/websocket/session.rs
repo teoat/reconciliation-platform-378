@@ -255,6 +255,7 @@ impl WsSession {
     }
 
     /// Handle authentication
+    #[allow(dead_code)]
     fn handle_auth(&mut self, token: String, ctx: &mut ws::WebsocketContext<Self>) {
         match self.validate_token(&token) {
             Ok(claims) => {

@@ -14,6 +14,10 @@ impl EmailValidator {
         })
     }
 
+    pub fn with_regex(email_regex: Regex) -> Self {
+        Self { email_regex }
+    }
+
     pub fn validate(&self, email: &str) -> AppResult<()> {
         if email.is_empty() {
             return Err(AppError::Validation("Email is required".to_string()));

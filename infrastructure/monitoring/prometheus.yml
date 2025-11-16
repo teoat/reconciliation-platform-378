@@ -8,6 +8,7 @@ global:
 
 rule_files:
   - "alert_rules.yml"
+  - "logstash_alerts.yml"
 
 alerting:
   alertmanagers:
@@ -72,6 +73,13 @@ scrape_configs:
     static_configs:
       - targets: ['grafana:3000']
     scrape_interval: 30s
+    metrics_path: /metrics
+
+  # Logstash Metrics
+  - job_name: 'logstash'
+    static_configs:
+      - targets: ['logstash-exporter:9198']
+    scrape_interval: 15s
     metrics_path: /metrics
 
 # Note: Retention and WAL compression are set via command-line flags in docker-compose

@@ -17,6 +17,7 @@ import { Folder } from 'lucide-react';
 import { GitCompare } from 'lucide-react';
 import { apiClient } from '../services/apiClient';
 import { useWebSocketIntegration } from '../hooks/useWebSocketIntegration';
+import { MetricCard, MetricTabs } from './analytics';
 
 // Lazy load chart components for better performance
 const LineChart = lazy(() => import('./charts').then((module) => ({ default: module.LineChart })));
@@ -404,111 +405,40 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       )}
 
       {/* Metric Tabs */}
-      <div className="border-b border-gray-200">
-        <nav className="-mb-px flex space-x-8">
-          {[
-            { id: 'overview', name: 'Overview', icon: BarChart3 },
-            { id: 'projects', name: 'Projects', icon: Folder },
-            { id: 'users', name: 'Users', icon: Users },
-            { id: 'reconciliation', name: 'Reconciliation', icon: GitCompare },
-          ].map((tab) => {
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setSelectedMetric(tab.id as any)}
-                className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
-                  selectedMetric === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <Icon className="w-4 h-4 mr-2" />
-                {tab.name}
-              </button>
-            );
-          })}
-        </nav>
-      </div>
+      <MetricTabs
+        tabs={[
+          { id: 'overview', name: 'Overview', icon: BarChart3 },
+          { id: 'projects', name: 'Projects', icon: Folder },
+          { id: 'users', name: 'Users', icon: Users },
+          { id: 'reconciliation', name: 'Reconciliation', icon: GitCompare },
+        ]}
+        selectedTab={selectedMetric}
+        onTabChange={(tabId) => setSelectedMetric(tabId as typeof selectedMetric)}
+      />
 
       {/* Overview Metrics */}
       {selectedMetric === 'overview' && dashboardMetrics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {/* Total Projects */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Folder className="h-6 w-6 text-gray-400" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Projects</dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {dashboardMetrics.total_projects}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Users */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Users className="h-6 w-6 text-gray-400" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Users</dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {dashboardMetrics.total_users}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Files */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <Folder className="h-6 w-6 text-gray-400" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Files</dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {dashboardMetrics.total_files}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Total Jobs */}
-          <div className="bg-white overflow-hidden shadow rounded-lg">
-            <div className="p-5">
-              <div className="flex items-center">
-                <div className="flex-shrink-0">
-                  <GitCompare className="h-6 w-6 text-gray-400" />
-                </div>
-                <div className="ml-5 w-0 flex-1">
-                  <dl>
-                    <dt className="text-sm font-medium text-gray-500 truncate">Total Jobs</dt>
-                    <dd className="text-lg font-medium text-gray-900">
-                      {dashboardMetrics.total_reconciliation_jobs}
-                    </dd>
-                  </dl>
-                </div>
-              </div>
-            </div>
-          </div>
+          <MetricCard
+            icon={Folder}
+            label="Total Projects"
+            value={dashboardMetrics.total_projects}
+          />
+          <MetricCard
+            icon={Users}
+            label="Total Users"
+            value={dashboardMetrics.total_users}
+          />
+          <MetricCard
+            icon={Folder}
+            label="Total Files"
+            value={dashboardMetrics.total_files}
+          />
+          <MetricCard
+            icon={GitCompare}
+            label="Total Jobs"
+            value={dashboardMetrics.total_reconciliation_jobs}
+          />
         </div>
       )}
 

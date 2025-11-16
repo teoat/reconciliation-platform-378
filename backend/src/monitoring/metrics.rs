@@ -82,7 +82,7 @@ impl PiiMasker {
     pub fn mask_email(email: &str) -> String {
         if let Some(at_pos) = email.find('@') {
             if at_pos > 0 {
-                let prefix = &email[..at_pos];
+                let _prefix = &email[..at_pos];
                 let domain = &email[at_pos..];
                 let masked = "*".repeat(at_pos.min(3));
                 format!("{}@{}", masked, domain)

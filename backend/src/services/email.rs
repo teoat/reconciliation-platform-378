@@ -17,8 +17,11 @@ pub enum EmailTemplate {
 /// Email service
 pub struct EmailService {
     smtp_host: String,
+    #[allow(dead_code)]
     smtp_port: u16,
+    #[allow(dead_code)]
     smtp_user: String,
+    #[allow(dead_code)]
     smtp_password: String,
     from_email: String,
     resilience: Option<Arc<ResilienceManager>>,

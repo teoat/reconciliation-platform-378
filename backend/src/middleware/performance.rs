@@ -278,7 +278,7 @@ async fn record_request_metric(state: &PerformanceMonitoringState, metric: Reque
 
 /// Log slow request
 async fn log_slow_request(
-    state: &PerformanceMonitoringState,
+    _state: &PerformanceMonitoringState,
     method: &str,
     path: &str,
     response_time_ms: u64,
@@ -291,7 +291,7 @@ async fn log_slow_request(
 
 /// Log error response
 async fn log_error_response(
-    state: &PerformanceMonitoringState,
+    _state: &PerformanceMonitoringState,
     method: &str,
     path: &str,
     status_code: u16,

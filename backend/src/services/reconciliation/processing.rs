@@ -11,7 +11,7 @@ use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::models::schema::reconciliation_results;
 use crate::models::{DataSource, MatchType, NewReconciliationResult, ReconciliationRecord};
-use diesel::{QueryDsl, RunQueryDsl};
+use diesel::RunQueryDsl;
 
 use super::job_management::{JobProgress, JobStatus};
 use super::matching::{ExactMatchingAlgorithm, FuzzyMatchingAlgorithm, MatchingAlgorithm};
@@ -28,7 +28,7 @@ pub async fn process_data_sources_chunked(
     matching_rules: &[MatchingRule],
     confidence_threshold: f64,
     chunk_size: usize,
-    progress_sender: &tokio::sync::mpsc::Sender<JobProgress>,
+    _progress_sender: &tokio::sync::mpsc::Sender<JobProgress>,
     status: &Arc<RwLock<JobStatus>>,
 ) -> AppResult<Vec<ReconciliationResultType>> {
     let mut results = Vec::new();
@@ -123,7 +123,7 @@ async fn process_chunk(
     confidence_threshold: f64,
     start_record: usize,
     end_record: usize,
-    exact_algorithm: &dyn MatchingAlgorithm,
+    _exact_algorithm: &dyn MatchingAlgorithm,
     _fuzzy_algorithm: &FuzzyMatchingAlgorithm,
 ) -> AppResult<Vec<ReconciliationResultType>> {
     let mut results = Vec::new();
@@ -198,7 +198,6 @@ pub async fn save_reconciliation_results(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use uuid::Uuid;
 
     #[tokio::test]
     async fn update_job_status_works() {

@@ -11,18 +11,36 @@ import React, { memo, useEffect, useState, useId, useRef } from 'react';
 
 /**
  * Skip Link Component
- * Provides keyboard navigation shortcut to main content
+ * Provides keyboard navigation shortcuts to key content areas
  * Improves accessibility for screen reader users
  */
-export const SkipLink: React.FC = memo(() => {
+export interface SkipLinkProps {
+  /** Additional skip links to include */
+  additionalLinks?: Array<{ href: string; label: string }>;
+}
+
+export const SkipLink: React.FC<SkipLinkProps> = memo(({ additionalLinks = [] }) => {
+  const defaultLinks = [
+    { href: '#main-content', label: 'Skip to main content' },
+    { href: '#navigation', label: 'Skip to navigation' },
+    { href: '#search', label: 'Skip to search' },
+  ];
+
+  const allLinks = [...defaultLinks, ...additionalLinks];
+
   return (
-    <a
-      href="#main-content"
-      className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-      aria-label="Skip to main content"
-    >
-      Skip to main content
-    </a>
+    <div className="sr-only focus-within:not-sr-only focus-within:absolute focus-within:top-4 focus-within:left-4 focus-within:z-50 focus-within:flex focus-within:flex-col focus-within:gap-2">
+      {allLinks.map((link) => (
+        <a
+          key={link.href}
+          href={link.href}
+          className="sr-only focus:not-sr-only focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-600 focus:ring-offset-2"
+          aria-label={link.label}
+        >
+          {link.label}
+        </a>
+      ))}
+    </div>
   );
 });
 
@@ -116,6 +134,7 @@ export const ARIALiveRegion: React.FC<ARIALiveRegionProps> = memo(
       <div
         id={finalId}
         role="status"
+        // eslint-disable-next-line jsx-a11y/aria-props
         aria-live={priority === 'assertive' ? 'assertive' : 'polite'}
         aria-atomic="true"
         className="sr-only"

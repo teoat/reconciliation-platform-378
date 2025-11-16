@@ -66,5 +66,7 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         // Password manager routes
         .service(web::scope("/api/passwords").configure(password_manager::configure_routes))
         // Health check routes (from existing health.rs)
-        .configure(health::configure_health_routes);
+        // Register at both /health and /api/health for compatibility
+        .configure(health::configure_health_routes)
+        .service(web::scope("/api").configure(health::configure_health_routes));
 }

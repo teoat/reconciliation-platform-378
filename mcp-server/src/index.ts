@@ -4,12 +4,13 @@
  * 
  * Provides enhanced AI agent controls for:
  * - Docker container management
- * - Database operations
  * - Redis cache operations
  * - Backend service management
  * - Frontend build/deployment
  * - Health checks and diagnostics
- * - Log aggregation and analysis
+ * 
+ * Note: Database queries use postgres MCP server, file operations use filesystem MCP server,
+ * and metrics use prometheus MCP server to avoid redundancy.
  */
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
@@ -20,10 +21,9 @@ import {
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
 import Docker from 'dockerode';
-import { Pool } from 'pg';
 import { createClient } from 'redis';
 import axios from 'axios';
-import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
+import { readFileSync, readdirSync, statSync } from 'fs';
 import { join } from 'path';
 import * as dotenv from 'dotenv';
 
@@ -34,18 +34,7 @@ const SERVER_VERSION = '1.0.0';
 
 // Initialize connections
 const docker = new Docker();
-let pgPool: Pool | null = null;
 let redisClient: ReturnType<typeof createClient> | null = null;
-
-// Initialize database pool
-async function initDatabase() {
-  if (!pgPool) {
-    pgPool = new Pool({
-      connectionString: process.env.DATABASE_URL || 'postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app',
-    });
-  }
-  return pgPool;
-}
 
 // Initialize Redis client
 async function initRedis() {
@@ -155,39 +144,6 @@ const tools: Tool[] = [
     },
   },
   {
-    name: 'backend_metrics',
-    description: 'Get backend Prometheus metrics',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        endpoint: {
-          type: 'string',
-          description: 'Metrics endpoint URL',
-          default: 'http://localhost:2000/api/v1/metrics',
-        },
-      },
-    },
-  },
-  {
-    name: 'database_query',
-    description: 'Execute a read-only SQL query on the PostgreSQL database',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: {
-          type: 'string',
-          description: 'SQL query to execute (SELECT only)',
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum number of rows to return',
-          default: 100,
-        },
-      },
-      required: ['query'],
-    },
-  },
-  {
     name: 'redis_get',
     description: 'Get value from Redis cache',
     inputSchema: {
@@ -240,42 +196,6 @@ const tools: Tool[] = [
           enum: ['full', 'backend', 'frontend', 'database', 'redis', 'containers'],
           description: 'Diagnostic scope',
           default: 'full',
-        },
-      },
-    },
-  },
-  {
-    name: 'read_file',
-    description: 'Read a file from the filesystem',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        path: {
-          type: 'string',
-          description: 'File path (relative to project root)',
-        },
-        lines: {
-          type: 'number',
-          description: 'Number of lines to read (optional, reads all if not specified)',
-        },
-      },
-      required: ['path'],
-    },
-  },
-  {
-    name: 'list_directory',
-    description: 'List files in a directory',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        path: {
-          type: 'string',
-          description: 'Directory path (relative to project root)',
-          default: '.',
-        },
-        pattern: {
-          type: 'string',
-          description: 'File pattern filter (optional)',
         },
       },
     },
@@ -401,43 +321,6 @@ async function handleTool(name: string, args: any): Promise<any> {
       }
     }
 
-    case 'backend_metrics': {
-      try {
-        const response = await axios.get(args.endpoint || 'http://localhost:2000/api/v1/metrics', {
-          timeout: 5000,
-        });
-        return {
-          metrics: response.data,
-        };
-      } catch (error: any) {
-        return {
-          error: error.message,
-          statusCode: error.response?.status,
-        };
-      }
-    }
-
-    case 'database_query': {
-      if (!args.query.trim().toUpperCase().startsWith('SELECT')) {
-        throw new Error('Only SELECT queries are allowed');
-      }
-      
-      const pool = await initDatabase();
-      const limit = args.limit || 100;
-      const query = `${args.query} LIMIT ${limit}`;
-      
-      try {
-        const result = await pool.query(query);
-        return {
-          rows: result.rows,
-          rowCount: result.rowCount,
-          columns: result.fields.map(f => f.name),
-        };
-      } catch (error: any) {
-        throw new Error(`Database query error: ${error.message}`);
-      }
-    }
-
     case 'redis_get': {
       const client = await initRedis();
       const value = await client.get(args.key);
@@ -474,60 +357,6 @@ async function handleTool(name: string, args: any): Promise<any> {
         status: 'pending',
         message: 'Run ./scripts/comprehensive-diagnostic.sh for full diagnostic',
       };
-    }
-
-    case 'read_file': {
-      const projectRoot = process.env.PROJECT_ROOT || '/Users/Arief/Desktop/378';
-      const filePath = join(projectRoot, args.path);
-      
-      try {
-        const content = readFileSync(filePath, 'utf-8');
-        const lines = content.split('\n');
-        
-        if (args.lines) {
-          return {
-            path: args.path,
-            content: lines.slice(0, args.lines).join('\n'),
-            totalLines: lines.length,
-            truncated: lines.length > args.lines,
-          };
-        }
-        
-        return {
-          path: args.path,
-          content: content,
-          totalLines: lines.length,
-        };
-      } catch (error: any) {
-        throw new Error(`File read error: ${error.message}`);
-      }
-    }
-
-    case 'list_directory': {
-      const projectRoot = process.env.PROJECT_ROOT || '/Users/Arief/Desktop/378';
-      const dirPath = join(projectRoot, args.path || '.');
-      
-      try {
-        const entries = readdirSync(dirPath, { withFileTypes: true });
-        let files = entries.map(entry => ({
-          name: entry.name,
-          type: entry.isDirectory() ? 'directory' : 'file',
-          path: join(args.path || '.', entry.name),
-        }));
-        
-        if (args.pattern) {
-          const regex = new RegExp(args.pattern.replace('*', '.*'));
-          files = files.filter(f => regex.test(f.name));
-        }
-        
-        return {
-          path: args.path || '.',
-          files: files,
-          count: files.length,
-        };
-      } catch (error: any) {
-        throw new Error(`Directory read error: ${error.message}`);
-      }
     }
 
     case 'frontend_build_status': {

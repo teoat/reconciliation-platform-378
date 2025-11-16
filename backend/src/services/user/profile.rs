@@ -2,7 +2,6 @@
 //!
 //! Handles user profile management including profile retrieval and updates.
 
-use diesel::prelude::*;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
@@ -79,7 +78,7 @@ impl ProfileService {
         let mut conn = self.db.get_connection()?;
 
         // Check if user exists
-        let existing_user = users::table
+        let _existing_user = users::table
             .filter(users::id.eq(user_id))
             .first::<User>(&mut conn)
             .map_err(AppError::Database)?;

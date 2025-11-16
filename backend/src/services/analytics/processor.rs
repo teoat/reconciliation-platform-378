@@ -12,6 +12,7 @@ use crate::services::analytics::types::*;
 
 /// Data processor for analytics
 pub struct AnalyticsProcessor {
+    #[allow(dead_code)]
     db: Database,
 }
 

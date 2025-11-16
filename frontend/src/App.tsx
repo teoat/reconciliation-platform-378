@@ -10,6 +10,7 @@ import AppShell from './components/layout/AppShell';
 import AuthPage from './pages/AuthPage';
 import ToastContainer from './components/ui/ToastContainer';
 import { APP_CONFIG } from './config/AppConfig';
+import KeyboardShortcuts from './components/pages/KeyboardShortcuts';
 
 // Lazy load route components for better performance
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -78,6 +79,7 @@ function App() {
           <AuthProvider>
             <Router basename={process.env.NEXT_PUBLIC_BASE_PATH || '/'}>
               <div className="min-h-screen bg-gray-100">
+                <KeyboardShortcuts />
                 <ToastContainer />
                 <Routes>
                   <Route path="/login" element={<AuthPage />} />

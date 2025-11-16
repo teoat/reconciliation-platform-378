@@ -30,7 +30,6 @@ pub use traits::*;
 
 // Main user service that composes sub-services
 
-use diesel::prelude::*;
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use uuid::Uuid;
 
@@ -301,7 +300,7 @@ impl UserService {
         // Use transaction to ensure validation and update are atomic
         with_transaction(self.db.get_pool(), |tx| {
             // Check if user exists
-            let existing_user = users::table
+            let _existing_user = users::table
                 .filter(users::id.eq(user_id))
                 .first::<User>(tx)
                 .map_err(AppError::Database)?;

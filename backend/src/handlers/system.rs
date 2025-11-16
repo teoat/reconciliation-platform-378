@@ -24,7 +24,7 @@ pub async fn system_status() -> Result<HttpResponse, AppError> {
 
 /// Get system metrics
 pub async fn get_metrics(
-    data: web::Data<Database>,
+    _data: web::Data<Database>,
     _config: web::Data<crate::config::Config>,
 ) -> Result<HttpResponse, AppError> {
     use crate::services::monitoring::MonitoringService;

@@ -31,7 +31,6 @@ pub mod services {
     pub mod internationalization;
     pub mod internationalization_data;
     pub mod internationalization_models;
-    pub mod mobile_optimization;
     pub mod monitoring;
     pub mod offline_persistence;
     pub mod optimistic_ui;

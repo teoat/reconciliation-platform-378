@@ -19,10 +19,12 @@ pub use types::{
 // Main validation service that delegates to specialized validators
 use crate::errors::{AppError, AppResult};
 use std::collections::HashMap;
+use regex::Regex;
 
 pub struct ValidationServiceDelegate {
     email_validator: email::EmailValidator,
     password_validator: password::PasswordValidator,
+    #[allow(dead_code)]
     uuid_validator: uuid::UuidValidator,
     file_validator: file::FileValidator,
     json_schema_validator: json_schema::JsonSchemaValidator,
@@ -95,29 +97,45 @@ impl ValidationServiceDelegate {
 
 impl Default for ValidationServiceDelegate {
     fn default() -> Self {
-        Self::new().unwrap_or_else(|e| {
-            // Fallback if initialization fails - create with empty validators
-            log::error!("Failed to initialize ValidationServiceDelegate: {:?}", e);
-            // In fallback path, try to create validators with error handling
-            // If creation fails, log error and use minimal validators
-            Self {
-                email_validator: email::EmailValidator::new().unwrap_or_else(|e| {
-                    log::error!("Failed to create email validator in fallback: {:?}", e);
-                    // Return a minimal validator - in production, prefer explicit construction
-                    panic!("Failed to create email validator: {:?}", e)
-                }),
-                password_validator: password::PasswordValidator::new().unwrap_or_else(|e| {
-                    log::error!("Failed to create password validator in fallback: {:?}", e);
-                    panic!("Failed to create password validator: {:?}", e)
-                }),
-                uuid_validator: uuid::UuidValidator {},
-                file_validator: file::FileValidator::new().unwrap_or_else(|e| {
-                    log::error!("Failed to create file validator in fallback: {:?}", e);
-                    panic!("Failed to create file validator: {:?}", e)
-                }),
-                json_schema_validator: json_schema::JsonSchemaValidator {},
-                business_rules_validator: business_rules::BusinessRulesValidator {},
+        // Try to create with proper initialization
+        match Self::new() {
+            Ok(service) => service,
+            Err(e) => {
+                // Fallback if initialization fails - log error and use minimal validators
+                // This should rarely happen in production, but we handle it gracefully
+                log::error!("Failed to initialize ValidationServiceDelegate: {:?}", e);
+                log::warn!("Using minimal validators as fallback - some validation features may be limited");
+                
+                // For validators that require regex compilation, create them with
+                // simpler regex patterns that should always compile
+                // If even that fails, use empty regex (will fail validation safely)
+                Self {
+                    email_validator: email::EmailValidator::new().unwrap_or_else(|e| {
+                        log::error!("Failed to create email validator in fallback: {:?}", e);
+                        // Use a simpler regex pattern as fallback
+                        let fallback_regex = Regex::new(r"^.+@.+\..+$")
+                            .unwrap_or_else(|_| Regex::new(r"^$").expect("Empty regex should always compile"));
+                        email::EmailValidator::with_regex(fallback_regex)
+                    }),
+                    password_validator: password::PasswordValidator::new().unwrap_or_else(|e| {
+                        log::error!("Failed to create password validator in fallback: {:?}", e);
+                        // Use a simpler regex pattern as fallback
+                        let fallback_regex = Regex::new(r".{8,}")
+                            .unwrap_or_else(|_| Regex::new(r"^$").expect("Empty regex should always compile"));
+                        password::PasswordValidator::with_regex(fallback_regex)
+                    }),
+                    uuid_validator: uuid::UuidValidator {},
+                    file_validator: file::FileValidator::new().unwrap_or_else(|e| {
+                        log::error!("Failed to create file validator in fallback: {:?}", e);
+                        // Use the same regex pattern as fallback
+                        let fallback_regex = Regex::new(r"^\.(csv|xlsx|xls|json|xml|txt)$")
+                            .unwrap_or_else(|_| Regex::new(r"^$").expect("Empty regex should always compile"));
+                        file::FileValidator::with_regex(fallback_regex)
+                    }),
+                    json_schema_validator: json_schema::JsonSchemaValidator {},
+                    business_rules_validator: business_rules::BusinessRulesValidator {},
+                }
             }
-        })
+        }
     }
 }

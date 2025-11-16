@@ -1,21 +1,12 @@
 'use client';
 import { logger } from '@/services/logger';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { Workflow } from 'lucide-react';
-import { CheckCircle } from 'lucide-react';
-import { XCircle } from 'lucide-react';
-import { Clock } from 'lucide-react';
-import { ArrowRight } from 'lucide-react';
-import { ArrowLeft } from 'lucide-react';
-import { Play } from 'lucide-react';
-import { Pause } from 'lucide-react';
-import { RotateCcw } from 'lucide-react';
-import { AlertTriangle } from 'lucide-react';
-import { Info } from 'lucide-react';
-import { Zap } from 'lucide-react';
-import { Target } from 'lucide-react';
-import { Activity } from 'lucide-react';
+import { useState, useCallback, useMemo } from 'react';
+import { Workflow, Zap } from 'lucide-react';
+import { WorkflowStageComponent } from './workflow/WorkflowStage';
+import { WorkflowProgress } from './workflow/WorkflowProgress';
+import { WorkflowBreadcrumbs } from './workflow/WorkflowBreadcrumbs';
+import { WorkflowControls } from './workflow/WorkflowControls';
 
 interface WorkflowStage {
   id: string;
@@ -250,6 +241,27 @@ const WorkflowOrchestrator = ({
     [workflowTransitions, onValidation]
   );
 
+  // Go to previous stage
+  const goToPreviousStage = useCallback(() => {
+    const currentStageIndex = workflowStages.findIndex((stage) => stage.isActive);
+    if (currentStageIndex <= 0) {
+      return;
+    }
+
+    const previousStageData = workflowStages[currentStageIndex - 1];
+
+    // Update workflow state
+    setWorkflowStages((prev) =>
+      prev.map((stage) => ({
+        ...stage,
+        isActive: stage.id === previousStageData.id ? true : false,
+      }))
+    );
+
+    // Change page
+    onStageChange(previousStageData.page);
+  }, [workflowStages, onStageChange]);
+
   // Advance to next stage
   const advanceToNextStage = useCallback(async () => {
     const currentStageIndex = workflowStages.findIndex((stage) => stage.isActive);
@@ -302,205 +314,37 @@ const WorkflowOrchestrator = ({
             Workflow Orchestration
           </h3>
         </div>
-        <div className="flex items-center space-x-2">
-          <div className="text-sm text-gray-600" aria-live="polite" aria-atomic="true">
-            <span className="sr-only">Progress:</span>
-            {workflowProgress.completed}/{workflowProgress.total} stages completed
-          </div>
-          <div
-            className="w-24 bg-gray-200 rounded-full h-2"
-            role="progressbar"
-            aria-valuenow={String(workflowProgress.percentage)}
-            aria-valuemin="0"
-            aria-valuemax="100"
-            aria-label={`Workflow progress: ${workflowProgress.percentage}%`}
-          >
-            <div
-              className="progress-bar progress-bar-blue h-2 rounded-full transition-all duration-300"
-              style={{ width: `${workflowProgress.percentage}%` }}
-              aria-hidden="true"
-            />
-          </div>
-        </div>
+        <WorkflowProgress
+          completed={workflowProgress.completed}
+          total={workflowProgress.total}
+          percentage={workflowProgress.percentage}
+        />
       </div>
 
-      {/* Breadcrumbs */}
-      <nav aria-label="Workflow steps" className="mb-6">
-        <ol className="flex items-center space-x-2 text-sm">
-          {workflowStages.map((stage, index) => (
-            <li key={stage.id} className="flex items-center">
-              {index > 0 && (
-                <span className="mx-2 text-gray-400" aria-hidden="true">
-                  /
-                </span>
-              )}
-              <span
-                className={`${
-                  stage.isActive
-                    ? 'font-semibold text-blue-600'
-                    : stage.isCompleted
-                      ? 'text-green-600'
-                      : 'text-gray-500'
-                }`}
-                aria-current={stage.isActive ? 'step' : undefined}
-              >
-                Step {stage.order} of {workflowStages.length}: {stage.name}
-              </span>
-            </li>
-          ))}
-        </ol>
-      </nav>
+      <WorkflowBreadcrumbs stages={workflowStages} />
 
       {/* Workflow Stages */}
       <div className="space-y-4" role="list">
         {workflowStages.map((stage, index) => (
-          <div
+          <WorkflowStageComponent
             key={stage.id}
-            role="listitem"
-            className={`flex items-center space-x-4 p-4 rounded-lg border transition-all duration-200 ${
-              stage.isActive
-                ? 'border-blue-500 bg-blue-50'
-                : stage.isCompleted
-                  ? 'border-green-500 bg-green-50'
-                  : 'border-gray-200 bg-gray-50'
-            }`}
-            aria-current={stage.isActive ? 'step' : undefined}
-          >
-            <div className="flex-shrink-0" aria-hidden="true">
-              {stage.isCompleted ? (
-                <CheckCircle className="w-6 h-6 text-green-600" aria-label="Completed" />
-              ) : stage.isActive ? (
-                <Activity className="w-6 h-6 text-blue-600" aria-label="Active" />
-              ) : (
-                <Clock className="w-6 h-6 text-gray-400" aria-label="Pending" />
-              )}
-            </div>
-
-            <div className="flex-1">
-              <div className="flex items-center justify-between">
-                <h4
-                  className={`font-medium ${
-                    stage.isActive
-                      ? 'text-blue-900'
-                      : stage.isCompleted
-                        ? 'text-green-900'
-                        : 'text-gray-700'
-                  }`}
-                  id={`stage-${stage.id}-title`}
-                >
-                  {stage.name}
-                </h4>
-                <div className="flex items-center space-x-2">
-                  <span
-                    className="text-sm text-gray-500"
-                    aria-label={`Estimated time: ${stage.estimatedTime} minutes`}
-                  >
-                    {stage.estimatedTime}m
-                  </span>
-                  {stage.isRequired && (
-                    <span
-                      className="px-2 py-1 text-xs font-medium bg-red-100 text-red-800 rounded-full"
-                      aria-label="Required step"
-                    >
-                      Required
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-1 text-sm text-gray-600">
-                {stage.page} • Dependencies:{' '}
-                {stage.dependencies.length > 0 ? stage.dependencies.join(', ') : 'None'}
-              </div>
-
-              {validationResults[stage.id] && (
-                <div className="mt-2">
-                  {validationResults[stage.id].errors.map((error, errorIndex) => (
-                    <div
-                      key={errorIndex}
-                      className="flex items-center space-x-2 text-sm text-red-600"
-                    >
-                      <XCircle className="w-4 h-4" />
-                      <span>{error.message}</span>
-                    </div>
-                  ))}
-                  {validationResults[stage.id].warnings.map((warning, warningIndex) => (
-                    <div
-                      key={warningIndex}
-                      className="flex items-center space-x-2 text-sm text-yellow-600"
-                    >
-                      <AlertTriangle className="w-4 h-4" />
-                      <span>{warning.message}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {index < workflowStages.length - 1 && (
-              <div className="flex-shrink-0">
-                <ArrowRight className="w-5 h-5 text-gray-400" />
-              </div>
-            )}
-          </div>
+            stage={stage}
+            validationResult={validationResults[stage.id]}
+            isLast={index === workflowStages.length - 1}
+          />
         ))}
       </div>
 
-      {/* Workflow Controls */}
-      <div className="flex items-center justify-between mt-6 pt-6 border-t border-gray-200">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={goToPreviousStage}
-            disabled={workflowStages.findIndex((stage) => stage.isActive) <= 0}
-            className="btn-secondary flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Go to previous workflow stage"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                goToPreviousStage();
-              }
-            }}
-          >
-            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
-            <span>Previous</span>
-          </button>
-
-          <button
-            onClick={advanceToNextStage}
-            disabled={
-              isAutoAdvancing ||
-              workflowStages.findIndex((stage) => stage.isActive) >= workflowStages.length - 1
-            }
-            className="btn-primary flex items-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-label="Advance to next workflow stage"
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                advanceToNextStage();
-              }
-            }}
-          >
-            {isAutoAdvancing ? (
-              <>
-                <RotateCcw className="w-4 h-4 animate-spin" aria-hidden="true" />
-                <span>
-                  <span className="sr-only">Status:</span>
-                  Advancing...
-                </span>
-              </>
-            ) : (
-              <>
-                <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                <span>Next</span>
-              </>
-            )}
-          </button>
-        </div>
-
-        <div className="text-sm text-gray-600">
-          Estimated time remaining: {workflowProgress.estimatedTimeRemaining} minutes
-        </div>
-      </div>
+      <WorkflowControls
+        canGoPrevious={workflowStages.findIndex((stage) => stage.isActive) > 0}
+        canGoNext={
+          workflowStages.findIndex((stage) => stage.isActive) < workflowStages.length - 1
+        }
+        isAutoAdvancing={isAutoAdvancing}
+        estimatedTimeRemaining={workflowProgress.estimatedTimeRemaining}
+        onPrevious={goToPreviousStage}
+        onNext={advanceToNextStage}
+      />
 
       {/* Auto-advance indicator */}
       {isAutoAdvancing && (

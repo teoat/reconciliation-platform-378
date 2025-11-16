@@ -475,7 +475,7 @@ impl InternationalizationService {
     }
 
     /// Get localization context for user
-    pub async fn get_localization_context(&self, user_id: Uuid) -> AppResult<LocalizationContext> {
+    pub async fn get_localization_context(&self, _user_id: Uuid) -> AppResult<LocalizationContext> {
         // In a real implementation, this would get user preferences from database
         // For now, we'll return default context
 
