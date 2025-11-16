@@ -303,11 +303,17 @@ export class PerformanceMonitor {
     const durations = this.measurements.get(key);
     if (!durations || durations.length === 0) return null;
 
+    const valid = durations.filter((d) => Number.isFinite(d));
+    if (valid.length === 0) return null;
+
+    const sum = valid.reduce((a, b) => a + b, 0);
+    const avg = sum / valid.length;
+
     return {
-      count: durations.length,
-      avg: durations.reduce((a, b) => a + b, 0) / durations.length,
-      min: Math.min(...durations),
-      max: Math.max(...durations),
+      count: valid.length,
+      avg,
+      min: Math.min(...valid),
+      max: Math.max(...valid),
       threshold: this.thresholds.get(key),
     };
   }
