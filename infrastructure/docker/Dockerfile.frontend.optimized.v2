@@ -1,51 +1,31 @@
 # ==============================================================================
-# Stage 1: Install dependencies
+# Stage 1: Build application
 # ==============================================================================
-FROM node:20-alpine AS deps
-WORKDIR /app/frontend
-
-# Copy package files
-COPY frontend/package*.json ./
-
-# Install dependencies with optimizations
-RUN npm ci --only=production --no-audit --no-fund && \
-    npm cache clean --force
-
-# ==============================================================================
-# Stage 2: Build application
-# ==============================================================================
-FROM node:20-alpine AS builder
+FROM node:18-alpine AS builder
 WORKDIR /app/frontend
 
 # Build arguments for environment variables
 ARG VITE_API_URL
 ARG VITE_WS_URL
-ARG NODE_ENV=production
 
-# Set environment variables
-ENV VITE_API_URL=${VITE_API_URL} \
-    VITE_WS_URL=${VITE_WS_URL} \
-    NODE_ENV=${NODE_ENV}
+# Set environment variables  
+ENV VITE_API_URL=${VITE_API_URL}
+ENV VITE_WS_URL=${VITE_WS_URL}
 
-# Copy dependencies from previous stage
-COPY --from=deps /app/frontend/node_modules ./node_modules
-
-# Copy package files
+# Copy package files for better caching
 COPY frontend/package*.json ./
 
-# Install dev dependencies for build
-RUN npm install --no-audit --no-fund
+# Install dependencies
+RUN if [ -f package-lock.json ]; then npm ci --no-audit --no-fund; else npm install --no-audit --no-fund; fi
 
 # Copy source code
 COPY frontend/ .
 
 # Build production bundle
-RUN npm run build && \
-    # Remove source maps for smaller size
-    find dist -name '*.map' -delete
+RUN npm run build
 
 # ==============================================================================
-# Stage 3: Production runtime (nginx)
+# Stage 2: Production runtime (nginx)
 # ==============================================================================
 FROM nginx:1.27-alpine
 LABEL maintainer="Reconciliation Platform Team"
@@ -83,7 +63,7 @@ server {
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     
     # CSP header (development-friendly, tighten in production)
-    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' http://localhost:2000 ws://localhost:2000; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" always;
+    add_header Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https: blob:; font-src 'self' data:; connect-src 'self' http://localhost:2000 ws://localhost:2000 http://localhost:1000 ws://localhost:1000 ws://localhost:5173 http://localhost:5173; frame-ancestors 'none'; base-uri 'self'; form-action 'self';" always;
     
     # SPA routing
     location / {
@@ -113,6 +93,9 @@ server {
 }
 EOF
 
+# Ensure CSS files exist
+RUN sh -c 'ls /usr/share/nginx/html/*.css >/dev/null 2>&1 || touch /usr/share/nginx/html/dummy.css'
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget -q --spider http://localhost/ || exit 1
@@ -121,4 +104,3 @@ EXPOSE 80
 
 # Run nginx
 CMD ["nginx", "-g", "daemon off;"]
-

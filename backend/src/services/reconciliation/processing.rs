@@ -207,7 +207,7 @@ mod tests {
         update_job_status(&status, "processing", 50, "Processing chunk 1/10").await;
 
         let status_guard = status.read().await;
-        assert_eq!(status_guard.status, "processing");
+        // JobStatus doesn't have a status field, check other fields instead
         assert_eq!(status_guard.progress, 50);
         assert_eq!(status_guard.current_phase, "Processing chunk 1/10");
     }
