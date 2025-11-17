@@ -75,12 +75,12 @@ scrape_configs:
     scrape_interval: 30s
     metrics_path: /metrics
 
-  # Logstash Metrics (optional - can be enabled if logstash-exporter is deployed)
-  # - job_name: 'logstash'
-  #   static_configs:
-  #     - targets: ['logstash-exporter:9198']
-  #   scrape_interval: 15s
-  #   metrics_path: /metrics
+  # OpenTelemetry Collector (APM integrated)
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector:8888']
+    scrape_interval: 15s
+    metrics_path: /metrics
 
 # Note: Retention and WAL compression are set via command-line flags in docker-compose
 # Leave storage defaults in config file; see docker-compose.yml for retention settings

@@ -124,6 +124,18 @@ docker compose --profile production up -d
 
 ## Quick Commands
 
+### Deploy with Profiles
+```bash
+# Minimal (development)
+docker compose -f docker-compose.optimized.yml --profile minimal up -d
+
+# Standard (staging)
+docker compose -f docker-compose.optimized.yml --profile standard up -d
+
+# Production (full stack)
+docker compose -f docker-compose.optimized.yml --profile production up -d
+```
+
 ### Check Current Resource Usage
 ```bash
 docker stats --no-stream
@@ -131,16 +143,22 @@ docker stats --no-stream
 
 ### Compare Service Counts
 ```bash
-# Full stack
-docker compose ps | wc -l
+# Optimized stack
+docker compose -f docker-compose.optimized.yml --profile production ps | wc -l
 
 # Minimal stack
-docker compose -f docker-compose.dev.yml ps | wc -l
+docker compose -f docker-compose.optimized.yml --profile minimal ps | wc -l
 ```
 
 ### View Resource Limits
 ```bash
 docker inspect <container> | grep -A 10 "Resources"
+```
+
+### View Logs in Loki
+```bash
+# Access Grafana and use LogQL queries
+# Example: {service="reconciliation-backend"} |= "error"
 ```
 
 ---

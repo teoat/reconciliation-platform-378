@@ -333,7 +333,13 @@ const AuthPage: React.FC = () => {
                 </div>
               </div>
 
-              <div ref={googleButtonRef} className="w-full flex justify-center"></div>
+              <div ref={googleButtonRef} className="w-full flex justify-center">
+                {!import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+                  <p className="text-xs text-gray-400 text-center mt-2 px-4">
+                    Google Sign-In is not configured. Set VITE_GOOGLE_CLIENT_ID in .env to enable.
+                  </p>
+                )}
+              </div>
             </form>
           ) : (
             <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-6">
@@ -479,7 +485,13 @@ const AuthPage: React.FC = () => {
                 </div>
               </div>
 
-              <div ref={googleButtonRef} className="w-full flex justify-center"></div>
+              <div ref={googleButtonRef} className="w-full flex justify-center">
+                {!import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+                  <p className="text-xs text-gray-400 text-center mt-2 px-4">
+                    Google Sign-In is not configured. Set VITE_GOOGLE_CLIENT_ID in .env to enable.
+                  </p>
+                )}
+              </div>
             </form>
           )}
 

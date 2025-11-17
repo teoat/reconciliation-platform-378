@@ -105,10 +105,31 @@ async fn main() -> std::io::Result<()> {
     let cache = app_startup.cache().clone();
     let resilience = app_startup.resilience().clone();
 
-    // Initialize password manager
+    // Initialize authentication and user services
     use std::sync::Arc;
     use reconciliation_backend::services::password_manager::PasswordManager;
+    use reconciliation_backend::services::auth::AuthService;
+    use reconciliation_backend::services::user::UserService;
     
+    // Create auth service (not wrapped in Arc yet, as UserService needs the value)
+    let auth_service_value = AuthService::new(
+        config.jwt_secret.clone(),
+        config.jwt_expiration,
+    );
+    log::info!("Auth service initialized");
+    
+    // Create user service (requires database and auth service value)
+    let user_service_value = UserService::new(
+        Arc::new(database.clone()),
+        auth_service_value.clone(),
+    );
+    log::info!("User service initialized");
+    
+    // Now wrap both in Arc for app_data
+    let auth_service = Arc::new(auth_service_value);
+    let user_service = Arc::new(user_service_value);
+    
+    // Initialize password manager
     let master_key = std::env::var("PASSWORD_MASTER_KEY")
         .unwrap_or_else(|_| {
             log::warn!("PASSWORD_MASTER_KEY not set, using default (CHANGE IN PRODUCTION!)");
@@ -156,6 +177,9 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(cache.clone()))
             .app_data(web::Data::new(resilience.clone()))
             .app_data(web::Data::from(password_manager.clone()))
+            // Add authentication and user services (required by auth handlers)
+            .app_data(web::Data::from(auth_service.clone()))
+            .app_data(web::Data::from(user_service.clone()))
             // Configure routes
             .configure(handlers::configure_routes)
     })
