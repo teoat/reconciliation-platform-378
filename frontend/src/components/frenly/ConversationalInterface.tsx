@@ -15,8 +15,6 @@ import { logger } from '../../services/logger';
 // Consider moving agents/ to frontend/src/agents/ or configuring a path alias for better maintainability
 import { MessageContext } from '../../../../agents/guidance/FrenlyGuidanceAgent';
 
-// ConversationMessage is now imported from conversationStorage
-
 interface ConversationalInterfaceProps {
   userId: string;
   currentPage?: string;
@@ -39,6 +37,8 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
+  const [showExportMenu, setShowExportMenu] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -54,19 +54,46 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
     }
   }, [isOpen, isMinimized]);
 
-  // Initialize with welcome message
+  // Initialize session and load conversation history
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
-      const welcomeMessage: ConversationMessage = {
-        id: 'welcome',
-        role: 'assistant',
-        content: "Hi! I'm Frenly, your AI assistant! 👋 How can I help you today?",
-        timestamp: new Date(),
-        type: 'greeting',
-      };
-      setMessages([welcomeMessage]);
+    if (isOpen) {
+      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      setSessionId(newSessionId);
+
+      // Try to load previous conversation
+      const savedSession = conversationStorage.loadConversation(newSessionId);
+      if (savedSession && savedSession.messages.length > 0) {
+        setMessages(savedSession.messages);
+      } else if (messages.length === 0) {
+        // Only show welcome if no messages loaded
+        const welcomeMessage: ConversationMessage = {
+          id: 'welcome',
+          role: 'assistant',
+          content: "Hi! I'm Frenly, your AI assistant! 👋 How can I help you today?",
+          timestamp: new Date(),
+          type: 'greeting',
+        };
+        setMessages([welcomeMessage]);
+      }
     }
-  }, [isOpen, messages.length]);
+  }, [isOpen]);
+
+  // Save conversation when messages change
+  useEffect(() => {
+    if (sessionId && messages.length > 0) {
+      const saveConversation = async () => {
+        try {
+          await conversationStorage.saveConversation(sessionId, userId, messages);
+        } catch (error) {
+          logger.error('Error saving conversation:', error);
+        }
+      };
+      
+      // Debounce saves to avoid excessive writes
+      const timeout = setTimeout(saveConversation, 1000);
+      return () => clearTimeout(timeout);
+    }
+  }, [messages, sessionId, userId]);
 
   /**
    * Handle sending a message
@@ -115,7 +142,9 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
       setMessages(prev => [...prev, assistantMessage]);
 
       // Track interaction
-      await frenlyAgentService.trackInteraction(userId, 'message_sent', agentMessage.id);
+      await frenlyAgentService.trackInteraction(userId, 'message_sent', agentMessage.id).catch(err => {
+        logger.warn('Failed to track interaction:', err);
+      });
     } catch (error) {
       logger.error('Error handling query:', error);
       
@@ -144,15 +173,53 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
     }
   }, [handleSend]);
 
+  /**
+   * Export conversation
+   */
+  const handleExport = useCallback((format: 'json' | 'text') => {
+    if (!sessionId) return;
+
+    try {
+      let content: string | null = null;
+      let filename: string;
+      let mimeType: string;
+
+      if (format === 'json') {
+        content = conversationStorage.exportConversation(sessionId);
+        filename = `frenly-conversation-${sessionId}.json`;
+        mimeType = 'application/json';
+      } else {
+        content = conversationStorage.exportConversationAsText(sessionId);
+        filename = `frenly-conversation-${sessionId}.txt`;
+        mimeType = 'text/plain';
+      }
+
+      if (content) {
+        const blob = new Blob([content], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        setShowExportMenu(false);
+      }
+    } catch (error) {
+      logger.error('Error exporting conversation:', error);
+    }
+  }, [sessionId]);
+
   if (!isOpen) {
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50 ${className}`}
+        className={`fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${className}`}
         title="Open Conversational Interface"
         aria-label="Open Conversational Interface"
       >
-        <MessageCircle className="w-8 h-8 text-white" />
+        <MessageCircle className="w-8 h-8 text-white" aria-hidden="true" />
       </button>
     );
   }
@@ -160,15 +227,18 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
   return (
     <div
       className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${
-        isMinimized ? 'w-80 h-16' : 'w-96 h-[600px]'
+        isMinimized ? 'w-16 h-16 sm:w-80 sm:h-16' : 'w-[calc(100vw-3rem)] sm:w-96 h-[calc(100vh-8rem)] sm:h-[600px] max-w-md'
       } ${className}`}
+      role="dialog"
+      aria-label="Frenly AI Conversational Interface"
+      aria-modal="true"
     >
       <div className="bg-white rounded-lg shadow-2xl border border-purple-200 flex flex-col h-full">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-t-lg">
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
-              <MessageCircle className="w-5 h-5" />
+              <MessageCircle className="w-5 h-5" aria-hidden="true" />
             </div>
             <div>
               <h3 className="text-sm font-semibold">Frenly AI</h3>
@@ -176,25 +246,56 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
             </div>
           </div>
           <div className="flex items-center space-x-1">
+            {!isMinimized && (
+              <div className="relative">
+                <button
+                  onClick={() => setShowExportMenu(!showExportMenu)}
+                  className="p-1 hover:bg-white/20 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+                  title="Export conversation"
+                  aria-label="Export conversation"
+                  aria-expanded={showExportMenu}
+                >
+                  <Download className="w-4 h-4" aria-hidden="true" />
+                </button>
+                {showExportMenu && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-10">
+                    <button
+                      onClick={() => handleExport('json')}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100"
+                      aria-label="Export as JSON"
+                    >
+                      Export as JSON
+                    </button>
+                    <button
+                      onClick={() => handleExport('text')}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 focus:outline-none focus:bg-gray-100"
+                      aria-label="Export as Text"
+                    >
+                      Export as Text
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
             <button
               onClick={() => setIsMinimized(!isMinimized)}
-              className="p-1 hover:bg-white/20 rounded transition-colors"
+              className="p-1 hover:bg-white/20 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
               title={isMinimized ? 'Expand' : 'Minimize'}
               aria-label={isMinimized ? 'Expand' : 'Minimize'}
             >
               {isMinimized ? (
-                <Maximize2 className="w-4 h-4" />
+                <Maximize2 className="w-4 h-4" aria-hidden="true" />
               ) : (
-                <Minimize2 className="w-4 h-4" />
+                <Minimize2 className="w-4 h-4" aria-hidden="true" />
               )}
             </button>
             <button
               onClick={() => setIsOpen(false)}
-              className="p-1 hover:bg-white/20 rounded transition-colors"
+              className="p-1 hover:bg-white/20 rounded transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
               title="Close"
               aria-label="Close"
             >
-              <X className="w-4 h-4" />
+              <X className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -251,13 +352,14 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
                   onChange={(e) => setInputValue(e.target.value)}
                   onKeyPress={handleKeyPress}
                   placeholder="Ask me anything..."
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={isTyping}
+                  aria-label="Message input"
                 />
                 <button
                   onClick={handleSend}
                   disabled={!inputValue.trim() || isTyping}
-                  className={`p-2 rounded-lg transition-colors ${
+                  className={`p-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${
                     inputValue.trim() && !isTyping
                       ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:from-purple-600 hover:to-pink-600'
                       : 'bg-gray-200 text-gray-400 cursor-not-allowed'
@@ -265,7 +367,7 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
                   title="Send message"
                   aria-label="Send message"
                 >
-                  <Send className="w-5 h-5" />
+                  <Send className="w-5 h-5" aria-hidden="true" />
                 </button>
               </div>
             </div>

@@ -324,11 +324,11 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
     return (
       <button
         onClick={toggleVisibility}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+        className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
         aria-label="Open Frenly AI Assistant"
         title="Open Frenly AI Assistant"
       >
-        <MessageCircle className="w-8 h-8 text-white" aria-hidden="true" />
+        <MessageCircle className="w-7 h-7 sm:w-8 sm:h-8 text-white" aria-hidden="true" />
       </button>
     )
   }
@@ -336,7 +336,9 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
   return (
     <div 
       className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${
-        state.isMinimized ? 'w-16 h-16' : 'w-80'
+        state.isMinimized 
+          ? 'w-16 h-16 sm:w-16 sm:h-16' 
+          : 'w-[calc(100vw-3rem)] sm:w-80 max-w-sm'
       }`}
       role="complementary"
       aria-label="Frenly AI Assistant"
@@ -405,7 +407,7 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
             )}
 
             {state.activeMessage && (
-              <div className="absolute bottom-20 right-0 bg-white rounded-2xl shadow-lg p-4 max-w-64 border-2 border-purple-200" role="alert" aria-live="polite">
+              <div className="absolute bottom-20 right-0 bg-white rounded-2xl shadow-lg p-3 sm:p-4 max-w-[calc(100vw-6rem)] sm:max-w-64 border-2 border-purple-200" role="alert" aria-live="polite">
                 {/* Speech bubble tail */}
                 <div className="absolute bottom-0 right-4 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-white" />
                 <div className="absolute bottom-0 right-4 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-purple-200 transform translate-y-0.5" />
@@ -463,7 +465,7 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
 
       {/* Control Panel */}
       {!state.isMinimized && (
-        <div className="bg-white rounded-lg shadow-lg p-3 border border-purple-200">
+        <div className="bg-white rounded-lg shadow-lg p-2 sm:p-3 border border-purple-200">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-medium text-purple-600">Frenly AI</span>
             <div className="flex items-center space-x-1">

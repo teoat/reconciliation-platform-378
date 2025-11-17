@@ -105,14 +105,29 @@ reconciliation-platform-378/
 ## Next Steps
 
 1. ✅ Review [FOLDER_SYSTEM_SIMPLIFICATION_ANALYSIS.md](./FOLDER_SYSTEM_SIMPLIFICATION_ANALYSIS.md)
-2. ⏳ Prioritize phases with team
-3. ⏳ Create backup
-4. ⏳ Execute Phase 1 (lowest risk)
-5. ⏳ Verify and proceed to next phases
+2. ✅ Review [FOLDER_SIMPLIFICATION_DEEP_ANALYSIS.md](./FOLDER_SIMPLIFICATION_DEEP_ANALYSIS.md) for detailed fixes
+3. ⏳ Prioritize phases with team
+4. ⏳ Create backup
+5. ⏳ Execute Phase 1 (lowest risk)
+6. ⏳ Verify and proceed to next phases
 
 ---
 
-**Full Analysis**: [FOLDER_SYSTEM_SIMPLIFICATION_ANALYSIS.md](./FOLDER_SYSTEM_SIMPLIFICATION_ANALYSIS.md)  
-**Verification Script**: `scripts/verify-folder-consolidation.sh`  
-**Risk Level**: Minimum (with phased approach)
+## Documentation
+
+- **High-Level Analysis**: [FOLDER_SYSTEM_SIMPLIFICATION_ANALYSIS.md](./FOLDER_SYSTEM_SIMPLIFICATION_ANALYSIS.md)
+- **Deep Analysis with Fixes**: [FOLDER_SIMPLIFICATION_DEEP_ANALYSIS.md](./FOLDER_SIMPLIFICATION_DEEP_ANALYSIS.md)
+- **Verification Script**: `scripts/verify-folder-consolidation.sh`
+- **Migration Script**: `scripts/consolidate-folders.sh`
+- **Risk Level**: Minimum (with phased approach)
+
+---
+
+## Quick Reference
+
+**Affected Files Identified**: 20+ files  
+**Import Fixes Required**: 2+ files (types directory)  
+**Path Updates Required**: 15+ files (docker-compose, scripts, CI/CD)  
+**Migration Scripts**: 4 scripts available  
+**Risk Mitigation**: Comprehensive with verification checklists
 
