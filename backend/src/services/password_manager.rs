@@ -660,6 +660,9 @@ impl PasswordManager {
 }
 
 /// Password rotation scheduler
+/// 
+/// NOTE: Extracted utilities are available in password_manager_utils module.
+/// This struct is kept here for backward compatibility.
 pub struct PasswordRotationScheduler {
     password_manager: Arc<PasswordManager>,
     interval_seconds: u64,
@@ -681,7 +684,7 @@ impl PasswordRotationScheduler {
             interval.tick().await;
             
             if let Err(e) = self.password_manager.rotate_due_passwords().await {
-                eprintln!("Error rotating passwords: {:?}", e);
+                log::error!("Error rotating passwords: {:?}", e);
             }
         }
     }

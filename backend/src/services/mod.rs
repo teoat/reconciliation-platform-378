@@ -85,4 +85,13 @@ pub use resilience::{ResilienceManager, graceful_degradation};
 
 // Password management
 pub mod password_manager;
-pub use password_manager::{PasswordManager, PasswordEntry, RotationSchedule, PasswordRotationScheduler};
+// Extracted password manager utilities (rotation, audit, encryption)
+// Note: These are separate modules that can be used independently
+// The main password_manager.rs file contains the core implementation
+#[path = "password_manager/mod.rs"]
+pub mod password_manager_utils;
+
+// Re-export main types
+pub use password_manager::{
+    PasswordManager, PasswordEntry, RotationSchedule, PasswordRotationScheduler,
+};

@@ -7,7 +7,7 @@ use std::sync::Arc;
 use tokio::time::{interval, Duration};
 
 use crate::errors::AppResult;
-use super::PasswordManager;
+use crate::services::PasswordManager;
 
 /// Password rotation scheduler
 pub struct PasswordRotationScheduler {

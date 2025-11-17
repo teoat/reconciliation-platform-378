@@ -1,14 +1,18 @@
-//! Password Manager Module
+//! Password Manager Utilities Module
 //!
-//! Provides secure password storage, retrieval, and rotation functionality.
-//! Organized into sub-modules for better separation of concerns.
+//! Provides extracted utilities for password management:
+//! - Rotation: Password rotation scheduling
+//! - Audit: Audit logging for password operations
+//! - Encryption: Encryption/decryption utilities
+//!
+//! These are separate utilities that can be used independently.
+//! The main password_manager.rs file contains the core PasswordManager implementation.
 
 pub mod audit;
 pub mod encryption;
 pub mod rotation;
 
-// Re-export main types for backward compatibility
-pub use super::password_manager::{
-    PasswordEntry, PasswordManager, RotationSchedule,
-};
-
+// Re-export for convenience
+pub use audit::PasswordAuditLogger;
+pub use encryption::{encrypt_password, decrypt_password, generate_secure_password};
+pub use rotation::PasswordRotationScheduler as RotationScheduler;

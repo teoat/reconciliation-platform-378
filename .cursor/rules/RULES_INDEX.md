@@ -1,198 +1,215 @@
 # Cursor Rules Index
 
 **Last Updated**: January 2025  
-**Purpose**: Quick reference guide to all Cursor IDE rules
+**Purpose**: Quick reference guide to all coding rules and patterns
 
----
+## Overview
 
-## 📚 Rule Files Overview
+This index provides a quick reference to all rule files in `.cursor/rules/`. Each rule file contains specific patterns and best practices for different aspects of the codebase.
+
+## Rule Files
 
 ### Core Rules
 
-#### [cursor_rules.mdc](.cursor/rules/cursor_rules.mdc)
-**Purpose**: Meta-rules for creating and maintaining Cursor rules  
-**Applies to**: `.cursor/rules/*.mdc`  
-**Key Topics**: Rule structure, file references, code examples, formatting guidelines
+#### [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc)
+- **Purpose**: General rule formatting and structure guidelines
+- **Applies To**: All rule files
+- **Key Topics**: Rule structure, file references, code examples, maintenance
 
-#### [self_improve.mdc](.cursor/rules/self_improve.mdc)
-**Purpose**: Guidelines for continuously improving rules based on code patterns  
-**Applies to**: All files  
-**Key Topics**: Rule improvement triggers, pattern recognition, continuous improvement
-
----
+#### [self_improve.mdc](mdc:.cursor/rules/self_improve.mdc)
+- **Purpose**: Rule improvement and evolution guidelines
+- **Applies To**: Rule maintenance process
+- **Key Topics**: Pattern recognition, rule updates, quality checks
 
 ### Language-Specific Rules
 
-#### [rust_patterns.mdc](.cursor/rules/rust_patterns.mdc)
-**Purpose**: Rust-specific coding patterns for backend  
-**Applies to**: `backend/**/*.rs`  
-**Key Topics**: Error handling, database operations, async patterns, logging, middleware, type safety, performance
+#### [rust_patterns.mdc](mdc:.cursor/rules/rust_patterns.mdc)
+- **Purpose**: Rust-specific coding patterns for backend
+- **Applies To**: `backend/**/*.rs`
+- **Key Topics**: 
+  - Error handling (AppResult, AppError)
+  - Database operations (Diesel, transactions)
+  - Async patterns
+  - Logging (references [security.mdc](mdc:.cursor/rules/security.mdc))
+  - Middleware patterns
+- **Security**: References [security.mdc](mdc:.cursor/rules/security.mdc) for security patterns
 
-#### [typescript_patterns.mdc](.cursor/rules/typescript_patterns.mdc)
-**Purpose**: TypeScript and React patterns for frontend  
-**Applies to**: `frontend/**/*.{ts,tsx}`, `components/**/*.{ts,tsx}`, `pages/**/*.{ts,tsx}`  
-**Key Topics**: Type safety, state management, component structure, styling, error handling, performance, security
+#### [typescript_patterns.mdc](mdc:.cursor/rules/typescript_patterns.mdc)
+- **Purpose**: TypeScript and React patterns for frontend
+- **Applies To**: `frontend/**/*.{ts,tsx}`, `components/**/*.{ts,tsx}`, `pages/**/*.{ts,tsx}`
+- **Key Topics**:
+  - Type safety (strict mode, interfaces)
+  - State management (Redux Toolkit, hooks)
+  - API service patterns
+  - Component structure
+  - Styling (Tailwind CSS)
+  - Error handling (references [security.mdc](mdc:.cursor/rules/security.mdc))
+- **Security**: References [security.mdc](mdc:.cursor/rules/security.mdc) for security patterns
 
----
+### Security Rules
 
-### Cross-Cutting Concerns
+#### [security.mdc](mdc:.cursor/rules/security.mdc)
+- **Purpose**: Security best practices and patterns
+- **Applies To**: `**/*.{rs,ts,tsx,js}`
+- **Key Topics**:
+  - Input validation
+  - Authentication and authorization
+  - XSS prevention
+  - SQL injection prevention
+  - CSRF protection
+  - Secrets management
+  - Error handling security
+  - Logging security (masking PII)
+  - HTTPS and security headers
+- **Referenced By**: rust_patterns.mdc, typescript_patterns.mdc
 
-#### [security.mdc](.cursor/rules/security.mdc)
-**Purpose**: Security best practices and patterns  
-**Applies to**: `**/*.{rs,ts,tsx,js}`  
-**Key Topics**: Input validation, authentication, authorization, XSS/SQL injection prevention, secrets management, error handling, logging security
+### Workflow Rules
 
-#### [testing.mdc](.cursor/rules/testing.mdc)
-**Purpose**: Testing patterns for Rust and TypeScript/React  
-**Applies to**: `**/*test*.{rs,ts,tsx}`, `**/__tests__/**/*`, `**/*.spec.{ts,tsx}`  
-**Key Topics**: Test organization, unit/integration/E2E tests, mocking, test data, coverage, performance testing, security testing
+#### [git_workflow.mdc](mdc:.cursor/rules/git_workflow.mdc)
+- **Purpose**: Git workflow and branching conventions
+- **Applies To**: All git operations
+- **Key Topics**:
+  - Branch naming conventions
+  - Commit message format
+  - Merge vs rebase
+  - PR workflow
+  - Tagging releases
 
-#### [performance.mdc](.cursor/rules/performance.mdc)
-**Purpose**: Performance optimization patterns  
-**Applies to**: `**/*.{rs,ts,tsx}`  
-**Key Topics**: Database optimization, caching, frontend performance, API optimization, monitoring, profiling
+#### [api_design.mdc](mdc:.cursor/rules/api_design.mdc)
+- **Purpose**: RESTful API design patterns
+- **Applies To**: API endpoints
+- **Key Topics**:
+  - RESTful conventions
+  - Endpoint naming
+  - Request/response patterns
+  - Error response format
+  - API versioning
 
----
-
-### Workflow & Process Rules
-
-#### [git_workflow.mdc](.cursor/rules/git_workflow.mdc)
-**Purpose**: Git workflow, branching, and commit conventions  
-**Applies to**: All files  
-**Key Topics**: Branch naming, commit messages, merge strategies, PR guidelines, tagging releases
-
-#### [code_review.mdc](.cursor/rules/code_review.mdc)
-**Purpose**: Code review guidelines and best practices  
-**Applies to**: All files  
-**Key Topics**: Review checklist, approval criteria, review process, common issues, PR guidelines
-
-#### [api_design.mdc](.cursor/rules/api_design.mdc)
-**Purpose**: API design patterns and REST conventions  
-**Applies to**: `backend/**/*.rs`, `frontend/**/*.{ts,tsx}`  
-**Key Topics**: RESTful conventions, endpoint naming, HTTP status codes, error responses, authentication, versioning, rate limiting
-
----
+#### [code_review.mdc](mdc:.cursor/rules/code_review.mdc)
+- **Purpose**: Code review guidelines and checklist
+- **Applies To**: All code reviews
+- **Key Topics**:
+  - Review checklist
+  - What to look for
+  - Approval criteria
+  - Review process
 
 ### Organization Rules
 
-#### [code_organization.mdc](.cursor/rules/code_organization.mdc)
-**Purpose**: Code organization principles and SSOT patterns  
-**Applies to**: All files  
-**Key Topics**: SSOT principles, directory structure, file naming, module boundaries, code duplication prevention
+#### [code_organization.mdc](mdc:.cursor/rules/code_organization.mdc)
+- **Purpose**: Code organization and structure
+- **Applies To**: All code
+- **Key Topics**:
+  - Directory structure
+  - File naming
+  - Module boundaries
+  - SSOT principles
 
-#### [documentation.mdc](.cursor/rules/documentation.mdc)
-**Purpose**: Documentation standards and guidelines  
-**Applies to**: `docs/**/*.md`, `**/*.md`  
-**Key Topics**: Documentation structure, file naming, content guidelines, consolidation rules, maintenance
+#### [consolidation.mdc](mdc:.cursor/rules/consolidation.mdc)
+- **Purpose**: Preventing duplication and consolidation
+- **Applies To**: Scripts, documentation, functions
+- **Key Topics**:
+  - Shared function library
+  - Documentation consolidation
+  - Archive organization
+  - Maintenance process
 
-#### [consolidation.mdc](.cursor/rules/consolidation.mdc)
-**Purpose**: Script and documentation consolidation patterns  
-**Applies to**: `scripts/**/*.sh`, `docs/**/*.md`  
-**Key Topics**: Shared function library, script consolidation, documentation archiving, preventing duplication
+#### [documentation.mdc](mdc:.cursor/rules/documentation.mdc)
+- **Purpose**: Documentation structure and organization
+- **Applies To**: All documentation
+- **Key Topics**:
+  - Document types (PLAN, STATUS, GUIDE, ARCHIVE)
+  - File naming conventions
+  - Content guidelines
+  - Consolidation rules
 
----
+### Quality Rules
 
-## 🗺️ Quick Reference Map
+#### [testing.mdc](mdc:.cursor/rules/testing.mdc)
+- **Purpose**: Testing patterns and best practices
+- **Applies To**: All test files
+- **Key Topics**:
+  - Test organization
+  - Rust testing patterns
+  - TypeScript/React testing
+  - Test data management
+  - Mocking and stubs
+  - E2E testing
+  - Test coverage
 
-### By Task
+#### [performance.mdc](mdc:.cursor/rules/performance.mdc)
+- **Purpose**: Performance optimization patterns
+- **Applies To**: All code
+- **Key Topics**:
+  - Database query optimization
+  - Backend performance
+  - Frontend performance
+  - Caching strategies
+  - API response optimization
+  - Monitoring and profiling
 
-**Starting a new feature?**
-→ [git_workflow.mdc](.cursor/rules/git_workflow.mdc) → [code_organization.mdc](.cursor/rules/code_organization.mdc) → [rust_patterns.mdc](.cursor/rules/rust_patterns.mdc) or [typescript_patterns.mdc](.cursor/rules/typescript_patterns.mdc)
+## Quick Reference
 
-**Writing API endpoints?**
-→ [api_design.mdc](.cursor/rules/api_design.mdc) → [security.mdc](.cursor/rules/security.mdc) → [testing.mdc](.cursor/rules/testing.mdc)
+### When to Use Which Rule
 
-**Optimizing performance?**
-→ [performance.mdc](.cursor/rules/performance.mdc) → [testing.mdc](.cursor/rules/testing.mdc)
+| Task | Rule File |
+|------|-----------|
+| Writing Rust code | [rust_patterns.mdc](mdc:.cursor/rules/rust_patterns.mdc) |
+| Writing TypeScript/React | [typescript_patterns.mdc](mdc:.cursor/rules/typescript_patterns.mdc) |
+| Security concerns | [security.mdc](mdc:.cursor/rules/security.mdc) |
+| Creating API endpoints | [api_design.mdc](mdc:.cursor/rules/api_design.mdc) |
+| Git operations | [git_workflow.mdc](mdc:.cursor/rules/git_workflow.mdc) |
+| Code review | [code_review.mdc](mdc:.cursor/rules/code_review.mdc) |
+| Organizing code | [code_organization.mdc](mdc:.cursor/rules/code_organization.mdc) |
+| Writing tests | [testing.mdc](mdc:.cursor/rules/testing.mdc) |
+| Performance optimization | [performance.mdc](mdc:.cursor/rules/performance.mdc) |
+| Writing documentation | [documentation.mdc](mdc:.cursor/rules/documentation.mdc) |
 
-**Reviewing code?**
-→ [code_review.mdc](.cursor/rules/code_review.mdc) → [security.mdc](.cursor/rules/security.mdc) → [testing.mdc](.cursor/rules/testing.mdc)
+### Cross-References
 
-**Writing tests?**
-→ [testing.mdc](.cursor/rules/testing.mdc) → [rust_patterns.mdc](.cursor/rules/rust_patterns.mdc) or [typescript_patterns.mdc](.cursor/rules/typescript_patterns.mdc)
+**Security Patterns**:
+- Referenced in: rust_patterns.mdc, typescript_patterns.mdc
+- Use for: Input validation, authentication, secrets, logging security
 
-**Security concerns?**
-→ [security.mdc](.cursor/rules/security.mdc) → [api_design.mdc](.cursor/rules/api_design.mdc)
+**Error Handling**:
+- Rust: rust_patterns.mdc (AppResult pattern)
+- TypeScript: typescript_patterns.mdc (try-catch patterns)
+- Security: security.mdc (error handling security)
 
----
+**Testing**:
+- Patterns: testing.mdc
+- Security testing: security.mdc
+- Performance testing: performance.mdc
 
-## 📊 Rule Statistics
+## Rule Maintenance
 
-- **Total Rule Files**: 13
-- **Core Rules**: 2
-- **Language-Specific**: 2
-- **Cross-Cutting**: 3
-- **Workflow/Process**: 3
-- **Organization**: 3
+- **When to Update**: When new patterns emerge (3+ occurrences)
+- **How to Update**: See [self_improve.mdc](mdc:.cursor/rules/self_improve.mdc)
+- **Format**: Follow [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc)
 
----
+## Rule Maintenance Process
 
-## 🔗 Cross-References
+### Quarterly Review
+- **Process**: See [QUARTERLY_REVIEW.md](mdc:.cursor/rules/QUARTERLY_REVIEW.md)
+- **Schedule**: January, April, July, October
+- **Last Review**: January 2025
+- **Next Review**: April 2025
 
-### Security References
-- Referenced in: `rust_patterns.mdc`, `typescript_patterns.mdc`, `api_design.mdc`, `code_review.mdc`
+### Maintenance Guidelines
+- **When to Update**: When new patterns emerge (3+ occurrences)
+- **How to Update**: See [self_improve.mdc](mdc:.cursor/rules/self_improve.mdc)
+- **Format**: Follow [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc)
 
-### Testing References
-- Referenced in: `rust_patterns.mdc`, `typescript_patterns.mdc`, `performance.mdc`, `code_review.mdc`
+## Related Documentation
 
-### Code Organization References
-- Referenced in: `typescript_patterns.mdc`, `documentation.mdc`, `consolidation.mdc`
-
-### Git Workflow References
-- Referenced in: `code_review.mdc`
-
----
-
-## 📝 Rule Maintenance
-
-### When to Update Rules
-- New patterns emerge in codebase (3+ occurrences)
-- Common bugs could be prevented
-- Code reviews repeatedly mention same feedback
-- New security or performance patterns emerge
-
-### How to Update
-1. Identify pattern or issue
-2. Check existing rules for coverage
-3. Update relevant rule file or create new one
-4. Update this index if adding new rule
-5. Cross-reference from related rules
-
-### Rule Review Schedule
-- **Quarterly**: Review all rules for relevance
-- **After Major Refactors**: Update rules to match new patterns
-- **When Issues Arise**: Update rules to prevent recurrence
-
----
-
-## 🎯 Rule Priorities
-
-### High Priority (Always Follow)
-- `security.mdc` - Security vulnerabilities are critical
-- `git_workflow.mdc` - Required for protected branches
-- `code_organization.mdc` - Prevents duplication and confusion
-
-### Medium Priority (Important for Quality)
-- `testing.mdc` - Ensures code quality
-- `api_design.mdc` - API consistency
-- `code_review.mdc` - Review quality
-
-### Low Priority (Best Practices)
-- `performance.mdc` - Optimization guidelines
-- `documentation.mdc` - Documentation standards
-- `consolidation.mdc` - Maintenance patterns
-
----
-
-## 📖 Related Documentation
-
-- [Rules Evaluation](.cursor/RULES_EVALUATION_AND_IMPROVEMENTS.md) - Analysis and improvements
-- [Pending Improvements](.cursor/PENDING_IMPROVEMENTS.md) - Incomplete items
+- [PENDING_IMPROVEMENTS.md](mdc:.cursor/PENDING_IMPROVEMENTS.md) - ✅ All items completed
+- [RULES_EVALUATION_AND_IMPROVEMENTS.md](mdc:.cursor/RULES_EVALUATION_AND_IMPROVEMENTS.md) - Rule evaluation report
+- [QUARTERLY_REVIEW.md](mdc:.cursor/rules/QUARTERLY_REVIEW.md) - Review and maintenance process
 - [GitHub Rulesets](.github/rulesets/README.md) - Branch protection rules
 - [SSOT Guidance](docs/architecture/SSOT_GUIDANCE.md) - Single source of truth principles
 
 ---
 
-**Last Review**: January 2025  
-**Next Review**: April 2025
-
+**Last Updated**: January 2025  
+**Total Rule Files**: 13 (.mdc files) + 2 documentation files (RULES_INDEX.md, QUARTERLY_REVIEW.md)  
+**Total Lines**: ~2,104 lines
