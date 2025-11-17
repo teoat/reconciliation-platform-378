@@ -42,7 +42,7 @@ export const APP_CONFIG = {
   // Unified API Configuration (SSOT)
   API_URL: getEnvVar('VITE_API_URL', 'http://localhost:2000/api'),
   WS_URL: getEnvVar('VITE_WS_URL', 'ws://localhost:2000'),
-  API_BASE_URL: getEnvVar('VITE_API_URL', 'http://localhost:2000'), // Legacy alias
+  API_BASE_URL: getEnvVar('VITE_API_URL', 'http://localhost:2000/api'), // Legacy alias
   WS_BASE_URL: getEnvVar('VITE_WS_URL', 'ws://localhost:2000'), // Legacy alias
 
   // Application Configuration

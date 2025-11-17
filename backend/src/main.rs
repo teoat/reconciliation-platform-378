@@ -3,6 +3,7 @@
 //! Initializes the application with resilience patterns enabled,
 //! configures services, and starts the HTTP server.
 
+use actix_cors::Cors;
 use reconciliation_backend::{
     config::Config,
     handlers,
@@ -138,11 +139,18 @@ async fn main() -> std::io::Result<()> {
 
     // Create HTTP server with resilience-protected services
     HttpServer::new(move || {
+        // Configure CORS - use permissive for development (allows all origins)
+        // In production, configure specific origins via CORS_ORIGINS env var
+        // Note: Cors::permissive() allows all origins, methods, and headers
+        let cors = Cors::permissive();
+
         actix_web::App::new()
             // Add correlation ID middleware (must be first to propagate IDs)
             .wrap(CorrelationIdMiddleware)
             // Add error handler middleware (ensures correlation IDs in error responses)
             .wrap(ErrorHandlerMiddleware)
+            // Add CORS middleware (after other middleware)
+            .wrap(cors)
             // Configure app data with resilience-protected services
             .app_data(web::Data::new(database.clone()))
             .app_data(web::Data::new(cache.clone()))

@@ -71,14 +71,7 @@ function AppContent() {
     return (
       <div className="min-h-screen bg-gray-50">
         <AuthPage />
-        <FrenlyAI 
-          currentPage="/auth"
-          userProgress={{
-            completedSteps: [],
-            currentStep: 'authentication',
-            totalSteps: 8
-          }}
-        />
+        <FrenlyAI />
       </div>
     )
   }
@@ -142,14 +135,7 @@ function AppContent() {
       </main>
 
       {/* Frenly AI Component - Always visible on authenticated pages */}
-      <FrenlyAI 
-        currentPage={frenlyState.currentPage}
-        userProgress={frenlyState.userProgress}
-        onAction={(action) => {
-          console.log('Frenly AI action:', action)
-          // Handle Frenly AI actions here
-        }}
-      />
+      <FrenlyAI />
     </div>
   )
 }

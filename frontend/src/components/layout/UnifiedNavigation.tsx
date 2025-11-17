@@ -150,11 +150,13 @@ const UnifiedNavigation: React.FC<UnifiedNavigationProps> = ({ className = '' })
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 text-gray-400 hover:text-gray-600"
+              aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? (
-                <X className="h-6 w-6" />
+                <X className="h-6 w-6" aria-hidden="true" />
               ) : (
-                <Menu className="h-6 w-6" />
+                <Menu className="h-6 w-6" aria-hidden="true" />
               )}
             </button>
           </div>

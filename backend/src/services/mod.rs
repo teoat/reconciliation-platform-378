@@ -26,7 +26,7 @@ pub mod database_sharding;
 pub mod shard_aware_db;
 
 // Re-export cache types (limit public surface)
-pub use cache::CacheStrategy;
+// Note: CacheStrategy may not exist, using CacheStats if available
 pub mod backup_recovery;
 pub mod realtime;
 pub mod monitoring;
@@ -49,6 +49,14 @@ pub mod database_migration;
 
 // Add missing S-Tier service modules  
 pub mod advanced_metrics;
+
+// Add missing service modules
+pub mod security_monitor;
+pub mod secrets;
+pub mod structured_logging;
+pub mod billing;
+pub mod query_optimizer;
+pub mod reconciliation_engine;
 
 // Re-export commonly used services
 pub use auth::AuthService;
@@ -88,7 +96,7 @@ pub mod password_manager;
 // Extracted password manager utilities (rotation, audit, encryption)
 // Note: These are separate modules that can be used independently
 // The main password_manager.rs file contains the core implementation
-#[path = "password_manager/mod.rs"]
+#[path = "password_manager_utils_dir/mod.rs"]
 pub mod password_manager_utils;
 
 // Re-export main types

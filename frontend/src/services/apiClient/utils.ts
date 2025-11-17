@@ -31,7 +31,7 @@ export class UrlBuilder {
 export class ConfigBuilder {
   static createDefaultConfig(): ApiClientConfig {
     return {
-      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:2000/api/v1',
+      baseURL: import.meta.env.VITE_API_URL || 'http://localhost:2000/api',
       timeout: 30000, // 30 seconds
       retryConfig: {
         maxRetries: 3,

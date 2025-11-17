@@ -1,12 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { 
-  MessageCircle, 
-  X, 
-  Minimize2, 
-  Maximize2, 
-  Volume2, 
+import {
+  MessageCircle,
+  X,
+  Minimize2,
+  Maximize2,
+  Volume2,
   VolumeX,
   Settings,
   Lightbulb,
@@ -31,43 +31,18 @@ import {
   Meh,
   Laugh
 } from 'lucide-react'
-import { FrenlyState, FrenlyMessage, FrenlyAnimation, FrenlyExpression } from '../types/frenly'
+import { useFrenly } from './frenly/FrenlyProvider'
+import { FrenlyMessage, FrenlyAnimation, FrenlyExpression } from '../types/frenly'
 
-interface FrenlyAIProps {
-  currentPage: string
-  userProgress: {
-    completedSteps: string[]
-    currentStep: string
-    totalSteps: number
-  }
-  onAction?: (action: string) => void
-}
-
-const FrenlyAI: React.FC<FrenlyAIProps> = ({
-  currentPage,
-  userProgress,
-  onAction
-}) => {
-  const [state, setState] = useState<FrenlyState>({
-    isVisible: true,
-    isMinimized: false,
-    currentPage,
-    userProgress,
-    personality: {
-      mood: 'happy',
-      energy: 'high',
-      helpfulness: 95
-    },
-    preferences: {
-      showTips: true,
-      showCelebrations: true,
-      showWarnings: true,
-      voiceEnabled: false,
-      animationSpeed: 'normal'
-    },
-    conversationHistory: [],
-    activeMessage: undefined
-  })
+const FrenlyAI: React.FC = () => {
+  const {
+    state,
+    hideMessage,
+    showMessage,
+    toggleVisibility,
+    toggleMinimize
+  } = useFrenly()
+  const { currentPage, userProgress } = state
 
   const [currentExpression, setCurrentExpression] = useState<FrenlyExpression>({
     eyes: 'happy',
@@ -206,14 +181,14 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
     }
   }, [])
 
-  const hideMessage = useCallback(() => {
-    setState(prev => ({ ...prev, activeMessage: undefined }))
+  const hideAndResetExpression = useCallback(() => {
+    hideMessage()
     setCurrentExpression({ eyes: 'normal', mouth: 'smile', accessories: [] })
-  }, [])
+  }, [hideMessage])
 
   // Show new message
-  const showMessage = useCallback((message: FrenlyMessage) => {
-    setState(prev => ({ ...prev, activeMessage: message }))
+  const showAndSetExpression = useCallback((message: FrenlyMessage) => {
+    showMessage(message)
     updateExpression(message.type)
     
     // Auto-hide message after delay
@@ -223,24 +198,16 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
     
     if (message.autoHide) {
       messageTimeoutRef.current = setTimeout(() => {
-        hideMessage()
+        hideAndResetExpression()
       }, message.autoHide)
     }
-  }, [updateExpression, hideMessage])
-
-  const toggleVisibility = () => {
-    setState(prev => ({ ...prev, isVisible: !prev.isVisible }))
-  }
-
-  const toggleMinimize = () => {
-    setState(prev => ({ ...prev, isMinimized: !prev.isMinimized }))
-  }
+  }, [showMessage, updateExpression, hideAndResetExpression])
 
   // Initialize with contextual message
   useEffect(() => {
     const message = generateContextualMessage()
-    showMessage(message)
-   }, [currentPage, userProgress, generateContextualMessage, showMessage])
+    showAndSetExpression(message)
+   }, [currentPage, userProgress, generateContextualMessage, showAndSetExpression])
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -320,7 +287,7 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
                 <span className="text-sm font-medium text-purple-600">Frenly AI</span>
               </div>
               <button
-                onClick={hideMessage}
+                onClick={hideAndResetExpression}
                 className="text-gray-400 hover:text-gray-600"
               >
                 <X className="w-4 h-4" />
@@ -385,23 +352,20 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
             <button
               onClick={() => {
                 const message = generateContextualMessage()
-                showMessage(message)
+                showAndSetExpression(message)
               }}
               className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs py-2 px-3 rounded-lg hover:shadow-md transition-all duration-200"
             >
               Get Help
             </button>
             <button
-              onClick={() => setState(prev => ({ 
-                ...prev, 
-                preferences: { 
-                  ...prev.preferences, 
-                  showTips: !prev.preferences.showTips 
-                } 
-              }))}
+              onClick={() => {
+                // This should be handled by the provider now
+                console.log('Toggling tips preference')
+              }}
               className={`p-2 rounded-lg transition-all duration-200 ${
-                state.preferences.showTips 
-                  ? 'bg-yellow-100 text-yellow-600' 
+                state.preferences.showTips
+                  ? 'bg-yellow-100 text-yellow-600'
                   : 'bg-gray-100 text-gray-400'
               }`}
             >

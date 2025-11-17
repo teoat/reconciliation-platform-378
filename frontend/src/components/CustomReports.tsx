@@ -631,8 +631,9 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
               <button
                 onClick={() => setShowReportModal(false)}
                 className="text-secondary-400 hover:text-secondary-600"
+                aria-label="Close report modal"
               >
-                <X className="w-6 h-6" />
+                <X className="w-6 h-6" aria-hidden="true" />
               </button>
             </div>
 
@@ -726,8 +727,9 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
               <button
                 onClick={() => setShowCreateModal(false)}
                 className="text-secondary-400 hover:text-secondary-600"
+                aria-label="Close create report modal"
               >
-                <X className="w-6 h-6" />
+                <X className="w-6 h-6" aria-hidden="true" />
               </button>
             </div>
 

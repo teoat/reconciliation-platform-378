@@ -241,6 +241,11 @@ export class ApiClient {
     return this.makeRequest<BackendUser>('/auth/me', config);
   }
 
+  async googleOAuth(idToken: string): Promise<ApiResponse<LoginResponse>> {
+    const config = this.requestBuilder.method('POST').body({ id_token: idToken }).skipAuth().build();
+    return this.makeRequest<LoginResponse>('/auth/google', config);
+  }
+
   // ============================================================================
   // USER MANAGEMENT METHODS
   // ============================================================================
