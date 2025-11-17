@@ -123,15 +123,15 @@ const ProjectEdit: React.FC = () => {
         keywords="project, edit, update, reconciliation, settings"
       />
       <main id="main-content" className="max-w-2xl mx-auto p-6">
-        <div className="mb-6">
-          <button
-            onClick={() => navigate(id ? `/projects/${id}` : '/')}
-            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Project
-          </button>
-          <h1 className="text-3xl font-bold text-gray-900">Edit Project</h1>
+      <div className="mb-6">
+        <button
+          onClick={() => navigate(id ? `/projects/${id}` : '/')}
+          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+        >
+          <ArrowLeft className="w-4 h-4 mr-2" />
+          Back to Project
+        </button>
+        <h1 className="text-3xl font-bold text-gray-900">Edit Project</h1>
         <p className="text-gray-600 mt-2">Update project information</p>
       </div>
 

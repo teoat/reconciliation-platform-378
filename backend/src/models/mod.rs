@@ -195,6 +195,14 @@ pub struct Project {
     pub updated_at: DateTime<Utc>,
 }
 
+impl Project {
+    /// Get is_active status derived from status field
+    /// Note: Once database migration adds is_active column, this can be removed
+    pub fn is_active(&self) -> bool {
+        matches!(self.status.as_str(), "active" | "draft")
+    }
+}
+
 /// New project model for inserts
 #[derive(Insertable, Deserialize)]
 #[diesel(table_name = crate::models::schema::projects)]
@@ -651,13 +659,14 @@ pub struct ProjectResponse {
 
 impl From<Project> for ProjectResponse {
     fn from(project: Project) -> Self {
+        let is_active = project.is_active();
         ProjectResponse {
             id: project.id,
             name: project.name,
             description: project.description,
             owner_id: project.owner_id,
             settings: Some(project.settings),
-            is_active: true, // TODO: Add is_active field to Project struct
+            is_active,
             created_at: project.created_at,
         }
     }

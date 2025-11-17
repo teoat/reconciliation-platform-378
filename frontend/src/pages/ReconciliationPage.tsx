@@ -35,6 +35,7 @@ import {
   BackendReconciliationJob,
   BackendReconciliationMatch,
 } from '../services/apiClient';
+import { PageMeta } from '../components/seo/PageMeta';
 
 // Lazy load heavy components
 const FileDropzone = lazy(() =>
@@ -446,10 +447,16 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   }, [activeTab]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Skip Links */}
-      <SkipLink href="#main-content" label="Skip to main content" />
-      <SkipLink href="#navigation-tabs" label="Skip to navigation tabs" />
+    <>
+      <PageMeta
+        title={`Reconciliation - ${project?.name || 'Project'}`}
+        description="Manage reconciliation jobs, upload data sources, configure matching rules, and view results."
+        keywords="reconciliation, data matching, project, jobs, results"
+      />
+      <div className="min-h-screen bg-gray-50">
+        {/* Skip Links */}
+        <SkipLink href="#main-content" label="Skip to main content" />
+        <SkipLink href="#navigation-tabs" label="Skip to navigation tabs" />
 
       {/* Screen reader announcements */}
       <div
@@ -829,6 +836,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
         </div>
       </Modal>
     </div>
+    </>
   );
 };
 

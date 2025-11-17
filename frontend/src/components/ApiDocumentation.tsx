@@ -506,12 +506,12 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
       />
       <main id="main-content" className={`max-w-7xl mx-auto ${className}`}>
         <h1 className="text-3xl font-bold text-gray-900 mb-6">API Documentation</h1>
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">API Reference</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+        {/* Sidebar */}
+        <div className="lg:col-span-1">
+          <Card>
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">API Reference</h3>
               <nav className="space-y-2">
                 {sections.map((section) => (
                   <button

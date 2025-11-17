@@ -24,7 +24,7 @@ const Dashboard: React.FC = () => {
         keywords="reconciliation, dashboard, projects, analytics"
       />
       <main id="main-content" className="max-w-6xl mx-auto" data-testid="dashboard">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Reconciliation Platform Dashboard</h1>
+      <h1 className="text-3xl font-bold text-gray-900 mb-8">Reconciliation Platform Dashboard</h1>
 
       {/* System Status */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">

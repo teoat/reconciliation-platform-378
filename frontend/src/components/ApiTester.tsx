@@ -226,11 +226,11 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
       />
       <main id="main-content" className={`space-y-6 ${className}`}>
         <h1 className="text-3xl font-bold text-gray-900 mb-6">API Tester</h1>
-        {/* API Test Controls */}
-        <Card>
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">API Testing Console</h3>
+      {/* API Test Controls */}
+      <Card>
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">API Testing Console</h3>
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"

@@ -240,15 +240,15 @@ const AuthPage: React.FC = () => {
         keywords="login, sign in, authentication, reconciliation platform"
       />
       <main id="main-content" className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-lg shadow-xl p-8">
-            <div className="text-center mb-8">
-              <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-                <Lock className="w-8 h-8 text-blue-600" />
-              </div>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+      <div className="max-w-md w-full">
+        <div className="bg-white rounded-lg shadow-xl p-8">
+          <div className="text-center mb-8">
+            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+              <Lock className="w-8 h-8 text-blue-600" />
+            </div>
+            <h1 className="text-2xl font-bold text-gray-900 mb-2">
                 {isRegistering ? 'Create Account' : 'Sign In'}
-              </h1>
+            </h1>
             <p className="text-gray-600">
               {isRegistering ? 'Sign up to access the Reconciliation Platform' : 'Sign in to access the Reconciliation Platform'}
             </p>

@@ -28,6 +28,16 @@
 				"PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD": "0"
 			}
 		},
+		"sequential-thinking": {
+			"command": "npx",
+			"args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
+			"env": {}
+		},
+		"memory": {
+			"command": "npx",
+			"args": ["-y", "@modelcontextprotocol/server-memory"],
+			"env": {}
+		},
 		"reconciliation-platform": {
 			"command": "node",
 			"args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/index.js"],

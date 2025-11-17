@@ -176,10 +176,10 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(database.clone()))
             .app_data(web::Data::new(cache.clone()))
             .app_data(web::Data::new(resilience.clone()))
-            .app_data(web::Data::from(password_manager.clone()))
+            .app_data(web::Data::new(password_manager.clone()))
             // Add authentication and user services (required by auth handlers)
-            .app_data(web::Data::from(auth_service.clone()))
-            .app_data(web::Data::from(user_service.clone()))
+            .app_data(web::Data::new(auth_service.clone()))
+            .app_data(web::Data::new(user_service.clone()))
             // Configure routes
             .configure(handlers::configure_routes)
     })

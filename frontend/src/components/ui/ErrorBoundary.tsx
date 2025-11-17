@@ -98,7 +98,14 @@ export class ErrorBoundary extends Component<Props, State> {
       // Try to use Sentry if available (using dynamic import with explicit error handling)
       try {
         // Use dynamic import with better error handling for missing module
-        const sentryPromise = import('@sentry/react').catch(() => null);
+        // Wrap in try-catch to prevent Vite from failing on missing module
+        const sentryPromise = (async () => {
+          try {
+            return await import('@sentry/react');
+          } catch {
+            return null;
+          }
+        })();
         sentryPromise.then((sentryModule) => {
           if (sentryModule?.captureException) {
             sentryModule.captureException(error, {

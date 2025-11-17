@@ -340,8 +340,8 @@ const QuickReconciliationWizard: React.FC = () => {
       />
       <main id="main-content" className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Quick Reconciliation</h1>
-        {/* Progress Bar */}
-        <div className="mb-8">
+      {/* Progress Bar */}
+      <div className="mb-8">
         <ProgressBar 
           value={progress}
           variant="success"

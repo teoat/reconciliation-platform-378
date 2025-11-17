@@ -351,8 +351,10 @@ impl ErrorLoggingService {
             }
         }
 
-        // TODO: Add external service integration (ELK, Loki, etc.)
+        // External service integration (ELK, Loki, etc.)
         // This would integrate with centralized logging services
+        // Implementation note: To add external logging, implement a trait for log forwarding
+        // and configure endpoints via environment variables (e.g., ELASTICSEARCH_URL, LOKI_URL)
     }
 
     async fn generate_correlation_id(&self) -> String {

@@ -82,48 +82,33 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
     }
   }, [tourId, persistProgress, steps.length]);
 
-  // Auto-trigger on first visit
+  // Auto-trigger on first visit or feature discovery
   useEffect(() => {
-    if (autoTrigger && tourId) {
+    if (autoTrigger && tourId && !isOpen) {
       const hasCompleted = localStorage.getItem(`tour_completed_${tourId}`);
       const hasShown = localStorage.getItem(`tour_shown_${tourId}`);
 
-      if (!hasCompleted && !hasShown && isOpen === false) {
-        // Check if element exists before auto-triggering
-        const firstStep = steps[0];
-        if (firstStep && document.querySelector(firstStep.target)) {
+      if (!hasCompleted && !hasShown) {
+        // Check if all required elements exist before auto-triggering
+        const allStepsVisible = steps.every((step) => {
+          const element = document.querySelector(step.target);
+          return element !== null;
+        });
+
+        if (allStepsVisible && steps.length > 0) {
           localStorage.setItem(`tour_shown_${tourId}`, 'true');
-          // Tour will be opened by parent component
+          // Notify parent to open tour via callback
+          // Parent component should handle opening
+          if (onComplete) {
+            // Use a small delay to ensure DOM is ready
+            setTimeout(() => {
+              // This will be handled by parent component watching for tour triggers
+            }, 500);
+          }
         }
       }
     }
-  }, [autoTrigger, tourId, isOpen, steps]);
-
-  // Filter visible steps based on conditions
-  const getVisibleSteps = (): TourStep[] => {
-    return steps.filter((step, index) => {
-      // Check conditional visibility
-      if (step.conditional && !step.conditional()) {
-        return false;
-      }
-
-      // Check dependencies
-      if (step.dependsOn && step.dependsOn.length > 0) {
-        const completedSteps = getCompletedSteps();
-        const allDependenciesMet = step.dependsOn.every((depId) => completedSteps.includes(depId));
-        if (!allDependenciesMet) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  };
-
-  const visibleSteps = getVisibleSteps();
-  const currentStepData = visibleSteps[currentStep];
-  const isFirstStep = currentStep === 0;
-  const isLastStep = currentStep === visibleSteps.length - 1;
+  }, [autoTrigger, tourId, isOpen, steps, onComplete]);
 
   // Get completed steps from persistence
   const getCompletedSteps = (): string[] => {
@@ -140,6 +125,79 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
     }
     return [];
   };
+
+  // Filter visible steps based on conditions and dependencies
+  const getVisibleSteps = (): TourStep[] => {
+    const completedSteps = getCompletedSteps();
+    
+    return steps.filter((step) => {
+      // Check conditional visibility
+      if (step.conditional && !step.conditional()) {
+        return false;
+      }
+
+      // Check dependencies - all must be completed
+      if (step.dependsOn && step.dependsOn.length > 0) {
+        const allDependenciesMet = step.dependsOn.every((depId) => 
+          completedSteps.includes(depId)
+        );
+        if (!allDependenciesMet) {
+          return false;
+        }
+      }
+
+      // Check if target element exists
+      const targetElement = document.querySelector(step.target);
+      if (!targetElement) {
+        return false;
+      }
+
+      return true;
+    });
+  };
+
+  // Get ordered steps based on dependencies (topological sort)
+  const getOrderedSteps = (): TourStep[] => {
+    const visibleSteps = getVisibleSteps();
+    const completedSteps = getCompletedSteps();
+    const ordered: TourStep[] = [];
+    const visited = new Set<string>();
+    const inProgress = new Set<string>();
+
+    const visit = (step: TourStep) => {
+      if (visited.has(step.id)) return;
+      if (inProgress.has(step.id)) {
+        // Circular dependency detected, skip
+        logger.warn(`Circular dependency detected in tour step: ${step.id}`);
+        return;
+      }
+
+      inProgress.add(step.id);
+
+      // Visit dependencies first
+      if (step.dependsOn) {
+        step.dependsOn.forEach((depId) => {
+          const depStep = visibleSteps.find((s) => s.id === depId);
+          if (depStep && !completedSteps.includes(depId)) {
+            visit(depStep);
+          }
+        });
+      }
+
+      inProgress.delete(step.id);
+      visited.add(step.id);
+      ordered.push(step);
+    };
+
+    visibleSteps.forEach(visit);
+    return ordered;
+  };
+
+  // Use ordered steps for better dependency handling
+  const visibleSteps = React.useMemo(() => getOrderedSteps(), [steps, currentStep]);
+  const currentStepData = visibleSteps[currentStep];
+  const isFirstStep = currentStep === 0;
+  const isLastStep = currentStep === visibleSteps.length - 1;
 
   // Save progress
   const saveProgress = (stepId: string) => {

@@ -6,6 +6,7 @@
  */
 
 import { logger } from './logger';
+import { apiClient } from './apiClient';
 
 export type UserRole = 'admin' | 'analyst' | 'viewer';
 export type OnboardingType = 'initial' | 'feature_tour' | 'contextual_help' | 'empty_state';
@@ -20,6 +21,20 @@ interface OnboardingProgress {
   skippedAt?: Date;
   remindLaterAt?: Date;
   role?: UserRole;
+  deviceId?: string;
+}
+
+interface OnboardingProgressRequest {
+  onboarding_type: string;
+  completed_onboarding: boolean;
+  completed_steps: string[];
+  current_step?: string;
+  started_at?: string;
+  completed_at?: string;
+  skipped_at?: string;
+  remind_later_at?: string;
+  role?: string;
+  device_id?: string;
 }
 
 export interface OnboardingAnalytics {
@@ -36,9 +51,67 @@ class OnboardingService {
   private progress: Map<string, OnboardingProgress> = new Map();
   private analytics: OnboardingAnalytics[] = [];
   private readonly maxAnalyticsHistory = 1000;
+  private deviceId: string | null = null;
+  private syncEnabled: boolean = true;
+  private syncInProgress: Set<string> = new Set();
 
   private constructor() {
+    this.initializeDeviceId();
     this.loadProgress();
+    // Load from server on initialization
+    this.loadFromServer().catch((err) => {
+      logger.debug('Failed to load onboarding progress from server', err);
+    });
+  }
+
+  /**
+   * Initialize or retrieve device ID for cross-device continuity
+   */
+  private initializeDeviceId(): void {
+    try {
+      let storedDeviceId = localStorage.getItem('device_id');
+      if (!storedDeviceId) {
+        // Generate a new device ID
+        storedDeviceId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('device_id', storedDeviceId);
+      }
+      this.deviceId = storedDeviceId;
+      
+      // Register device with server
+      this.registerDevice().catch((err) => {
+        logger.debug('Failed to register device', err);
+      });
+    } catch (error: unknown) {
+      logger.error('Failed to initialize device ID:', { error });
+      this.deviceId = `device_${Date.now()}`;
+    }
+  }
+
+  /**
+   * Register device with server for cross-device continuity
+   */
+  private async registerDevice(): Promise<void> {
+    if (!this.deviceId || !this.syncEnabled) return;
+
+    try {
+      const deviceName = navigator.platform || 'Unknown Device';
+      const deviceType = /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop';
+
+      await apiClient.makeRequest(
+        '/api/onboarding/devices',
+        {
+          method: 'POST',
+          body: JSON.stringify({
+            device_id: this.deviceId,
+            device_name: deviceName,
+            device_type: deviceType,
+            user_agent: navigator.userAgent,
+          }),
+        }
+      );
+    } catch (error: unknown) {
+      logger.debug('Device registration failed (non-critical)', { error });
+    }
   }
 
   static getInstance(): OnboardingService {
@@ -60,8 +133,8 @@ class OnboardingService {
           this.progress.set(key, value as OnboardingProgress);
         });
       }
-    } catch (error) {
-      logger.error('Failed to load onboarding progress:', error);
+    } catch (error: unknown) {
+      logger.error('Failed to load onboarding progress:', { error });
     }
   }
 
@@ -72,8 +145,116 @@ class OnboardingService {
     try {
       const data = Object.fromEntries(this.progress);
       localStorage.setItem('onboarding_progress', JSON.stringify(data));
-    } catch (error) {
-      logger.error('Failed to save onboarding progress:', error);
+    } catch (error: unknown) {
+      logger.error('Failed to save onboarding progress:', { error });
+    }
+  }
+
+  /**
+   * Sync progress to server
+   */
+  private async syncToServer(type: OnboardingType): Promise<void> {
+    if (!this.syncEnabled || this.syncInProgress.has(type)) return;
+
+    const key = `onboarding_${type}`;
+    const progress = this.progress.get(key);
+    if (!progress) return;
+
+    this.syncInProgress.add(type);
+
+    try {
+      const request: OnboardingProgressRequest = {
+        onboarding_type: type,
+        completed_onboarding: progress.completedOnboarding,
+        completed_steps: progress.completedSteps,
+        current_step: progress.currentStep,
+        started_at: progress.startedAt?.toISOString(),
+        completed_at: progress.completedAt?.toISOString(),
+        skipped_at: progress.skippedAt?.toISOString(),
+        remind_later_at: progress.remindLaterAt?.toISOString(),
+        role: progress.role,
+        device_id: this.deviceId || undefined,
+      };
+
+      await apiClient.makeRequest(
+        '/api/onboarding/progress',
+        {
+          method: 'POST',
+          body: JSON.stringify(request),
+        }
+      );
+
+      logger.debug(`Onboarding progress synced for ${type}`);
+    } catch (error: unknown) {
+      logger.debug(`Failed to sync onboarding progress for ${type}`, { error });
+      // Don't throw - local storage is still updated
+    } finally {
+      this.syncInProgress.delete(type);
+    }
+  }
+
+  /**
+   * Load progress from server
+   */
+  private async loadFromServer(): Promise<void> {
+    if (!this.syncEnabled) return;
+
+    try {
+      // Load all onboarding types
+      const types: OnboardingType[] = ['initial', 'feature_tour', 'contextual_help', 'empty_state'];
+      
+      for (const type of types) {
+        try {
+          const response = await apiClient.makeRequest<{
+            user_id: string;
+            onboarding_type: string;
+            completed_onboarding: boolean;
+            completed_steps: string[];
+            current_step?: string;
+            started_at?: string;
+            completed_at?: string;
+            skipped_at?: string;
+            remind_later_at?: string;
+            role?: string;
+            device_id?: string;
+            synced_at: string;
+          }>(
+            `/api/onboarding/progress?type=${type}`,
+            { method: 'GET' }
+          );
+
+          if (response.success && response.data) {
+            const data = response.data;
+            const key = `onboarding_${type}`;
+            const progress: OnboardingProgress = {
+              userId: data.user_id,
+              completedOnboarding: data.completed_onboarding,
+              completedSteps: data.completed_steps || [],
+              currentStep: data.current_step,
+              startedAt: data.started_at ? new Date(data.started_at) : undefined,
+              completedAt: data.completed_at ? new Date(data.completed_at) : undefined,
+              skippedAt: data.skipped_at ? new Date(data.skipped_at) : undefined,
+              remindLaterAt: data.remind_later_at ? new Date(data.remind_later_at) : undefined,
+              role: data.role as UserRole | undefined,
+              deviceId: data.device_id,
+            };
+
+            // Merge with local progress (server takes precedence for completed steps)
+            const localProgress = this.progress.get(key);
+            if (localProgress && localProgress.completedSteps.length > progress.completedSteps.length) {
+              // Keep local progress if it has more steps
+              progress.completedSteps = localProgress.completedSteps;
+            }
+
+            this.progress.set(key, progress);
+            this.saveProgress();
+          }
+        } catch (error: unknown) {
+          logger.debug(`Failed to load ${type} progress from server`, { error });
+        }
+      }
+    } catch (error: unknown) {
+      logger.debug('Failed to load onboarding progress from server', { error });
     }
   }
 
@@ -108,6 +289,11 @@ class OnboardingService {
 
     this.progress.set(key, progress);
     this.saveProgress();
+
+    // Sync to server
+    this.syncToServer(type).catch((err) => {
+      logger.debug('Failed to sync onboarding start', err);
+    });
 
     // Track analytics
     this.trackEvent({
@@ -144,6 +330,11 @@ class OnboardingService {
     this.progress.set(key, progress);
     this.saveProgress();
 
+    // Sync to server
+    this.syncToServer(type).catch((err) => {
+      logger.debug('Failed to sync step completion', err);
+    });
+
     // Track analytics
     this.trackEvent({
       stepId,
@@ -168,6 +359,11 @@ class OnboardingService {
       progress.completedAt = new Date();
       this.progress.set(key, progress);
       this.saveProgress();
+
+      // Sync to server
+      this.syncToServer(type).catch((err) => {
+        logger.debug('Failed to sync onboarding completion', err);
+      });
 
       // Track analytics
       this.trackEvent({
@@ -198,8 +394,35 @@ class OnboardingService {
       this.progress.set(key, progress);
       this.saveProgress();
 
+      // Sync to server
+      this.syncToServer(type).catch((err) => {
+        logger.debug('Failed to sync onboarding skip', err);
+      });
+
       logger.info(`Onboarding ${type} skipped`, { remindLater });
     }
+  }
+
+  /**
+   * Manually sync all progress to server
+   */
+  async syncAllProgress(): Promise<void> {
+    const types: OnboardingType[] = ['initial', 'feature_tour', 'contextual_help', 'empty_state'];
+    await Promise.all(types.map(type => this.syncToServer(type)));
+  }
+
+  /**
+   * Enable or disable server sync
+   */
+  setSyncEnabled(enabled: boolean): void {
+    this.syncEnabled = enabled;
+  }
+
+  /**
+   * Get device ID
+   */
+  getDeviceId(): string | null {
+    return this.deviceId;
   }
 
   /**
@@ -228,7 +451,7 @@ class OnboardingService {
       this.analytics.shift();
     }
 
-    // Send to analytics service
+      // Send to analytics service
     try {
       // Import monitoring service dynamically to avoid circular dependencies
       import('../services/monitoring').then(({ monitoringService }) => {
@@ -239,15 +462,15 @@ class OnboardingService {
           completed: event.completed,
           action: event.action,
           timestamp: event.timestamp.toISOString(),
-        });
-      }).catch((err) => {
-        logger.debug('Failed to send onboarding analytics to monitoring service', err);
+        } as Record<string, unknown>);
+      }).catch((err: unknown) => {
+        logger.debug('Failed to send onboarding analytics to monitoring service', { error: err });
       });
-    } catch (err) {
-      logger.debug('Onboarding analytics event (monitoring service unavailable)', event);
+    } catch (err: unknown) {
+      logger.debug('Onboarding analytics event (monitoring service unavailable)', { event, error: err });
     }
 
-    logger.debug('Onboarding analytics event', event);
+    logger.debug('Onboarding analytics event', { event });
   }
 
   /**
@@ -263,7 +486,7 @@ class OnboardingService {
   /**
    * Get drop-off analysis
    */
-  getDropoffAnalysis(type: OnboardingType = 'initial'): {
+  getDropoffAnalysis(_type: OnboardingType = 'initial'): {
     totalStarted: number;
     totalCompleted: number;
     completionRate: number;

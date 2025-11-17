@@ -313,12 +313,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
         keywords="users, management, roles, permissions, access control"
       />
       <main id="main-content" className="min-h-screen bg-gray-50 p-6" data-testid="user-management">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
               <p className="text-gray-600 mt-2">
                 Manage users, roles, and permissions for the reconciliation platform
               </p>

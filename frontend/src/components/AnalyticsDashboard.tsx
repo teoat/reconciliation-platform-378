@@ -369,12 +369,12 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         keywords="analytics, insights, metrics, reconciliation, data trends"
       />
       <main id="main-content" className="space-y-6" data-testid="analytics-dashboard">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
             <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
-            <p className="text-gray-600">Real-time insights and performance metrics</p>
-          </div>
+          <p className="text-gray-600">Real-time insights and performance metrics</p>
+        </div>
         <div className="flex items-center space-x-3">
           <select
             value={selectedTimeRange}

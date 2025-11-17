@@ -98,10 +98,10 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
       />
       <main id="main-content" className={`space-y-4 ${className}`}>
         <h1 className="text-3xl font-bold text-gray-900 mb-6">API Integration Status</h1>
-        {/* Connection Status */}
-        <Card>
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
+      {/* Connection Status */}
+      <Card>
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-gray-900">Connection Status</h3>
             <div className="flex items-center space-x-2">
               <Button size="sm" variant="outline" onClick={checkHealth} disabled={isChecking}>

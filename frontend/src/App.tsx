@@ -75,14 +75,14 @@ function App() {
 
   return (
     <HelmetProvider>
-      <ErrorBoundary>
-        <ReduxProvider>
-          <WebSocketProvider config={wsConfig}>
-            <AuthProvider>
-              <Router basename={import.meta.env.VITE_BASE_PATH || '/'}>
-                <div className="min-h-screen bg-gray-100">
-                  <KeyboardShortcuts />
-                  <ToastContainer />
+    <ErrorBoundary>
+      <ReduxProvider>
+        <WebSocketProvider config={wsConfig}>
+          <AuthProvider>
+            <Router basename={import.meta.env.VITE_BASE_PATH || '/'}>
+              <div className="min-h-screen bg-gray-100">
+                <KeyboardShortcuts />
+                <ToastContainer />
                 <Routes>
                   <Route path="/login" element={<AuthPage />} />
                   <Route

@@ -170,6 +170,9 @@ pub async fn login(
     // Update last login
     user_service.as_ref().update_last_login(user.id).await?;
 
+    // Get user role from status field
+    let role = user.status.clone();
+
     // Create response
     let auth_response = crate::services::auth::AuthResponse {
         token,
@@ -178,7 +181,7 @@ pub async fn login(
             email: user.email,
             first_name: user.first_name.as_deref().unwrap_or("").to_string(),
             last_name: user.last_name.as_deref().unwrap_or("").to_string(),
-            role: "user".to_string(), // TODO: Implement proper role fetching
+            role,
             is_active: user.status == "active",
             last_login: user.last_login_at,
         },
@@ -623,7 +626,7 @@ pub async fn get_current_user(
                 "email": user.email,
                 "first_name": user.first_name,
                 "last_name": user.last_name,
-                "role": "user", // TODO: Implement proper role fetching
+                "role": user.role,
                 "is_active": user.is_active,
                 "last_login": user.last_login.map(|dt| dt.to_rfc3339())
             })),

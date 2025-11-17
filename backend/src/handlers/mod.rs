@@ -31,6 +31,9 @@ pub mod health;
 // Password manager handlers
 pub mod password_manager;
 
+// Onboarding handlers
+pub mod onboarding;
+
 // Re-export types for backward compatibility
 pub use helpers::{extract_user_id, get_client_ip, get_user_agent, mask_email};
 pub use types::{ApiResponse, PaginatedResponse, SearchQueryParams, UserQueryParams};
@@ -65,6 +68,8 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .service(web::scope("/api/sync").configure(sync::configure_routes))
         // Password manager routes
         .service(web::scope("/api/passwords").configure(password_manager::configure_routes))
+        // Onboarding routes
+        .service(web::scope("/api/onboarding").configure(onboarding::configure_routes))
         // Health check routes (from existing health.rs)
         // Register at both /health and /api/health for compatibility
         .configure(health::configure_health_routes)
