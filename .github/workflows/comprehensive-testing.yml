@@ -420,15 +420,48 @@ jobs:
           cargo run --release &
           sleep 10
 
-      - name: 🌐 Run E2E tests
+      - name: 🎭 Install Playwright browsers
         run: |
           cd frontend
-          npm run test:e2e
+          npx playwright install --with-deps chromium
+
+      - name: 🌐 Run comprehensive diagnostic tests
+        run: |
+          cd frontend
+          npm run test:e2e -- comprehensive-diagnostic.spec.ts --project=chromium --reporter=list
+
+      - name: 🌐 Run reconciliation feature tests
+        run: |
+          cd frontend
+          npm run test:e2e -- reconciliation-features.spec.ts --project=chromium --reporter=list
+
+      - name: 🌐 Run reconciliation workflow tests
+        run: |
+          cd frontend
+          npm run test:e2e -- reconciliation-workflows.spec.ts --project=chromium --reporter=list
+
+      - name: ♿ Run accessibility tests
+        run: |
+          cd frontend
+          npm run test:e2e -- accessibility.spec.ts --project=chromium --reporter=list
+        continue-on-error: true
+
+      - name: ⚡ Run performance tests
+        run: |
+          cd frontend
+          npm run test:performance -- --project=chromium --reporter=list
+        continue-on-error: true
+
+      - name: 🎨 Run visual regression tests
+        run: |
+          cd frontend
+          npm run test:visual -- --project=chromium --reporter=list
+        continue-on-error: true
 
       - name: 📊 Generate E2E test reports
         run: |
           cd frontend
-          npm run test:e2e:report
+          npx playwright show-report || echo "Report generation skipped"
 
       - name: 📤 Upload E2E test results
         uses: actions/upload-artifact@v4

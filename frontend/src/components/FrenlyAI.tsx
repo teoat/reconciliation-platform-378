@@ -75,6 +75,8 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
   })
 
   const [currentAnimation, setCurrentAnimation] = useState<FrenlyAnimation | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const messageTimeoutRef = useRef<NodeJS.Timeout>()
 
   // Generate contextual messages using FrenlyAgentService
@@ -90,6 +92,9 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
   }), [currentPage])
 
   const generateContextualMessage = useCallback(async (): Promise<FrenlyMessage> => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
       // Get user ID from localStorage or generate one
       const userId = localStorage.getItem('userId') || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -98,7 +103,9 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
       }
 
       // Track interaction
-      await frenlyAgentService.trackInteraction(userId, 'page_view');
+      await frenlyAgentService.trackInteraction(userId, 'page_view').catch(err => {
+        logger.warn('Failed to track interaction:', err);
+      });
 
       // Generate intelligent message using agent
       const agentMessage = await frenlyAgentService.generateMessage({
@@ -119,7 +126,9 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
       });
 
       // Track message shown
-      await frenlyAgentService.trackInteraction(userId, 'message_shown', agentMessage.id);
+      await frenlyAgentService.trackInteraction(userId, 'message_shown', agentMessage.id).catch(err => {
+        logger.warn('Failed to track message shown:', err);
+      });
 
       // Convert agent message to FrenlyMessage format
       return {
@@ -134,8 +143,11 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
       };
     } catch (error) {
       logger.error('Error generating contextual message:', error);
+      setError('Unable to generate message. Using default message.');
       // Fallback to default message
       return createDefaultMessage();
+    } finally {
+      setIsLoading(false);
     }
   }, [currentPage, userProgress, createDefaultMessage])
 
@@ -312,17 +324,23 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
     return (
       <button
         onClick={toggleVisibility}
-        className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50"
+        className="fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center z-50 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+        aria-label="Open Frenly AI Assistant"
+        title="Open Frenly AI Assistant"
       >
-        <MessageCircle className="w-8 h-8 text-white" />
+        <MessageCircle className="w-8 h-8 text-white" aria-hidden="true" />
       </button>
     )
   }
 
   return (
-    <div className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${
-      state.isMinimized ? 'w-16 h-16' : 'w-80'
-    }`}>
+    <div 
+      className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${
+        state.isMinimized ? 'w-16 h-16' : 'w-80'
+      }`}
+      role="complementary"
+      aria-label="Frenly AI Assistant"
+    >
       {/* Frenly Character */}
       <div className="relative">
         {/* Character Avatar */}
@@ -361,55 +379,85 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
         </div>
 
         {/* Speech Bubble */}
-        {state.activeMessage && !state.isMinimized && (
-          <div className="absolute bottom-20 right-0 bg-white rounded-2xl shadow-lg p-4 max-w-64 border-2 border-purple-200">
-            {/* Speech bubble tail */}
-            <div className="absolute bottom-0 right-4 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-white" />
-            <div className="absolute bottom-0 right-4 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-purple-200 transform translate-y-0.5" />
-            
-            <div className="flex items-start justify-between mb-2">
-              <div className="flex items-center space-x-2">
-                {state.activeMessage.type === 'greeting' && <Smile className="w-4 h-4 text-purple-500" />}
-                {state.activeMessage.type === 'tip' && <Lightbulb className="w-4 h-4 text-yellow-500" />}
-                {state.activeMessage.type === 'warning' && <AlertTriangle className="w-4 h-4 text-orange-500" />}
-                {state.activeMessage.type === 'celebration' && <PartyPopper className="w-4 h-4 text-pink-500" />}
-                {state.activeMessage.type === 'encouragement' && <Star className="w-4 h-4 text-blue-500" />}
-                <span className="text-sm font-medium text-purple-600">Frenly AI</span>
+        {!state.isMinimized && (
+          <>
+            {isLoading && !state.activeMessage && (
+              <div className="absolute bottom-20 right-0 bg-white rounded-2xl shadow-lg p-4 max-w-64 border-2 border-purple-200">
+                <div className="flex items-center space-x-2">
+                  <div className="flex space-x-1">
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-purple-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                  <span className="text-sm text-gray-600">Thinking...</span>
+                </div>
               </div>
-              <button
-                onClick={async () => {
-                  // Record feedback when user dismisses
-                  if (state.activeMessage) {
-                    const userId = localStorage.getItem('userId');
-                    if (userId) {
-                      try {
-                        await frenlyAgentService.recordFeedback(userId, state.activeMessage.id, 'dismissed');
-                      } catch (error) {
-                        logger.error('Error recording feedback:', error);
-                      }
-                    }
-                  }
-                  hideMessage();
-                }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            
-            <p className="text-sm text-gray-700 mb-3">
-              {state.activeMessage.content}
-            </p>
-            
-            {state.activeMessage.action && (
-              <button
-                onClick={state.activeMessage.action.onClick}
-                className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm py-2 px-4 rounded-lg hover:shadow-md transition-all duration-200"
-              >
-                {state.activeMessage.action.text}
-              </button>
             )}
-          </div>
+            
+            {error && (
+              <div className="absolute bottom-20 right-0 bg-orange-50 rounded-2xl shadow-lg p-4 max-w-64 border-2 border-orange-200">
+                <div className="flex items-center space-x-2 mb-2">
+                  <AlertTriangle className="w-4 h-4 text-orange-500" />
+                  <span className="text-sm font-medium text-orange-600">Notice</span>
+                </div>
+                <p className="text-xs text-orange-700">{error}</p>
+              </div>
+            )}
+
+            {state.activeMessage && (
+              <div className="absolute bottom-20 right-0 bg-white rounded-2xl shadow-lg p-4 max-w-64 border-2 border-purple-200" role="alert" aria-live="polite">
+                {/* Speech bubble tail */}
+                <div className="absolute bottom-0 right-4 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-white" />
+                <div className="absolute bottom-0 right-4 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-purple-200 transform translate-y-0.5" />
+                
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    {state.activeMessage.type === 'greeting' && <Smile className="w-4 h-4 text-purple-500" aria-hidden="true" />}
+                    {state.activeMessage.type === 'tip' && <Lightbulb className="w-4 h-4 text-yellow-500" aria-hidden="true" />}
+                    {state.activeMessage.type === 'warning' && <AlertTriangle className="w-4 h-4 text-orange-500" aria-hidden="true" />}
+                    {state.activeMessage.type === 'celebration' && <PartyPopper className="w-4 h-4 text-pink-500" aria-hidden="true" />}
+                    {state.activeMessage.type === 'encouragement' && <Star className="w-4 h-4 text-blue-500" aria-hidden="true" />}
+                    <span className="text-sm font-medium text-purple-600">Frenly AI</span>
+                  </div>
+                  <button
+                    onClick={async () => {
+                      // Record feedback when user dismisses
+                      if (state.activeMessage) {
+                        const userId = localStorage.getItem('userId');
+                        if (userId) {
+                          try {
+                            await frenlyAgentService.recordFeedback(userId, state.activeMessage.id, 'dismissed');
+                          } catch (error) {
+                            logger.error('Error recording feedback:', error);
+                          }
+                        }
+                      }
+                      hideMessage();
+                    }}
+                    className="text-gray-400 hover:text-gray-600"
+                    aria-label="Close message"
+                    title="Close message"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+                
+                <p className="text-sm text-gray-700 mb-3">
+                  {state.activeMessage.content}
+                </p>
+                
+                {state.activeMessage.action && (
+                  <button
+                    onClick={state.activeMessage.action.onClick}
+                    className="w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm py-2 px-4 rounded-lg hover:shadow-md transition-all duration-200"
+                    aria-label={state.activeMessage.action.text}
+                  >
+                    {state.activeMessage.action.text}
+                  </button>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -421,15 +469,19 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
             <div className="flex items-center space-x-1">
               <button
                 onClick={toggleMinimize}
-                className="p-1 text-gray-400 hover:text-gray-600"
+                className="p-1 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
+                aria-label={state.isMinimized ? "Expand Frenly AI" : "Minimize Frenly AI"}
+                title={state.isMinimized ? "Expand" : "Minimize"}
               >
-                <Minimize2 className="w-4 h-4" />
+                <Minimize2 className="w-4 h-4" aria-hidden="true" />
               </button>
               <button
                 onClick={toggleVisibility}
-                className="p-1 text-gray-400 hover:text-gray-600"
+                className="p-1 text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded"
+                aria-label="Close Frenly AI"
+                title="Close"
               >
-                <X className="w-4 h-4" />
+                <X className="w-4 h-4" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -457,9 +509,12 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
                 const message = await generateContextualMessage();
                 showMessage(message);
               }}
-              className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs py-2 px-3 rounded-lg hover:shadow-md transition-all duration-200"
+              disabled={isLoading}
+              className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs py-2 px-3 rounded-lg hover:shadow-md transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+              aria-label="Get help from Frenly AI"
+              title="Get help"
             >
-              Get Help
+              {isLoading ? 'Loading...' : 'Get Help'}
             </button>
             <button
               onClick={() => setState(prev => ({ 
@@ -469,13 +524,15 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({
                   showTips: !prev.preferences.showTips 
                 } 
               }))}
-              className={`p-2 rounded-lg transition-all duration-200 ${
+              className={`p-2 rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-purple-500 ${
                 state.preferences.showTips 
                   ? 'bg-yellow-100 text-yellow-600' 
                   : 'bg-gray-100 text-gray-400'
               }`}
+              aria-label={state.preferences.showTips ? "Hide tips" : "Show tips"}
+              title={state.preferences.showTips ? "Hide tips" : "Show tips"}
             >
-              <Lightbulb className="w-4 h-4" />
+              <Lightbulb className="w-4 h-4" aria-hidden="true" />
             </button>
           </div>
         </div>

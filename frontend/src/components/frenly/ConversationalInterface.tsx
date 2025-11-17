@@ -7,19 +7,15 @@ import { logger } from '../services/logger'; * Conversational Interface Componen
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Send, X, Minimize2, Maximize2 } from 'lucide-react';
+import { MessageCircle, Send, X, Minimize2, Maximize2, Download, Search } from 'lucide-react';
 import { frenlyAgentService } from '@/services/frenlyAgentService';
+import { conversationStorage, ConversationMessage } from '../../utils/conversationStorage';
+import { logger } from '../../services/logger';
 // Note: Using relative import because agents/ is at project root, not in frontend/src
 // Consider moving agents/ to frontend/src/agents/ or configuring a path alias for better maintainability
 import { MessageContext } from '../../../../agents/guidance/FrenlyGuidanceAgent';
 
-export interface ConversationMessage {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  timestamp: Date;
-  type?: 'greeting' | 'tip' | 'warning' | 'celebration' | 'help';
-}
+// ConversationMessage is now imported from conversationStorage
 
 interface ConversationalInterfaceProps {
   userId: string;

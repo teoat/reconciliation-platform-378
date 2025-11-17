@@ -11,7 +11,8 @@
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
     "test": "vitest",
     "test:ui": "vitest --ui",
-    "test:coverage": "vitest --coverage"
+    "test:coverage": "vitest --coverage",
+    "audit": "audit-ci --critical"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.2",
@@ -37,6 +38,7 @@
     "@vitejs/plugin-react": "^4.1.1",
     "@vitest/coverage-v8": "^1.0.4",
     "@vitest/ui": "^1.0.4",
+    "audit-ci": "^7.1.0",
     "autoprefixer": "^10.4.16",
     "eslint": "^8.53.0",
     "eslint-plugin-react-hooks": "^4.6.0",

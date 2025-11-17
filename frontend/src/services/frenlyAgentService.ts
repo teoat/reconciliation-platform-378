@@ -22,6 +22,14 @@ export interface FrenlyAgentServiceConfig {
   apiEndpoint?: string;
   enableCache?: boolean;
   cacheTimeout?: number;
+  maxRetries?: number;
+  retryDelay?: number;
+}
+
+interface RetryOptions {
+  maxRetries?: number;
+  retryDelay?: number;
+  exponentialBackoff?: boolean;
 }
 
 class FrenlyAgentService {
@@ -30,17 +38,79 @@ class FrenlyAgentService {
   private config: FrenlyAgentServiceConfig;
   private requestDebounce: Map<string, NodeJS.Timeout> = new Map();
   private readonly debounceDelay = 300; // 300ms debounce
+  private readonly defaultMaxRetries = 3;
+  private readonly defaultRetryDelay = 1000; // 1 second
 
   private constructor(config: FrenlyAgentServiceConfig = {}) {
     this.config = {
       enableCache: true,
       cacheTimeout: 5 * 60 * 1000, // 5 minutes
+      maxRetries: 3,
+      retryDelay: 1000,
       ...config,
     };
 
     // Initialize agent (in a real implementation, this would connect to backend)
     this.agent = new FrenlyGuidanceAgent();
     this.initializeAgent();
+  }
+
+  /**
+   * Retry mechanism with exponential backoff
+   */
+  private async retryWithBackoff<T>(
+    fn: () => Promise<T>,
+    options: RetryOptions = {}
+  ): Promise<T> {
+    const maxRetries = options.maxRetries ?? this.config.maxRetries ?? this.defaultMaxRetries;
+    const retryDelay = options.retryDelay ?? this.config.retryDelay ?? this.defaultRetryDelay;
+    const useExponentialBackoff = options.exponentialBackoff ?? true;
+
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await fn();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        
+        if (attempt < maxRetries) {
+          const delay = useExponentialBackoff 
+            ? retryDelay * Math.pow(2, attempt)
+            : retryDelay;
+          
+          logger.warn(`Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`, { error: lastError });
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    throw lastError || new Error('Operation failed after retries');
+  }
+
+  /**
+   * Get fallback message when agent fails
+   */
+  private getFallbackMessage(context: MessageContext): GeneratedMessage {
+    const pageMessages: Record<string, string> = {
+      '/projects': "Ready to create a project? Click 'New Project' to get started!",
+      '/ingestion': "Upload your data files to begin the reconciliation process.",
+      '/reconciliation': "Configure matching rules to find matching records.",
+      '/adjudication': "Review and resolve discrepancies in your data.",
+      '/visualization': "Create visualizations to understand your data better.",
+      '/summary': "Generate comprehensive reports from your reconciliation results.",
+    };
+
+    const defaultMessage = "I'm here to help! Feel free to ask me anything about the reconciliation process.";
+
+    return {
+      id: `fallback_${Date.now()}`,
+      type: 'tip',
+      content: pageMessages[context.page || ''] || defaultMessage,
+      priority: 'low',
+      timestamp: new Date(),
+      context,
+    };
   }
 
   /**
@@ -54,19 +124,27 @@ class FrenlyAgentService {
   }
 
   /**
-   * Initialize the agent
+   * Initialize the agent with retry mechanism
    */
   private async initializeAgent(): Promise<void> {
     try {
-      await this.agent.initialize();
-      await this.agent.start();
+      await this.retryWithBackoff(async () => {
+        await this.agent.initialize();
+        await this.agent.start();
+      }, {
+        maxRetries: 5,
+        retryDelay: 2000,
+        exponentialBackoff: true,
+      });
+      logger.info('FrenlyGuidanceAgent initialized successfully');
     } catch (error) {
-      logger.error('Failed to initialize FrenlyGuidanceAgent:', { error });
+      logger.error('Failed to initialize FrenlyGuidanceAgent after retries:', { error });
+      // Agent will work in degraded mode with fallback messages
     }
   }
 
   /**
-   * Generate an intelligent message based on context with debouncing
+   * Generate an intelligent message based on context with debouncing and retry
    */
   async generateMessage(context: MessageContext): Promise<GeneratedMessage> {
     // Create debounce key
@@ -78,20 +156,36 @@ class FrenlyAgentService {
       clearTimeout(existingDebounce);
     }
 
-    // Create debounced request
+    // Create debounced request with retry
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(async () => {
         try {
-          const result = await this.agent.execute(context as any);
-          
-          if (result.success && result.data) {
+          // Try with retry mechanism
+          const result = await this.retryWithBackoff(async () => {
+            const execResult = await this.agent.execute(context as any);
+            if (!execResult.success) {
+              throw new Error('Agent execution failed');
+            }
+            return execResult;
+          });
+
+          if (result.data) {
             resolve((result.data as { message: GeneratedMessage }).message);
           } else {
-            reject(new Error('Failed to generate message'));
+            throw new Error('No message data returned');
           }
         } catch (error) {
-          logger.error('Error generating message:', { error });
-          reject(error);
+          logger.error('Error generating message after retries:', { error });
+          
+          // Graceful degradation - return fallback message
+          try {
+            const fallbackMessage = this.getFallbackMessage(context);
+            logger.info('Using fallback message', { context: context.page });
+            resolve(fallbackMessage);
+          } catch (fallbackError) {
+            logger.error('Fallback message generation failed:', { error: fallbackError });
+            reject(error);
+          }
         } finally {
           this.requestDebounce.delete(debounceKey);
         }
@@ -118,18 +212,22 @@ class FrenlyAgentService {
   }
 
   /**
-   * Handle user query with NLU
+   * Handle user query with NLU and retry mechanism
    */
   async handleUserQuery(
     userId: string,
     query: string,
     context?: MessageContext
   ): Promise<GeneratedMessage> {
+    const fullContext: MessageContext = context || { userId };
+
     try {
-      // Use agent's handleUserQuery method
-      return await this.agent.handleUserQuery(userId, query, context);
+      // Use agent's handleUserQuery method with retry
+      return await this.retryWithBackoff(async () => {
+        return await this.agent.handleUserQuery(userId, query, context);
+      });
     } catch (error) {
-      logger.error('Error handling user query:', { error });
+      logger.error('Error handling user query after retries:', { error });
       
       // Fallback to NLU service directly
       try {
@@ -143,11 +241,20 @@ class FrenlyAgentService {
           content: response,
           priority: understanding.confidence > 0.8 ? 'high' : 'medium',
           timestamp: new Date(),
-          context: context || { userId },
+          context: fullContext,
         };
       } catch (fallbackError) {
         logger.error('Fallback NLU error:', { error: fallbackError });
-        throw error;
+        
+        // Final fallback - generic helpful message
+        return {
+          id: `fallback_query_${Date.now()}`,
+          type: 'help',
+          content: "I'm having trouble understanding that right now. Could you try rephrasing your question? I'm here to help with reconciliation tasks, project management, and data processing.",
+          priority: 'medium',
+          timestamp: new Date(),
+          context: fullContext,
+        };
       }
     }
   }
