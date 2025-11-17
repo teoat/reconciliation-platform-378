@@ -38,10 +38,10 @@ declare global {
   interface Window {
     google?: {
       accounts: {
-        id: {
-          initialize: (config: { client_id: string; callback: (response: any) => void }) => void
-          renderButton: (element: HTMLElement, config: any) => void
-        }
+          id: {
+            initialize: (config: { client_id: string; callback: (response: { credential: string }) => void }) => void
+            renderButton: (element: HTMLElement, config: { type?: string; theme?: string; size?: string; text?: string; width?: string }) => void
+          }
       }
     }
   }
@@ -83,7 +83,7 @@ const AuthPage: React.FC = () => {
   }, [isRegistering, loginForm, registerForm])
 
   // Handle Google Sign-In
-  const handleGoogleSignIn = useCallback(async (response: any) => {
+  const handleGoogleSignIn = useCallback(async (response: { credential: string }) => {
     try {
       setError(null)
       if (!response.credential) {
@@ -311,7 +311,6 @@ const AuthPage: React.FC = () => {
                 type="submit"
                 disabled={isLoading}
                 aria-label="Sign in"
-                aria-busy={isLoading ? 'true' : 'false'}
                 className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
               >
                 {isLoading ? (
@@ -463,7 +462,6 @@ const AuthPage: React.FC = () => {
                 type="submit"
                 disabled={isLoading}
                 aria-label="Create account"
-                aria-busy={isLoading ? 'true' : 'false'}
                 className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
               >
                 {isLoading ? (
