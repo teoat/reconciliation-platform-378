@@ -14,12 +14,21 @@ import { useData } from '../components/DataProvider';
 import { useProjectAnalytics } from '../hooks/useFileReconciliation';
 import { useToast } from '../hooks/useToast';
 import { logger } from '../services/logger';
+import { usePageOrchestration } from '../hooks/usePageOrchestration';
+import {
+  visualizationPageMetadata,
+  getVisualizationOnboardingSteps,
+  getVisualizationPageContext,
+  getVisualizationWorkflowState,
+  registerVisualizationGuidanceHandlers,
+  getVisualizationGuidanceContent,
+} from '../orchestration/pages/VisualizationPageOrchestration';
 
 // Interfaces (shared with main index.tsx)
 export interface PageConfig {
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   path: string;
   showStats?: boolean;
   showFilters?: boolean;
@@ -29,7 +38,7 @@ export interface PageConfig {
 export interface StatsCard {
   title: string;
   value: string | number;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   color: string;
   trend?: {
     direction: 'up' | 'down' | 'neutral';
@@ -40,7 +49,7 @@ export interface StatsCard {
 
 export interface ActionConfig {
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   onClick: () => void;
   variant?: 'primary' | 'secondary' | 'danger';
   loading?: boolean;
@@ -181,6 +190,33 @@ const VisualizationPageContent: React.FC = () => {
   const [selectedChart, setSelectedChart] = useState<'overview' | 'systems' | 'trends'>('overview');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+
+  // Page Orchestration with Frenly AI
+  const {
+    updatePageContext,
+    trackFeatureUsage,
+    trackFeatureError,
+  } = usePageOrchestration({
+    pageMetadata: visualizationPageMetadata,
+    getPageContext: () =>
+      getVisualizationPageContext(
+        currentProject?.id,
+        1, // chartsCount (simplified)
+        0, // dashboardsCount
+        currentProject?.name
+      ),
+    getOnboardingSteps: () =>
+      getVisualizationOnboardingSteps(
+        selectedChart !== 'overview',
+        false // hasCreatedDashboard
+      ),
+    getWorkflowState: () => getVisualizationWorkflowState(),
+    registerGuidanceHandlers: () => registerVisualizationGuidanceHandlers(
+      () => {},
+      () => {}
+    ),
+    getGuidanceContent: (topic) => getVisualizationGuidanceContent(topic),
+  });
 
   // Fetch analytics on mount and when project changes
   useEffect(() => {

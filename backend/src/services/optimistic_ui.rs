@@ -378,7 +378,7 @@ impl OptimisticUpdateManager {
         let mut retry_count = 0;
 
         for id in failed_updates {
-            if let Err(_) = self.sync_with_server(&id).await {
+            if self.sync_with_server(&id).await.is_err() {
                 retry_count += 1;
             }
         }

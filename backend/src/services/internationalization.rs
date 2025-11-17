@@ -322,9 +322,8 @@ impl InternationalizationService {
             // Add thousands separators
             let mut result = String::new();
             let chars: Vec<char> = integer_part.chars().collect();
-            let mut count = 0;
 
-            for &ch in chars.iter().rev() {
+            for (count, &ch) in chars.iter().rev().enumerate() {
                 if count > 0 && count % 3 == 0 {
                     result.insert(
                         0,
@@ -337,7 +336,6 @@ impl InternationalizationService {
                     );
                 }
                 result.insert(0, ch);
-                count += 1;
             }
 
             result.push_str(&locale.number_format.decimal_separator);
@@ -515,9 +513,11 @@ impl InternationalizationService {
         let translations = self.translations.read().await;
         let cache = self.translation_cache.read().await;
 
-        let mut stats = TranslationStats::default();
-        stats.total_translations = translations.len() as u32;
-        stats.cached_translations = cache.len() as u32;
+        let mut stats = TranslationStats {
+            total_translations: translations.len() as u32,
+            cached_translations: cache.len() as u32,
+            ..Default::default()
+        };
 
         // Count translations by language
         for translation in translations.values() {
@@ -598,7 +598,7 @@ mod tests {
         assert_eq!(translation, Some("Bienvenido".to_string()));
 
         // Test text translation
-        let request = TranslationRequest {
+        let request = crate::services::internationalization::TranslationRequest {
             text: "Welcome".to_string(),
             source_language: "en".to_string(),
             target_language: "es".to_string(),

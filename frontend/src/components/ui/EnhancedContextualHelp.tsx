@@ -213,6 +213,41 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
               </div>
             )}
 
+            {/* Interactive Example */}
+            {helpContent.interactiveExample && (
+              <div className="mb-3 border-t border-gray-200 pt-3">
+                <h4 className="text-xs font-semibold text-gray-600 mb-2">
+                  Interactive Example:
+                </h4>
+                <div className="bg-gray-50 rounded p-2 text-xs">
+                  <div className="font-medium text-gray-700 mb-1">
+                    {helpContent.interactiveExample.title}
+                  </div>
+                  {helpContent.interactiveExample.description && (
+                    <p className="text-gray-600 mb-2 text-xs">
+                      {helpContent.interactiveExample.description}
+                    </p>
+                  )}
+                  {helpContent.interactiveExample.code && (
+                    <pre className="bg-gray-900 text-gray-100 p-2 rounded text-xs overflow-x-auto">
+                      <code>{helpContent.interactiveExample.code}</code>
+                    </pre>
+                  )}
+                  {helpContent.interactiveExample.demoUrl && (
+                    <a
+                      href={helpContent.interactiveExample.demoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center mt-2 text-xs text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      Try Interactive Demo
+                      <ChevronRight className="h-3 w-3 ml-1" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Related Content */}
             {relatedContent.length > 0 && (
               <div className="mb-3 border-t border-gray-200 pt-3">

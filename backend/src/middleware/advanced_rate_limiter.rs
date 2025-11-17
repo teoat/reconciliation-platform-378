@@ -54,15 +54,16 @@ pub enum RateLimitKey {
     Custom(String),
 }
 
-impl RateLimitKey {
-    pub fn to_string(&self) -> String {
-        match self {
+impl std::fmt::Display for RateLimitKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
             Self::IpAddress(ip) => format!("ip:{}", ip),
             Self::UserId(uid) => format!("user:{}", uid),
             Self::ApiKey(key) => format!("apikey:{}", key),
             Self::Endpoint(endpoint) => format!("endpoint:{}", endpoint),
             Self::Custom(key) => format!("custom:{}", key),
-        }
+        };
+        write!(f, "{}", s)
     }
 }
 

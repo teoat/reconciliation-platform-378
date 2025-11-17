@@ -26,7 +26,7 @@ impl ValidationUtils {
     /// Validate pagination parameters
     pub fn validate_pagination(page: Option<i64>, per_page: Option<i64>) -> AppResult<(i64, i64)> {
         let page = page.unwrap_or(1).max(1);
-        let per_page = per_page.unwrap_or(20).max(1).min(100);
+        let per_page = per_page.unwrap_or(20).clamp(1, 100);
         Ok((page, per_page))
     }
 }

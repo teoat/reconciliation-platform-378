@@ -43,13 +43,10 @@ pub struct RoleManager;
 impl RoleManager {
     /// Check if user has required role
     pub fn has_role(user_role: &str, required_role: &str) -> bool {
-        match (user_role, required_role) {
-            ("admin", _) => true,
-            ("manager", "user") => true,
-            ("manager", "manager") => true,
-            ("user", "user") => true,
-            _ => false,
-        }
+        matches!(
+            (user_role, required_role),
+            ("admin", _) | ("manager", "user") | ("manager", "manager") | ("user", "user")
+        )
     }
 
     /// Check if user has permission for specific action

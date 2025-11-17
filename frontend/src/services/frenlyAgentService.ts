@@ -286,6 +286,147 @@ class FrenlyAgentService {
   }
 
   /**
+   * Sync page state with Frenly AI
+   */
+  async syncPageState(data: {
+    pageId: string;
+    state: Record<string, any>;
+    timestamp: number;
+  }): Promise<void> {
+    try {
+      await this.retryWithBackoff(async () => {
+        // Track page state sync
+        await this.agent.trackInteraction(
+          data.state.userId || 'unknown',
+          'page_state_sync',
+          data.pageId
+        );
+      });
+    } catch (error) {
+      logger.error('Error syncing page state:', { error });
+      // Don't throw - sync failures shouldn't break the page
+    }
+  }
+
+  /**
+   * Update onboarding progress
+   */
+  async updateOnboardingProgress(data: {
+    pageId: string;
+    completedSteps: string[];
+    currentStep: string | null;
+  }): Promise<void> {
+    try {
+      await this.retryWithBackoff(async () => {
+        // Track onboarding progress
+        const userId = localStorage.getItem('userId') || 'unknown';
+        await this.agent.trackInteraction(
+          userId,
+          'onboarding_progress',
+          JSON.stringify(data)
+        );
+      });
+    } catch (error) {
+      logger.error('Error updating onboarding progress:', { error });
+    }
+  }
+
+  /**
+   * Update workflow state
+   */
+  async updateWorkflowState(data: {
+    workflowId: string;
+    currentStep: string;
+    progress: number;
+    completedSteps: string[];
+  }): Promise<void> {
+    try {
+      await this.retryWithBackoff(async () => {
+        // Track workflow state
+        const userId = localStorage.getItem('userId') || 'unknown';
+        await this.agent.trackInteraction(
+          userId,
+          'workflow_state',
+          JSON.stringify(data)
+        );
+      });
+    } catch (error) {
+      logger.error('Error updating workflow state:', { error });
+    }
+  }
+
+  /**
+   * Generate onboarding message
+   */
+  async generateOnboardingMessage(data: {
+    pageId: string;
+    progress: {
+      completedSteps: string[];
+      currentStep: string | null;
+      totalSteps: number;
+    };
+  }): Promise<GeneratedMessage> {
+    try {
+      const userId = localStorage.getItem('userId') || 'unknown';
+      const context: MessageContext = {
+        userId,
+        page: data.pageId,
+        progress: {
+          completedSteps: data.progress.completedSteps,
+          totalSteps: data.progress.totalSteps,
+          currentStep: data.progress.currentStep || undefined,
+        },
+      };
+      return await this.generateMessage(context);
+    } catch (error) {
+      logger.error('Error generating onboarding message:', { error });
+      return this.getFallbackMessage({ userId: 'unknown', page: data.pageId });
+    }
+  }
+
+  /**
+   * Generate workflow message
+   */
+  async generateWorkflowMessage(data: {
+    workflowId: string;
+    state: {
+      currentStep: string;
+      progress: number;
+      completedSteps: string[];
+      totalSteps: number;
+    };
+  }): Promise<GeneratedMessage> {
+    try {
+      const userId = localStorage.getItem('userId') || 'unknown';
+      const context: MessageContext = {
+        userId,
+        page: data.workflowId,
+        progress: {
+          completedSteps: data.state.completedSteps,
+          totalSteps: data.state.totalSteps,
+          currentStep: data.state.currentStep,
+        },
+      };
+      return await this.generateMessage(context);
+    } catch (error) {
+      logger.error('Error generating workflow message:', { error });
+      return this.getFallbackMessage({ userId: 'unknown', page: data.workflowId });
+    }
+  }
+
+  /**
+   * Track page view
+   */
+  async trackPageView(pageId: string): Promise<void> {
+    try {
+      const userId = localStorage.getItem('userId') || 'unknown';
+      await this.trackInteraction(userId, 'page_view', pageId);
+    } catch (error) {
+      logger.error('Error tracking page view:', { error });
+    }
+  }
+
+  /**
    * Shutdown the service
    */
   async shutdown(): Promise<void> {

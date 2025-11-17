@@ -1,13 +1,11 @@
 // Shard-Aware Database Operations
 // Provides high-level database operations that automatically route to the correct shard
 
-use super::database_sharding::{ShardedPoolManager, ShardManager, ShardConfig};
-use diesel::prelude::*;
+use super::database_sharding::{ShardedPoolManager, ShardConfig};
 use diesel::r2d2::ConnectionManager;
 use diesel::PgConnection;
 use uuid::Uuid;
 use std::sync::Arc;
-use tokio::sync::Mutex;
 
 pub type PooledConnection = diesel::r2d2::PooledConnection<ConnectionManager<PgConnection>>;
 
@@ -56,13 +54,13 @@ impl ShardAwareDb {
 
         for shard in shard_manager.get_all_shards() {
             let pool = self.pool_manager.get_pool_for_shard(shard.id).await?;
-            let mut conn = pool.lock().await.get()
+            let conn = pool.lock().await.get()
                 .map_err(|e| format!("Failed to get connection for cross-shard operation: {}", e))?;
             connections.push(conn);
         }
 
         // Convert to mutable references
-        let mut conn_refs: Vec<&mut PooledConnection> = connections.iter_mut().collect();
+        let conn_refs: Vec<&mut PooledConnection> = connections.iter_mut().collect();
 
         operation(conn_refs).await
             .map_err(|e| format!("Cross-shard operation failed: {}", e))
@@ -99,8 +97,8 @@ impl ShardAwareDb {
 // Convenience functions for common operations
 impl ShardAwareDb {
     /// Insert a user record on the appropriate shard
-    pub async fn insert_user(&self, user_id: Uuid, user_data: serde_json::Value) -> Result<(), String> {
-        self.execute_on_user_shard(user_id, move |conn| {
+    pub async fn insert_user(&self, user_id: Uuid, _user_data: serde_json::Value) -> Result<(), String> {
+        self.execute_on_user_shard(user_id, move |_conn| {
             async move {
                 // This would be replaced with actual Diesel insert operations
                 // For now, just return success
@@ -111,7 +109,7 @@ impl ShardAwareDb {
 
     /// Get user data from the appropriate shard
     pub async fn get_user(&self, user_id: Uuid) -> Result<Option<serde_json::Value>, String> {
-        self.read_on_user_shard(user_id, move |conn| {
+        self.read_on_user_shard(user_id, move |_conn| {
             async move {
                 // This would be replaced with actual Diesel select operations
                 // For now, just return None
@@ -121,8 +119,8 @@ impl ShardAwareDb {
     }
 
     /// Update user data on the appropriate shard
-    pub async fn update_user(&self, user_id: Uuid, user_data: serde_json::Value) -> Result<(), String> {
-        self.execute_on_user_shard(user_id, move |conn| {
+    pub async fn update_user(&self, user_id: Uuid, _user_data: serde_json::Value) -> Result<(), String> {
+        self.execute_on_user_shard(user_id, move |_conn| {
             async move {
                 // This would be replaced with actual Diesel update operations
                 // For now, just return success
@@ -133,7 +131,7 @@ impl ShardAwareDb {
 
     /// Delete user data from the appropriate shard
     pub async fn delete_user(&self, user_id: Uuid) -> Result<(), String> {
-        self.execute_on_user_shard(user_id, move |conn| {
+        self.execute_on_user_shard(user_id, move |_conn| {
             async move {
                 // This would be replaced with actual Diesel delete operations
                 // For now, just return success

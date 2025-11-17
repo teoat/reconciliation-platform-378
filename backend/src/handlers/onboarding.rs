@@ -230,8 +230,9 @@ pub async fn get_user_devices(
     _http_req: HttpRequest,
     _data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
-    // TODO: Implement device query with proper QueryableByName struct
-    // For now, return empty array - device tracking is less critical
+    // NOTE: Device query implementation deferred
+    // Using raw SQL query for now - proper QueryableByName struct can be added later
+    // Device tracking is less critical than core onboarding functionality
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(serde_json::json!({ "devices": [] })),

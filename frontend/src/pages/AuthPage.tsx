@@ -57,6 +57,8 @@ const AuthPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isRegistering, setIsRegistering] = useState(false)
+  const [isGoogleButtonLoading, setIsGoogleButtonLoading] = useState(false)
+  const [googleButtonError, setGoogleButtonError] = useState(false)
   
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -121,71 +123,119 @@ const AuthPage: React.FC = () => {
           category: 'oauth',
         })
       }
+      setIsGoogleButtonLoading(false)
+      setGoogleButtonError(false)
       return // Skip if no Google Client ID is configured
+    }
+
+    // Reset states when starting to load
+    setIsGoogleButtonLoading(true)
+    setGoogleButtonError(false)
+
+    // Function to render Google button with retry logic
+    const renderGoogleButton = (retries = 5, delay = 200) => {
+      if (retries === 0) {
+        logger.error('Failed to render Google Sign-In button after multiple attempts', {
+          component: 'AuthPage',
+          category: 'oauth',
+        })
+        setIsGoogleButtonLoading(false)
+        setGoogleButtonError(true)
+        return
+      }
+
+      if (!window.google) {
+        // Script not loaded yet, retry
+        setTimeout(() => renderGoogleButton(retries - 1, delay), delay)
+        return
+      }
+
+      if (!googleButtonRef.current) {
+        // Ref not ready yet, retry
+        setTimeout(() => renderGoogleButton(retries - 1, delay), delay)
+        return
+      }
+
+      try {
+        // Check if button already rendered
+        const existingButton = googleButtonRef.current.querySelector('iframe')
+        if (existingButton) {
+          setIsGoogleButtonLoading(false)
+          setGoogleButtonError(false)
+          return // Button already rendered
+        }
+
+        // Initialize Google Sign-In
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: handleGoogleSignIn,
+        })
+
+        // Render button
+        window.google.accounts.id.renderButton(googleButtonRef.current, {
+          type: 'standard',
+          theme: 'outline',
+          size: 'large',
+          text: 'signin_with',
+          width: '100%',
+        })
+
+        logger.info('Google Sign-In button rendered successfully', {
+          component: 'AuthPage',
+          category: 'oauth',
+        })
+        setIsGoogleButtonLoading(false)
+        setGoogleButtonError(false)
+      } catch (error) {
+        logger.error('Error rendering Google Sign-In button', {
+          component: 'AuthPage',
+          category: 'oauth',
+          error: error instanceof Error ? error.message : String(error),
+        })
+        // Retry on error
+        setTimeout(() => renderGoogleButton(retries - 1, delay), delay)
+      }
     }
 
     // Check if script already exists
     const existingScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
     if (existingScript) {
-      // Re-initialize if script already loaded
-      if (window.google && googleButtonRef.current) {
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: handleGoogleSignIn,
-        })
-        
-        setTimeout(() => {
-          if (googleButtonRef.current) {
-            const button = googleButtonRef.current.querySelector('iframe')
-            if (!button) {
-              window.google!.accounts.id.renderButton(googleButtonRef.current, {
-                type: 'standard',
-                theme: 'outline',
-                size: 'large',
-                text: 'signin_with',
-                width: '100%',
-              })
-            }
-          }
-        }, 100)
-      }
+      // Script already loaded, try to render button
+      renderGoogleButton()
       return
     }
 
+    // Load Google Identity Services script
     const script = document.createElement('script')
     script.src = 'https://accounts.google.com/gsi/client'
     script.async = true
     script.defer = true
     script.onload = () => {
-      // Initialize Google Sign-In when script loads
-      if (window.google && googleButtonRef.current) {
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: handleGoogleSignIn,
-        })
-        
-        // Render button after a short delay to ensure DOM is ready
-        setTimeout(() => {
-          if (googleButtonRef.current) {
-            window.google!.accounts.id.renderButton(googleButtonRef.current, {
-              type: 'standard',
-              theme: 'outline',
-              size: 'large',
-              text: 'signin_with',
-              width: '100%',
-            })
-          }
-        }, 100)
-      }
+      logger.info('Google Identity Services script loaded', {
+        component: 'AuthPage',
+        category: 'oauth',
+      })
+      // Try to render button after script loads
+      renderGoogleButton()
     }
-    document.body.appendChild(script)
+    script.onerror = () => {
+      logger.error('Failed to load Google Identity Services script', {
+        component: 'AuthPage',
+        category: 'oauth',
+      })
+      setIsGoogleButtonLoading(false)
+      setGoogleButtonError(true)
+    }
+    document.head.appendChild(script)
 
     return () => {
-      // Cleanup: remove script if component unmounts
-      const scriptToRemove = document.querySelector('script[src="https://accounts.google.com/gsi/client"]')
-      if (scriptToRemove) {
-        document.body.removeChild(scriptToRemove)
+      // Cleanup: don't remove script as it might be used by other components
+      // Just clear the button container
+      if (googleButtonRef.current) {
+        googleButtonRef.current.innerHTML = ''
       }
+      setIsGoogleButtonLoading(false)
+      setGoogleButtonError(false)
     }
   }, [handleGoogleSignIn])
 
@@ -301,11 +351,12 @@ const AuthPage: React.FC = () => {
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400" />
+                      <EyeOff className="h-5 w-5 text-gray-400" aria-hidden="true" />
                     ) : (
-                      <Eye className="h-5 w-5 text-gray-400" />
+                      <Eye className="h-5 w-5 text-gray-400" aria-hidden="true" />
                     )}
                   </button>
                 </div>
@@ -339,12 +390,35 @@ const AuthPage: React.FC = () => {
                 </div>
               </div>
 
-              <div ref={googleButtonRef} className="w-full flex justify-center">
-                {!import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+              <div 
+                ref={googleButtonRef} 
+                className="w-full flex flex-col items-center justify-center min-h-[40px]"
+                aria-label="Google Sign-In"
+              >
+                {!import.meta.env.VITE_GOOGLE_CLIENT_ID ? (
                   <p className="text-xs text-gray-400 text-center mt-2 px-4">
                     Google Sign-In is not configured. Set VITE_GOOGLE_CLIENT_ID in .env to enable.
                   </p>
-                )}
+                ) : isGoogleButtonLoading ? (
+                  <div className="flex items-center justify-center py-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2" aria-hidden="true"></div>
+                    <span className="text-sm text-gray-600">Loading Google Sign-In...</span>
+                  </div>
+                ) : googleButtonError ? (
+                  <div className="flex flex-col items-center justify-center py-2 px-4">
+                    <p className="text-xs text-red-600 text-center mb-2">
+                      Failed to load Google Sign-In button. Please refresh the page.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => window.location.reload()}
+                      className="text-xs text-blue-600 hover:text-blue-700 underline"
+                      aria-label="Refresh page to retry Google Sign-In"
+                    >
+                      Refresh Page
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </form>
           ) : (
@@ -418,11 +492,12 @@ const AuthPage: React.FC = () => {
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                   >
                     {showPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400" />
+                      <EyeOff className="h-5 w-5 text-gray-400" aria-hidden="true" />
                     ) : (
-                      <Eye className="h-5 w-5 text-gray-400" />
+                      <Eye className="h-5 w-5 text-gray-400" aria-hidden="true" />
                     )}
                   </button>
                 </div>
@@ -452,11 +527,12 @@ const AuthPage: React.FC = () => {
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
                   >
                     {showConfirmPassword ? (
-                      <EyeOff className="h-5 w-5 text-gray-400" />
+                      <EyeOff className="h-5 w-5 text-gray-400" aria-hidden="true" />
                     ) : (
-                      <Eye className="h-5 w-5 text-gray-400" />
+                      <Eye className="h-5 w-5 text-gray-400" aria-hidden="true" />
                     )}
                   </button>
                 </div>
@@ -490,12 +566,35 @@ const AuthPage: React.FC = () => {
                 </div>
               </div>
 
-              <div ref={googleButtonRef} className="w-full flex justify-center">
-                {!import.meta.env.VITE_GOOGLE_CLIENT_ID && (
+              <div 
+                ref={googleButtonRef} 
+                className="w-full flex flex-col items-center justify-center min-h-[40px]"
+                aria-label="Google Sign-In"
+              >
+                {!import.meta.env.VITE_GOOGLE_CLIENT_ID ? (
                   <p className="text-xs text-gray-400 text-center mt-2 px-4">
                     Google Sign-In is not configured. Set VITE_GOOGLE_CLIENT_ID in .env to enable.
                   </p>
-                )}
+                ) : isGoogleButtonLoading ? (
+                  <div className="flex items-center justify-center py-2">
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2" aria-hidden="true"></div>
+                    <span className="text-sm text-gray-600">Loading Google Sign-In...</span>
+                  </div>
+                ) : googleButtonError ? (
+                  <div className="flex flex-col items-center justify-center py-2 px-4">
+                    <p className="text-xs text-red-600 text-center mb-2">
+                      Failed to load Google Sign-In button. Please refresh the page.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => window.location.reload()}
+                      className="text-xs text-blue-600 hover:text-blue-700 underline"
+                      aria-label="Refresh page to retry Google Sign-In"
+                    >
+                      Refresh Page
+                    </button>
+                  </div>
+                ) : null}
               </div>
             </form>
           )}
@@ -514,7 +613,13 @@ const AuthPage: React.FC = () => {
                   </button>
                 </p>
                 <p className="text-xs text-gray-500">
-                  Demo credentials: <span className="font-medium">admin@example.com / password123</span>
+                  Don't have an account? <button
+                    type="button"
+                    onClick={() => setIsRegistering(true)}
+                    className="text-blue-600 hover:text-blue-700 font-medium underline"
+                  >
+                    Register here
+                  </button>
                 </p>
               </>
             ) : (

@@ -248,7 +248,7 @@ export default defineConfig(({ mode }) => {
       'lucide-react',
     ],
     // Exclude large dependencies from pre-bundling
-    exclude: [],
+    exclude: ['@sentry/react'],
     // Force pre-bundling of specific modules
     force: true,
   },

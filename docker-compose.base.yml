@@ -62,6 +62,7 @@ x-backend-base: &backend-base
     RUST_LOG: ${RUST_LOG:-info}
     MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
     UPLOAD_PATH: /app/uploads
+    DISABLE_AUTH: ${DISABLE_AUTH:-false}
   volumes:
     - uploads_data:/app/uploads
     - logs_data:/app/logs

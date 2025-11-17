@@ -6,6 +6,15 @@ import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
 import { UserFriendlyError } from '../components/ui/UserFriendlyError';
 import { ContextualHelp } from '../components/ui/ContextualHelp';
 import { useErrorRecovery } from '../hooks/useErrorRecovery';
+import { usePageOrchestration } from '../hooks/usePageOrchestration';
+import {
+  reconciliationPageMetadata,
+  getReconciliationOnboardingSteps,
+  getReconciliationPageContext,
+  getReconciliationWorkflowState,
+  registerReconciliationGuidanceHandlers,
+  getReconciliationGuidanceContent,
+} from '../orchestration/examples/ReconciliationPageOrchestration';
 import { Upload } from 'lucide-react';
 import { FileText } from 'lucide-react';
 import { Play } from 'lucide-react';
@@ -59,6 +68,43 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+  const [completedTabs, setCompletedTabs] = useState<string[]>([]);
+
+  // Page Orchestration with Frenly AI
+  const { updatePageContext, trackFeatureUsage, trackFeatureError, trackUserAction } =
+    usePageOrchestration({
+      pageMetadata: reconciliationPageMetadata,
+      getPageContext: () =>
+        getReconciliationPageContext(
+          projectId,
+          activeTab,
+          dataSources?.length || 0,
+          jobs?.length || 0,
+          matches?.length || 0,
+          project?.name
+        ),
+      getOnboardingSteps: () =>
+        getReconciliationOnboardingSteps(
+          activeTab,
+          (dataSources?.length || 0) > 0,
+          (jobs?.length || 0) > 0
+        ),
+      getWorkflowState: () => getReconciliationWorkflowState(activeTab, completedTabs),
+      registerGuidanceHandlers: () =>
+        registerReconciliationGuidanceHandlers(
+          () => setActiveTab('upload'),
+          () => setActiveTab('configure'),
+          () => setActiveTab('run'),
+          () => setActiveTab('results')
+        ),
+      getGuidanceContent: (topic) => getReconciliationGuidanceContent(topic),
+      onContextChange: (changes) => {
+        // Handle context changes if needed
+        if (changes.activeTab) {
+          logger.debug('Tab changed', { tab: changes.activeTab });
+        }
+      },
+    });
 
   // Error recovery
   const { recoveryActions, suggestions, errorTitle } = useErrorRecovery({
@@ -84,6 +130,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
 
   // Handle file upload with error handling
   const handleFileUpload = async (files: File[]) => {
+    trackFeatureUsage('upload', 'file-upload-started', { fileCount: files.length });
     try {
       for (const file of files) {
         try {
@@ -92,15 +139,27 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
           if (result.success && result.dataSource) {
             // Process the file after upload
             await processFile(result.dataSource.id);
+            trackFeatureUsage('upload', 'file-upload-success', { fileName: file.name });
           }
         } catch (uploadError) {
           logger.error('Upload failed:', uploadError);
-          setError(uploadError instanceof Error ? uploadError : new Error('File upload failed'));
+          const error =
+            uploadError instanceof Error ? uploadError : new Error('File upload failed');
+          setError(error);
+          trackFeatureError('upload', error);
         }
       }
       setShowUploadModal(false);
+      // Mark upload tab as completed
+      if (!completedTabs.includes('upload')) {
+        setCompletedTabs([...completedTabs, 'upload']);
+      }
+      // Update page context
+      updatePageContext({ dataSourcesCount: dataSources?.length || 0 });
     } catch (error) {
-      setError(error instanceof Error ? error : new Error('Upload process failed'));
+      const uploadError = error instanceof Error ? error : new Error('Upload process failed');
+      setError(uploadError);
+      trackFeatureError('upload', uploadError);
     }
   };
 
@@ -108,6 +167,8 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   const handleStartReconciliation = async () => {
     if (!projectId) return;
 
+    trackFeatureUsage('run-jobs', 'job-creation-started');
+    trackUserAction('button-clicked', 'start-reconciliation-button');
     try {
       const result = await createJob({
         project_id: projectId,
@@ -118,11 +179,23 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
 
       if (result.success && result.job) {
         await startJob(result.job.id);
+        trackFeatureUsage('run-jobs', 'job-creation-success', { jobId: result.job.id });
+        // Mark run tab as completed
+        if (!completedTabs.includes('run')) {
+          setCompletedTabs([...completedTabs, 'run']);
+        }
+        // Update page context
+        updatePageContext({ jobsCount: jobs?.length || 0 });
       } else {
-        setError(new Error('Failed to create reconciliation job'));
+        const error = new Error('Failed to create reconciliation job');
+        setError(error);
+        trackFeatureError('run-jobs', error);
       }
     } catch (error) {
-      setError(error instanceof Error ? error : new Error('Failed to start reconciliation job'));
+      const jobError =
+        error instanceof Error ? error : new Error('Failed to start reconciliation job');
+      setError(jobError);
+      trackFeatureError('run-jobs', jobError);
     }
   };
 
@@ -197,7 +270,9 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       key: 'id',
       label: 'Job ID',
       sortable: true,
-      render: (value) => <span className="font-mono text-sm">{value ? value.slice(0, 8) : 'N/A'}...</span>,
+      render: (value) => (
+        <span className="font-mono text-sm">{value ? value.slice(0, 8) : 'N/A'}...</span>
+      ),
     },
     {
       key: 'status',
@@ -215,7 +290,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       key: 'created_at',
       label: 'Started',
       sortable: true,
-      render: (value) => value ? new Date(value).toLocaleString() : 'N/A',
+      render: (value) => (value ? new Date(value).toLocaleString() : 'N/A'),
     },
     {
       key: 'progress',
@@ -225,7 +300,12 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
           <div className="w-16 bg-gray-200 rounded-full h-2">
             <div
               className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${row.status === 'completed' ? 100 : value || 0}%` }}
+              // Dynamic width for progress bar - acceptable inline style
+              style={
+                {
+                  width: `${row.status === 'completed' ? 100 : value || 0}%`,
+                } as React.CSSProperties
+              }
             />
           </div>
           <span className="text-sm text-gray-600">
@@ -278,7 +358,9 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       key: 'id',
       label: 'Match ID',
       sortable: true,
-      render: (value) => <span className="font-mono text-sm">{value ? value.slice(0, 8) : 'N/A'}...</span>,
+      render: (value) => (
+        <span className="font-mono text-sm">{value ? value.slice(0, 8) : 'N/A'}...</span>
+      ),
     },
     {
       key: 'confidence_score',
@@ -294,7 +376,8 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
                 className={`h-2 rounded-full transition-all duration-300 ${
                   score >= 0.8 ? 'bg-green-500' : score >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'
                 }`}
-                style={{ width: `${score * 100}%` }}
+                // Dynamic width for progress bar - acceptable inline style
+                style={{ width: `${score * 100}%` } as React.CSSProperties}
               />
             </div>
             <span className="text-sm font-medium">{progressValue}%</span>
@@ -318,7 +401,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       key: 'created_at',
       label: 'Created',
       sortable: true,
-      render: (value) => value ? new Date(value).toLocaleDateString() : 'N/A',
+      render: (value) => (value ? new Date(value).toLocaleDateString() : 'N/A'),
     },
     {
       key: 'actions',
@@ -444,7 +527,10 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
         announcement.textContent = '';
       }, 1000);
     }
-  }, [activeTab]);
+    // Update page context when tab changes
+    updatePageContext({ activeTab });
+    trackUserAction('tab-changed', `tab-${activeTab}`);
+  }, [activeTab, updatePageContext, trackUserAction]);
 
   return (
     <>
@@ -458,384 +544,389 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
         <SkipLink href="#main-content" label="Skip to main content" />
         <SkipLink href="#navigation-tabs" label="Skip to navigation tabs" />
 
-      {/* Screen reader announcements */}
-      <div
-        id="tab-announcement"
-        className="sr-only"
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-      />
+        {/* Screen reader announcements */}
+        <div
+          id="tab-announcement"
+          className="sr-only"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        />
 
-      {/* Header */}
-      <header className="bg-white shadow-sm border-b" role="banner">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center space-x-4">
-              <Button variant="ghost" onClick={() => navigate('/')}>
-                ← Back to Dashboard
-              </Button>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900" id="page-title">
-                  {project?.name ?? 'Unknown Project'}
-                </h1>
-                <p className="text-sm text-gray-500">Reconciliation Management</p>
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b" role="banner">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center space-x-4">
+                <Button variant="ghost" onClick={() => navigate('/')}>
+                  ← Back to Dashboard
+                </Button>
+                <div>
+                  <h1 className="text-xl font-semibold text-gray-900" id="page-title">
+                    {project?.name ?? 'Unknown Project'}
+                  </h1>
+                  <p className="text-sm text-gray-500">Reconciliation Management</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Button variant="outline" onClick={() => setShowSettingsModal(true)}>
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
+                <Button variant="primary" onClick={() => setShowUploadModal(true)}>
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Files
+                </Button>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Button variant="outline" onClick={() => setShowSettingsModal(true)}>
-                <Settings className="h-4 w-4 mr-2" />
-                Settings
-              </Button>
-              <Button variant="primary" onClick={() => setShowUploadModal(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Upload Files
-              </Button>
+          </div>
+        </header>
+
+        {/* Navigation Tabs */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="navigation-tabs">
+          <div className="border-b border-gray-200">
+            <div
+              className="-mb-px flex space-x-8"
+              role="tablist"
+              aria-label="Reconciliation workflow tabs"
+            >
+              {[
+                { id: 'upload' as const, label: 'Upload Data', icon: Upload },
+                { id: 'configure' as const, label: 'Configure', icon: Settings },
+                { id: 'run' as const, label: 'Run Jobs', icon: Play },
+                { id: 'results' as const, label: 'Results', icon: BarChart3 },
+            ].map((tab) => {
+              const isSelected = activeTab === tab.id;
+              const tabIndexValue = isSelected ? 0 : -1;
+              return (
+                  <button
+                    key={tab.id}
+                    role="tab"
+                    // eslint-disable-next-line jsx-a11y/aria-proptypes
+                    aria-selected={isSelected}
+                    aria-controls={`tabpanel-${tab.id}`}
+                    id={`tab-${tab.id}`}
+                    tabIndex={tabIndexValue}
+                    onClick={() => setActiveTab(tab.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setActiveTab(tab.id);
+                      }
+                    }}
+                    className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      activeTab === tab.id
+                        ? 'border-blue-500 text-blue-600'
+                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    }`}
+                  >
+                    <tab.icon className="h-4 w-4 mr-2 inline" aria-hidden="true" />
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
-      </header>
 
-      {/* Navigation Tabs */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="navigation-tabs">
-        <div className="border-b border-gray-200">
-          <div
-            className="-mb-px flex space-x-8"
-            role="tablist"
-            aria-label="Reconciliation workflow tabs"
-          >
-            {[
-              { id: 'upload' as const, label: 'Upload Data', icon: Upload },
-              { id: 'configure' as const, label: 'Configure', icon: Settings },
-              { id: 'run' as const, label: 'Run Jobs', icon: Play },
-              { id: 'results' as const, label: 'Results', icon: BarChart3 },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                role="tab"
-                aria-selected={activeTab === tab.id}
-                aria-controls={`tabpanel-${tab.id}`}
-                id={`tab-${tab.id}`}
-                tabIndex={activeTab === tab.id ? 0 : -1}
-                onClick={() => setActiveTab(tab.id)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setActiveTab(tab.id);
-                  }
-                }}
-                className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <tab.icon className="h-4 w-4 mr-2 inline" aria-hidden="true" />
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
-      <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" role="main">
-        {/* User-Friendly Error Display */}
-        {error && (
-          <div className="mb-6">
-            <UserFriendlyError
-              error={error || 'Unknown error'}
-              title={errorTitle}
-              context="Reconciliation workflow"
-              recoveryActions={recoveryActions}
-              suggestions={suggestions}
-              onDismiss={() => setError(null)}
-              errorId="reconciliation-error"
-            />
-          </div>
-        )}
-
-        {/* Upload Tab */}
-        {activeTab === 'upload' && (
-          <div
-            id="tabpanel-upload"
-            role="tabpanel"
-            aria-labelledby="tab-upload"
-            className="space-y-6"
-          >
-            {/* Metrics */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-              <MetricCard
-                title="Data Sources"
-                value={dataSources?.length ?? 0}
-                icon={<FileText className="w-6 h-6" />}
-              />
-              <MetricCard
-                title="Processed Files"
-                value={dataSources?.filter((ds) => ds?.status === 'processed').length ?? 0}
-                icon={<CheckCircle className="w-6 h-6" />}
-              />
-              <MetricCard
-                title="Active Jobs"
-                value={jobs?.filter((job) => job?.status === 'running').length ?? 0}
-                icon={<Clock className="w-6 h-6" />}
-              />
-              <MetricCard
-                title="Total Matches"
-                value={matches?.length ?? 0}
-                icon={<Users className="w-6 h-6" />}
+        {/* Content */}
+        <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" role="main">
+          {/* User-Friendly Error Display */}
+          {error && (
+            <div className="mb-6">
+              <UserFriendlyError
+                error={error || 'Unknown error'}
+                title={errorTitle}
+                context="Reconciliation workflow"
+                recoveryActions={recoveryActions}
+                suggestions={suggestions}
+                onDismiss={() => setError(null)}
+                errorId="reconciliation-error"
               />
             </div>
+          )}
 
-            {/* Data Sources Table */}
-            <Card>
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold">Data Sources</h3>
-                    <ContextualHelp
-                      trigger="hover"
-                      position="right"
-                      helpContent={{
-                        id: 'data-sources-help',
-                        title: 'Upload Data Files',
-                        content:
-                          'Upload CSV or Excel files containing your reconciliation data. Supported formats: .csv, .xlsx, .xls. Maximum file size: 50MB per file.',
-                        tips: [
-                          {
-                            id: 'tip-1',
-                            title: 'Upload Method',
-                            content: 'Use the Upload Files button or drag and drop files',
-                            category: 'tip',
-                          },
-                          {
-                            id: 'tip-2',
-                            title: 'Validation',
-                            content: 'Files are automatically validated after upload',
-                            category: 'tip',
-                          },
-                          {
-                            id: 'tip-3',
-                            title: 'Multiple Files',
-                            content: 'Multiple files can be uploaded at once',
-                            category: 'tip',
-                          },
-                        ],
-                      }}
-                    />
-                  </div>
-                  <Button variant="primary" onClick={() => setShowUploadModal(true)}>
-                    <Upload className="h-4 w-4 mr-2" />
-                    Upload Files
-                  </Button>
-                </div>
-                <DataTable
-                  data={dataSources ?? []}
-                  columns={dataSourceColumns}
-                  emptyMessage="No data sources uploaded yet"
+          {/* Upload Tab */}
+          {activeTab === 'upload' && (
+            <div
+              id="tabpanel-upload"
+              role="tabpanel"
+              aria-labelledby="tab-upload"
+              className="space-y-6"
+            >
+              {/* Metrics */}
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <MetricCard
+                  title="Data Sources"
+                  value={dataSources?.length ?? 0}
+                  icon={<FileText className="w-6 h-6" />}
+                />
+                <MetricCard
+                  title="Processed Files"
+                  value={dataSources?.filter((ds) => ds?.status === 'processed').length ?? 0}
+                  icon={<CheckCircle className="w-6 h-6" />}
+                />
+                <MetricCard
+                  title="Active Jobs"
+                  value={jobs?.filter((job) => job?.status === 'running').length ?? 0}
+                  icon={<Clock className="w-6 h-6" />}
+                />
+                <MetricCard
+                  title="Total Matches"
+                  value={matches?.length ?? 0}
+                  icon={<Users className="w-6 h-6" />}
                 />
               </div>
-            </Card>
-          </div>
-        )}
 
-        {/* Configure Tab */}
-        {activeTab === 'configure' && (
-          <div
-            id="tabpanel-configure"
-            role="tabpanel"
-            aria-labelledby="tab-configure"
-            className="space-y-6"
-          >
-            <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-semibold mb-4">Reconciliation Settings</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label
-                      htmlFor="matching-threshold"
-                      className="block text-sm font-medium text-gray-700 mb-2"
-                    >
-                      Matching Threshold
-                    </label>
-                    <input
-                      id="matching-threshold"
-                      type="range"
-                      min="0.1"
-                      max="1"
-                      step="0.1"
-                      value={reconciliationSettings.matchingThreshold}
-                      onChange={(e) =>
-                        setReconciliationSettings((prev) => ({
-                          ...prev,
-                          matchingThreshold: parseFloat(e.target.value) || 0,
-                        }))
-                      }
-                      className="w-full"
-                      aria-label="Matching threshold slider"
-                    />
-                    <div className="flex justify-between text-sm text-gray-500 mt-1">
-                      <span>10%</span>
-                      <span className="font-medium">
-                        {Math.round(reconciliationSettings.matchingThreshold * 100)}%
-                      </span>
-                      <span>100%</span>
+              {/* Data Sources Table */}
+              <Card>
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold">Data Sources</h3>
+                      <ContextualHelp
+                        trigger="hover"
+                        position="right"
+                        helpContent={{
+                          id: 'data-sources-help',
+                          title: 'Upload Data Files',
+                          content:
+                            'Upload CSV or Excel files containing your reconciliation data. Supported formats: .csv, .xlsx, .xls. Maximum file size: 50MB per file.',
+                          tips: [
+                            {
+                              id: 'tip-1',
+                              title: 'Upload Method',
+                              content: 'Use the Upload Files button or drag and drop files',
+                              category: 'tip',
+                            },
+                            {
+                              id: 'tip-2',
+                              title: 'Validation',
+                              content: 'Files are automatically validated after upload',
+                              category: 'tip',
+                            },
+                            {
+                              id: 'tip-3',
+                              title: 'Multiple Files',
+                              content: 'Multiple files can be uploaded at once',
+                              category: 'tip',
+                            },
+                          ],
+                        }}
+                      />
+                    </div>
+                    <Button variant="primary" onClick={() => setShowUploadModal(true)}>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Upload Files
+                    </Button>
+                  </div>
+                  <DataTable
+                    data={dataSources ?? []}
+                    columns={dataSourceColumns}
+                    emptyMessage="No data sources uploaded yet"
+                  />
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Configure Tab */}
+          {activeTab === 'configure' && (
+            <div
+              id="tabpanel-configure"
+              role="tabpanel"
+              aria-labelledby="tab-configure"
+              className="space-y-6"
+            >
+              <Card>
+                <div className="p-6">
+                  <h3 className="text-lg font-semibold mb-4">Reconciliation Settings</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label
+                        htmlFor="matching-threshold"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Matching Threshold
+                      </label>
+                      <input
+                        id="matching-threshold"
+                        type="range"
+                        min="0.1"
+                        max="1"
+                        step="0.1"
+                        value={reconciliationSettings.matchingThreshold}
+                        onChange={(e) =>
+                          setReconciliationSettings((prev) => ({
+                            ...prev,
+                            matchingThreshold: parseFloat(e.target.value) || 0,
+                          }))
+                        }
+                        className="w-full"
+                        aria-label="Matching threshold slider"
+                      />
+                      <div className="flex justify-between text-sm text-gray-500 mt-1">
+                        <span>10%</span>
+                        <span className="font-medium">
+                          {Math.round(reconciliationSettings.matchingThreshold * 100)}%
+                        </span>
+                        <span>100%</span>
+                      </div>
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="auto-approve"
+                        className="block text-sm font-medium text-gray-700 mb-2"
+                      >
+                        Auto-approve matches
+                      </label>
+                      <input
+                        id="auto-approve"
+                        type="checkbox"
+                        checked={reconciliationSettings.autoApprove}
+                        onChange={(e) =>
+                          setReconciliationSettings((prev) => ({
+                            ...prev,
+                            autoApprove: e.target.checked,
+                          }))
+                        }
+                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        aria-label="Auto-approve matches checkbox"
+                      />
                     </div>
                   </div>
-                  <div>
-                    <label
-                      htmlFor="auto-approve"
-                      className="block text-sm font-medium text-gray-700 mb-2"
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Run Jobs Tab */}
+          {activeTab === 'run' && (
+            <div id="tabpanel-run" role="tabpanel" aria-labelledby="tab-run" className="space-y-6">
+              <Card>
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Reconciliation Jobs</h3>
+                    <Button
+                      variant="primary"
+                      onClick={handleStartReconciliation}
+                      disabled={!dataSources || dataSources.length === 0}
                     >
-                      Auto-approve matches
-                    </label>
-                    <input
-                      id="auto-approve"
-                      type="checkbox"
-                      checked={reconciliationSettings.autoApprove}
-                      onChange={(e) =>
-                        setReconciliationSettings((prev) => ({
-                          ...prev,
-                          autoApprove: e.target.checked,
-                        }))
-                      }
-                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                      aria-label="Auto-approve matches checkbox"
-                    />
+                      <Play className="h-4 w-4 mr-2" />
+                      Start New Job
+                    </Button>
                   </div>
+                  <DataTable
+                    data={jobs ?? []}
+                    columns={jobColumns}
+                    emptyMessage="No reconciliation jobs yet"
+                  />
                 </div>
-              </div>
-            </Card>
-          </div>
-        )}
+              </Card>
+            </div>
+          )}
 
-        {/* Run Jobs Tab */}
-        {activeTab === 'run' && (
-          <div id="tabpanel-run" role="tabpanel" aria-labelledby="tab-run" className="space-y-6">
-            <Card>
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Reconciliation Jobs</h3>
-                  <Button
-                    variant="primary"
-                    onClick={handleStartReconciliation}
-                    disabled={!dataSources || dataSources.length === 0}
-                  >
-                    <Play className="h-4 w-4 mr-2" />
-                    Start New Job
-                  </Button>
+          {/* Results Tab */}
+          {activeTab === 'results' && (
+            <div
+              id="tabpanel-results"
+              role="tabpanel"
+              aria-labelledby="tab-results"
+              className="space-y-6"
+            >
+              <Card>
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold">Reconciliation Matches</h3>
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        /* Export results */
+                      }}
+                    >
+                      <Download className="h-4 w-4 mr-2" />
+                      Export Results
+                    </Button>
+                  </div>
+                  <DataTable
+                    data={matches ?? []}
+                    columns={matchColumns}
+                    virtualized
+                    virtualRowHeight={48}
+                    virtualContainerHeight={560}
+                    emptyMessage="No matches found yet"
+                  />
                 </div>
-                <DataTable
-                  data={jobs ?? []}
-                  columns={jobColumns}
-                  emptyMessage="No reconciliation jobs yet"
-                />
-              </div>
-            </Card>
-          </div>
-        )}
+              </Card>
+            </div>
+          )}
+        </main>
 
-        {/* Results Tab */}
-        {activeTab === 'results' && (
-          <div
-            id="tabpanel-results"
-            role="tabpanel"
-            aria-labelledby="tab-results"
-            className="space-y-6"
-          >
-            <Card>
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold">Reconciliation Matches</h3>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      /* Export results */
-                    }}
-                  >
-                    <Download className="h-4 w-4 mr-2" />
-                    Export Results
-                  </Button>
+        {/* Upload Modal */}
+        <Modal
+          isOpen={showUploadModal}
+          onClose={() => setShowUploadModal(false)}
+          title="Upload Data Files"
+        >
+          <div className="p-6">
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                 </div>
-                <DataTable
-                  data={matches ?? []}
-                  columns={matchColumns}
-                  virtualized
-                  virtualRowHeight={48}
-                  virtualContainerHeight={560}
-                  emptyMessage="No matches found yet"
-                />
-              </div>
-            </Card>
-          </div>
-        )}
-      </main>
-
-      {/* Upload Modal */}
-      <Modal
-        isOpen={showUploadModal}
-        onClose={() => setShowUploadModal(false)}
-        title="Upload Data Files"
-      >
-        <div className="p-6">
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center h-32">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              </div>
-            }
-          >
-            <FileDropzone
-              onFilesSelected={handleFileUpload}
-              accept=".csv,.xlsx,.json"
-              maxFiles={5}
-              maxSize={50 * 1024 * 1024} // 50MB
-            />
-          </Suspense>
-        </div>
-      </Modal>
-
-      {/* Settings Modal */}
-      <Modal
-        isOpen={showSettingsModal}
-        onClose={() => setShowSettingsModal(false)}
-        title="Reconciliation Settings"
-      >
-        <div className="p-6">
-          <div className="space-y-4">
-            <div>
-              <label
-                htmlFor="notification-email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Notification Email
-              </label>
-              <input
-                id="notification-email"
-                type="email"
-                value={reconciliationSettings.notificationEmail}
-                onChange={(e) =>
-                  setReconciliationSettings((prev) => ({
-                    ...prev,
-                    notificationEmail: e.target.value,
-                  }))
-                }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Enter email for notifications"
+              }
+            >
+              <FileDropzone
+                onFilesSelected={handleFileUpload}
+                accept=".csv,.xlsx,.json"
+                maxFiles={5}
+                maxSize={50 * 1024 * 1024} // 50MB
               />
-            </div>
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setShowSettingsModal(false)}>
-                Cancel
-              </Button>
-              <Button variant="primary" onClick={() => setShowSettingsModal(false)}>
-                Save Settings
-              </Button>
+            </Suspense>
+          </div>
+        </Modal>
+
+        {/* Settings Modal */}
+        <Modal
+          isOpen={showSettingsModal}
+          onClose={() => setShowSettingsModal(false)}
+          title="Reconciliation Settings"
+        >
+          <div className="p-6">
+            <div className="space-y-4">
+              <div>
+                <label
+                  htmlFor="notification-email"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
+                  Notification Email
+                </label>
+                <input
+                  id="notification-email"
+                  type="email"
+                  value={reconciliationSettings.notificationEmail}
+                  onChange={(e) =>
+                    setReconciliationSettings((prev) => ({
+                      ...prev,
+                      notificationEmail: e.target.value,
+                    }))
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter email for notifications"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button variant="outline" onClick={() => setShowSettingsModal(false)}>
+                  Cancel
+                </Button>
+                <Button variant="primary" onClick={() => setShowSettingsModal(false)}>
+                  Save Settings
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </Modal>
-    </div>
+        </Modal>
+      </div>
     </>
   );
 };

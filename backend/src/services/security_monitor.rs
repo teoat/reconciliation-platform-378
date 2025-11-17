@@ -83,6 +83,8 @@ pub struct SecurityMonitor {
     alert_rules: Arc<RwLock<HashMap<String, AlertRule>>>,
     email_service: Option<Arc<EmailService>>,
     http_client: Arc<Client>,
+    // Account lockout tracking: key format "ip:user_id" or "ip:unknown"
+    login_attempts: Arc<RwLock<HashMap<String, Vec<SystemTime>>>>,
 }
 
 #[derive(Debug, Clone)]
@@ -128,6 +130,7 @@ impl SecurityMonitor {
             alert_rules: Arc::new(RwLock::new(HashMap::new())),
             email_service: None,
             http_client: Arc::new(Client::new()),
+            login_attempts: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -143,6 +146,7 @@ impl SecurityMonitor {
             alert_rules: Arc::new(RwLock::new(HashMap::new())),
             email_service: Some(email_service),
             http_client: Arc::new(Client::new()),
+            login_attempts: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -206,6 +210,107 @@ impl SecurityMonitor {
             .count();
 
         Ok(failure_count >= self.config.brute_force_threshold)
+    }
+
+    /// Record a login attempt and check for account lockout
+    /// Returns (is_locked, remaining_attempts)
+    pub async fn record_login_attempt(
+        &self,
+        ip_address: &str,
+        user_id: Option<&str>,
+        success: bool,
+    ) -> AppResult<(bool, usize)> {
+        let now = SystemTime::now();
+        let key = format!("{}:{}", ip_address, user_id.unwrap_or("unknown"));
+        let lockout_duration = Duration::from_secs(900); // 15 minutes
+        let max_attempts = self.config.brute_force_threshold;
+
+        let mut attempts_map = self.login_attempts.write().await;
+        let user_attempts = attempts_map.entry(key.clone()).or_insert_with(Vec::new);
+
+        if success {
+            // Clear attempts on successful login
+            user_attempts.clear();
+            return Ok((false, max_attempts));
+        }
+
+        // Record failed attempt
+        user_attempts.push(now);
+
+        // Clean old attempts outside lockout window
+        let cutoff = now - lockout_duration;
+        user_attempts.retain(|&time| time > cutoff);
+
+        let recent_attempts = user_attempts.len();
+        let is_locked = recent_attempts >= max_attempts;
+        let remaining_attempts = max_attempts.saturating_sub(recent_attempts);
+
+        // Log lockout event if threshold reached
+        if is_locked {
+            let lockout_event = SecurityEvent {
+                id: uuid::Uuid::new_v4().to_string(),
+                event_type: SecurityEventType::BruteForceAttack,
+                severity: SecuritySeverity::High,
+                timestamp: chrono::Utc::now().to_rfc3339(),
+                source_ip: Some(ip_address.to_string()),
+                user_id: user_id.map(|s| s.to_string()),
+                description: format!(
+                    "Account locked due to {} failed login attempts",
+                    recent_attempts
+                ),
+                metadata: {
+                    let mut meta = HashMap::new();
+                    meta.insert("attempts".to_string(), recent_attempts.to_string());
+                    meta.insert("lockout_duration_seconds".to_string(), "900".to_string());
+                    meta
+                },
+            };
+            let _ = self.record_event(lockout_event).await;
+        }
+
+        Ok((is_locked, remaining_attempts))
+    }
+
+    /// Check if account is currently locked
+    pub async fn is_account_locked(
+        &self,
+        ip_address: &str,
+        user_id: Option<&str>,
+    ) -> AppResult<bool> {
+        let key = format!("{}:{}", ip_address, user_id.unwrap_or("unknown"));
+        let lockout_duration = Duration::from_secs(900); // 15 minutes
+        let max_attempts = self.config.brute_force_threshold;
+
+        let attempts_map = self.login_attempts.read().await;
+        if let Some(user_attempts) = attempts_map.get(&key) {
+            let now = SystemTime::now();
+            let cutoff = now - lockout_duration;
+            let recent_attempts = user_attempts.iter().filter(|&&time| time > cutoff).count();
+            Ok(recent_attempts >= max_attempts)
+        } else {
+            Ok(false)
+        }
+    }
+
+    /// Get remaining login attempts before lockout
+    pub async fn get_remaining_attempts(
+        &self,
+        ip_address: &str,
+        user_id: Option<&str>,
+    ) -> AppResult<usize> {
+        let key = format!("{}:{}", ip_address, user_id.unwrap_or("unknown"));
+        let lockout_duration = Duration::from_secs(900); // 15 minutes
+        let max_attempts = self.config.brute_force_threshold;
+
+        let attempts_map = self.login_attempts.read().await;
+        if let Some(user_attempts) = attempts_map.get(&key) {
+            let now = SystemTime::now();
+            let cutoff = now - lockout_duration;
+            let recent_attempts = user_attempts.iter().filter(|&&time| time > cutoff).count();
+            Ok(max_attempts.saturating_sub(recent_attempts))
+        } else {
+            Ok(max_attempts)
+        }
     }
 
     /// Calculate anomaly score for an event

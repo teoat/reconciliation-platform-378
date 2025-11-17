@@ -16,6 +16,17 @@ import { DollarSign } from 'lucide-react'
 import { FileText } from 'lucide-react'
 import { X } from 'lucide-react'
 import { useData } from '../components/DataProvider'
+import type { Project } from '@/types/backend-aligned'
+import type { ReconciliationData, CashflowData } from '../components/data/types'
+import type { ReconciliationRecord } from '@/services/dataManagement/types'
+
+// Extended type for records that may have direct properties or nested in sources
+type ExtendedReconciliationRecord = ReconciliationRecord & {
+  amount?: number;
+  description?: string;
+  date?: string;
+  category?: string;
+}
 
 // AI Discrepancy Detection Interfaces
 interface AIDiscrepancyDetectionData {
@@ -64,7 +75,7 @@ interface AIPrediction {
   modelId: string
   input: Record<string, unknown>
   output: {
-    prediction: any
+    prediction: unknown
     confidence: number
     probabilities: Record<string, number>
     explanation: string
@@ -76,7 +87,7 @@ interface AIPrediction {
 
 
 interface AIDiscrepancyDetectionProps {
-  project: any
+  project: Project
   onProgressUpdate?: (step: string) => void
 }
 
@@ -92,11 +103,11 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
   const [filterSeverity, setFilterSeverity] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
 
-  const generateAIDetections = useCallback((reconciliationData: any, cashflowData: any): AIDiscrepancyDetectionData[] => {
+  const generateAIDetections = useCallback((reconciliationData: ReconciliationData, cashflowData: CashflowData): AIDiscrepancyDetectionData[] => {
     const detections: AIDiscrepancyDetectionData[] = []
 
     // Analyze reconciliation records for discrepancies
-    reconciliationData.records.forEach((record: any, index: number) => {
+    reconciliationData.records.forEach((record: ExtendedReconciliationRecord, index: number) => {
       if (record.status === 'discrepancy' && record.difference) {
         const detection: AIDiscrepancyDetectionData = {
           id: `ai-detection-${index}`,
@@ -130,7 +141,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
     })
 
     // Analyze cashflow data for anomalies
-    cashflowData.records.forEach((record: any, index: number) => {
+    cashflowData.records.forEach((record: ExtendedReconciliationRecord, index: number) => {
       if (record.amount > 5000000) { // High value transaction
         const detection: AIDiscrepancyDetectionData = {
           id: `ai-detection-cashflow-${index}`,
@@ -153,8 +164,8 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
             context: {
               amount: record.amount,
               description: record.description,
-              date: record.date,
-              category: record.category
+              date: record.date ?? '',
+              category: record.category ?? ''
             }
           }
         }
@@ -165,7 +176,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
     return detections
   }, [])
 
-  const generateAIPredictions = useCallback((reconciliationData: any): AIPrediction[] => {
+  const generateAIPredictions = useCallback((reconciliationData: ReconciliationData): AIPrediction[] => {
     // Generate predictions for next week
     const nextWeekPredictions = [
       {
@@ -174,7 +185,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
         type: 'reconciliation_accuracy',
         targetDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         input: {
-          historicalData: reconciliationData.metrics,
+          historicalData: reconciliationData.qualityMetrics,
           currentTrends: {
             accuracy: 94.2,
             throughput: 180,
@@ -406,6 +417,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
               <div className="w-full bg-secondary-200 rounded-full h-2">
                 <div
                   className="bg-primary-600 h-2 rounded-full transition-all duration-300"
+                  // Dynamic width for progress bar - acceptable inline style
                   style={{ width: `${analysisProgress}%` }}
                 />
               </div>
@@ -426,6 +438,8 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
               value={filterSeverity}
               onChange={(e) => setFilterSeverity(e.target.value)}
               className="input-field"
+              aria-label="Filter by severity"
+              title="Filter detections by severity level"
             >
               <option value="all">All Severities</option>
               <option value="low">Low</option>
@@ -436,6 +450,8 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
+              aria-label="Filter by type"
+              title="Filter detections by type"
               className="input-field"
             >
               <option value="all">All Types</option>
@@ -555,6 +571,8 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
               <button
                 onClick={() => setShowDetectionModal(false)}
                 className="text-secondary-400 hover:text-secondary-600"
+                aria-label="Close detection details modal"
+                title="Close"
               >
                 <X className="w-6 h-6" />
               </button>

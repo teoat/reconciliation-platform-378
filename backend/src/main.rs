@@ -39,7 +39,7 @@ async fn main() -> std::io::Result<()> {
 
     // Load configuration (initial load from env - needed for database connection)
     log::info!("Loading configuration...");
-    let mut config = match Config::from_env() {
+    let config = match Config::from_env() {
         Ok(cfg) => {
             log::info!("Configuration loaded successfully from environment");
             cfg

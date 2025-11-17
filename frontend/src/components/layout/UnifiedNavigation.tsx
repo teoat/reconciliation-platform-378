@@ -57,14 +57,22 @@ const UnifiedNavigation: React.FC<UnifiedNavigationProps> = ({ className = '' })
           {/* Logo */}
           <div className="flex items-center">
             <div className="flex-shrink-0 flex items-center">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center cursor-pointer" onClick={() => navigate('/')}>
+              <button
+                onClick={() => navigate('/')}
+                className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center cursor-pointer"
+                aria-label="Go to home page"
+              >
                 <span className="text-white font-bold text-sm">R</span>
-              </div>
+              </button>
               <div className="ml-3">
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900 cursor-pointer" onClick={() => navigate('/')}>
+                <button
+                  onClick={() => navigate('/')}
+                  className="text-lg sm:text-xl font-bold text-gray-900 cursor-pointer"
+                  aria-label="Reconciliation Platform - Go to home"
+                >
                   <span className="hidden sm:inline">Reconciliation Platform</span>
                   <span className="sm:hidden">RP</span>
-                </h1>
+                </button>
               </div>
             </div>
           </div>

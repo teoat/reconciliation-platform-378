@@ -2,6 +2,15 @@ import React, { useState } from 'react';
 import { FileText, CheckCircle, AlertCircle, Printer, Download, TrendingUp } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
+import { usePageOrchestration } from '../hooks/usePageOrchestration';
+import {
+  summaryPageMetadata,
+  getSummaryOnboardingSteps,
+  getSummaryPageContext,
+  getSummaryWorkflowState,
+  registerSummaryGuidanceHandlers,
+  getSummaryGuidanceContent,
+} from '../orchestration/pages/SummaryPageOrchestration';
 
 // Interfaces (shared with main index.tsx)
 export interface PageConfig {
@@ -241,6 +250,33 @@ const SummaryPageContent: React.FC = () => {
   const [data] = useState<Record<string, unknown> | null>(null);
   const [showExportModal, setShowExportModal] = useState(false);
   const [exportFormat, setExportFormat] = useState<'csv' | 'pdf' | 'json'>('csv');
+
+  // Page Orchestration with Frenly AI
+  const {
+    updatePageContext,
+    trackFeatureUsage,
+    trackFeatureError,
+  } = usePageOrchestration({
+    pageMetadata: summaryPageMetadata,
+    getPageContext: () =>
+      getSummaryPageContext(
+        undefined, // projectId
+        data ? Number((data.reconciliationSummary as Record<string, unknown>)?.totalRecords ?? 0) : 0,
+        0, // exportedReportsCount
+        undefined // projectName
+      ),
+    getOnboardingSteps: () =>
+      getSummaryOnboardingSteps(
+        data !== null,
+        false // hasExportedData
+      ),
+    getWorkflowState: () => getSummaryWorkflowState(),
+    registerGuidanceHandlers: () => registerSummaryGuidanceHandlers(
+      () => setShowExportModal(true),
+      () => setShowExportModal(true)
+    ),
+    getGuidanceContent: (topic) => getSummaryGuidanceContent(topic),
+  });
 
   const config: PageConfig = {
     title: 'Summary & Export',

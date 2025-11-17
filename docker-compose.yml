@@ -156,6 +156,7 @@ services:
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
       UPLOAD_PATH: /app/uploads
       ENV: production
+      DISABLE_AUTH: ${DISABLE_AUTH:-false}
       RUST_LOG: warn,reconciliation_backend=info
       CUSTOM_CSP: "default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:2000 ws://localhost:2000 http://localhost:1000 ws://localhost:1000; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
       WORKER_THREADS: 4

@@ -72,8 +72,8 @@ pub struct Translation {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TranslationRequest {
     pub text: String,
-    pub source_language: String,
-    pub target_language: String,
+    pub from: String,
+    pub to: String,
     pub context: Option<String>,
     pub domain: Option<String>,
 }
@@ -635,7 +635,7 @@ impl InternationalizationService {
         // In a real implementation, this would use a translation service like Google Translate, DeepL, etc.
         // For now, we'll simulate this with a simple lookup
         
-        let cache_key = format!("{}:{}:{}", request.source_language, request.target_language, request.text);
+        let cache_key = format!("{}:{}:{}", request.from, request.to, request.text);
         
         // Check cache first
         {
@@ -644,15 +644,15 @@ impl InternationalizationService {
                 return Ok(TranslationResponse {
                     translated_text: cached_translation.clone(),
                     confidence: 0.9,
-                    source_language: request.source_language.clone(),
-                    target_language: request.target_language.clone(),
+                    source_language: request.from.clone(),
+                    target_language: request.to.clone(),
                     alternatives: vec![],
                 });
             }
         }
 
         // Simulate translation (in real implementation, call external service)
-        let translated_text = match request.target_language.as_str() {
+        let translated_text = match request.to.as_str() {
             "es" => match request.text.as_str() {
                 "Welcome" => "Bienvenido".to_string(),
                 "Login" => "Iniciar sesión".to_string(),
@@ -688,8 +688,8 @@ impl InternationalizationService {
         Ok(TranslationResponse {
             translated_text,
             confidence: 0.8,
-            source_language: request.source_language,
-            target_language: request.target_language,
+            source_language: request.from,
+            target_language: request.to,
             alternatives: vec![],
         })
     }
@@ -939,8 +939,8 @@ mod tests {
         // Test text translation
         let request = TranslationRequest {
             text: "Welcome".to_string(),
-            source_language: "en".to_string(),
-            target_language: "es".to_string(),
+            from: "en".to_string(),
+            to: "es".to_string(),
             context: None,
             domain: None,
         };

@@ -386,9 +386,11 @@ impl ApiVersioningService {
         let versions = self.versions.read().await;
         let endpoint_versions = self.endpoint_versions.read().await;
 
-        let mut stats = VersionStats::default();
-        stats.total_versions = versions.len() as u32;
-        stats.total_endpoints = endpoint_versions.len() as u32;
+        let mut stats = VersionStats {
+            total_versions: versions.len() as u32,
+            total_endpoints: endpoint_versions.len() as u32,
+            ..Default::default()
+        };
 
         for version in versions.values() {
             match version.status {

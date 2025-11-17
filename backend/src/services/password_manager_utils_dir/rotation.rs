@@ -2,7 +2,7 @@
 //!
 //! Handles automatic rotation of passwords based on rotation intervals.
 
-use chrono::{DateTime, Utc};
+// DateTime and Utc not used in this module
 use std::sync::Arc;
 use tokio::time::{interval, Duration};
 

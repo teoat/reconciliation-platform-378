@@ -98,7 +98,7 @@ class OnboardingService {
       const deviceType = /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop';
 
       await apiClient.makeRequest(
-        '/api/onboarding/devices',
+        '/onboarding/devices',
         {
           method: 'POST',
           body: JSON.stringify({
@@ -177,7 +177,7 @@ class OnboardingService {
       };
 
       await apiClient.makeRequest(
-        '/api/onboarding/progress',
+        '/onboarding/progress',
         {
           method: 'POST',
           body: JSON.stringify(request),
@@ -219,7 +219,7 @@ class OnboardingService {
             device_id?: string;
             synced_at: string;
           }>(
-            `/api/onboarding/progress?type=${type}`,
+            `/onboarding/progress?type=${type}`,
             { method: 'GET' }
           );
 

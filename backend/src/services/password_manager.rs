@@ -562,11 +562,8 @@ impl PasswordManager {
                     log::error!("Database error inserting password entry '{}': {} (Error kind: {:?})", 
                         entry.name, e, e);
                     // Provide more context for debugging
-                    match &e {
-                        diesel::result::Error::DatabaseError(kind, info) => {
-                            log::error!("Database constraint/error details: {:?}, {:?}", kind, info);
-                        }
-                        _ => {}
+                    if let diesel::result::Error::DatabaseError(kind, info) = &e {
+                        log::error!("Database constraint/error details: {:?}, {:?}", kind, info);
                     }
                     AppError::Database(e)
                 })?;
@@ -603,7 +600,7 @@ impl PasswordManager {
         let entries = password_entries::table
             .order_by(password_entries::name)
             .load::<PasswordEntry>(&mut conn)
-            .map_err(|e| AppError::Database(e))?;
+            .map_err(AppError::Database)?;
         
         Ok(entries)
     }

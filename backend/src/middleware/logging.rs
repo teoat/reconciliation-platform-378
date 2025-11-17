@@ -273,7 +273,7 @@ fn mask_sensitive_data(data: &str, sensitive_patterns: &[String]) -> String {
     let mut masked = data.to_string();
 
     // Mask common PII patterns
-    let pii_patterns = vec![
+    let pii_patterns = [
         r"\b\d{3}-\d{2}-\d{4}\b",                               // SSN
         r"\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b",          // Credit card
         r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", // Email

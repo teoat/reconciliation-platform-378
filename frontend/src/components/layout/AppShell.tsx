@@ -35,13 +35,13 @@ export const AppShell: React.FC<AppShellProps> = ({
       <UnifiedNavigation />
       
       {/* Tier 1+: Progressive content loading */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main id="main-content" role="main" aria-label="Main content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {showSkeleton ? (
           <SkeletonDashboard />
         ) : (
           children
         )}
-      </div>
+      </main>
       
       {/* Tier 0: Notification system (always available) */}
       <NotificationSystem />

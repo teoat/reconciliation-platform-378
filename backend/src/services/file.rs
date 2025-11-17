@@ -440,14 +440,12 @@ impl FileService {
 
         // For security, limit preview to first 10 lines or 1KB
         let mut preview = String::new();
-        let mut lines = 0;
-        for line in content.lines() {
+        for (lines, line) in content.lines().enumerate() {
             if lines >= 10 || preview.len() + line.len() > 1024 {
                 break;
             }
             preview.push_str(line);
             preview.push('\n');
-            lines += 1;
         }
 
         // Remove trailing newline if present

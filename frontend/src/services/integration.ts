@@ -1,4 +1,6 @@
 // Integration and Export Services
+import type { Project } from '@/types/backend-aligned';
+
 export interface ExportOptions {
   format: 'csv' | 'excel' | 'pdf' | 'json'
   includeMetadata: boolean
@@ -8,11 +10,13 @@ export interface ExportOptions {
     start: string
     end: string
   }
-  filters?: {
-    status?: string[]
-    category?: string[]
-    department?: string[]
-  }
+  filters?: ProjectFilters
+}
+
+export interface ProjectFilters {
+  status?: string[]
+  category?: string[]
+  department?: string[]
 }
 
 export interface IntegrationConfig {
@@ -42,7 +46,7 @@ export interface SyncResult {
 
 export class ProjectExportService {
   static async exportProjects(
-    projects: any[], 
+    projects: Project[], 
     options: ExportOptions
   ): Promise<ExportResult> {
     try {
@@ -71,7 +75,7 @@ export class ProjectExportService {
     }
   }
 
-  private static filterProjects(projects: any[], filters?: any) {
+  private static filterProjects(projects: Project[], filters?: ProjectFilters): Project[] {
     if (!filters) return projects
     
     return projects.filter(project => {
@@ -88,7 +92,7 @@ export class ProjectExportService {
     })
   }
 
-  private static formatData(projects: any[], options: ExportOptions) {
+  private static formatData(projects: Project[], options: ExportOptions) {
     return projects.map(project => {
       const baseData = {
         id: project.id,
@@ -115,7 +119,7 @@ export class ProjectExportService {
 
       if (options.includeComments) {
         Object.assign(baseData, {
-          comments: project.comments?.map((c: any) => ({
+          comments: (project as unknown as { comments?: Array<{ userId: string; content: string; timestamp: string }> }).comments?.map((c) => ({
             user: c.userId,
             content: c.content,
             timestamp: c.timestamp
@@ -187,7 +191,7 @@ export class IntegrationService {
     return false
   }
 
-  static async syncWithCalendar(projects: any[]): Promise<SyncResult> {
+  static async syncWithCalendar(projects: Project[]): Promise<SyncResult> {
     // Simulate calendar sync
     const calendarIntegration = this.integrations.find(i => i.type === 'calendar' && i.enabled)
     if (!calendarIntegration) {
@@ -256,7 +260,7 @@ export class IntegrationService {
 }
 
 export class APIService {
-  static async getProjects(): Promise<any[]> {
+  static async getProjects(): Promise<Project[]> {
     // Simulate API call
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -265,7 +269,7 @@ export class APIService {
     })
   }
 
-  static async createProject(project: any): Promise<any> {
+  static async createProject(project: Partial<Project>): Promise<Project> {
     // Simulate API call
     return new Promise((resolve) => {
       setTimeout(() => {
@@ -274,7 +278,7 @@ export class APIService {
     })
   }
 
-  static async updateProject(id: string, updates: any): Promise<any> {
+  static async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
     // Simulate API call
     return new Promise((resolve) => {
       setTimeout(() => {

@@ -11,6 +11,41 @@ import { useToast } from '../hooks/useToast';
 import { logger } from '../services/logger';
 import { ReconciliationRecord } from '../types/backend-aligned';
 
+// Helper component for progress bar with proper ARIA attributes
+const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, title }) => {
+  const progressValue = Math.max(0, Math.min(100, progress ?? 0)); // Clamp between 0-100
+  const ariaLabel = `${title} progress: ${progressValue}%`;
+  return (
+    <div className="mt-4">
+      <div className="w-full bg-gray-200 rounded-full h-2">
+        <div
+          className="bg-blue-500 h-2 rounded-full"
+          // Dynamic width for progress bar - acceptable inline style
+          style={{ width: `${progressValue}%` }}
+          role="progressbar"
+          aria-label={ariaLabel}
+          // eslint-disable-next-line jsx-a11y/aria-proptypes
+          aria-valuenow={progressValue}
+          // eslint-disable-next-line jsx-a11y/aria-proptypes
+          aria-valuemin={0}
+          // eslint-disable-next-line jsx-a11y/aria-proptypes
+          aria-valuemax={100}
+        ></div>
+      </div>
+    </div>
+  );
+};
+
+import { usePageOrchestration } from '../hooks/usePageOrchestration';
+import {
+  adjudicationPageMetadata,
+  getAdjudicationOnboardingSteps,
+  getAdjudicationPageContext,
+  getAdjudicationWorkflowState,
+  registerAdjudicationGuidanceHandlers,
+  getAdjudicationGuidanceContent,
+} from '../orchestration/pages/AdjudicationPageOrchestration';
+
 // Interfaces (shared with main index.tsx)
 // Icon component props interface
 interface IconProps {
@@ -164,19 +199,10 @@ const BasePage: React.FC<BasePageProps> = ({
                 </div>
               </div>
               {stat.progress !== undefined && (
-                <div className="mt-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-500 h-2 rounded-full"
-                      style={{ width: `${stat.progress ?? 0}%` }}
-                      role="progressbar"
-                      aria-label={`${stat.title} progress: ${stat.progress}%`}
-                      aria-valuenow={stat.progress}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                    ></div>
-                  </div>
-                </div>
+                <ProgressBar
+                  progress={stat.progress}
+                  title={stat.title}
+                />
               )}
             </div>
           ))}
@@ -276,11 +302,54 @@ const AdjudicationPageContent: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [selectedRecord, setSelectedRecord] = useState<ReconciliationRecord | null>(null);
 
+  // Page Orchestration with Frenly AI
+  const {
+    updatePageContext,
+    trackFeatureUsage,
+    trackFeatureError,
+    trackUserAction,
+  } = usePageOrchestration({
+    pageMetadata: adjudicationPageMetadata,
+    getPageContext: () =>
+      getAdjudicationPageContext(
+        currentProject?.id,
+        records.length,
+        records.filter((r) => r.status === 'approved' || r.status === 'resolved').length,
+        records.filter((r) => r.status === 'pending').length,
+        currentProject?.name
+      ),
+    getOnboardingSteps: () =>
+      getAdjudicationOnboardingSteps(
+        records.length > 0,
+        records.filter((r) => r.status === 'approved' || r.status === 'resolved').length > 0
+      ),
+    getWorkflowState: () =>
+      getAdjudicationWorkflowState(
+        records.length,
+        records.filter((r) => r.status === 'approved' || r.status === 'resolved').length,
+        records.filter((r) => r.status === 'approved').length
+      ),
+    registerGuidanceHandlers: () => registerAdjudicationGuidanceHandlers(),
+    getGuidanceContent: (topic) => getAdjudicationGuidanceContent(topic),
+    onContextChange: (changes) => {
+      console.debug('Adjudication context changed:', changes);
+    },
+  });
+
   useEffect(() => {
     if (currentProject?.id) {
       handleRefresh();
     }
   }, [currentProject?.id]);
+
+  // Update context when records change
+  useEffect(() => {
+    updatePageContext({
+      matchesCount: records.length,
+      resolvedCount: records.filter((r) => r.status === 'approved' || r.status === 'resolved').length,
+      pendingCount: records.filter((r) => r.status === 'pending').length,
+    });
+  }, [records, updatePageContext]);
 
   const handleRefresh = async () => {
     if (!currentProject) {

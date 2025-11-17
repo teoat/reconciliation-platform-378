@@ -25,10 +25,8 @@ impl PasswordManager {
     /// Validates password strength with configurable requirements
     pub fn validate_password_strength(password: &str) -> AppResult<()> {
         // Common banned passwords list
-        let banned_passwords = vec![
-            "password", "12345678", "password123", "admin123", "qwerty123",
-            "welcome123", "letmein", "monkey", "dragon", "master",
-        ];
+        let banned_passwords = ["password", "12345678", "password123", "admin123", "qwerty123",
+            "welcome123", "letmein", "monkey", "dragon", "master"];
         
         let password_lower = password.to_lowercase();
         if banned_passwords.contains(&password_lower.as_str()) {

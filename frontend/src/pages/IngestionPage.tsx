@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Upload, FileText, Eye, Trash2 } from 'lucide-react';
 import { useData } from '../components/DataProvider';
 import { ApiService } from '../services/ApiService';
@@ -11,6 +11,41 @@ import { Modal } from '../components/ui/Modal';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
 import { LoadingSpinnerComponent, SkeletonText } from '../components/LoadingComponents';
 import { logger } from '../services/logger';
+
+// Helper component for progress bar with proper ARIA attributes
+const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, title }) => {
+  const progressValue = Math.max(0, Math.min(100, progress ?? 0)); // Clamp between 0-100
+  const ariaLabel = `${title} progress: ${progressValue}%`;
+  return (
+    <div className="mt-4">
+      <div className="w-full bg-gray-200 rounded-full h-2">
+        <div
+          className="bg-blue-500 h-2 rounded-full"
+          // Dynamic width for progress bar - acceptable inline style
+          style={{ width: `${progressValue}%` }}
+          role="progressbar"
+          aria-label={ariaLabel}
+          // eslint-disable-next-line jsx-a11y/aria-proptypes
+          aria-valuenow={progressValue}
+          // eslint-disable-next-line jsx-a11y/aria-proptypes
+          aria-valuemin={0}
+          // eslint-disable-next-line jsx-a11y/aria-proptypes
+          aria-valuemax={100}
+        ></div>
+      </div>
+    </div>
+  );
+};
+
+import { usePageOrchestration } from '../hooks/usePageOrchestration';
+import {
+  ingestionPageMetadata,
+  getIngestionOnboardingSteps,
+  getIngestionPageContext,
+  getIngestionWorkflowState,
+  registerIngestionGuidanceHandlers,
+  getIngestionGuidanceContent,
+} from '../orchestration/pages/IngestionPageOrchestration';
 
 // BasePage component (simplified for this extraction)
 interface BasePageProps {
@@ -96,19 +131,10 @@ const BasePage: React.FC<BasePageProps> = ({
                 </div>
               </div>
               {stat.progress !== undefined && (
-                <div className="mt-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-500 h-2 rounded-full"
-                      style={{ width: `${stat.progress}%` }}
-                      role="progressbar"
-                      aria-label={`${stat.title} progress: ${stat.progress}%`}
-                      aria-valuenow={stat.progress}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                    ></div>
-                  </div>
-                </div>
+                <ProgressBar
+                  progress={stat.progress}
+                  title={stat.title}
+                />
               )}
             </div>
           ))}
@@ -159,12 +185,63 @@ const IngestionPageContent: React.FC = () => {
   } | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
+
+  // Page Orchestration with Frenly AI
+  const {
+    updatePageContext,
+    trackFeatureUsage,
+    trackFeatureError,
+    trackUserAction,
+  } = usePageOrchestration({
+    pageMetadata: ingestionPageMetadata,
+    getPageContext: () =>
+      getIngestionPageContext(
+        currentProject?.id,
+        files.length,
+        files.filter((f) => f.status === 'completed').length,
+        processingStatus,
+        currentProject?.name
+      ),
+    getOnboardingSteps: () =>
+      getIngestionOnboardingSteps(
+        files.length > 0,
+        files.filter((f) => f.status === 'completed').length > 0
+      ),
+    getWorkflowState: () =>
+      getIngestionWorkflowState(
+        files.length,
+        files.filter((f) => f.status === 'completed').length,
+        processingStatus
+      ),
+    registerGuidanceHandlers: () => registerIngestionGuidanceHandlers(),
+    getGuidanceContent: (topic) => getIngestionGuidanceContent(topic),
+    onContextChange: (changes) => {
+      console.debug('Ingestion context changed:', changes);
+    },
+  });
+
+  // Update context when files change
+  useEffect(() => {
+    updatePageContext({
+      uploadedFilesCount: files.length,
+      validatedFilesCount: files.filter((f) => f.status === 'completed').length,
+      processingStatus: files.some((f) => f.status === 'processing')
+        ? 'processing'
+        : files.every((f) => f.status === 'completed' || f.status === 'error')
+          ? 'completed'
+          : 'idle',
+    });
+  }, [files, updatePageContext]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = event.target.files;
     if (!selectedFiles || !currentProject) return;
 
     setIsUploading(true);
+    trackFeatureUsage('file-upload', 'upload-started', { fileCount: selectedFiles.length });
+    trackUserAction('file-upload', 'upload-button');
+
     try {
       const uploadedFiles: UploadedFile[] = [];
       for (let i = 0; i < selectedFiles.length; i++) {
@@ -190,6 +267,8 @@ const IngestionPageContent: React.FC = () => {
       }
       setFiles((prev) => [...prev, ...uploadedFiles]);
       toast.success(`${uploadedFiles.length} file(s) uploaded successfully`);
+      trackFeatureUsage('file-upload', 'upload-success', { fileCount: uploadedFiles.length });
+      setProcessingStatus('processing');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to upload file';
       logger.error('Upload failed', {
@@ -197,6 +276,8 @@ const IngestionPageContent: React.FC = () => {
         projectId: currentProject?.id,
       });
       toast.error(errorMessage);
+      trackFeatureError('file-upload', error instanceof Error ? error : new Error(errorMessage));
+      setProcessingStatus('error');
     } finally {
       setIsUploading(false);
     }
@@ -238,13 +319,16 @@ const IngestionPageContent: React.FC = () => {
     if (!file) return;
 
     setIsDeleting(fileId);
+    trackFeatureUsage('file-delete', 'delete-started', { fileId });
     try {
       await ApiService.deleteDataSource(currentProject.id, fileId);
       setFiles((prev) => prev.filter((f) => f.id !== fileId));
       toast.success('File deleted successfully');
+      trackFeatureUsage('file-delete', 'delete-success', { fileId });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete file';
       toast.error(errorMessage);
+      trackFeatureError('file-delete', error instanceof Error ? error : new Error(errorMessage));
     } finally {
       setIsDeleting(null);
     }

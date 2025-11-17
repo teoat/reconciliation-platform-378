@@ -61,7 +61,13 @@ export interface PendingChange {
   id: string;
   page: keyof CrossPageData;
   action: 'create' | 'update' | 'delete';
-  data: IngestionData | ReconciliationData | AdjudicationData | AnalyticsData | SecurityData | ApiData;
+  data:
+    | IngestionData
+    | ReconciliationData
+    | AdjudicationData
+    | AnalyticsData
+    | SecurityData
+    | ApiData;
   timestamp: Date;
   retryCount: number;
 }
@@ -132,6 +138,7 @@ export interface ReconciliationData {
   records: ReconciliationRecord[];
   matchingResults: MatchingResult[];
   discrepancies: DiscrepancyRecord[];
+  metrics: ReconciliationMetrics;
   qualityMetrics: ReconciliationMetrics;
   lastUpdated: Date;
 }
@@ -428,4 +435,3 @@ export interface CashflowData {
   records: ReconciliationRecord[];
   lastUpdated: Date;
 }
-

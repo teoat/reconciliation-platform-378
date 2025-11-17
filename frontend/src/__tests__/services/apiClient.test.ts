@@ -4,6 +4,17 @@ import { apiClient } from '../../services/apiClient'
 // Mock fetch
 global.fetch = vi.fn()
 
+// Type definitions for mock fetch
+interface MockFetchResponse {
+  ok: boolean
+  json: () => Promise<unknown>
+}
+
+interface MockFetch {
+  mockResolvedValueOnce: (value: MockFetchResponse) => void
+  mockRejectedValueOnce: (error: Error) => void
+}
+
 describe('apiClient', () => {
   beforeEach(() => {
     vi.clearAllMocks()
@@ -15,12 +26,12 @@ describe('apiClient', () => {
     apiClient.setAuthToken(mockToken)
     
     const mockResponse = { data: { id: '1' } }
-    ;(global.fetch as any).mockResolvedValueOnce({
+    ;(global.fetch as unknown as MockFetch).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     })
 
-    const response = await apiClient.getProjects()
+    await apiClient.getProjects()
     
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/projects'),
@@ -38,7 +49,7 @@ describe('apiClient', () => {
       user: { id: '1', email: 'test@example.com' }
     }
     
-    ;(global.fetch as any).mockResolvedValueOnce({
+    ;(global.fetch as unknown as MockFetch).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     })
@@ -58,7 +69,7 @@ describe('apiClient', () => {
       user: { id: '1', email: 'test@example.com' }
     }
     
-    ;(global.fetch as any).mockResolvedValueOnce({
+    ;(global.fetch as unknown as MockFetch).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
     })
@@ -75,7 +86,7 @@ describe('apiClient', () => {
   })
 
   it('handles errors gracefully', async () => {
-    (global.fetch as any).mockRejectedValueOnce(
+    (global.fetch as unknown as MockFetch).mockRejectedValueOnce(
       new Error('Network error')
     )
 

@@ -2,12 +2,20 @@ import React, { useState, useEffect } from 'react';
 import { BarChart3, Target, CheckCircle, Clock, Users, PieChart } from 'lucide-react';
 import { apiClient } from '../services/apiClient';
 import { getErrorMessageFromApiError } from '../utils/errorExtraction';
+import { usePageOrchestration } from '../hooks/usePageOrchestration';
+import {
+  dashboardPageMetadata,
+  getDashboardOnboardingSteps,
+  getDashboardPageContext,
+  registerDashboardGuidanceHandlers,
+  getDashboardGuidanceContent,
+} from '../orchestration/pages/DashboardPageOrchestration';
 
 // Interfaces (shared with main index.tsx)
 export interface PageConfig {
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   path: string;
   showStats?: boolean;
   showFilters?: boolean;
@@ -17,7 +25,7 @@ export interface PageConfig {
 export interface StatsCard {
   title: string;
   value: string | number;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   color: string;
   trend?: {
     direction: 'up' | 'down' | 'neutral';
@@ -67,6 +75,7 @@ const BasePage: React.FC<BasePageProps> = ({ config, stats, loading, error, chil
                     <div className="w-full bg-gray-200 rounded-full h-2">
                       <div
                         className="bg-blue-500 h-2 rounded-full"
+                        // Dynamic width for progress bar - acceptable inline style
                         style={{ width: `${stat.progress}%` }}
                       ></div>
                     </div>
@@ -126,6 +135,33 @@ export const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Page Orchestration with Frenly AI
+  const {
+    updatePageContext,
+    trackFeatureUsage,
+    trackFeatureError,
+  } = usePageOrchestration({
+    pageMetadata: dashboardPageMetadata,
+    getPageContext: () =>
+      getDashboardPageContext(
+        dashboardData?.prioritized_projects?.length || 0,
+        dashboardData?.prioritized_projects?.filter((p) => p.status === 'active').length || 0,
+        dashboardData?.prioritized_projects?.filter((p) => p.status === 'completed').length || 0,
+        dashboardData?.user_metrics?.overall_score
+      ),
+    getOnboardingSteps: () =>
+      getDashboardOnboardingSteps(
+        (dashboardData?.prioritized_projects?.length || 0) > 0,
+        (dashboardData?.prioritized_projects?.filter((p) => p.status === 'completed').length || 0) > 0
+      ),
+    registerGuidanceHandlers: () => registerDashboardGuidanceHandlers(),
+    getGuidanceContent: (topic) => getDashboardGuidanceContent(topic),
+    onContextChange: (changes) => {
+      // Handle context changes if needed
+      console.debug('Dashboard context changed:', changes);
+    },
+  });
+
   useEffect(() => {
     fetchDashboardData();
   }, []);
@@ -133,15 +169,27 @@ export const DashboardPage: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      trackFeatureUsage('dashboard', 'data-load-started');
       const response = await apiClient.getDashboardData();
 
       if (response.error) {
-        setError(getErrorMessageFromApiError(response.error));
+        const errorMessage = getErrorMessageFromApiError(response.error);
+        setError(errorMessage);
+        trackFeatureError('dashboard', new Error(errorMessage));
       } else if (response.data) {
-        setDashboardData(response.data);
+        const data = response.data as DashboardData;
+        setDashboardData(data);
+        trackFeatureUsage('dashboard', 'data-load-success');
+        // Update context when data loads
+        updatePageContext({
+          projectsCount: data.prioritized_projects?.length || 0,
+          productivityScore: data.user_metrics?.overall_score,
+        });
       }
     } catch (err) {
-      setError('Failed to load dashboard data');
+      const error = err instanceof Error ? err : new Error('Failed to load dashboard data');
+      setError(error.message);
+      trackFeatureError('dashboard', error);
     } finally {
       setLoading(false);
     }
@@ -159,7 +207,7 @@ export const DashboardPage: React.FC = () => {
     ? [
         {
           title: 'Productivity Score',
-          value: `${Math.round(dashboardData.user_metrics?.overall_score * 100 || 0)}%`,
+          value: `${Math.round((dashboardData.user_metrics?.overall_score ?? 0) * 100)}%`,
           icon: Target,
           color: 'bg-blue-100 text-blue-600',
           trend: {
@@ -170,10 +218,10 @@ export const DashboardPage: React.FC = () => {
         },
         {
           title: 'Completion Rate',
-          value: `${Math.round(dashboardData.user_metrics?.project_completion_rate * 100 || 0)}%`,
+          value: `${Math.round((dashboardData.user_metrics?.project_completion_rate ?? 0) * 100)}%`,
           icon: CheckCircle,
           color: 'bg-green-100 text-green-600',
-          progress: dashboardData.user_metrics?.project_completion_rate * 100 || 0,
+          progress: (dashboardData.user_metrics?.project_completion_rate ?? 0) * 100,
         },
         {
           title: 'Avg Task Time',
@@ -242,6 +290,7 @@ export const DashboardPage: React.FC = () => {
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-blue-500 h-2 rounded-full"
+                          // Dynamic width for progress bar - acceptable inline style
                           style={{ width: `${typeof project.priority_score === 'number' ? project.priority_score * 100 : 0}%` }}
                         ></div>
                       </div>

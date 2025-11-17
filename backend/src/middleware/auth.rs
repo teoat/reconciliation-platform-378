@@ -146,6 +146,16 @@ where
         let state = self.state.clone();
 
         Box::pin(async move {
+            // TEMPORARY: Check if authentication is disabled via environment variable
+            if std::env::var("DISABLE_AUTH")
+                .unwrap_or_else(|_| "false".to_string())
+                .to_lowercase()
+                == "true"
+            {
+                log::warn!("⚠️  AUTHENTICATION DISABLED - This should only be used for development/testing!");
+                return service.call(req).await;
+            }
+
             // Check if path should be skipped
             if state
                 .config
