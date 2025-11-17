@@ -14,6 +14,7 @@ import { useAppSelector } from '../store/unifiedStore';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import StatusBadge from './ui/StatusBadge';
+import { PageMeta } from './seo/PageMeta';
 
 interface ApiIntegrationStatusProps {
   className?: string;
@@ -89,12 +90,19 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
   }, [isChecking, isHealthy]);
 
   return (
-    <div className={`space-y-4 ${className}`}>
-      {/* Connection Status */}
-      <Card>
-        <div className="p-4">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">API Integration Status</h3>
+    <>
+      <PageMeta
+        title="API Integration Status"
+        description="Monitor API integration status, connection health, and endpoint availability."
+        keywords="API, integration, status, health check, monitoring"
+      />
+      <main id="main-content" className={`space-y-4 ${className}`}>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">API Integration Status</h1>
+        {/* Connection Status */}
+        <Card>
+          <div className="p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">Connection Status</h3>
             <div className="flex items-center space-x-2">
               <Button size="sm" variant="outline" onClick={checkHealth} disabled={isChecking}>
                 <RefreshCw className={`h-4 w-4 mr-1 ${isChecking ? 'animate-spin' : ''}`} />
@@ -318,7 +326,8 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
           </div>
         </div>
       </Card>
-    </div>
+    </main>
+    </>
   );
 });
 

@@ -18,6 +18,7 @@ import { GitCompare } from 'lucide-react';
 import { apiClient } from '../services/apiClient';
 import { useWebSocketIntegration } from '../hooks/useWebSocketIntegration';
 import { MetricCard, MetricTabs } from './analytics';
+import { PageMeta } from './seo/PageMeta';
 
 // Lazy load chart components for better performance
 const LineChart = lazy(() => import('./charts').then((module) => ({ default: module.LineChart })));
@@ -361,13 +362,19 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   }
 
   return (
-    <div className="space-y-6" data-testid="analytics-dashboard">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h2>
-          <p className="text-gray-600">Real-time insights and performance metrics</p>
-        </div>
+    <>
+      <PageMeta
+        title="Analytics"
+        description="Comprehensive analytics and insights for reconciliation projects and data trends."
+        keywords="analytics, insights, metrics, reconciliation, data trends"
+      />
+      <main id="main-content" className="space-y-6" data-testid="analytics-dashboard">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
+            <p className="text-gray-600">Real-time insights and performance metrics</p>
+          </div>
         <div className="flex items-center space-x-3">
           <select
             value={selectedTimeRange}
@@ -776,7 +783,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           Last updated: {new Date(dashboardMetrics.last_updated).toLocaleString()}
         </div>
       )}
-    </div>
+    </main>
+    </>
   );
 };
 

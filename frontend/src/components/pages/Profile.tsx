@@ -10,6 +10,7 @@ import { User } from 'lucide-react';
 import { Mail } from 'lucide-react';
 import { Lock } from 'lucide-react';
 import { Edit2 } from 'lucide-react';
+import { PageMeta } from '../seo/PageMeta';
 
 const Profile: React.FC = () => {
   const navigate = useNavigate();
@@ -147,17 +148,23 @@ const Profile: React.FC = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <div className="mb-6">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-          aria-label="Back to dashboard"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
+    <>
+      <PageMeta
+        title="Profile"
+        description="View and edit your user profile, account information, and preferences."
+        keywords="profile, account, user settings, preferences"
+      />
+      <main id="main-content" className="max-w-2xl mx-auto p-6">
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+            aria-label="Back to dashboard"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900">Profile</h1>
         <p className="text-gray-600 mt-2">Manage your profile information and password</p>
       </div>
 
@@ -391,7 +398,8 @@ const Profile: React.FC = () => {
           </div>
         </form>
       </div>
-    </div>
+    </main>
+    </>
   );
 };
 

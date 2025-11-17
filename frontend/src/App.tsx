@@ -1,5 +1,6 @@
 import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, ProtectedRoute } from './hooks/useAuth';
 import { ReduxProvider } from './store/ReduxProvider';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
@@ -73,14 +74,15 @@ function App() {
   }, []);
 
   return (
-    <ErrorBoundary>
-      <ReduxProvider>
-        <WebSocketProvider config={wsConfig}>
-          <AuthProvider>
-            <Router basename={import.meta.env.VITE_BASE_PATH || '/'}>
-              <div className="min-h-screen bg-gray-100">
-                <KeyboardShortcuts />
-                <ToastContainer />
+    <HelmetProvider>
+      <ErrorBoundary>
+        <ReduxProvider>
+          <WebSocketProvider config={wsConfig}>
+            <AuthProvider>
+              <Router basename={import.meta.env.VITE_BASE_PATH || '/'}>
+                <div className="min-h-screen bg-gray-100">
+                  <KeyboardShortcuts />
+                  <ToastContainer />
                 <Routes>
                   <Route path="/login" element={<AuthPage />} />
                   <Route
@@ -268,6 +270,7 @@ function App() {
         </WebSocketProvider>
       </ReduxProvider>
     </ErrorBoundary>
+    </HelmetProvider>
   );
 }
 

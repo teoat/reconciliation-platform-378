@@ -5,6 +5,7 @@ import { apiClient } from '../../services/apiClient'
 import { Button } from '../ui/Button'
 import { useToast } from '../../hooks/useToast'
 import { ArrowLeft, Save } from 'lucide-react'
+import { PageMeta } from '../seo/PageMeta'
 
 const ProjectCreate: React.FC = () => {
   const navigate = useNavigate()
@@ -51,16 +52,22 @@ const ProjectCreate: React.FC = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <div className="mb-6">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900">Create New Project</h1>
+    <>
+      <PageMeta
+        title="Create Project"
+        description="Create a new reconciliation project with custom settings and configurations."
+        keywords="project, create, reconciliation, new project"
+      />
+      <main id="main-content" className="max-w-2xl mx-auto p-6">
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900">Create New Project</h1>
         <p className="text-gray-600 mt-2">Create a new reconciliation project</p>
       </div>
 
@@ -142,7 +149,8 @@ const ProjectCreate: React.FC = () => {
           </Button>
         </div>
       </form>
-    </div>
+    </main>
+    </>
   )
 }
 

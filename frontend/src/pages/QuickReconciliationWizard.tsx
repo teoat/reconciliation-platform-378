@@ -21,6 +21,7 @@ import Card from '../components/ui/Card'
 import StatusBadge from '../components/ui/StatusBadge'
 import { apiClient, Project } from '../services/apiClient'
 import ProgressBar from '../components/ui/ProgressBar'
+import { PageMeta } from '../components/seo/PageMeta'
 
 interface WizardStep {
   id: number
@@ -331,9 +332,16 @@ const QuickReconciliationWizard: React.FC = () => {
   const progress = (currentStep / steps.length) * 100
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Progress Bar */}
-      <div className="mb-8">
+    <>
+      <PageMeta
+        title="Quick Reconciliation"
+        description="Quickly create and process reconciliation jobs with our step-by-step wizard."
+        keywords="reconciliation, wizard, quick start, data matching"
+      />
+      <main id="main-content" className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Quick Reconciliation</h1>
+        {/* Progress Bar */}
+        <div className="mb-8">
         <ProgressBar 
           value={progress}
           variant="success"
@@ -399,7 +407,8 @@ const QuickReconciliationWizard: React.FC = () => {
           )}
         </div>
       </Card>
-    </div>
+    </main>
+    </>
   )
 }
 

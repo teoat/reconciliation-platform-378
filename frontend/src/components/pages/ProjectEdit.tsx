@@ -5,6 +5,7 @@ import { useProjects } from '../../hooks/useApi'
 import { Button } from '../ui/Button'
 import { useToast } from '../../hooks/useToast'
 import { ArrowLeft, Save } from 'lucide-react'
+import { PageMeta } from '../seo/PageMeta'
 
 const ProjectEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>()
@@ -115,16 +116,22 @@ const ProjectEdit: React.FC = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
-      <div className="mb-6">
-        <button
-          onClick={() => navigate(id ? `/projects/${id}` : '/')}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Project
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900">Edit Project</h1>
+    <>
+      <PageMeta
+        title={`Edit Project ${id || ''}`}
+        description="Edit project settings, configurations, and reconciliation parameters."
+        keywords="project, edit, update, reconciliation, settings"
+      />
+      <main id="main-content" className="max-w-2xl mx-auto p-6">
+        <div className="mb-6">
+          <button
+            onClick={() => navigate(id ? `/projects/${id}` : '/')}
+            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Project
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900">Edit Project</h1>
         <p className="text-gray-600 mt-2">Update project information</p>
       </div>
 
@@ -206,7 +213,8 @@ const ProjectEdit: React.FC = () => {
           </Button>
         </div>
       </form>
-    </div>
+    </main>
+    </>
   )
 }
 

@@ -12,6 +12,7 @@ import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import { passwordSchema } from '../utils/passwordValidation'
 import { logger } from '../services/logger'
+import { PageMeta } from '../components/seo/PageMeta'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -232,16 +233,22 @@ const AuthPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <div className="bg-white rounded-lg shadow-xl p-8">
-          <div className="text-center mb-8">
-            <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
-              <Lock className="w-8 h-8 text-blue-600" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">
-              {isRegistering ? 'Create Account' : 'Welcome Back'}
-            </h1>
+    <>
+      <PageMeta
+        title="Login"
+        description="Sign in to access the reconciliation platform and manage your projects."
+        keywords="login, sign in, authentication, reconciliation platform"
+      />
+      <main id="main-content" className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="max-w-md w-full">
+          <div className="bg-white rounded-lg shadow-xl p-8">
+            <div className="text-center mb-8">
+              <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mb-4">
+                <Lock className="w-8 h-8 text-blue-600" />
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                {isRegistering ? 'Create Account' : 'Sign In'}
+              </h1>
             <p className="text-gray-600">
               {isRegistering ? 'Sign up to access the Reconciliation Platform' : 'Sign in to access the Reconciliation Platform'}
             </p>
@@ -525,7 +532,8 @@ const AuthPage: React.FC = () => {
           </div>
         </div>
       </div>
-    </div>
+    </main>
+    </>
   )
 }
 

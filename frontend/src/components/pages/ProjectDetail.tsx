@@ -130,20 +130,26 @@ const ProjectDetail: React.FC = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6">
-      {/* Header */}
-      <div className="mb-6">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Dashboard
-        </button>
-        
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">{project.name}</h1>
+    <>
+      <PageMeta
+        title={`Project ${project?.name || id || ''}`}
+        description="View project details, reconciliation status, and manage project settings."
+        keywords="project, details, reconciliation, status"
+      />
+      <main id="main-content" className="max-w-7xl mx-auto p-6">
+        {/* Header */}
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center text-gray-600 hover:text-gray-900 mb-4"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </button>
+          
+          <div className="flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">{project.name}</h1>
             {project.description && (
               <p className="text-gray-600 mb-4">{project.description}</p>
             )}
@@ -379,7 +385,8 @@ const ProjectDetail: React.FC = () => {
           </div>
         )}
       </div>
-    </div>
+    </main>
+    </>
   )
 }
 

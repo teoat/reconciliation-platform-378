@@ -9,6 +9,7 @@ import { SkipLink, ARIALiveRegion } from '../ui/Accessibility'
 import { OnboardingAnalyticsDashboard } from '../onboarding/OnboardingAnalyticsDashboard'
 import { FeatureGate } from '../ui/FeatureGate'
 import { ArrowLeft, Save, Bell, Shield, Palette, CheckCircle } from 'lucide-react'
+import { PageMeta } from '../seo/PageMeta'
 
 interface SettingsData {
   notifications: {
@@ -206,20 +207,26 @@ const Settings: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6" id="main-content">
-      <SkipLink />
-      <ARIALiveRegion message={liveMessage} priority="polite" />
-      <div className="mb-6">
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center text-gray-600 hover:text-gray-900 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-          aria-label="Back to dashboard"
-          type="button"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" aria-hidden="true" />
-          <span>Back to Dashboard</span>
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+    <>
+      <PageMeta
+        title="Settings"
+        description="Configure application settings, preferences, and account options."
+        keywords="settings, preferences, configuration, account"
+      />
+      <main id="main-content" className="max-w-4xl mx-auto p-6">
+        <SkipLink />
+        <ARIALiveRegion message={liveMessage} priority="polite" />
+        <div className="mb-6">
+          <button
+            onClick={() => navigate('/')}
+            className="flex items-center text-gray-600 hover:text-gray-900 mb-4 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+            aria-label="Back to dashboard"
+            type="button"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" aria-hidden="true" />
+            <span>Back to Dashboard</span>
+          </button>
+          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
         <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
       </div>
 
@@ -522,7 +529,8 @@ const Settings: React.FC = () => {
           </Button>
         </div>
       </div>
-    </div>
+    </main>
+    </>
   )
 }
 

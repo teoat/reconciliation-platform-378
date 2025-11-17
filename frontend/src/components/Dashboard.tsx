@@ -5,6 +5,7 @@ import { useProjects } from '../hooks/useApi';
 import { apiClient } from '../services/apiClient';
 import { logger } from '../services/logger';
 import Button from './ui/Button';
+import { PageMeta } from './seo/PageMeta';
 
 const Dashboard: React.FC = () => {
   const { isHealthy, isChecking, lastChecked } = useHealthCheck();
@@ -16,8 +17,14 @@ const Dashboard: React.FC = () => {
   }, [fetchProjects]);
 
   return (
-    <div className="max-w-6xl mx-auto" data-testid="dashboard">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Reconciliation Platform Dashboard</h1>
+    <>
+      <PageMeta
+        title="Dashboard"
+        description="View and manage reconciliation projects, track progress, and analyze data in real-time."
+        keywords="reconciliation, dashboard, projects, analytics"
+      />
+      <main id="main-content" className="max-w-6xl mx-auto" data-testid="dashboard">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">Reconciliation Platform Dashboard</h1>
 
       {/* System Status */}
       <div className="bg-white rounded-lg shadow-md p-6 mb-6">
@@ -194,7 +201,8 @@ const Dashboard: React.FC = () => {
           </button>
         </div>
       </div>
-    </div>
+    </main>
+    </>
   );
 };
 
