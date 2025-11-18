@@ -20,27 +20,22 @@ import {
   fetchReconciliationRecords,
   runMatching,
   fetchDashboardData,
-  createGetThunk,
-  createPostThunk,
-  createPutThunk,
-  createDeleteThunk,
-  createFileUploadThunk,
-  createPaginatedListThunk,
 } from './asyncThunkUtils';
-import type { User } from '../types/backend-aligned';
-import type { Project } from '../types/backend-aligned';
+// Import types from backend-aligned (will be re-exported for compatibility)
+import type { User as BackendUser } from '../types/backend-aligned';
+import type { Project as BackendProject } from '../types/backend-aligned';
 import type { UploadedFile } from '../types/backend-aligned';
-import type { ReconciliationRecord } from '../types/index';
-import type { ReconciliationJob } from '../types/backend-aligned';
+import type { ReconciliationRecord as BackendReconciliationRecord } from '../types/index';
+import type { ReconciliationJob as BackendReconciliationJob } from '../types/backend-aligned';
 import type { DashboardData } from '../types/backend-aligned';
-import type { Notification } from '../types/backend-aligned';
+import type { Notification as BackendNotification } from '../types/backend-aligned';
 
 // ============================================================================
 // UNIFIED STATE INTERFACES
 // ============================================================================
 
 export interface AuthState {
-  user: User | null;
+  user: BackendUser | null;
   token: string | null;
   refreshToken: string | null;
   isAuthenticated: boolean;
@@ -51,8 +46,8 @@ export interface AuthState {
 }
 
 export interface ProjectsState {
-  projects: Project[];
-  selectedProject: Project | null;
+  projects: BackendProject[];
+  selectedProject: BackendProject | null;
   isLoading: boolean;
   error: string | null;
   pagination: {
@@ -74,8 +69,9 @@ export interface DataIngestionState {
 }
 
 export interface ReconciliationState {
-  records: ReconciliationRecord[];
-  jobs: ReconciliationJob[];
+  records: BackendReconciliationRecord[];
+  jobs: BackendReconciliationJob[];
+  matches?: ReconciliationMatch[]; // Compatibility field for old store structure
   config: {
     matchingRules: string[];
     tolerance: number;
@@ -110,7 +106,7 @@ export interface AnalyticsState {
 export interface UIState {
   sidebarOpen: boolean;
   theme: 'light' | 'dark' | 'system';
-  notifications: Notification[];
+  notifications: BackendNotification[];
   modals: {
     createProject: boolean;
     exportData: boolean;
@@ -179,6 +175,7 @@ const initialDataIngestionState: DataIngestionState = {
 const initialReconciliationState: ReconciliationState = {
   records: [],
   jobs: [],
+  matches: [], // Compatibility field for old store structure
   config: {
     matchingRules: ['amount', 'date', 'description'],
     tolerance: 0.01,
@@ -240,7 +237,7 @@ export const authSlice = createSlice({
   name: 'auth',
   initialState: initialAuthState,
   reducers: {
-    setUser: (state, action: PayloadAction<User | null>) => {
+    setUser: (state, action: PayloadAction<BackendUser | null>) => {
       state.user = action.payload;
       state.isAuthenticated = !!action.payload;
       state.lastLogin = action.payload ? new Date().toISOString() : null;
@@ -270,6 +267,29 @@ export const authSlice = createSlice({
     setSessionExpiry: (state, action: PayloadAction<string>) => {
       state.sessionExpiry = action.payload;
     },
+    // Compatibility actions for useApiEnhanced.ts
+    loginStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    loginSuccess: (state, action: PayloadAction<BackendUser>) => {
+      state.user = action.payload;
+      state.isAuthenticated = true;
+      state.isLoading = false;
+      state.error = null;
+      state.lastLogin = new Date().toISOString();
+    },
+    loginFailure: (state, action: PayloadAction<string>) => {
+      state.user = null;
+      state.isAuthenticated = false;
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    updateUser: (state, action: PayloadAction<Partial<BackendUser>>) => {
+      if (state.user) {
+        state.user = { ...state.user, ...action.payload };
+      }
+    },
   },
   extraReducers: (builder) => {
     // Login
@@ -280,9 +300,10 @@ export const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-        state.refreshToken = action.payload.refreshToken;
+        const payload = action.payload as { user: BackendUser; token: string; refreshToken?: string };
+        state.user = payload.user;
+        state.token = payload.token;
+        state.refreshToken = payload.refreshToken || null;
         state.isAuthenticated = true;
         state.error = null;
         state.lastLogin = new Date().toISOString();
@@ -299,9 +320,10 @@ export const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload.user;
-        state.token = action.payload.token;
-        state.refreshToken = action.payload.refreshToken;
+        const payload = action.payload as { user: BackendUser; token: string; refreshToken?: string };
+        state.user = payload.user;
+        state.token = payload.token;
+        state.refreshToken = payload.refreshToken || null;
         state.isAuthenticated = true;
         state.error = null;
         state.lastLogin = new Date().toISOString();
@@ -317,7 +339,7 @@ export const authSlice = createSlice({
       })
       .addCase(getCurrentUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.user = action.payload;
+        state.user = action.payload as BackendUser;
         state.isAuthenticated = true;
       })
       .addCase(getCurrentUser.rejected, (state, action) => {
@@ -343,7 +365,7 @@ export const projectsSlice = createSlice({
   name: 'projects',
   initialState: initialProjectsState,
   reducers: {
-    setSelectedProject: (state, action: PayloadAction<Project | null>) => {
+    setSelectedProject: (state, action: PayloadAction<BackendProject | null>) => {
       state.selectedProject = action.payload;
     },
     setSearchQuery: (state, action: PayloadAction<string>) => {
@@ -361,6 +383,21 @@ export const projectsSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    // Compatibility actions for useApiEnhanced.ts
+    fetchProjectsStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    fetchProjectsSuccess: (state, action: PayloadAction<{ projects: BackendProject[]; pagination: ProjectsState['pagination'] }>) => {
+      state.projects = action.payload.projects;
+      state.pagination = action.payload.pagination;
+      state.isLoading = false;
+      state.error = null;
+    },
+    fetchProjectsFailure: (state, action: PayloadAction<string>) => {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
   },
   extraReducers: (builder) => {
     // Fetch Projects
@@ -371,9 +408,9 @@ export const projectsSlice = createSlice({
       })
       .addCase(fetchProjects.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.projects = action.payload.data || action.payload.projects || [];
-        state.pagination =
-          action.payload.metadata?.pagination || action.payload.pagination || state.pagination;
+        const payload = action.payload as { data?: BackendProject[]; projects?: BackendProject[]; metadata?: { pagination?: ProjectsState['pagination'] }; pagination?: ProjectsState['pagination'] };
+        state.projects = payload.data || payload.projects || [];
+        state.pagination = payload.metadata?.pagination || payload.pagination || state.pagination;
         state.error = null;
       })
       .addCase(fetchProjects.rejected, (state, action) => {
@@ -382,23 +419,25 @@ export const projectsSlice = createSlice({
       })
       // Create Project
       .addCase(createProject.fulfilled, (state, action) => {
-        state.projects.unshift(action.payload);
+        state.projects.unshift(action.payload as BackendProject);
         state.pagination.total += 1;
       })
       // Update Project
       .addCase(updateProject.fulfilled, (state, action) => {
-        const index = state.projects.findIndex((p) => p.id === action.payload.id);
+        const project = action.payload as BackendProject;
+        const index = state.projects.findIndex((p) => p.id === project.id);
         if (index !== -1) {
-          state.projects[index] = action.payload;
+          state.projects[index] = project;
         }
-        if (state.selectedProject?.id === action.payload.id) {
-          state.selectedProject = action.payload;
+        if (state.selectedProject?.id === project.id) {
+          state.selectedProject = project;
         }
       })
       // Delete Project
       .addCase(deleteProject.fulfilled, (state, action) => {
-        state.projects = state.projects.filter((p) => p.id !== action.payload);
-        if (state.selectedProject?.id === action.payload) {
+        const projectId = action.payload as string;
+        state.projects = state.projects.filter((p) => p.id !== projectId);
+        if (state.selectedProject?.id === projectId) {
           state.selectedProject = null;
         }
         state.pagination.total -= 1;
@@ -420,6 +459,50 @@ export const dataIngestionSlice = createSlice({
     clearError: (state) => {
       state.error = null;
     },
+    // Compatibility actions for useApiEnhanced.ts (dataSourcesActions)
+    fetchDataSourcesStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    fetchDataSourcesSuccess: (state, action: PayloadAction<UploadedFile[]>) => {
+      state.uploadedFiles = action.payload || [];
+      state.isLoading = false;
+      state.error = null;
+    },
+    fetchDataSourcesFailure: (state, action: PayloadAction<string>) => {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    uploadFileStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+      state.uploadProgress = 0;
+    },
+    uploadFileSuccess: (state, action: PayloadAction<UploadedFile>) => {
+      state.uploadedFiles.unshift(action.payload);
+      state.uploadProgress = 100;
+      state.isLoading = false;
+      state.error = null;
+    },
+    uploadFileFailure: (state, action: PayloadAction<{ fileId: string; error: string }>) => {
+      state.isLoading = false;
+      state.error = action.payload.error;
+      state.uploadProgress = 0;
+    },
+    processFileStart: (state) => {
+      state.isLoading = true;
+    },
+    processFileSuccess: (state, action: PayloadAction<UploadedFile>) => {
+      const index = state.uploadedFiles.findIndex((f) => f.id === action.payload.id);
+      if (index !== -1) {
+        state.uploadedFiles[index] = action.payload;
+      }
+      state.isLoading = false;
+    },
+    processFileFailure: (state, action: PayloadAction<{ dataSourceId: string; error: string }>) => {
+      state.isLoading = false;
+      state.error = action.payload.error;
+    },
   },
   extraReducers: (builder) => {
     // Upload File
@@ -431,7 +514,15 @@ export const dataIngestionSlice = createSlice({
       })
       .addCase(uploadFile.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.uploadedFiles.unshift(action.payload);
+        // Convert FileUploadResponse to UploadedFile format if needed
+        const payload = action.payload as unknown;
+        if (payload && typeof payload === 'object') {
+          // Map the response to UploadedFile format
+          const file = payload as Partial<UploadedFile>;
+          if (file.id) {
+            state.uploadedFiles.unshift(file as UploadedFile);
+          }
+        }
         state.uploadProgress = 100;
         state.error = null;
       })
@@ -442,7 +533,7 @@ export const dataIngestionSlice = createSlice({
       })
       // Fetch Files
       .addCase(fetchUploadedFiles.fulfilled, (state, action) => {
-        state.uploadedFiles = action.payload;
+        state.uploadedFiles = (action.payload as UploadedFile[]) || [];
       });
   },
 });
@@ -489,7 +580,103 @@ export const reconciliationSlice = createSlice({
       const job = state.jobs.find((j) => j.id === action.payload.jobId);
       if (job) {
         job.status = 'failed';
-        job.error_message = action.payload.error;
+        // Note: error_message may not exist on type, but we'll set it for compatibility
+        (job as BackendReconciliationJob & { error_message?: string }).error_message = action.payload.error;
+      }
+    },
+    // Compatibility actions for useApiEnhanced.ts (reconciliationRecordsActions)
+    fetchRecordsStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    fetchRecordsSuccess: (state, action: PayloadAction<{ records: ReconciliationRecord[]; pagination?: { page: number; per_page: number; total: number; total_pages: number } }>) => {
+      state.records = action.payload.records;
+      state.isLoading = false;
+      state.error = null;
+    },
+    fetchRecordsFailure: (state, action: PayloadAction<string>) => {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    updateRecord: (state, action: PayloadAction<BackendReconciliationRecord>) => {
+      const record = action.payload;
+      const index = state.records.findIndex((r: BackendReconciliationRecord) => r.id === record.id);
+      if (index !== -1) {
+        state.records[index] = record;
+      }
+    },
+    // Compatibility actions for useApiEnhanced.ts (reconciliationMatchesActions)
+    fetchMatchesStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    fetchMatchesSuccess: (state, action: PayloadAction<{ matches: ReconciliationMatch[]; pagination?: { page: number; per_page: number; total: number; total_pages: number } }>) => {
+      if (!state.matches) {
+        state.matches = [];
+      }
+      state.matches = action.payload.matches;
+      state.isLoading = false;
+      state.error = null;
+    },
+    fetchMatchesFailure: (state, action: PayloadAction<string>) => {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    createMatch: (state, action: PayloadAction<ReconciliationMatch>) => {
+      if (!state.matches) {
+        state.matches = [];
+      }
+      state.matches.unshift(action.payload);
+    },
+    updateMatch: (state, action: PayloadAction<ReconciliationMatch>) => {
+      if (!state.matches) {
+        state.matches = [];
+      }
+      const index = state.matches.findIndex((m) => m.id === action.payload.id);
+      if (index !== -1) {
+        state.matches[index] = action.payload;
+      }
+    },
+    approveMatch: (state, action: PayloadAction<string>) => {
+      if (!state.matches) {
+        state.matches = [];
+      }
+      const match = state.matches.find((m) => m.id === action.payload);
+      if (match) {
+        match.status = 'approved';
+      }
+    },
+    rejectMatch: (state, action: PayloadAction<string>) => {
+      if (!state.matches) {
+        state.matches = [];
+      }
+      const match = state.matches.find((m) => m.id === action.payload);
+      if (match) {
+        match.status = 'rejected';
+      }
+    },
+    // Compatibility actions for useApiEnhanced.ts (reconciliationJobsActions)
+    fetchJobsStart: (state) => {
+      state.isLoading = true;
+      state.error = null;
+    },
+    fetchJobsSuccess: (state, action: PayloadAction<ReconciliationJob[]>) => {
+      state.jobs = action.payload;
+      state.isLoading = false;
+      state.error = null;
+    },
+    fetchJobsFailure: (state, action: PayloadAction<string>) => {
+      state.isLoading = false;
+      state.error = action.payload;
+    },
+    createJob: (state, action: PayloadAction<ReconciliationJob>) => {
+      state.jobs.unshift(action.payload);
+    },
+    startJob: (state, action: PayloadAction<string>) => {
+      const job = state.jobs.find((j) => j.id === action.payload);
+      if (job) {
+        job.status = 'running';
+        job.started_at = new Date().toISOString();
       }
     },
   },
@@ -502,7 +689,8 @@ export const reconciliationSlice = createSlice({
       })
       .addCase(fetchReconciliationRecords.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.records = action.payload.data || action.payload.records || [];
+        const payload = action.payload as { data?: BackendReconciliationRecord[]; records?: BackendReconciliationRecord[] };
+        state.records = payload.data || payload.records || [];
         state.error = null;
       })
       .addCase(fetchReconciliationRecords.rejected, (state, action) => {
@@ -518,7 +706,7 @@ export const reconciliationSlice = createSlice({
       .addCase(runMatching.fulfilled, (state, action) => {
         state.isLoading = false;
         state.matchingProgress = 100;
-        state.matchingResults = action.payload;
+        state.matchingResults = action.payload as Record<string, unknown> | null;
         state.error = null;
       })
       .addCase(runMatching.rejected, (state, action) => {
@@ -553,7 +741,7 @@ export const analyticsSlice = createSlice({
       })
       .addCase(fetchDashboardData.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.dashboardData = action.payload;
+        state.dashboardData = action.payload as DashboardData | null;
         state.lastUpdated = new Date().toISOString();
         state.error = null;
       })
@@ -581,7 +769,7 @@ export const uiSlice = createSlice({
     setTheme: (state, action: PayloadAction<'light' | 'dark' | 'system'>) => {
       state.theme = action.payload;
     },
-    addNotification: (state, action: PayloadAction<Notification>) => {
+    addNotification: (state, action: PayloadAction<BackendNotification>) => {
       state.notifications.unshift(action.payload);
     },
     removeNotification: (state, action: PayloadAction<string>) => {
@@ -607,17 +795,17 @@ export const uiSlice = createSlice({
     ) => {
       state.loadingStates[action.payload.key] = action.payload.loading;
     },
-    addError: (state, action: PayloadAction<{ message: string; timestamp: string }>) => {
+    addError: (state, action: PayloadAction<{ message: string; timestamp: string; id?: string; dismissed?: boolean }>) => {
       state.errors.push(action.payload);
     },
     dismissError: (state, action: PayloadAction<string>) => {
-      const error = state.errors.find((e) => e.id === action.payload);
+      const error = state.errors.find((e) => (e as { id?: string }).id === action.payload);
       if (error) {
-        error.dismissed = true;
+        (error as { dismissed?: boolean }).dismissed = true;
       }
     },
     removeError: (state, action: PayloadAction<string>) => {
-      state.errors = state.errors.filter((e) => e.id !== action.payload);
+      state.errors = state.errors.filter((e) => (e as { id?: string }).id !== action.payload);
     },
     setBreadcrumbs: (state, action: PayloadAction<Array<{ label: string; path: string }>>) => {
       state.breadcrumbs = action.payload;
@@ -757,36 +945,13 @@ export const reconciliationJobsActions = reconciliationSlice.actions; // Note: u
 export const notificationsActions = uiSlice.actions; // Note: notifications are in ui slice
 export const uiActions = uiSlice.actions;
 
-// Type exports for compatibility
-export interface User {
-  id: string;
-  email: string;
-  name: string;
-  firstName?: string;
-  lastName?: string;
-  role?: string;
-  permissions?: Record<string, boolean>;
-  preferences?: Record<string, unknown>;
-  isActive: boolean;
-  lastLogin?: string;
-  createdAt?: string;
-  updatedAt?: string;
-}
+// Type exports for compatibility - re-export backend-aligned types with aliases
+export type User = BackendUser;
+export type Project = BackendProject;
+export type ReconciliationJob = BackendReconciliationJob;
+export type Notification = BackendNotification;
 
-export interface Project {
-  id: string;
-  name: string;
-  description?: string;
-  status?: string;
-  type?: string;
-  ownerId?: string;
-  settings?: Record<string, unknown>;
-  data?: Record<string, unknown>;
-  analytics?: Record<string, unknown>;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
+// Additional compatibility types
 export interface DataSource {
   id: string;
   projectId: string;
@@ -807,21 +972,7 @@ export interface DataSource {
   updatedAt: string;
 }
 
-export interface ReconciliationRecord {
-  id: string;
-  projectId: string;
-  ingestionJobId: string;
-  externalId?: string;
-  status: string;
-  amount?: number;
-  transactionDate?: string;
-  description?: string;
-  sourceData: string;
-  matchingResults: string;
-  confidence?: number;
-  auditTrail: string;
-  createdAt: string;
-}
+export type ReconciliationRecord = BackendReconciliationRecord;
 
 export interface ReconciliationMatch {
   id: string;
@@ -836,36 +987,6 @@ export interface ReconciliationMatch {
   createdAt: string;
   updatedAt: string;
 }
-
-export interface ReconciliationJob {
-  id: string;
-  projectId: string;
-  name: string;
-  description?: string;
-  status: string;
-  startedAt?: string;
-  completedAt?: string;
-  createdBy: string;
-  createdAt: string;
-  updatedAt: string;
-  settings?: Record<string, unknown>;
-  confidenceThreshold?: number;
-  progress?: number;
-  totalRecords?: number;
-  processedRecords?: number;
-  matchedRecords?: number;
-  unmatchedRecords?: number;
-}
-export type Notification = {
-  id: string;
-  type: 'success' | 'error' | 'warning' | 'info';
-  title: string;
-  message: string;
-  timestamp: Date;
-  read: boolean;
-  persistent?: boolean;
-  actions?: Array<{ label: string; action: () => void; type: 'primary' | 'secondary' }>;
-};
 
 // Selectors
 export const selectAuth = (state: RootState) => state.auth;

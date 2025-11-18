@@ -25,11 +25,8 @@ const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, 
           style={{ width: `${progressValue}%` }}
           role="progressbar"
           aria-label={ariaLabel}
-          // eslint-disable-next-line jsx-a11y/aria-proptypes
           aria-valuenow={progressValue}
-          // eslint-disable-next-line jsx-a11y/aria-proptypes
           aria-valuemin={0}
-          // eslint-disable-next-line jsx-a11y/aria-proptypes
           aria-valuemax={100}
         ></div>
       </div>
@@ -217,7 +214,7 @@ const IngestionPageContent: React.FC = () => {
     registerGuidanceHandlers: () => registerIngestionGuidanceHandlers(),
     getGuidanceContent: (topic) => getIngestionGuidanceContent(topic),
     onContextChange: (changes) => {
-      console.debug('Ingestion context changed:', changes);
+      logger.debug('Ingestion context changed', { changes });
     },
   });
 

@@ -233,6 +233,43 @@ This script validates:
 - Backend `GOOGLE_CLIENT_ID` format (optional)
 - Backend `GOOGLE_CLIENT_SECRET` format (optional)
 
+### Playwright Diagnostic (Chrome DevTools)
+
+Comprehensive browser-based diagnostic using Playwright and Chrome DevTools Protocol:
+
+```bash
+# Option 1: Use diagnostic script (recommended)
+./diagnose-google-oauth.sh
+
+# Option 2: Use Playwright test directly
+cd frontend
+npm run test:e2e:google-oauth
+
+# Option 3: Run in headed mode (see browser)
+npm run test:e2e:google-oauth:headed
+
+# Option 4: Debug mode
+npm run test:e2e:google-oauth:debug
+```
+
+**What it checks:**
+- ✅ Page loads correctly
+- ✅ Environment variable is set and accessible
+- ✅ Google Identity Services script loads
+- ✅ Console errors and warnings (captured via DevTools)
+- ✅ Network requests to Google APIs (monitored)
+- ✅ Google Sign-In button exists and is visible
+- ✅ Button functionality (opens popup)
+- ✅ Screenshots and video recording
+- ✅ Comprehensive diagnostic report
+
+**Output:**
+- JSON diagnostic report: `test-results/google-oauth-diagnostic/diagnostic-report-*.json`
+- Screenshots: `test-results/google-oauth-diagnostic/screenshots/`
+- Video recording: `test-results/google-oauth-diagnostic/videos/`
+- Console logs: Captured in report
+- Network requests: All Google OAuth requests logged
+
 ## 📝 Implementation Status
 
 ### ✅ Completed
@@ -240,6 +277,9 @@ This script validates:
 - ✅ Restart script (`restart-servers.sh`) - Automates server restart
 - ✅ Verification script (`verify-google-oauth.sh`) - Automated checklist verification
 - ✅ Environment variable checker (`check-env-vars.sh`) - Validates env var format
+- ✅ Playwright diagnostic test (`frontend/e2e/google-oauth-diagnostic.spec.ts`) - Browser-based testing
+- ✅ Standalone diagnostic script (`diagnose-google-oauth.ts`) - Chrome DevTools Protocol diagnostic
+- ✅ Diagnostic wrapper script (`diagnose-google-oauth.sh`) - Easy-to-use diagnostic tool
 - ✅ Documentation - Complete setup and troubleshooting guides
 
 ### 🔄 In Progress
@@ -266,3 +306,48 @@ Run this one-liner to verify everything:
 ```bash
 ./verify-google-oauth.sh && echo "✅ Setup complete!" || echo "❌ Please fix issues above"
 ```
+
+### Comprehensive Browser Diagnostic
+
+For detailed browser-based diagnosis with Chrome DevTools:
+
+```bash
+# Quick diagnostic
+./diagnose-google-oauth.sh
+
+# Or use Playwright directly
+cd frontend
+npm run test:e2e:google-oauth:headed
+```
+
+**See [Google OAuth Diagnostic Guide](./GOOGLE_OAUTH_DIAGNOSTIC_GUIDE.md) for detailed information.**
+
+**Quick Start:** See [Diagnostic Quick Start](./GOOGLE_OAUTH_DIAGNOSTIC_QUICK_START.md) for immediate usage.
+
+## Diagnostic Tools Summary
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| `verify-google-oauth.sh` | Quick server/config check | Before starting development |
+| `check-env-vars.sh` | Validate env var format | After editing `.env.local` |
+| `diagnose-google-oauth.sh` | Browser-based diagnostic | When troubleshooting OAuth issues |
+| `restart-servers.sh` | Restart with verification | After configuration changes |
+
+## Next Steps After Diagnostic
+
+1. **If all checks pass:**
+   - ✅ Google OAuth is properly configured
+   - ✅ Test authentication flow manually
+   - ✅ Proceed with development
+
+2. **If checks fail:**
+   - Review diagnostic report: `test-results/google-oauth-diagnostic/`
+   - Check console logs for errors
+   - Verify network requests succeeded
+   - Fix issues and re-run diagnostic
+
+3. **For detailed analysis:**
+   - Open diagnostic report JSON
+   - Review screenshots
+   - Watch video recording
+   - Check Chrome DevTools manually

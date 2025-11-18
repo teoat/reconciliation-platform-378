@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { logger } from '@/services/logger'
-import { useAppDispatch, useAppSelector } from '../store/store'
+import { useAppDispatch, useAppSelector } from '../store/unifiedStore'
 import {
   authActions,
   projectsActions,
@@ -10,7 +10,7 @@ import {
   reconciliationJobsActions,
   notificationsActions,
   uiActions
-} from '../store/store'
+} from '../store/unifiedStore'
 import ApiService from '../services/ApiService'
 import { useNotificationHelpers } from '../store/hooks'
 

@@ -4,7 +4,7 @@
 
 import { apiClient } from '../apiClient';
 import type { ReconciliationRecord, ReconciliationStats } from '../../types/index';
-import type { ReconciliationMatch } from '../../store/store';
+import type { ReconciliationMatch } from '../../store/unifiedStore';
 import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
 
 export class ReconciliationApiService {

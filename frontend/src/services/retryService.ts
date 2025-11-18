@@ -1,5 +1,10 @@
+// ============================================================================
+// UNIFIED RETRY SERVICE - Exponential Backoff, Circuit Breaker & Error Recovery
+// ============================================================================
 // Standardized Retry Logic Service - Consistent retry strategies across all components
 // Implements comprehensive retry mechanisms with exponential backoff and circuit breaker patterns
+// Merged from retryService.ts and enhancedRetryService.ts
+// ============================================================================
 
 export interface RetryConfig {
   maxRetries: number
@@ -63,7 +68,7 @@ class RetryService {
     }
   }
 
-  private isRetryableError(error: unknown): boolean {
+  public isRetryableError(error: unknown): boolean {
     // Type guard for error objects
     if (typeof error !== 'object' || error === null) {
       return false
@@ -379,3 +384,117 @@ export const useRetry = () => {
 
 // Export singleton instance
 export const retryService = RetryService.getInstance()
+
+// ============================================================================
+// CONVENIENCE FUNCTIONS (from enhancedRetryService for backward compatibility)
+// ============================================================================
+
+/**
+ * Retry a function with exponential backoff (convenience wrapper)
+ * @deprecated Use retryService.executeWithRetry() instead for more features
+ */
+export async function retryWithBackoff<T>(
+  fn: () => Promise<T>,
+  options: {
+    maxRetries?: number;
+    baseDelay?: number;
+    maxDelay?: number;
+    backoffMultiplier?: number;
+    retryable?: (error: unknown) => boolean;
+    onRetry?: (attempt: number, error: unknown) => void;
+  } = {}
+): Promise<T> {
+  const service = RetryService.getInstance();
+  const result = await service.executeWithRetry(fn, {
+    maxRetries: options.maxRetries ?? 3,
+    baseDelay: options.baseDelay ?? 1000,
+    maxDelay: options.maxDelay ?? 30000,
+    backoffMultiplier: options.backoffMultiplier ?? 2,
+    jitter: true,
+    retryCondition: options.retryable ?? ((error) => service.isRetryableError(error)),
+    onRetry: options.onRetry,
+  });
+
+  if (result.success && result.data !== undefined) {
+    return result.data;
+  }
+  throw result.error || new Error('Retry failed');
+}
+
+/**
+ * Retry with jitter (randomized backoff) to prevent thundering herd
+ * @deprecated Use retryService.executeWithRetry() with jitter: true instead
+ */
+export async function retryWithJitter<T>(
+  fn: () => Promise<T>,
+  options: {
+    maxRetries?: number;
+    baseDelay?: number;
+    maxDelay?: number;
+    backoffMultiplier?: number;
+    retryable?: (error: unknown) => boolean;
+    onRetry?: (attempt: number, error: unknown) => void;
+  } = {}
+): Promise<T> {
+  const service = RetryService.getInstance();
+  const result = await service.executeWithRetry(fn, {
+    maxRetries: options.maxRetries ?? 3,
+    baseDelay: options.baseDelay ?? 1000,
+    maxDelay: options.maxDelay ?? 30000,
+    backoffMultiplier: options.backoffMultiplier ?? 2,
+    jitter: true, // Jitter is always enabled in this convenience function
+    retryCondition: options.retryable ?? ((error) => service.isRetryableError(error)),
+    onRetry: options.onRetry,
+  });
+
+  if (result.success && result.data !== undefined) {
+    return result.data;
+  }
+  throw result.error || new Error('Retry failed');
+}
+
+/**
+ * Create a retryable fetch wrapper
+ */
+export function createRetryableFetch(
+  fetchFn: typeof fetch,
+  options: {
+    maxRetries?: number;
+    baseDelay?: number;
+    maxDelay?: number;
+    backoffMultiplier?: number;
+    retryable?: (error: unknown) => boolean;
+  } = {}
+): typeof fetch {
+  const service = RetryService.getInstance();
+  return async (input: RequestInfo | URL, init?: RequestInit) => {
+    const result = await service.executeWithRetry(
+      async () => {
+        const response = await fetchFn(input, init);
+        
+        // Treat 5xx errors as retryable
+        if (response.status >= 500 && response.status < 600) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        return response;
+      },
+      {
+        maxRetries: options.maxRetries ?? 3,
+        baseDelay: options.baseDelay ?? 1000,
+        maxDelay: options.maxDelay ?? 30000,
+        backoffMultiplier: options.backoffMultiplier ?? 2,
+        jitter: true,
+        retryCondition: options.retryable ?? ((error) => service.isRetryableError(error)),
+      }
+    );
+
+    if (result.success && result.data) {
+      return result.data;
+    }
+    throw result.error || new Error('Fetch retry failed');
+  };
+}
+
+// Export default for backward compatibility
+export default retryService

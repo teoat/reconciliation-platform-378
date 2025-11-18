@@ -9,7 +9,7 @@ import { useReconciliation } from '../hooks/useFileReconciliation';
 import { ApiService } from '../services/ApiService';
 import { useToast } from '../hooks/useToast';
 import { logger } from '../services/logger';
-import { ReconciliationRecord } from '../types/backend-aligned';
+import type { ReconciliationRecord } from '../types';
 
 // Helper component for progress bar with proper ARIA attributes
 const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, title }) => {
@@ -24,11 +24,8 @@ const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, 
           style={{ width: `${progressValue}%` }}
           role="progressbar"
           aria-label={ariaLabel}
-          // eslint-disable-next-line jsx-a11y/aria-proptypes
           aria-valuenow={progressValue}
-          // eslint-disable-next-line jsx-a11y/aria-proptypes
           aria-valuemin={0}
-          // eslint-disable-next-line jsx-a11y/aria-proptypes
           aria-valuemax={100}
         ></div>
       </div>
@@ -67,7 +64,7 @@ export interface PageConfig {
 export interface StatsCard {
   title: string;
   value: string | number;
-  icon: React.ComponentType<IconProps>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   color: string;
   trend?: {
     direction: 'up' | 'down' | 'neutral';
@@ -332,7 +329,7 @@ const AdjudicationPageContent: React.FC = () => {
     registerGuidanceHandlers: () => registerAdjudicationGuidanceHandlers(),
     getGuidanceContent: (topic) => getAdjudicationGuidanceContent(topic),
     onContextChange: (changes) => {
-      console.debug('Adjudication context changed:', changes);
+      logger.debug('Adjudication context changed', { changes });
     },
   });
 

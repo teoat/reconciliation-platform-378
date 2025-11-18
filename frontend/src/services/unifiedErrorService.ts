@@ -1,7 +1,17 @@
 // ============================================================================
-import { logger } from '@/services/logger'
 // UNIFIED ERROR SERVICE - SINGLE SOURCE OF TRUTH
 // ============================================================================
+// Consolidates error handling from:
+// - unifiedErrorService.ts (base implementation)
+// - errorContextService.ts (context tracking)
+// - errorTranslationService.ts (error translation)
+// - utils/errorService.ts (error reporting)
+// - serviceIntegrationService.ts (unified error handling)
+// ============================================================================
+
+import { logger } from '@/services/logger'
+import { errorContextService, type ErrorContext as ErrorContextType } from './errorContextService'
+import { errorTranslationService, type ErrorTranslation } from './errorTranslationService'
 
 export interface UnifiedApiError {
   error: string           // Error type
@@ -21,15 +31,23 @@ export interface ErrorContext {
 }
 
 /**
- * Unified error handling service
- * Consolidates error handling from:
- * - utils/errorHandler.ts
- * - utils/errorStandardization.ts
- * - services/errorHandler.ts
- * - services/errorRecoveryTester.ts
- * - services/errorTranslationService.ts
+ * Unified Error Service
+ * Single source of truth for all error handling
+ * Integrates with errorContextService and errorTranslationService
  */
 export class UnifiedErrorService {
+  private static instance: UnifiedErrorService;
+
+  public static getInstance(): UnifiedErrorService {
+    if (!UnifiedErrorService.instance) {
+      UnifiedErrorService.instance = new UnifiedErrorService();
+    }
+    return UnifiedErrorService.instance;
+  }
+
+  private constructor() {
+    // Private constructor for singleton
+  }
   /**
    * Parse error into standardized format
    */
@@ -67,22 +85,66 @@ export class UnifiedErrorService {
   }
 
   /**
-   * Handle error with logging and reporting
+   * Handle error with logging, context tracking, translation, and reporting
    */
   static handleError(error: unknown, context?: ErrorContext): void {
     const parsed = this.parseError(error)
     
+    // Set error context if provided
+    if (context) {
+      errorContextService.setContext({
+        component: context.component,
+        action: context.action,
+        projectId: context.projectId,
+        userId: context.userId,
+      });
+    }
+
+    // Track error in context service
+    const errorObj = error instanceof Error ? error : new Error(String(error));
+    errorContextService.trackError(errorObj, {
+      component: context?.component,
+      action: context?.action,
+      data: context,
+    });
+    
     // Log error
-    logger.error('Error:', parsed, 'Context:', context)
+    logger.error('Error occurred', { error: parsed, context });
     
     // Report to monitoring service (if available)
     if (typeof window !== 'undefined') {
-      const win = window as Record<string, unknown>
+      const win = window as unknown as Record<string, unknown>;
       if (win.monitoring && typeof win.monitoring === 'object') {
-        const monitoring = win.monitoring as { reportError?: (error: unknown, context?: unknown) => void }
-        monitoring.reportError?.(parsed, context)
+        const monitoring = win.monitoring as { reportError?: (error: unknown, context?: unknown) => void };
+        monitoring.reportError?.(parsed, context);
       }
     }
+  }
+
+  /**
+   * Handle error with translation (returns user-friendly message)
+   */
+  static handleErrorWithTranslation(
+    error: unknown,
+    context?: ErrorContext
+  ): { parsed: UnifiedApiError; translation?: ErrorTranslation; userMessage: string } {
+    const parsed = this.parseError(error);
+    
+    // Get translation
+    const translation = errorTranslationService.translateError(parsed.code, {
+      component: context?.component,
+      action: context?.action,
+      data: context,
+    });
+
+    // Handle error (logging, context tracking, etc.)
+    this.handleError(error, context);
+
+    return {
+      parsed,
+      translation,
+      userMessage: translation?.userMessage || parsed.message,
+    };
   }
 
   /**
@@ -93,24 +155,26 @@ export class UnifiedErrorService {
   }
 
   /**
-   * Get user-friendly error message
+   * Get user-friendly error message (uses translation service)
    */
-  static getUserFriendlyMessage(error: unknown): string {
-    const parsed = this.parseError(error)
+  static getUserFriendlyMessage(error: unknown, context?: ErrorContext): string {
+    const parsed = this.parseError(error);
     
-    // Map error codes to user-friendly messages
-    const messageMap: Record<string, string> = {
-      'VALIDATION_ERROR': 'Please check your input and try again',
-      'AUTHENTICATION_ERROR': 'Please log in to continue',
-      'AUTHORIZATION_ERROR': 'You do not have permission to perform this action',
-      'NOT_FOUND': 'The requested resource was not found',
-      'RATE_LIMIT_EXCEEDED': 'Too many requests. Please try again later',
-      'NETWORK_ERROR': 'Network error. Please check your connection',
-      'TIMEOUT': 'Request timed out. Please try again',
-      'SERVER_ERROR': 'Server error. Please try again later'
-    }
+    // Use translation service for better messages
+    const translation = errorTranslationService.translateError(parsed.code, {
+      component: context?.component,
+      action: context?.action,
+      data: context,
+    });
 
-    return messageMap[parsed.code] || parsed.message
+    return translation?.userMessage || parsed.message;
+  }
+
+  /**
+   * Get current error context
+   */
+  static getCurrentContext(): ErrorContextType | null {
+    return errorContextService.getCurrentContext();
   }
 
   /**
@@ -148,5 +212,9 @@ export class UnifiedErrorService {
   }
 }
 
-export default UnifiedErrorService
+// Export singleton instance
+export const unifiedErrorService = UnifiedErrorService.getInstance();
+
+// Export for convenience
+export default unifiedErrorService;
 

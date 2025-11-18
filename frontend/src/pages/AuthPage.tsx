@@ -13,6 +13,7 @@ import { useToast } from '../hooks/useToast'
 import { passwordSchema } from '../utils/passwordValidation'
 import { logger } from '../services/logger'
 import { PageMeta } from '../components/seo/PageMeta'
+import { getPrimaryDemoCredentials, isDemoModeEnabled, DEMO_CREDENTIALS } from '../config/demoCredentials'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -59,6 +60,8 @@ const AuthPage: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false)
   const [isGoogleButtonLoading, setIsGoogleButtonLoading] = useState(false)
   const [googleButtonError, setGoogleButtonError] = useState(false)
+  const [selectedDemoRole, setSelectedDemoRole] = useState<'admin' | 'manager' | 'user'>('admin')
+  const demoModeEnabled = isDemoModeEnabled()
   
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -256,6 +259,15 @@ const AuthPage: React.FC = () => {
       setError(errorMsg)
       toast.error(errorMsg)
     }
+  }
+
+  // Handle demo credentials quick fill
+  const handleUseDemoCredentials = (role: 'admin' | 'manager' | 'user' = selectedDemoRole) => {
+    const demo = DEMO_CREDENTIALS.find((c) => c.role === role) || getPrimaryDemoCredentials()
+    loginForm.setValue('email', demo.email)
+    loginForm.setValue('password', demo.password)
+    setSelectedDemoRole(role)
+    toast.info(`Demo credentials filled: ${demo.role} account`)
   }
 
   const onRegisterSubmit = async (data: RegisterForm) => {
@@ -599,6 +611,41 @@ const AuthPage: React.FC = () => {
             </form>
           )}
 
+          {/* Demo Credentials Section */}
+          {demoModeEnabled && !isRegistering && (
+            <div className="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-xs font-semibold text-gray-700 mb-3 uppercase tracking-wide">
+                Demo Credentials
+              </p>
+              <div className="space-y-2 mb-3">
+                {DEMO_CREDENTIALS.map((demo) => (
+                  <div key={demo.role} className="flex items-center justify-between text-xs">
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-700 capitalize">{demo.role}:</span>
+                      <span className="text-gray-600 ml-2">{demo.email}</span>
+                      <span className="text-gray-500 ml-2">/ {demo.password}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleUseDemoCredentials(demo.role)}
+                      className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                      aria-label={`Use ${demo.role} demo credentials`}
+                    >
+                      Use
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => handleUseDemoCredentials()}
+                className="w-full px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                Quick Login with Demo Account
+              </button>
+            </div>
+          )}
+
           <div className="mt-6 text-center">
             {!isRegistering ? (
               <>
@@ -610,15 +657,6 @@ const AuthPage: React.FC = () => {
                     className="text-blue-600 hover:text-blue-700 font-medium"
                   >
                     Sign up
-                  </button>
-                </p>
-                <p className="text-xs text-gray-500">
-                  Don't have an account? <button
-                    type="button"
-                    onClick={() => setIsRegistering(true)}
-                    className="text-blue-600 hover:text-blue-700 font-medium underline"
-                  >
-                    Register here
                   </button>
                 </p>
               </>

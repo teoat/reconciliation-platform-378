@@ -3,6 +3,7 @@ import { BarChart3, Target, CheckCircle, Clock, Users, PieChart } from 'lucide-r
 import { apiClient } from '../services/apiClient';
 import { getErrorMessageFromApiError } from '../utils/errorExtraction';
 import { usePageOrchestration } from '../hooks/usePageOrchestration';
+import { logger } from '../services/logger';
 import {
   dashboardPageMetadata,
   getDashboardOnboardingSteps,
@@ -50,7 +51,7 @@ const BasePage: React.FC<BasePageProps> = ({ config, stats, loading, error, chil
         {/* Header */}
         <header className="mb-8">
           <div className="flex items-center space-x-3 mb-2">
-            <config.icon className="w-8 h-8 text-blue-600" aria-hidden="true" />
+            <config.icon className="w-8 h-8 text-blue-600" aria-hidden={true} />
             <h1 className="text-3xl font-bold text-gray-900">{config.title}</h1>
           </div>
           <p className="text-lg text-gray-600">{config.description}</p>
@@ -158,7 +159,7 @@ export const DashboardPage: React.FC = () => {
     getGuidanceContent: (topic) => getDashboardGuidanceContent(topic),
     onContextChange: (changes) => {
       // Handle context changes if needed
-      console.debug('Dashboard context changed:', changes);
+      logger.debug('Dashboard context changed', { changes });
     },
   });
 
