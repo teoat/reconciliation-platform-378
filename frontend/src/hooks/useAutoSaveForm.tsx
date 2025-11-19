@@ -76,7 +76,7 @@ export const useAutoSaveForm = ({
   }, [])
 
   // Set specific field
-  const setField = React.useCallback((field: string, value: any) => {
+  const setField = React.useCallback((field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }, [])
 
@@ -136,8 +136,8 @@ interface AutoSaveFormProps {
   children: (props: {
     formData: Record<string, unknown>
     updateFormData: (updates: Record<string, unknown>) => void
-    setField: (field: string, value: any) => void
-    getField: (field: string) => any
+    setField: (field: string, value: unknown) => void
+    getField: (field: string) => unknown
     clearFormData: () => void
     resetFormData: (initialData?: Record<string, unknown>) => void
     isAutoSaving: boolean

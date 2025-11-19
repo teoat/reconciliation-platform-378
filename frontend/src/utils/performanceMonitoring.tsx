@@ -333,7 +333,7 @@ export function usePerformanceMonitoring(config: Partial<PerformanceConfig> = {}
 /**
  * Debounces a function to improve performance
  */
-export function debounce<T extends (...args: any[]) => any>(
+export function debounce<T extends (...args: unknown[]) => unknown>(
   func: T,
   wait: number
 ): (...args: Parameters<T>) => void {
@@ -347,7 +347,7 @@ export function debounce<T extends (...args: any[]) => any>(
 /**
  * Throttles a function to improve performance
  */
-export function throttle<T extends (...args: any[]) => any>(
+export function throttle<T extends (...args: unknown[]) => unknown>(
   func: T,
   limit: number
 ): (...args: Parameters<T>) => void {
@@ -364,7 +364,7 @@ export function throttle<T extends (...args: any[]) => any>(
 /**
  * Memoizes a function result
  */
-export function memoize<T extends (...args: any[]) => any>(
+export function memoize<T extends (...args: unknown[]) => unknown>(
   func: T,
   keyGenerator?: (...args: Parameters<T>) => string
 ): T {

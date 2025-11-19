@@ -9,9 +9,11 @@ import UnifiedFetchInterceptor from './services/unifiedFetchInterceptor';
 import { initializeMemoryMonitoring } from './utils/memoryOptimization';
 import AppShell from './components/layout/AppShell';
 import AuthPage from './pages/AuthPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ToastContainer from './components/ui/ToastContainer';
 import { APP_CONFIG } from './config/AppConfig';
 import KeyboardShortcuts from './components/pages/KeyboardShortcuts';
+import { SessionTimeoutHandler } from './components/SessionTimeoutHandler';
 
 // Lazy load route components for better performance
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -83,8 +85,10 @@ function App() {
               <div className="min-h-screen bg-gray-100">
                 <KeyboardShortcuts />
                 <ToastContainer />
+                <SessionTimeoutHandler />
                 <Routes>
                   <Route path="/login" element={<AuthPage />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                   <Route
                     path="/"
                     element={

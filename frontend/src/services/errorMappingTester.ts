@@ -16,7 +16,7 @@ export interface ErrorMappingTest {
 export interface ErrorMappingTestResult {
   success: boolean
   message: string
-  details?: any
+  details?: Record<string, unknown>
   timestamp: Date
   duration: number
   errors?: string[]
@@ -36,7 +36,7 @@ export interface BackendError {
   code: string
   message: string
   statusCode: number
-  details?: any
+  details?: Record<string, unknown>
   timestamp: Date
 }
 

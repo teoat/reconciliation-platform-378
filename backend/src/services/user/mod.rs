@@ -307,13 +307,19 @@ impl UserService {
 
     /// Check if user exists by email
     pub async fn user_exists_by_email(&self, email: &str) -> AppResult<bool> {
-        let mut conn = self.db.get_connection()?;
-
-        let count = users::table
-            .filter(users::email.eq(email))
-            .count()
-            .get_result::<i64>(&mut conn)
-            .map_err(AppError::Database)?;
+        let db = Arc::clone(&self.db);
+        let email = email.to_string();
+        
+        let count = tokio::task::spawn_blocking(move || {
+            let mut conn = db.get_connection()?;
+            users::table
+                .filter(users::email.eq(&email))
+                .count()
+                .get_result::<i64>(&mut conn)
+                .map_err(AppError::Database)
+        })
+        .await
+        .map_err(|e| AppError::Internal(format!("Task join error: {}", e)))??;
 
         Ok(count > 0)
     }

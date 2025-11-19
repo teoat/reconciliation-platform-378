@@ -142,11 +142,15 @@ impl SecurityService {
     }
 
     // Authentication security
+    // NOTE: Password hashing/verification is handled by services/auth/password.rs (PasswordManager)
+    // These methods are deprecated and should not be used. Use AuthService instead.
+    #[deprecated(note = "Use AuthService::hash_password() instead. Password operations are handled by services/auth/password.rs")]
     pub async fn hash_password(&self, password: &str) -> Result<String, String> {
         hash(password, self.config.bcrypt_cost)
             .map_err(|e| format!("Password hashing failed: {}", e))
     }
 
+    #[deprecated(note = "Use AuthService::verify_password() instead. Password operations are handled by services/auth/password.rs")]
     pub async fn verify_password(&self, password: &str, hash: &str) -> Result<bool, String> {
         verify(password, hash).map_err(|e| format!("Password verification failed: {}", e))
     }
@@ -417,6 +421,9 @@ impl SecurityService {
         email.contains('@') && email.contains('.') && email.len() > 5
     }
 
+    // NOTE: Password validation is handled by services/auth/password.rs (PasswordManager)
+    // This method is deprecated and should not be used. Use AuthService instead.
+    #[deprecated(note = "Use AuthService::validate_password_strength() instead. Password validation is handled by services/auth/password.rs")]
     pub fn validate_password_strength(&self, password: &str) -> Result<(), String> {
         if password.len() < 8 {
             return Err("Password must be at least 8 characters long".to_string());

@@ -17,7 +17,7 @@ export const formatFileSize = (bytes: number): string => {
 /**
  * Transforms API response to UploadedFile format
  */
-export const transformApiFileToUploadedFile = (apiFile: any): UploadedFile => {
+export const transformApiFileToUploadedFile = (apiFile: ApiFileResponse): UploadedFile => {
   return {
     id: apiFile.id,
     name: apiFile.name || apiFile.filename,
@@ -75,8 +75,8 @@ export const sortFiles = (
   direction: 'asc' | 'desc' = 'asc'
 ): UploadedFile[] => {
   return [...files].sort((a, b) => {
-    let aValue: any;
-    let bValue: any;
+    let aValue: unknown;
+    let bValue: unknown;
 
     switch (sortBy) {
       case 'name':

@@ -6,12 +6,8 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { HelpCircle, X, ChevronRight, Lightbulb, BookOpen } from 'lucide-react';
-// Import ariaLiveRegionsService with fallback
-import ariaLiveRegionsServiceModule from '../../services/ariaLiveRegionsService';
-const ariaLiveRegionsService =
-  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService ||
-  (ariaLiveRegionsServiceModule as any).default?.getInstance?.() ||
-  ariaLiveRegionsServiceModule;
+// Import ariaLiveRegionsService with type-safe access
+import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
 
 export interface HelpTip {
   id: string;

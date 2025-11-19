@@ -675,12 +675,12 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                       <div>
                         <span className="text-secondary-600">Category:</span>
-                        <span className="ml-2 text-secondary-900">{(rule as any).category}</span>
+                        <span className="ml-2 text-secondary-900">{rule.category}</span>
                       </div>
                       <div>
                         <span className="text-secondary-600">Executions:</span>
                         <span className="ml-2 text-secondary-900">
-                          {(rule as any).executionCount}
+                          {rule.executionCount}
                         </span>
                       </div>
                       <div>

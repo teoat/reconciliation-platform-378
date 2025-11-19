@@ -136,7 +136,7 @@ export const useProjectsAPI = () => {
   const createProject = useCallback(async (projectData: {
     name: string
     description?: string
-    settings?: any
+    settings?: Record<string, unknown>
     status?: string
   }) => {
     try {
@@ -156,7 +156,7 @@ export const useProjectsAPI = () => {
   const updateProject = useCallback(async (projectId: string, projectData: {
     name?: string
     description?: string
-    settings?: any
+    settings?: Record<string, unknown>
     status?: string
     is_active?: boolean
   }) => {
@@ -343,7 +343,7 @@ export const useReconciliationRecordsAPI = (projectId?: string) => {
     }
   }, [projectId, dispatch, showError])
 
-  const updateRecord = useCallback(async (recordId: string, recordData: any) => {
+  const updateRecord = useCallback(async (recordId: string, recordData: Record<string, unknown>) => {
     if (!projectId) return { success: false, error: 'No project ID' }
     
     try {
@@ -522,7 +522,7 @@ export const useReconciliationJobsAPI = (projectId?: string) => {
   }, [projectId, dispatch, showError])
 
   const createJob = useCallback(async (jobData: {
-    settings?: any
+    settings?: Record<string, unknown>
     priority?: string
     description?: string
   }) => {
@@ -612,9 +612,9 @@ export const useReconciliationJobsAPI = (projectId?: string) => {
 // ============================================================================
 
 export const useAnalyticsAPI = () => {
-  const [dashboardData, setDashboardData] = useState<any>(null)
-  const [projectStats, setProjectStats] = useState<any>(null)
-  const [reconciliationStats, setReconciliationStats] = useState<any>(null)
+  const [dashboardData, setDashboardData] = useState<Record<string, unknown> | null>(null)
+  const [projectStats, setProjectStats] = useState<Record<string, unknown> | null>(null)
+  const [reconciliationStats, setReconciliationStats] = useState<Record<string, unknown> | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const { showError } = useNotificationHelpers()
@@ -751,15 +751,15 @@ export const useWebSocketAPI = () => {
     setConnectionStatus('disconnected')
   }, [])
 
-  const sendMessage = useCallback((type: string, data: any) => {
+  const sendMessage = useCallback((type: string, data: Record<string, unknown>) => {
     ApiService.sendWebSocketMessage(type, data)
   }, [])
 
-  const onMessage = useCallback((eventType: string, handler: Function) => {
+  const onMessage = useCallback((eventType: string, handler: (data: unknown) => void) => {
     ApiService.onWebSocketMessage(eventType, handler)
   }, [])
 
-  const offMessage = useCallback((eventType: string, handler: Function) => {
+  const offMessage = useCallback((eventType: string, handler: (data: unknown) => void) => {
     ApiService.offWebSocketMessage(eventType, handler)
   }, [])
 

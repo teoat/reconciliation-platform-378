@@ -564,37 +564,39 @@ mod tests {
         let language = service
             .get_language("en")
             .await
-            .expect("Failed to get language");
+            .unwrap_or_else(|e| panic!("Failed to get language: {}", e));
         assert!(language.is_some());
-        assert_eq!(language.expect("Expected language").code, "en");
+        let lang = language.unwrap_or_else(|| panic!("Expected language"));
+        assert_eq!(lang.code, "en");
 
         // Test listing languages
         let languages = service
             .list_languages()
             .await
-            .expect("Failed to list languages");
+            .unwrap_or_else(|e| panic!("Failed to list languages: {}", e));
         assert!(!languages.is_empty());
 
         // Test getting locale
         let locale = service
             .get_locale("en-US")
             .await
-            .expect("Failed to get locale");
+            .unwrap_or_else(|e| panic!("Failed to get locale: {}", e));
         assert!(locale.is_some());
-        assert_eq!(locale.expect("Expected locale").code, "en-US");
+        let loc = locale.unwrap_or_else(|| panic!("Expected locale"));
+        assert_eq!(loc.code, "en-US");
 
         // Test getting translation
         let translation = service
             .get_translation("welcome", "en")
             .await
-            .expect("Failed to get translation");
+            .unwrap_or_else(|e| panic!("Failed to get translation: {}", e));
         assert_eq!(translation, Some("Welcome".to_string()));
 
         // Test translation fallback
         let translation = service
             .get_translation("welcome", "es")
             .await
-            .expect("Failed to get translation");
+            .unwrap_or_else(|e| panic!("Failed to get translation: {}", e));
         assert_eq!(translation, Some("Bienvenido".to_string()));
 
         // Test text translation

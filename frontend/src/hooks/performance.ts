@@ -5,7 +5,15 @@ import { logger } from '@/services/logger';
 
 import { useCallback, useMemo, useRef, useEffect } from 'react';
 
-export const useMemoizedCallback = <T extends (...args: any[]) => any>(
+/**
+ * @deprecated This is just a wrapper around useCallback. Use useCallback directly instead.
+ * For stable callbacks that don't change reference, use useStableCallback from usePerformanceOptimizations.ts
+ * 
+ * Migration:
+ * - Old: useMemoizedCallback(callback, deps)
+ * - New: useCallback(callback, deps)
+ */
+export const useMemoizedCallback = <T extends (...args: unknown[]) => unknown>(
   callback: T,
   deps: React.DependencyList
 ): T => {
@@ -28,7 +36,7 @@ export const useWhyDidYouUpdate = (name: string, props: Record<string, unknown>)
   useEffect(() => {
     if (previous.current) {
       const allKeys = Object.keys({ ...previous.current, ...props });
-      const changedProps: Record<string, { from: any; to: any }> = {};
+      const changedProps: Record<string, { from: unknown; to: unknown }> = {};
 
       allKeys.forEach((key) => {
         if (previous.current![key] !== props[key]) {

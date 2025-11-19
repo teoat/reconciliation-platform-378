@@ -25,7 +25,7 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
     enableErrorReporting: true,
   });
 
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(false);
 
   // Example 1: Using handleApiCall (automatic correlation ID extraction)

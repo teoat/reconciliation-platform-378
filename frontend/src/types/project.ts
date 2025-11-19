@@ -1,5 +1,23 @@
 // Project-related type definitions
 
+/**
+ * Enhanced Project type with rich UI features.
+ * 
+ * This type extends basic project data with UI-specific features like:
+ * - Project analytics and progress tracking
+ * - Alerts and notifications
+ * - Activity history
+ * - Templates and configuration
+ * 
+ * Use this type when:
+ * - Working with UI components that need rich project data
+ * - Need project analytics, progress, alerts, templates
+ * - Working with project management dashboard features
+ * - Displaying project details with enhanced information
+ * 
+ * For backend API integration, use '@/types/backend-aligned::Project' instead.
+ * For simplified service layer usage, see '@/types/service::Project' instead.
+ */
 export interface EnhancedProject {
   id: string;
   name: string;

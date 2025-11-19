@@ -11,6 +11,7 @@ import {
   type PageContext,
   type OnboardingStep,
   type GuidanceHandler,
+  type GuidanceContent,
   type WorkflowState,
   type PageMetadata,
 } from '@/orchestration';
@@ -23,7 +24,7 @@ export interface UsePageOrchestrationOptions {
   completeOnboardingStep?: (stepId: string) => Promise<void>;
   skipOnboardingStep?: (stepId: string) => Promise<void>;
   registerGuidanceHandlers?: () => GuidanceHandler[];
-  getGuidanceContent?: (topic: string) => any[];
+  getGuidanceContent?: (topic: string) => GuidanceContent[];
   getWorkflowState?: () => WorkflowState | null;
   updateWorkflowState?: (state: Partial<WorkflowState>) => Promise<void>;
   onContextChange?: (changes: Partial<PageContext>) => void;
@@ -140,7 +141,7 @@ export function usePageOrchestration(
 
   // Track feature usage
   const trackFeatureUsage = useCallback(
-    (featureId: string, action: string, data?: Record<string, any>) => {
+    (featureId: string, action: string, data?: Record<string, unknown>) => {
       lifecycleManager.trackFeatureUsage(featureId, action, data);
     },
     [lifecycleManager]
@@ -156,7 +157,7 @@ export function usePageOrchestration(
 
   // Track user action
   const trackUserAction = useCallback(
-    (action: string, target?: string, data?: Record<string, any>) => {
+    (action: string, target?: string, data?: Record<string, unknown>) => {
       lifecycleManager.trackUserAction(action, target, data);
     },
     [lifecycleManager]

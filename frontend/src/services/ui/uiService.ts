@@ -1,4 +1,7 @@
 // Unified UI Service
+// NOTE: This file is deprecated. Use frontend/src/services/uiService.ts instead.
+// This file is kept for backward compatibility but should not be used in new code.
+// @deprecated Use uiService from '../uiService' instead
 import { BaseService } from '../BaseService'
 
 export interface UIState {

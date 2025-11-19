@@ -1,9 +1,11 @@
+import type { RequestConfig, ApiResponse } from '@/types/api';
+
 export interface RequestInterceptor {
-  (config: any): any;
+  (config: RequestConfig): RequestConfig | Promise<RequestConfig>;
 }
 
 export interface ResponseInterceptor {
-  (response: any): any;
+  <T = unknown>(response: ApiResponse<T>): ApiResponse<T> | Promise<ApiResponse<T>>;
 }
 
 export class ApiError extends Error {

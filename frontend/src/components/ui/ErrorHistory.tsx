@@ -149,7 +149,7 @@ export const ErrorHistory: React.FC<ErrorHistoryProps> = ({
             <Filter className="h-4 w-4 text-gray-400" aria-hidden="true" />
             <select
               value={filterSeverity}
-              onChange={(e) => setFilterSeverity(e.target.value as any)}
+              onChange={(e) => setFilterSeverity(e.target.value as 'all' | 'error' | 'warning' | 'info')}
               className="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500"
               aria-label="Filter by severity"
             >
@@ -164,7 +164,7 @@ export const ErrorHistory: React.FC<ErrorHistoryProps> = ({
             <Clock className="h-4 w-4 text-gray-400" aria-hidden="true" />
             <select
               value={sortOrder}
-              onChange={(e) => setSortOrder(e.target.value as any)}
+              onChange={(e) => setSortOrder(e.target.value as 'newest' | 'oldest')}
               className="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500"
               aria-label="Sort order"
             >

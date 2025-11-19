@@ -18,7 +18,7 @@ import { useCallback, useMemo, useRef, useEffect } from 'react';
  *   doSomething(id, latestState);
  * });
  */
-export function useStableCallback<T extends (...args: any[]) => any>(callback: T): T {
+export function useStableCallback<T extends (...args: unknown[]) => unknown>(callback: T): T {
   const callbackRef = useRef(callback);
   
   useEffect(() => {
@@ -35,20 +35,10 @@ export function useStableCallback<T extends (...args: any[]) => any>(callback: T
  * 
  * @example
  * const debouncedSearch = useDebounce(searchTerm, 300);
+ * 
+ * NOTE: Re-exported from useDebounce.ts (SSOT)
  */
-export function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
-  
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-    
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-  
-  return debouncedValue;
-}
+export { useDebounce } from './useDebounce';
 
 /**
  * Throttled callback hook - limits how often a function can be called
@@ -60,7 +50,7 @@ export function useDebounce<T>(value: T, delay: number): T {
  *   // Handle scroll
  * }, 100);
  */
-export function useThrottle<T extends (...args: any[]) => any>(
+export function useThrottle<T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number
 ): T {
@@ -105,7 +95,7 @@ export function useMemoizedList<T>(
  *   onDelete: (id) => deleteItem(id),
  * });
  */
-export function useStableHandlers<T extends Record<string, (...args: any[]) => any>>(
+export function useStableHandlers<T extends Record<string, (...args: unknown[]) => unknown>>(
   handlers: T
 ): T {
   const handlersRef = useRef(handlers);
@@ -118,7 +108,7 @@ export function useStableHandlers<T extends Record<string, (...args: any[]) => a
     const stableHandlers = {} as T;
     
     Object.keys(handlers).forEach((key) => {
-      stableHandlers[key as keyof T] = ((...args: any[]) => 
+      stableHandlers[key as keyof T] = ((...args: unknown[]) => 
         handlersRef.current[key as keyof T](...args)
       ) as T[keyof T];
     });
@@ -224,7 +214,7 @@ export function usePerformanceMeasure(componentName: string): void {
  * 
  * batchUpdate({ name: 'John', email: 'john@example.com' });
  */
-export function useBatchState<T extends Record<string, any>>(
+export function useBatchState<T extends Record<string, unknown>>(
   initialState: T
 ): [T, (updates: Partial<T>) => void] {
   const [state, setState] = useState(initialState);

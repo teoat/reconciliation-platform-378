@@ -49,7 +49,7 @@ export const createMockProject = (overrides = {}) => ({
   ...overrides,
 });
 
-export const createMockApiResponse = (data: any, overrides = {}) => ({
+export const createMockApiResponse = (data: unknown, overrides: Record<string, unknown> = {}) => ({
   data,
   success: true,
   message: 'Success',
@@ -74,7 +74,7 @@ export const createMockButton = (props = {}) => <button {...props}>Test Button</
 export const createMockInput = (props = {}) => <input {...props} />;
 
 // API testing helpers
-export const mockApiCall = (url: string, response: any) => {
+export const mockApiCall = (url: string, response: unknown) => {
   global.fetch = vi.fn().mockImplementationOnce((requestUrl: string) => {
     if (requestUrl.includes(url)) {
       return Promise.resolve({
@@ -86,7 +86,7 @@ export const mockApiCall = (url: string, response: any) => {
   });
 };
 
-export const mockApiError = (url: string, error: any, status = 500) => {
+export const mockApiError = (url: string, error: unknown, status = 500) => {
   global.fetch = vi.fn().mockImplementationOnce((requestUrl: string) => {
     if (requestUrl.includes(url)) {
       return Promise.resolve({

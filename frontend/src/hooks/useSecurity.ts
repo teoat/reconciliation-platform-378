@@ -28,7 +28,7 @@ interface AuditLog {
   ipAddress: string
   userAgent: string
   result: 'success' | 'failure'
-  details?: any
+  details?: Record<string, unknown>
 }
 
 interface ComplianceRequirement {
@@ -102,7 +102,7 @@ export const useSecurity = () => {
     action: string,
     resource: string,
     result: 'success' | 'failure',
-    details?: any
+    details?: Record<string, unknown>
   ) => {
     const auditLog: AuditLog = {
       id: `audit-${Date.now()}`,
@@ -146,7 +146,7 @@ export const useSecurity = () => {
    }, [securityPolicies, logAuditEvent])
 
   // Encrypt sensitive data
-  const encryptData = useCallback((data: any, dataType: string): any => {
+  const encryptData = useCallback(<T,>(data: T, dataType: string): T & { _encrypted: boolean; _encryptionType: string; _encryptedAt: string } => {
     if (!isSecurityEnabled) return data
 
     // Simple encryption simulation
@@ -166,7 +166,7 @@ export const useSecurity = () => {
   }, [isSecurityEnabled, logAuditEvent])
 
   // Decrypt sensitive data
-  const decryptData = useCallback((encryptedData: any, dataType: string): any => {
+  const decryptData = useCallback(<T,>(encryptedData: T & { _encrypted?: boolean }, dataType: string): T => {
     if (!isSecurityEnabled || !encryptedData._encrypted) return encryptedData
 
     // Simple decryption simulation

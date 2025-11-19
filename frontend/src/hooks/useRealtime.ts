@@ -1,7 +1,55 @@
 // React Hooks for Real-time Features
 import { logger } from '@/services/logger'
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { realtimeService, UserPresence, Comment, Notification, RealtimeUpdate } from '../services/realtimeService';
+
+// WebSocket event data types
+interface UserJoinEvent {
+  user_id: string;
+  username: string;
+  page: string;
+  timestamp: string;
+}
+
+interface UserLeaveEvent {
+  user_id: string;
+  page: string;
+  timestamp: string;
+}
+
+interface UserPresenceEvent {
+  page: string;
+  users: UserPresence[];
+}
+
+interface CommentEvent {
+  id: string;
+  page: string;
+  message: string;
+  user_id: string;
+  username: string;
+  position?: { x: number; y: number; element?: string };
+  created_at: string;
+  updated_at?: string;
+}
+
+interface ReconciliationJobEvent {
+  job_id: string;
+  project_id: string;
+  progress?: number;
+  status?: string;
+  error?: string;
+  completed_at?: string;
+}
+
+interface FileUploadEvent {
+  file_id: string;
+  filename: string;
+  progress?: number;
+  status?: string;
+  error?: string;
+  completed_at?: string;
+}
 
 // Real-time Connection Hook
 export const useRealtimeConnection = () => {
@@ -16,7 +64,7 @@ export const useRealtimeConnection = () => {
       setIsConnected(true);
       setConnectionStatus('connected');
     } catch (error) {
-      logger.error('Realtime connection failed:', error);
+      logger.error('Realtime connection failed:', { error: String(error) });
       setIsConnected(false);
       setConnectionStatus('error');
     }
@@ -100,35 +148,36 @@ export const useUserPresence = (page: string) => {
   }, []);
 
   useEffect(() => {
-    const handleUserJoin = (data: any) => {
+    const handleUserJoin = (data: UserJoinEvent) => {
       if (data.page === page) {
-        setActiveUsers(prev => {
-          const existing = prev.find(u => u.user_id === data.user_id);
-          if (existing) {
-            return prev.map(u => 
-              u.user_id === data.user_id 
-                ? { ...u, last_seen: data.timestamp }
-                : u
-            );
-          } else {
-            return [...prev, {
-              user_id: data.user_id,
-              username: data.username,
-              page: data.page,
-              last_seen: data.timestamp,
-            }];
-          }
-        });
+      setActiveUsers(prev => {
+        const existing = prev.find(u => u.user_id === data.user_id);
+        if (existing) {
+          return prev.map(u => 
+            u.user_id === data.user_id 
+              ? { ...u, last_seen: data.timestamp }
+              : u
+          );
+        } else {
+          const presence: UserPresence = {
+            user_id: data.user_id,
+            username: data.username,
+            page: data.page,
+            last_seen: data.timestamp,
+          };
+          return [...prev, presence];
+        }
+      });
       }
     };
 
-    const handleUserLeave = (data: any) => {
+    const handleUserLeave = (data: UserLeaveEvent) => {
       if (data.page === page) {
         setActiveUsers(prev => prev.filter(u => u.user_id !== data.user_id));
       }
     };
 
-    const handleUserPresence = (data: any) => {
+    const handleUserPresence = (data: UserPresenceEvent) => {
       if (data.page === page) {
         setActiveUsers(data.users || []);
       }
@@ -163,7 +212,6 @@ export const useUserPresence = (page: string) => {
 // Comments Hook
 export const useComments = (page: string) => {
   const [comments, setComments] = useState<Comment[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
 
   const addComment = useCallback((message: string, position?: { x: number; y: number; element?: string }) => {
     realtimeService.addComment(message, position);
@@ -178,19 +226,29 @@ export const useComments = (page: string) => {
   }, []);
 
   useEffect(() => {
-    const handleCommentAdd = (data: any) => {
+    const handleCommentAdd = (data: CommentEvent) => {
       if (data.page === page) {
         setComments(prev => {
           const exists = prev.find(c => c.id === data.id);
           if (!exists) {
-            return [...prev, data];
+            const comment: Comment = {
+              id: data.id,
+              user_id: data.user_id,
+              username: data.username,
+              page: data.page,
+              message: data.message,
+              position: data.position,
+              created_at: data.created_at,
+              updated_at: data.updated_at
+            };
+            return [...prev, comment];
           }
           return prev;
         });
       }
     };
 
-    const handleCommentUpdate = (data: any) => {
+    const handleCommentUpdate = (data: CommentEvent) => {
       setComments(prev => 
         prev.map(comment => 
           comment.id === data.id 
@@ -200,7 +258,7 @@ export const useComments = (page: string) => {
       );
     };
 
-    const handleCommentDelete = (data: any) => {
+    const handleCommentDelete = (data: CommentEvent) => {
       setComments(prev => prev.filter(comment => comment.id !== data.id));
     };
 
@@ -217,7 +275,6 @@ export const useComments = (page: string) => {
 
   return {
     comments: comments.filter(c => c.page === page),
-    isLoading,
     addComment,
     updateComment,
     deleteComment,
@@ -254,7 +311,7 @@ export const useNotifications = () => {
   }, []);
 
   useEffect(() => {
-    const handleNotification = (data: any) => {
+    const handleNotification = (data: Notification) => {
       setNotifications(prev => [data, ...prev]);
     };
 
@@ -282,15 +339,15 @@ export const useNotifications = () => {
 
 // Reconciliation Progress Hook
 export const useReconciliationProgress = () => {
-  const [activeJobs, setActiveJobs] = useState<Map<string, any>>(new Map());
-  const [completedJobs, setCompletedJobs] = useState<any[]>([]);
+  const [activeJobs, setActiveJobs] = useState<Map<string, ReconciliationJobEvent>>(new Map());
+  const [completedJobs, setCompletedJobs] = useState<ReconciliationJobEvent[]>([]);
 
   const startReconciliation = useCallback((jobId: string, projectId: string) => {
     realtimeService.startReconciliation(jobId, projectId);
   }, []);
 
   useEffect(() => {
-    const handleReconciliationStart = (data: any) => {
+    const handleReconciliationStart = (data: ReconciliationJobEvent) => {
       setActiveJobs(prev => new Map(prev.set(data.job_id, {
         ...data,
         progress: 0,
@@ -298,14 +355,14 @@ export const useReconciliationProgress = () => {
       })));
     };
 
-    const handleReconciliationProgress = (data: any) => {
+    const handleReconciliationProgress = (data: ReconciliationJobEvent) => {
       setActiveJobs(prev => new Map(prev.set(data.job_id, {
         ...prev.get(data.job_id),
         ...data
       })));
     };
 
-    const handleReconciliationComplete = (data: any) => {
+    const handleReconciliationComplete = (data: ReconciliationJobEvent) => {
       const job = activeJobs.get(data.job_id);
       if (job) {
         setCompletedJobs(prev => [{
@@ -321,7 +378,7 @@ export const useReconciliationProgress = () => {
       }
     };
 
-    const handleReconciliationError = (data: any) => {
+    const handleReconciliationError = (data: ReconciliationJobEvent) => {
       setActiveJobs(prev => {
         const newMap = new Map(prev);
         const job = newMap.get(data.job_id);
@@ -358,15 +415,15 @@ export const useReconciliationProgress = () => {
 
 // File Upload Progress Hook
 export const useFileUploadProgress = () => {
-  const [activeUploads, setActiveUploads] = useState<Map<string, any>>(new Map());
-  const [completedUploads, setCompletedUploads] = useState<any[]>([]);
+  const [activeUploads, setActiveUploads] = useState<Map<string, FileUploadEvent>>(new Map());
+  const [completedUploads, setCompletedUploads] = useState<FileUploadEvent[]>([]);
 
   const startFileUpload = useCallback((fileId: string, filename: string) => {
     realtimeService.startFileUpload(fileId, filename);
   }, []);
 
   useEffect(() => {
-    const handleFileUploadStart = (data: any) => {
+    const handleFileUploadStart = (data: FileUploadEvent) => {
       setActiveUploads(prev => new Map(prev.set(data.file_id, {
         ...data,
         progress: 0,
@@ -374,14 +431,14 @@ export const useFileUploadProgress = () => {
       })));
     };
 
-    const handleFileUploadProgress = (data: any) => {
+    const handleFileUploadProgress = (data: FileUploadEvent) => {
       setActiveUploads(prev => new Map(prev.set(data.file_id, {
         ...prev.get(data.file_id),
         ...data
       })));
     };
 
-    const handleFileUploadComplete = (data: any) => {
+    const handleFileUploadComplete = (data: FileUploadEvent) => {
       const upload = activeUploads.get(data.file_id);
       if (upload) {
         setCompletedUploads(prev => [{
@@ -397,7 +454,7 @@ export const useFileUploadProgress = () => {
       }
     };
 
-    const handleFileUploadError = (data: any) => {
+    const handleFileUploadError = (data: FileUploadEvent) => {
       setActiveUploads(prev => {
         const newMap = new Map(prev);
         const upload = newMap.get(data.file_id);
@@ -437,7 +494,7 @@ export const useRealtimeUpdates = () => {
   const [updates, setUpdates] = useState<RealtimeUpdate[]>([]);
 
   useEffect(() => {
-    const handleRealtimeUpdate = (data: any) => {
+    const handleRealtimeUpdate = (data: RealtimeUpdate) => {
       setUpdates(prev => [data, ...prev.slice(0, 99)]); // Keep last 100 updates
     };
 

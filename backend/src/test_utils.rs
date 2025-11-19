@@ -4,12 +4,10 @@
 //! for comprehensive testing of the backend services.
 
 use uuid::Uuid;
-use chrono::Utc;
-use serde_json::json;
 
 use crate::models::{
-    User, NewUser, Project, NewProject, DataSource, NewDataSource,
-    ReconciliationJob, NewReconciliationJob, UserRole, ProjectStatus,
+    NewUser, NewProject, NewDataSource,
+    NewReconciliationJob, UserRole, ProjectStatus,
 };
 
 /// Test database configuration
@@ -23,6 +21,12 @@ pub struct TestUser {
     pub first_name: String,
     pub last_name: String,
     pub role: UserRole,
+}
+
+impl Default for TestUser {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TestUser {
@@ -99,12 +103,12 @@ impl TestProject {
     
     pub fn to_new_project(&self) -> NewProject {
         NewProject {
-            id: self.id,
             name: self.name.clone(),
             description: self.description.clone(),
             owner_id: self.owner_id,
             status: self.status.to_string(),
-            settings: None,
+            settings: serde_json::json!({}),
+            metadata: None,
         }
     }
 }
@@ -135,7 +139,6 @@ impl TestDataSource {
     
     pub fn to_new_data_source(&self) -> NewDataSource {
         NewDataSource {
-            id: self.id,
             project_id: self.project_id,
             name: self.name.clone(),
             source_type: self.source_type.clone(),
@@ -143,7 +146,13 @@ impl TestDataSource {
             file_size: self.file_size,
             file_hash: self.file_hash.clone(),
             schema: None,
+            connection_config: None,
+            record_count: None,
+            description: None,
             status: "uploaded".to_string(),
+            is_active: true,
+            processed_at: None,
+            uploaded_at: None,
         }
     }
 }
@@ -169,14 +178,16 @@ impl TestReconciliationJob {
     }
     
     pub fn to_new_reconciliation_job(&self) -> NewReconciliationJob {
+        use bigdecimal::BigDecimal;
+        use std::str::FromStr;
         NewReconciliationJob {
-            id: self.id,
             project_id: self.project_id,
             name: self.name.clone(),
             description: self.description.clone(),
             status: "pending".to_string(),
-            confidence_threshold: self.confidence_threshold,
-            settings: Some(json!({
+            created_by: Uuid::new_v4(), // Test user ID
+            confidence_threshold: Some(BigDecimal::from_str(&format!("{:.2}", self.confidence_threshold)).unwrap()),
+            settings: Some(serde_json::json!({
                 "matching_rules": [
                     {
                         "field_a": "name",
@@ -187,6 +198,14 @@ impl TestReconciliationJob {
                     }
                 ]
             })),
+            started_at: None,
+            completed_at: None,
+            progress: None,
+            total_records: None,
+            processed_records: None,
+            matched_records: None,
+            unmatched_records: None,
+            processing_time_ms: None,
         }
     }
 }
@@ -201,7 +220,7 @@ Bob Johnson,bob@example.com,555-9012,789 Pine Rd"#
 
 /// Test JSON data
 pub fn get_test_json_data() -> serde_json::Value {
-    json!([
+    serde_json::json!([
         {
             "name": "John Doe",
             "email": "john@example.com",
@@ -230,6 +249,12 @@ pub struct TestJwtData {
     pub role: String,
 }
 
+impl Default for TestJwtData {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TestJwtData {
     pub fn new() -> Self {
         Self {
@@ -253,8 +278,7 @@ pub mod database {
     use super::*;
     use crate::database::Database;
     use diesel::prelude::*;
-    use crate::models::schema::users;
-    use crate::models::schema::projects::{projects, data_sources, reconciliation_jobs};
+    use crate::models::schema::{users, projects, data_sources, reconciliation_jobs};
     
     /// Create a test database connection
     pub async fn create_test_db() -> Database {
@@ -357,14 +381,13 @@ pub struct TestData {
 /// HTTP test utilities
 pub mod http {
     use actix_web::{test, web, App};
-    use serde_json::json;
     
     use crate::handlers::configure_routes;
     use crate::config::Config;
     use crate::database::Database;
     
     /// Create test app
-    pub async fn create_test_app() -> Result<App, Box<dyn std::error::Error>> {
+    pub async fn create_test_app() -> Result<App<impl actix_web::dev::ServiceFactory<actix_web::dev::ServiceRequest, Config = (), Error = actix_web::Error, InitError = ()>>, Box<dyn std::error::Error>> {
         let config = Config::from_env().map_err(|e| {
             format!("Failed to load test config: {}", e)
         })?;
@@ -372,32 +395,36 @@ pub mod http {
             .await
             .map_err(|e| format!("Failed to create test database: {}", e))?;
         
-        App::new()
+        Ok(App::new()
             .app_data(web::Data::new(db))
             .app_data(web::Data::new(config))
-            .configure(configure_routes)
+            .configure(configure_routes))
     }
     
     /// Create test request (simplified for unit tests)
     pub fn create_test_request(method: &str, uri: &str) -> test::TestRequest {
+        use actix_web::http::Method;
+        let method = Method::from_bytes(method.as_bytes()).unwrap_or(Method::GET);
         test::TestRequest::with_uri(uri).method(method)
     }
     
     /// Create authenticated test request (simplified for unit tests)
     pub fn create_authenticated_request(method: &str, uri: &str, token: &str) -> test::TestRequest {
+        use actix_web::http::Method;
+        let method = Method::from_bytes(method.as_bytes()).unwrap_or(Method::GET);
         test::TestRequest::with_uri(uri)
             .method(method)
             .insert_header(("Authorization", format!("Bearer {}", token)))
     }
     
     /// Assert response status
-    pub fn assert_status(response: &mut actix_web::dev::ServiceResponse, expected_status: u16) {
+    pub fn assert_status(response: &actix_web::dev::ServiceResponse, expected_status: u16) {
         assert_eq!(response.status().as_u16(), expected_status);
     }
     
     /// Assert JSON response
     pub async fn assert_json_response<T: serde::de::DeserializeOwned>(
-        response: &mut actix_web::dev::ServiceResponse,
+        response: actix_web::dev::ServiceResponse,
     ) -> T {
         let body = test::read_body(response).await;
         let body_str = String::from_utf8(body.to_vec()).unwrap();

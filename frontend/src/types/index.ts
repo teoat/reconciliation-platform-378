@@ -99,6 +99,9 @@ export * from './files';
 // Ingestion types
 export * from './ingestion';
 
+// Data types (DataSource, DataMapping, DataTransfer)
+export * from './data';
+
 // API types (frontend-specific ApiError, ApiResponse, PaginatedResponse)
 export * from './api';
 

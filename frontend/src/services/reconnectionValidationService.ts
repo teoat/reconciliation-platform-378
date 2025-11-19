@@ -195,12 +195,12 @@ class ReconnectionValidationService {
 
     try {
       // Get server data with timeout
-      const serverData = (await Promise.race([
+      const serverData = await Promise.race([
         getServerData(),
-        new Promise((_, reject) =>
+        new Promise<T>((_, reject) =>
           setTimeout(() => reject(new Error('Validation timeout')), this.config.validationTimeout)
         ),
-      ])) as any;
+      ]);
 
       const inconsistencies: DataInconsistency[] = [];
       const recommendations: string[] = [];

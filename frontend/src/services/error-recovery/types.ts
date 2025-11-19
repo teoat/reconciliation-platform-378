@@ -14,7 +14,7 @@ export interface ErrorRecoveryTest {
 export interface ErrorRecoveryTestResult {
   success: boolean;
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
   timestamp: Date;
   duration: number;
   errors?: string[];
@@ -45,7 +45,7 @@ export interface CircuitBreakerTest {
 export interface FallbackTest {
   fallbackType: 'default-value' | 'cached-data' | 'alternative-service' | 'user-prompt';
   success: boolean;
-  fallbackData?: any;
+  fallbackData?: unknown;
   timestamp: Date;
 }
 

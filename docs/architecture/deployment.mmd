@@ -1,0 +1,32 @@
+graph TB
+    subgraph "Development"
+        A[Local Development] --> B[Docker Compose]
+        B --> C[Frontend:3000]
+        B --> D[Backend:2000]
+        B --> E[PostgreSQL:5432]
+        B --> F[Redis:6379]
+    end
+
+    subgraph "Staging"
+        G[GitHub Actions] --> H[Build Images]
+        H --> I[Push to Registry]
+        I --> J[Deploy to Staging]
+        J --> K[Staging Environment]
+    end
+
+    subgraph "Production"
+        L[Production Deployment] --> M[Load Balancer]
+        M --> N[Frontend Pods]
+        M --> O[Backend Pods]
+        N --> P[CDN]
+        O --> Q[Database Cluster]
+        O --> R[Redis Cluster]
+        O --> S[Monitoring Stack]
+    end
+
+    K --> L
+
+    style A fill:#e1f5ff
+    style K fill:#fff5e1
+    style L fill:#ffe1e1
+

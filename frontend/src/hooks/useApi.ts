@@ -81,7 +81,7 @@ export const useProjects = () => {
   const createProject = useCallback(async (projectData: {
     name: string;
     description?: string;
-    settings?: any;
+    settings?: Record<string, unknown>;
   }) => {
     setIsLoading(true);
     setError(null);
@@ -646,7 +646,7 @@ export const useWebSocket = () => {
     wsRef.current = null;
   }, []);
 
-  const sendMessage = useCallback((type: string, data: any) => {
+    const sendMessage = useCallback((type: string, data: Record<string, unknown>) => {
     if (wsRef.current) {
       wsRef.current.send(type, data);
     }
@@ -724,7 +724,7 @@ export const useRealtimeCollaboration = (page: string) => {
 
   // Handle incoming messages
   useEffect(() => {
-    const handlePresenceUpdate = (data: any) => {
+    const handlePresenceUpdate = (data: { userId: string; userName: string; page: string; timestamp: string }) => {
       setActiveUsers(prev => {
         const existing = prev.find(u => u.id === data.userId);
         if (existing) {
@@ -744,7 +744,7 @@ export const useRealtimeCollaboration = (page: string) => {
       });
     };
 
-    const handleCommentAdded = (data: any) => {
+    const handleCommentAdded = (data: { id: string; page: string; [key: string]: unknown }) => {
       if (data.page === page) {
         setLiveComments(prev => {
           const exists = prev.find(c => c.id === data.id);
@@ -756,7 +756,7 @@ export const useRealtimeCollaboration = (page: string) => {
       }
     };
 
-    const handleUserLeft = (data: any) => {
+    const handleUserLeft = (data: { userId: string }) => {
       setActiveUsers(prev => prev.filter(u => u.id !== data.userId));
     };
 

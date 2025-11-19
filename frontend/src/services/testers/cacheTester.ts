@@ -181,7 +181,10 @@ export class CacheTester {
         entry.timestamp = Date.now();
       } else if (strategy === 'lfu') {
         // Simple LFU: could track access count
-        (entry as any).accessCount = 1;
+        interface CacheEntryWithAccessCount extends CacheEntry {
+          accessCount?: number;
+        }
+        (entry as CacheEntryWithAccessCount).accessCount = 1;
       }
 
       this.cache.set(key, entry);
@@ -228,8 +231,11 @@ export class CacheTester {
       }
 
       // Apply strategy-specific logic
-      if (strategy === 'lfu' && (entry as any).accessCount !== undefined) {
-        (entry as any).accessCount++;
+      interface CacheEntryWithAccessCount extends CacheEntry {
+        accessCount?: number;
+      }
+      if (strategy === 'lfu' && (entry as CacheEntryWithAccessCount).accessCount !== undefined) {
+        (entry as CacheEntryWithAccessCount).accessCount++;
       }
 
       return {

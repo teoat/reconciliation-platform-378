@@ -14,7 +14,7 @@ import * as LucideIcons from 'lucide-react'
 // Icon registry with lazy loading support
 export interface IconConfig {
   name: string
-  component: ComponentType<any>
+  component: ComponentType<React.SVGProps<SVGSVGElement>>
   category: 'navigation' | 'action' | 'status' | 'file' | 'ui' | 'other'
 }
 
@@ -139,7 +139,7 @@ export const StopIcon = LucideIcons.Square
 /**
  * Get icon component by name
  */
-export const getIcon = (name: string): ComponentType<any> | undefined => {
+export const getIcon = (name: string): ComponentType<React.SVGProps<SVGSVGElement>> | undefined => {
   return IconRegistry[name]?.component
 }
 
@@ -151,7 +151,7 @@ export interface IconProps {
   className?: string
   size?: number | string
   color?: string
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export const Icon: React.FC<IconProps> = ({ name, className = '', size = 20, color, ...props }) => {

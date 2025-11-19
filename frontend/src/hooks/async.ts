@@ -69,7 +69,7 @@ export const useFetch = <T>(
   return { data, loading, error, refetch: fetchData }
 }
 
-export const useMutation = <T, V = any>(
+export const useMutation = <T, V = unknown>(
   mutationFn: (variables: V) => Promise<T>
 ) => {
   const [data, setData] = useState<T | null>(null)

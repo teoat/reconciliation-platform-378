@@ -77,8 +77,10 @@ impl ValidationService {
     }
 
     pub fn validate_uuid(&self, uuid_str: &str) -> AppResult<uuid::Uuid> {
-        uuid::Uuid::parse_str(uuid_str)
-            .map_err(|_| AppError::Validation("Invalid UUID format".to_string()))
+        // Use specialized UuidValidator for consistency
+        use super::uuid::UuidValidator;
+        let validator = UuidValidator::new()?;
+        validator.validate(uuid_str)
     }
 
     pub fn validate_filename(&self, filename: &str) -> AppResult<()> {

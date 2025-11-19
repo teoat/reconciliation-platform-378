@@ -7,7 +7,7 @@ export interface ValidationRule {
   maxLength?: number
   pattern?: RegExp
   email?: boolean
-  custom?: (value: any) => string | null
+  custom?: (value: unknown) => string | null
 }
 
 export interface ValidationRules {
@@ -15,7 +15,7 @@ export interface ValidationRules {
 }
 
 export interface FormData {
-  [key: string]: any
+  [key: string]: unknown
 }
 
 export interface FormErrors {
@@ -34,10 +34,10 @@ export interface UseFormReturn {
   touched: { [key: string]: boolean }
   isSubmitting: boolean
   isValid: boolean
-  setValue: (name: string, value: any) => void
+  setValue: (name: string, value: unknown) => void
   setError: (name: string, error: string) => void
   clearError: (name: string) => void
-  handleChange: (name: string, value: any) => void
+  handleChange: (name: string, value: unknown) => void
   handleBlur: (name: string) => void
   handleSubmit: (e?: React.FormEvent) => Promise<void>
   reset: () => void
@@ -50,7 +50,7 @@ const validateEmail = (email: string): boolean => {
   return emailRegex.test(email)
 }
 
-const validateField = (value: any, rules: ValidationRule): string | null => {
+const validateField = (value: unknown, rules: ValidationRule): string | null => {
   if (rules.required && (!value || (typeof value === 'string' && value.trim() === ''))) {
     return 'This field is required'
   }
@@ -114,7 +114,7 @@ export const useForm = ({
 
   const isValid = Object.keys(errors).length === 0 && Object.keys(validateForm()).length === 0
 
-  const setValue = useCallback((name: string, value: any) => {
+  const setValue = useCallback((name: string, value: unknown) => {
     setValues(prev => ({ ...prev, [name]: value }))
     
     // Clear error when user starts typing
@@ -139,7 +139,7 @@ export const useForm = ({
     })
   }, [])
 
-  const handleChange = useCallback((name: string, value: any) => {
+  const handleChange = useCallback((name: string, value: unknown) => {
     setValue(name, value)
   }, [setValue])
 

@@ -4,7 +4,7 @@ import { logger } from '../services/logger'; * PWA Utilities for Service Worker 
 
 interface ServiceWorkerMessage {
   type: string;
-  data?: any;
+  data?: unknown;
 }
 
 interface CacheInfo {
@@ -167,7 +167,7 @@ class PWAUtils {
   /**
    * Queue analytics event for offline sending
    */
-  async queueAnalyticsEvent(event: any): Promise<void> {
+  async queueAnalyticsEvent(event: Record<string, unknown>): Promise<void> {
     return this.sendMessageToSW({ type: 'QUEUE_ANALYTICS', data: event });
   }
 

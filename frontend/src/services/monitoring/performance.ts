@@ -88,7 +88,9 @@ class PerformanceMonitoringService {
     try {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          const fid = (entry as any).processingStart - entry.startTime;
+          // FID entries have processingStart property
+          const fidEntry = entry as PerformanceEntry & { processingStart?: number };
+          const fid = (fidEntry.processingStart ?? fidEntry.startTime) - entry.startTime;
           
           this.recordMetric({
             name: 'FID',
@@ -121,8 +123,9 @@ class PerformanceMonitoringService {
 
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          if (!(entry as any).hadRecentInput) {
-            clsValue += (entry as any).value;
+          const layoutShiftEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+          if (!layoutShiftEntry.hadRecentInput) {
+            clsValue += layoutShiftEntry.value ?? 0;
           }
         }
 

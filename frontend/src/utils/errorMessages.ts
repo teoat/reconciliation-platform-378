@@ -143,7 +143,7 @@ export const getContextualError = (
 /**
  * Format error for logging and reporting
  */
-export const formatErrorForReporting = (error: Error | string, context?: any): string => {
+export const formatErrorForReporting = (error: Error | string, context?: Record<string, unknown>): string => {
   const errorMessage = error instanceof Error ? error.message : error;
   const errorStack = error instanceof Error ? error.stack : undefined;
   const timestamp = new Date().toISOString();

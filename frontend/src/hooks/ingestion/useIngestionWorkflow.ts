@@ -313,7 +313,7 @@ export const useIngestionWorkflow = () => {
 };
 
 // Helper function for transformations
-function applyTransformation(value: any, transformation: string): any {
+function applyTransformation(value: unknown, transformation: string): unknown {
   if (!value) return value;
 
   const transformType = transformation.toLowerCase().trim();

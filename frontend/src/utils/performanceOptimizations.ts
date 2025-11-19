@@ -32,7 +32,7 @@ export function useDeepMemo<T>(factory: () => T, deps: React.DependencyList): T 
 /**
  * Memoized callback with deep dependency comparison
  */
-export function useDeepCallback<T extends (...args: any[]) => any>(
+export function useDeepCallback<T extends (...args: unknown[]) => unknown>(
   callback: T,
   deps: React.DependencyList
 ): T {
@@ -67,7 +67,7 @@ export function useConditionalMemo<T>(
 /**
  * Advanced debouncing with immediate execution option
  */
-export function useDebounce<T extends (...args: any[]) => any>(
+export function useDebounce<T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number,
   options: { immediate?: boolean; maxWait?: number } = {}
@@ -126,7 +126,7 @@ export function useDebounce<T extends (...args: any[]) => any>(
 /**
  * Throttling hook with leading/trailing edge options
  */
-export function useThrottle<T extends (...args: any[]) => any>(
+export function useThrottle<T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number,
   options: { leading?: boolean; trailing?: boolean } = { leading: true, trailing: true }
@@ -321,7 +321,7 @@ export function useBatchedState<T extends Record<string, unknown>>(initialState:
 /**
  * Memory-efficient event handlers
  */
-export function useEventHandlers<T extends Record<string, (...args: any[]) => any>>(
+export function useEventHandlers<T extends Record<string, (...args: unknown[]) => unknown>>(
   handlers: T
 ): T {
   return useMemo(() => handlers, Object.values(handlers));

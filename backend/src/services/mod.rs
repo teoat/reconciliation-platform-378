@@ -51,6 +51,7 @@ pub mod database_migration;
 pub mod advanced_metrics;
 
 // Add missing service modules
+pub mod security;
 pub mod security_monitor;
 pub mod secrets;
 pub mod structured_logging;

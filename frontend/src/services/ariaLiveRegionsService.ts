@@ -24,7 +24,7 @@ export interface Announcement {
   category: 'navigation' | 'status' | 'error' | 'success' | 'warning' | 'info' | 'progress'
   timestamp: Date
   duration?: number
-  context?: any
+  context?: AnnouncementContext
   regionId?: string
 }
 
@@ -58,9 +58,9 @@ export interface AnnouncementContext {
   pageId?: string
   componentId?: string
   action?: string
-  previousState?: any
-  currentState?: any
-  metadata?: any
+  previousState?: Record<string, unknown>
+  currentState?: Record<string, unknown>
+  metadata?: Record<string, unknown>
 }
 
 const defaultConfig: AriaLiveConfig = {
@@ -309,7 +309,7 @@ export class AriaLiveRegionsService {
   public createRegion(regionConfig: Omit<AriaLiveRegion, 'element' | 'isActive'>): AriaLiveRegion {
     const region: AriaLiveRegion = {
       ...regionConfig,
-      element: null as any,
+      element: null as unknown as HTMLElement,
       isActive: false
     }
 

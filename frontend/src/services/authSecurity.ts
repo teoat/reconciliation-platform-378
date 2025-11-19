@@ -7,6 +7,7 @@ import { secureStorage } from './secureStorage'
 
 class RateLimiter {
   private attempts: Map<string, number[]> = new Map()
+  private failedAttempts: Map<string, number> = new Map() // Track failed attempts for warnings
 
   canMakeRequest(key: string, maxAttempts: number, windowMs: number): boolean {
     const now = Date.now()
@@ -27,6 +28,18 @@ class RateLimiter {
 
   reset(key: string): void {
     this.attempts.delete(key)
+    this.failedAttempts.delete(key)
+  }
+
+  recordFailedAttempt(key: string): number {
+    const current = this.failedAttempts.get(key) || 0
+    const newCount = current + 1
+    this.failedAttempts.set(key, newCount)
+    return newCount
+  }
+
+  getFailedAttempts(key: string): number {
+    return this.failedAttempts.get(key) || 0
   }
 
   getRemainingAttempts(key: string, maxAttempts: number, windowMs: number): number {
@@ -34,6 +47,27 @@ class RateLimiter {
     const attempts = this.attempts.get(key) || []
     const recentAttempts = attempts.filter(time => now - time < windowMs)
     return Math.max(0, maxAttempts - recentAttempts.length)
+  }
+
+  /**
+   * Get the time remaining until rate limit resets (in milliseconds)
+   * Returns 0 if not rate limited
+   */
+  getTimeUntilReset(key: string, maxAttempts: number, windowMs: number): number {
+    const now = Date.now()
+    const attempts = this.attempts.get(key) || []
+    const recentAttempts = attempts.filter(time => now - time < windowMs)
+    
+    if (recentAttempts.length < maxAttempts) {
+      return 0 // Not rate limited
+    }
+    
+    // Find the oldest attempt that's still within the window
+    const oldestAttempt = Math.min(...recentAttempts)
+    const resetTime = oldestAttempt + windowMs
+    const remaining = resetTime - now
+    
+    return Math.max(0, remaining)
   }
 }
 
@@ -111,16 +145,24 @@ export const csrfManager = new CSRFManager()
 // ============================================================================
 
 export class SessionTimeoutManager {
-  private timeoutId: NodeJS.Timeout | null = null
+  private timeoutId: ReturnType<typeof setTimeout> | null = null
+  private warningId: ReturnType<typeof setTimeout> | null = null
   private readonly SESSION_TIMEOUT = 30 * 60 * 1000 // 30 minutes
+  private readonly WARNING_TIME = 5 * 60 * 1000 // 5 minutes before timeout
   private lastActivity = Date.now()
   private onTimeout: (() => void) | null = null
+  private onWarning: ((remainingMinutes: number) => void) | null = null
   private activityListeners: Array<() => void> = []
 
-  constructor(onTimeout: () => void) {
+  constructor(
+    onTimeout: () => void,
+    onWarning?: (remainingMinutes: number) => void
+  ) {
     this.onTimeout = onTimeout
+    this.onWarning = onWarning || null
     this.startTracking()
     this.startTimer()
+    this.startWarningTimer()
   }
 
   private startTracking(): void {
@@ -162,6 +204,34 @@ export class SessionTimeoutManager {
         this.startTimer()
       }
     }, 60000) // Check every minute
+    
+    // Reset warning timer when activity detected
+    this.startWarningTimer()
+  }
+
+  private startWarningTimer(): void {
+    if (this.warningId) {
+      clearTimeout(this.warningId)
+    }
+    
+    const timeUntilWarning = this.SESSION_TIMEOUT - this.WARNING_TIME
+    const timeSinceLastActivity = Date.now() - this.lastActivity
+    const remainingUntilWarning = timeUntilWarning - timeSinceLastActivity
+    
+    if (remainingUntilWarning > 0) {
+      this.warningId = setTimeout(() => {
+        const remainingMinutes = Math.ceil((this.SESSION_TIMEOUT - (Date.now() - this.lastActivity)) / (60 * 1000))
+        if (remainingMinutes > 0 && this.onWarning) {
+          this.onWarning(remainingMinutes)
+        }
+      }, remainingUntilWarning)
+    } else {
+      // Warning time already passed, show warning immediately
+      const remainingMinutes = Math.ceil((this.SESSION_TIMEOUT - (Date.now() - this.lastActivity)) / (60 * 1000))
+      if (remainingMinutes > 0 && this.onWarning) {
+        this.onWarning(remainingMinutes)
+      }
+    }
   }
 
   private startTimer(): void {
@@ -178,12 +248,26 @@ export class SessionTimeoutManager {
       clearTimeout(this.timeoutId)
       this.timeoutId = null
     }
+    
+    if (this.warningId) {
+      clearTimeout(this.warningId)
+      this.warningId = null
+    }
 
     // Remove all event listeners
     this.activityListeners.forEach(() => {
       // Note: We can't easily remove anonymous listeners without storing references
       // In production, you'd want to store the handler references
     })
+  }
+
+  /**
+   * Extend session by resetting activity time
+   * Called when user clicks "Stay Logged In" in warning modal
+   */
+  extendSession(): void {
+    this.lastActivity = Date.now()
+    this.resetTimer()
   }
 }
 
@@ -192,7 +276,7 @@ export class SessionTimeoutManager {
 // ============================================================================
 
 export class TokenRefreshManager {
-  private refreshInterval: NodeJS.Timeout | null = null
+  private refreshInterval: ReturnType<typeof setInterval> | null = null
   private readonly REFRESH_INTERVAL = 25 * 60 * 1000 // 25 minutes (refresh before 30min expiry)
 
   constructor(

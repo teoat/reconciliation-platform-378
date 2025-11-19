@@ -21,6 +21,16 @@ pub mod api {
 }
 pub mod startup;
 
+// Test utilities module - always available for test code
+// Note: This is safe to always include as it's only used in test contexts
+mod test_utils;
+
+// Export test utilities for use in tests
+// Note: Made always available since test files in tests/ directory are separate crates
+pub mod test_utils_export {
+    pub use crate::test_utils::*;
+}
+
 // Re-export commonly used types
 pub use config::Config;
 pub use database::Database;

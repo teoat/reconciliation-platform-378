@@ -252,17 +252,17 @@ export const Button: React.FC<ButtonProps> = ({
       onFocus={onFocus}
       onBlur={onBlur}
       onKeyDown={handleKeyDown}
-      aria-label={ariaLabel}
-      aria-describedby={ariaDescribedBy}
-      aria-expanded={ariaExpanded}
-      aria-pressed={ariaPressed}
-      aria-haspopup={ariaHasPopup}
+      {...(ariaLabel && { 'aria-label': ariaLabel })}
+      {...(ariaDescribedBy && { 'aria-describedby': ariaDescribedBy })}
+      {...(ariaExpanded !== undefined && { 'aria-expanded': ariaExpanded })}
+      {...(ariaPressed !== undefined && { 'aria-pressed': ariaPressed })}
+      {...(ariaHasPopup !== undefined && { 'aria-haspopup': ariaHasPopup })}
       form={form}
       name={name}
       value={value}
-      autoFocus={autoFocus}
+      // autoFocus removed for accessibility - use programmatic focus if needed
       tabIndex={tabIndex}
-      role={role}
+      {...(role && { role })}
       data-testid={dataTestId}
       {...props}
     >

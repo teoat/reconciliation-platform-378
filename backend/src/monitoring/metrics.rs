@@ -79,19 +79,11 @@ pub struct PiiMasker;
 
 impl PiiMasker {
     /// Mask email addresses
+    /// Uses the same implementation as handlers::helpers::mask_email for consistency
     pub fn mask_email(email: &str) -> String {
-        if let Some(at_pos) = email.find('@') {
-            if at_pos > 0 {
-                let _prefix = &email[..at_pos];
-                let domain = &email[at_pos..];
-                let masked = "*".repeat(at_pos.min(3));
-                format!("{}@{}", masked, domain)
-            } else {
-                String::from("***@***")
-            }
-        } else {
-            String::from("***")
-        }
+        // Delegate to handlers::helpers::mask_email for consistency
+        // This ensures all email masking uses the same logic across the codebase
+        crate::handlers::helpers::mask_email(email)
     }
 
     /// Mask UUIDs (keep first and last few chars)
@@ -403,7 +395,9 @@ mod tests {
 
     #[test]
     fn test_mask_email() {
-        assert_eq!(PiiMasker::mask_email("test@example.com"), "***@example.com");
+        // Updated to match handlers::helpers::mask_email implementation
+        // Shows first 2 chars + *** + domain (e.g., "te***@example.com")
+        assert_eq!(PiiMasker::mask_email("test@example.com"), "te***@example.com");
     }
 
     #[test]

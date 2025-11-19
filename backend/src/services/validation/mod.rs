@@ -54,8 +54,8 @@ impl ValidationServiceDelegate {
     }
 
     pub fn validate_uuid(&self, uuid_str: &str) -> AppResult<uuid::Uuid> {
-        uuid::Uuid::parse_str(uuid_str)
-            .map_err(|_| crate::errors::AppError::Validation("Invalid UUID format".to_string()))
+        // Use specialized UuidValidator for consistency
+        self.uuid_validator.validate(uuid_str)
     }
 
     pub fn validate_filename(&self, filename: &str) -> AppResult<()> {
@@ -114,14 +114,26 @@ impl Default for ValidationServiceDelegate {
                         log::error!("Failed to create email validator in fallback: {:?}", e);
                         // Use a simpler regex pattern as fallback
                         let fallback_regex = Regex::new(r"^.+@.+\..+$")
-                            .unwrap_or_else(|_| Regex::new(r"^$").expect("Empty regex should always compile"));
+                            .unwrap_or_else(|_| {
+                                // Empty regex is always valid, but if this fails, use a pattern that matches nothing
+                                Regex::new(r"^$").unwrap_or_else(|_| {
+                                    // This should never fail, but handle it gracefully
+                                    Regex::new(r"^a^").unwrap()
+                                })
+                            });
                         email::EmailValidator::with_regex(fallback_regex)
                     }),
                     password_validator: password::PasswordValidator::new().unwrap_or_else(|e| {
                         log::error!("Failed to create password validator in fallback: {:?}", e);
                         // Use a simpler regex pattern as fallback
                         let fallback_regex = Regex::new(r".{8,}")
-                            .unwrap_or_else(|_| Regex::new(r"^$").expect("Empty regex should always compile"));
+                            .unwrap_or_else(|_| {
+                                // Empty regex is always valid, but if this fails, use a pattern that matches nothing
+                                Regex::new(r"^$").unwrap_or_else(|_| {
+                                    // This should never fail, but handle it gracefully
+                                    Regex::new(r"^a^").unwrap()
+                                })
+                            });
                         password::PasswordValidator::with_regex(fallback_regex)
                     }),
                     uuid_validator: uuid::UuidValidator {},
@@ -129,7 +141,13 @@ impl Default for ValidationServiceDelegate {
                         log::error!("Failed to create file validator in fallback: {:?}", e);
                         // Use the same regex pattern as fallback
                         let fallback_regex = Regex::new(r"^\.(csv|xlsx|xls|json|xml|txt)$")
-                            .unwrap_or_else(|_| Regex::new(r"^$").expect("Empty regex should always compile"));
+                            .unwrap_or_else(|_| {
+                                // Empty regex is always valid, but if this fails, use a pattern that matches nothing
+                                Regex::new(r"^$").unwrap_or_else(|_| {
+                                    // This should never fail, but handle it gracefully
+                                    Regex::new(r"^a^").unwrap()
+                                })
+                            });
                         file::FileValidator::with_regex(fallback_regex)
                     }),
                     json_schema_validator: json_schema::JsonSchemaValidator {},

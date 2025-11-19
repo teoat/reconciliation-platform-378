@@ -30,7 +30,7 @@ export const ErrorHandlingExample: React.FC = () => {
   });
 
   const [serviceStatus, setServiceStatus] = useState<'open' | 'half-open' | 'closed'>('closed');
-  const [cachedData, setCachedData] = useState<any>(null);
+  const [cachedData, setCachedData] = useState<Record<string, unknown> | null>(null);
 
   // Simulate API call with error handling
   const handleApiCall = async () => {

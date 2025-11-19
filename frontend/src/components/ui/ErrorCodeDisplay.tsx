@@ -6,12 +6,8 @@ import { logger } from '../../services/logger'; * Error Code Display Component
 
 import React, { useState } from 'react';
 import { Copy, Check, Code } from 'lucide-react';
-// Import ariaLiveRegionsService with fallback
-import ariaLiveRegionsServiceModule from '../../services/ariaLiveRegionsService';
-const ariaLiveRegionsService = 
-  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService || 
-  (ariaLiveRegionsServiceModule as any).default?.getInstance?.() ||
-  ariaLiveRegionsServiceModule;
+// Import ariaLiveRegionsService with type-safe access
+import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
 
 export interface ErrorCodeDisplayProps {
   errorCode?: string;

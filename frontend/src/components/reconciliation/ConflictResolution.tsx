@@ -105,7 +105,7 @@ export const ConflictResolution: React.FC<ConflictResolutionProps> = ({
                 <span className="text-sm text-gray-600">{selectedConflicts.length} selected</span>
                 <select
                   value={bulkAction || ''}
-                  onChange={(e) => setBulkAction(e.target.value as any)}
+                  onChange={(e) => setBulkAction(e.target.value as 'approve' | 'reject' | 'escalate' | null)}
                   className="px-3 py-1 border border-gray-300 rounded text-sm"
                 >
                   <option value="">Bulk action</option>

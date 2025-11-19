@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, FileText, Eye, Trash2 } from 'lucide-react';
-import { useData } from '../components/DataProvider';
-import { ApiService } from '../services/ApiService';
-import { useToast } from '../hooks/useToast';
-import { apiClient } from '../services/apiClient';
-import { PageConfig, StatsCard, ActionConfig } from '../../types/common';
-import { UploadedFile } from '../../types/ingestion';
+import { useData } from '@/components/DataProvider';
+import { ApiService } from '@/services/ApiService';
+import { useToast } from '@/hooks/useToast';
+import { apiClient } from '@/services/apiClient';
+import { PageConfig, StatsCard, ActionConfig } from '@/types/common';
+import { UploadedFile } from '@/types/ingestion';
 
-import { Modal } from '../components/ui/Modal';
-import { ErrorBoundary } from '../components/ui/ErrorBoundary';
-import { LoadingSpinnerComponent, SkeletonText } from '../components/LoadingComponents';
-import { logger } from '../services/logger';
+import { Modal } from '@/components/ui/Modal';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { LoadingSpinnerComponent, SkeletonText } from '@/components/LoadingComponents';
+import { logger } from '@/services/logger';
 
 // Helper component for progress bar with proper ARIA attributes
 const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, title }) => {
@@ -34,7 +34,7 @@ const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, 
   );
 };
 
-import { usePageOrchestration } from '../hooks/usePageOrchestration';
+import { usePageOrchestration } from '@/hooks/usePageOrchestration';
 import {
   ingestionPageMetadata,
   getIngestionOnboardingSteps,
@@ -42,7 +42,7 @@ import {
   getIngestionWorkflowState,
   registerIngestionGuidanceHandlers,
   getIngestionGuidanceContent,
-} from '../orchestration/pages/IngestionPageOrchestration';
+} from '@/orchestration/pages/IngestionPageOrchestration';
 
 // BasePage component (simplified for this extraction)
 interface BasePageProps {

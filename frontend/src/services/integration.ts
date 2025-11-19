@@ -259,49 +259,6 @@ export class IntegrationService {
   }
 }
 
-export class APIService {
-  static async getProjects(): Promise<Project[]> {
-    // Simulate API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([])
-      }, 1000)
-    })
-  }
-
-  static async createProject(project: Partial<Project>): Promise<Project> {
-    // Simulate API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ ...project, id: Math.random().toString(36).substr(2, 9) })
-      }, 500)
-    })
-  }
-
-  static async updateProject(id: string, updates: Partial<Project>): Promise<Project> {
-    // Simulate API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ id, ...updates })
-      }, 500)
-    })
-  }
-
-  static async deleteProject(_id: string): Promise<boolean> {
-    // Simulate API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(true)
-      }, 500)
-    })
-  }
-
-  static async archiveProject(_id: string): Promise<boolean> {
-    // Simulate API call
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(true)
-      }, 500)
-    })
-  }
-}
+// NOTE: APIService mock implementation removed
+// Use the real API service from frontend/src/services/api/mod.ts instead
+// This was a mock service for testing and is no longer needed

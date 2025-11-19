@@ -236,14 +236,39 @@ fn add_security_headers_to_response<B>(
         let csp = if let Some(ref custom_csp) = config.csp_directives {
             custom_csp.clone()
         } else if let Some(nonce) = nonce {
-            // Default CSP with nonce for both scripts and styles
+            // Comprehensive CSP with nonce for both scripts and styles
+            // Includes report-uri for CSP violation reporting
             format!(
-                "default-src 'self'; script-src 'self' 'nonce-{}'; style-src 'self' 'nonce-{}'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;",
+                "default-src 'self'; \
+                script-src 'self' 'nonce-{}' 'strict-dynamic'; \
+                style-src 'self' 'nonce-{}' 'unsafe-inline'; \
+                img-src 'self' data: https: blob:; \
+                font-src 'self' data: https:; \
+                connect-src 'self' https: wss: ws:; \
+                frame-src 'self' https:; \
+                frame-ancestors 'none'; \
+                base-uri 'self'; \
+                form-action 'self'; \
+                upgrade-insecure-requests; \
+                block-all-mixed-content; \
+                report-uri /api/security/csp-report;",
                 nonce, nonce
             )
         } else {
-            // Fallback CSP without nonce
-            "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;".to_string()
+            // Fallback CSP without nonce (should not be used in production)
+            "default-src 'self'; \
+            script-src 'self'; \
+            style-src 'self' 'unsafe-inline'; \
+            img-src 'self' data: https: blob:; \
+            font-src 'self' data: https:; \
+            connect-src 'self' https: wss: ws:; \
+            frame-src 'self' https:; \
+            frame-ancestors 'none'; \
+            base-uri 'self'; \
+            form-action 'self'; \
+            upgrade-insecure-requests; \
+            block-all-mixed-content; \
+            report-uri /api/security/csp-report;".to_string()
         };
 
         if let Ok(val) = HeaderValue::from_str(&csp) {

@@ -383,7 +383,7 @@ export class DataService {
       });
 
       session.status = 'completed';
-      return response.data as any as UploadedFile;
+      return response.data as UploadedFile;
     } catch (error) {
       session.status = 'failed';
       throw error;
@@ -453,8 +453,8 @@ export class DataService {
 
   // Reconciliation Data
   async getReconciliationRecords(projectId: string): Promise<ReconciliationRecord[]> {
-    const response = await apiClient.get(`/api/projects/${projectId}/reconciliation`);
-    return (response.data as any).records;
+    const response = await apiClient.get<{ records: ReconciliationRecord[] }>(`/api/projects/${projectId}/reconciliation`);
+    return response.data?.records ?? [];
   }
 
   async updateReconciliationRecord(

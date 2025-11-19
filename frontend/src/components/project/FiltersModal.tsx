@@ -47,7 +47,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
                   <input
                     type="checkbox"
                     checked={filters.status.includes(status)}
-                    onChange={() => toggleArrayFilter('status', status as any)}
+                    onChange={() => toggleArrayFilter('status', status)}
                     className="rounded border-secondary-300"
                   />
                   <span className="text-sm text-secondary-700 capitalize">{status}</span>

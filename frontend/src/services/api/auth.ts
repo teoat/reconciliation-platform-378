@@ -68,5 +68,32 @@ export class AuthApiService {
       throw new Error(error instanceof Error ? error.message : 'Failed to change password');
     }
   }
+
+  static async requestPasswordReset(email: string) {
+    try {
+      const response = await apiClient.post('/api/auth/password-reset', { email });
+      if (response.error) {
+        throw new Error(getErrorMessageFromApiError(response.error));
+      }
+      return response.data;
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to request password reset');
+    }
+  }
+
+  static async confirmPasswordReset(token: string, newPassword: string) {
+    try {
+      const response = await apiClient.post('/api/auth/password-reset/confirm', { 
+        token, 
+        new_password: newPassword 
+      });
+      if (response.error) {
+        throw new Error(getErrorMessageFromApiError(response.error));
+      }
+      return response.data;
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to confirm password reset');
+    }
+  }
 }
 

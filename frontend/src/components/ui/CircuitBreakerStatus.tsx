@@ -7,12 +7,8 @@ import { logger } from '../../services/logger'; * Circuit Breaker Status Compone
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle, Clock, RefreshCw, Info } from 'lucide-react';
 import { Tooltip } from './Tooltip';
-// Import ariaLiveRegionsService with fallback
-import ariaLiveRegionsServiceModule from '../../services/ariaLiveRegionsService';
-const ariaLiveRegionsService = 
-  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService || 
-  (ariaLiveRegionsServiceModule as any).default?.getInstance?.() ||
-  ariaLiveRegionsServiceModule;
+// Import ariaLiveRegionsService with type-safe access
+import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
 
 export interface CircuitBreakerStatusProps {
   service: string;

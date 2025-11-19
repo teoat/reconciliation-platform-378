@@ -4,6 +4,7 @@ import { logger } from '@/services/logger';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWebSocket } from './useApi';
+import type { Notification } from '@/types/ui';
 
 interface SyncStatus {
   isConnected: boolean;
@@ -281,7 +282,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
 
 // Real-time metrics hook
 export const useRealtimeMetrics = (page: string) => {
-  const [metrics, setMetrics] = useState<any>(null);
+  const [metrics, setMetrics] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const { syncData, requestData, syncStatus } = useRealtimeDataSync({
@@ -322,7 +323,7 @@ export const useRealtimeMetrics = (page: string) => {
 
 // Real-time notifications hook
 export const useRealtimeNotifications = (page: string) => {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const { syncData, requestData } = useRealtimeDataSync({

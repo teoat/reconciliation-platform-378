@@ -916,7 +916,7 @@ class BackupRecoveryService {
     if (job) {
       job.logs.push({
         timestamp: new Date(),
-        level: level as any,
+        level: level as 'debug' | 'info' | 'warn' | 'error',
         message,
         component,
       });

@@ -5,6 +5,7 @@
 pub mod authorization;
 pub mod crypto;
 pub mod date;
+pub mod env_validation;
 pub mod error_handling;
 pub mod error_logging;
 pub mod file;

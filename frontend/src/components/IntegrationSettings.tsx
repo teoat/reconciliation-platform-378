@@ -30,7 +30,7 @@ import { IntegrationConfig, IntegrationService, ProjectExportService, ExportOpti
 interface IntegrationSettingsProps {
   isVisible: boolean
   onClose: () => void
-  projects: any[]
+  projects: Array<{ id: string; name: string; [key: string]: unknown }>
 }
 
 const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
@@ -49,7 +49,13 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
     includeHistory: false
   })
   const [isExporting, setIsExporting] = useState(false)
-  const [exportResult, setExportResult] = useState<any>(null)
+  interface ExportResult {
+    success: boolean
+    error?: string
+    fileUrl?: string
+    fileName?: string
+  }
+  const [exportResult, setExportResult] = useState<ExportResult | null>(null)
 
   const handleToggleIntegration = (id: string) => {
     const success = IntegrationService.toggleIntegration(id)
@@ -186,7 +192,7 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                       value={exportOptions.format}
                       onChange={(e) => setExportOptions(prev => ({ 
                         ...prev, 
-                        format: e.target.value as any 
+                        format: e.target.value as 'csv' | 'excel' | 'json' 
                       }))}
                       className="input-field"
                     >

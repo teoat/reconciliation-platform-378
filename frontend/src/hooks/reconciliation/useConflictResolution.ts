@@ -1,6 +1,16 @@
 import { useState, useCallback } from 'react';
 import { EnhancedReconciliationRecord } from '../../types/reconciliation';
 
+// Extended resolution type for conflict resolution
+interface ConflictResolution {
+  status?: 'pending' | 'approved' | 'rejected' | 'escalated';
+  resolvedAt?: string;
+  resolution?: string;
+  comments?: string[];
+  assignedTo?: string;
+  assignedAt?: string;
+}
+
 export interface ConflictResolutionState {
   conflicts: EnhancedReconciliationRecord[];
   resolvedConflicts: EnhancedReconciliationRecord[];
@@ -100,7 +110,7 @@ export const useConflictResolution = () => {
                   ...(conflict.resolution?.comments || []),
                   comment ? `Resolution: ${comment}` : `Marked as ${resolution}`,
                 ].filter(Boolean),
-              } as any,
+              } as ConflictResolution,
             };
           }
           return conflict;
@@ -149,7 +159,7 @@ export const useConflictResolution = () => {
                     ...(conflict.resolution?.comments || []),
                     comment ? `Bulk resolution: ${comment}` : `Bulk marked as ${resolution}`,
                   ].filter(Boolean),
-                } as any,
+                } as ConflictResolution,
               };
             }
             return conflict;
@@ -218,7 +228,7 @@ export const useConflictResolution = () => {
                   ...(conflict.resolution?.comments || []),
                   `${new Date().toISOString()}: ${comment}`,
                 ],
-              } as any,
+              } as ConflictResolution,
             }
           : conflict
       ),
@@ -236,7 +246,7 @@ export const useConflictResolution = () => {
                 ...conflict.resolution,
                 assignedTo: assignee,
                 assignedAt: new Date().toISOString(),
-              } as any,
+              } as ConflictResolution,
             }
           : conflict
       ),

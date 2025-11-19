@@ -1,40 +1,24 @@
 [tool.tarpaulin]
-# Test coverage configuration for cargo-tarpaulin
-# Install: cargo install cargo-tarpaulin
-# Run: cargo tarpaulin --out Html --output-dir coverage
+# Tarpaulin configuration for test coverage
 
-# Output formats
-out = ["Html", "Xml", "Stdout"]
-
-# Coverage thresholds
-fail_under = 50.0  # Fail if coverage is below 50%
-
-# Exclude patterns
+# Exclude test files from coverage
 exclude_files = [
     "*/tests/*",
     "*/test_utils/*",
     "*/examples/*",
-    "*/benches/*",
-    "*/src/main.rs",  # Main entry point
 ]
 
-# Include patterns
-include_files = [
-    "src/**/*.rs",
-]
+# Exclude lines from coverage
+exclude_assertions = true
+exclude_default_features = false
+
+# Coverage thresholds
+line_threshold = 80.0
+branch_threshold = 80.0
+
+# Output options
+out = ["Html", "Xml"]
+output_dir = "target/tarpaulin-report"
 
 # Timeout for tests
-timeout = 300  # 5 minutes
-
-# Follow test binaries
-follow_exec = true
-
-# Line coverage (default)
-line = true
-
-# Branch coverage
-branch = false  # Enable if needed (slower)
-
-# Test coverage report settings
-report_uri = "coverage/index.html"
-
+timeout = 300

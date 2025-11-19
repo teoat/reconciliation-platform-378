@@ -8,17 +8,18 @@ import { EyeOff } from 'lucide-react'
 import { Lock } from 'lucide-react'
 import { User } from 'lucide-react'
 import { AlertCircle } from 'lucide-react'
-import { useAuth } from '../hooks/useAuth'
-import { useToast } from '../hooks/useToast'
-import { passwordSchema } from '../utils/passwordValidation'
-import { logger } from '../services/logger'
-import { PageMeta } from '../components/seo/PageMeta'
-import { getPrimaryDemoCredentials, isDemoModeEnabled, DEMO_CREDENTIALS } from '../config/demoCredentials'
+import { useAuth } from '@/hooks/useAuth'
+import { useToast } from '@/hooks/useToast'
+import { passwordSchema } from '@/utils/passwordValidation'
+import { logger } from '@/services/logger'
+import { PageMeta } from '@/components/seo/PageMeta'
+import { getPrimaryDemoCredentials, isDemoModeEnabled, DEMO_CREDENTIALS } from '@/config/demoCredentials'
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
   // For login, only validate that password is not empty - backend handles authentication
   password: z.string().min(1, 'Password is required'),
+  rememberMe: z.boolean().optional(),
 })
 
 const registerSchema = z.object({
@@ -62,6 +63,8 @@ const AuthPage: React.FC = () => {
   const [googleButtonError, setGoogleButtonError] = useState(false)
   const [selectedDemoRole, setSelectedDemoRole] = useState<'admin' | 'manager' | 'user'>('admin')
   const demoModeEnabled = isDemoModeEnabled()
+  const [passwordValue, setPasswordValue] = useState('')
+  const [passwordFeedback, setPasswordFeedback] = useState<ReturnType<typeof getPasswordFeedback> | null>(null)
   
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
@@ -178,7 +181,7 @@ const AuthPage: React.FC = () => {
         }
 
         // Clear container before rendering to avoid conflicts
-        // Use innerHTML to clear, which is safer than removeChild when Google manages the DOM
+        // Use replaceChildren() for safer DOM manipulation when Google manages the DOM
         if (googleButtonRef.current) {
           // Check if there's an existing iframe from Google
           const existingIframe = googleButtonRef.current.querySelector('iframe')
@@ -188,8 +191,15 @@ const AuthPage: React.FC = () => {
             setGoogleButtonError(false)
             return
           }
-          // Clear any other content safely
-          googleButtonRef.current.innerHTML = ''
+          // Clear any other content safely using modern DOM API
+          // Using replaceChildren() is safer than innerHTML for clearing
+          const element = googleButtonRef.current as HTMLElement & { replaceChildren?: () => void };
+          if (element.replaceChildren) {
+            element.replaceChildren()
+          } else {
+            // Fallback for older browsers
+            element.innerHTML = ''
+          }
         }
 
         // Initialize Google Sign-In
@@ -261,7 +271,7 @@ const AuthPage: React.FC = () => {
       // Just reset state, let Google handle its own cleanup
       setIsGoogleButtonLoading(false)
       setGoogleButtonError(false)
-      // Note: We don't clear innerHTML here because Google's script manages the DOM
+      // Note: We don't clear the container here because Google's script manages the DOM
       // and React trying to remove it causes "removeChild" errors
     }
   }, [handleGoogleSignIn])
@@ -269,7 +279,7 @@ const AuthPage: React.FC = () => {
   const onLoginSubmit = async (data: LoginForm) => {
     try {
       setError(null)
-      const result = await login(data.email, data.password)
+      const result = await login(data.email, data.password, data.rememberMe)
       if (result.success) {
         toast.success('Welcome back!')
         navigate('/', { replace: true })
@@ -526,7 +536,12 @@ const AuthPage: React.FC = () => {
                     <Lock className="h-5 w-5 text-gray-400" />
                   </div>
                   <input
-                    {...registerForm.register('password')}
+                    {...registerForm.register('password', {
+                      onChange: (e) => {
+                        setPasswordValue(e.target.value)
+                        setPasswordFeedback(getPasswordFeedback(e.target.value))
+                      }
+                    })}
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
                     className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -548,9 +563,52 @@ const AuthPage: React.FC = () => {
                 {registerForm.formState.errors.password && (
                   <p className="mt-1 text-sm text-red-600">{registerForm.formState.errors.password.message}</p>
                 )}
+                
+                {/* Real-time password strength indicator */}
+                {passwordValue && passwordFeedback && (
+                  <div className="mt-2 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-gray-600">Password strength:</span>
+                      <span className={`text-xs font-medium ${
+                        passwordFeedback.strength === 'strong' ? 'text-green-600' :
+                        passwordFeedback.strength === 'medium' ? 'text-yellow-600' :
+                        'text-red-600'
+                      }`}>
+                        {passwordFeedback.strength.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${
+                          passwordFeedback.strength === 'strong' ? 'bg-green-600' :
+                          passwordFeedback.strength === 'medium' ? 'bg-yellow-600' :
+                          'bg-red-600'
+                        }`}
+                        style={{
+                          width: `${(passwordFeedback.checks.filter((c: { passed: boolean }) => c.passed).length / passwordFeedback.checks.length) * 100}%`
+                        }}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      {passwordFeedback.checks.map((check: { label: string; passed: boolean }, index: number) => (
+                        <div key={index} className="flex items-center text-xs">
+                          <span className={`mr-2 ${check.passed ? 'text-green-600' : 'text-gray-400'}`}>
+                            {check.passed ? '✓' : '○'}
+                          </span>
+                          <span className={check.passed ? 'text-gray-600' : 'text-gray-400'}>
+                            {check.label}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {!passwordValue && (
                 <p className="mt-1 text-xs text-gray-500">
                   Must contain uppercase, lowercase, number, and special character
                 </p>
+                )}
               </div>
 
               <div>

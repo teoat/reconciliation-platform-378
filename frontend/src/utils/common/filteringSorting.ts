@@ -103,7 +103,7 @@ export const multiSort = <T>(
   sorts: Array<{
     property: keyof T;
     direction?: 'asc' | 'desc';
-    transform?: (value: any) => any;
+    transform?: (value: unknown) => unknown;
   }>
 ): T[] => {
   let sortedItems = [...items];
@@ -161,7 +161,7 @@ export const sortUploadedFiles = (
   sortBy: 'name' | 'size' | 'status' | 'uploaded_at',
   direction: 'asc' | 'desc' = 'asc'
 ): UploadedFile[] => {
-  const transforms: Record<string, (value: any) => any> = {
+  const transforms: Record<string, (value: unknown) => unknown> = {
     uploaded_at: (value) => (value ? new Date(value).getTime() : 0),
     size: (value) => Number(value),
   };
@@ -227,7 +227,7 @@ export const sortReconciliationRecords = (
   sortBy: 'confidence' | 'status' | 'createdAt' | 'riskLevel',
   direction: 'asc' | 'desc' = 'asc'
 ): EnhancedReconciliationRecord[] => {
-  const transforms: Record<string, (value: any) => any> = {
+  const transforms: Record<string, (value: unknown) => unknown> = {
     createdAt: (value) => new Date(value).getTime(),
   };
 

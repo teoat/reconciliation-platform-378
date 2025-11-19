@@ -37,6 +37,10 @@ async fn main() -> std::io::Result<()> {
     std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
     log::info!("Logging initialized");
 
+    // Validate environment variables before loading configuration
+    log::info!("Validating environment variables...");
+    reconciliation_backend::utils::env_validation::validate_and_exit_on_error();
+
     // Load configuration (initial load from env - needed for database connection)
     log::info!("Loading configuration...");
     let config = match Config::from_env() {

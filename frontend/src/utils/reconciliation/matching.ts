@@ -12,8 +12,8 @@ import {
  */
 export const calculateConfidenceScore = (
   criteria: MatchingCriteria[],
-  data1: any,
-  data2: any
+  data1: Record<string, unknown>,
+  data2: Record<string, unknown>
 ): number => {
   let totalWeight = 0;
   let weightedScore = 0;
@@ -111,8 +111,8 @@ export const levenshteinDistance = (str1: string, str2: string): number => {
  * Applies matching rules to find potential matches
  */
 export const findMatches = (
-  sourceData: any[],
-  targetData: any[],
+  sourceData: Record<string, unknown>[],
+  targetData: Record<string, unknown>[],
   rules: MatchingRule[],
   threshold: number = 80
 ): Array<{
@@ -247,8 +247,8 @@ export const resolveConflicts = (
  * Creates reconciliation records from matched data
  */
 export const createReconciliationRecords = (
-  sourceData: any[],
-  targetData: any[],
+  sourceData: Record<string, unknown>[],
+  targetData: Record<string, unknown>[],
   resolvedMatches: Array<{
     sourceIndex: number;
     targetIndex: number;

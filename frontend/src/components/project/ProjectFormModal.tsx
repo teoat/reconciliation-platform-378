@@ -84,7 +84,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               <select
                 value={formData.category}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, category: e.target.value as any }))
+                  setFormData((prev) => ({ ...prev, category: e.target.value as EnhancedProject['category'] }))
                 }
                 className="input-field"
               >
@@ -116,7 +116,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               <select
                 value={formData.status}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, status: e.target.value as any }))
+                  setFormData((prev) => ({ ...prev, status: e.target.value as EnhancedProject['status'] }))
                 }
                 className="input-field"
               >
@@ -131,7 +131,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
               <select
                 value={formData.priority}
                 onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, priority: e.target.value as any }))
+                  setFormData((prev) => ({ ...prev, priority: e.target.value as EnhancedProject['priority'] }))
                 }
                 className="input-field"
               >

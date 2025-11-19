@@ -549,7 +549,7 @@ class SkeletonService {
     return skeleton
   }
 
-  public showSkeleton(container: HTMLElement, skeletonType: 'table' | 'card' | 'list' | 'custom', config: any = {}): HTMLElement {
+  public showSkeleton(container: HTMLElement, skeletonType: 'table' | 'card' | 'list' | 'custom', config: Partial<SkeletonConfig | TableSkeletonConfig | CardSkeletonConfig | ListSkeletonConfig> = {}): HTMLElement {
     // Hide existing content
     const existingContent = container.querySelectorAll(':not(.skeleton-container)')
     existingContent.forEach(element => {
@@ -632,7 +632,7 @@ class SkeletonService {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: unknown): void {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
       callbacks.forEach(callback => callback(data))
@@ -664,7 +664,7 @@ export const useSkeleton = () => {
     return service.createCustomSkeleton(width, height, config)
   }
 
-  const showSkeleton = (container: HTMLElement, skeletonType: 'table' | 'card' | 'list' | 'custom', config?: any) => {
+  const showSkeleton = (container: HTMLElement, skeletonType: 'table' | 'card' | 'list' | 'custom', config?: Partial<SkeletonConfig | TableSkeletonConfig | CardSkeletonConfig | ListSkeletonConfig>) => {
     return service.showSkeleton(container, skeletonType, config)
   }
 

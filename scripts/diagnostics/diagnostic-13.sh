@@ -3,7 +3,7 @@
 # DIAGNOSTIC AREA 13: Docker & Container Analysis
 # ============================================================================
 
-set -euo pipefail
+set -eo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/../lib/common-functions.sh"

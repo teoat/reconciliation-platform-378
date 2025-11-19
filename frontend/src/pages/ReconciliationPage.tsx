@@ -1,12 +1,12 @@
 import React, { useState, memo, lazy, Suspense, useEffect } from 'react';
 import { logger } from '@/services/logger';
 import { useParams, useNavigate } from 'react-router-dom';
-import { SkipLink } from '../components/ui/SkipLink';
-import { useKeyboardNavigation } from '../hooks/useKeyboardNavigation';
-import { UserFriendlyError } from '../components/ui/UserFriendlyError';
-import { ContextualHelp } from '../components/ui/ContextualHelp';
-import { useErrorRecovery } from '../hooks/useErrorRecovery';
-import { usePageOrchestration } from '../hooks/usePageOrchestration';
+import { SkipLink } from '@/components/ui/SkipLink';
+import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
+import { UserFriendlyError } from '@/components/ui/UserFriendlyError';
+import { ContextualHelp } from '@/components/ui/ContextualHelp';
+import { useErrorRecovery } from '@/hooks/useErrorRecovery';
+import { usePageOrchestration } from '@/hooks/usePageOrchestration';
 import {
   reconciliationPageMetadata,
   getReconciliationOnboardingSteps,
@@ -14,41 +14,28 @@ import {
   getReconciliationWorkflowState,
   registerReconciliationGuidanceHandlers,
   getReconciliationGuidanceContent,
-} from '../orchestration/examples/ReconciliationPageOrchestration';
-import { Upload } from 'lucide-react';
-import { FileText } from 'lucide-react';
-import { Play } from 'lucide-react';
-import { Pause } from 'lucide-react';
-import { CheckCircle } from 'lucide-react';
-import { AlertCircle } from 'lucide-react';
-import { Settings } from 'lucide-react';
-import { BarChart3 } from 'lucide-react';
-import { Users } from 'lucide-react';
-import { Clock } from 'lucide-react';
-import { Download } from 'lucide-react';
-import { useProject } from '../hooks/useApi';
-import { useDataSources } from '../hooks/useApi';
-import { useReconciliationJobs } from '../hooks/useApi';
-import { useReconciliationMatches } from '../hooks/useApi';
+} from '@/orchestration/examples/ReconciliationPageOrchestration';
+import { Upload, FileText, Play, Pause, CheckCircle, AlertCircle, Settings, BarChart3, Users, Clock, Download } from 'lucide-react';
+import { useProject, useDataSources, useReconciliationJobs, useReconciliationMatches } from '@/hooks/useApi';
 // FileDropzone will be lazy loaded
-import { DataTable, Column } from '../components/ui/DataTable';
-import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
-import Modal from '../components/ui/Modal';
-import StatusBadge from '../components/ui/StatusBadge';
-import MetricCard from '../components/ui/MetricCard';
-import { SkeletonDashboard } from '../components/ui/LoadingSpinner';
+import { DataTable, Column } from '@/components/ui/DataTable';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Modal from '@/components/ui/Modal';
+import StatusBadge from '@/components/ui/StatusBadge';
+import MetricCard from '@/components/ui/MetricCard';
+import { SkeletonDashboard } from '@/components/ui/LoadingSpinner';
 import {
   apiClient,
   BackendDataSource,
   BackendReconciliationJob,
   BackendReconciliationMatch,
-} from '../services/apiClient';
-import { PageMeta } from '../components/seo/PageMeta';
+} from '@/services/apiClient';
+import { PageMeta } from '@/components/seo/PageMeta';
 
 // Lazy load heavy components
 const FileDropzone = lazy(() =>
-  import('../components/EnhancedDropzone').then((module) => ({ default: module.FileDropzone }))
+  import('@/components/EnhancedDropzone').then((module) => ({ default: module.FileDropzone }))
 );
 
 interface ReconciliationPageProps {}

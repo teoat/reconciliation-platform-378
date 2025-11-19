@@ -10,7 +10,7 @@ import { ErrorRecoveryAction } from '../components/ui/UserFriendlyError';
 export interface ErrorContext {
   component?: string;
   action?: string;
-  data?: any;
+  data?: Record<string, unknown>;
   timestamp?: Date;
 }
 

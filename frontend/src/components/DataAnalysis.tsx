@@ -89,8 +89,8 @@ import {
 interface DataAnalysisProps {
   isVisible: boolean
   onClose: () => void
-  expensesData?: any[]
-  bankData?: any[]
+  expensesData?: ProcessedExpenseRecord[]
+  bankData?: ProcessedBankRecord[]
 }
 
 const DataAnalysis: React.FC<DataAnalysisProps> = ({
@@ -106,7 +106,24 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
     bank: ProcessedBankRecord
     match: IndonesianMatchingResult
   }>>([])
-  const [summary, setSummary] = useState<any>(null)
+  interface CategoryData {
+    count: number
+    totalAmount: number
+  }
+  
+  interface ReconciliationSummary {
+    categories: {
+      expenses: Record<string, CategoryData>
+      bankRecords: Record<string, CategoryData>
+    }
+    totalExpenses: number
+    totalBankTransactions: number
+    matchedAmount: number
+    unmatchedExpenses: number
+    unmatchedBankTransactions: number
+  }
+  
+  const [summary, setSummary] = useState<ReconciliationSummary | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [processingProgress, setProcessingProgress] = useState(0)
   const [activeTab, setActiveTab] = useState<'overview' | 'matching' | 'categories' | 'timeline'>('overview')
@@ -470,7 +487,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                 <div className="card">
                   <h3 className="text-lg font-semibold text-secondary-900 mb-4">Expense Categories</h3>
                   <div className="space-y-3">
-                    {Object.entries(summary.categories.expenses).slice(0, 10).map(([category, data]: [string, any]) => (
+                    {Object.entries(summary.categories.expenses).slice(0, 10).map(([category, data]: [string, CategoryData]) => (
                       <div key={category} className="flex items-center justify-between">
                         <div>
                           <span className="text-sm font-medium text-secondary-700">{category}</span>
@@ -489,7 +506,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                 <div className="card">
                   <h3 className="text-lg font-semibold text-secondary-900 mb-4">Bank Transaction Categories</h3>
                   <div className="space-y-3">
-                    {Object.entries(summary.categories.bankRecords).slice(0, 10).map(([category, data]: [string, any]) => (
+                    {Object.entries(summary.categories.bankRecords).slice(0, 10).map(([category, data]: [string, CategoryData]) => (
                       <div key={category} className="flex items-center justify-between">
                         <div>
                           <span className="text-sm font-medium text-secondary-700">{category}</span>

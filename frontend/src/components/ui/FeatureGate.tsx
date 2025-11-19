@@ -127,7 +127,14 @@ export const useFeatureGate = (
   isAvailable: boolean;
   reason?: string;
 } => {
-  const { requiredRole = [], requiredPermissions = [], requiredFlag, userRole, userPermissions = [] } = config as any;
+  interface FeatureGateConfigInternal {
+    requiredRole?: string[];
+    requiredPermissions?: string[];
+    requiredFlag?: string;
+    userRole?: string;
+    userPermissions?: string[];
+  }
+  const { requiredRole = [], requiredPermissions = [], requiredFlag, userRole, userPermissions = [] } = config as FeatureGateConfigInternal;
 
   // Check feature flag
   if (requiredFlag) {

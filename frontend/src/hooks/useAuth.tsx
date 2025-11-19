@@ -90,12 +90,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   // Setup session timeout and token refresh when authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      // Start session timeout tracking
-      sessionTimeoutRef.current = new SessionTimeoutManager(() => {
+      // Start session timeout tracking with warning
+      sessionTimeoutRef.current = new SessionTimeoutManager(
+        () => {
         logger.logSecurity('Session timeout triggered')
         logout()
         window.location.href = '/login'
-      })
+        },
+        (remainingMinutes: number) => {
+          // Show warning modal 5 minutes before timeout
+          const event = new CustomEvent('session-timeout-warning', {
+            detail: { remainingMinutes }
+          })
+          window.dispatchEvent(event)
+        }
+      )
+
+      // Listen for extend-session events
+      const handleExtendSession = () => {
+        sessionTimeoutRef.current?.extendSession()
+      }
+      window.addEventListener('extend-session', handleExtendSession)
 
       // Start token refresh manager
       const refreshFn = async (): Promise<string | null> => {
@@ -146,6 +161,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         sessionTimeoutRef.current?.destroy()
         tokenRefreshRef.current?.stop()
         window.removeEventListener('auth:logout-required', handleLogoutRequired)
+        window.removeEventListener('extend-session', handleExtendSession)
       }
     } else {
       // Clean up when not authenticated
@@ -154,15 +170,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [isAuthenticated, logout])
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string, rememberMe?: boolean) => {
     // Rate limiting - 5 attempts per 15 minutes
     const rateLimitKey = `login:${email}`
-    if (!rateLimiter.canMakeRequest(rateLimitKey, 5, 15 * 60 * 1000)) {
-      const remaining = rateLimiter.getRemainingAttempts(rateLimitKey, 5, 15 * 60 * 1000)
-      logger.logSecurity('Login rate limit exceeded', { email, remaining })
+    const maxAttempts = 5
+    const windowMs = 15 * 60 * 1000 // 15 minutes
+    
+    if (!rateLimiter.canMakeRequest(rateLimitKey, maxAttempts, windowMs)) {
+      const remainingAttempts = rateLimiter.getRemainingAttempts(rateLimitKey, maxAttempts, windowMs)
+      const timeUntilReset = rateLimiter.getTimeUntilReset(rateLimitKey, maxAttempts, windowMs)
+      
+      logger.logSecurity('Login rate limit exceeded', { email, remainingAttempts, timeUntilReset })
+      
+      // Calculate user-friendly time message
+      const remainingMinutes = Math.ceil(timeUntilReset / (60 * 1000))
+      const remainingSeconds = Math.ceil((timeUntilReset % (60 * 1000)) / 1000)
+      
+      let timeMessage: string
+      if (remainingMinutes > 0) {
+        timeMessage = `${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}`
+      } else if (remainingSeconds > 0) {
+        timeMessage = `${remainingSeconds} second${remainingSeconds > 1 ? 's' : ''}`
+      } else {
+        timeMessage = 'a moment'
+      }
+      
       return { 
         success: false, 
-        error: `Too many login attempts. Please try again in ${Math.ceil((15 * 60 * 1000) / (60 * 1000))} minutes.` 
+        error: `Too many login attempts. Please try again in ${timeMessage}.` 
       }
     }
 
@@ -173,9 +208,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       setIsLoading(true)
-      const response = await apiClient.login({ email, password })
+      const response = await apiClient.login({ email, password, rememberMe })
       
       if (response.error) {
+        // Record failed attempt for warning
+        const failedCount = rateLimiter.recordFailedAttempt(rateLimitKey)
+        
+        // Show warning after 3 failed attempts
+        if (failedCount >= 3 && failedCount < maxAttempts) {
+          const remaining = maxAttempts - failedCount
+          const errorMsg = getErrorMessageFromApiError(response.error)
+          return { 
+            success: false, 
+            error: `${errorMsg} (${remaining} attempt${remaining !== 1 ? 's' : ''} remaining before account lockout)` 
+          }
+        }
+        
         return { success: false, error: getErrorMessageFromApiError(response.error) }
       }
       
@@ -193,6 +241,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return { success: true }
       }
       
+      // Record failed attempt
+      rateLimiter.recordFailedAttempt(rateLimitKey)
       return { success: false, error: 'Login failed' }
     } catch (error) {
       logger.error('Login failed', { error, email })

@@ -7,12 +7,8 @@ import { logger } from '../../services/logger'; * Service Degraded Banner Compon
 import React, { useEffect, useState } from 'react';
 import { AlertTriangle, X, RefreshCw, Clock, CheckCircle } from 'lucide-react';
 import { Button } from './Button';
-// Import ariaLiveRegionsService with fallback
-import ariaLiveRegionsServiceModule from '../../services/ariaLiveRegionsService';
-const ariaLiveRegionsService = 
-  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService || 
-  (ariaLiveRegionsServiceModule as any).default?.getInstance?.() ||
-  ariaLiveRegionsServiceModule;
+// Import ariaLiveRegionsService with type-safe access
+import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
 
 export interface AlternativeAction {
   label: string;

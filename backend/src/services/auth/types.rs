@@ -16,14 +16,16 @@ pub struct Claims {
 }
 
 /// Login request
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
+    #[serde(default)]
+    pub remember_me: Option<bool>,
 }
 
 /// Register request
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RegisterRequest {
     pub email: String,
     pub password: String,

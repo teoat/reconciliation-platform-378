@@ -1,92 +1,14 @@
 // Generic Reusable Components Library
 // Provides consistent, accessible, and reusable UI components
 
-import React, { forwardRef } from 'react'
-import { X, Loader2 } from 'lucide-react'
-import { uiService } from '../services/uiService'
-import { formService } from '../services/formService'
+import React, { forwardRef } from 'react';
+import { X } from 'lucide-react';
 
-// Button Component
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
-  size?: 'sm' | 'md' | 'lg'
-  loading?: boolean
-  fullWidth?: boolean
-}
-
-export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ 
-    variant = 'primary', 
-    size = 'md', 
-    loading = false, 
-    fullWidth = false,
-    className = '',
-    children,
-    disabled,
-    onClick,
-    ...props 
-  }, ref) => {
-    const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-      if (loading || disabled) return
-      
-      // Handle debouncing
-      const buttonId = `button_${Date.now()}`
-      const success = formService.handleButtonClick(buttonId, () => {
-        onClick?.(e)
-      })
-      
-      if (!success) {
-        formService.setButtonLoading(buttonId, true)
-        setTimeout(() => {
-          formService.setButtonLoading(buttonId, false)
-        }, 300)
-      }
-    }
-
-    const getVariantClasses = () => {
-      const variants = {
-        primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
-        secondary: 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500',
-        outline: 'border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-blue-500',
-        ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-blue-500',
-        danger: 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500'
-      }
-      return variants[variant]
-    }
-
-    const getSizeClasses = () => {
-      const sizes = {
-        sm: 'px-3 py-1.5 text-sm',
-        md: 'px-4 py-2 text-sm',
-        lg: 'px-6 py-3 text-base'
-      }
-      return sizes[size]
-    }
-
-    return (
-      <button
-        ref={ref}
-        className={`
-          inline-flex items-center justify-center rounded-lg font-medium
-          transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2
-          disabled:opacity-50 disabled:cursor-not-allowed
-          ${getVariantClasses()}
-          ${getSizeClasses()}
-          ${fullWidth ? 'w-full' : ''}
-          ${className}
-        `}
-        disabled={disabled || loading}
-        onClick={handleClick}
-        {...props}
-      >
-        {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        {children}
-      </button>
-    )
-  }
-)
-
-Button.displayName = 'Button'
+// NOTE: Button component moved to components/ui/Button.tsx (SSOT)
+// This file now re-exports from ui/Button for backward compatibility
+// @deprecated Use Button from '@/components/ui' instead
+export { Button } from './ui/Button';
+export type { ButtonProps } from './ui/Button';
 
 // Input Component
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -109,7 +31,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     className = '',
     id,
     ...props 
-  }, ref) => {
+  }, ref: React.Ref<HTMLInputElement>) => {
     const inputId = id || `input_${Date.now()}`
     const hasError = !!error
 
@@ -145,7 +67,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               ${rightIcon ? 'pr-10' : ''}
               ${className}
             `}
-            aria-invalid={hasError ? 'true' : 'false'}
+            {...(hasError && { 'aria-invalid': true })}
             aria-describedby={error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined}
             {...props}
           />
@@ -205,11 +127,21 @@ export const Modal: React.FC<ModalProps> = ({
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onClose()
+  // Handle Escape key to close modal
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
     }
-  }
+    
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown)
+      return () => {
+        document.removeEventListener('keydown', handleKeyDown)
+      }
+    }
+  }, [isOpen, onClose])
 
   const getSizeClasses = () => {
     const sizes = {
@@ -226,12 +158,22 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto"
-      onKeyDown={handleKeyDown}
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby={title ? 'modal-title' : undefined}
     >
       {/* Overlay */}
       <div 
         className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
         onClick={handleOverlayClick}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape') {
+            onClose();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Close modal overlay"
       />
       
       {/* Modal */}

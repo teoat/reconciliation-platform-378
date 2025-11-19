@@ -209,7 +209,13 @@ export class ErrorSimulation {
     return new Promise((resolve) => setTimeout(resolve, delayMs));
   }
 
-  static generateTestData(size: number = 100): any {
+  static generateTestData(size: number = 100): {
+    id: string;
+    name: string;
+    data: string;
+    timestamp: number;
+    version: number;
+  } {
     return {
       id: Math.random().toString(36).substring(2, 11),
       name: `Test Data ${Date.now()}`,

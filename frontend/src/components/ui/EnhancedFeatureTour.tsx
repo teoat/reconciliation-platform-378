@@ -12,12 +12,7 @@ import { logger } from '../../services/logger'; * Enhanced Feature Tour Componen
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronRight, ChevronLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { onboardingService } from '../../services/onboardingService';
-import ariaLiveRegionsServiceModule from '../../services/ariaLiveRegionsService';
-
-const ariaLiveRegionsService =
-  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService ||
-  (ariaLiveRegionsServiceModule as any).default?.getInstance?.() ||
-  ariaLiveRegionsServiceModule;
+import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
 
 export interface TourStep {
   id: string;

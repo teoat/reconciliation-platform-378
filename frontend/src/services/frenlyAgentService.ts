@@ -162,7 +162,7 @@ class FrenlyAgentService {
         try {
           // Try with retry mechanism
           const result = await this.retryWithBackoff(async () => {
-            const execResult = await this.agent.execute(context as any);
+            const execResult = await this.agent.execute(context);
             if (!execResult.success) {
               throw new Error('Agent execution failed');
             }

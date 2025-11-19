@@ -8,12 +8,7 @@ import React, { useState, useCallback, useEffect } from 'react';
 import { HelpCircle, X, ChevronRight, Lightbulb, BookOpen, Video, Search } from 'lucide-react';
 import { helpContentService, HelpContent } from '../../services/helpContentService';
 import { HelpSearch } from './HelpSearch';
-import ariaLiveRegionsServiceModule from '../../services/ariaLiveRegionsService';
-
-const ariaLiveRegionsService =
-  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService ||
-  (ariaLiveRegionsServiceModule as any).default?.getInstance?.() ||
-  ariaLiveRegionsServiceModule;
+import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
 
 export interface EnhancedContextualHelpProps {
   contentId?: string; // Help content ID from HelpContentService
@@ -56,13 +51,13 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
       setHelpContent(content);
 
       // Track view (if method exists)
-      if ('trackView' in helpContentService && typeof helpContentService.trackView === 'function') {
-        (helpContentService as any).trackView(content.id);
+      if ('trackView' in helpContentService && typeof (helpContentService as { trackView?: (id: string) => void }).trackView === 'function') {
+        (helpContentService as { trackView: (id: string) => void }).trackView(content.id);
       }
 
       // Load related content (if method exists)
-      if ('getRelated' in helpContentService && typeof helpContentService.getRelated === 'function') {
-        const related = (helpContentService as any).getRelated(content.id, 3);
+      if ('getRelated' in helpContentService && typeof (helpContentService as { getRelated?: (id: string, limit: number) => HelpContent[] }).getRelated === 'function') {
+        const related = (helpContentService as { getRelated: (id: string, limit: number) => HelpContent[] }).getRelated(content.id, 3);
         setRelatedContent(related || []);
       } else {
         // Fallback: get content by category

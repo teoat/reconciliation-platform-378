@@ -6,7 +6,7 @@ interface ButtonFeedbackProps {
   className?: string
   onClick?: (e: React.MouseEvent) => void
   disabled?: boolean
-  [key: string]: any
+  [key: string]: unknown
 }
 
 /**

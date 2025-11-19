@@ -13,7 +13,16 @@ import { XCircle } from 'lucide-react';
 export const SecurityDashboard: React.FC = () => {
   const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
   const [cspViolations, setCspViolations] = useState<string[]>([]);
-  const [sessionInfo, setSessionInfo] = useState<any>(null);
+  interface SessionInfo {
+    id?: string;
+    userId?: string;
+    ipAddress?: string;
+    userAgent?: string;
+    createdAt?: Date;
+    expiresAt?: Date;
+    [key: string]: unknown;
+  }
+  const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
   const [isMonitoring, setIsMonitoring] = useState(false);
 
   useEffect(() => {

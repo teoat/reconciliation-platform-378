@@ -23,6 +23,11 @@ export interface Metadata {
 
 /**
  * Project-specific metadata
+ * 
+ * This is a generic metadata structure for projects.
+ * Used by the simplified Project type in '@/types/service'.
+ * 
+ * For full project data, use '@/types/backend-aligned::Project' instead.
  */
 export interface ProjectMetadata {
   projectName?: string;

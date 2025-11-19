@@ -48,7 +48,13 @@ export const AccessibleButton: React.FC<AccessibleButtonProps> = ({
     handleKeyboardNavigation(e, {
       onEnter: () => {
         if (!disabled && !loading && onClick) {
-          onClick(e as any);
+          // Convert keyboard event to mouse event for onClick handler
+          const syntheticEvent = {
+            ...e,
+            currentTarget: e.currentTarget,
+            target: e.target,
+          } as unknown as React.MouseEvent<HTMLButtonElement>;
+          onClick(syntheticEvent);
         }
       },
       onEscape: () => {

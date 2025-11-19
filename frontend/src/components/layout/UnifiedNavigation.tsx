@@ -16,10 +16,11 @@ import { FileText } from 'lucide-react'
 import { Upload } from 'lucide-react'
 import { useAuth } from '../../hooks/useAuth'
 import Button from '../ui/Button'
+import type { Project } from '@/types/backend-aligned'
 
 interface UnifiedNavigationProps {
   className?: string
-  currentProject?: any
+  currentProject?: Project
 }
 
 const UnifiedNavigation: React.FC<UnifiedNavigationProps> = ({ className = '' }) => {

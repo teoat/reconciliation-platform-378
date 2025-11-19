@@ -35,7 +35,7 @@ export interface CacheStats {
 // MEMORY CACHE IMPLEMENTATION
 // ============================================================================
 
-export class MemoryCache<T = any> {
+export class MemoryCache<T = unknown> {
   private cache = new Map<string, CacheEntry<T>>()
   private config: CacheConfig
   private stats = {
@@ -593,7 +593,7 @@ export const createCache = <T = any>(type: 'memory' | 'localStorage' | 'sessionS
 }
 
 // Cache decorator for functions
-export const cacheable = <T extends (...args: any[]) => any>(
+export const cacheable = <T extends (...args: unknown[]) => unknown>(
   fn: T,
   cache: MemoryCache<ReturnType<T>>,
   keyGenerator?: (...args: Parameters<T>) => string

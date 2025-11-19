@@ -168,6 +168,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               value={getInputValue(filter.value)}
               onChange={(e) => handleFilterChange(filter.id, { value: e.target.value })}
               className="input-field w-40"
+              aria-label={`${filter.field} date filter`}
             />
             {filter.operator === 'between' && (
               <>
@@ -177,6 +178,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                   value={getInputValue(filter.value2)}
                   onChange={(e) => handleFilterChange(filter.id, { value2: e.target.value })}
                   className="input-field w-40"
+                  aria-label={`${filter.field} end date filter`}
                 />
               </>
             )}
@@ -188,6 +190,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
             value={getInputValue(filter.value)}
             onChange={(e) => handleFilterChange(filter.id, { value: e.target.value })}
             className="input-field"
+            aria-label={`${filter.field} filter`}
           >
             <option value="">Select value...</option>
             {filter.options?.map((option) => (
@@ -227,6 +230,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
             value={getInputValue(filter.value)}
             onChange={(e) => handleFilterChange(filter.id, { value: e.target.value === 'true' })}
             className="input-field"
+            aria-label={`${filter.field} boolean filter`}
           >
             <option value="">Select...</option>
             <option value="true">True</option>
@@ -249,7 +253,11 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
             <Filter className="w-6 h-6 text-primary-600" />
             <h2 className="text-xl font-semibold text-secondary-900">Advanced Filters</h2>
           </div>
-          <button onClick={onClose} className="text-secondary-400 hover:text-secondary-600">
+          <button 
+            onClick={onClose} 
+            className="text-secondary-400 hover:text-secondary-600"
+            aria-label="Close filters"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -270,12 +278,14 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                           handleFilterChange(filter.id, { active: e.target.checked })
                         }
                         className="rounded border-secondary-300"
+                        aria-label="Toggle filter active status"
                       />
                       <span className="text-sm text-secondary-700">Active</span>
                     </label>
                     <button
                       onClick={() => handleRemoveFilter(filter.id)}
                       className="text-red-500 hover:text-red-700"
+                      aria-label="Remove filter"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -285,11 +295,13 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {/* Field Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label htmlFor={`filter-field-${filter.id}`} className="block text-sm font-medium text-secondary-700 mb-2">
                       Field
                     </label>
                     <select
+                      id={`filter-field-${filter.id}`}
                       value={filter.field}
+                      aria-label="Filter field selection"
                       onChange={(e) => {
                         const selectedField = availableFields.find((f) => f.id === e.target.value);
                         handleFilterChange(filter.id, {
@@ -312,11 +324,13 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 
                   {/* Operator Selection */}
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label htmlFor={`filter-operator-${filter.id}`} className="block text-sm font-medium text-secondary-700 mb-2">
                       Operator
                     </label>
                     <select
+                      id={`filter-operator-${filter.id}`}
                       value={filter.operator}
+                      aria-label="Filter operator selection"
                       onChange={(e) =>
                         handleFilterChange(filter.id, {
                           operator: e.target.value as FilterConfig['operator'],
@@ -334,10 +348,12 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 
                   {/* Value Input */}
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label htmlFor={`filter-value-${filter.id}`} className="block text-sm font-medium text-secondary-700 mb-2">
                       Value
                     </label>
+                    <div id={`filter-value-${filter.id}`}>
                     {renderFilterInput(filter)}
+                    </div>
                   </div>
                 </div>
               </div>

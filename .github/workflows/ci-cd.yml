@@ -145,22 +145,22 @@ jobs:
           echo "⚠️ Coverage report not found, skipping threshold check"
         fi
 
-     - name: Upload coverage report
-       uses: actions/upload-artifact@v4
-       if: always()
-       with:
-         name: backend-coverage-report
-         path: backend/coverage/
-         retention-days: 30
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: backend-coverage-report
+        path: backend/coverage/
+        retention-days: 30
 
-     - name: Upload coverage to Codecov
-       uses: codecov/codecov-action@v3
-       if: always()
-       with:
-         file: ./backend/coverage/cobertura.xml
-         flags: backend
-         name: backend-coverage
-         fail_ci_if_error: false
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: always()
+      with:
+        file: ./backend/coverage/cobertura.xml
+        flags: backend
+        name: backend-coverage
+        fail_ci_if_error: false
 
     - name: Run backend clippy (deny warnings)
       working-directory: ./backend
@@ -202,49 +202,49 @@ jobs:
       working-directory: ./frontend
       run: npm run test:ci
 
-      - name: Build frontend
-        working-directory: ./frontend
-        run: npm run build
+    - name: Build frontend
+      working-directory: ./frontend
+      run: npm run build
 
-      - name: Check bundle size budgets
-        working-directory: ./frontend
-        run: npm run check-bundle-size:strict
+    - name: Check bundle size budgets
+      working-directory: ./frontend
+      run: npm run check-bundle-size:strict
 
-      - name: Generate frontend coverage
-        working-directory: ./frontend
-        run: npm run test:coverage
+    - name: Generate frontend coverage
+      working-directory: ./frontend
+      run: npm run test:coverage
 
-      - name: Check frontend coverage thresholds
-        working-directory: ./frontend
-        continue-on-error: true
-        run: |
-          if [ -f "coverage/lcov-report/index.html" ]; then
-            # Extract coverage percentage from lcov report
-            COVERAGE=$(grep -oP 'Lines\s*:\s*\K[0-9.]+' coverage/lcov-report/index.html | head -1 || echo "0")
-            if [ -n "$COVERAGE" ]; then
-              THRESHOLD=80
-              if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
-                echo "❌ Frontend coverage ${COVERAGE}% is below ${THRESHOLD}% threshold"
-                echo "::error::Frontend test coverage ${COVERAGE}% is below ${THRESHOLD}% threshold"
-                exit 1
-              else
-                echo "✅ Frontend coverage: ${COVERAGE}% (threshold: ${THRESHOLD}%)"
-              fi
+    - name: Check frontend coverage thresholds
+      working-directory: ./frontend
+      continue-on-error: true
+      run: |
+        if [ -f "coverage/lcov-report/index.html" ]; then
+          # Extract coverage percentage from lcov report
+          COVERAGE=$(grep -oP 'Lines\s*:\s*\K[0-9.]+' coverage/lcov-report/index.html | head -1 || echo "0")
+          if [ -n "$COVERAGE" ]; then
+            THRESHOLD=80
+            if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
+              echo "❌ Frontend coverage ${COVERAGE}% is below ${THRESHOLD}% threshold"
+              echo "::error::Frontend test coverage ${COVERAGE}% is below ${THRESHOLD}% threshold"
+              exit 1
             else
-              echo "⚠️ Could not extract frontend coverage percentage, skipping threshold check"
+              echo "✅ Frontend coverage: ${COVERAGE}% (threshold: ${THRESHOLD}%)"
             fi
           else
-            echo "⚠️ Frontend coverage report not found, skipping threshold check"
+            echo "⚠️ Could not extract frontend coverage percentage, skipping threshold check"
           fi
+        else
+          echo "⚠️ Frontend coverage report not found, skipping threshold check"
+        fi
 
-      - name: Upload frontend coverage to Codecov
-        uses: codecov/codecov-action@v3
-        if: always()
-        with:
-          file: ./frontend/coverage/lcov.info
-          flags: frontend
-          name: frontend-coverage
-          fail_ci_if_error: false
+    - name: Upload frontend coverage to Codecov
+      uses: codecov/codecov-action@v3
+      if: always()
+      with:
+        file: ./frontend/coverage/lcov.info
+        flags: frontend
+        name: frontend-coverage
+        fail_ci_if_error: false
 
   # Security Scanning
   security-scan:
@@ -312,10 +312,10 @@ jobs:
         path: sbom.spdx.json
 
     - name: Run cargo audit
-      working-directory: ./backend
       uses: rustsec/audit-check@v1
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        path: ./backend
 
   # Integration Tests
   integration-test:

@@ -1,0 +1,65 @@
+erDiagram
+    USERS ||--o{ PROJECTS : owns
+    USERS ||--o{ RECONCILIATION_JOBS : creates
+    PROJECTS ||--o{ DATA_SOURCES : contains
+    PROJECTS ||--o{ RECONCILIATION_JOBS : has
+    RECONCILIATION_JOBS ||--o{ RECONCILIATION_RESULTS : produces
+    RECONCILIATION_RESULTS ||--o{ RECONCILIATION_MATCHES : contains
+    DATA_SOURCES ||--o{ RECONCILIATION_JOBS : used_in
+
+    USERS {
+        int id PK
+        string email
+        string name
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    PROJECTS {
+        int id PK
+        int user_id FK
+        string name
+        json settings
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    DATA_SOURCES {
+        int id PK
+        int project_id FK
+        string name
+        string source_type
+        string status
+        json metadata
+        timestamp created_at
+    }
+
+    RECONCILIATION_JOBS {
+        int id PK
+        int project_id FK
+        int user_id FK
+        string name
+        string status
+        float progress
+        json config
+        timestamp created_at
+        timestamp updated_at
+    }
+
+    RECONCILIATION_RESULTS {
+        int id PK
+        int job_id FK
+        json summary
+        json metrics
+        timestamp created_at
+    }
+
+    RECONCILIATION_MATCHES {
+        int id PK
+        int result_id FK
+        float confidence_score
+        string status
+        json data
+        timestamp created_at
+    }
+

@@ -108,7 +108,7 @@ export class ErrorStandardization {
   /**
    * Translate an error to user-friendly format
    */
-  static translateError(error: any): StandardizedError {
+  static translateError(error: unknown): StandardizedError {
     // Check for specific status code
     const statusCode = this.extractStatusCode(error)
     if (statusCode && this.translations.has(statusCode)) {
@@ -116,11 +116,12 @@ export class ErrorStandardization {
     }
     
     // Check error type
-    if (error?.message?.includes('network')) {
+    const err = error as { message?: string };
+    if (err?.message?.includes('network')) {
       return this.translations.get('NETWORK_ERROR')!
     }
     
-    if (error?.message?.includes('timeout')) {
+    if (err?.message?.includes('timeout')) {
       return this.translations.get('TIMEOUT')!
     }
     
@@ -137,10 +138,11 @@ export class ErrorStandardization {
   /**
    * Extract HTTP status code from error
    */
-  private static extractStatusCode(error: any): string | null {
-    if (error?.status) return error.status.toString()
-    if (error?.statusCode) return error.statusCode.toString()
-    if (error?.response?.status) return error.response.status.toString()
+  private static extractStatusCode(error: unknown): string | null {
+    const err = error as { status?: number; statusCode?: number; response?: { status?: number } };
+    if (err?.status) return err.status.toString()
+    if (err?.statusCode) return err.statusCode.toString()
+    if (err?.response?.status) return err.response.status.toString()
     return null
   }
 

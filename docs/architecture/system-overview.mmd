@@ -1,0 +1,40 @@
+graph TB
+    subgraph "Frontend Layer"
+        A[React Application] --> B[Component Library]
+        A --> C[State Management]
+        A --> D[API Client]
+        A --> E[WebSocket Client]
+    end
+
+    subgraph "Backend Layer"
+        F[Rust API Server] --> G[Business Logic]
+        F --> H[Database Layer]
+        F --> I[Cache Layer]
+        F --> J[WebSocket Server]
+    end
+
+    subgraph "Data Layer"
+        H --> K[(PostgreSQL)]
+        I --> L[(Redis)]
+        M[Elasticsearch] --> N[Logs & Analytics]
+    end
+
+    subgraph "Infrastructure"
+        O[Docker Containers] --> P[Frontend Container]
+        O --> Q[Backend Container]
+        O --> R[Database Container]
+        O --> S[Cache Container]
+        O --> T[Monitoring Stack]
+    end
+
+    D --> F
+    E --> J
+    G --> H
+    G --> I
+    T --> M
+
+    style A fill:#e1f5ff
+    style F fill:#ffe1f5
+    style K fill:#fff5e1
+    style L fill:#ffe1e1
+

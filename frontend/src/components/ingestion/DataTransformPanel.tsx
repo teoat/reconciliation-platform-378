@@ -96,7 +96,7 @@ export const DataTransformPanel: React.FC<DataTransformPanelProps> = ({
     });
   };
 
-  const applyTransformation = (value: any, transformation: string): any => {
+  const applyTransformation = (value: unknown, transformation: string): unknown => {
     if (!value) return value;
 
     const transformType = transformation.toLowerCase().trim();

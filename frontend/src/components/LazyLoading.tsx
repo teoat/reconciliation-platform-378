@@ -49,7 +49,7 @@ export const withLazyLoading = <P extends object>(
   const WrappedComponent = (props: P) => (
     <LazyErrorBoundary fallback={fallback}>
       <Suspense fallback={fallback || <LoadingSpinner />}>
-        <LazyComponent {...(props as any)} />
+        <LazyComponent {...props} />
       </Suspense>
     </LazyErrorBoundary>
   )

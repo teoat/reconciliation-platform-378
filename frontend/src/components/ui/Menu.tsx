@@ -124,7 +124,7 @@ export const Menu: React.FC<MenuProps> = memo(({
                     setIsOpen(false)
                   }
                 },
-              } as any)
+              } as React.HTMLAttributes<HTMLElement>)
             }
             return child
           })}

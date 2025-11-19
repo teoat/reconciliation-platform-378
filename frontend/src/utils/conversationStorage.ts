@@ -206,7 +206,7 @@ class ConversationStorage {
   /**
    * Date replacer for JSON serialization
    */
-  private dateReplacer(key: string, value: any): any {
+  private dateReplacer(key: string, value: unknown): unknown {
     if (key === 'timestamp' || key === 'createdAt' || key === 'updatedAt') {
       return value instanceof Date ? value.toISOString() : value;
     }
@@ -216,7 +216,7 @@ class ConversationStorage {
   /**
    * Date reviver for JSON parsing
    */
-  private dateReviver(key: string, value: any): any {
+  private dateReviver(key: string, value: unknown): unknown {
     if (key === 'timestamp' || key === 'createdAt' || key === 'updatedAt') {
       return value ? new Date(value) : value;
     }

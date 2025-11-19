@@ -18,8 +18,8 @@ export interface ReconciliationEngineState {
 
 export interface ReconciliationEngineActions {
   startReconciliation: (
-    sourceData: any[],
-    targetData: any[],
+    sourceData: Record<string, unknown>[],
+    targetData: Record<string, unknown>[],
     rules: MatchingRule[],
     threshold?: number
   ) => Promise<void>;
@@ -57,7 +57,7 @@ export const useReconciliationEngine = () => {
   });
 
   const startReconciliation = useCallback(
-    async (sourceData: any[], targetData: any[], rules: MatchingRule[], threshold: number = 80) => {
+    async (sourceData: Record<string, unknown>[], targetData: Record<string, unknown>[], rules: MatchingRule[], threshold: number = 80) => {
       setState((prev) => ({
         ...prev,
         isProcessing: true,

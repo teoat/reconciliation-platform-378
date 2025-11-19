@@ -12,7 +12,7 @@ import { progressiveValidateCsv, ProgressiveValidationIssue } from '../utils/fil
 
 interface FileDropzoneProps {
   onFilesSelected?: (files: File[]) => void
-  onUploadComplete?: (fileData: any) => void
+  onUploadComplete?: (fileData: Record<string, unknown>) => void
   onUploadError?: (error: Error) => void
   accept?: string
   maxFiles?: number
@@ -31,8 +31,17 @@ export const FileDropzone: React.FC<FileDropzoneProps> = ({
   className = '',
   disabled = false
 }) => {
+  interface UploadSession {
+    id: string
+    fileId: string
+    fileName: string
+    fileSize: number
+    progress: number
+    status: string
+  }
+  
   const [isDragOver, setIsDragOver] = useState(false)
-  const [uploadSessions, setUploadSessions] = useState<Map<string, any>>(new Map())
+  const [uploadSessions, setUploadSessions] = useState<Map<string, UploadSession>>(new Map())
   const [errors, setErrors] = useState<string[]>([])
   const [validationIssues, setValidationIssues] = useState<ProgressiveValidationIssue[]>([])
 

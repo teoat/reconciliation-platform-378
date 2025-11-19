@@ -256,7 +256,7 @@ export const securityHeaders = {
 /**
  * Security middleware for Express.js
  */
-export function securityMiddleware(_req: any, res: any, next: any) {
+export function securityMiddleware(_req: unknown, res: unknown, next: unknown) {
   // Set security headers
   Object.entries(securityHeaders).forEach(([header, value]) => {
     res.setHeader(header, value)

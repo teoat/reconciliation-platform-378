@@ -350,7 +350,7 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
             {recentActivities.length > 0 ? (
               <DataTable
                 data={recentActivities as unknown as Record<string, unknown>[]}
-                columns={activityColumns as any}
+                columns={activityColumns as Array<{ key: string; label: string; [key: string]: unknown }>}
                 searchable={false}
                 pagination={false}
                 emptyMessage="No recent activities"

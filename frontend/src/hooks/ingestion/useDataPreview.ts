@@ -30,7 +30,7 @@ export interface DataPreviewActions {
   setPage: (page: number) => void;
   setPageSize: (pageSize: number) => void;
   sort: (field: string, direction?: 'asc' | 'desc') => void;
-  addFilter: (field: string, value: any, operator?: string) => void;
+  addFilter: (field: string, value: unknown, operator?: string) => void;
   removeFilter: (field: string) => void;
   clearFilters: () => void;
   clearSort: () => void;
@@ -144,7 +144,7 @@ export const useDataPreview = () => {
     });
   }, []);
 
-  const addFilter = useCallback((field: string, value: any, operator: string = 'equals') => {
+  const addFilter = useCallback((field: string, value: unknown, operator: string = 'equals') => {
     setState((prev) => {
       const newFilters = [
         ...prev.filters.filter((f) => f.field !== field),

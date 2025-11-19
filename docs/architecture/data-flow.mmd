@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant User
+    participant Frontend
+    participant API
+    participant Service
+    participant Database
+    participant Cache
+
+    User->>Frontend: Upload File
+    Frontend->>API: POST /api/files
+    API->>Service: Process Upload
+    Service->>Database: Store Metadata
+    Service->>Cache: Cache File Info
+    Cache-->>Service: Cached Data
+    Service-->>API: Upload Result
+    API-->>Frontend: Response
+    Frontend-->>User: Success Notification
+
+    User->>Frontend: Start Reconciliation
+    Frontend->>API: POST /api/reconciliation/jobs
+    API->>Service: Create Job
+    Service->>Database: Store Job
+    Service->>Cache: Cache Job Status
+    Service-->>API: Job Created
+    API-->>Frontend: Job Response
+    Frontend->>Frontend: WebSocket Listen
+    Service->>Cache: Update Status
+    Cache->>Frontend: WebSocket Update
+    Frontend-->>User: Progress Update
+

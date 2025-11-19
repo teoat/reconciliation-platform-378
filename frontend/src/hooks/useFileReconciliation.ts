@@ -229,9 +229,11 @@ export const useProjectAnalytics = (projectId: string | null) => {
   }
 }
 
+import type { DashboardData } from '@/types/backend-aligned';
+
 // Dashboard Hook
 export const useDashboard = () => {
-  const [dashboardData, setDashboardData] = useState<any>(null)
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 

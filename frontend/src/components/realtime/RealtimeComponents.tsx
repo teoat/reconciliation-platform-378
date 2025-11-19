@@ -339,11 +339,11 @@ export const ProgressIndicator: React.FC<{
 
 // Real-time Activity Feed
 export const ActivityFeed: React.FC = () => {
-  const [activities, setActivities] = useState<any[]>([]);
+  const [activities, setActivities] = useState<Array<Record<string, unknown>>>([]);
 
   useEffect(() => {
     // This would integrate with the real-time updates
-    const handleActivity = (data: any) => {
+    const handleActivity = (data: Record<string, unknown>) => {
       setActivities(prev => [data, ...prev.slice(0, 49)]); // Keep last 50 activities
     };
 
