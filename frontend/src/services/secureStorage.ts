@@ -96,7 +96,7 @@ class SecureStorageService {
   /**
    * Set item in localStorage with encryption
    */
-  setItem(key: string, value: any, useSessionStorage = false): void {
+  setItem(key: string, value: unknown, useSessionStorage = false): void {
     try {
       const storage = useSessionStorage ? sessionStorage : localStorage;
       const fullKey = `${this.config.prefix}${key}`;
@@ -126,7 +126,7 @@ class SecureStorageService {
   /**
    * Get item from localStorage with decryption
    */
-  getItem<T = any>(key: string, useSessionStorage = false): T | null {
+  getItem<T = unknown>(key: string, useSessionStorage = false): T | null {
     try {
       const storage = useSessionStorage ? sessionStorage : localStorage;
       const fullKey = `${this.config.prefix}${key}`;

@@ -504,7 +504,7 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
         description="Complete API documentation with endpoints, parameters, and examples."
         keywords="API, documentation, endpoints, reference, integration"
       />
-      <main id="main-content" className={`max-w-7xl mx-auto ${className}`}>
+      <main id="main-content" role="main" className={`max-w-7xl mx-auto ${className}`}>
         <h1 className="text-3xl font-bold text-gray-900 mb-6">API Documentation</h1>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar */}

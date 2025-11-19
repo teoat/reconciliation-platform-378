@@ -180,7 +180,7 @@ export const useRealTimeSync = (config: SyncConfig) => {
 // Hook for reconciliation real-time updates
 export const useReconciliationSync = () => {
   const { subscribe, unsubscribe, emit, isConnected } = useWebSocketContext();
-  const [records, setRecords] = useState<any[]>([]);
+  const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -254,7 +254,7 @@ export const useReconciliationSync = () => {
 // Hook for real-time notifications
 export const useRealtimeNotifications = () => {
   const { subscribe, unsubscribe, isConnected } = useWebSocketContext();
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
     if (!isConnected()) return;
@@ -295,8 +295,8 @@ export const useRealtimeNotifications = () => {
 // Hook for real-time collaboration
 export const useRealtimeCollaboration = (roomId: string) => {
   const { joinRoom, leaveRoom, subscribe, unsubscribe, emit, isConnected } = useWebSocketContext();
-  const [collaborators, setCollaborators] = useState<any[]>([]);
-  const [activities, setActivities] = useState<any[]>([]);
+  const [collaborators, setCollaborators] = useState<Record<string, unknown>[]>([]);
+  const [activities, setActivities] = useState<Record<string, unknown>[]>([]);
 
   useEffect(() => {
     if (!isConnected() || !roomId) return;

@@ -58,7 +58,7 @@ export interface RealtimeUpdate {
     | 'system_alert'
     | 'user_activity'
     | 'data_change';
-  data: any;
+  data: Record<string, unknown>;
   timestamp: string;
 }
 
@@ -79,8 +79,8 @@ class RealtimeService extends EventEmitter {
   private url: string;
   private reconnectAttempts = 0;
   private maxReconnectAttempts = 5;
-  private reconnectTimeout: NodeJS.Timeout | null = null;
-  private heartbeatInterval: NodeJS.Timeout | null = null;
+  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private isConnected = false;
   private isAuthenticated = false;
   private userId: string | null = null;
@@ -113,12 +113,13 @@ class RealtimeService extends EventEmitter {
             const message: WebSocketMessage = JSON.parse(event.data);
             this.handleMessage(message);
           } catch (error) {
-            logger.error('Failed to parse WebSocket message:', error);
+            const errorObj = error instanceof Error ? error : new Error(String(error));
+            logger.error('Failed to parse WebSocket message:', { error: errorObj.message });
           }
         };
 
         this.ws.onclose = (event) => {
-          logger.info('WebSocket disconnected:', event.code, event.reason);
+          logger.info('WebSocket disconnected', { code: event.code, reason: event.reason });
           this.isConnected = false;
           this.isAuthenticated = false;
           this.stopHeartbeat();
@@ -127,7 +128,8 @@ class RealtimeService extends EventEmitter {
         };
 
         this.ws.onerror = (error) => {
-          logger.error('WebSocket error:', error);
+          const errorObj = error instanceof Error ? error : new Error(String(error));
+          logger.error('WebSocket error:', { error: errorObj.message });
           this.emit('error', error);
           reject(error);
         };
@@ -173,8 +175,9 @@ class RealtimeService extends EventEmitter {
     switch (message.type) {
       case 'auth_success':
         this.isAuthenticated = true;
-        this.userId = message.data?.user_id;
-        this.username = message.data?.username;
+        const data = message.data as Record<string, unknown> | undefined;
+        this.userId = (data?.user_id as string | undefined) || null;
+        this.username = (data?.username as string | undefined) || null;
         this.emit('authenticated', message.data);
         break;
 
@@ -248,7 +251,7 @@ class RealtimeService extends EventEmitter {
         break;
 
       default:
-        logger.warn('Unknown message type:', message.type);
+        logger.warn('Unknown message type', { type: message.type });
     }
   }
 

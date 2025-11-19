@@ -6,34 +6,37 @@
 # Usage: ./scripts/run-all-diagnostics.sh [area] [options]
 # ============================================================================
 
-set -euo pipefail
+set -eo pipefail
 
 # Source common functions
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common-functions.sh"
 
-# Diagnostic areas
-declare -A DIAGNOSTIC_AREAS=(
-    ["all"]="Run all diagnostics"
-    ["1"]="Dependency & Package Analysis"
-    ["2"]="Code Quality & Complexity"
-    ["3"]="Security Vulnerabilities"
-    ["4"]="Performance & Optimization"
-    ["5"]="Testing Coverage & Quality"
-    ["6"]="Dead Code Detection"
-    ["7"]="Import/Export Analysis"
-    ["8"]="Database & Schema Analysis"
-    ["9"]="API Consistency & Documentation"
-    ["10"]="Build & Bundle Analysis"
-    ["11"]="Git History & Code Churn"
-    ["12"]="Environment & Configuration"
-    ["13"]="Docker & Container Analysis"
-    ["14"]="License Compliance"
-    ["15"]="Accessibility Compliance"
-    ["system"]="System Health (Docker, Services, Network)"
-    ["frontend"]="Frontend Diagnostics (E2E, Playwright)"
-    ["oauth"]="Google OAuth Diagnostic"
-)
+# Diagnostic area names (compatible with macOS bash)
+get_area_name() {
+    case "$1" in
+        all) echo "Run all diagnostics" ;;
+        1) echo "Dependency & Package Analysis" ;;
+        2) echo "Code Quality & Complexity" ;;
+        3) echo "Security Vulnerabilities" ;;
+        4) echo "Performance & Optimization" ;;
+        5) echo "Testing Coverage & Quality" ;;
+        6) echo "Dead Code Detection" ;;
+        7) echo "Import/Export Analysis" ;;
+        8) echo "Database & Schema Analysis" ;;
+        9) echo "API Consistency & Documentation" ;;
+        10) echo "Build & Bundle Analysis" ;;
+        11) echo "Git History & Code Churn" ;;
+        12) echo "Environment & Configuration" ;;
+        13) echo "Docker & Container Analysis" ;;
+        14) echo "License Compliance" ;;
+        15) echo "Accessibility Compliance" ;;
+        system) echo "System Health (Docker, Services, Network)" ;;
+        frontend) echo "Frontend Diagnostics (E2E, Playwright)" ;;
+        oauth) echo "Google OAuth Diagnostic" ;;
+        *) echo "Unknown area" ;;
+    esac
+}
 
 # Results directory
 RESULTS_DIR="${RESULTS_DIR:-./diagnostic-results}"
@@ -82,7 +85,7 @@ add_area_result() {
 # Run diagnostic area
 run_diagnostic() {
     local area_num=$1
-    local area_name="${DIAGNOSTIC_AREAS[$area_num]}"
+    local area_name=$(get_area_name "$area_num")
     
     log_info "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     log_info "Running Diagnostic Area $area_num: $area_name"
@@ -269,9 +272,25 @@ usage() {
     echo "Usage: $0 [area] [options]"
     echo ""
     echo "Areas:"
-    for key in "${!DIAGNOSTIC_AREAS[@]}"; do
-        echo "  $key - ${DIAGNOSTIC_AREAS[$key]}"
-    done
+    echo "  all - Run all diagnostics"
+    echo "  1 - Dependency & Package Analysis"
+    echo "  2 - Code Quality & Complexity"
+    echo "  3 - Security Vulnerabilities"
+    echo "  4 - Performance & Optimization"
+    echo "  5 - Testing Coverage & Quality"
+    echo "  6 - Dead Code Detection"
+    echo "  7 - Import/Export Analysis"
+    echo "  8 - Database & Schema Analysis"
+    echo "  9 - API Consistency & Documentation"
+    echo "  10 - Build & Bundle Analysis"
+    echo "  11 - Git History & Code Churn"
+    echo "  12 - Environment & Configuration"
+    echo "  13 - Docker & Container Analysis"
+    echo "  14 - License Compliance"
+    echo "  15 - Accessibility Compliance"
+    echo "  system - System Health (Docker, Services, Network)"
+    echo "  frontend - Frontend Diagnostics (E2E, Playwright)"
+    echo "  oauth - Google OAuth Diagnostic"
     echo ""
     echo "Options:"
     echo "  --output-dir DIR    Set output directory (default: ./diagnostic-results)"

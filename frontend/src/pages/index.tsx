@@ -3,7 +3,6 @@
 // ============================================================================
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { DashboardPage } from './DashboardPage';
 import { ProjectPage } from './ProjectPage';
 import { IngestionPage } from './IngestionPage';
 import ReconciliationPage from './ReconciliationPage';
@@ -16,9 +15,7 @@ import { AlertCircle } from 'lucide-react';
 import { Filter } from 'lucide-react';
 import { useFrenly } from '../components/frenly/FrenlyProvider';
 import { LoadingButton } from '../components/ui/LoadingSpinner';
-import { Button, Input, Card, StatusBadge } from '../components/ui';
-import { apiClient } from '../services/apiClient';
-import { ProjectInfo } from '../types/backend-aligned';
+import { Button, Input } from '../components/ui';
 
 // ============================================================================
 // COMMON INTERFACES
@@ -27,7 +24,7 @@ import { ProjectInfo } from '../types/backend-aligned';
 export interface PageConfig {
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   path: string;
   showStats?: boolean;
   showFilters?: boolean;
@@ -37,7 +34,7 @@ export interface PageConfig {
 export interface StatsCard {
   title: string;
   value: string | number;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   color: string;
   trend?: {
     direction: 'up' | 'down' | 'neutral';
@@ -56,7 +53,7 @@ export interface FilterConfig {
 
 export interface ActionConfig {
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   onClick: () => void;
   variant?: 'primary' | 'secondary' | 'danger';
   loading?: boolean;
@@ -213,6 +210,7 @@ export const BasePage: React.FC<BasePageProps> = ({
                       value={filterValues[filter.key] || ''}
                       onChange={(e) => handleFilterChange(filter.key, e.target.value)}
                       className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      aria-label={filter.label}
                     >
                       <option value="">All {filter.label}</option>
                       {filter.options?.map((option) => (

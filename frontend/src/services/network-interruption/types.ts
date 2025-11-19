@@ -14,7 +14,7 @@ export interface NetworkInterruptionTest {
 export interface NetworkInterruptionTestResult {
   success: boolean;
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
   timestamp: Date;
   duration: number;
   errors?: string[];
@@ -41,7 +41,7 @@ export interface RecoveryAction {
   type: 'auto-save' | 'retry' | 'rollback' | 'notify-user';
   success: boolean;
   timestamp: Date;
-  details?: any;
+  details?: Record<string, unknown>;
 }
 
 export interface NetworkInterruptionConfig {

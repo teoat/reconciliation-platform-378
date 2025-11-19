@@ -11,7 +11,7 @@ export interface DataSource {
   file_path?: string
   file_size?: number
   file_hash?: string
-  schema?: any
+  schema?: Record<string, unknown>
   status: string
   created_at: string
   updated_at: string
@@ -24,7 +24,7 @@ export interface ReconciliationJob {
   description?: string
   status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
   confidence_threshold: number
-  settings?: any
+  settings?: Record<string, unknown>
   created_at: string
   updated_at: string
 }
@@ -39,7 +39,7 @@ export interface ReconciliationResult {
   match_type: 'exact' | 'fuzzy' | 'partial'
   reconciled_at: string
   status: 'matched' | 'unmatched' | 'adjudicated'
-  details: any
+  details: Record<string, unknown>
 }
 
 export interface ProjectAnalytics {
@@ -136,8 +136,8 @@ class FileReconciliationService {
   }
 
   // Dashboard Methods
-  async getDashboardData(): Promise<ApiResponse<any>> {
-    return apiClient.makeRequest<any>('/dashboard')
+  async getDashboardData(): Promise<ApiResponse<Record<string, unknown>>> {
+    return apiClient.makeRequest<Record<string, unknown>>('/dashboard')
   }
 
   // System Methods

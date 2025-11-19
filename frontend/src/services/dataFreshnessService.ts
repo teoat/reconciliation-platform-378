@@ -320,7 +320,7 @@ class DataFreshnessService {
   private async performRefresh(
     dataSource: DataSource,
     strategy: RefreshStrategy
-  ): Promise<any> {
+  ): Promise<Record<string, unknown>> {
     const { endpoint, method, headers, params } = dataSource
 
     try {

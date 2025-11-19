@@ -189,7 +189,7 @@ export class FormService extends PersistenceService {
   // Validation Management
   public validateField(
     fieldId: string,
-    value: any,
+    value: unknown,
     rules: Partial<FormValidation>
   ): FormValidation {
     const validation: FormValidation = {

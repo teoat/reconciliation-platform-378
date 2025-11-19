@@ -249,19 +249,27 @@ impl UserService {
 
     /// Get user by ID
     pub async fn get_user_by_id(&self, user_id: Uuid) -> AppResult<UserInfo> {
-        let mut conn = self.db.get_connection()?;
+        let db = Arc::clone(&self.db);
+        let user_id_clone = user_id;
+        
+        let (user, project_count) = tokio::task::spawn_blocking(move || {
+            let mut conn = db.get_connection()?;
+            
+            let user = users::table
+                .filter(users::id.eq(user_id_clone))
+                .first::<User>(&mut conn)
+                .map_err(AppError::Database)?;
 
-        let user = users::table
-            .filter(users::id.eq(user_id))
-            .first::<User>(&mut conn)
-            .map_err(AppError::Database)?;
+            let project_count = projects::table
+                .filter(projects::owner_id.eq(user_id_clone))
+                .count()
+                .get_result::<i64>(&mut conn)
+                .map_err(AppError::Database)?;
 
-        // Get project count
-        let project_count = projects::table
-            .filter(projects::owner_id.eq(user_id))
-            .count()
-            .get_result::<i64>(&mut conn)
-            .map_err(AppError::Database)?;
+            Ok::<_, AppError>((user, project_count))
+        })
+        .await
+        .map_err(|e| AppError::Internal(format!("Task join error: {}", e)))??;
 
         Ok(UserInfo {
             id: user.id,
@@ -283,12 +291,18 @@ impl UserService {
 
     /// Get user by email
     pub async fn get_user_by_email(&self, email: &str) -> AppResult<User> {
-        let mut conn = self.db.get_connection()?;
-
-        users::table
-            .filter(users::email.eq(email))
-            .first::<User>(&mut conn)
-            .map_err(AppError::Database)
+        let db = Arc::clone(&self.db);
+        let email = email.to_string();
+        
+        tokio::task::spawn_blocking(move || {
+            let mut conn = db.get_connection()?;
+            users::table
+                .filter(users::email.eq(&email))
+                .first::<User>(&mut conn)
+                .map_err(AppError::Database)
+        })
+        .await
+        .map_err(|e| AppError::Internal(format!("Task join error: {}", e)))?
     }
 
     /// Check if user exists by email

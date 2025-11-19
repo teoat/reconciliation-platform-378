@@ -224,7 +224,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
         description="Test API endpoints, view responses, and debug integration issues."
         keywords="API, tester, testing, endpoints, debugging"
       />
-      <main id="main-content" className={`space-y-6 ${className}`}>
+      <main id="main-content" role="main" className={`space-y-6 ${className}`}>
         <h1 className="text-3xl font-bold text-gray-900 mb-6">API Tester</h1>
       {/* API Test Controls */}
       <Card>

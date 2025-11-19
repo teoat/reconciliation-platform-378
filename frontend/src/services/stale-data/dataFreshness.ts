@@ -65,7 +65,13 @@ export class DataFreshness {
     return hash.toString(16);
   }
 
-  static generateTestData(size: number = 1000): any {
+  static generateTestData(size: number = 1000): {
+    id: string;
+    name: string;
+    data: string;
+    timestamp: number;
+    version: number;
+  } {
     return {
       id: Math.random().toString(36).substring(2, 11),
       name: `Test Data ${Date.now()}`,

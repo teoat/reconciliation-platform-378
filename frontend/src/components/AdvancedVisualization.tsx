@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { LineChart } from 'lucide-react';
 import { PieChart } from 'lucide-react';
@@ -78,8 +78,9 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
 
     // Simulate data processing
     setTimeout(() => {
-      const reconciliationData = getReconciliationData();
-      const cashflowData = getCashflowData();
+      // Data will be used when implementing actual chart rendering
+      void getReconciliationData();
+      void getCashflowData();
 
       const sampleCharts: ChartData[] = [
         {
@@ -502,6 +503,7 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
               className="input-field"
+              aria-label="Filter chart type"
             >
               <option value="all">All Types</option>
               <option value={CHART_CONFIG.BAR}>Bar Charts</option>
@@ -516,6 +518,7 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
             <button
               onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
               className="btn-secondary flex items-center space-x-2"
+              aria-label={viewMode === 'grid' ? 'Switch to list view' : 'Switch to grid view'}
             >
               {viewMode === 'grid' ? (
                 <Minimize className="w-4 h-4" />
@@ -527,6 +530,7 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
             <button
               onClick={initializeVisualizations}
               className="btn-primary flex items-center space-x-2"
+              aria-label="Refresh visualizations"
             >
               <RefreshCw className="w-4 h-4" />
               <span>Refresh</span>
@@ -536,7 +540,7 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
 
         {project && (
           <div className="text-sm text-primary-600 bg-primary-50 px-3 py-2 rounded-lg inline-block">
-            Project: {project.name}
+            Project: {String(project.name ?? 'Unknown')}
           </div>
         )}
       </div>
@@ -565,6 +569,7 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
                   setShowChartModal(true);
                 }}
                 className="text-secondary-400 hover:text-secondary-600"
+                aria-label={`View ${chart.name} details`}
               >
                 <Eye className="w-4 h-4" />
               </button>
@@ -599,7 +604,10 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
             <div className="mt-4 pt-4 border-t border-secondary-200">
               <div className="flex items-center justify-between text-xs text-secondary-500">
                 <span>Updated: {new Date(chart.lastUpdated).toLocaleDateString()}</span>
-                <button className="text-primary-600 hover:text-primary-700">
+                <button 
+                  className="text-primary-600 hover:text-primary-700"
+                  aria-label="Download chart"
+                >
                   <Download className="w-3 h-3" />
                 </button>
               </div>
@@ -617,6 +625,7 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
               <button
                 onClick={() => setShowChartModal(false)}
                 className="text-secondary-400 hover:text-secondary-600"
+                aria-label="Close chart modal"
               >
                 <X className="w-6 h-6" />
               </button>
@@ -670,7 +679,7 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-secondary-200">
-                      {Object.keys(selectedChart.data[0] ?? {}).map((key) => (
+                      {selectedChart.data.length > 0 && Object.keys(selectedChart.data[0] ?? {}).map((key) => (
                         <th
                           key={key}
                           className="text-left py-2 px-3 font-medium text-secondary-600"
@@ -681,19 +690,27 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedChart.data.slice(0, 10).map((row, index) => (
+                    {selectedChart.data.length > 0 ? selectedChart.data.slice(0, 10).map((row, index) => (
                       <tr key={index} className="border-b border-secondary-100">
                         {Object.values(row).map((value, cellIndex) => (
                           <td key={cellIndex} className="py-2 px-3 text-secondary-900">
-                            {typeof value === 'number' && value > 1000000
-                              ? formatCurrency(value)
-                              : typeof value === 'number' && value < 1
-                                ? formatPercentage(value * 100)
-                                : String(value)}
+                            {value === null || value === undefined
+                              ? 'N/A'
+                              : typeof value === 'number' && value > 1000000
+                                ? formatCurrency(value)
+                                : typeof value === 'number' && value < 1
+                                  ? formatPercentage(value * 100)
+                                  : String(value)}
                           </td>
                         ))}
                       </tr>
-                    ))}
+                    )) : (
+                      <tr>
+                        <td colSpan={100} className="py-4 text-center text-secondary-500">
+                          No data available
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>

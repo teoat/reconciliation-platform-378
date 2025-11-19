@@ -14,7 +14,7 @@ export interface StaleDataTest {
 export interface StaleDataTestResult {
   success: boolean;
   message: string;
-  details?: any;
+  details?: Record<string, unknown>;
   timestamp: Date;
   duration: number;
   errors?: string[];

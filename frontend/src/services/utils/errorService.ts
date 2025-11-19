@@ -7,7 +7,7 @@ export interface ErrorInfo {
   message: string
   stack?: string
   timestamp: Date
-  context?: any
+  context?: Record<string, unknown>
   resolved?: boolean
 }
 
@@ -25,7 +25,7 @@ export class ErrorService extends BaseService<ErrorInfo> {
     super({ persistence: true })
   }
   
-  public reportError(error: Error, context?: any): string {
+  public reportError(error: Error, context?: Record<string, unknown>): string {
     const errorId = this.generateId()
     const errorInfo: ErrorInfo = {
       id: errorId,
@@ -46,14 +46,14 @@ export class ErrorService extends BaseService<ErrorInfo> {
   public resolveError(errorId: string): void {
     const error = this.get(errorId)
     if (error) {
-      error.resolved = true
-      this.set(errorId, error)
-      this.emit('resolved', error)
+      const updatedError: ErrorInfo = { ...error, resolved: true }
+      this.set(errorId, updatedError)
+      this.emit('resolved', updatedError)
     }
   }
   
   public getUnresolvedErrors(): ErrorInfo[] {
-    return Array.from(this.data.values()).filter(error => !error.resolved)
+    return Array.from(this.data.values()).filter((error: ErrorInfo) => !error.resolved)
   }
   
   private generateId(): string {

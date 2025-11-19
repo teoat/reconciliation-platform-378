@@ -4,10 +4,10 @@ import { PersistenceService } from '../BaseService'
 
 export interface DataItem {
   id: string
-  data: any
+  data: unknown
   timestamp: Date
   version: number
-  metadata?: any
+  metadata?: Record<string, unknown>
 }
 
 export class DataService extends PersistenceService<DataItem> {
@@ -24,7 +24,7 @@ export class DataService extends PersistenceService<DataItem> {
     super('reconciliation_data')
   }
   
-  public saveData(id: string, data: any, metadata?: any): void {
+  public saveData(id: string, data: unknown, metadata?: Record<string, unknown>): void {
     const existing = this.get(id)
     const version = existing ? existing.version + 1 : 1
     
@@ -41,9 +41,9 @@ export class DataService extends PersistenceService<DataItem> {
     this.emit('saved', dataItem)
   }
   
-  public getData(id: string): any {
+  public getData<T = unknown>(id: string): T | null {
     const item = this.get(id)
-    return item ? item.data : null
+    return item ? (item.data as T) : null
   }
   
   public getVersion(id: string): number {
@@ -66,14 +66,15 @@ export class DataService extends PersistenceService<DataItem> {
   
   public importData(jsonData: string): void {
     try {
-      const data = JSON.parse(jsonData)
+      const data = JSON.parse(jsonData) as DataItem[]
       data.forEach((item: DataItem) => {
         this.set(item.id, item)
       })
       this.save()
-      this.emit('imported', data)
+      this.emit('imported', data as unknown)
     } catch (error) {
-      logger.error('Failed to import data:', error)
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Failed to import data:', { error: errorObj.message })
     }
   }
 }

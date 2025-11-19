@@ -152,8 +152,8 @@ export interface MonitoringConfig {
 
 export class MonitoringService {
   private config: MonitoringConfig;
-  private metricsBuffer: Map<string, any[]> = new Map();
-  private flushTimer: NodeJS.Timeout | null = null;
+  private metricsBuffer: Map<string, unknown[]> = new Map();
+  private flushTimer: ReturnType<typeof setInterval> | null = null;
   private isInitialized = false;
 
   constructor(config: Partial<MonitoringConfig> = {}) {
@@ -218,7 +218,7 @@ export class MonitoringService {
         )[0] as PerformanceNavigationTiming;
         const paintEntries = performance.getEntriesByType('paint');
 
-        const perfMemory = (performance as any).memory;
+        const perfMemory = (performance as unknown as { memory?: { usedJSHeapSize?: number; jsHeapSizeLimit?: number } }).memory;
         const metrics: PerformanceMetrics = {
           timestamp: new Date().toISOString(),
           pageLoadTime: navigation.loadEventEnd - navigation.loadEventStart,
@@ -260,11 +260,13 @@ export class MonitoringService {
       const fidObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach((entry: PerformanceEntry) => {
-          const perfEntry = entry as any; // Type assertion for FID-specific properties
-          this.collectMetric('performance', {
-            timestamp: new Date().toISOString(),
-            firstInputDelay: perfEntry.processingStart - entry.startTime,
-          });
+          const perfEntry = entry as PerformanceEntry & { processingStart?: number };
+          if (perfEntry.processingStart !== undefined) {
+            this.collectMetric('performance', {
+              timestamp: new Date().toISOString(),
+              firstInputDelay: perfEntry.processingStart - entry.startTime,
+            });
+          }
         });
       });
       fidObserver.observe({ entryTypes: ['first-input'] });
@@ -274,8 +276,8 @@ export class MonitoringService {
         let clsValue = 0;
         const entries = list.getEntries();
         entries.forEach((entry: PerformanceEntry) => {
-          const layoutShiftEntry = entry as any; // Type assertion for CLS-specific properties
-          if (!layoutShiftEntry.hadRecentInput) {
+          const layoutShiftEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+          if (!layoutShiftEntry.hadRecentInput && layoutShiftEntry.value !== undefined) {
             clsValue += layoutShiftEntry.value;
           }
         });
@@ -290,8 +292,9 @@ export class MonitoringService {
       const tbtObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
         let totalBlockingTime = 0;
-        entries.forEach((entry: any) => {
-          totalBlockingTime += entry.duration - 50; // Tasks longer than 50ms
+        entries.forEach((entry) => {
+          const perfEntry = entry as PerformanceEntry & { duration: number };
+          totalBlockingTime += perfEntry.duration - 50; // Tasks longer than 50ms
         });
         this.collectMetric('performance', {
           timestamp: new Date().toISOString(),
@@ -485,7 +488,7 @@ export class MonitoringService {
     }
   }
 
-  private async sendMetrics(type: string, metrics: Metric[]): Promise<void> {
+  private async sendMetrics(type: string, metrics: unknown[]): Promise<void> {
     const endpoint = `/api/monitoring/metrics/${type}`;
 
     for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {

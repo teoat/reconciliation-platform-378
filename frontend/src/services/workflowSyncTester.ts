@@ -53,6 +53,59 @@ export interface WorkflowSyncConfig {
   enableErrorHandlingTests: boolean;
 }
 
+// Type definitions for workflow state objects
+interface ProgressIndicator {
+  progress: number;
+  label: string;
+  color: string;
+}
+
+interface ErrorState {
+  hasError: boolean;
+  errorType?: string;
+  message?: string;
+  details?: Record<string, unknown>;
+}
+
+interface RecoveryState {
+  isRecovering: boolean;
+  recoveryStep?: string;
+  progress?: number;
+  details?: Record<string, unknown>;
+}
+
+interface RollbackState {
+  isRollingBack: boolean;
+  rollbackStep?: string;
+  progress?: number;
+  details?: Record<string, unknown>;
+}
+
+interface WorkflowState {
+  step: string;
+  progress: number;
+  data?: Record<string, unknown>;
+}
+
+interface DataState {
+  records: number;
+  matches: number;
+  discrepancies: number;
+  [key: string]: unknown;
+}
+
+interface StepValidation {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+interface StepPermissions {
+  canEdit: boolean;
+  canDelete: boolean;
+  canAdvance: boolean;
+}
+
 const defaultConfig: WorkflowSyncConfig = {
   testTimeout: 45000,
   retryAttempts: 3,
@@ -952,59 +1005,6 @@ export class WorkflowSyncTester {
   private async simulateDataChange(dataChange: Record<string, unknown>): Promise<void> {
     // Mock implementation
     logger.debug('Data changed', { dataChange });
-  }
-
-  // Type definitions for workflow state objects
-  interface ProgressIndicator {
-    progress: number;
-    label: string;
-    color: string;
-  }
-
-  interface ErrorState {
-    hasError: boolean;
-    errorType?: string;
-    message?: string;
-    details?: Record<string, unknown>;
-  }
-
-  interface RecoveryState {
-    isRecovering: boolean;
-    recoveryStep?: string;
-    progress?: number;
-    details?: Record<string, unknown>;
-  }
-
-  interface RollbackState {
-    isRollingBack: boolean;
-    rollbackStep?: string;
-    progress?: number;
-    details?: Record<string, unknown>;
-  }
-
-  interface WorkflowState {
-    step: string;
-    progress: number;
-    data?: Record<string, unknown>;
-  }
-
-  interface DataState {
-    records: number;
-    matches: number;
-    discrepancies: number;
-    [key: string]: unknown;
-  }
-
-  interface StepValidation {
-    valid: boolean;
-    errors: string[];
-    warnings: string[];
-  }
-
-  interface StepPermissions {
-    canEdit: boolean;
-    canDelete: boolean;
-    canAdvance: boolean;
   }
 
   private async simulateProgressIndicatorUpdate(indicator: ProgressIndicator): Promise<void> {

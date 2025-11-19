@@ -27,14 +27,14 @@ export const timeout = <T>(
   ])
 }
 
-export const createError = (code: string, message: string, details?: any) => ({
+export const createError = (code: string, message: string, details?: unknown) => ({
   code,
   message,
   details,
   timestamp: new Date().toISOString()
 })
 
-export const createSuccess = (code: string, message: string, data?: any) => ({
+export const createSuccess = <T = unknown>(code: string, message: string, data?: T) => ({
   code,
   message,
   data,

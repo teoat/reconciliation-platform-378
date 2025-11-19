@@ -488,10 +488,10 @@ class ReconnectionValidationService {
 // REACT HOOK
 // ============================================================================
 
-export const useReconnectionValidation = (
+export const useReconnectionValidation = <T = unknown>(
   key: string,
-  getCurrentData: () => any,
-  getServerData: () => Promise<any>,
+  getCurrentData: () => T,
+  getServerData: () => Promise<T>,
   metadata: {
     userId?: string;
     projectId?: string;

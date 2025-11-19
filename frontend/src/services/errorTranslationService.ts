@@ -4,7 +4,7 @@
 export interface ErrorTranslationContext {
   component?: string;
   action?: string;
-  data?: any;
+  data?: Record<string, unknown>;
   statusCode?: number;
 }
 

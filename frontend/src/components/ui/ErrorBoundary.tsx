@@ -54,12 +54,11 @@ export class ErrorBoundary extends Component<Props, State> {
     try {
       errorContextService.trackError(error, {
         component: 'ErrorBoundary',
-        severity: 'high',
-        stack: error.stack,
         metadata: {
           componentStack: errorInfo.componentStack,
           errorName: error.name,
           errorMessage: error.message,
+          stack: error.stack,
         },
       });
 
@@ -69,25 +68,34 @@ export class ErrorBoundary extends Component<Props, State> {
         {
           component: 'ErrorBoundary',
           action: 'error_boundary_catch',
-        },
-        error.message
+        }
       );
 
       // Store translation for display
       if (translation) {
         this.setState((prevState) => ({
           ...prevState,
-          translatedError: translation,
+          translatedError: {
+            title: translation.userMessage || 'Error',
+            message: translation.suggestion || translation.userMessage || error.message,
+            code: error.name || 'UNKNOWN_ERROR',
+            suggestion: translation.suggestion,
+          },
         }));
       }
     } catch (contextError) {
       // Fail silently if context service fails
-      logger.warn('Failed to track error context:', contextError);
+      const errorObj = contextError instanceof Error ? contextError : new Error(String(contextError));
+      logger.warn('Failed to track error context:', { error: errorObj.message });
     }
 
     // Log error to console in development
     if (import.meta.env.DEV) {
-      logger.error('ErrorBoundary caught an error:', error, errorInfo);
+      logger.error('ErrorBoundary caught an error:', { 
+        error: error.message, 
+        stack: error.stack,
+        componentStack: errorInfo.componentStack 
+      });
     }
 
     // Call custom error handler if provided
@@ -95,20 +103,15 @@ export class ErrorBoundary extends Component<Props, State> {
 
     // Log to external service in production
     if (import.meta.env.PROD) {
-      // Try to use Sentry if available (using dynamic import with explicit error handling)
-      try {
-        // Use dynamic import with better error handling for missing module
-        // Wrap in try-catch to prevent Vite from failing on missing module
-        const sentryPromise = (async () => {
-          try {
-            return await import('@sentry/react');
-          } catch {
-            return null;
-          }
-        })();
-        sentryPromise.then((sentryModule) => {
-          if (sentryModule?.captureException) {
-            sentryModule.captureException(error, {
+      // Try to use Sentry if available (optional dependency)
+      // Note: @sentry/react is optional - if not installed, this will gracefully fail
+      // Use IIFE to handle async import since componentDidCatch cannot be async
+      (async () => {
+        try {
+          // Check if Sentry is available via window object (if loaded via script tag)
+          const win = window as unknown as { Sentry?: { captureException: (error: Error, options?: unknown) => void } };
+          if (win.Sentry?.captureException) {
+            win.Sentry.captureException(error, {
               contexts: {
                 react: {
                   componentStack: errorInfo.componentStack,
@@ -117,16 +120,28 @@ export class ErrorBoundary extends Component<Props, State> {
             });
           } else {
             // Sentry not available - use logger
-            logger.error('Production error:', error, errorInfo);
+            logger.error('Production error:', { 
+              error: error.message, 
+              stack: error.stack,
+              componentStack: errorInfo.componentStack 
+            });
           }
-        });
-      } catch (importError) {
-        // Sentry not available or not configured - use logger
-        logger.error('Production error:', error, errorInfo);
-      }
+        } catch (importError) {
+          // Sentry not available or not configured - use logger
+          logger.error('Production error:', { 
+            error: error.message, 
+            stack: error.stack,
+            componentStack: errorInfo.componentStack 
+          });
+        }
+      })();
     } else {
       // Always log in development
-      logger.error('Development error:', error, errorInfo);
+      logger.error('Development error:', { 
+        error: error.message, 
+        stack: error.stack,
+        componentStack: errorInfo.componentStack 
+      });
     }
   }
 
@@ -205,12 +220,20 @@ export class ErrorBoundary extends Component<Props, State> {
 // Hook for functional components to handle errors
 export const useErrorHandler = () => {
   const handleError = (error: Error, errorInfo?: string) => {
-    logger.error('Error caught by useErrorHandler:', error, errorInfo);
+    logger.error('Error caught by useErrorHandler:', { 
+      error: error.message, 
+      stack: error.stack,
+      errorInfo 
+    });
 
     // Log to external service in production
     if (import.meta.env.PROD) {
       // Send to error tracking service
-      logger.error('Production error:', error, errorInfo);
+      logger.error('Production error:', { 
+        error: error.message, 
+        stack: error.stack,
+        errorInfo 
+      });
     }
   };
 

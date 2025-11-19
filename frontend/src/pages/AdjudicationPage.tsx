@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, Clock, AlertCircle, RefreshCw, Download, Eye, X } from 'lucide-react';
+import { CheckCircle, Clock, AlertCircle, RefreshCw, Download, Eye } from 'lucide-react';
 import { Button, StatusBadge } from '../components/ui';
 import { Modal } from '../components/ui/Modal';
 import { ErrorBoundary } from '../components/ui/ErrorBoundary';
-import { LoadingSpinnerComponent, SkeletonText } from '../components/LoadingComponents';
+import { SkeletonText } from '../components/LoadingComponents';
 import { useData } from '../components/DataProvider';
-import { useReconciliation } from '../hooks/useFileReconciliation';
 import { ApiService } from '../services/ApiService';
 import { useToast } from '../hooks/useToast';
 import { logger } from '../services/logger';
@@ -27,6 +26,8 @@ const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, 
           aria-valuenow={progressValue}
           aria-valuemin={0}
           aria-valuemax={100}
+          aria-live="polite"
+          tabIndex={0}
         ></div>
       </div>
     </div>
@@ -44,17 +45,10 @@ import {
 } from '../orchestration/pages/AdjudicationPageOrchestration';
 
 // Interfaces (shared with main index.tsx)
-// Icon component props interface
-interface IconProps {
-  className?: string;
-  size?: number;
-  color?: string;
-}
-
 export interface PageConfig {
   title: string;
   description: string;
-  icon: React.ComponentType<IconProps>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   path: string;
   showStats?: boolean;
   showFilters?: boolean;
@@ -83,7 +77,7 @@ export interface FilterConfig {
 
 export interface ActionConfig {
   label: string;
-  icon: React.ComponentType<IconProps>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   onClick: () => void;
   variant?: 'primary' | 'secondary' | 'danger';
   loading?: boolean;
@@ -111,16 +105,6 @@ const BasePage: React.FC<BasePageProps> = ({
 }) => {
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
 
-  // Filter records based on filter values (to be passed to children)
-  const filterRecords = (records: ReconciliationRecord[]) => {
-    return records.filter((record) => {
-      return Object.entries(filterValues).every(([key, value]) => {
-        if (!value) return true;
-        const recordValue = (record as Record<string, unknown>)[key] || '';
-        return String(recordValue).toLowerCase().includes(String(value).toLowerCase());
-      });
-    });
-  };
 
   const handleFilterChange = (key: string, value: string) => {
     setFilterValues((prev) => ({ ...prev, [key]: value }));
@@ -302,9 +286,6 @@ const AdjudicationPageContent: React.FC = () => {
   // Page Orchestration with Frenly AI
   const {
     updatePageContext,
-    trackFeatureUsage,
-    trackFeatureError,
-    trackUserAction,
   } = usePageOrchestration({
     pageMetadata: adjudicationPageMetadata,
     getPageContext: () =>
@@ -466,7 +447,7 @@ const AdjudicationPageContent: React.FC = () => {
   const config: PageConfig = {
     title: 'Adjudication',
     description: 'Review and resolve discrepancies',
-    icon: CheckCircle,
+    icon: CheckCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
     path: '/adjudication',
     showStats: true,
     showFilters: true,
@@ -477,25 +458,25 @@ const AdjudicationPageContent: React.FC = () => {
     {
       title: 'Total Records',
       value: records.length,
-      icon: CheckCircle,
+      icon: CheckCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       color: 'bg-blue-100 text-blue-600',
     },
     {
       title: 'Pending',
       value: records.filter((r) => r.status === 'pending').length,
-      icon: Clock,
+      icon: Clock as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       color: 'bg-yellow-100 text-yellow-600',
     },
     {
       title: 'Approved',
       value: records.filter((r) => r.status === 'approved').length,
-      icon: CheckCircle,
+      icon: CheckCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       color: 'bg-green-100 text-green-600',
     },
     {
       title: 'Rejected',
       value: records.filter((r) => r.status === 'rejected').length,
-      icon: AlertCircle,
+      icon: AlertCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       color: 'bg-red-100 text-red-600',
     },
   ];
@@ -527,14 +508,14 @@ const AdjudicationPageContent: React.FC = () => {
   const actions: ActionConfig[] = [
     {
       label: isRefreshing ? 'Refreshing...' : 'Refresh',
-      icon: RefreshCw,
+      icon: RefreshCw as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       onClick: handleRefresh,
       variant: 'secondary',
       loading: isRefreshing,
     },
     {
       label: isExporting ? 'Exporting...' : 'Export',
-      icon: Download,
+      icon: Download as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       onClick: handleExport,
       variant: 'secondary',
       loading: isExporting,

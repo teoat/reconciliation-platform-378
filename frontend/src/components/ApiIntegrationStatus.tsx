@@ -96,7 +96,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
         description="Monitor API integration status, connection health, and endpoint availability."
         keywords="API, integration, status, health check, monitoring"
       />
-      <main id="main-content" className={`space-y-4 ${className}`}>
+      <main id="main-content" role="main" className={`space-y-4 ${className}`}>
         <h1 className="text-3xl font-bold text-gray-900 mb-6">API Integration Status</h1>
       {/* Connection Status */}
       <Card>

@@ -10,7 +10,7 @@ export interface ErrorContext {
   userAgent?: string;
   url?: string;
   timestamp?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ErrorEvent {
@@ -99,14 +99,15 @@ class ErrorTrackingService {
   /**
    * Track API error
    */
-  trackAPIError(url: string, status: number, error: any): void {
+  trackAPIError(url: string, status: number, error: Error | unknown): void {
+    const errorObj = error instanceof Error ? error : new Error(String(error));
     this.trackError({
       message: `API Error: ${status} ${url}`,
-      stack: error?.stack,
+      stack: errorObj.stack,
       context: {
         url,
-        status,
-        error: error?.message,
+        status: String(status),
+        error: errorObj.message,
       },
       severity: status >= 500 ? 'critical' : status >= 400 ? 'high' : 'medium',
       category: 'api',
@@ -181,9 +182,11 @@ class ErrorTrackingService {
     }
 
     // Check if Sentry or other monitoring service is configured
-    if (typeof window !== 'undefined' && (window as any).Sentry) {
-      try {
-        (window as any).Sentry.captureException(new Error(error.message), {
+    if (typeof window !== 'undefined') {
+      const win = window as unknown as { Sentry?: { captureException: (error: Error, options?: unknown) => void } };
+      if (win.Sentry) {
+        try {
+          win.Sentry.captureException(new Error(error.message), {
           contexts: {
             custom: error.context,
           },
@@ -195,6 +198,7 @@ class ErrorTrackingService {
       } catch (e) {
         // Sentry not available or error sending
       }
+    }
     }
 
     // Could also send to custom API endpoint

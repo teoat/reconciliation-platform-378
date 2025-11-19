@@ -43,13 +43,13 @@ export interface SoundConfig {
 export interface InteractionCondition {
   field: string
   operator: 'equals' | 'not_equals' | 'greater_than' | 'less_than' | 'contains' | 'exists'
-  value: any
+  value: string | number | boolean | null
 }
 
 export interface InteractionContext {
   component: string
   action: string
-  data?: any
+  data?: Record<string, unknown>
   userRole?: string
   deviceType?: 'mobile' | 'tablet' | 'desktop'
   preferences?: UserPreferences
@@ -210,7 +210,8 @@ class MicroInteractionService {
         this.userPreferences = { ...this.userPreferences, ...JSON.parse(stored) }
       }
     } catch (error) {
-      logger.error('Failed to load user preferences:', error)
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Failed to load user preferences:', { error: errorObj.message })
     }
   }
 
@@ -218,15 +219,18 @@ class MicroInteractionService {
     try {
       localStorage.setItem('micro_interaction_preferences', JSON.stringify(this.userPreferences))
     } catch (error) {
-      logger.error('Failed to save user preferences:', error)
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Failed to save user preferences:', { error: errorObj.message })
     }
   }
 
   private initializeAudioContext(): void {
     try {
-      this.audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+      const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      this.audioContext = new AudioContextClass();
     } catch (error) {
-      logger.warn('Audio context not supported:', error)
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.warn('Audio context not supported:', { error: errorObj.message })
     }
   }
 
@@ -266,7 +270,7 @@ class MicroInteractionService {
     return true
   }
 
-  private shouldTriggerInteraction(interaction: MicroInteraction, context: Partial<InteractionContext>): boolean {
+  private shouldTriggerInteraction(interaction: MicroInteraction, _context: Partial<InteractionContext>): boolean {
     // Check reduced motion preference
     if (this.userPreferences.reducedMotion && interaction.animation) {
       return false
@@ -339,7 +343,7 @@ class MicroInteractionService {
     })
   }
 
-  private generateKeyframes(config: AnimationConfig): Keyframe[] {
+  private generateKeyframes(config: AnimationConfig): Array<{ [key: string]: string | number | undefined; offset?: number }> {
     const intensity = this.getIntensityMultiplier(config.intensity)
     
     switch (config.type) {
@@ -364,7 +368,7 @@ class MicroInteractionService {
           { opacity: 1, offset: 1 }
         ]
       
-      case 'slide':
+      case 'slide': {
         const direction = config.direction || 'right'
         const translateX = direction === 'left' ? -20 * intensity : 20 * intensity
         const translateY = direction === 'up' ? -20 * intensity : 20 * intensity
@@ -374,6 +378,7 @@ class MicroInteractionService {
           { transform: `translate(${translateX}px, ${translateY}px)`, offset: 0.5 },
           { transform: 'translate(0px, 0px)', offset: 1 }
         ]
+      }
       
       case 'rotate':
         return [
@@ -527,18 +532,19 @@ class MicroInteractionService {
   private checkConditions(conditions: InteractionCondition[], context: Partial<InteractionContext>): boolean {
     return conditions.every(condition => {
       const value = this.getValueFromContext(condition.field, context)
+      const conditionValue = condition.value;
       
       switch (condition.operator) {
         case 'equals':
-          return value === condition.value
+          return value === conditionValue
         case 'not_equals':
-          return value !== condition.value
+          return value !== conditionValue
         case 'greater_than':
-          return value > condition.value
+          return typeof value === 'number' && typeof conditionValue === 'number' && value > conditionValue
         case 'less_than':
-          return value < condition.value
+          return typeof value === 'number' && typeof conditionValue === 'number' && value < conditionValue
         case 'contains':
-          return value && value.includes && value.includes(condition.value)
+          return typeof value === 'string' && typeof conditionValue === 'string' && value.includes(conditionValue)
         case 'exists':
           return value !== undefined && value !== null
         default:
@@ -633,7 +639,7 @@ class MicroInteractionService {
     }
   }
 
-  private emit(event: string, data?: any): void {
+  private emit(event: string, data?: unknown): void {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
       callbacks.forEach(callback => callback(data))

@@ -118,6 +118,15 @@ const AuthPage: React.FC = () => {
   // Load Google Identity Services script
   useEffect(() => {
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || ''
+    // Debug log to verify environment variable is loaded (only once per session)
+    if (import.meta.env.DEV && !sessionStorage.getItem('googleClientIdLogged')) {
+      console.log('[AuthPage] Google Client ID check:', {
+        hasValue: !!googleClientId,
+        valueLength: googleClientId.length,
+        valuePreview: googleClientId ? `${googleClientId.substring(0, 20)}...` : 'empty'
+      })
+      sessionStorage.setItem('googleClientIdLogged', 'true')
+    }
     if (!googleClientId) {
       // Log warning in production if Google OAuth is expected but not configured
       if (import.meta.env.PROD) {
@@ -162,10 +171,25 @@ const AuthPage: React.FC = () => {
       try {
         // Check if button already rendered
         const existingButton = googleButtonRef.current.querySelector('iframe')
-        if (existingButton) {
+        if (existingButton && existingButton.parentNode === googleButtonRef.current) {
           setIsGoogleButtonLoading(false)
           setGoogleButtonError(false)
           return // Button already rendered
+        }
+
+        // Clear container before rendering to avoid conflicts
+        // Use innerHTML to clear, which is safer than removeChild when Google manages the DOM
+        if (googleButtonRef.current) {
+          // Check if there's an existing iframe from Google
+          const existingIframe = googleButtonRef.current.querySelector('iframe')
+          if (existingIframe) {
+            // Google button already exists, don't re-render
+            setIsGoogleButtonLoading(false)
+            setGoogleButtonError(false)
+            return
+          }
+          // Clear any other content safely
+          googleButtonRef.current.innerHTML = ''
         }
 
         // Initialize Google Sign-In
@@ -174,13 +198,13 @@ const AuthPage: React.FC = () => {
           callback: handleGoogleSignIn,
         })
 
-        // Render button
+        // Render button (Google doesn't accept percentage width, use pixel value or omit)
         window.google.accounts.id.renderButton(googleButtonRef.current, {
           type: 'standard',
           theme: 'outline',
           size: 'large',
           text: 'signin_with',
-          width: '100%',
+          // width: '100%', // Google doesn't accept percentage, container div handles width
         })
 
         logger.info('Google Sign-In button rendered successfully', {
@@ -232,13 +256,13 @@ const AuthPage: React.FC = () => {
     document.head.appendChild(script)
 
     return () => {
-      // Cleanup: don't remove script as it might be used by other components
-      // Just clear the button container
-      if (googleButtonRef.current) {
-        googleButtonRef.current.innerHTML = ''
-      }
+      // Cleanup: Don't try to remove Google's DOM elements
+      // Google manages its own DOM, and React trying to remove them causes conflicts
+      // Just reset state, let Google handle its own cleanup
       setIsGoogleButtonLoading(false)
       setGoogleButtonError(false)
+      // Note: We don't clear innerHTML here because Google's script manages the DOM
+      // and React trying to remove it causes "removeChild" errors
     }
   }, [handleGoogleSignIn])
 
@@ -356,6 +380,7 @@ const AuthPage: React.FC = () => {
                   <input
                     {...loginForm.register('password')}
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
                     className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your password"
                   />
@@ -403,7 +428,6 @@ const AuthPage: React.FC = () => {
               </div>
 
               <div 
-                ref={googleButtonRef} 
                 className="w-full flex flex-col items-center justify-center min-h-[40px]"
                 aria-label="Google Sign-In"
               >
@@ -430,7 +454,14 @@ const AuthPage: React.FC = () => {
                       Refresh Page
                     </button>
                   </div>
-                ) : null}
+                ) : (
+                  <div 
+                    ref={googleButtonRef} 
+                    key="google-signin-button"
+                    suppressHydrationWarning
+                    style={{ width: '100%' }}
+                  />
+                )}
               </div>
             </form>
           ) : (
@@ -497,6 +528,7 @@ const AuthPage: React.FC = () => {
                   <input
                     {...registerForm.register('password')}
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
                     className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your password"
                   />
@@ -532,6 +564,7 @@ const AuthPage: React.FC = () => {
                   <input
                     {...registerForm.register('confirmPassword')}
                     type={showConfirmPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
                     className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Confirm your password"
                   />
@@ -579,7 +612,6 @@ const AuthPage: React.FC = () => {
               </div>
 
               <div 
-                ref={googleButtonRef} 
                 className="w-full flex flex-col items-center justify-center min-h-[40px]"
                 aria-label="Google Sign-In"
               >
@@ -606,7 +638,14 @@ const AuthPage: React.FC = () => {
                       Refresh Page
                     </button>
                   </div>
-                ) : null}
+                ) : (
+                  <div 
+                    ref={googleButtonRef} 
+                    key="google-signin-button"
+                    suppressHydrationWarning
+                    style={{ width: '100%' }}
+                  />
+                )}
               </div>
             </form>
           )}

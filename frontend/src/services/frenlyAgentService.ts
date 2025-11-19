@@ -9,7 +9,7 @@ import { FrenlyGuidanceAgent, MessageContext, GeneratedMessage } from '../../../
 import { logger } from './logger';
 
 // Import NLU service directly
-let nluService: any = null;
+let nluService: { processQuery?: (query: string) => Promise<unknown>; understand?: (query: string) => Promise<unknown>; generateResponse?: (intent: string) => Promise<unknown> } | null = null;
 const getNLUService = async () => {
   if (!nluService) {
     const module = await import('./nluService');
@@ -36,7 +36,7 @@ class FrenlyAgentService {
   private static instance: FrenlyAgentService;
   private agent: FrenlyGuidanceAgent;
   private config: FrenlyAgentServiceConfig;
-  private requestDebounce: Map<string, NodeJS.Timeout> = new Map();
+  private requestDebounce: Map<string, ReturnType<typeof setTimeout>> = new Map();
   private readonly debounceDelay = 300; // 300ms debounce
   private readonly defaultMaxRetries = 3;
   private readonly defaultRetryDelay = 1000; // 1 second
@@ -290,7 +290,7 @@ class FrenlyAgentService {
    */
   async syncPageState(data: {
     pageId: string;
-    state: Record<string, any>;
+    state: Record<string, unknown>;
     timestamp: number;
   }): Promise<void> {
     try {

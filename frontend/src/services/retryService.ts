@@ -6,22 +6,43 @@
 // Merged from retryService.ts and enhancedRetryService.ts
 // ============================================================================
 
+/**
+ * Configuration for retry operations
+ * @interface RetryConfig
+ */
 export interface RetryConfig {
+  /** Maximum number of retry attempts */
   maxRetries: number
-  baseDelay: number // milliseconds
-  maxDelay: number // milliseconds
+  /** Base delay in milliseconds before first retry */
+  baseDelay: number
+  /** Maximum delay in milliseconds (caps exponential backoff) */
+  maxDelay: number
+  /** Multiplier for exponential backoff (e.g., 2 = double each attempt) */
   backoffMultiplier: number
+  /** Whether to add random jitter to prevent thundering herd */
   jitter: boolean
+  /** Function to determine if error is retryable */
   retryCondition: (error: unknown) => boolean
+  /** Optional callback called before each retry */
   onRetry?: (attempt: number, error: unknown) => void
+  /** Optional callback called when max retries reached */
   onMaxRetriesReached?: (error: unknown) => void
 }
 
+/**
+ * Result of a retry operation
+ * @interface RetryResult
+ */
 export interface RetryResult<T> {
+  /** Whether the operation succeeded */
   success: boolean
+  /** Result data if successful */
   data?: T
+  /** Error if failed */
   error?: unknown
+  /** Number of attempts made */
   attempts: number
+  /** Total time taken in milliseconds */
   totalTime: number
 }
 
@@ -38,12 +59,29 @@ export interface CircuitBreakerState {
   nextAttemptTime?: Date
 }
 
+/**
+ * Unified Retry Service
+ * Provides exponential backoff, circuit breaker patterns, and retry logic
+ * @class RetryService
+ * @example
+ * ```typescript
+ * const service = RetryService.getInstance();
+ * const result = await service.executeWithRetry(
+ *   () => fetchData(),
+ *   { maxRetries: 3, baseDelay: 1000 }
+ * );
+ * ```
+ */
 class RetryService {
   private static instance: RetryService
   private circuitBreakers: Map<string, CircuitBreakerState> = new Map()
   private defaultConfig: RetryConfig
   private defaultCircuitBreakerConfig: CircuitBreakerConfig
 
+  /**
+   * Get singleton instance
+   * @returns {RetryService} The singleton instance
+   */
   public static getInstance(): RetryService {
     if (!RetryService.instance) {
       RetryService.instance = new RetryService()
@@ -68,6 +106,11 @@ class RetryService {
     }
   }
 
+  /**
+   * Check if an error is retryable
+   * @param {unknown} error - The error to check
+   * @returns {boolean} True if error is retryable
+   */
   public isRetryableError(error: unknown): boolean {
     // Type guard for error objects
     if (typeof error !== 'object' || error === null) {
@@ -119,6 +162,25 @@ class RetryService {
     return new Promise(resolve => setTimeout(resolve, ms))
   }
 
+  /**
+   * Execute an operation with retry logic
+   * @template T
+   * @param {() => Promise<T>} operation - The async operation to retry
+   * @param {Partial<RetryConfig>} config - Retry configuration (optional)
+   * @param {string} [circuitBreakerKey] - Optional circuit breaker key for state tracking
+   * @returns {Promise<RetryResult<T>>} Result of the operation
+   * @example
+   * ```typescript
+   * const result = await retryService.executeWithRetry(
+   *   async () => await api.get('/data'),
+   *   { maxRetries: 3, baseDelay: 1000 },
+   *   'api-data-endpoint'
+   * );
+   * if (result.success) {
+   *   console.log('Data:', result.data);
+   * }
+   * ```
+   */
   public async executeWithRetry<T>(
     operation: () => Promise<T>,
     config: Partial<RetryConfig> = {},
@@ -292,7 +354,7 @@ class RetryService {
   }
 
   // Utility methods
-  public createRetryableFunction<T extends any[], R>(
+  public createRetryableFunction<T extends unknown[], R>(
     fn: (...args: T) => Promise<R>,
     config: Partial<RetryConfig> = {}
   ): (...args: T) => Promise<RetryResult<R>> {
@@ -301,7 +363,7 @@ class RetryService {
     }
   }
 
-  public withCircuitBreaker<T extends any[], R>(
+  public withCircuitBreaker<T extends unknown[], R>(
     fn: (...args: T) => Promise<R>,
     circuitBreakerKey: string,
     config: Partial<RetryConfig> = {}
@@ -345,14 +407,14 @@ export const useRetry = () => {
     return service.executeWithRetry(operation, config, circuitBreakerKey)
   }
 
-  const createRetryableFunction = <T extends any[], R>(
+  const createRetryableFunction = <T extends unknown[], R>(
     fn: (...args: T) => Promise<R>,
     config: Partial<RetryConfig> = {}
   ) => {
     return service.createRetryableFunction(fn, config)
   }
 
-  const withCircuitBreaker = <T extends any[], R>(
+  const withCircuitBreaker = <T extends unknown[], R>(
     fn: (...args: T) => Promise<R>,
     circuitBreakerKey: string,
     config: Partial<RetryConfig> = {}
@@ -467,7 +529,7 @@ export function createRetryableFetch(
   } = {}
 ): typeof fetch {
   const service = RetryService.getInstance();
-  return async (input: RequestInfo | URL, init?: RequestInit) => {
+  return async (input: string | Request | URL, init?: RequestInit | undefined) => {
     const result = await service.executeWithRetry(
       async () => {
         const response = await fetchFn(input, init);

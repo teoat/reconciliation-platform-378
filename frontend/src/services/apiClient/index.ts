@@ -212,9 +212,9 @@ export class ApiClient {
       confidence_score?: number;
       reviewed_by?: string;
     }
-  ): Promise<ApiResponse<any>> {
+  ): Promise<ApiResponse<Record<string, unknown>>> {
     const config = this.requestBuilder.method('PUT').body(matchData).build();
-    return this.makeRequest(`/projects/${projectId}/matches/${matchId}`, config);
+    return this.makeRequest<Record<string, unknown>>(`/projects/${projectId}/matches/${matchId}`, config);
   }
 
   // ============================================================================

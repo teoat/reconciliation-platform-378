@@ -29,7 +29,8 @@ console.log('🌱 Creating demo users...\n');
 
 users.forEach(async (user, index) => {
   try {
-    const response = await fetch('http://localhost:2000/api/auth/register', {
+    // Use relative URL to leverage Vite proxy (works when running from frontend)
+    const response = await fetch('/api/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(user)

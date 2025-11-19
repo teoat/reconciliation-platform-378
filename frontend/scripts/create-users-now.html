@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Demo Users - One Click</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #3B82F6;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+        }
+        button:hover {
+            background: #2563EB;
+        }
+        button:disabled {
+            background: #9CA3AF;
+            cursor: not-allowed;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            background: #F3F4F6;
+        }
+        .success { background: #D1FAE5; color: #065F46; }
+        .error { background: #FEE2E2; color: #991B1B; }
+        .info { background: #DBEAFE; color: #1E40AF; }
+        pre {
+            background: #1F2937;
+            color: #F9FAFB;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌱 Create Demo Users</h1>
+        <p>Click the button below to create all 3 demo users at once.</p>
+        
+        <button id="createBtn" onclick="createUsers()">Create All Demo Users</button>
+        
+        <div id="status"></div>
+        
+        <h3>What this creates:</h3>
+        <ul>
+            <li><strong>Admin:</strong> admin@example.com / AdminPassword123!</li>
+            <li><strong>Manager:</strong> manager@example.com / ManagerPassword123!</li>
+            <li><strong>User:</strong> user@example.com / UserPassword123!</li>
+        </ul>
+        
+        <h3>After creating:</h3>
+        <ol>
+            <li>Go to <a href="http://localhost:1000/login" target="_blank">http://localhost:1000/login</a></li>
+            <li>You should see "Demo Credentials" section</li>
+            <li>Click "Use" next to any account to auto-fill</li>
+            <li>Click "Sign In"</li>
+        </ol>
+    </div>
+
+    <script>
+        async function createUsers() {
+            const btn = document.getElementById('createBtn');
+            const status = document.getElementById('status');
+            btn.disabled = true;
+            btn.textContent = 'Creating users...';
+            status.innerHTML = '<div class="status info">🌱 Creating demo users...</div>';
+
+            const users = [
+                { email: 'admin@example.com', password: 'AdminPassword123!', first_name: 'Admin', last_name: 'User', role: 'admin' },
+                { email: 'manager@example.com', password: 'ManagerPassword123!', first_name: 'Manager', last_name: 'User', role: 'manager' },
+                { email: 'user@example.com', password: 'UserPassword123!', first_name: 'Demo', last_name: 'User', role: 'user' }
+            ];
+
+            let results = [];
+            let successCount = 0;
+
+            for (let i = 0; i < users.length; i++) {
+                const user = users[i];
+                try {
+                    // Use relative URL to leverage Vite proxy
+                    const response = await fetch('/api/auth/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(user)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (response.ok || response.status === 201) {
+                        results.push(`✅ Created: ${user.email} (${user.role})`);
+                        successCount++;
+                    } else if (response.status === 409 || data.message?.includes('already exists') || data.error?.includes('already exists')) {
+                        results.push(`ℹ️  Already exists: ${user.email} (${user.role})`);
+                        successCount++;
+                    } else {
+                        results.push(`❌ Failed: ${user.email} - ${data.error || data.message || response.statusText}`);
+                    }
+                } catch (error) {
+                    results.push(`❌ Error: ${user.email} - ${error.message}`);
+                }
+                
+                // Update status
+                status.innerHTML = `
+                    <div class="status info">
+                        <strong>Progress:</strong> ${i + 1}/${users.length} users processed<br>
+                        ${results.map(r => `<div style="margin: 5px 0;">${r}</div>`).join('')}
+                    </div>
+                `;
+                
+                // Small delay between requests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+
+            // Final status
+            if (successCount === users.length) {
+                status.innerHTML = `
+                    <div class="status success">
+                        <strong>✨ Success!</strong><br>
+                        All ${successCount} users are ready!<br><br>
+                        ${results.map(r => `<div style="margin: 5px 0;">${r}</div>`).join('')}<br>
+                        <strong>Next step:</strong> Go to <a href="http://localhost:1000/login" target="_blank">http://localhost:1000/login</a> and refresh the page!
+                    </div>
+                `;
+            } else {
+                status.innerHTML = `
+                    <div class="status ${successCount > 0 ? 'info' : 'error'}">
+                        <strong>Partial Success:</strong> ${successCount}/${users.length} users ready<br><br>
+                        ${results.map(r => `<div style="margin: 5px 0;">${r}</div>`).join('')}
+                    </div>
+                `;
+            }
+
+            btn.disabled = false;
+            btn.textContent = 'Create All Demo Users';
+        }
+    </script>
+</body>
+</html>
+

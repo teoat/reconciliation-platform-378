@@ -4,7 +4,6 @@ import { secureStorage } from './secureStorage'
 // Manages service worker registration, offline data, and PWA functionality
 
 import React from 'react'
-import { APP_CONFIG } from '../constants'
 
 // PWA configuration
 interface PWAConfig {
@@ -22,7 +21,7 @@ interface OfflineData {
   id: string
   type: 'create' | 'update' | 'delete'
   endpoint: string
-  data: Record<string, unknown>
+  data: unknown
   timestamp: Date
   retryCount: number
   maxRetries: number
@@ -45,7 +44,7 @@ class PWAService {
   private status: PWAStatus
   private offlineData: OfflineData[] = []
   private updateAvailable = false
-  private installPrompt: BeforeInstallPromptEvent | null = null
+  private installPrompt: unknown | null = null
   private listeners = new Map<string, Array<(...args: unknown[]) => void>>()
 
   public static getInstance(): PWAService {
@@ -100,7 +99,8 @@ class PWAService {
       
       logger.info('PWA Service initialized successfully')
     } catch (error: unknown) {
-      logger.error('Failed to initialize PWA Service', { error })
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Failed to initialize PWA Service', { error: errorObj.message })
     }
   }
 
@@ -141,7 +141,8 @@ class PWAService {
       })
 
     } catch (error) {
-      logger.error('Service Worker registration failed:', error)
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Service Worker registration failed:', { error: errorObj.message })
     }
   }
 
@@ -193,7 +194,8 @@ class PWAService {
         this.status.offlineDataCount = this.offlineData.length
       }
     } catch (error) {
-      logger.error('Failed to load offline data:', error)
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Failed to load offline data:', { error: errorObj.message })
       this.offlineData = []
     }
   }
@@ -203,7 +205,8 @@ class PWAService {
       secureStorage.setItem('pwa_offline_data', this.offlineData, false)
       this.status.offlineDataCount = this.offlineData.length
     } catch (error) {
-      logger.error('Failed to save offline data:', error)
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Failed to save offline data:', { error: errorObj.message })
     }
   }
 
@@ -223,7 +226,7 @@ class PWAService {
     }, this.config.updateCheckInterval)
   }
 
-  private handleServiceWorkerMessage(data: any): void {
+  private handleServiceWorkerMessage(data: Record<string, unknown>): void {
     switch (data.type) {
       case 'CACHE_SIZE':
         this.emit('cacheSize', data.size)
@@ -243,7 +246,9 @@ class PWAService {
     if (!this.installPrompt) return false
 
     try {
-      const result = await this.installPrompt.prompt()
+      const prompt = this.installPrompt as { prompt: () => Promise<{ userChoice: Promise<{ outcome: string }> }> } | null;
+      if (!prompt) return false;
+      const result = await prompt.prompt()
       const choiceResult = await result.userChoice
       
       if (choiceResult.outcome === 'accepted') {
@@ -256,7 +261,8 @@ class PWAService {
       
       return false
     } catch (error) {
-      logger.error('Install prompt failed:', error)
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Install prompt failed:', { error: errorObj.message })
       return false
     }
   }
@@ -272,7 +278,8 @@ class PWAService {
         window.location.reload()
       }
     } catch (error) {
-      logger.error('Update failed:', error)
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Update failed:', { error: errorObj.message })
     }
   }
 
@@ -296,12 +303,13 @@ class PWAService {
       this.config.notificationPermission = permission === 'granted'
       return this.config.notificationPermission
     } catch (error) {
-      logger.error('Notification permission request failed:', error)
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Notification permission request failed:', { error: errorObj.message })
       return false
     }
   }
 
-  public async sendNotification(title: string, options?: NotificationOptions): Promise<void> {
+  public async sendNotification(title: string, options?: NotificationOptions & { icon?: string; badge?: string }): Promise<void> {
     if (!this.config.notificationPermission) {
       const hasPermission = await this.requestNotificationPermission()
       if (!hasPermission) return
@@ -319,7 +327,8 @@ class PWAService {
         notification.close()
       }
     } catch (error) {
-      logger.error('Failed to send notification:', error)
+      const errorObj = error instanceof Error ? error : new Error(String(error));
+      logger.error('Failed to send notification:', { error: errorObj.message })
     }
   }
 
@@ -362,7 +371,7 @@ class PWAService {
     })
   }
 
-  public addOfflineAction(type: 'create' | 'update' | 'delete', endpoint: string, data: any): void {
+  public addOfflineAction(type: 'create' | 'update' | 'delete', endpoint: string, data: unknown): void {
     const offlineAction: OfflineData = {
       id: `offline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,
@@ -394,7 +403,8 @@ class PWAService {
         await this.syncAction(action)
         syncedActions.push(action.id)
       } catch (error) {
-        logger.error('Failed to sync action:', error)
+        const errorObj = error instanceof Error ? error : new Error(String(error));
+        logger.error('Failed to sync action:', { error: errorObj.message })
         action.retryCount++
         
         if (action.retryCount >= action.maxRetries) {
@@ -412,7 +422,7 @@ class PWAService {
   }
 
   private async syncAction(action: OfflineData): Promise<void> {
-    const options: RequestInit = {
+    const options: RequestInit & { body?: string } = {
       method: action.type === 'create' ? 'POST' : action.type === 'update' ? 'PUT' : 'DELETE',
       headers: {
         'Content-Type': 'application/json',
@@ -462,7 +472,7 @@ class PWAService {
     }
   }
 
-  private emit(event: string, ...args: any[]): void {
+  private emit(event: string, ...args: unknown[]): void {
     const callbacks = this.listeners.get(event)
     if (callbacks) {
       callbacks.forEach(callback => callback(...args))
@@ -471,7 +481,7 @@ class PWAService {
 
   private checkIfInstalled(): boolean {
     return window.matchMedia('(display-mode: standalone)').matches ||
-           (window.navigator as any).standalone === true ||
+           (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
            document.referrer.includes('android-app://')
   }
 }
