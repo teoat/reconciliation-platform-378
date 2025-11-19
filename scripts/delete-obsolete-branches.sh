@@ -9,10 +9,10 @@ set -e
 REPO_OWNER="teoat"
 REPO_NAME="reconciliation-platform-378"
 
-echo "╔════════════════════════════════════════════════════════════╗"
-echo "║  Branch Consolidation - Delete Obsolete Branches          ║"
-echo "║  Repository: $REPO_OWNER/$REPO_NAME                        ║"
-echo "╚════════════════════════════════════════════════════════════╝"
+echo "================================================================"
+echo "  Branch Consolidation - Delete Obsolete Branches"
+echo "  Repository: $REPO_OWNER/$REPO_NAME"
+echo "================================================================"
 echo ""
 
 # List of branches to delete (all except master)
@@ -39,9 +39,13 @@ BRANCHES_TO_DELETE=(
   "cursor/app-quality-assurance-and-error-resolution-0bd1"
 )
 
-# Optional: Dependabot branches (uncomment to delete)
-# "dependabot/npm_and_yarn/development-dependencies-3e6f6454af"
-# "dependabot/npm_and_yarn/production-dependencies-850c8e665e"
+# Dependabot branches are intentionally excluded from automated deletion
+# as they may be needed for ongoing dependency management.
+# To delete them, uncomment the lines below and add them to BRANCHES_TO_DELETE array:
+# BRANCHES_TO_DELETE+=(
+#   "dependabot/npm_and_yarn/development-dependencies-3e6f6454af"
+#   "dependabot/npm_and_yarn/production-dependencies-850c8e665e"
+# )
 
 echo "⚠️  WARNING: This script will delete ${#BRANCHES_TO_DELETE[@]} branches from the remote repository."
 echo ""
@@ -88,9 +92,9 @@ for branch in "${BRANCHES_TO_DELETE[@]}"; do
 done
 
 # Summary
-echo "╔════════════════════════════════════════════════════════════╗"
-echo "║  Deletion Summary                                          ║"
-echo "╚════════════════════════════════════════════════════════════╝"
+echo "================================================================"
+echo "  Deletion Summary"
+echo "================================================================"
 echo ""
 echo "✅ Successfully deleted: $SUCCESS_COUNT branches"
 echo "❌ Failed to delete: $FAILURE_COUNT branches"
@@ -107,9 +111,9 @@ if [ $FAILURE_COUNT -gt 0 ]; then
 fi
 
 echo ""
-echo "╔════════════════════════════════════════════════════════════╗"
-echo "║  Next Steps                                                ║"
-echo "╚════════════════════════════════════════════════════════════╝"
+echo "================================================================"
+echo "  Next Steps"
+echo "================================================================"
 echo ""
 echo "1. Verify remaining branches with: git ls-remote --heads origin"
 echo "2. Set 'master' as default branch in GitHub repository settings"

@@ -205,7 +205,7 @@ Or via GitHub UI:
 ### 4. Close Related PRs
 Close these PRs as they relate to consolidation work:
 - #46, #50, #51, #52, #53, #54, #55 (consolidation/fixes)
-- #60 (this PR - will be auto-closed on branch deletion)
+- The consolidation PR (will be auto-closed on its branch deletion)
 
 Keep/review:
 - #58, #59 (Dependabot updates)
