@@ -95,7 +95,7 @@ ENV RUST_LOG=info \
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD wget -q -O- http://localhost:2000/health || exit 1
+    CMD wget -q -O- http://localhost:2000/api/health || exit 1
 
 # Start application via entrypoint script
 ENTRYPOINT ["/app/entrypoint.sh"]

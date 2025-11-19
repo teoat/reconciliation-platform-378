@@ -181,7 +181,7 @@ export async function createHash(data: string): Promise<string> {
 /**
  * Validates JWT token
  */
-export function validateJWT(token: string): { isValid: boolean; payload?: any; error?: string } {
+export function validateJWT(token: string): { isValid: boolean; payload?: Record<string, unknown>; error?: string } {
   try {
     const parts = token.split('.')
     if (parts.length !== 3) {
@@ -214,13 +214,13 @@ export function validateJWT(token: string): { isValid: boolean; payload?: any; e
  */
 export function useSecureForm<T extends Record<string, unknown>>(
   initialValues: T,
-  validationRules: Record<keyof T, (value: any) => string | null>
+  validationRules: Record<keyof T, (value: unknown) => string | null>
 ) {
   const [values, setValues] = useState<T>(initialValues)
   const [errors, setErrors] = useState<Record<keyof T, string>>({} as Record<keyof T, string>)
   const [touched, setTouched] = useState<Record<keyof T, boolean>>({} as Record<keyof T, boolean>)
 
-  const setValue = useCallback((name: keyof T, value: any) => {
+  const setValue = useCallback((name: keyof T, value: unknown) => {
     const sanitizedValue = typeof value === 'string' ? sanitizeInput(value) : value
     setValues(prev => ({ ...prev, [name]: sanitizedValue }))
     
@@ -622,7 +622,7 @@ export function SecureInput({
   type?: string
   placeholder?: string
   required?: boolean
-  [key: string]: any
+  [key: string]: unknown
 }) {
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const sanitizedValue = sanitizeInput(e.target.value)
@@ -655,7 +655,7 @@ export function SecureTextarea({
   onChange: (value: string) => void
   placeholder?: string
   required?: boolean
-  [key: string]: any
+  [key: string]: unknown
 }) {
   const handleChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const sanitizedValue = sanitizeInput(e.target.value)

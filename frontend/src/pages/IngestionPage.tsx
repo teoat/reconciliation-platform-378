@@ -1,38 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, FileText, Eye, Trash2 } from 'lucide-react';
 import { useData } from '@/components/DataProvider';
-import { ApiService } from '@/services/ApiService';
 import { useToast } from '@/hooks/useToast';
-import { apiClient } from '@/services/apiClient';
 import { PageConfig, StatsCard, ActionConfig } from '@/types/common';
 import { UploadedFile } from '@/types/ingestion';
 
 import { Modal } from '@/components/ui/Modal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { LoadingSpinnerComponent, SkeletonText } from '@/components/LoadingComponents';
-import { logger } from '@/services/logger';
-
-// Helper component for progress bar with proper ARIA attributes
-const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, title }) => {
-  const progressValue = Math.max(0, Math.min(100, progress ?? 0)); // Clamp between 0-100
-  const ariaLabel = `${title} progress: ${progressValue}%`;
-  return (
-    <div className="mt-4">
-      <div className="w-full bg-gray-200 rounded-full h-2">
-        <div
-          className="bg-blue-500 h-2 rounded-full"
-          // Dynamic width for progress bar - acceptable inline style
-          style={{ width: `${progressValue}%` }}
-          role="progressbar"
-          aria-label={ariaLabel}
-          aria-valuenow={progressValue}
-          aria-valuemin={0}
-          aria-valuemax={100}
-        ></div>
-      </div>
-    </div>
-  );
-};
+import { LoadingSpinnerComponent } from '@/components/LoadingComponents';
+import { BasePage } from '@/components/BasePage';
+import { ProgressBar } from '@/components/ui/ProgressBar';
 
 import { usePageOrchestration } from '@/hooks/usePageOrchestration';
 import {
@@ -43,180 +20,69 @@ import {
   registerIngestionGuidanceHandlers,
   getIngestionGuidanceContent,
 } from '@/orchestration/pages/IngestionPageOrchestration';
-
-// BasePage component (simplified for this extraction)
-interface BasePageProps {
-  config: PageConfig;
-  stats?: StatsCard[];
-  actions?: ActionConfig[];
-  children: React.ReactNode;
-  loading?: boolean;
-  error?: string | null;
-}
-
-const BasePage: React.FC<BasePageProps> = ({
-  config,
-  stats = [],
-  actions = [],
-  children,
-  loading = false,
-  error = null,
-}) => {
-  if (loading) {
-    return (
-      <div className="p-6">
-        <div className="space-y-6">
-          <SkeletonText lines={1} className="w-1/4" />
-          {stats.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {stats.map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 rounded-lg animate-pulse"></div>
-              ))}
-            </div>
-          )}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="h-32 bg-gray-200 rounded-lg animate-pulse"></div>
-            <div className="h-32 bg-gray-200 rounded-lg animate-pulse"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
-          <div className="w-5 h-5 text-red-500 mr-2">⚠️</div>
-          <span className="text-red-700">{error}</span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <config.icon className="w-6 h-6 text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{config.title}</h1>
-            <p className="text-gray-600 mt-1">{config.description}</p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-          <span className="text-sm text-gray-600">Live Data</span>
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
-      {stats.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                </div>
-                <div className={`p-3 rounded-full ${stat.color}`}>
-                  <stat.icon className="w-6 h-6" />
-                </div>
-              </div>
-              {stat.progress !== undefined && (
-                <ProgressBar
-                  progress={stat.progress}
-                  title={stat.title}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Actions */}
-      {actions.length > 0 && (
-        <div className="flex items-center justify-end space-x-3">
-          {actions.map((action, index) => (
-            <button
-              key={index}
-              onClick={action.onClick}
-              className={`${
-                action.variant === 'primary'
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : action.variant === 'danger'
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-gray-600 text-white hover:bg-gray-700'
-              } px-4 py-2 rounded-lg flex items-center`}
-            >
-              <action.icon className="w-4 h-4 mr-2" />
-              {action.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Page Content */}
-      {children}
-    </div>
-  );
-};
+import { useIngestionUpload } from '@/hooks/ingestion/useIngestionUpload';
+import { useIngestionFileOperations } from '@/hooks/ingestion/useIngestionFileOperations';
 
 const IngestionPageContent: React.FC = () => {
   const { currentProject } = useData();
-  const toast = useToast();
   const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [isUploading, setIsUploading] = useState(false);
-  const [previewFile, setPreviewFile] = useState<UploadedFile | null>(null);
-  const [previewContent, setPreviewContent] = useState<{
-    file_id: string;
-    filename: string;
-    content_type: string;
-    size: number;
-    preview: string;
-    truncated: boolean;
-  } | null>(null);
-  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
-  const [isDeleting, setIsDeleting] = useState<string | null>(null);
-  const [processingStatus, setProcessingStatus] = useState<'idle' | 'processing' | 'completed' | 'error'>('idle');
+  const [processingStatus, setProcessingStatus] = useState<
+    'idle' | 'processing' | 'completed' | 'error'
+  >('idle');
 
-  // Page Orchestration with Frenly AI
-  const {
-    updatePageContext,
-    trackFeatureUsage,
-    trackFeatureError,
-    trackUserAction,
-  } = usePageOrchestration({
-    pageMetadata: ingestionPageMetadata,
-    getPageContext: () =>
-      getIngestionPageContext(
-        currentProject?.id,
-        files.length,
-        files.filter((f) => f.status === 'completed').length,
-        processingStatus,
-        currentProject?.name
-      ),
-    getOnboardingSteps: () =>
-      getIngestionOnboardingSteps(
-        files.length > 0,
-        files.filter((f) => f.status === 'completed').length > 0
-      ),
-    getWorkflowState: () =>
-      getIngestionWorkflowState(
-        files.length,
-        files.filter((f) => f.status === 'completed').length,
-        processingStatus
-      ),
-    registerGuidanceHandlers: () => registerIngestionGuidanceHandlers(),
-    getGuidanceContent: (topic) => getIngestionGuidanceContent(topic),
-    onContextChange: (changes) => {
-      logger.debug('Ingestion context changed', { changes });
+  // Use custom hooks for upload and file operations
+  const { isUploading, uploadFiles } = useIngestionUpload({
+    projectId: currentProject?.id || null,
+    onUploadSuccess: (uploadedFiles) => {
+      setFiles((prev) => [...prev, ...uploadedFiles]);
+      setProcessingStatus('processing');
     },
   });
+
+  const {
+    previewFile,
+    previewContent,
+    isLoadingPreview,
+    deletingFileId,
+    handleFilePreview,
+    handleFileDelete,
+    setPreviewFile,
+    setPreviewContent,
+  } = useIngestionFileOperations({
+    projectId: currentProject?.id || null,
+    files,
+    setFiles,
+  });
+
+  // Page Orchestration with Frenly AI
+  const { updatePageContext, trackFeatureUsage, trackFeatureError, trackUserAction } =
+    usePageOrchestration({
+      pageMetadata: ingestionPageMetadata,
+      getPageContext: () =>
+        getIngestionPageContext(
+          currentProject?.id,
+          files.length,
+          files.filter((f) => f.status === 'completed').length,
+          processingStatus,
+          currentProject?.name
+        ),
+      getOnboardingSteps: () =>
+        getIngestionOnboardingSteps(
+          files.length > 0,
+          files.filter((f) => f.status === 'completed').length > 0
+        ),
+      getWorkflowState: () =>
+        getIngestionWorkflowState(
+          files.length,
+          files.filter((f) => f.status === 'completed').length,
+          processingStatus
+        ),
+      registerGuidanceHandlers: () => registerIngestionGuidanceHandlers(),
+      getGuidanceContent: (topic) => getIngestionGuidanceContent(topic),
+      onContextChange: (changes) => {
+        logger.debug('Ingestion context changed', { changes });
+      },
+    });
 
   // Update context when files change
   useEffect(() => {
@@ -233,101 +99,17 @@ const IngestionPageContent: React.FC = () => {
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = event.target.files;
-    if (!selectedFiles || !currentProject) return;
+    if (!selectedFiles) return;
 
-    setIsUploading(true);
     trackFeatureUsage('file-upload', 'upload-started', { fileCount: selectedFiles.length });
     trackUserAction('file-upload', 'upload-button');
 
     try {
-      const uploadedFiles: UploadedFile[] = [];
-      for (let i = 0; i < selectedFiles.length; i++) {
-        const file = selectedFiles[i];
-        const result = await ApiService.uploadFile(currentProject.id, file, {
-          name: file.name,
-          source_type: 'reconciliation_data',
-        });
-
-        if (!result) {
-          throw new Error('Upload failed - no response received');
-        }
-
-        uploadedFiles.push({
-          id: result.id,
-          name: result.name || file.name,
-          size: file.size,
-          type: file.type || 'Unknown',
-          status: (result.status as UploadedFile['status']) || 'processing',
-          progress: 0,
-          fileType: 'other',
-        });
-      }
-      setFiles((prev) => [...prev, ...uploadedFiles]);
-      toast.success(`${uploadedFiles.length} file(s) uploaded successfully`);
-      trackFeatureUsage('file-upload', 'upload-success', { fileCount: uploadedFiles.length });
-      setProcessingStatus('processing');
+      const fileArray = Array.from(selectedFiles);
+      await uploadFiles(fileArray);
+      trackFeatureUsage('file-upload', 'upload-success', { fileCount: fileArray.length });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to upload file';
-      logger.error('Upload failed', {
-        error: errorMessage,
-        projectId: currentProject?.id,
-      });
-      toast.error(errorMessage);
-      trackFeatureError('file-upload', error instanceof Error ? error : new Error(errorMessage));
-      setProcessingStatus('error');
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
-  const handleFilePreview = async (fileId: string) => {
-    if (!currentProject) {
-      toast.warning('No project selected');
-      return;
-    }
-
-    const file = files.find((f) => f.id === fileId);
-    if (!file) return;
-
-    setIsLoadingPreview(true);
-    try {
-      const response = await apiClient.getFilePreview(currentProject.id, fileId);
-      if (response.success && response.data) {
-        setPreviewFile(file);
-        setPreviewContent(response.data);
-      } else {
-        toast.error('Failed to load file preview');
-      }
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Failed to load file preview';
-      toast.error(errorMsg);
-    } finally {
-      setIsLoadingPreview(false);
-    }
-  };
-
-  const handleFileDelete = async (fileId: string) => {
-    if (!currentProject) {
-      toast.warning('No project selected');
-      return;
-    }
-
-    const file = files.find((f) => f.id === fileId);
-    if (!file) return;
-
-    setIsDeleting(fileId);
-    trackFeatureUsage('file-delete', 'delete-started', { fileId });
-    try {
-      await ApiService.deleteDataSource(currentProject.id, fileId);
-      setFiles((prev) => prev.filter((f) => f.id !== fileId));
-      toast.success('File deleted successfully');
-      trackFeatureUsage('file-delete', 'delete-success', { fileId });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Failed to delete file';
-      toast.error(errorMessage);
-      trackFeatureError('file-delete', error instanceof Error ? error : new Error(errorMessage));
-    } finally {
-      setIsDeleting(null);
+      trackFeatureError('file-upload', error instanceof Error ? error : new Error('Upload failed'));
     }
   };
 
@@ -455,10 +237,10 @@ const IngestionPageContent: React.FC = () => {
                       </button>
                       <button
                         onClick={() => handleFileDelete(file.id)}
-                        disabled={isDeleting === file.id}
+                        disabled={deletingFileId === file.id}
                         className="p-2 text-red-400 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {isDeleting === file.id ? (
+                        {deletingFileId === file.id ? (
                           <LoadingSpinnerComponent size="sm" color="primary" />
                         ) : (
                           <Trash2 className="w-4 h-4" />

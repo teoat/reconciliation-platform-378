@@ -49,7 +49,6 @@ export const LazyReconciliationInterface = lazy(
 
 // Large components - loaded when needed
 // export const LazyProjectComponents = lazy(() => import('../components/ProjectComponents'));
-// export const LazyCollaborativeFeatures = lazy(() => import('../components/CollaborativeFeatures'));
 
 // ============================================================================
 // FEATURE-BASED CODE SPLITTING

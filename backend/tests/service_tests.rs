@@ -546,3 +546,374 @@ mod analytics_service_tests {
     // Note: Analytics processing and aggregation tests would require
     // time-series database mocking and are typically integration tests
 }
+
+/// Tests for Project Service
+#[cfg(test)]
+mod project_service_tests {
+    use super::*;
+    use reconciliation_backend::services::project::ProjectService;
+    use reconciliation_backend::test_utils::database::setup_test_database;
+
+    /// Test project service creation
+    #[tokio::test]
+    async fn test_project_service_creation() {
+        let (db, _) = setup_test_database().await;
+        let service = ProjectService::new(db);
+        // Service should be created successfully
+        assert!(true);
+    }
+
+    /// Test project creation and retrieval
+    #[tokio::test]
+    async fn test_project_creation_and_retrieval() {
+        let (db, _) = setup_test_database().await;
+        let service = ProjectService::new(db.clone());
+
+        // Create test user first
+        let user_service = reconciliation_backend::services::user::UserService::new(
+            db.clone(),
+            reconciliation_backend::services::auth::AuthService::new("test_secret".to_string(), 3600)
+        );
+
+        let user = user_service.create_user(reconciliation_backend::services::user::CreateUserRequest {
+            email: "project_test@example.com".to_string(),
+            password: "TestPassword123!".to_string(),
+            first_name: "Project".to_string(),
+            last_name: "Test".to_string(),
+            role: Some("user".to_string()),
+        }).await.unwrap();
+
+        // Create project
+        let project = service.create_project(
+            reconciliation_backend::services::project::CreateProjectRequest {
+                name: "Test Project".to_string(),
+                description: Some("A test project".to_string()),
+                owner_id: user.id,
+            }
+        ).await.unwrap();
+
+        assert_eq!(project.name, "Test Project");
+        assert_eq!(project.owner_id, user.id);
+
+        // Retrieve project
+        let retrieved = service.get_project(project.id).await.unwrap();
+        assert_eq!(retrieved.id, project.id);
+        assert_eq!(retrieved.name, "Test Project");
+    }
+
+    /// Test project update
+    #[tokio::test]
+    async fn test_project_update() {
+        let (db, _) = setup_test_database().await;
+        let service = ProjectService::new(db.clone());
+
+        // Create test user and project
+        let user_service = reconciliation_backend::services::user::UserService::new(
+            db.clone(),
+            reconciliation_backend::services::auth::AuthService::new("test_secret".to_string(), 3600)
+        );
+
+        let user = user_service.create_user(reconciliation_backend::services::user::CreateUserRequest {
+            email: "project_update@example.com".to_string(),
+            password: "TestPassword123!".to_string(),
+            first_name: "Project".to_string(),
+            last_name: "Update".to_string(),
+            role: Some("user".to_string()),
+        }).await.unwrap();
+
+        let project = service.create_project(
+            reconciliation_backend::services::project::CreateProjectRequest {
+                name: "Original Project".to_string(),
+                description: Some("Original description".to_string()),
+                owner_id: user.id,
+            }
+        ).await.unwrap();
+
+        // Update project
+        let updated = service.update_project(
+            project.id,
+            reconciliation_backend::services::project::UpdateProjectRequest {
+                name: Some("Updated Project".to_string()),
+                description: Some("Updated description".to_string()),
+            }
+        ).await.unwrap();
+
+        assert_eq!(updated.name, "Updated Project");
+        assert_eq!(updated.description, Some("Updated description".to_string()));
+    }
+
+    /// Test project deletion
+    #[tokio::test]
+    async fn test_project_deletion() {
+        let (db, _) = setup_test_database().await;
+        let service = ProjectService::new(db.clone());
+
+        // Create test user and project
+        let user_service = reconciliation_backend::services::user::UserService::new(
+            db.clone(),
+            reconciliation_backend::services::auth::AuthService::new("test_secret".to_string(), 3600)
+        );
+
+        let user = user_service.create_user(reconciliation_backend::services::user::CreateUserRequest {
+            email: "project_delete@example.com".to_string(),
+            password: "TestPassword123!".to_string(),
+            first_name: "Project".to_string(),
+            last_name: "Delete".to_string(),
+            role: Some("user".to_string()),
+        }).await.unwrap();
+
+        let project = service.create_project(
+            reconciliation_backend::services::project::CreateProjectRequest {
+                name: "Delete Project".to_string(),
+                description: Some("To be deleted".to_string()),
+                owner_id: user.id,
+            }
+        ).await.unwrap();
+
+        // Delete project
+        service.delete_project(project.id).await.unwrap();
+
+        // Verify deletion
+        let result = service.get_project(project.id).await;
+        assert!(result.is_err());
+    }
+}
+
+/// Tests for User Service
+#[cfg(test)]
+mod user_service_tests {
+    use super::*;
+    use reconciliation_backend::services::user::UserService;
+    use reconciliation_backend::test_utils::database::setup_test_database;
+
+    /// Test user service creation
+    #[tokio::test]
+    async fn test_user_service_creation() {
+        let (db, _) = setup_test_database().await;
+        let auth_service = reconciliation_backend::services::auth::AuthService::new("test_secret".to_string(), 3600);
+        let service = UserService::new(db, auth_service);
+        // Service should be created successfully
+        assert!(true);
+    }
+
+    /// Test user creation and authentication
+    #[tokio::test]
+    async fn test_user_creation_and_authentication() {
+        let (db, _) = setup_test_database().await;
+        let auth_service = reconciliation_backend::services::auth::AuthService::new("test_secret".to_string(), 3600);
+        let service = UserService::new(db, auth_service.clone());
+
+        // Create user
+        let user = service.create_user(reconciliation_backend::services::user::CreateUserRequest {
+            email: "user_test@example.com".to_string(),
+            password: "TestPassword123!".to_string(),
+            first_name: "User".to_string(),
+            last_name: "Test".to_string(),
+            role: Some("user".to_string()),
+        }).await.unwrap();
+
+        assert_eq!(user.email, "user_test@example.com");
+        assert_eq!(user.first_name, "User");
+        assert_eq!(user.last_name, "Test");
+
+        // Test authentication
+        let auth_result = service.authenticate_user("user_test@example.com", "TestPassword123!").await;
+        assert!(auth_result.is_ok());
+
+        let auth_user = auth_result.unwrap();
+        assert_eq!(auth_user.id, user.id);
+
+        // Test invalid password
+        let invalid_auth = service.authenticate_user("user_test@example.com", "WrongPassword").await;
+        assert!(invalid_auth.is_err());
+    }
+
+    /// Test user profile updates
+    #[tokio::test]
+    async fn test_user_profile_updates() {
+        let (db, _) = setup_test_database().await;
+        let auth_service = reconciliation_backend::services::auth::AuthService::new("test_secret".to_string(), 3600);
+        let service = UserService::new(db, auth_service.clone());
+
+        // Create user
+        let user = service.create_user(reconciliation_backend::services::user::CreateUserRequest {
+            email: "profile_update@example.com".to_string(),
+            password: "TestPassword123!".to_string(),
+            first_name: "Original".to_string(),
+            last_name: "Name".to_string(),
+            role: Some("user".to_string()),
+        }).await.unwrap();
+
+        // Update user profile
+        service.update_user(user.id, reconciliation_backend::services::user::UpdateUserRequest {
+            email: None,
+            first_name: Some("Updated".to_string()),
+            last_name: Some("Profile".to_string()),
+            role: None,
+            is_active: None,
+        }).await.unwrap();
+
+        // Verify update
+        let updated_user = service.get_user_by_id(user.id).await.unwrap();
+        assert_eq!(updated_user.first_name, "Updated");
+        assert_eq!(updated_user.last_name, "Profile");
+    }
+}
+
+/// Tests for Password Manager Service
+#[cfg(test)]
+mod password_manager_service_tests {
+    use super::*;
+    use reconciliation_backend::services::password_manager::PasswordManager;
+    use reconciliation_backend::test_utils::database::setup_test_database;
+    use std::sync::Arc;
+
+    /// Test password manager creation
+    #[tokio::test]
+    async fn test_password_manager_creation() {
+        let (db, _) = setup_test_database().await;
+        let service = PasswordManager::new(Arc::new(db), "test_master_key".to_string());
+        // Service should be created successfully
+        assert!(true);
+    }
+
+    /// Test password storage and retrieval
+    #[tokio::test]
+    async fn test_password_storage_and_retrieval() {
+        let (db, _) = setup_test_database().await;
+        let service = PasswordManager::new(Arc::new(db), "test_master_key".to_string());
+
+        let password_name = "test_password";
+        let password_value = "SecretPassword123!";
+
+        // Store password
+        let entry = service.create_password(password_name, password_value, 90, None).await.unwrap();
+        assert_eq!(entry.name, password_name);
+
+        // Retrieve password
+        let retrieved = service.get_password_by_name(password_name, None).await.unwrap();
+        assert_eq!(retrieved, password_value);
+    }
+
+    /// Test password rotation
+    #[tokio::test]
+    async fn test_password_rotation() {
+        let (db, _) = setup_test_database().await;
+        let service = PasswordManager::new(Arc::new(db), "test_master_key".to_string());
+
+        let password_name = "rotatable_password";
+        let old_password = "OldPassword123!";
+        let new_password = "NewPassword123!";
+
+        // Create password
+        let entry1 = service.create_password(password_name, old_password, 90, None).await.unwrap();
+
+        // Rotate password
+        let entry2 = service.rotate_password(password_name, Some(new_password), None).await.unwrap();
+
+        // Verify password changed
+        let retrieved = service.get_password_by_name(password_name, None).await.unwrap();
+        assert_eq!(retrieved, new_password);
+        assert_ne!(entry1.encrypted_password, entry2.encrypted_password);
+    }
+}
+
+/// Tests for Realtime Service
+#[cfg(test)]
+mod realtime_service_tests {
+    use super::*;
+    use reconciliation_backend::services::realtime::RealtimeService;
+
+    /// Test realtime service creation
+    #[tokio::test]
+    async fn test_realtime_service_creation() {
+        let service = RealtimeService::new();
+        // Service should be created successfully
+        assert!(true);
+    }
+
+    /// Test channel subscription
+    #[tokio::test]
+    async fn test_channel_subscription() {
+        let service = RealtimeService::new();
+        let channel = "test_channel";
+        let user_id = uuid::Uuid::new_v4();
+
+        // Subscribe to channel
+        service.subscribe(channel, user_id).await.unwrap();
+
+        // Verify subscription
+        let subscribers = service.get_channel_subscribers(channel).await.unwrap();
+        assert!(subscribers.contains(&user_id));
+    }
+
+    /// Test message broadcasting
+    #[tokio::test]
+    async fn test_message_broadcasting() {
+        let service = RealtimeService::new();
+        let channel = "broadcast_channel";
+        let user1 = uuid::Uuid::new_v4();
+        let user2 = uuid::Uuid::new_v4();
+        let message = serde_json::json!({"type": "test", "data": "hello"});
+
+        // Subscribe users
+        service.subscribe(channel, user1).await.unwrap();
+        service.subscribe(channel, user2).await.unwrap();
+
+        // Broadcast message
+        service.broadcast(channel, message.clone()).await.unwrap();
+
+        // Check messages received (this would need actual WebSocket testing in real scenario)
+        // For unit test, we verify the broadcast method doesn't error
+        assert!(true);
+    }
+}
+
+/// Tests for Secrets Service
+#[cfg(test)]
+mod secrets_service_tests {
+    use super::*;
+    use reconciliation_backend::services::secrets::SecretsService;
+    use std::sync::Arc;
+
+    /// Test secrets service creation
+    #[tokio::test]
+    async fn test_secrets_service_creation() {
+        let service = Arc::new(SecretsService::new("test_key".to_string()));
+        // Service should be created successfully
+        assert!(true);
+    }
+
+    /// Test secret storage and retrieval
+    #[tokio::test]
+    async fn test_secret_storage_and_retrieval() {
+        let service = Arc::new(SecretsService::new("test_key".to_string()));
+
+        let key = "test_secret";
+        let value = "secret_value";
+
+        // Store secret
+        service.store_secret(key, value).await.unwrap();
+
+        // Retrieve secret
+        let retrieved = service.get_secret(key).await.unwrap();
+        assert_eq!(retrieved, value);
+    }
+
+    /// Test secret deletion
+    #[tokio::test]
+    async fn test_secret_deletion() {
+        let service = Arc::new(SecretsService::new("test_key".to_string()));
+
+        let key = "delete_secret";
+        let value = "to_be_deleted";
+
+        // Store and then delete secret
+        service.store_secret(key, value).await.unwrap();
+        service.delete_secret(key).await.unwrap();
+
+        // Verify deletion
+        let result = service.get_secret(key).await;
+        assert!(result.is_err());
+    }
+}

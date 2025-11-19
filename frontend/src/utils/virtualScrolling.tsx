@@ -270,7 +270,7 @@ export function useSearchAndFilter<T>(
     searchTerm: string
     filters: Record<string, unknown>
     onSearchChange: (term: string) => void
-    onFilterChange: (key: string, value: any) => void
+    onFilterChange: (key: string, value: unknown) => void
   }
 ) {
   const { searchFields, searchTerm, filters, onSearchChange, onFilterChange } = config

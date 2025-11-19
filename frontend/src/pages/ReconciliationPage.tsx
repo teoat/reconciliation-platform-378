@@ -15,8 +15,26 @@ import {
   registerReconciliationGuidanceHandlers,
   getReconciliationGuidanceContent,
 } from '@/orchestration/examples/ReconciliationPageOrchestration';
-import { Upload, FileText, Play, Pause, CheckCircle, AlertCircle, Settings, BarChart3, Users, Clock, Download } from 'lucide-react';
-import { useProject, useDataSources, useReconciliationJobs, useReconciliationMatches } from '@/hooks/useApi';
+import {
+  Upload,
+  FileText,
+  Play,
+  Pause,
+  CheckCircle,
+  AlertCircle,
+  Settings,
+  BarChart3,
+  Users,
+  Clock,
+  Download,
+} from 'lucide-react';
+import {
+  useProject,
+  useDataSources,
+  useReconciliationJobs,
+  useReconciliationMatches,
+} from '@/hooks/useApi';
+import { useReconciliationOperations } from '@/hooks/reconciliation/useReconciliationOperations';
 // FileDropzone will be lazy loaded
 import { DataTable, Column } from '@/components/ui/DataTable';
 import Button from '@/components/ui/Button';
@@ -32,6 +50,12 @@ import {
   BackendReconciliationMatch,
 } from '@/services/apiClient';
 import { PageMeta } from '@/components/seo/PageMeta';
+import { ReconciliationHeader } from '@/components/reconciliation/ReconciliationHeader';
+import { ReconciliationTabs } from '@/components/reconciliation/ReconciliationTabs';
+import { UploadTabContent } from '@/components/reconciliation/UploadTabContent';
+import { ConfigureTabContent } from '@/components/reconciliation/ConfigureTabContent';
+import { RunTabContent } from '@/components/reconciliation/RunTabContent';
+import { ResultsTabContent } from '@/components/reconciliation/ResultsTabContent';
 
 // Lazy load heavy components
 const FileDropzone = lazy(() =>
@@ -49,6 +73,28 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   const { dataSources, uploadFile, processFile } = useDataSources(projectId || null);
   const { jobs, createJob, startJob } = useReconciliationJobs(projectId || null);
   const { matches, updateMatch } = useReconciliationMatches(projectId || null);
+
+  // Reconciliation operations hook
+  const {
+    isCreatingJob,
+    isStartingJob,
+    error: reconciliationError,
+    startReconciliation,
+  } = useReconciliationOperations({
+    projectId,
+    onJobCreated: (jobId) => {
+      logger.info('Reconciliation job created', { jobId });
+      trackFeatureUsage('reconciliation', 'job-created', { jobId });
+    },
+    onJobStarted: (jobId) => {
+      logger.info('Reconciliation job started', { jobId });
+      trackFeatureUsage('reconciliation', 'job-started', { jobId });
+    },
+    onError: (error) => {
+      setError(error);
+      trackFeatureError('reconciliation', error);
+    },
+  });
 
   // State
   const [activeTab, setActiveTab] = useState<'upload' | 'configure' | 'run' | 'results'>('upload');
@@ -152,38 +198,15 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
 
   // Start reconciliation job with error handling
   const handleStartReconciliation = async () => {
-    if (!projectId) return;
-
     trackFeatureUsage('run-jobs', 'job-creation-started');
     trackUserAction('button-clicked', 'start-reconciliation-button');
-    try {
-      const result = await createJob({
-        project_id: projectId,
-        name: `Reconciliation Job ${new Date().toISOString()}`,
-        description: 'Automated reconciliation job',
-        status: 'pending',
-      });
-
-      if (result.success && result.job) {
-        await startJob(result.job.id);
-        trackFeatureUsage('run-jobs', 'job-creation-success', { jobId: result.job.id });
-        // Mark run tab as completed
-        if (!completedTabs.includes('run')) {
-          setCompletedTabs([...completedTabs, 'run']);
-        }
-        // Update page context
-        updatePageContext({ jobsCount: jobs?.length || 0 });
-      } else {
-        const error = new Error('Failed to create reconciliation job');
-        setError(error);
-        trackFeatureError('run-jobs', error);
-      }
-    } catch (error) {
-      const jobError =
-        error instanceof Error ? error : new Error('Failed to start reconciliation job');
-      setError(jobError);
-      trackFeatureError('run-jobs', jobError);
+    await startReconciliation();
+    // Mark run tab as completed
+    if (!completedTabs.includes('run')) {
+      setCompletedTabs([...completedTabs, 'run']);
     }
+    // Update page context
+    updatePageContext({ jobsCount: jobs?.length || 0 });
   };
 
   // Perform data sync (placeholder)
@@ -541,78 +564,18 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
         />
 
         {/* Header */}
-        <header className="bg-white shadow-sm border-b" role="banner">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
-              <div className="flex items-center space-x-4">
-                <Button variant="ghost" onClick={() => navigate('/')}>
-                  ← Back to Dashboard
-                </Button>
-                <div>
-                  <h1 className="text-xl font-semibold text-gray-900" id="page-title">
-                    {project?.name ?? 'Unknown Project'}
-                  </h1>
-                  <p className="text-sm text-gray-500">Reconciliation Management</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Button variant="outline" onClick={() => setShowSettingsModal(true)}>
-                  <Settings className="h-4 w-4 mr-2" />
-                  Settings
-                </Button>
-                <Button variant="primary" onClick={() => setShowUploadModal(true)}>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Upload Files
-                </Button>
-              </div>
-            </div>
-          </div>
-        </header>
+        <ReconciliationHeader
+          projectName={project?.name}
+          onSettingsClick={() => setShowSettingsModal(true)}
+          onUploadClick={() => setShowUploadModal(true)}
+        />
 
         {/* Navigation Tabs */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" id="navigation-tabs">
-          <div className="border-b border-gray-200">
-            <div
-              className="-mb-px flex space-x-8"
-              role="tablist"
-              aria-label="Reconciliation workflow tabs"
-            >
-              {[
-                { id: 'upload' as const, label: 'Upload Data', icon: Upload },
-                { id: 'configure' as const, label: 'Configure', icon: Settings },
-                { id: 'run' as const, label: 'Run Jobs', icon: Play },
-                { id: 'results' as const, label: 'Results', icon: BarChart3 },
-            ].map((tab) => {
-              const isSelected = activeTab === tab.id;
-              const tabIndexValue = isSelected ? 0 : -1;
-              return (
-                  <button
-                    key={tab.id}
-                    role="tab"
-                    // eslint-disable-next-line jsx-a11y/aria-proptypes
-                    aria-selected={isSelected}
-                    aria-controls={`tabpanel-${tab.id}`}
-                    id={`tab-${tab.id}`}
-                    tabIndex={tabIndexValue}
-                    onClick={() => setActiveTab(tab.id)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        setActiveTab(tab.id);
-                      }
-                    }}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm whitespace-nowrap focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                      activeTab === tab.id
-                        ? 'border-blue-500 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                    }`}
-                  >
-                    <tab.icon className="h-4 w-4 mr-2 inline" aria-hidden="true" />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </div>
+        <ReconciliationTabs
+          activeTab={activeTab}
+          completedTabs={completedTabs}
+          onTabChange={setActiveTab}
+        />
           </div>
         </div>
 
@@ -635,217 +598,39 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
 
           {/* Upload Tab */}
           {activeTab === 'upload' && (
-            <div
-              id="tabpanel-upload"
-              role="tabpanel"
-              aria-labelledby="tab-upload"
-              className="space-y-6"
-            >
-              {/* Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <MetricCard
-                  title="Data Sources"
-                  value={dataSources?.length ?? 0}
-                  icon={<FileText className="w-6 h-6" />}
-                />
-                <MetricCard
-                  title="Processed Files"
-                  value={dataSources?.filter((ds) => ds?.status === 'processed').length ?? 0}
-                  icon={<CheckCircle className="w-6 h-6" />}
-                />
-                <MetricCard
-                  title="Active Jobs"
-                  value={jobs?.filter((job) => job?.status === 'running').length ?? 0}
-                  icon={<Clock className="w-6 h-6" />}
-                />
-                <MetricCard
-                  title="Total Matches"
-                  value={matches?.length ?? 0}
-                  icon={<Users className="w-6 h-6" />}
-                />
-              </div>
-
-              {/* Data Sources Table */}
-              <Card>
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <h3 className="text-lg font-semibold">Data Sources</h3>
-                      <ContextualHelp
-                        trigger="hover"
-                        position="right"
-                        helpContent={{
-                          id: 'data-sources-help',
-                          title: 'Upload Data Files',
-                          content:
-                            'Upload CSV or Excel files containing your reconciliation data. Supported formats: .csv, .xlsx, .xls. Maximum file size: 50MB per file.',
-                          tips: [
-                            {
-                              id: 'tip-1',
-                              title: 'Upload Method',
-                              content: 'Use the Upload Files button or drag and drop files',
-                              category: 'tip',
-                            },
-                            {
-                              id: 'tip-2',
-                              title: 'Validation',
-                              content: 'Files are automatically validated after upload',
-                              category: 'tip',
-                            },
-                            {
-                              id: 'tip-3',
-                              title: 'Multiple Files',
-                              content: 'Multiple files can be uploaded at once',
-                              category: 'tip',
-                            },
-                          ],
-                        }}
-                      />
-                    </div>
-                    <Button variant="primary" onClick={() => setShowUploadModal(true)}>
-                      <Upload className="h-4 w-4 mr-2" />
-                      Upload Files
-                    </Button>
-                  </div>
-                  <DataTable
-                    data={dataSources ?? []}
-                    columns={dataSourceColumns}
-                    emptyMessage="No data sources uploaded yet"
-                  />
-                </div>
-              </Card>
-            </div>
+            <UploadTabContent
+              dataSources={dataSources}
+              jobs={jobs}
+              matches={matches}
+              dataSourceColumns={dataSourceColumns}
+              onUploadClick={() => setShowUploadModal(true)}
+            />
           )}
 
           {/* Configure Tab */}
           {activeTab === 'configure' && (
-            <div
-              id="tabpanel-configure"
-              role="tabpanel"
-              aria-labelledby="tab-configure"
-              className="space-y-6"
-            >
-              <Card>
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold mb-4">Reconciliation Settings</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label
-                        htmlFor="matching-threshold"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Matching Threshold
-                      </label>
-                      <input
-                        id="matching-threshold"
-                        type="range"
-                        min="0.1"
-                        max="1"
-                        step="0.1"
-                        value={reconciliationSettings.matchingThreshold}
-                        onChange={(e) =>
-                          setReconciliationSettings((prev) => ({
-                            ...prev,
-                            matchingThreshold: parseFloat(e.target.value) || 0,
-                          }))
-                        }
-                        className="w-full"
-                        aria-label="Matching threshold slider"
-                      />
-                      <div className="flex justify-between text-sm text-gray-500 mt-1">
-                        <span>10%</span>
-                        <span className="font-medium">
-                          {Math.round(reconciliationSettings.matchingThreshold * 100)}%
-                        </span>
-                        <span>100%</span>
-                      </div>
-                    </div>
-                    <div>
-                      <label
-                        htmlFor="auto-approve"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Auto-approve matches
-                      </label>
-                      <input
-                        id="auto-approve"
-                        type="checkbox"
-                        checked={reconciliationSettings.autoApprove}
-                        onChange={(e) =>
-                          setReconciliationSettings((prev) => ({
-                            ...prev,
-                            autoApprove: e.target.checked,
-                          }))
-                        }
-                        className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                        aria-label="Auto-approve matches checkbox"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
+            <ConfigureTabContent
+              reconciliationSettings={reconciliationSettings}
+              setReconciliationSettings={setReconciliationSettings}
+            />
           )}
 
           {/* Run Jobs Tab */}
           {activeTab === 'run' && (
-            <div id="tabpanel-run" role="tabpanel" aria-labelledby="tab-run" className="space-y-6">
-              <Card>
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Reconciliation Jobs</h3>
-                    <Button
-                      variant="primary"
-                      onClick={handleStartReconciliation}
-                      disabled={!dataSources || dataSources.length === 0}
-                    >
-                      <Play className="h-4 w-4 mr-2" />
-                      Start New Job
-                    </Button>
-                  </div>
-                  <DataTable
-                    data={jobs ?? []}
-                    columns={jobColumns}
-                    emptyMessage="No reconciliation jobs yet"
-                  />
-                </div>
-              </Card>
-            </div>
+            <RunTabContent
+              dataSources={dataSources}
+              jobs={jobs}
+              jobColumns={jobColumns}
+              onStartReconciliation={handleStartReconciliation}
+            />
           )}
 
           {/* Results Tab */}
           {activeTab === 'results' && (
-            <div
-              id="tabpanel-results"
-              role="tabpanel"
-              aria-labelledby="tab-results"
-              className="space-y-6"
-            >
-              <Card>
-                <div className="p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold">Reconciliation Matches</h3>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        /* Export results */
-                      }}
-                    >
-                      <Download className="h-4 w-4 mr-2" />
-                      Export Results
-                    </Button>
-                  </div>
-                  <DataTable
-                    data={matches ?? []}
-                    columns={matchColumns}
-                    virtualized
-                    virtualRowHeight={48}
-                    virtualContainerHeight={560}
-                    emptyMessage="No matches found yet"
-                  />
-                </div>
-              </Card>
-            </div>
+            <ResultsTabContent
+              matches={matches}
+              matchColumns={matchColumns}
+            />
           )}
         </main>
 

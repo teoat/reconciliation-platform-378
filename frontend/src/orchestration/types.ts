@@ -19,7 +19,7 @@ export interface PageMetadata {
 }
 
 export interface PageContext {
-  [key: string]: any;
+  [key: string]: unknown;
   currentView?: string;
   userRole?: string;
   timestamp?: number;

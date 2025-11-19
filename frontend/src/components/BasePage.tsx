@@ -1,6 +1,7 @@
 import React from 'react';
 import { PageConfig, StatsCard, ActionConfig } from '../../types/common';
 import { LoadingSpinnerComponent } from '../LoadingComponents';
+import { ProgressBar } from './ui/ProgressBar';
 
 interface BasePageProps {
   config: PageConfig;
@@ -86,17 +87,12 @@ export const BasePage: React.FC<BasePageProps> = ({
               </div>
               {stat.progress !== undefined && (
                 <div className="mt-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-500 h-2 rounded-full"
-                      style={{ width: `${stat.progress}%` }}
-                      role="progressbar"
-                      aria-label={`${stat.title} progress: ${stat.progress}%`}
-                      aria-valuenow={stat.progress}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                    ></div>
-                  </div>
+                  <ProgressBar
+                    value={stat.progress}
+                    label={stat.title}
+                    showLabel={false}
+                    size="sm"
+                  />
                 </div>
               )}
             </div>

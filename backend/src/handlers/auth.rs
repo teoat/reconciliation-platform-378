@@ -87,14 +87,60 @@ pub async fn login(
         }
     };
 
+    // Check if account is locked BEFORE attempting authentication
+    if let Some(monitor) = security_monitor.as_ref() {
+        match monitor.is_account_locked(&ip, Some(&user.id.to_string())).await {
+            Ok(true) => {
+                // Account is locked - return error immediately
+                let remaining_attempts = monitor
+                    .get_remaining_attempts(&ip, Some(&user.id.to_string()))
+                    .await
+                    .unwrap_or(0);
+                
+                log::warn!(
+                    "⚠️  Login attempt blocked - account locked for user: {} from IP: {}",
+                    mask_email(&req.email),
+                    ip
+                );
+
+                return Err(AppError::Authentication(format!(
+                    "Account is temporarily locked due to too many failed login attempts. Please try again in 15 minutes. {} attempts remaining.",
+                    remaining_attempts
+                )));
+            }
+            Ok(false) => {
+                // Account is not locked, proceed with authentication
+            }
+            Err(e) => {
+                // Error checking lockout status - log but don't block (fail open for availability)
+                log::error!("Error checking account lockout status: {}", e);
+            }
+        }
+    }
+
     // Verify password
     let password_valid = auth_service
         .as_ref()
         .verify_password(&req.password, &user.password_hash)?;
     
     if !password_valid {
-        // Log security event for failed authentication
+        // Record failed login attempt and check if account should be locked
+        let mut is_locked = false;
+        let mut remaining_attempts = 0;
+        
         if let Some(monitor) = security_monitor.as_ref() {
+            // Record the failed attempt
+            match monitor.record_login_attempt(&ip, Some(&user.id.to_string()), false).await {
+                Ok((locked, remaining)) => {
+                    is_locked = locked;
+                    remaining_attempts = remaining;
+                }
+                Err(e) => {
+                    log::error!("Error recording login attempt: {}", e);
+                }
+            }
+
+            // Log security event for failed authentication
             let event = SecurityEvent {
                 id: uuid::Uuid::new_v4().to_string(),
                 event_type: SecurityEventType::AuthenticationFailure,
@@ -108,6 +154,10 @@ pub async fn login(
                     meta.insert("email".to_string(), mask_email(&req.email));
                     meta.insert("user_id".to_string(), user.id.to_string());
                     meta.insert("user_agent".to_string(), get_user_agent(&http_req));
+                    if is_locked {
+                        meta.insert("account_locked".to_string(), "true".to_string());
+                    }
+                    meta.insert("remaining_attempts".to_string(), remaining_attempts.to_string());
                     meta
                 },
             };
@@ -144,13 +194,27 @@ pub async fn login(
             "timestamp".to_string(),
             serde_json::json!(chrono::Utc::now().to_rfc3339()),
         );
+        if is_locked {
+            fields.insert("account_locked".to_string(), serde_json::json!(true));
+            fields.insert("remaining_attempts".to_string(), serde_json::json!(remaining_attempts));
+        }
         logger.log(
             crate::services::structured_logging::LogLevel::Warn,
             "Authentication denied: invalid credentials",
             fields,
         );
 
-        return Err(AppError::Authentication("Invalid credentials".to_string()));
+        // Return appropriate error message based on lockout status
+        if is_locked {
+            return Err(AppError::Authentication(format!(
+                "Account is temporarily locked due to too many failed login attempts. Please try again in 15 minutes."
+            )));
+        } else {
+            return Err(AppError::Authentication(format!(
+                "Invalid credentials. {} attempts remaining before account lockout.",
+                remaining_attempts
+            )));
+        }
     }
 
     // Check if user is active
@@ -158,6 +222,11 @@ pub async fn login(
         return Err(AppError::Authentication(
             "Account is deactivated".to_string(),
         ));
+    }
+
+    // Clear login attempts on successful authentication
+    if let Some(monitor) = security_monitor.as_ref() {
+        let _ = monitor.record_login_attempt(&ip, Some(&user.id.to_string()), true).await;
     }
 
     // Password manager master key is now separate from login password

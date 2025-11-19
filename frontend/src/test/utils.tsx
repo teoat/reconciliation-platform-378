@@ -6,7 +6,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { vi } from 'vitest';
 import { rootReducer } from '../store/unifiedStore';
 
-export const createMockStore = (initialState: any = {}) => {
+export const createMockStore = (initialState: Record<string, unknown> = {}) => {
   return configureStore({
     reducer: rootReducer,
     preloadedState: initialState,
@@ -16,7 +16,7 @@ export const createMockStore = (initialState: any = {}) => {
 // Custom render function that includes providers
 export const render = (
   ui: ReactElement,
-  { initialState = {}, store = createMockStore(initialState), ...renderOptions }: any = {}
+  { initialState = {}, store = createMockStore(initialState), ...renderOptions }: Record<string, unknown> = {}
 ) => {
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <Provider store={store}>
