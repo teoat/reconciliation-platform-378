@@ -9,14 +9,9 @@ import {
   Users, 
   Settings, 
   CheckCircle, 
-  XCircle, 
   Activity,
-  X,
-  RefreshCw,
   Download,
-  Upload,
   Edit,
-  Trash2,
   Plus as PlusIcon
 } from 'lucide-react'
 import { useData } from '../components/DataProvider'
