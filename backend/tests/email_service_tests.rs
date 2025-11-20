@@ -90,7 +90,7 @@ mod email_service_tests {
                 "test@example.com",
                 "Test Subject",
                 "Test body",
-                "correlation123",
+                Some("correlation123".to_string()),
             )
             .await;
         

@@ -30,14 +30,14 @@ export class UrlBuilder {
 
 export class ConfigBuilder {
   static createDefaultConfig(): ApiClientConfig {
-    // In development, use relative URL to leverage Vite proxy
+    // In development, always use relative URL to leverage Vite proxy
     // In production, use full URL or VITE_API_URL env var
-    const defaultBaseURL = import.meta.env.DEV 
-      ? '/api'  // Use Vite proxy in development
+    const baseURL = import.meta.env.DEV 
+      ? '/api'  // Always use Vite proxy in development
       : (import.meta.env.VITE_API_URL || 'http://localhost:2000/api');
     
     return {
-      baseURL: import.meta.env.VITE_API_URL || defaultBaseURL,
+      baseURL,
       timeout: 30000, // 30 seconds
       retryConfig: {
         maxRetries: 3,

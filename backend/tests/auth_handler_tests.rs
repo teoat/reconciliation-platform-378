@@ -976,4 +976,151 @@ mod auth_handler_tests {
         // Should fail validation
         assert!(resp.status().is_client_error());
     }
+
+    // Additional edge cases
+    #[tokio::test]
+    async fn test_login_handler_empty_email() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let auth_service_arc = Arc::new(auth_service.clone());
+        let user_service = web::Data::new(Arc::new(UserService::new(
+            db_arc.clone(),
+            auth_service.clone(),
+        )));
+
+        let login_request = LoginRequest {
+            email: "".to_string(),
+            password: "TestPassword123!".to_string(),
+            remember_me: None,
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/api/auth/login")
+            .set_json(&login_request)
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(auth_service_arc.clone()))
+                .app_data(user_service.clone())
+                .route("/api/auth/login", web::post().to(login)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_login_handler_empty_password() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let auth_service_arc = Arc::new(auth_service.clone());
+        let user_service = web::Data::new(Arc::new(UserService::new(
+            db_arc.clone(),
+            auth_service.clone(),
+        )));
+
+        let login_request = LoginRequest {
+            email: "test@example.com".to_string(),
+            password: "".to_string(),
+            remember_me: None,
+        };
+
+        let req = test::TestRequest::post()
+            .uri("/api/auth/login")
+            .set_json(&login_request)
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(auth_service_arc.clone()))
+                .app_data(user_service.clone())
+                .route("/api/auth/login", web::post().to(login)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_refresh_token_invalid_token() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let auth_service_arc = Arc::new(auth_service.clone());
+        let user_service = web::Data::new(Arc::new(UserService::new(
+            db_arc.clone(),
+            auth_service.clone(),
+        )));
+
+        let refresh_request = serde_json::json!({
+            "refresh_token": "invalid_token_here"
+        });
+
+        let req = test::TestRequest::post()
+            .uri("/api/auth/refresh")
+            .set_json(&refresh_request)
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(auth_service_arc.clone()))
+                .app_data(user_service.clone())
+                .route("/api/auth/refresh", web::post().to(refresh_token)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_change_password_missing_current() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let auth_service_arc = Arc::new(auth_service.clone());
+        let user_service = web::Data::new(Arc::new(UserService::new(
+            db_arc.clone(),
+            auth_service.clone(),
+        )));
+
+        // Create user first
+        let create_request = reconciliation_backend::services::user::CreateUserRequest {
+            email: "changepass_edge@example.com".to_string(),
+            password: "OriginalPassword123!".to_string(),
+            first_name: "Test".to_string(),
+            last_name: "User".to_string(),
+            role: Some("user".to_string()),
+        };
+
+        let user = user_service.create_user(create_request).await.unwrap();
+
+        // Try to change password without current password
+        let change_request = serde_json::json!({
+            "new_password": "NewPassword123!"
+        });
+
+        let req = test::TestRequest::post()
+            .uri("/api/auth/change-password")
+            .insert_header(("Authorization", format!("Bearer {}", "dummy_token")))
+            .set_json(&change_request)
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(auth_service_arc.clone()))
+                .app_data(user_service.clone())
+                .route("/api/auth/change-password", web::post().to(change_password)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail validation
+        assert!(resp.status().is_client_error());
+    }
 }

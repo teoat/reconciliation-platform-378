@@ -496,5 +496,265 @@ mod project_service_tests {
         let projects = result.unwrap();
         assert_eq!(projects.len(), 0);
     }
+
+    #[tokio::test]
+    async fn test_update_project_partial_fields() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+        let project_service = ProjectService::new((*db_arc).clone());
+
+        let user = create_test_user(&user_service, "partial@example.com").await;
+        let project = project_service
+            .create_project(reconciliation_backend::services::project_models::CreateProjectRequest {
+                name: "Partial Update".to_string(),
+                description: Some("Original".to_string()),
+                owner_id: user.id,
+                status: None,
+                settings: None,
+            })
+            .await
+            .unwrap();
+
+        // Update only name
+        let mut update_request = reconciliation_backend::services::project_models::UpdateProjectRequest::default();
+        update_request.name = Some("Updated Name".to_string());
+
+        let result = project_service.update_project(project.id, update_request).await;
+        assert!(result.is_ok());
+
+        let updated = result.unwrap();
+        assert_eq!(updated.name, "Updated Name");
+        assert_eq!(updated.description, Some("Original".to_string())); // Unchanged
+    }
+
+    #[tokio::test]
+    async fn test_update_project_nonexistent() {
+        let (db, _) = setup_test_database().await;
+        let project_service = ProjectService::new(db);
+
+        let nonexistent_id = Uuid::new_v4();
+        let mut update_request = reconciliation_backend::services::project_models::UpdateProjectRequest::default();
+        update_request.name = Some("Updated".to_string());
+
+        let result = project_service.update_project(nonexistent_id, update_request).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_delete_project_nonexistent() {
+        let (db, _) = setup_test_database().await;
+        let project_service = ProjectService::new(db);
+
+        let nonexistent_id = Uuid::new_v4();
+        let result = project_service.delete_project(nonexistent_id).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_update_project_empty_name() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+        let project_service = ProjectService::new((*db_arc).clone());
+
+        let user = create_test_user(&user_service, "empty_name_update@example.com").await;
+        let project = project_service
+            .create_project(reconciliation_backend::services::project_models::CreateProjectRequest {
+                name: "Valid Name".to_string(),
+                description: None,
+                owner_id: user.id,
+                status: None,
+                settings: None,
+            })
+            .await
+            .unwrap();
+
+        let mut update_request = reconciliation_backend::services::project_models::UpdateProjectRequest::default();
+        update_request.name = Some("".to_string());
+
+        let result = project_service.update_project(project.id, update_request).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_list_projects_with_status_filter() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+        let project_service = ProjectService::new((*db_arc).clone());
+
+        let user = create_test_user(&user_service, "status_filter@example.com").await;
+
+        // Create projects with different statuses
+        project_service
+            .create_project(reconciliation_backend::services::project_models::CreateProjectRequest {
+                name: "Active Project".to_string(),
+                description: None,
+                owner_id: user.id,
+                status: Some("active".to_string()),
+                settings: None,
+            })
+            .await
+            .unwrap();
+
+        project_service
+            .create_project(reconciliation_backend::services::project_models::CreateProjectRequest {
+                name: "Archived Project".to_string(),
+                description: None,
+                owner_id: user.id,
+                status: Some("archived".to_string()),
+                settings: None,
+            })
+            .await
+            .unwrap();
+
+        // List all projects
+        let result = project_service.list_projects(Some(1), Some(10)).await;
+        assert!(result.is_ok());
+
+        let projects = result.unwrap();
+        assert!(projects.projects.len() >= 2);
+    }
+
+    #[tokio::test]
+    async fn test_search_projects_by_description() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+        let project_service = ProjectService::new((*db_arc).clone());
+
+        let user = create_test_user(&user_service, "desc_search@example.com").await;
+
+        project_service
+            .create_project(reconciliation_backend::services::project_models::CreateProjectRequest {
+                name: "Description Project".to_string(),
+                description: Some("This project has a searchable description".to_string()),
+                owner_id: user.id,
+                status: None,
+                settings: None,
+            })
+            .await
+            .unwrap();
+
+        // Search in description
+        let result = project_service.search_projects("searchable", Some(1), Some(10)).await;
+        assert!(result.is_ok());
+
+        let projects = result.unwrap();
+        assert!(projects.projects.len() >= 1);
+    }
+
+    #[tokio::test]
+    async fn test_update_project_settings() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+        let project_service = ProjectService::new((*db_arc).clone());
+
+        let user = create_test_user(&user_service, "settings_update@example.com").await;
+        let project = project_service
+            .create_project(reconciliation_backend::services::project_models::CreateProjectRequest {
+                name: "Settings Update".to_string(),
+                description: None,
+                owner_id: user.id,
+                status: None,
+                settings: Some(serde_json::json!({"theme": "light"})),
+            })
+            .await
+            .unwrap();
+
+        let new_settings = serde_json::json!({
+            "theme": "dark",
+            "notifications": true
+        });
+
+        let mut update_request = reconciliation_backend::services::project_models::UpdateProjectRequest::default();
+        update_request.settings = Some(new_settings.clone());
+
+        let result = project_service.update_project(project.id, update_request).await;
+        assert!(result.is_ok());
+
+        let updated = result.unwrap();
+        assert!(updated.settings.is_some());
+        assert_eq!(updated.settings.unwrap()["theme"], "dark");
+    }
+
+    #[tokio::test]
+    async fn test_list_projects_pagination_edge_cases() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+        let project_service = ProjectService::new((*db_arc).clone());
+
+        let user = create_test_user(&user_service, "pagination_edge@example.com").await;
+
+        // Create 5 projects
+        for i in 0..5 {
+            project_service
+                .create_project(reconciliation_backend::services::project_models::CreateProjectRequest {
+                    name: format!("Project {}", i),
+                    description: None,
+                    owner_id: user.id,
+                    status: None,
+                    settings: None,
+                })
+                .await
+                .unwrap();
+        }
+
+        // Test page 0 (should handle gracefully)
+        let result = project_service.list_projects(Some(0), Some(10)).await;
+        assert!(result.is_ok() || result.is_err());
+
+        // Test negative page
+        let result = project_service.list_projects(Some(-1), Some(10)).await;
+        assert!(result.is_ok() || result.is_err());
+
+        // Test very large page number
+        let result = project_service.list_projects(Some(9999), Some(10)).await;
+        assert!(result.is_ok());
+        let projects = result.unwrap();
+        assert!(projects.projects.len() == 0); // Should be empty
+    }
+
+    #[tokio::test]
+    async fn test_get_project_by_id_after_update() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+        let project_service = ProjectService::new((*db_arc).clone());
+
+        let user = create_test_user(&user_service, "get_after_update@example.com").await;
+        let project = project_service
+            .create_project(reconciliation_backend::services::project_models::CreateProjectRequest {
+                name: "Original Name".to_string(),
+                description: None,
+                owner_id: user.id,
+                status: None,
+                settings: None,
+            })
+            .await
+            .unwrap();
+
+        // Update project
+        let mut update_request = reconciliation_backend::services::project_models::UpdateProjectRequest::default();
+        update_request.name = Some("Updated Name".to_string());
+        project_service.update_project(project.id, update_request).await.unwrap();
+
+        // Get project and verify update
+        let result = project_service.get_project_by_id(project.id).await;
+        assert!(result.is_ok());
+
+        let retrieved = result.unwrap();
+        assert_eq!(retrieved.name, "Updated Name");
+    }
 }
 

@@ -181,6 +181,11 @@ mod data_source_service_tests {
                 Some("Updated Name".to_string()),
                 Some("processed".to_string()),
                 None,
+                None,
+                None,
+                None,
+                None,
+                None,
             )
             .await;
 

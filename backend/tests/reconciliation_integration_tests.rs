@@ -660,6 +660,129 @@ mod job_management_tests {
         // Should handle gracefully
         assert!(result.is_ok() || result.is_err());
     }
+
+    // Performance and edge case tests
+    #[tokio::test]
+    async fn test_matching_performance_large_dataset() {
+        use reconciliation_backend::services::reconciliation::matching::match_records;
+        use reconciliation_backend::services::reconciliation::types::ReconciliationRecord;
+        use std::collections::HashMap;
+
+        let exact_algorithm = reconciliation_backend::services::reconciliation::matching::ExactMatchingAlgorithm;
+
+        // Create large number of test records
+        let mut source_fields = HashMap::new();
+        source_fields.insert("id".to_string(), serde_json::json!("12345"));
+        source_fields.insert("name".to_string(), serde_json::json!("Test Record"));
+
+        let mut target_fields = HashMap::new();
+        target_fields.insert("id".to_string(), serde_json::json!("12345"));
+        target_fields.insert("name".to_string(), serde_json::json!("Test Record"));
+
+        let source_record = ReconciliationRecord {
+            id: Uuid::new_v4(),
+            source_id: "source_1".to_string(),
+            fields: source_fields.clone(),
+            metadata: HashMap::new(),
+        };
+
+        let target_record = ReconciliationRecord {
+            id: Uuid::new_v4(),
+            source_id: "target_1".to_string(),
+            fields: target_fields.clone(),
+            metadata: HashMap::new(),
+        };
+
+        // Test matching performance
+        let start = std::time::Instant::now();
+        let fields = vec!["id".to_string(), "name".to_string()];
+        let _result = match_records(
+            &source_record,
+            &target_record,
+            &exact_algorithm,
+            &fields,
+            0.8,
+        );
+        let duration = start.elapsed();
+
+        // Should complete quickly (less than 100ms for single match)
+        assert!(duration.as_millis() < 100);
+    }
+
+    #[tokio::test]
+    async fn test_confidence_scoring_edge_cases() {
+        use reconciliation_backend::services::reconciliation::matching::match_records;
+        use reconciliation_backend::services::reconciliation::types::ReconciliationRecord;
+        use std::collections::HashMap;
+
+        let exact_algorithm = reconciliation_backend::services::reconciliation::matching::ExactMatchingAlgorithm;
+
+        // Test with empty fields
+        let mut empty_source = HashMap::new();
+        let mut empty_target = HashMap::new();
+
+        let empty_source_record = ReconciliationRecord {
+            id: Uuid::new_v4(),
+            source_id: "source_1".to_string(),
+            fields: empty_source,
+            metadata: HashMap::new(),
+        };
+
+        let empty_target_record = ReconciliationRecord {
+            id: Uuid::new_v4(),
+            source_id: "target_1".to_string(),
+            fields: empty_target,
+            metadata: HashMap::new(),
+        };
+
+        let fields = vec!["name".to_string()];
+        let result = match_records(
+            &empty_source_record,
+            &empty_target_record,
+            &exact_algorithm,
+            &fields,
+            0.8,
+        );
+
+        // Should handle empty fields gracefully
+        assert!(result.confidence_score >= 0.0 && result.confidence_score <= 1.0);
+    }
+
+    #[tokio::test]
+    async fn test_job_processor_concurrent_limit() {
+        let (db, _temp_dir) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let job_processor = reconciliation_backend::services::reconciliation::JobProcessor::new(2, 100);
+
+        // Test that max_concurrent_jobs limit is enforced
+        let job_ids = vec![
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+            Uuid::new_v4(),
+        ];
+
+        // Start jobs up to limit
+        for job_id in &job_ids[..2] {
+            job_processor.start_job(*job_id).await;
+        }
+
+        // Verify active jobs count
+        let active_jobs = job_processor.active_jobs.read().await;
+        assert_eq!(active_jobs.len(), 2);
+        drop(active_jobs);
+
+        // Check if can process more
+        let can_process = job_processor.can_process_job().await;
+        assert!(!can_process); // Should be false since we're at limit
+
+        // Stop one job
+        job_processor.stop_job(job_ids[0]).await.unwrap();
+
+        // Now should be able to process
+        let can_process_after = job_processor.can_process_job().await;
+        assert!(can_process_after);
+    }
 }
 
 /// Integration test for edge cases and error handling

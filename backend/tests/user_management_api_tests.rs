@@ -436,5 +436,144 @@ mod user_management_api_tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
+
+    // Edge cases
+    #[tokio::test]
+    async fn test_create_user_duplicate_email() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, _) = setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        let user_service = Arc::new(UserService::new(db_arc.clone(), auth_service.clone()));
+
+        // Create first user
+        let create_request = serde_json::json!({
+            "email": "duplicate@example.com",
+            "password": "TestPassword123!",
+            "first_name": "First",
+            "last_name": "User",
+            "role": "user"
+        });
+
+        let req1 = test::TestRequest::post()
+            .uri("/api/users")
+            .set_json(&create_request)
+            .to_request();
+
+        let app1 = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(web::Data::new(user_service.clone()))
+                .route("/api/users", web::post().to(create_user)),
+        )
+        .await;
+
+        let resp1 = test::call_service(&app1, req1).await;
+        assert!(resp1.status().is_success());
+
+        // Try to create duplicate
+        let req2 = test::TestRequest::post()
+            .uri("/api/users")
+            .set_json(&create_request)
+            .to_request();
+
+        let app2 = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(web::Data::new(user_service.clone()))
+                .route("/api/users", web::post().to(create_user)),
+        )
+        .await;
+
+        let resp2 = test::call_service(&app2, req2).await;
+        // Should fail with conflict
+        assert!(resp2.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_get_user_not_found() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let user_service = Arc::new(UserService::new(db_arc.clone(), auth_service.clone()));
+
+        let nonexistent_user_id = Uuid::new_v4();
+
+        let req = test::TestRequest::get()
+            .uri(&format!("/api/users/{}", nonexistent_user_id))
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(web::Data::new(user_service))
+                .route("/api/users/{user_id}", web::get().to(get_user)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should return 404
+        assert_eq!(resp.status().as_u16(), 404);
+    }
+
+    #[tokio::test]
+    async fn test_update_user_not_found() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let user_service = Arc::new(UserService::new(db_arc.clone(), auth_service.clone()));
+
+        let nonexistent_user_id = Uuid::new_v4();
+        let update_request = serde_json::json!({
+            "first_name": "Updated"
+        });
+
+        let req = test::TestRequest::put()
+            .uri(&format!("/api/users/{}", nonexistent_user_id))
+            .set_json(&update_request)
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(web::Data::new(user_service))
+                .route("/api/users/{user_id}", web::put().to(update_user)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should return 404
+        assert_eq!(resp.status().as_u16(), 404);
+    }
+
+    #[tokio::test]
+    async fn test_list_users_with_invalid_pagination() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let user_service = Arc::new(UserService::new(db_arc.clone(), auth_service.clone()));
+
+        // Test with negative page
+        let req = test::TestRequest::get()
+            .uri("/api/users?page=-1&per_page=10")
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(web::Data::new(user_service))
+                .route("/api/users", web::get().to(list_users)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should handle gracefully (may return 400 or default to page 1)
+        assert!(resp.status().is_success() || resp.status().is_client_error());
+    }
 }
 

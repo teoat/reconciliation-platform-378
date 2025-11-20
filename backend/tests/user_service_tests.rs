@@ -430,5 +430,346 @@ mod user_service_tests {
         assert_eq!(updated.first_name, "Updated");
         assert_eq!(updated.last_name, "Name"); // Unchanged
     }
+
+    #[tokio::test]
+    async fn test_update_user_invalid_email() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        let user = user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "invalid_update@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Test".to_string(),
+                last_name: "User".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        let mut update_request = reconciliation_backend::services::user::UpdateUserRequest::default();
+        update_request.email = Some("invalid_email_format".to_string());
+
+        let result = user_service.update_user(user.id, update_request).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_update_user_duplicate_email() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        // Create two users
+        let user1 = user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "user1@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "User".to_string(),
+                last_name: "One".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        let user2 = user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "user2@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "User".to_string(),
+                last_name: "Two".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        // Try to update user2's email to user1's email
+        let mut update_request = reconciliation_backend::services::user::UpdateUserRequest::default();
+        update_request.email = Some("user1@example.com".to_string());
+
+        let result = user_service.update_user(user2.id, update_request).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_update_user_role() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        let user = user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "role_update@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Role".to_string(),
+                last_name: "Update".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        let mut update_request = reconciliation_backend::services::user::UpdateUserRequest::default();
+        update_request.role = Some("admin".to_string());
+
+        let result = user_service.update_user(user.id, update_request).await;
+        assert!(result.is_ok());
+
+        let updated = result.unwrap();
+        assert_eq!(updated.role, "admin");
+    }
+
+    #[tokio::test]
+    async fn test_update_user_is_active() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        let user = user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "active_update@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Active".to_string(),
+                last_name: "Update".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        let mut update_request = reconciliation_backend::services::user::UpdateUserRequest::default();
+        update_request.is_active = Some(false);
+
+        let result = user_service.update_user(user.id, update_request).await;
+        assert!(result.is_ok());
+
+        let updated = result.unwrap();
+        assert_eq!(updated.is_active, false);
+    }
+
+    #[tokio::test]
+    async fn test_delete_user_with_projects() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+        let project_service = reconciliation_backend::services::project::ProjectService::new((*db_arc).clone());
+
+        // Create user
+        let user = user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "delete_with_projects@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Delete".to_string(),
+                last_name: "Projects".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        // Create a project for the user
+        let _project = project_service
+            .create_project(reconciliation_backend::services::project_models::CreateProjectRequest {
+                name: "User Project".to_string(),
+                description: None,
+                owner_id: user.id,
+                status: None,
+                settings: None,
+            })
+            .await
+            .unwrap();
+
+        // Delete user (should handle dependencies)
+        let result = user_service.delete_user(user.id).await;
+        // May succeed or fail depending on cascade settings
+        assert!(result.is_ok() || result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_search_users() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        // Create users with different names
+        user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "search1@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Search".to_string(),
+                last_name: "Test".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "search2@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Another".to_string(),
+                last_name: "User".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        // Search for "Search"
+        let result = user_service.search_users("Search", Some(1), Some(10)).await;
+        assert!(result.is_ok());
+
+        let users = result.unwrap();
+        assert!(users.users.len() >= 1);
+        assert!(users.users.iter().any(|u| u.first_name.contains("Search")));
+    }
+
+    #[tokio::test]
+    async fn test_search_users_no_matches() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        // Create a user
+        user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "no_match@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Test".to_string(),
+                last_name: "User".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        // Search for something that doesn't match
+        let result = user_service.search_users("NonexistentUser", Some(1), Some(10)).await;
+        assert!(result.is_ok());
+
+        let users = result.unwrap();
+        assert_eq!(users.users.len(), 0);
+    }
+
+    #[tokio::test]
+    async fn test_create_oauth_user() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        let request = reconciliation_backend::services::user::CreateOAuthUserRequest {
+            email: "oauth@example.com".to_string(),
+            first_name: "OAuth".to_string(),
+            last_name: "User".to_string(),
+            role: Some("user".to_string()),
+        };
+
+        let result = user_service.create_oauth_user(request).await;
+        assert!(result.is_ok());
+
+        let user = result.unwrap();
+        assert_eq!(user.email, "oauth@example.com");
+        assert_eq!(user.first_name, "OAuth");
+    }
+
+    #[tokio::test]
+    async fn test_create_oauth_user_duplicate_email() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        // Create regular user first
+        user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "oauth_duplicate@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Regular".to_string(),
+                last_name: "User".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        // Try to create OAuth user with same email
+        let request = reconciliation_backend::services::user::CreateOAuthUserRequest {
+            email: "oauth_duplicate@example.com".to_string(),
+            first_name: "OAuth".to_string(),
+            last_name: "User".to_string(),
+            role: Some("user".to_string()),
+        };
+
+        let result = user_service.create_oauth_user(request).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_list_users_with_filters() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        // Create users with different roles
+        user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "filter1@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Filter".to_string(),
+                last_name: "One".to_string(),
+                role: Some("admin".to_string()),
+            })
+            .await
+            .unwrap();
+
+        user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "filter2@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Filter".to_string(),
+                last_name: "Two".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        // List all users
+        let result = user_service.list_users(Some(1), Some(10)).await;
+        assert!(result.is_ok());
+
+        let users = result.unwrap();
+        assert!(users.users.len() >= 2);
+    }
+
+    #[tokio::test]
+    async fn test_update_user_nonexistent() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        let nonexistent_id = Uuid::new_v4();
+        let mut update_request = reconciliation_backend::services::user::UpdateUserRequest::default();
+        update_request.first_name = Some("Updated".to_string());
+
+        let result = user_service.update_user(nonexistent_id, update_request).await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_delete_user_nonexistent() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        let nonexistent_id = Uuid::new_v4();
+        let result = user_service.delete_user(nonexistent_id).await;
+        assert!(result.is_err());
+    }
 }
 

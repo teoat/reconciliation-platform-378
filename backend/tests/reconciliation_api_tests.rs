@@ -775,5 +775,158 @@ mod reconciliation_api_tests {
         // Handler should process the request
         assert!(resp.status().is_success() || resp.status().as_u16() == 400);
     }
+
+    // Edge cases
+    #[tokio::test]
+    async fn test_create_job_invalid_project_id() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let auth_service_arc = Arc::new(auth_service.clone());
+
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+
+        let invalid_project_id = Uuid::new_v4();
+        let job_request = serde_json::json!({
+            "project_id": invalid_project_id,
+            "name": "Invalid Job",
+            "source_a_id": Uuid::new_v4(),
+            "source_b_id": Uuid::new_v4(),
+            "matching_rules": [],
+            "confidence_threshold": 0.8
+        });
+
+        let req = test::TestRequest::post()
+            .uri("/api/reconciliation/jobs")
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .set_json(&job_request)
+            .to_request();
+
+        let reconciliation_service = web::Data::new(ReconciliationService::new((*db_arc).clone()));
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(reconciliation_service)
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/reconciliation/jobs", web::post().to(create_reconciliation_job)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail with 404 or 400
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_create_job_missing_required_fields() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let auth_service_arc = Arc::new(auth_service.clone());
+
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+
+        // Missing required fields
+        let job_request = serde_json::json!({
+            "name": "Incomplete Job"
+        });
+
+        let req = test::TestRequest::post()
+            .uri("/api/reconciliation/jobs")
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .set_json(&job_request)
+            .to_request();
+
+        let reconciliation_service = web::Data::new(ReconciliationService::new((*db_arc).clone()));
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(reconciliation_service)
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/reconciliation/jobs", web::post().to(create_reconciliation_job)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail validation
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_get_job_unauthorized() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+
+        let job_id = Uuid::new_v4();
+
+        let req = test::TestRequest::get()
+            .uri(&format!("/api/reconciliation/jobs/{}", job_id))
+            .to_request();
+
+        let reconciliation_service = web::Data::new(ReconciliationService::new((*db_arc).clone()));
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(reconciliation_service)
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/reconciliation/jobs/{job_id}", web::get().to(get_reconciliation_job)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail without auth
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_update_job_invalid_id() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let auth_service_arc = Arc::new(auth_service.clone());
+
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+
+        let invalid_job_id = Uuid::new_v4();
+        let update_request = serde_json::json!({
+            "name": "Updated Name"
+        });
+
+        let req = test::TestRequest::put()
+            .uri(&format!("/api/reconciliation/jobs/{}", invalid_job_id))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .set_json(&update_request)
+            .to_request();
+
+        let reconciliation_service = web::Data::new(ReconciliationService::new((*db_arc).clone()));
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(reconciliation_service)
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/reconciliation/jobs/{job_id}", web::put().to(update_reconciliation_job)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail with 404
+        assert!(resp.status().is_client_error());
+    }
 }
 
