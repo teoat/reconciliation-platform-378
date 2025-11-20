@@ -181,6 +181,5 @@ export const useIcon = (name: string) => {
   return IconComponent || (() => null)
 }
 
-export { IconRegistry };
 export default Icon
 
