@@ -96,9 +96,9 @@ mod resilience_service_tests {
     async fn test_api_circuit_breaker() {
         let manager = ResilienceManager::new();
 
-        // Test API circuit breaker
+        // Test API circuit breaker - wrap async block in closure
         let result = manager
-            .execute_api(async {
+            .execute_api(|| async {
                 Ok::<(), reconciliation_backend::errors::AppError>(())
             })
             .await;

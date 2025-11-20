@@ -275,5 +275,116 @@ mod sync_onboarding_api_tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
+
+    // Edge cases
+    #[tokio::test]
+    async fn test_sync_status_unauthorized() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+
+        let req = test::TestRequest::get()
+            .uri("/api/sync/status")
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .route("/api/sync/status", web::get().to(get_sync_status)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail without auth
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_register_device_missing_fields() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, token) = setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        // Missing required fields
+        let device_request = serde_json::json!({
+            "device_id": "test_device_123"
+        });
+
+        let req = test::TestRequest::post()
+            .uri("/api/onboarding/devices")
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .set_json(&device_request)
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .route("/api/onboarding/devices", web::post().to(register_device)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail validation
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_get_onboarding_progress_not_found() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, token) = setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        let nonexistent_user_id = Uuid::new_v4();
+
+        let req = test::TestRequest::get()
+            .uri(&format!("/api/onboarding/progress/{}", nonexistent_user_id))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .route("/api/onboarding/progress/{user_id}", web::get().to(get_onboarding_progress)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should return 404 or handle gracefully
+        assert!(resp.status().is_success() || resp.status().as_u16() == 404);
+    }
+
+    #[tokio::test]
+    async fn test_sync_data_invalid_payload() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, token) = setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        // Invalid payload structure
+        let sync_request = serde_json::json!({
+            "invalid": "data"
+        });
+
+        let req = test::TestRequest::post()
+            .uri("/api/sync/data")
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .set_json(&sync_request)
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .route("/api/sync/data", web::post().to(sync_data)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail validation
+        assert!(resp.status().is_client_error());
+    }
 }
 

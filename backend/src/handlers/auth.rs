@@ -278,10 +278,10 @@ pub async fn register(
 
     let user_info = user_service.as_ref().create_user(create_request).await?;
 
-    // Generate token - we need to get the User struct, not UserInfo
+    // Generate token - get User struct by ID (more efficient than by email)
     let user = user_service
         .as_ref()
-        .get_user_by_email(&user_info.email)
+        .get_user_by_id_raw(user_info.id)
         .await?;
     let token = auth_service.as_ref().generate_token(&user)?;
 

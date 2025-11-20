@@ -196,5 +196,104 @@ mod analytics_api_tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
+
+    // Edge cases
+    #[tokio::test]
+    async fn test_get_project_stats_not_found() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, _, token) =
+            setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        let nonexistent_project_id = Uuid::new_v4();
+
+        let cache = web::Data::new(Arc::new(MultiLevelCache::new("redis://localhost:6379").unwrap()));
+        let resilience = web::Data::new(Arc::new(ResilienceManager::new()));
+        let config = web::Data::new(create_test_config());
+
+        let req = test::TestRequest::get()
+            .uri(&format!("/api/analytics/projects/{}/stats", nonexistent_project_id))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(cache)
+                .app_data(resilience)
+                .app_data(config)
+                .route("/api/analytics/projects/{project_id}/stats", web::get().to(get_project_stats)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should return 404 or handle gracefully
+        assert!(resp.status().is_success() || resp.status().as_u16() == 404);
+    }
+
+    #[tokio::test]
+    async fn test_get_user_activity_invalid_user() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, _, token) =
+            setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        let nonexistent_user_id = Uuid::new_v4();
+
+        let cache = web::Data::new(Arc::new(MultiLevelCache::new("redis://localhost:6379").unwrap()));
+        let resilience = web::Data::new(Arc::new(ResilienceManager::new()));
+        let config = web::Data::new(create_test_config());
+
+        let req = test::TestRequest::get()
+            .uri(&format!("/api/analytics/users/{}/activity", nonexistent_user_id))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(cache)
+                .app_data(resilience)
+                .app_data(config)
+                .route("/api/analytics/users/{user_id}/activity", web::get().to(get_user_activity)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should handle gracefully
+        assert!(resp.status().is_success() || resp.status().as_u16() == 404);
+    }
+
+    #[tokio::test]
+    async fn test_get_dashboard_data_unauthorized() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+
+        let cache = web::Data::new(Arc::new(MultiLevelCache::new("redis://localhost:6379").unwrap()));
+        let resilience = web::Data::new(Arc::new(ResilienceManager::new()));
+        let config = web::Data::new(create_test_config());
+
+        let req = test::TestRequest::get()
+            .uri("/api/analytics/dashboard")
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(cache)
+                .app_data(resilience)
+                .app_data(config)
+                .route("/api/analytics/dashboard", web::get().to(get_dashboard_data)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // May require auth or return empty data
+        assert!(resp.status().is_success() || resp.status().is_client_error());
+    }
 }
 

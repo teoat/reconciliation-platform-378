@@ -108,8 +108,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 }) => {
   // State management
   const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
-  const [, setProjectStats] = useState<ProjectStats[]>([]);
-  const [, setUserActivityStats] = useState<UserActivityStats[]>([]);
+  const [projectStats, setProjectStats] = useState<ProjectStats[]>([]);
+  const [userActivityStats, setUserActivityStats] = useState<UserActivityStats[]>([]);
   const [reconciliationStats, setReconciliationStats] = useState<ReconciliationStats | null>(null);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState(false);

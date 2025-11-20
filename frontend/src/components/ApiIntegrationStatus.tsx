@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback, memo, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, memo } from 'react';
 import { Wifi } from 'lucide-react';
 import { WifiOff } from 'lucide-react';
 import { RefreshCw } from 'lucide-react';

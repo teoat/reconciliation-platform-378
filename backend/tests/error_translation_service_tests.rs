@@ -98,5 +98,74 @@ mod error_translation_service_tests {
         // Should provide user-friendly message
         assert!(!translated.message.is_empty());
     }
+
+    #[test]
+    fn test_translate_unknown_error_code() {
+        let service = ErrorTranslationService::new();
+        let context = ErrorContextBuilder::new().build();
+
+        // Test with unknown error code
+        let translated = service.translate_error("UNKNOWN_ERROR_CODE", context, None);
+
+        // Should still provide a message
+        assert!(!translated.message.is_empty());
+        assert_eq!(translated.code, "UNKNOWN_ERROR_CODE");
+    }
+
+    #[test]
+    fn test_translate_error_empty_context() {
+        let service = ErrorTranslationService::new();
+        let empty_context = ErrorContextBuilder::new().build();
+
+        let translated = service.translate_error("INTERNAL_ERROR", empty_context, None);
+
+        // Should handle empty context
+        assert!(!translated.message.is_empty());
+    }
+
+    #[test]
+    fn test_translate_error_with_custom_message() {
+        let service = ErrorTranslationService::new();
+        let context = ErrorContextBuilder::new().build();
+
+        let custom_message = "Custom error message".to_string();
+        let translated = service.translate_error("VALIDATION_ERROR", context, Some(custom_message.clone()));
+
+        // Should use custom message if provided
+        assert!(translated.message.contains(&custom_message) || !translated.message.is_empty());
+    }
+
+    #[test]
+    fn test_error_context_builder_empty() {
+        let context = ErrorContextBuilder::new().build();
+
+        assert!(context.user_id.is_none());
+        assert!(context.project_id.is_none());
+        assert!(context.action.is_none());
+    }
+
+    #[test]
+    fn test_translate_all_error_codes() {
+        let service = ErrorTranslationService::new();
+        let context = ErrorContextBuilder::new().build();
+
+        let error_codes = vec![
+            "UNAUTHORIZED",
+            "FORBIDDEN",
+            "NOT_FOUND",
+            "VALIDATION_ERROR",
+            "CONFLICT",
+            "INTERNAL_ERROR",
+            "SERVICE_UNAVAILABLE",
+            "TIMEOUT",
+            "RATE_LIMIT_EXCEEDED",
+        ];
+
+        for code in error_codes {
+            let translated = service.translate_error(code, context.clone(), None);
+            assert!(!translated.message.is_empty(), "Error code {} should have a message", code);
+            assert_eq!(translated.code, code);
+        }
+    }
 }
 

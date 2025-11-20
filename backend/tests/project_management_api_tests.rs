@@ -480,5 +480,151 @@ mod project_management_api_tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success() || resp.status().as_u16() == 404);
     }
+
+    // Edge cases
+    #[tokio::test]
+    async fn test_create_project_empty_name() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, _, token) = setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        let project_request = serde_json::json!({
+            "name": "",
+            "description": "Test project"
+        });
+
+        let req = test::TestRequest::post()
+            .uri("/api/projects")
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .set_json(&project_request)
+            .to_request();
+
+        let project_service = web::Data::new(ProjectService::new((*db_arc).clone()));
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(project_service)
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/projects", web::post().to(create_project)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail validation
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_get_project_not_found_edge_case() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let _auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let nonexistent_project_id = Uuid::new_v4();
+
+        let project_service = web::Data::new(ProjectService::new((*db_arc).clone()));
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let req = test::TestRequest::get()
+            .uri(&format!("/api/projects/{}", nonexistent_project_id))
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(project_service)
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/projects/{project_id}", web::get().to(get_project)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should return 404
+        assert_eq!(resp.status().as_u16(), 404);
+    }
+
+    #[tokio::test]
+    async fn test_update_project_not_found() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, _, token) = setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        let nonexistent_project_id = Uuid::new_v4();
+        let update_request = serde_json::json!({
+            "name": "Updated Name"
+        });
+
+        let project_service = web::Data::new(ProjectService::new((*db_arc).clone()));
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let req = test::TestRequest::put()
+            .uri(&format!("/api/projects/{}", nonexistent_project_id))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .set_json(&update_request)
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(project_service)
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/projects/{project_id}", web::put().to(update_project)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should return 404
+        assert_eq!(resp.status().as_u16(), 404);
+    }
+
+    #[tokio::test]
+    async fn test_create_data_source_invalid_project() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, _, token) = setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        let invalid_project_id = Uuid::new_v4();
+        let data_source_json = serde_json::json!({
+            "name": "Test Data Source",
+            "source_type": "file",
+            "file_path": "/path/to/file.csv"
+        });
+
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let req = test::TestRequest::post()
+            .uri(&format!("/api/projects/{}/data-sources", invalid_project_id))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .set_json(&data_source_json)
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/projects/{project_id}/data-sources", web::post().to(create_data_source)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail with 404
+        assert!(resp.status().is_client_error());
+    }
 }
 

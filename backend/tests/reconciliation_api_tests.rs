@@ -928,5 +928,173 @@ mod reconciliation_api_tests {
         // Should fail with 404
         assert!(resp.status().is_client_error());
     }
+
+    #[tokio::test]
+    async fn test_update_reconciliation_job_invalid_data() {
+        let db_arc = Arc::new(setup_test_database().await.0);
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), Arc::new(AuthService::new(db_arc.clone()))).await;
+
+        let (_, _, _, job_id) = setup_reconciliation_job(db_arc.clone()).await;
+        let invalid_request = serde_json::json!({
+            "name": "", // Empty name should fail validation
+        });
+
+        let req = test::TestRequest::put()
+            .uri(&format!("/api/reconciliation/jobs/{}", job_id))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .set_json(&invalid_request)
+            .to_request();
+
+        let reconciliation_service = web::Data::new(ReconciliationService::new((*db_arc).clone()));
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(reconciliation_service)
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/reconciliation/jobs/{job_id}", web::put().to(update_reconciliation_job)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail with validation error
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_get_reconciliation_results_empty() {
+        let db_arc = Arc::new(setup_test_database().await.0);
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), Arc::new(AuthService::new(db_arc.clone()))).await;
+
+        let (_, _, _, job_id) = setup_reconciliation_job(db_arc.clone()).await;
+
+        let req = test::TestRequest::get()
+            .uri(&format!("/api/reconciliation/jobs/{}/results", job_id))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .to_request();
+
+        let reconciliation_service = web::Data::new(ReconciliationService::new((*db_arc).clone()));
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(reconciliation_service)
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/reconciliation/jobs/{job_id}/results", web::get().to(get_reconciliation_results)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+    }
+
+    #[tokio::test]
+    async fn test_get_reconciliation_results_pagination() {
+        let db_arc = Arc::new(setup_test_database().await.0);
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), Arc::new(AuthService::new(db_arc.clone()))).await;
+
+        let (_, _, _, job_id) = setup_reconciliation_job(db_arc.clone()).await;
+
+        let req = test::TestRequest::get()
+            .uri(&format!("/api/reconciliation/jobs/{}/results?page=2&per_page=10", job_id))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .to_request();
+
+        let reconciliation_service = web::Data::new(ReconciliationService::new((*db_arc).clone()));
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(reconciliation_service)
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/reconciliation/jobs/{job_id}/results", web::get().to(get_reconciliation_results)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        assert!(resp.status().is_success());
+    }
+
+    #[tokio::test]
+    async fn test_start_reconciliation_job_already_running() {
+        let db_arc = Arc::new(setup_test_database().await.0);
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), Arc::new(AuthService::new(db_arc.clone()))).await;
+
+        let (_, _, _, job_id) = setup_reconciliation_job(db_arc.clone()).await;
+
+        // Start job first time
+        let req1 = test::TestRequest::post()
+            .uri(&format!("/api/reconciliation/jobs/{}/start", job_id))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .to_request();
+
+        let reconciliation_service = web::Data::new(ReconciliationService::new((*db_arc).clone()));
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(reconciliation_service)
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/reconciliation/jobs/{job_id}/start", web::post().to(start_reconciliation_job)),
+        )
+        .await;
+
+        let _resp1 = test::call_service(&app, req1).await;
+
+        // Try to start again
+        let req2 = test::TestRequest::post()
+            .uri(&format!("/api/reconciliation/jobs/{}/start", job_id))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .to_request();
+
+        let resp2 = test::call_service(&app, req2).await;
+        // Should handle gracefully (may succeed or fail depending on implementation)
+        assert!(resp2.status().is_success() || resp2.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_delete_reconciliation_job_unauthorized() {
+        let db_arc = Arc::new(setup_test_database().await.0);
+        let auth_service = Arc::new(AuthService::new(db_arc.clone()));
+        let (_, _, _, token1) = setup_test_fixtures(db_arc.clone(), auth_service.clone()).await;
+
+        // Create job with user 1
+        let (_, _, _, job_id) = setup_reconciliation_job(db_arc.clone()).await;
+
+        // Try to delete with different user (no token or invalid token)
+        let req = test::TestRequest::delete()
+            .uri(&format!("/api/reconciliation/jobs/{}", job_id))
+            .to_request();
+
+        let reconciliation_service = web::Data::new(ReconciliationService::new((*db_arc).clone()));
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(reconciliation_service)
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/reconciliation/jobs/{job_id}", web::delete().to(delete_reconciliation_job)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail with unauthorized
+        assert!(resp.status().is_client_error());
+    }
 }
 

@@ -979,7 +979,7 @@ mod auth_handler_tests {
 
     // Additional edge cases
     #[tokio::test]
-    async fn test_login_handler_empty_email() {
+    async fn test_login_handler_empty_email_edge_case() {
         let (db, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);

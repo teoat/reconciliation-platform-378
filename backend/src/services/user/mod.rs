@@ -305,6 +305,22 @@ impl UserService {
         .map_err(|e| AppError::Internal(format!("Task join error: {}", e)))?
     }
 
+    /// Get user by ID (returns User struct, not UserInfo)
+    pub async fn get_user_by_id_raw(&self, user_id: Uuid) -> AppResult<User> {
+        let db = Arc::clone(&self.db);
+        let user_id_clone = user_id;
+        
+        tokio::task::spawn_blocking(move || {
+            let mut conn = db.get_connection()?;
+            users::table
+                .filter(users::id.eq(user_id_clone))
+                .first::<User>(&mut conn)
+                .map_err(AppError::Database)
+        })
+        .await
+        .map_err(|e| AppError::Internal(format!("Task join error: {}", e)))?
+    }
+
     /// Check if user exists by email
     pub async fn user_exists_by_email(&self, email: &str) -> AppResult<bool> {
         let db = Arc::clone(&self.db);

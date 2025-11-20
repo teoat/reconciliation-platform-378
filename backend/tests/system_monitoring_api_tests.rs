@@ -135,5 +135,57 @@ mod system_monitoring_api_tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
+
+    // Edge cases
+    #[tokio::test]
+    async fn test_get_health_with_invalid_service() {
+        let req = test::TestRequest::get()
+            .uri("/api/monitoring/health?service=invalid_service")
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .route("/api/monitoring/health", web::get().to(get_health)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should handle invalid service gracefully
+        assert!(resp.status().is_success() || resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_get_metrics_with_invalid_time_range() {
+        let req = test::TestRequest::get()
+            .uri("/api/monitoring/metrics?start_time=invalid&end_time=invalid")
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .route("/api/monitoring/metrics", web::get().to(get_metrics)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should handle invalid time range gracefully
+        assert!(resp.status().is_success() || resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_get_alerts_with_invalid_severity() {
+        let req = test::TestRequest::get()
+            .uri("/api/monitoring/alerts?severity=invalid_severity")
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .route("/api/monitoring/alerts", web::get().to(get_alerts)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should handle invalid severity gracefully
+        assert!(resp.status().is_success() || resp.status().is_client_error());
+    }
 }
 

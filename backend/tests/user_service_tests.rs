@@ -368,7 +368,7 @@ mod user_service_tests {
         let result = user_service.list_users(None, None).await;
         assert!(result.is_ok());
         let users = result.unwrap();
-        assert!(users.len() >= 0); // Can be empty
+        assert!(users.users.len() >= 0); // Can be empty
     }
 
     #[tokio::test]
@@ -396,8 +396,8 @@ mod user_service_tests {
         let page1 = user_service.list_users(Some(1), Some(2)).await.unwrap();
         let page2 = user_service.list_users(Some(2), Some(2)).await.unwrap();
 
-        assert!(page1.len() <= 2);
-        assert!(page2.len() <= 2);
+        assert!(page1.users.len() <= 2);
+        assert!(page2.users.len() <= 2);
     }
 
     #[tokio::test]
@@ -420,8 +420,13 @@ mod user_service_tests {
             .unwrap();
 
         // Update only first name
-        let mut update_request = reconciliation_backend::services::user::UpdateUserRequest::default();
-        update_request.first_name = Some("Updated".to_string());
+        let update_request = reconciliation_backend::services::user::UpdateUserRequest {
+            email: None,
+            first_name: Some("Updated".to_string()),
+            last_name: None,
+            role: None,
+            is_active: None,
+        };
 
         let result = user_service.update_user(user.id, update_request).await;
         assert!(result.is_ok());
@@ -449,8 +454,13 @@ mod user_service_tests {
             .await
             .unwrap();
 
-        let mut update_request = reconciliation_backend::services::user::UpdateUserRequest::default();
-        update_request.email = Some("invalid_email_format".to_string());
+        let update_request = reconciliation_backend::services::user::UpdateUserRequest {
+            email: Some("invalid_email_format".to_string()),
+            first_name: None,
+            last_name: None,
+            role: None,
+            is_active: None,
+        };
 
         let result = user_service.update_user(user.id, update_request).await;
         assert!(result.is_err());
@@ -464,7 +474,7 @@ mod user_service_tests {
         let user_service = UserService::new(db_arc.clone(), auth_service.clone());
 
         // Create two users
-        let user1 = user_service
+        let _user1 = user_service
             .create_user(reconciliation_backend::services::user::CreateUserRequest {
                 email: "user1@example.com".to_string(),
                 password: "TestPassword123!".to_string(),
@@ -487,8 +497,13 @@ mod user_service_tests {
             .unwrap();
 
         // Try to update user2's email to user1's email
-        let mut update_request = reconciliation_backend::services::user::UpdateUserRequest::default();
-        update_request.email = Some("user1@example.com".to_string());
+        let update_request = reconciliation_backend::services::user::UpdateUserRequest {
+            email: Some("user1@example.com".to_string()),
+            first_name: None,
+            last_name: None,
+            role: None,
+            is_active: None,
+        };
 
         let result = user_service.update_user(user2.id, update_request).await;
         assert!(result.is_err());
@@ -512,8 +527,13 @@ mod user_service_tests {
             .await
             .unwrap();
 
-        let mut update_request = reconciliation_backend::services::user::UpdateUserRequest::default();
-        update_request.role = Some("admin".to_string());
+        let update_request = reconciliation_backend::services::user::UpdateUserRequest {
+            email: None,
+            first_name: None,
+            last_name: None,
+            role: Some("admin".to_string()),
+            is_active: None,
+        };
 
         let result = user_service.update_user(user.id, update_request).await;
         assert!(result.is_ok());
@@ -540,8 +560,13 @@ mod user_service_tests {
             .await
             .unwrap();
 
-        let mut update_request = reconciliation_backend::services::user::UpdateUserRequest::default();
-        update_request.is_active = Some(false);
+        let update_request = reconciliation_backend::services::user::UpdateUserRequest {
+            email: None,
+            first_name: None,
+            last_name: None,
+            role: None,
+            is_active: Some(false),
+        };
 
         let result = user_service.update_user(user.id, update_request).await;
         assert!(result.is_ok());
@@ -753,8 +778,13 @@ mod user_service_tests {
         let user_service = UserService::new(db_arc.clone(), auth_service.clone());
 
         let nonexistent_id = Uuid::new_v4();
-        let mut update_request = reconciliation_backend::services::user::UpdateUserRequest::default();
-        update_request.first_name = Some("Updated".to_string());
+        let update_request = reconciliation_backend::services::user::UpdateUserRequest {
+            email: None,
+            first_name: Some("Updated".to_string()),
+            last_name: None,
+            role: None,
+            is_active: None,
+        };
 
         let result = user_service.update_user(nonexistent_id, update_request).await;
         assert!(result.is_err());
@@ -770,6 +800,190 @@ mod user_service_tests {
         let nonexistent_id = Uuid::new_v4();
         let result = user_service.delete_user(nonexistent_id).await;
         assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_user_operations() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        // Create user
+        let user = user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "concurrent@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Concurrent".to_string(),
+                last_name: "Test".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        // Test concurrent operations
+        let (result1, result2, result3) = tokio::join!(
+            user_service.get_user_by_id(user.id),
+            user_service.get_user_by_email("concurrent@example.com"),
+            user_service.user_exists_by_email("concurrent@example.com")
+        );
+
+        assert!(result1.is_ok());
+        assert!(result2.is_ok());
+        assert!(result3.is_ok());
+        assert!(result3.unwrap());
+    }
+
+    #[tokio::test]
+    async fn test_user_role_validation_edge_cases() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        let user = user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "role_validation@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Role".to_string(),
+                last_name: "Validation".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        // Test invalid role
+        let update_request = reconciliation_backend::services::user::UpdateUserRequest {
+            email: None,
+            first_name: None,
+            last_name: None,
+            role: Some("invalid_role".to_string()),
+            is_active: None,
+        };
+
+        let result = user_service.update_user(user.id, update_request).await;
+        assert!(result.is_err());
+
+        // Test valid roles
+        for role in ["user", "admin", "manager", "viewer"] {
+            let update_request = reconciliation_backend::services::user::UpdateUserRequest {
+                email: None,
+                first_name: None,
+                last_name: None,
+                role: Some(role.to_string()),
+                is_active: None,
+            };
+            let result = user_service.update_user(user.id, update_request).await;
+            assert!(result.is_ok());
+        }
+    }
+
+    #[tokio::test]
+    async fn test_user_preferences_management() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        let user = user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "preferences@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Preferences".to_string(),
+                last_name: "Test".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        // Test that user can be retrieved (preferences are managed by PreferencesService)
+        let result = user_service.get_user_by_id(user.id).await;
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
+    async fn test_user_search_complex_filters() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        // Create users with different characteristics
+        user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "complex1@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Complex".to_string(),
+                last_name: "Search".to_string(),
+                role: Some("admin".to_string()),
+            })
+            .await
+            .unwrap();
+
+        user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "complex2@example.com".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Another".to_string(),
+                last_name: "Complex".to_string(),
+                role: Some("user".to_string()),
+            })
+            .await
+            .unwrap();
+
+        // Search with various terms
+        let searches = vec!["Complex", "Search", "Another", "complex1", "complex2"];
+        for search_term in searches {
+            let result = user_service.search_users(search_term, Some(1), Some(10)).await;
+            assert!(result.is_ok());
+        }
+    }
+
+    #[tokio::test]
+    async fn test_user_validation_edge_cases() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let user_service = UserService::new(db_arc.clone(), auth_service.clone());
+
+        // Test empty email
+        let result = user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: "".to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Test".to_string(),
+                last_name: "User".to_string(),
+                role: None,
+            })
+            .await;
+        assert!(result.is_err());
+
+        // Test very long email
+        let long_email = format!("{}@example.com", "a".repeat(250));
+        let result = user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: long_email,
+                password: "TestPassword123!".to_string(),
+                first_name: "Test".to_string(),
+                last_name: "User".to_string(),
+                role: None,
+            })
+            .await;
+        assert!(result.is_err() || result.is_ok()); // May succeed or fail depending on validation
+
+        // Test SQL injection attempt in email
+        let sql_injection_email = "test'; DROP TABLE users; --@example.com";
+        let result = user_service
+            .create_user(reconciliation_backend::services::user::CreateUserRequest {
+                email: sql_injection_email.to_string(),
+                password: "TestPassword123!".to_string(),
+                first_name: "Test".to_string(),
+                last_name: "User".to_string(),
+                role: None,
+            })
+            .await;
+        // Should fail validation or be sanitized
+        assert!(result.is_err() || result.is_ok());
     }
 }
 

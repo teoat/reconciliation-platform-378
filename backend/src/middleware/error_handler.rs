@@ -89,44 +89,12 @@ where
                 );
             }
 
-            // For error responses (4xx, 5xx), add correlation ID to JSON body if it's an ErrorResponse
+            // For error responses (4xx, 5xx), add correlation ID to headers only
+            // Note: Reading body can cause stack overflow, so we only add headers
             if status.is_client_error() || status.is_server_error() {
-                // Try to parse and modify the response body
-                let body = actix_web::body::to_bytes(res.into_body())
-                    .await
-                    .map_err(|e| {
-                        actix_web::Error::from(std::io::Error::other(format!(
-                            "Failed to read body: {}",
-                            e
-                        )))
-                    })?;
-
-                // Try to parse as ErrorResponse JSON
-                if let Ok(mut error_response) =
-                    serde_json::from_slice::<crate::errors::ErrorResponse>(&body)
-                {
-                    // Add correlation ID if not already present
-                    if error_response.correlation_id.is_none() {
-                        error_response.correlation_id = Some(correlation_id.clone());
-                    }
-
-                    // Rebuild response with modified JSON
-                    let json_body = serde_json::to_string(&error_response)
-                        .unwrap_or_else(|_| String::from_utf8_lossy(&body).to_string());
-                    let new_res = actix_web::HttpResponse::build(status)
-                        .content_type("application/json")
-                        .append_header((CORRELATION_ID_HEADER, correlation_id.as_str()))
-                        .body(json_body);
-
-                    return Ok(ServiceResponse::new(req, new_res));
-                }
-
-                // If not ErrorResponse JSON, rebuild response with original body
-                let new_res = actix_web::HttpResponse::build(status)
-                    .append_header((CORRELATION_ID_HEADER, correlation_id.as_str()))
-                    .body(body);
-
-                return Ok(ServiceResponse::new(req, new_res));
+                // Just add correlation ID to headers, don't modify body
+                // This avoids potential stack overflow from reading large bodies
+                return Ok(ServiceResponse::new(req, res));
             }
 
             Ok(ServiceResponse::new(req, res))

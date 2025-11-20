@@ -14,22 +14,7 @@ import { User } from 'lucide-react'
 import { Reply } from 'lucide-react'
 import { useRealtimeCollaboration } from '../hooks/useWebSocketIntegration';
 
-interface LiveComment {
-  id: string;
-  userId: string;
-  userName: string;
-  message: string;
-  timestamp: string;
-  page: string;
-  replies?: LiveComment[];
-}
-
-interface ActiveUser {
-  id: string;
-  name: string;
-  page: string;
-  lastSeen: string;
-}
+// Types are inferred from the hook return value
 
 interface CollaborationPanelProps {
   page: string;

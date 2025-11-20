@@ -132,5 +132,88 @@ mod cache_service_tests {
             // Value may or may not be expired depending on Redis TTL handling
         }
     }
+
+    #[test]
+    fn test_cache_get_nonexistent() {
+        let cache = match create_test_cache_service() {
+            service => service,
+        };
+
+        let key = "nonexistent_key";
+        let get_result: Result<Option<String>, _> = cache.get(key);
+        assert!(get_result.is_ok());
+        assert!(get_result.unwrap().is_none());
+    }
+
+    #[test]
+    fn test_cache_set_without_ttl() {
+        let cache = match create_test_cache_service() {
+            service => service,
+        };
+
+        let key = "no_ttl_key";
+        let value = "no_ttl_value";
+
+        // Set without TTL
+        let set_result = cache.set(key, &value, None);
+        if set_result.is_ok() {
+            let get_result: Result<Option<String>, _> = cache.get(key);
+            assert!(get_result.is_ok());
+            assert!(get_result.unwrap().is_some());
+        }
+    }
+
+    #[test]
+    fn test_cache_exists_nonexistent() {
+        let cache = match create_test_cache_service() {
+            service => service,
+        };
+
+        let key = "nonexistent_exists_key";
+        let exists_result = cache.exists(key);
+        assert!(exists_result.is_ok());
+        assert!(!exists_result.unwrap());
+    }
+
+    #[test]
+    fn test_cache_delete_many_empty() {
+        let cache = match create_test_cache_service() {
+            service => service,
+        };
+
+        let empty_keys: Vec<String> = vec![];
+        let delete_result = cache.delete_many(&empty_keys);
+        assert!(delete_result.is_ok());
+    }
+
+    #[test]
+    fn test_cache_set_overwrite() {
+        let cache = match create_test_cache_service() {
+            service => service,
+        };
+
+        let key = "overwrite_key";
+        let value1 = "value1";
+        let value2 = "value2";
+
+        // Set first value
+        if cache.set(key, &value1, Some(Duration::from_secs(60))).is_ok() {
+            // Overwrite with second value
+            if cache.set(key, &value2, Some(Duration::from_secs(60))).is_ok() {
+                let get_result: Result<Option<String>, _> = cache.get(key);
+                assert!(get_result.is_ok());
+                let retrieved = get_result.unwrap();
+                assert!(retrieved.is_some());
+                assert_eq!(retrieved.unwrap(), value2);
+            }
+        }
+    }
+
+    #[test]
+    fn test_cache_service_invalid_url() {
+        // Test with invalid Redis URL
+        let result = CacheService::new("invalid://url");
+        assert!(result.is_err());
+    }
 }
 

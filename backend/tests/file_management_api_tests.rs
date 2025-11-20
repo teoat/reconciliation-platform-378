@@ -249,6 +249,105 @@ mod file_management_api_tests {
         assert!(resp.status().is_success() || resp.status().as_u16() == 204 || resp.status().as_u16() == 404);
     }
 
+    // Edge cases
+    #[tokio::test]
+    async fn test_init_resumable_upload_invalid_size() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, _, token) = setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        // Try with negative file size
+        let init_request = serde_json::json!({
+            "filename": "test.csv",
+            "file_size": -1,
+            "content_type": "text/csv"
+        });
+
+        let req = test::TestRequest::post()
+            .uri("/api/files/upload/resumable/init")
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .set_json(&init_request)
+            .to_request();
+
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/files/upload/resumable/init", web::post().to(init_resumable_upload)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail validation
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_get_file_not_found() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, _, token) = setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        let nonexistent_file_id = Uuid::new_v4();
+
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let req = test::TestRequest::get()
+            .uri(&format!("/api/files/{}", nonexistent_file_id))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/files/{file_id}", web::get().to(get_file)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should return 404
+        assert_eq!(resp.status().as_u16(), 404);
+    }
+
+    #[tokio::test]
+    async fn test_delete_file_unauthorized() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+
+        let file_id = Uuid::new_v4();
+
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+        let config = web::Data::new(create_test_config());
+
+        let req = test::TestRequest::delete()
+            .uri(&format!("/api/files/{}", file_id))
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(cache)
+                .app_data(config)
+                .route("/api/files/{file_id}", web::delete().to(delete_file)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail without auth
+        assert!(resp.status().is_client_error());
+    }
+
     #[tokio::test]
     async fn test_process_file() {
         let (db, _) = setup_test_database().await;

@@ -280,5 +280,125 @@ mod profile_settings_api_tests {
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
+
+    // Edge cases
+    #[tokio::test]
+    async fn test_get_profile_not_found() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let nonexistent_user_id = Uuid::new_v4();
+
+        let user_service = Arc::new(UserService::new(db_arc.clone(), auth_service.clone()));
+
+        let req = test::TestRequest::get()
+            .uri(&format!("/api/profile/{}", nonexistent_user_id))
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(web::Data::new(user_service))
+                .route("/api/profile/{user_id}", web::get().to(get_profile)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should return 404
+        assert_eq!(resp.status().as_u16(), 404);
+    }
+
+    #[tokio::test]
+    async fn test_update_profile_invalid_email() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (user_id, _) = setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        let user_service = Arc::new(UserService::new(db_arc.clone(), auth_service.clone()));
+
+        // Invalid email format
+        let update_request = serde_json::json!({
+            "email": "not-an-email"
+        });
+
+        let req = test::TestRequest::put()
+            .uri(&format!("/api/profile/{}", user_id))
+            .set_json(&update_request)
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db_arc.clone()))
+                .app_data(web::Data::new(user_service))
+                .route("/api/profile/{user_id}", web::put().to(update_profile)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail validation
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_get_settings_unauthorized() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+
+        let req = test::TestRequest::get()
+            .uri("/api/settings")
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(Uuid::new_v4())) // Invalid user_id
+                .app_data(cache)
+                .route("/api/settings", web::get().to(get_settings)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should handle gracefully
+        assert!(resp.status().is_success() || resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_update_settings_invalid_items_per_page() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (user_id, _) = setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        let cache = web::Data::new(MultiLevelCache::new("redis://localhost:6379").unwrap());
+
+        // Invalid items_per_page (negative)
+        let update_request = serde_json::json!({
+            "display": {
+                "items_per_page": -10
+            }
+        });
+
+        let req = test::TestRequest::put()
+            .uri("/api/settings")
+            .set_json(&update_request)
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(user_id))
+                .app_data(cache)
+                .route("/api/settings", web::put().to(update_settings)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail validation
+        assert!(resp.status().is_client_error());
+    }
 }
 

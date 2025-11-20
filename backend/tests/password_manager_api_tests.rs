@@ -284,5 +284,123 @@ mod password_manager_api_tests {
         // May return 404 if password doesn't exist
         assert!(resp.status().is_success() || resp.status().as_u16() == 404);
     }
+
+    // Edge cases
+    #[tokio::test]
+    async fn test_get_password_not_found() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, token, password_manager) =
+            setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        let nonexistent_password_name = "nonexistent_password";
+
+        let req = test::TestRequest::get()
+            .uri(&format!("/api/passwords/{}", nonexistent_password_name))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(password_manager))
+                .route("/api/passwords/{name}", web::get().to(get_password)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should return 404
+        assert_eq!(resp.status().as_u16(), 404);
+    }
+
+    #[tokio::test]
+    async fn test_create_password_missing_fields() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, token, password_manager) =
+            setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        // Missing required fields
+        let create_json = serde_json::json!({
+            "name": "incomplete_password"
+        });
+
+        let req = test::TestRequest::post()
+            .uri("/api/passwords")
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .set_json(&create_json)
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(password_manager))
+                .route("/api/passwords", web::post().to(create_password)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail validation
+        assert!(resp.status().is_client_error());
+    }
+
+    #[tokio::test]
+    async fn test_rotate_password_not_found() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, token, password_manager) =
+            setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        let nonexistent_password_name = "nonexistent_password";
+        let rotate_json = serde_json::json!({
+            "new_password": "NewPassword123!"
+        });
+
+        let req = test::TestRequest::post()
+            .uri(&format!("/api/passwords/{}/rotate", nonexistent_password_name))
+            .insert_header(("Authorization", format!("Bearer {}", token)))
+            .set_json(&rotate_json)
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(password_manager))
+                .route("/api/passwords/{name}/rotate", web::post().to(rotate_password)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should return 404
+        assert_eq!(resp.status().as_u16(), 404);
+    }
+
+    #[tokio::test]
+    async fn test_list_passwords_unauthorized() {
+        let (db, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+
+        let (_, _, password_manager) =
+            setup_test_fixtures((*db_arc).clone(), auth_service.clone()).await;
+
+        let req = test::TestRequest::get()
+            .uri("/api/passwords")
+            .to_request();
+
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(password_manager))
+                .route("/api/passwords", web::get().to(list_passwords)),
+        )
+        .await;
+
+        let resp = test::call_service(&app, req).await;
+        // Should fail without auth
+        assert!(resp.status().is_client_error());
+    }
 }
 

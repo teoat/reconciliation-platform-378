@@ -507,6 +507,7 @@ mod matching_algorithm_tests {
 /// Integration test for job management
 #[cfg(test)]
 mod job_management_tests {
+    use super::*;
 
     #[tokio::test]
     async fn test_job_processor_lifecycle() {

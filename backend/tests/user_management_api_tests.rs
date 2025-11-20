@@ -493,7 +493,7 @@ mod user_management_api_tests {
     }
 
     #[tokio::test]
-    async fn test_get_user_not_found() {
+    async fn test_get_user_not_found_edge_case() {
         let (db, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
@@ -567,7 +567,7 @@ mod user_management_api_tests {
             App::new()
                 .app_data(web::Data::new(db_arc.clone()))
                 .app_data(web::Data::new(user_service))
-                .route("/api/users", web::get().to(list_users)),
+                .route("/api/users", web::get().to(get_users)),
         )
         .await;
 

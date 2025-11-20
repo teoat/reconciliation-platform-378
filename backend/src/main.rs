@@ -259,6 +259,7 @@ async fn main() -> std::io::Result<()> {
             // Configure routes
             .configure(handlers::configure_routes)
     })
+    .workers(1)  // Reduce workers to 1 to minimize stack usage
     .bind(&bind_addr)
     .map_err(|e| {
         let error_msg = format!("Failed to bind to {}: {}", bind_addr, e);
