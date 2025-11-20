@@ -223,34 +223,13 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                           </p>
                           <div className="flex items-center space-x-2 mt-1">
                             <button
-                              onClick={() => setReplyingTo(comment.id)}
+                              onClick={() => setReplyingTo(comment.id || `${index}`)}
                               className="text-xs text-blue-600 hover:text-blue-800 flex items-center space-x-1"
                             >
                               <Reply className="w-3 h-3" />
                               <span>Reply</span>
                             </button>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-sm font-medium text-gray-900">
-                                {comment.userName || 'User'}
-                              </span>
-                              <span className="text-xs text-gray-500">
-                                {comment.timestamp ? formatTimestamp(comment.timestamp) : 'Now'}
-                              </span>
-                            </div>
-                            <p className="text-sm text-gray-700 mt-1">
-                              {comment.message || 'No message'}
-                            </p>
-                            <div className="flex items-center space-x-2 mt-1">
-                              <button
-                                onClick={() => setReplyingTo(comment.id || `${index}`)}
-                                className="text-xs text-blue-600 hover:text-blue-800 flex items-center space-x-1"
-                              >
-                                <Reply className="w-3 h-3" />
-                                <span>Reply</span>
-                              </button>
-                            </div>
                         </div>
                       </div>
                       
