@@ -103,7 +103,7 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     )
     // Backward compatibility / Legacy routes for a smoother migration
     .configure(configure_legacy_routes)
-    // Health check routes (keep at root level for K8s probes)
+    // Health check routes (configured at root level for K8s probes, not under /api/v1)
     .configure(health::configure_health_routes);
 }
 
