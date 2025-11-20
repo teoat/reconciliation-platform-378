@@ -69,7 +69,7 @@ export const FormField = memo(
           )}
 
           <div className="relative">
-            {React.cloneElement(children as React.ReactElement, {
+            {React.cloneElement(children as React.ReactElement<any>, {
               id: fieldId,
               'aria-describedby':
                 [error ? errorId : '', helpText ? helpId : ''].filter(Boolean).join(' ') ||
@@ -81,7 +81,7 @@ export const FormField = memo(
                   : success
                     ? 'border-green-300 focus:border-green-500 focus:ring-green-500'
                     : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'
-              } ${(children as React.ReactElement).props.className || ''}`,
+              } ${((children as React.ReactElement).props as any).className || ''}`,
             })}
 
             {/* Status Icons */}
@@ -118,7 +118,7 @@ export const FormField = memo(
 
       if (fieldset) {
         return (
-          <fieldset ref={ref as React.RefObject<HTMLFieldSetElement>} className={`space-y-2 ${className}`}>
+          <fieldset ref={ref as any} className={`space-y-2 ${className}`}>
             {content}
           </fieldset>
         );

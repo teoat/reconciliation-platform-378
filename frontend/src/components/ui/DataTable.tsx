@@ -1,5 +1,5 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
-import { useVirtualScroll } from '../../utils/virtualScrolling';
+import { useVirtualScroll, VirtualScrollResult } from '../../utils/virtualScrolling';
 import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
 import { ChevronUp } from 'lucide-react';
 import { ChevronDown } from 'lucide-react';
@@ -114,7 +114,7 @@ const DataTableComponent = <T extends Record<string, unknown>>({
 
   const totalPages = Math.ceil(sortedData.length / pageSize);
 
-  const v = shouldVirtualize
+  const v: VirtualScrollResult | null = shouldVirtualize
     ? useVirtualScroll(sortedData, {
         itemHeight: virtualRowHeight,
         containerHeight: virtualContainerHeight,
@@ -239,7 +239,7 @@ const DataTableComponent = <T extends Record<string, unknown>>({
                         }
                         className="text-sm"
                         options={[
-                          { value: '', label: `All ${column.label}` },
+                          { value: '', label: `All ${column.header}` },
                           ...Array.from(new Set(data.map((row) => row[column.key])))
                             .filter(Boolean)
                             .map((value) => ({
@@ -277,12 +277,12 @@ const DataTableComponent = <T extends Record<string, unknown>>({
                   }`}
                 >
                   <div className="flex items-center space-x-1">
-                    <span>{column.label}</span>
+                    <span>{column.header}</span>
                     {sortable && column.sortable && (
                       <button
                         onClick={() => handleSort(column.key)}
                         className="hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-                        aria-label={`Sort by ${column.label}`}
+                        aria-label={`Sort by ${column.header}`}
                       >
                         {sortConfig.key === column.key ? (
                           sortConfig.direction === 'asc' ? (
@@ -453,4 +453,4 @@ const DataTableComponent = <T extends Record<string, unknown>>({
 
 export const DataTable = memo(DataTableComponent) as <T extends Record<string, unknown>>(
   props: DataTableProps<T>
-) => JSX.Element;
+) => React.JSX.Element;

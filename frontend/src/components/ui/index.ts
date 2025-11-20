@@ -27,8 +27,6 @@ export {
   LoadingPage,
   LoadingCard,
   LoadingButton,
-  Skeleton,
-  SkeletonCard,
   SkeletonTable,
 } from './LoadingSpinner';
 
@@ -77,22 +75,19 @@ export {
 export { 
   EnhancedContextualHelp,
   type EnhancedContextualHelpProps
-} from '../onboarding/EnhancedContextualHelp';
+} from './EnhancedContextualHelp';
 
 export { 
-  OnboardingAnalyticsDashboard,
-  type OnboardingAnalyticsDashboardProps
+  OnboardingAnalyticsDashboard
 } from '../onboarding/OnboardingAnalyticsDashboard';
 
 export { 
   EmptyStateGuidance,
-  type EmptyStateGuidanceProps,
   type EmptyStateType
 } from '../onboarding/EmptyStateGuidance';
 
 export { 
-  EnhancedFrenlyOnboarding,
-  type EnhancedFrenlyOnboardingProps
+  EnhancedFrenlyOnboarding
 } from '../onboarding/EnhancedFrenlyOnboarding';
 
 // Component Props Types

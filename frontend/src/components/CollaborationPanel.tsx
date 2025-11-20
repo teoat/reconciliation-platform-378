@@ -212,14 +212,14 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2">
                             <span className="text-sm font-medium text-gray-900">
-                              {comment.userName}
+                              {comment.userName || 'User'}
                             </span>
                             <span className="text-xs text-gray-500">
-                              {formatTimestamp(comment.timestamp)}
+                              {comment.timestamp ? formatTimestamp(comment.timestamp) : 'Now'}
                             </span>
                           </div>
                           <p className="text-sm text-gray-700 mt-1">
-                            {comment.message}
+                            {comment.message || 'No message'}
                           </p>
                           <div className="flex items-center space-x-2 mt-1">
                             <button

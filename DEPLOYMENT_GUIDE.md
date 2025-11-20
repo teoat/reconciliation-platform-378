@@ -9,7 +9,16 @@
 
 ## 🚀 Quick Deployment Options
 
-### **Option 1: Docker Compose (Recommended for Development)**
+### **Option 1: Docker Compose (Recommended)**
+
+**Status**: ✅ Production Ready  
+**Requirements**:
+- Docker Engine 20.10+
+- Docker Compose v2.0+
+- 4GB+ RAM available
+- 10GB+ disk space
+
+#### Quick Start
 
 ```bash
 # Clone repository
@@ -20,18 +29,178 @@ cd 378
 cp .env.example .env
 # Edit .env with your values
 
-# Start all services
-docker-compose up --build -d
+# Deploy all services
+./deploy.sh
+
+# Or manually:
+docker-compose build
+docker-compose up -d
 
 # Verify services
 docker-compose ps
 ```
 
-**Access Points**:
-- Frontend: http://localhost:1000
-- Backend: http://localhost:2000
-- Prometheus: http://localhost:9090
-- Grafana: http://localhost:3001
+#### Environment Configuration
+
+Create `.env` file in project root with the following required variables:
+
+```bash
+# Required - Change these values!
+POSTGRES_PASSWORD=your_strong_db_password
+REDIS_PASSWORD=your_strong_redis_password  
+JWT_SECRET=generate_with_openssl_rand_hex_32
+
+# Optional - with defaults
+POSTGRES_DB=reconciliation_app
+POSTGRES_USER=postgres
+BACKEND_PORT=2000
+FRONTEND_PORT=1000
+GRAFANA_PASSWORD=admin
+```
+
+**Generate secure secrets:**
+```bash
+# JWT Secret (64 characters)
+openssl rand -hex 32
+
+# Database Password
+openssl rand -base64 24
+
+# Redis Password
+openssl rand -base64 24
+```
+
+#### Build and Start Services
+
+```bash
+# Build with BuildKit cache (faster rebuilds)
+DOCKER_BUILDKIT=1 docker-compose build --parallel
+
+# Start all services
+docker-compose up -d
+
+# Check status
+docker-compose ps
+
+# View logs
+docker-compose logs -f
+```
+
+#### Apply Database Migrations & Indexes
+
+```bash
+# Wait for postgres to be ready (30 seconds)
+sleep 30
+
+# Apply performance indexes
+export POSTGRES_HOST=localhost
+export POSTGRES_PORT=5432
+export POSTGRES_DB=reconciliation_app
+export POSTGRES_USER=postgres
+export POSTGRES_PASSWORD=your_password
+
+bash backend/apply-indexes.sh
+```
+
+**Service Endpoints**:
+
+| Service | URL | Default Port |
+|---------|-----|--------------|
+| Backend API | http://localhost:2000 | 2000 |
+| Frontend | http://localhost:1000 | 1000 |
+| Prometheus | http://localhost:9090 | 9090 |
+| Grafana | http://localhost:3001 | 3001 |
+
+**Default Credentials:**
+- Grafana: `admin` / `admin` (change via `GRAFANA_PASSWORD` in .env)
+
+#### Docker Common Operations
+
+**View Logs:**
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f backend
+docker-compose logs -f frontend
+docker-compose logs -f postgres
+```
+
+**Restart Services:**
+```bash
+# Restart all
+docker-compose restart
+
+# Restart specific service
+docker-compose restart backend
+```
+
+**Stop Services:**
+```bash
+# Stop (keeps data volumes)
+docker-compose stop
+
+# Stop and remove containers (keeps volumes)
+docker-compose down
+
+# Stop and remove everything including volumes (⚠️ DESTROYS DATA)
+docker-compose down -v
+```
+
+**Update Services:**
+```bash
+# Pull latest images (if using pre-built)
+docker-compose pull
+
+# Rebuild and restart
+docker-compose build --no-cache
+docker-compose up -d
+```
+
+**Access Database:**
+```bash
+# Connect to PostgreSQL
+docker-compose exec postgres psql -U postgres -d reconciliation_app
+
+# Or from host
+psql -h localhost -p 5432 -U postgres -d reconciliation_app
+```
+
+**Access Redis:**
+```bash
+# Connect to Redis CLI
+docker-compose exec redis redis-cli -a $REDIS_PASSWORD
+```
+
+#### Resource Limits
+
+Services are configured with resource limits:
+
+| Service | CPU Limit | Memory Limit |
+|---------|-----------|--------------|
+| Backend | 1.0 core | 1GB |
+| Frontend | 1.0 core | 1GB |
+| Postgres | 2.0 cores | 2GB |
+| Redis | Default | 512MB |
+
+Adjust in `docker-compose.yml` if needed.
+
+#### Data Persistence
+
+Data is stored in Docker volumes:
+
+- `postgres_data`: Database data
+- `redis_data`: Redis persistence
+- `uploads_data`: File uploads
+- `logs_data`: Application logs
+- `prometheus_data`: Prometheus metrics
+- `grafana_data`: Grafana dashboards
+
+**Backup volumes:**
+```bash
+docker run --rm -v reconciliation-platform_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_backup.tar.gz /data
+```
 
 ---
 
@@ -151,6 +320,20 @@ psql -h localhost -U postgres -d reconciliation_app -c "\dt"
    - Configure CORS properly
    - Firewall rules
 
+### **Docker-Specific Security**
+
+⚠️ **Important for Production:**
+
+1. **Change all default passwords** in `.env`
+2. **Use strong JWT_SECRET** (64+ characters, random)
+3. **Restrict CORS_ORIGINS** to your actual domains
+4. **Use secrets manager** in production (AWS Secrets Manager, HashiCorp Vault, etc.)
+5. **Enable HTTPS** via reverse proxy (nginx/traefik)
+6. **Firewall rules**: Only expose necessary ports
+7. **Network isolation**: Use Docker networks for service isolation
+8. **Non-root containers**: Ensure containers don't run as root
+9. **Image scanning**: Regularly scan images for vulnerabilities
+
 ---
 
 ## 📊 Monitoring & Observability
@@ -210,39 +393,84 @@ docker-compose ps
 
 ### **Common Issues**
 
-1. **Database Connection Failed**
+1. **Services Won't Start (Docker)**
    ```bash
-   # Check database status
-   docker ps | grep postgres
+   # Check logs
+   docker-compose logs
    
-   # Test connection
+   # Check if ports are in use
+   netstat -tulpn | grep -E ':(2000|1000|5432|6379)'
+   
+   # Restart Docker daemon (if needed)
+   sudo systemctl restart docker
+   ```
+
+2. **Database Connection Failed**
+   ```bash
+   # Check database status (Docker)
+   docker-compose ps postgres
+   docker-compose logs postgres
+   
+   # Verify postgres is healthy
+   docker-compose exec postgres psql -U postgres -d reconciliation_app
+   
+   # Check DATABASE_URL format
+   echo $DATABASE_URL
+   # Should be: postgresql://user:password@postgres:5432/dbname (Docker)
+   # Should be: postgresql://user:password@localhost:5432/dbname (host)
+   
+   # Test connection from host
    psql -h localhost -U postgres -d reconciliation_app
    ```
 
-2. **Redis Connection Failed**
+3. **Redis Connection Failed**
    ```bash
-   # Check Redis status
-   docker ps | grep redis
+   # Check Redis status (Docker)
+   docker-compose ps redis
+   docker-compose logs redis
    
-   # Test connection
-   redis-cli -h localhost -p 6379 PING
+   # Verify redis is healthy
+   docker-compose exec redis redis-cli -a $REDIS_PASSWORD ping
+   
+   # Check REDIS_URL format
+   echo $REDIS_URL
+   # Should be: redis://:password@redis:6379 (Docker)
+   # Should be: redis://:password@localhost:6379 (host)
+   
+   # Test connection from host
+   redis-cli -h localhost -p 6379 -a $REDIS_PASSWORD PING
    ```
 
-3. **Port Conflicts**
+4. **Port Conflicts**
    ```bash
    # Check port usage
    lsof -i :1000  # Frontend
    lsof -i :2000  # Backend
+   lsof -i :5432  # PostgreSQL
+   lsof -i :6379  # Redis
    
    # Kill process if needed
    kill -9 <PID>
    ```
 
-4. **Build Failures**
+5. **Build Failures**
    ```bash
-   # Clean build
+   # Docker build failures
+   # Clear Docker build cache
+   docker builder prune -a
+   
+   # Rebuild without cache
+   docker-compose build --no-cache --pull
+   
+   # Manual build
    cd frontend && npm run build:clean
    cd backend && cargo clean && cargo build
+   ```
+
+6. **Permission Issues (Docker)**
+   ```bash
+   # Fix volume permissions
+   sudo chown -R $USER:$USER $(docker volume inspect reconciliation-platform_uploads_data | jq -r '.[0].Mountpoint')
    ```
 
 ---
@@ -306,7 +534,33 @@ ab -n 1000 -c 10 http://localhost:2000/health
 
 # API testing
 curl http://localhost:2000/api/v1/health
+
+# Docker health checks
+docker-compose ps
+
+# Container resource usage
+docker stats
 ```
+
+### **Docker Performance Optimization**
+
+The deployment uses:
+- ✅ Multi-stage Docker builds (smaller images)
+- ✅ BuildKit cache mounts (faster rebuilds)
+- ✅ Optimized base images (Alpine Linux)
+- ✅ Database connection pooling
+- ✅ Redis caching layer
+- ✅ Resource limits to prevent OOM
+
+### **Next Steps After Docker Deployment**
+
+1. **Apply performance indexes** (if not automated)
+2. **Set up monitoring alerts** in Grafana
+3. **Configure backup schedule** for Docker volumes
+4. **Set up reverse proxy** for HTTPS (nginx/traefik)
+5. **Configure logging aggregation** (ELK, Loki, etc.)
+6. **Review container resource usage** and adjust limits
+7. **Set up health check monitoring**
 
 ---
 

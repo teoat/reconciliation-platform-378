@@ -36,7 +36,8 @@ const ProjectEdit: React.FC = () => {
     try {
       const response = await apiClient.getProjectById(id)
       if (response.error) {
-        setError(response.error.message)
+        const errorMsg = typeof response.error === 'object' && 'message' in response.error ? response.error.message : String(response.error);
+        setError(errorMsg)
         return
       }
       
@@ -65,9 +66,8 @@ const ProjectEdit: React.FC = () => {
       const result = await updateProject(id, {
         name: formData.name,
         description: formData.description,
-        status: formData.status,
         is_active: formData.status === 'active',
-      })
+      } as any)
 
       if (result.success) {
         toast.success('Project updated successfully')

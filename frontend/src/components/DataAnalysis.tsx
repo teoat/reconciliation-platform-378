@@ -84,7 +84,7 @@ import {
   ProcessedExpenseRecord, 
   ProcessedBankRecord, 
   IndonesianMatchingResult 
-} from '../../../utils/indonesianDataProcessor'
+} from '../utils/indonesianDataProcessor'
 
 interface DataAnalysisProps {
   isVisible: boolean
@@ -138,7 +138,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
         matchingResults = IndonesianDataProcessor.matchRecords(processedExpenses, processedBankRecords)
         // Transform to expected shape
         const transformedMatches = matchingResults.map((match) => ({
-          expense: match.sourceRecord as ProcessedExpenseRecord,
+          expense: match.sourceRecord as unknown as ProcessedExpenseRecord,
           bank: match.targetRecord,
           match
         }))

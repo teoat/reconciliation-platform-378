@@ -1,6 +1,6 @@
 // Security Monitoring Components
 import React, { useState, useEffect } from 'react';
-import { securityService, SecurityEvent, SecuritySeverity, SecurityEventType } from '../services/security';
+import { securityService, SecurityEvent, SecuritySeverity, SecurityEventType } from '../../services/security';
 import { Shield } from 'lucide-react'
 import { AlertTriangle } from 'lucide-react'
 import { Lock } from 'lucide-react'
@@ -25,7 +25,7 @@ export const SecurityDashboard: React.FC = () => {
     
     // Load initial data
     setSecurityEvents(securityService.getSecurityEvents());
-    setCspViolations(securityService.getCspViolations());
+    setCspViolations(securityService.getCSPViolations());
     setSessionInfo(securityService.getSessionInfo());
 
     return () => {

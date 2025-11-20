@@ -123,20 +123,27 @@ App → ErrorBoundary → ReduxProvider → WebSocketProvider → AuthProvider �
 
 ### **Essential Guides**
 
-- **[START_HERE.md](./START_HERE.md)** - Quick start guide
-- **[8_LAYER_QUANTUM_AUDIT_EXECUTION_REPORT.md](./8_LAYER_QUANTUM_AUDIT_EXECUTION_REPORT.md)** - Complete audit report
-- **[EXECUTION_COMPLETE_SUMMARY.md](./EXECUTION_COMPLETE_SUMMARY.md)** - Execution summary
+- **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)** - Complete deployment guide (Docker, Kubernetes, Terraform)
+- **[QUICK_START.md](./QUICK_START.md)** - Fast-track setup guide
+- **[docs/](./docs/)** - Complete documentation index
+- **[CONTRIBUTING.md](./CONTRIBUTING.md)** - Contribution guidelines
 
-### **API Documentation**
+### **Operations & Support**
 
-- **REST API**: See `/api-docs` in application
-- **WebSocket API**: Real-time event documentation
+- **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** - Troubleshooting guide
+- **[docs/SUPPORT_MAINTENANCE_GUIDE.md](./docs/SUPPORT_MAINTENANCE_GUIDE.md)** - Maintenance operations
+- **[docs/INCIDENT_RESPONSE_RUNBOOKS.md](./docs/INCIDENT_RESPONSE_RUNBOOKS.md)** - Incident response procedures
 
-### **Deployment**
+### **API & Architecture**
 
-- **Docker**: `docker-compose up --build`
-- **Kubernetes**: See `k8s/` directory
-- **Terraform**: See `terraform/` directory
+- **[docs/API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md)** - REST and WebSocket API reference
+- **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - System architecture overview
+- **[docs/INFRASTRUCTURE.md](./docs/INFRASTRUCTURE.md)** - Infrastructure topology
+
+### **Testing**
+
+- **[docs/UAT_PLAN.md](./docs/UAT_PLAN.md)** - User Acceptance Testing plan
+- **[docs/UAT_SUMMARY.md](./docs/UAT_SUMMARY.md)** - UAT execution summary
 
 ---
 
@@ -221,65 +228,48 @@ Pre-commit hooks are set up via Husky and lint-staged (requires dev dependency i
 
 ## 🚀 Deployment
 
-### **Docker Compose**
+For complete deployment instructions, see **[DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md)**.
+
+### Quick Deployment Options
+
+#### **Docker Compose (Recommended)**
 
 ```bash
+# Clone and setup
+git clone <repository-url>
+cd 378
+cp .env.example .env
+
+# Deploy all services
 docker-compose up --build -d
+
+# Access the application
+# Frontend: http://localhost:1000
+# Backend: http://localhost:2000
 ```
 
-### **Kubernetes**
+#### **Kubernetes**
 
 ```bash
 kubectl apply -f k8s/
 ```
 
-### Manual Workflow
-- **Backend**
-  ```bash
-  cd backend
-  cargo run
-  ```
-- **Frontend**
-  ```bash
-  cd frontend
-  npm install
-  npm run dev
-  ```
-- **Database & cache**: use the Compose services (`docker compose up postgres redis`) or configure local instances via `DATABASE_URL` and `REDIS_URL`.
+#### **Manual Development Setup**
 
-### Configuration
-- Backend `.env`
-  ```env
-  DATABASE_URL=postgresql://user:password@localhost:5432/reconciliation
-  REDIS_URL=redis://localhost:6379
-  JWT_SECRET=change-me
-  RUST_LOG=info
-  ```
-- Frontend `.env.local`
-  ```env
-  NEXT_PUBLIC_API_URL=http://localhost:8080
-  NEXT_PUBLIC_WS_URL=ws://localhost:8080/ws
-  ```
+**Backend** (requires Rust):
+```bash
+cd backend
+cargo run
+```
 
-## Development Tasks
-- **Run tests**
-  ```bash
-  # backend
-  cd backend && cargo test
+**Frontend** (requires Node.js 18+):
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-  # frontend
-  cd frontend && npm test
-
-  # e2e
-  npx playwright test
-  ```
-- **Lint & format**
-  - Backend: `cargo fmt && cargo clippy`
-  - Frontend: `npm run lint`
-
-## Deployment
-- Full deployment instructions: see `DEPLOYMENT_GUIDE.md`
-- Additional documentation: see `docs/` folder
+For detailed deployment instructions including environment configuration, security hardening, monitoring setup, and troubleshooting, refer to [DEPLOYMENT_GUIDE.md](./DEPLOYMENT_GUIDE.md).
 
 ## Observability & Operations
 - Grafana: `http://localhost:3001`
