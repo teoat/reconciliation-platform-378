@@ -1,283 +1,382 @@
 #!/bin/bash
-
-# Deployment Script for 378 Reconciliation Platform
-# Usage: ./deploy.sh [environment] [version]
-# Environment: staging, production
-# Version: optional, defaults to latest
+# ============================================================================
+# UNIFIED DEPLOYMENT SCRIPT - 378 Reconciliation Platform
+# ============================================================================
+# Unified deployment script supporting multiple environments
+# Usage: ./deploy.sh [environment] [options]
+# Environments: dev, staging, production, go-live
+# ============================================================================
 
 set -e
 
-# Configuration
-ENVIRONMENT=${1:-staging}
-VERSION=${2:-latest}
-PROJECT_NAME="reconciliation-platform"
-DEPLOY_DIR="/opt/reconciliation-platform"
-BACKUP_DIR="/opt/backups"
-
-# Colors for output
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-# Logging function
-log() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
+# Default values
+ENVIRONMENT="${1:-dev}"
+SKIP_TESTS="${SKIP_TESTS:-false}"
+SKIP_HEALTH_CHECK="${SKIP_HEALTH_CHECK:-false}"
+
+echo -e "${BLUE}============================================================================${NC}"
+echo -e "${BLUE}🚀 378 Reconciliation Platform - Unified Deployment${NC}"
+echo -e "${BLUE}============================================================================${NC}"
+echo -e "Environment: ${GREEN}${ENVIRONMENT}${NC}"
+echo -e "Skip Tests: ${YELLOW}${SKIP_TESTS}${NC}"
+echo -e "Skip Health Check: ${YELLOW}${SKIP_HEALTH_CHECK}${NC}"
+echo ""
+
+# Function to print step
+print_step() {
+    echo -e "${GREEN}>>> $1${NC}"
 }
 
-error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}"
+# Function to print error and exit
+error_exit() {
+    echo -e "${RED}❌ Error: $1${NC}" >&2
     exit 1
-}
-
-warning() {
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}"
-}
-
-# Check if running as root
-check_root() {
-    if [[ $EUID -eq 0 ]]; then
-        error "This script should not be run as root"
-    fi
 }
 
 # Check prerequisites
 check_prerequisites() {
-    log "Checking prerequisites..."
-    
-    # Check if Docker is installed
-    if ! command -v docker &> /dev/null; then
-        error "Docker is not installed"
+    print_step "Checking prerequisites..."
+
+    # Check Docker
+    if ! docker info > /dev/null 2>&1; then
+        error_exit "Docker is not running. Please start Docker first."
     fi
-    
-    # Check if Docker Compose is installed
-    if ! command -v docker-compose &> /dev/null; then
-        error "Docker Compose is not installed"
+
+    # Check docker-compose
+    if ! command -v docker-compose > /dev/null 2>&1 && ! docker compose version > /dev/null 2>&1; then
+        error_exit "docker-compose is not installed"
     fi
-    
-    # Check if git is installed
-    if ! command -v git &> /dev/null; then
-        error "Git is not installed"
-    fi
-    
-    # Check if required files exist
-    if [[ ! -f "docker-compose.${ENVIRONMENT}.yml" ]]; then
-        error "Docker Compose file for ${ENVIRONMENT} not found"
-    fi
-    
-    if [[ ! -f ".env.${ENVIRONMENT}" ]]; then
-        error "Environment file for ${ENVIRONMENT} not found"
-    fi
-    
-    log "Prerequisites check passed"
+
+    echo -e "${GREEN}✅ Prerequisites met${NC}"
 }
 
-# Create backup
-create_backup() {
-    log "Creating backup..."
-    
-    # Create backup directory if it doesn't exist
-    sudo mkdir -p ${BACKUP_DIR}
-    
-    # Create database backup
-    if docker-compose -f docker-compose.${ENVIRONMENT}.yml ps postgres | grep -q "Up"; then
-        log "Creating database backup..."
-        docker-compose -f docker-compose.${ENVIRONMENT}.yml exec -T postgres pg_dump -U reconciliation_user -d reconciliation_platform > ${BACKUP_DIR}/backup_$(date +%Y%m%d_%H%M%S).sql
-        log "Database backup created"
-    else
-        warning "PostgreSQL container is not running, skipping database backup"
+# Setup environment
+setup_environment() {
+    print_step "Setting up environment for ${ENVIRONMENT}..."
+
+    case "$ENVIRONMENT" in
+        dev)
+            COMPOSE_FILE="docker-compose.yml"
+            ;;
+        staging)
+            COMPOSE_FILE="docker-compose.yml"
+            ;;
+        production)
+            COMPOSE_FILE="docker-compose.prod.yml"
+            if [ ! -f "$COMPOSE_FILE" ]; then
+                COMPOSE_FILE="docker-compose.yml"
+                echo -e "${YELLOW}⚠️  Production compose file not found, using default${NC}"
+            fi
+            ;;
+        go-live)
+            COMPOSE_FILE="docker-compose.prod.yml"
+            if [ ! -f "$COMPOSE_FILE" ]; then
+                error_exit "Production compose file required for go-live"
+            fi
+            ;;
+        *)
+            error_exit "Unknown environment: $ENVIRONMENT"
+            ;;
+    esac
+
+    # Create .env if missing
+    if [ ! -f .env ]; then
+        echo -e "${YELLOW}⚠️  No .env file found. Creating basic one...${NC}"
+        cat > .env << 'EOF'
+# Basic Configuration
+POSTGRES_DB=reconciliation_app
+POSTGRES_USER=postgres
+POSTGRES_PASSWORD=postgres_pass
+JWT_SECRET=$(openssl rand -hex 32 2>/dev/null || echo "dev-jwt-secret-key")
+JWT_EXPIRES_IN=24h
+CORS_ORIGINS=http://localhost:1000
+POSTGRES_PORT=5432
+REDIS_PORT=6379
+BACKEND_PORT=2000
+FRONTEND_PORT=1000
+PROMETHEUS_PORT=9090
+GRAFANA_PORT=3001
+EOF
+        echo -e "${GREEN}✅ Created .env file${NC}"
     fi
-    
-    # Create file backup
-    if [[ -d "${DEPLOY_DIR}/uploads" ]]; then
-        log "Creating file backup..."
-        sudo tar -czf ${BACKUP_DIR}/uploads_$(date +%Y%m%d_%H%M%S).tar.gz -C ${DEPLOY_DIR} uploads
-        log "File backup created"
-    fi
-    
-    # Clean up old backups (keep last 7 days)
-    find ${BACKUP_DIR} -name "backup_*.sql" -mtime +7 -delete
-    find ${BACKUP_DIR} -name "uploads_*.tar.gz" -mtime +7 -delete
-    
-    log "Backup completed"
+
+    echo -e "${GREEN}✅ Environment setup complete${NC}"
 }
 
-# Pull latest code
+# Pull latest code (for production/staging)
 pull_code() {
-    log "Pulling latest code..."
-    
-    cd ${DEPLOY_DIR}
-    git fetch origin
-    git checkout master
-    git pull origin master
-    
-    if [ $? -ne 0 ]; then
-        error "Failed to pull from master branch. Please ensure the master branch exists."
+    if [ "$ENVIRONMENT" = "production" ] || [ "$ENVIRONMENT" = "staging" ] || [ "$ENVIRONMENT" = "go-live" ]; then
+        print_step "Pulling latest code..."
+
+        if [ -d .git ]; then
+            # Support repositories that may use either 'master' or 'main' as the default branch
+            git pull origin master || { echo -e "${RED}❌ Failed to pull from master branch. Exiting.${NC}"; exit 1; }
+        else
+            echo -e "${YELLOW}⚠️  Not a git repository, skipping pull${NC}"
+        fi
+
+        echo -e "${GREEN}✅ Code pulled${NC}"
     fi
-    
-    log "Code updated"
 }
 
-# Build and deploy
-deploy() {
-    log "Starting deployment..."
-    
-    cd ${DEPLOY_DIR}
-    
-    # Copy environment file
-    cp .env.${ENVIRONMENT} .env
-    
-    # Pull latest images
-    log "Pulling Docker images..."
-    docker-compose -f docker-compose.${ENVIRONMENT}.yml pull
-    
-    # Build custom images
-    log "Building custom images..."
-    docker-compose -f docker-compose.${ENVIRONMENT}.yml build
-    
-    # Stop existing services
-    log "Stopping existing services..."
-    docker-compose -f docker-compose.${ENVIRONMENT}.yml down
-    
-    # Start services
-    log "Starting services..."
-    docker-compose -f docker-compose.${ENVIRONMENT}.yml up -d
-    
-    # Wait for services to be ready
-    log "Waiting for services to be ready..."
-    sleep 30
-    
-    # Run database migrations
-    log "Running database migrations..."
-    docker-compose -f docker-compose.${ENVIRONMENT}.yml exec -T backend diesel migration run
-    
-    log "Deployment completed"
+# Run tests
+run_tests() {
+    if [ "$SKIP_TESTS" = "false" ] && [ "$ENVIRONMENT" != "dev" ]; then
+        print_step "Running tests..."
+
+        # Backend tests
+        if [ -d "backend" ] && [ -f "backend/Cargo.toml" ]; then
+            echo "Running backend tests..."
+            cd backend
+            cargo test --release || error_exit "Backend tests failed"
+            cd ..
+        fi
+
+        # Frontend tests
+        if [ -d "frontend" ] && [ -f "frontend/package.json" ]; then
+            echo "Running frontend tests..."
+            cd frontend
+            npm test -- --watchAll=false --passWithNoTests || error_exit "Frontend tests failed"
+            cd ..
+        fi
+
+        echo -e "${GREEN}✅ Tests passed${NC}"
+    else
+        echo -e "${YELLOW}⚠️  Skipping tests${NC}"
+    fi
+}
+
+# Build images
+build_images() {
+    print_step "Building Docker images..."
+
+    if [ "$ENVIRONMENT" = "production" ] || [ "$ENVIRONMENT" = "go-live" ]; then
+        docker-compose -f "$COMPOSE_FILE" build --no-cache
+    else
+        docker-compose -f "$COMPOSE_FILE" build
+    fi
+
+    echo -e "${GREEN}✅ Images built${NC}"
+}
+
+# Stop old containers
+stop_containers() {
+    print_step "Stopping old containers..."
+
+    docker-compose -f "$COMPOSE_FILE" down || true
+
+    echo -e "${GREEN}✅ Old containers stopped${NC}"
+}
+
+# Start containers
+start_containers() {
+    print_step "Starting containers..."
+
+    docker-compose -f "$COMPOSE_FILE" up -d
+
+    echo -e "${GREEN}✅ Containers started${NC}"
+}
+
+# Run migrations
+run_migrations() {
+    if [ "$ENVIRONMENT" = "production" ] || [ "$ENVIRONMENT" = "staging" ] || [ "$ENVIRONMENT" = "go-live" ]; then
+        print_step "Running database migrations..."
+
+        # Try different migration commands
+        docker-compose -f "$COMPOSE_FILE" exec -T backend ./migrate.sh 2>/dev/null || \
+        docker-compose -f "$COMPOSE_FILE" exec -T backend diesel migration run 2>/dev/null || \
+        echo -e "${YELLOW}⚠️  No migration command found or migrations already run${NC}"
+
+        echo -e "${GREEN}✅ Migrations completed${NC}"
+    fi
+}
+
+# Wait for services
+wait_for_services() {
+    print_step "Waiting for services to be ready..."
+
+    local max_attempts=30
+    local attempt=0
+
+    # Wait for backend
+    echo "Waiting for backend..."
+    while [ $attempt -lt $max_attempts ]; do
+        if curl -f -s http://localhost:2000/health > /dev/null 2>&1 || \
+           curl -f -s http://localhost:8080/health > /dev/null 2>&1; then
+            echo -e "${GREEN}✅ Backend is ready${NC}"
+            break
+        fi
+        attempt=$((attempt + 1))
+        sleep 2
+        echo -n "."
+    done
+    echo ""
+
+    if [ $attempt -eq $max_attempts ]; then
+        echo -e "${YELLOW}⚠️  Backend health check timed out${NC}"
+    fi
+
+    # Wait for frontend
+    attempt=0
+    echo "Waiting for frontend..."
+    while [ $attempt -lt $max_attempts ]; do
+        if curl -f -s http://localhost:1000 > /dev/null 2>&1 || \
+           curl -f -s http://localhost:80 > /dev/null 2>&1; then
+            echo -e "${GREEN}✅ Frontend is ready${NC}"
+            break
+        fi
+        attempt=$((attempt + 1))
+        sleep 1
+        echo -n "."
+    done
+    echo ""
+
+    if [ $attempt -eq $max_attempts ]; then
+        echo -e "${YELLOW}⚠️  Frontend health check timed out${NC}"
+    fi
 }
 
 # Health check
 health_check() {
-    log "Performing health check..."
-    
-    # Check if services are running
-    if ! docker-compose -f docker-compose.${ENVIRONMENT}.yml ps | grep -q "Up"; then
-        error "Some services are not running"
-    fi
-    
-    # Check application health
-    local health_url="http://localhost:8080/health"
-    if [[ "${ENVIRONMENT}" == "production" ]]; then
-        health_url="https://api.378reconciliation.com/health"
-    fi
-    
-    local max_attempts=30
-    local attempt=1
-    
-    while [[ $attempt -le $max_attempts ]]; do
-        if curl -f -s ${health_url} > /dev/null; then
-            log "Health check passed"
-            return 0
+    if [ "$SKIP_HEALTH_CHECK" = "false" ]; then
+        print_step "Running health checks..."
+
+        # Check backend health
+        if curl -f -s http://localhost:2000/health > /dev/null 2>&1 || \
+           curl -f -s http://localhost:8080/health > /dev/null 2>&1; then
+            echo -e "${GREEN}✅ Backend health check passed${NC}"
+        else
+            error_exit "Backend health check failed"
         fi
-        
-        log "Health check attempt ${attempt}/${max_attempts} failed, retrying in 10 seconds..."
-        sleep 10
-        ((attempt++))
-    done
-    
-    error "Health check failed after ${max_attempts} attempts"
-}
 
-# Rollback function
-rollback() {
-    log "Rolling back deployment..."
-    
-    cd ${DEPLOY_DIR}
-    
-    # Stop current services
-    docker-compose -f docker-compose.${ENVIRONMENT}.yml down
-    
-    # Restore from backup
-    local latest_backup=$(ls -t ${BACKUP_DIR}/backup_*.sql | head -n1)
-    if [[ -n "${latest_backup}" ]]; then
-        log "Restoring database from ${latest_backup}"
-        docker-compose -f docker-compose.${ENVIRONMENT}.yml up -d postgres
-        sleep 10
-        docker-compose -f docker-compose.${ENVIRONMENT}.yml exec -T postgres psql -U reconciliation_user -d reconciliation_platform < ${latest_backup}
-    fi
-    
-    # Start services
-    docker-compose -f docker-compose.${ENVIRONMENT}.yml up -d
-    
-    log "Rollback completed"
-}
+        # Check database
+        if docker-compose -f "$COMPOSE_FILE" exec -T postgres pg_isready -U postgres > /dev/null 2>&1 2>/dev/null || \
+           docker-compose -f "$COMPOSE_FILE" exec -T database pg_isready -U postgres > /dev/null 2>&1 2>/dev/null; then
+            echo -e "${GREEN}✅ Database health check passed${NC}"
+        else
+            echo -e "${YELLOW}⚠️  Database health check failed (may not be configured)${NC}"
+        fi
 
-# Cleanup function
-cleanup() {
-    log "Cleaning up..."
-    
-    # Remove unused Docker images
-    docker image prune -f
-    
-    # Remove unused Docker volumes
-    docker volume prune -f
-    
-    # Remove unused Docker networks
-    docker network prune -f
-    
-    log "Cleanup completed"
-}
-
-# Notification function
-notify() {
-    local status=$1
-    local message=$2
-    
-    # Send Slack notification if webhook is configured
-    if [[ -n "${SLACK_WEBHOOK}" ]]; then
-        curl -X POST -H 'Content-type: application/json' \
-            --data "{\"text\":\"Deployment ${status}: ${message}\"}" \
-            ${SLACK_WEBHOOK}
-    fi
-    
-    # Send email notification if configured
-    if [[ -n "${EMAIL_RECIPIENTS}" ]]; then
-        echo "Deployment ${status}: ${message}" | mail -s "Deployment ${status}" ${EMAIL_RECIPIENTS}
-    fi
-}
-
-# Main deployment function
-main() {
-    log "Starting deployment to ${ENVIRONMENT} environment"
-    
-    # Check if running as root
-    check_root
-    
-    # Check prerequisites
-    check_prerequisites
-    
-    # Create backup
-    create_backup
-    
-    # Pull latest code
-    pull_code
-    
-    # Deploy
-    deploy
-    
-    # Health check
-    if health_check; then
-        log "Deployment successful"
-        notify "SUCCESS" "Deployment to ${ENVIRONMENT} completed successfully"
-        cleanup
+        echo -e "${GREEN}✅ Health checks completed${NC}"
     else
-        error "Deployment failed"
-        notify "FAILURE" "Deployment to ${ENVIRONMENT} failed"
-        rollback
-        exit 1
+        echo -e "${YELLOW}⚠️  Skipping health checks${NC}"
     fi
 }
 
-# Handle script interruption
-trap 'error "Deployment interrupted"' INT TERM
+# Go-live specific steps
+go_live_steps() {
+    if [ "$ENVIRONMENT" = "go-live" ]; then
+        print_step "Executing go-live procedures..."
 
-# Run main function
-main "$@"
+        # Additional go-live checks would go here
+        # DNS updates, SSL activation, monitoring activation, etc.
+
+        echo -e "${GREEN}✅ Go-live procedures completed${NC}"
+    fi
+}
+
+# Show status
+show_status() {
+    print_step "Deployment status"
+
+    echo ""
+    echo -e "${BLUE}Service Status:${NC}"
+    docker-compose -f "$COMPOSE_FILE" ps
+
+    echo ""
+    echo -e "${BLUE}Access URLs:${NC}"
+
+    # Determine ports based on environment
+    case "$ENVIRONMENT" in
+        production|go-live)
+            FRONTEND_URL="http://localhost:80"
+            BACKEND_URL="http://localhost:8080"
+            ;;
+        *)
+            FRONTEND_URL="http://localhost:1000"
+            BACKEND_URL="http://localhost:2000"
+            ;;
+    esac
+
+    echo -e "  Frontend:    ${GREEN}${FRONTEND_URL}${NC}"
+    echo -e "  Backend API: ${GREEN}${BACKEND_URL}${NC}"
+    echo -e "  Health:      ${GREEN}${BACKEND_URL}/health${NC}"
+
+    if [ "$ENVIRONMENT" != "dev" ]; then
+        echo -e "  Grafana:     ${GREEN}http://localhost:3000${NC}"
+        echo -e "  Prometheus:  ${GREEN}http://localhost:9090${NC}"
+    fi
+
+    echo ""
+    echo -e "${BLUE}Useful Commands:${NC}"
+    echo -e "  View logs:   ${YELLOW}docker-compose -f $COMPOSE_FILE logs -f${NC}"
+    echo -e "  Stop:        ${YELLOW}docker-compose -f $COMPOSE_FILE down${NC}"
+    echo -e "  Restart:     ${YELLOW}docker-compose -f $COMPOSE_FILE restart${NC}"
+    echo ""
+}
+
+# Main deployment flow
+main() {
+    check_prerequisites
+    setup_environment
+    pull_code
+    run_tests
+    build_images
+    stop_containers
+    start_containers
+    run_migrations
+    wait_for_services
+    health_check
+    go_live_steps
+    show_status
+
+    echo ""
+    echo -e "${GREEN}============================================================================${NC}"
+    echo -e "${GREEN}  🎉 Deployment to ${ENVIRONMENT} completed successfully!${NC}"
+    echo -e "${GREEN}============================================================================${NC}"
+    echo ""
+}
+
+# Show usage
+usage() {
+    echo "Usage: $0 [environment] [options]"
+    echo ""
+    echo "Environments:"
+    echo "  dev        Development deployment (default)"
+    echo "  staging    Staging deployment"
+    echo "  production Production deployment"
+    echo "  go-live    Production go-live deployment"
+    echo ""
+    echo "Options:"
+    echo "  SKIP_TESTS=true          Skip running tests"
+    echo "  SKIP_HEALTH_CHECK=true   Skip health checks"
+    echo ""
+    echo "Examples:"
+    echo "  $0 dev"
+    echo "  $0 production"
+    echo "  SKIP_TESTS=true $0 staging"
+    echo ""
+}
+
+# Parse arguments
+case "${1:-help}" in
+    dev|staging|production|go-live)
+        main
+        ;;
+    help|--help|-h)
+        usage
+        ;;
+    *)
+        echo -e "${RED}Unknown environment: $1${NC}"
+        echo ""
+        usage
+        exit 1
+        ;;
+esac

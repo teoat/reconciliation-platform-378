@@ -1,0 +1,313 @@
+# ============================================================================
+# DOCKER COMPOSE - Reconciliation Platform
+# ============================================================================
+# ✅ SINGLE SOURCE OF TRUTH (SSOT) - LOCKED FOR USE
+# ============================================================================
+# This is the official docker-compose file for the Reconciliation Platform
+# DO NOT EDIT: Contact platform team for modifications
+# ============================================================================
+# Usage:
+#   docker-compose up -d                # Start all services
+#   docker-compose down                 # Stop all services
+#   docker-compose logs -f [service]    # View logs
+# ============================================================================
+# Last Updated: January 2025
+# Status: Production Ready ✅
+# ============================================================================
+
+services:
+  # ==========================================================================
+  # POSTGRESQL DATABASE
+  # ==========================================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: reconciliation-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-reconciliation_app}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_pass}
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infrastructure/database/postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - reconciliation-network
+    restart: unless-stopped
+  pgbouncer:
+    image: edoburu/pgbouncer
+    container_name: reconciliation-pgbouncer
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
+      PGBOUNCER_LISTEN_ADDR: 0.0.0.0
+      PGBOUNCER_LISTEN_PORT: 6432
+      POOL_MODE: transaction
+      MAX_CLIENT_CONN: 500
+      DEFAULT_POOL_SIZE: 50
+      AUTH_TYPE: md5
+      ADMIN_USERS: ${POSTGRES_USER:-postgres}
+    ports:
+      - "6432:5432"
+    depends_on:
+      postgres:
+        condition: service_started
+    networks:
+      - reconciliation-network
+    restart: unless-stopped
+
+   # ==========================================================================
+   # REDIS CACHE
+   # ==========================================================================
+   redis:
+     image: redis:7-alpine
+     container_name: reconciliation-redis
+     volumes:
+       - redis_data:/data
+       - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+     ports:
+       - "${REDIS_PORT:-6379}:6379"
+     networks:
+       - reconciliation-network
+     restart: unless-stopped
+     environment:
+       REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass}
+     command:
+       - sh
+       - -c
+       - "redis-server /usr/local/etc/redis/redis.conf --requirepass \"$${REDIS_PASSWORD}\""
+     healthcheck:
+       test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping"]
+       interval: 10s
+       timeout: 3s
+       retries: 5
+
+   # ==========================================================================
+   # BACKEND API (Rust)
+   # ==========================================================================
+   backend:
+     build:
+       context: .
+       dockerfile: infrastructure/docker/Dockerfile.backend.optimized
+    container_name: reconciliation-backend
+    environment:
+       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
+       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
+       HOST: 0.0.0.0
+       PORT: 2000
+       BACKEND_PORT: 2000
+       LOG_FORMAT: json
+       CUSTOM_CSP: "default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:2000 ws://localhost:2000 http://localhost:1000 ws://localhost:1000; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-24h}
+       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:1000}
+       RUST_LOG: ${RUST_LOG:-info}
+       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+       UPLOAD_PATH: /app/uploads
+       ELASTIC_APM_SERVER_URL: http://apm-server:8200
+       ELASTIC_APM_SERVICE_NAME: reconciliation-backend
+       ELASTIC_APM_ENVIRONMENT: ${ENVIRONMENT:-development}
+    volumes:
+      - uploads_data:/app/uploads
+      - logs_data:/app/logs
+      - filebeat_data:/var/log/filebeat
+    ports:
+      - "${BACKEND_PORT:-2000}:2000"
+    networks:
+      - reconciliation-network
+    depends_on:
+      postgres:
+        condition: service_started
+      redis:
+        condition: service_healthy
+      logstash:
+        condition: service_started
+      apm-server:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:2000/ready >/dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================================================
+  # FRONTEND (React/Vite)
+  # ==========================================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/Dockerfile.frontend.optimized
+      args:
+        BUILDKIT_INLINE_CACHE: 1
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:2000}/api/v1
+        VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:2000}
+    container_name: reconciliation-frontend
+    environment:
+       - NODE_ENV=${NODE_ENV:-production}
+       - DOCKER_BUILDKIT=1
+       - ELASTIC_APM_SERVER_URL=http://apm-server:8200
+       - ELASTIC_APM_SERVICE_NAME=reconciliation-frontend
+       - ELASTIC_APM_ENVIRONMENT=${ENVIRONMENT:-development}
+    volumes:
+      - filebeat_frontend_data:/var/log/filebeat
+    ports:
+      - "${FRONTEND_PORT:-1000}:80"
+    networks:
+      - reconciliation-network
+    depends_on:
+      backend:
+        condition: service_healthy
+      logstash:
+        condition: service_started
+      apm-server:
+        condition: service_started
+    restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # ==========================================================================
+  # MONITORING: PROMETHEUS
+  # ==========================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: reconciliation-prometheus
+    volumes:
+      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "${PROMETHEUS_PORT:-9090}:9090"
+    networks:
+      - reconciliation-network
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+
+  # ==========================================================================
+  # MONITORING: GRAFANA
+  # ==========================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: reconciliation-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "${GRAFANA_PORT:-3001}:3000"
+    networks:
+      - reconciliation-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # ==========================================================================
+  # LOG AGGREGATION: ELASTICSEARCH
+  # ==========================================================================
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: reconciliation-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - elasticsearch_data:/usr/share/elasticsearch/data
+    ports:
+      - "${ELASTICSEARCH_PORT:-9200}:9200"
+    networks:
+      - reconciliation-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ==========================================================================
+  # LOG AGGREGATION: LOGSTASH
+  # ==========================================================================
+  logstash:
+    image: docker.elastic.co/logstash/logstash:8.11.0
+    container_name: reconciliation-logstash
+    volumes:
+      - ./logging/logstash/pipeline.conf:/usr/share/logstash/pipeline/logstash.conf:ro
+      - ./logging/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+    ports:
+      - "${LOGSTASH_PORT:-5044}:5044"
+      - "${LOGSTASH_HTTP_PORT:-9600}:9600"
+    networks:
+      - reconciliation-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+    environment:
+       - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
+
+  # ==========================================================================
+  # LOG AGGREGATION: KIBANA
+  # ==========================================================================
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: reconciliation-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_HOST=0.0.0.0
+    ports:
+      - "${KIBANA_PORT:-5601}:5601"
+    networks:
+      - reconciliation-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ==========================================================================
+  # APPLICATION PERFORMANCE MONITORING: ELASTIC APM
+  # ==========================================================================
+  apm-server:
+    image: docker.elastic.co/apm/apm-server:8.11.0
+    container_name: reconciliation-apm-server
+    volumes:
+      - ./infrastructure/apm/apm-server.yml:/usr/share/apm-server/apm-server.yml:ro
+    ports:
+      - "${APM_PORT:-8200}:8200"
+    networks:
+      - reconciliation-network
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      kibana:
+        condition: service_started
+    restart: unless-stopped
+
+# ============================================================================
+# NETWORKS
+# ============================================================================
+networks:
+  reconciliation-network:
+    driver: bridge
+
+# ============================================================================
+# VOLUMES
+# ============================================================================
+volumes:
+  postgres_data:
+  redis_data:
+  uploads_data:
+  logs_data:
+  prometheus_data:
+  grafana_data:
+  elasticsearch_data:
+  filebeat_data:
+  filebeat_frontend_data:

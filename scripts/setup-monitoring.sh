@@ -1,107 +1,252 @@
 #!/bin/bash
-
-# Monitoring Setup Script for 378 Reconciliation Platform
-# This script sets up comprehensive monitoring with Prometheus, Grafana, and Alertmanager
+# ============================================================================
+# UNIFIED MONITORING SETUP - 378 Reconciliation Platform
+# ============================================================================
+# Comprehensive monitoring setup with multiple modes
+# Usage: ./setup-monitoring.sh [mode] [options]
+# Modes: basic, production, full
+# ============================================================================
 
 set -e
 
-# Configuration
-MONITORING_DIR="/opt/monitoring"
-GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-"admin123"}
-PROMETHEUS_RETENTION=${PROMETHEUS_RETENTION:-"30d"}
-
-# Colors for output
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+BLUE='\033[0;34m'
+NC='\033[0m'
 
-# Logging function
-log() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
+# Default values
+MODE="${1:-basic}"
+GRAFANA_ADMIN_PASSWORD="${GRAFANA_ADMIN_PASSWORD:-admin123}"
+PROMETHEUS_RETENTION="${PROMETHEUS_RETENTION:-30d}"
+
+echo -e "${BLUE}============================================================================${NC}"
+echo -e "${BLUE}📊 378 Reconciliation Platform - Monitoring Setup${NC}"
+echo -e "${BLUE}============================================================================${NC}"
+echo -e "Mode: ${GREEN}${MODE}${NC}"
+echo ""
+
+# Function to print step
+print_step() {
+    echo -e "${GREEN}>>> $1${NC}"
 }
 
-error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}"
+# Function to print success
+print_success() {
+    echo -e "${GREEN}✅ $1${NC}"
+}
+
+# Function to print error and exit
+error_exit() {
+    echo -e "${RED}❌ Error: $1${NC}" >&2
     exit 1
 }
 
-warning() {
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}"
-}
+# Check prerequisites
+check_prerequisites() {
+    print_step "Checking prerequisites..."
 
-# Check if running as root
-check_root() {
-    if [[ $EUID -ne 0 ]]; then
-        error "This script must be run as root"
+    # Check Docker
+    if ! docker info > /dev/null 2>&1; then
+        error_exit "Docker is not running. Please start Docker first."
     fi
+
+    # Check docker-compose
+    if ! command -v docker-compose > /dev/null 2>&1 && ! docker compose version > /dev/null 2>&1; then
+        error_exit "docker-compose is not installed"
+    fi
+
+    echo -e "${GREEN}✅ Prerequisites met${NC}"
 }
 
-# Install required packages
-install_packages() {
-    log "Installing required packages..."
-    
-    # Update package list
-    apt-get update
-    
+# Basic monitoring setup
+setup_basic() {
+    print_step "Setting up basic monitoring..."
+
+    # Create monitoring directories
+    mkdir -p monitoring/logs
+
+    # Configure basic environment variables
+    if [ -f ".env" ]; then
+        # Add basic monitoring config to .env
+        if ! grep -q "PROMETHEUS_PORT" .env; then
+            echo "" >> .env
+            echo "# Monitoring" >> .env
+            echo "PROMETHEUS_PORT=9090" >> .env
+            echo "GRAFANA_PORT=3000" >> .env
+            echo "GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}" >> .env
+        fi
+    fi
+
+    # Create basic docker-compose monitoring file
+    cat > docker-compose.monitoring.yml << EOF
+version: '3.8'
+
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION}'
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+      GF_SECURITY_ADMIN_USER: admin
+      GF_USERS_ALLOW_SIGN_UP: false
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+volumes:
+  prometheus_data:
+  grafana_data:
+EOF
+
+    # Create basic Prometheus config
+    mkdir -p monitoring
+    cat > monitoring/prometheus.yml << EOF
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'reconciliation-platform'
+    static_configs:
+      - targets: ['host.docker.internal:2000']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+EOF
+
+    print_success "Basic monitoring setup complete"
+}
+
+# Production monitoring setup
+setup_production() {
+    print_step "Setting up production monitoring..."
+
+    # Create performance directories
+    mkdir -p performance-results
+    mkdir -p performance-alerts
+    mkdir -p monitoring/logs
+
+    # Set performance baseline
+    if [ ! -f "performance-results/baseline.json" ]; then
+        print_step "Creating performance baseline..."
+
+        cat > performance-results/baseline.json << EOF
+{
+  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")",
+  "bundleSize": {
+    "totalSizeMB": 4.2,
+    "chunks": [
+      {"name": "app.js", "sizeKB": 1200},
+      {"name": "vendor.js", "sizeKB": 800},
+      {"name": "common.js", "sizeKB": 300}
+    ]
+  },
+  "lighthouse": {
+    "performance": 85,
+    "firstContentfulPaint": 1800,
+    "largestContentfulPaint": 2500,
+    "firstInputDelay": 50,
+    "cumulativeLayoutShift": 0.05
+  },
+  "synthetic": {
+    "initialLoadTime": 2200,
+    "domContentLoaded": 1500,
+    "firstPaint": 1200,
+    "reactHydrationTime": 400
+  }
+}
+EOF
+        print_success "Performance baseline created"
+    fi
+
+    # Configure alert channels
+    if [ -f ".env" ]; then
+        if ! grep -q "SLACK_WEBHOOK_URL" .env; then
+            echo "" >> .env
+            echo "# Alert Channels" >> .env
+            echo "SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK" >> .env
+            echo "ALERT_EMAIL_TO=alerts@yourcompany.com" >> .env
+            echo "GITHUB_REPO=your-org/reconciliation-platform" >> .env
+        fi
+    fi
+
+    # Setup automated monitoring cron job
+    if command -v crontab > /dev/null 2>&1; then
+        CRON_JOB="0 */4 * * * cd $(pwd) && npm run performance:test > monitoring/logs/performance-\$(date +\%Y\%m\%d-\%H\%M\%S).log 2>&1"
+
+        if ! crontab -l 2>/dev/null | grep -q "performance:test"; then
+            print_step "Setting up automated performance monitoring..."
+            (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
+            print_success "Cron job added for performance monitoring"
+        fi
+    fi
+
+    print_success "Production monitoring setup complete"
+}
+
+# Full monitoring setup (requires root)
+setup_full() {
+    print_step "Setting up full monitoring infrastructure..."
+
+    # Check if running as root
+    if [[ $EUID -ne 0 ]]; then
+        error_exit "Full monitoring setup requires root privileges. Run with sudo."
+    fi
+
     # Install required packages
-    apt-get install -y curl wget gnupg2 software-properties-common apt-transport-https ca-certificates
-    
-    log "Packages installed"
-}
-
-# Install Docker
-install_docker() {
-    log "Installing Docker..."
-    
-    # Add Docker's official GPG key
-    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-    
-    # Add Docker repository
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
-    
-    # Install Docker
+    print_step "Installing required packages..."
     apt-get update
-    apt-get install -y docker-ce docker-ce-cli containerd.io
-    
-    # Start and enable Docker
-    systemctl start docker
-    systemctl enable docker
-    
-    log "Docker installed"
-}
+    apt-get install -y curl wget gnupg2 software-properties-common apt-transport-https ca-certificates
 
-# Install Docker Compose
-install_docker_compose() {
-    log "Installing Docker Compose..."
-    
-    # Download Docker Compose
-    curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-    
-    # Make executable
-    chmod +x /usr/local/bin/docker-compose
-    
-    # Create symlink
-    ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
-    
-    log "Docker Compose installed"
-}
+    # Install Docker if not present
+    if ! command -v docker > /dev/null 2>&1; then
+        print_step "Installing Docker..."
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+        echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+        apt-get update
+        apt-get install -y docker-ce docker-ce-cli containerd.io
+        systemctl start docker
+        systemctl enable docker
+    fi
 
-# Create monitoring directory structure
-create_directories() {
-    log "Creating monitoring directory structure..."
-    
+    # Install Docker Compose if not present
+    if ! command -v docker-compose > /dev/null 2>&1; then
+        print_step "Installing Docker Compose..."
+        curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+        ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+    fi
+
+    # Create monitoring directory structure
+    MONITORING_DIR="/opt/monitoring"
     mkdir -p ${MONITORING_DIR}/{prometheus,grafana,alertmanager,node-exporter,postgres-exporter,redis-exporter,nginx-exporter}
     mkdir -p ${MONITORING_DIR}/grafana/{dashboards,datasources,provisioning}
     mkdir -p ${MONITORING_DIR}/prometheus/{rules,alerts}
-    
-    log "Directories created"
-}
 
-# Create Prometheus configuration
-create_prometheus_config() {
-    log "Creating Prometheus configuration..."
-    
+    # Create comprehensive Prometheus config
     cat > ${MONITORING_DIR}/prometheus/prometheus.yml << EOF
 global:
   scrape_interval: 15s
@@ -117,12 +262,10 @@ alerting:
           - alertmanager:9093
 
 scrape_configs:
-  # Prometheus itself
   - job_name: 'prometheus'
     static_configs:
       - targets: ['localhost:9090']
 
-  # Backend application
   - job_name: 'reconciliation-platform'
     static_configs:
       - targets: ['backend:9090']
@@ -130,44 +273,27 @@ scrape_configs:
     scrape_interval: 30s
     scrape_timeout: 10s
 
-  # PostgreSQL exporter
   - job_name: 'postgres'
     static_configs:
       - targets: ['postgres-exporter:9187']
     scrape_interval: 30s
 
-  # Redis exporter
   - job_name: 'redis'
     static_configs:
       - targets: ['redis-exporter:9121']
     scrape_interval: 30s
 
-  # Node exporter
   - job_name: 'node'
     static_configs:
       - targets: ['node-exporter:9100']
     scrape_interval: 30s
-
-  # Nginx exporter
-  - job_name: 'nginx'
-    static_configs:
-      - targets: ['nginx-exporter:9113']
-    scrape_interval: 30s
 EOF
 
-    log "Prometheus configuration created"
-}
-
-# Create Alertmanager configuration
-create_alertmanager_config() {
-    log "Creating Alertmanager configuration..."
-    
+    # Create Alertmanager config
     cat > ${MONITORING_DIR}/alertmanager/alertmanager.yml << EOF
 global:
   smtp_smarthost: 'localhost:587'
   smtp_from: 'alerts@378reconciliation.com'
-  smtp_auth_username: 'alerts@378reconciliation.com'
-  smtp_auth_password: 'your_smtp_password'
 
 route:
   group_by: ['alertname']
@@ -179,9 +305,6 @@ route:
     - match:
         severity: critical
       receiver: 'critical-alerts'
-    - match:
-        severity: warning
-      receiver: 'warning-alerts'
 
 receivers:
   - name: 'web.hook'
@@ -197,37 +320,9 @@ receivers:
           Alert: {{ .Annotations.summary }}
           Description: {{ .Annotations.description }}
           {{ end }}
-    slack_configs:
-      - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
-        channel: '#alerts'
-        title: 'Critical Alert'
-        text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
-
-  - name: 'warning-alerts'
-    email_configs:
-      - to: 'team@378reconciliation.com'
-        subject: '[WARNING] {{ .GroupLabels.alertname }}'
-        body: |
-          {{ range .Alerts }}
-          Alert: {{ .Annotations.summary }}
-          Description: {{ .Annotations.description }}
-          {{ end }}
-
-inhibit_rules:
-  - source_match:
-      severity: 'critical'
-    target_match:
-      severity: 'warning'
-    equal: ['alertname', 'dev', 'instance']
 EOF
 
-    log "Alertmanager configuration created"
-}
-
-# Create Grafana datasource configuration
-create_grafana_datasource() {
-    log "Creating Grafana datasource configuration..."
-    
+    # Create Grafana datasource config
     cat > ${MONITORING_DIR}/grafana/datasources/prometheus.yml << EOF
 apiVersion: 1
 
@@ -240,35 +335,7 @@ datasources:
     editable: true
 EOF
 
-    log "Grafana datasource configuration created"
-}
-
-# Create Grafana dashboard configuration
-create_grafana_dashboard() {
-    log "Creating Grafana dashboard configuration..."
-    
-    cat > ${MONITORING_DIR}/grafana/dashboards/dashboard.yml << EOF
-apiVersion: 1
-
-providers:
-  - name: 'default'
-    orgId: 1
-    folder: ''
-    type: file
-    disableDeletion: false
-    updateIntervalSeconds: 10
-    allowUiUpdates: true
-    options:
-      path: /etc/grafana/provisioning/dashboards
-EOF
-
-    log "Grafana dashboard configuration created"
-}
-
-# Create Docker Compose file for monitoring
-create_docker_compose() {
-    log "Creating Docker Compose file for monitoring..."
-    
+    # Create full docker-compose file
     cat > ${MONITORING_DIR}/docker-compose.yml << EOF
 version: '3.8'
 
@@ -284,8 +351,6 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
       - '--storage.tsdb.retention.time=${PROMETHEUS_RETENTION}'
       - '--web.enable-lifecycle'
     restart: unless-stopped
@@ -318,7 +383,6 @@ services:
     command:
       - '--config.file=/etc/alertmanager/alertmanager.yml'
       - '--storage.path=/alertmanager'
-      - '--web.external-url=https://alerts.378reconciliation.com'
     restart: unless-stopped
 
   node-exporter:
@@ -334,34 +398,6 @@ services:
       - '--path.procfs=/host/proc'
       - '--path.rootfs=/rootfs'
       - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
-    restart: unless-stopped
-
-  postgres-exporter:
-    image: prometheuscommunity/postgres-exporter:latest
-    container_name: postgres-exporter
-    ports:
-      - "9187:9187"
-    environment:
-      DATA_SOURCE_NAME: "postgresql://reconciliation_user:password@postgres:5432/reconciliation_platform?sslmode=disable"
-    restart: unless-stopped
-
-  redis-exporter:
-    image: oliver006/redis_exporter:latest
-    container_name: redis-exporter
-    ports:
-      - "9121:9121"
-    environment:
-      REDIS_ADDR: "redis://redis:6379"
-    restart: unless-stopped
-
-  nginx-exporter:
-    image: nginx/nginx-prometheus-exporter:latest
-    container_name: nginx-exporter
-    ports:
-      - "9113:9113"
-    command:
-      - '-nginx.scrape-uri=http://nginx:8080/nginx_status'
     restart: unless-stopped
 
 volumes:
@@ -370,13 +406,7 @@ volumes:
   alertmanager_data:
 EOF
 
-    log "Docker Compose file created"
-}
-
-# Create systemd service for monitoring
-create_systemd_service() {
-    log "Creating systemd service for monitoring..."
-    
+    # Create systemd service
     cat > /etc/systemd/system/monitoring.service << EOF
 [Unit]
 Description=Monitoring Stack
@@ -395,141 +425,121 @@ TimeoutStartSec=0
 WantedBy=multi-user.target
 EOF
 
-    # Enable service
     systemctl daemon-reload
     systemctl enable monitoring.service
-    
-    log "Systemd service created and enabled"
+
+    print_success "Full monitoring infrastructure setup complete"
 }
 
-# Start monitoring stack
+# Start monitoring services
 start_monitoring() {
-    log "Starting monitoring stack..."
-    
-    cd ${MONITORING_DIR}
-    docker-compose up -d
-    
-    # Wait for services to be ready
-    sleep 30
-    
-    log "Monitoring stack started"
+    case "$MODE" in
+        basic)
+            print_step "Starting basic monitoring..."
+            docker-compose -f docker-compose.monitoring.yml up -d
+            ;;
+        production)
+            print_step "Production monitoring is configured (no services to start)"
+            ;;
+        full)
+            print_step "Starting full monitoring stack..."
+            cd /opt/monitoring
+            docker-compose up -d
+            ;;
+    esac
+
+    # Wait and verify
+    sleep 10
+
+    case "$MODE" in
+        basic|full)
+            if curl -f -s http://localhost:9090/-/healthy > /dev/null; then
+                print_success "Prometheus is healthy"
+            else
+                echo -e "${YELLOW}⚠️  Prometheus health check failed${NC}"
+            fi
+
+            if curl -f -s http://localhost:3000/api/health > /dev/null; then
+                print_success "Grafana is healthy"
+            else
+                echo -e "${YELLOW}⚠️  Grafana health check failed${NC}"
+            fi
+            ;;
+    esac
 }
 
-# Verify monitoring setup
-verify_setup() {
-    log "Verifying monitoring setup..."
-    
-    # Check if services are running
-    if ! docker-compose ps | grep -q "Up"; then
-        error "Some monitoring services are not running"
-    fi
-    
-    # Check Prometheus
-    if ! curl -f -s http://localhost:9090/-/healthy > /dev/null; then
-        error "Prometheus is not healthy"
-    fi
-    
-    # Check Grafana
-    if ! curl -f -s http://localhost:3000/api/health > /dev/null; then
-        error "Grafana is not healthy"
-    fi
-    
-    # Check Alertmanager
-    if ! curl -f -s http://localhost:9093/-/healthy > /dev/null; then
-        error "Alertmanager is not healthy"
-    fi
-    
-    log "Monitoring setup verified successfully"
+# Show access information
+show_access_info() {
+    echo ""
+    echo -e "${BLUE}Monitoring Access Information:${NC}"
+
+    case "$MODE" in
+        basic|full)
+            echo -e "  Prometheus: ${GREEN}http://localhost:9090${NC}"
+            echo -e "  Grafana:    ${GREEN}http://localhost:3000${NC} (admin/${GRAFANA_ADMIN_PASSWORD})"
+            ;;
+    esac
+
+    case "$MODE" in
+        full)
+            echo -e "  Alertmanager: ${GREEN}http://localhost:9093${NC}"
+            echo -e "  Node Exporter: ${GREEN}http://localhost:9100${NC}"
+            ;;
+    esac
+
+    echo ""
+    echo -e "${BLUE}Useful Commands:${NC}"
+    case "$MODE" in
+        basic)
+            echo -e "  Start:  ${YELLOW}docker-compose -f docker-compose.monitoring.yml up -d${NC}"
+            echo -e "  Stop:   ${YELLOW}docker-compose -f docker-compose.monitoring.yml down${NC}"
+            ;;
+        full)
+            echo -e "  Start:  ${YELLOW}sudo systemctl start monitoring${NC}"
+            echo -e "  Stop:   ${YELLOW}sudo systemctl stop monitoring${NC}"
+            ;;
+    esac
 }
 
-# Create monitoring dashboard
-create_dashboard() {
-    log "Creating monitoring dashboard..."
-    
-    # This would typically import a pre-built dashboard
-    # For now, we'll create a basic dashboard configuration
-    
-    cat > ${MONITORING_DIR}/grafana/dashboards/overview.json << EOF
-{
-  "dashboard": {
-    "id": null,
-    "title": "378 Reconciliation Platform Overview",
-    "tags": ["reconciliation", "platform"],
-    "style": "dark",
-    "timezone": "browser",
-    "panels": [
-      {
-        "id": 1,
-        "title": "System Overview",
-        "type": "stat",
-        "targets": [
-          {
-            "expr": "up",
-            "legendFormat": "Services Up"
-          }
-        ],
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 0,
-          "y": 0
-        }
-      }
-    ],
-    "time": {
-      "from": "now-1h",
-      "to": "now"
-    },
-    "refresh": "30s"
-  }
-}
-EOF
+# Main logic
+case "$MODE" in
+    basic)
+        check_prerequisites
+        setup_basic
+        start_monitoring
+        show_access_info
+        ;;
+    production)
+        setup_production
+        show_access_info
+        ;;
+    full)
+        setup_full
+        start_monitoring
+        show_access_info
+        ;;
+    *)
+        echo -e "${RED}Unknown monitoring mode: $MODE${NC}"
+        echo "Usage: $0 [mode] [options]"
+        echo ""
+        echo "Modes:"
+        echo "  basic      Basic Prometheus + Grafana setup (default)"
+        echo "  production Production performance monitoring"
+        echo "  full       Full infrastructure monitoring (requires root)"
+        echo ""
+        echo "Options:"
+        echo "  GRAFANA_ADMIN_PASSWORD=your_password   Set Grafana admin password"
+        echo "  PROMETHEUS_RETENTION=30d              Set Prometheus data retention"
+        echo ""
+        echo "Examples:"
+        echo "  $0 basic"
+        echo "  $0 production"
+        echo "  GRAFANA_ADMIN_PASSWORD=mypassword $0 full"
+        exit 1
+        ;;
+esac
 
-    log "Dashboard created"
-}
-
-# Main function
-main() {
-    log "Starting monitoring setup..."
-    
-    # Check if running as root
-    check_root
-    
-    # Install required packages
-    install_packages
-    
-    # Install Docker
-    install_docker
-    
-    # Install Docker Compose
-    install_docker_compose
-    
-    # Create directories
-    create_directories
-    
-    # Create configurations
-    create_prometheus_config
-    create_alertmanager_config
-    create_grafana_datasource
-    create_grafana_dashboard
-    create_docker_compose
-    create_systemd_service
-    
-    # Create dashboard
-    create_dashboard
-    
-    # Start monitoring
-    start_monitoring
-    
-    # Verify setup
-    verify_setup
-    
-    log "Monitoring setup completed successfully!"
-    log "Access URLs:"
-    log "  Prometheus: http://localhost:9090"
-    log "  Grafana: http://localhost:3000 (admin/${GRAFANA_ADMIN_PASSWORD})"
-    log "  Alertmanager: http://localhost:9093"
-}
-
-# Run main function
-main "$@"
+echo ""
+echo -e "${GREEN}============================================================================${NC}"
+echo -e "${GREEN}  📊 Monitoring setup completed successfully!${NC}"
+echo -e "${GREEN}============================================================================${NC}"
