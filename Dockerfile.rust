@@ -1,6 +1,6 @@
 # Multi-stage Dockerfile for Rust Backend
 # Stage 1: Build stage
-FROM rust:1.91-alpine AS builder
+FROM rust:1.75-alpine AS builder
 
 # Install system dependencies
 RUN apk add --no-cache \

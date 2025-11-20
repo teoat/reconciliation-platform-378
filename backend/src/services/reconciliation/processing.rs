@@ -60,8 +60,8 @@ pub async fn process_data_sources_chunked(
         
         // Process chunk
         let chunk_results = process_chunk(
-            source_a,
-            source_b,
+            &records_a,
+            &records_b,
             matching_rules,
             confidence_threshold,
             start_record,
@@ -91,8 +91,8 @@ pub async fn process_data_sources_chunked(
 
 /// Process a single chunk of data
 async fn process_chunk(
-    _source_a: &DataSource,
-    _source_b: &DataSource,
+    records_a: &[ReconciliationRecord],
+    records_b: &[ReconciliationRecord],
     _matching_rules: &[MatchingRule],
     confidence_threshold: f64,
     start_record: usize,
@@ -102,30 +102,57 @@ async fn process_chunk(
 ) -> AppResult<Vec<ReconciliationResultType>> {
     let mut results = Vec::new();
     
-    // Simulate processing records in this chunk
+    // Iterate through the chunk of source A records
     for i in start_record..end_record {
-        // In real implementation, load actual records from sources
-        // For now, create mock results
-        let confidence = if i % 2 == 0 {
-            Some(0.95) // Matched
-        } else {
-            Some(0.3) // Unmatched
-        };
+        if i >= records_a.len() {
+            break;
+        }
+        let record_a = &records_a[i];
         
-        if let Some(conf) = confidence {
-            if conf >= confidence_threshold {
-                results.push(ReconciliationResultType {
-                    id: Uuid::new_v4(),
-                    job_id: Uuid::new_v4(), // This should be the actual job_id
-                    record_a_id: Uuid::new_v4(),
-                    record_b_id: Some(Uuid::new_v4()),
-                    match_type: MatchType::Exact.to_string(),
-                    confidence_score: Some(conf),
-                    status: "matched".to_string(),
-                    notes: Some(format!("Matched record {}", i)),
-                    created_at: chrono::Utc::now(),
-                    updated_at: chrono::Utc::now(),
-                });
+        // Compare with ALL records in source B (Naive O(N^2) for chunk)
+        // In production, this should use blocking/indexing (see build_exact_index)
+        for record_b in records_b {
+            // Try exact match on external_id first
+            if let (Some(id_a), Some(id_b)) = (&record_a.external_id, &record_b.external_id) {
+                let similarity = exact_algorithm.calculate_similarity(id_a, id_b);
+                if similarity >= confidence_threshold {
+                    results.push(ReconciliationResultType {
+                        id: Uuid::new_v4(),
+                        job_id: Uuid::new_v4(),
+                        record_a_id: record_a.id,
+                        record_b_id: Some(record_b.id),
+                        match_type: MatchType::Exact.to_string(),
+                        confidence_score: Some(similarity),
+                        status: "matched".to_string(),
+                        notes: Some("Exact match on external_id".to_string()),
+                        created_at: chrono::Utc::now(),
+                        updated_at: chrono::Utc::now(),
+                        match_details: None,
+                        reviewed_by: None,
+                    });
+                    // Found a match, move to next record_a
+                    continue;
+                }
+            }
+
+            // Fallback to simple amount matching if IDs don't match
+            if let (Some(amt_a), Some(amt_b)) = (record_a.amount, record_b.amount) {
+                if (amt_a - amt_b).abs() < 0.01 {
+                     results.push(ReconciliationResultType {
+                        id: Uuid::new_v4(),
+                        job_id: Uuid::new_v4(),
+                        record_a_id: record_a.id,
+                        record_b_id: Some(record_b.id),
+                        match_type: MatchType::Manual.to_string(), // Mark as manual/potential
+                        confidence_score: Some(0.8),
+                        status: "matched".to_string(),
+                        notes: Some("Match on amount".to_string()),
+                        created_at: chrono::Utc::now(),
+                        updated_at: chrono::Utc::now(),
+                        match_details: None,
+                        reviewed_by: None,
+                    });
+                }
             }
         }
     }
