@@ -17,8 +17,28 @@ import { Download } from 'lucide-react';
 import { X } from 'lucide-react';
 import { CHART_CONFIG } from '../config/AppConfig';
 import { useData } from './DataProvider';
+import type { BackendProject } from '../services/apiClient/types';
 
 // Advanced Visualization Interfaces
+interface ChartDataPoint {
+  label: string;
+  value: number;
+  category?: string;
+  metadata?: Record<string, unknown>;
+}
+
+interface FilterConfig {
+  field: string;
+  operator: string;
+  value: unknown;
+}
+
+interface ThresholdConfig {
+  value: number;
+  color: string;
+  label: string;
+}
+
 interface ChartData {
   id: string;
   name: string;
@@ -34,7 +54,7 @@ interface ChartData {
     | 'radar'
     | 'funnel'
     | 'gauge';
-  data: any[];
+  data: ChartDataPoint[];
   config: {
     title: string;
     xAxis?: string;
@@ -45,8 +65,8 @@ interface ChartData {
     animation?: boolean;
     interactive?: boolean;
     drillDown?: boolean;
-    filters?: any[];
-    thresholds?: any[];
+    filters?: FilterConfig[];
+    thresholds?: ThresholdConfig[];
   };
   insights: string[];
   drillDownData?: ChartData[];
@@ -60,7 +80,7 @@ interface ChartData {
 }
 
 interface VisualizationDashboardProps {
-  project: any;
+  project: BackendProject;
   onProgressUpdate?: (step: string) => void;
 }
 
@@ -78,8 +98,8 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
 
     // Simulate data processing
     setTimeout(() => {
-      const reconciliationData = getReconciliationData();
-      const cashflowData = getCashflowData();
+      getReconciliationData();
+      getCashflowData();
 
       const sampleCharts: ChartData[] = [
         {

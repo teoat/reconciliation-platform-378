@@ -16,6 +16,8 @@ import { DollarSign } from 'lucide-react'
 import { FileText } from 'lucide-react'
 import { X } from 'lucide-react'
 import { useData } from '../components/DataProvider'
+import type { BackendProject } from '../services/apiClient/types'
+import type { ReconciliationData } from './data/types'
 
 // AI Discrepancy Detection Interfaces
 interface AIDiscrepancyDetectionData {
@@ -64,7 +66,7 @@ interface AIPrediction {
   modelId: string
   input: Record<string, unknown>
   output: {
-    prediction: any
+    prediction: Record<string, unknown>
     confidence: number
     probabilities: Record<string, number>
     explanation: string
@@ -73,10 +75,18 @@ interface AIPrediction {
   accuracy?: number
 }
 
-
+interface CashflowData {
+  records: Array<{
+    id: string
+    amount: number
+    description: string
+    date: string
+    category?: string
+  }>
+}
 
 interface AIDiscrepancyDetectionProps {
-  project: any
+  project: BackendProject
   onProgressUpdate?: (step: string) => void
 }
 
@@ -92,11 +102,11 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
   const [filterSeverity, setFilterSeverity] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
 
-  const generateAIDetections = useCallback((reconciliationData: any, cashflowData: any): AIDiscrepancyDetectionData[] => {
+  const generateAIDetections = useCallback((reconciliationData: ReconciliationData, cashflowData: CashflowData): AIDiscrepancyDetectionData[] => {
     const detections: AIDiscrepancyDetectionData[] = []
 
     // Analyze reconciliation records for discrepancies
-    reconciliationData.records.forEach((record: any, index: number) => {
+    reconciliationData.records.forEach((record, index: number) => {
       if (record.status === 'discrepancy' && record.difference) {
         const detection: AIDiscrepancyDetectionData = {
           id: `ai-detection-${index}`,
@@ -165,7 +175,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
     return detections
   }, [])
 
-  const generateAIPredictions = useCallback((reconciliationData: any): AIPrediction[] => {
+  const generateAIPredictions = useCallback((reconciliationData: ReconciliationData): AIPrediction[] => {
     // Generate predictions for next week
     const nextWeekPredictions = [
       {
@@ -454,8 +464,16 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
           {filteredDetections.map((detection) => (
             <div
               key={detection.id}
+              role="button"
+              tabIndex={0}
               className="flex items-center justify-between p-4 border border-secondary-200 rounded-lg hover:bg-secondary-50 cursor-pointer"
               onClick={() => handleDetectionClick(detection)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleDetectionClick(detection);
+                }
+              }}
             >
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">

@@ -1,46 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Filter, Calendar, DollarSign, Hash, Type, CheckSquare, Square, Plus, Minus, ArrowUpDown, ChevronDown, ChevronUp, AlertCircle, Info, Settings } from 'lucide-react'
-import { Save } from 'lucide-react'
-import { RefreshCw } from 'lucide-react'
-import { Trash2 } from 'lucide-react'
-import { Copy } from 'lucide-react'
-import { Edit } from 'lucide-react'
-import { Eye } from 'lucide-react'
-import { EyeOff } from 'lucide-react'
-import { Lock } from 'lucide-react'
-import { Unlock } from 'lucide-react'
-import { Key } from 'lucide-react'
-import { Globe } from 'lucide-react'
-import { Database } from 'lucide-react'
-import { Cloud } from 'lucide-react'
-import { Server } from 'lucide-react'
-import { Wifi } from 'lucide-react'
-import { WifiOff } from 'lucide-react'
-import { Bell } from 'lucide-react'
-import { BellOff } from 'lucide-react'
-import { Star } from 'lucide-react'
-import { Bookmark } from 'lucide-react'
-import { Share2 } from 'lucide-react'
-import { ExternalLink } from 'lucide-react'
-import { Download } from 'lucide-react'
-import { Upload } from 'lucide-react'
-import { File } from 'lucide-react'
-import { FileText } from 'lucide-react'
-import { FileCheck } from 'lucide-react'
-import { FileX } from 'lucide-react'
-import { FilePlus } from 'lucide-react'
-import { FileMinus } from 'lucide-react'
-import { FileEdit } from 'lucide-react'
-import { FileSearch } from 'lucide-react'
-import { FileImage } from 'lucide-react'
-import { FileVideo } from 'lucide-react'
-import { FileAudio } from 'lucide-react'
-import { FileSpreadsheet } from 'lucide-react'
-import { FileCode } from 'lucide-react'
-import { FileJson } from 'lucide-react'
-import { FileArchive } from 'lucide-react'
+import { X, Filter, Save, RefreshCw, Trash2 } from 'lucide-react'
 
 interface FilterConfig {
   id: string
@@ -149,7 +110,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
     }
   }
 
-  const getInputValue = (value: any): string => {
+  const getInputValue = (value: unknown): string => {
     if (typeof value === 'string' || typeof value === 'number') {
       return String(value);
     }

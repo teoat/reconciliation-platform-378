@@ -1,16 +1,11 @@
 import React, { useState } from 'react';
 import { BookOpen } from 'lucide-react';
-import { Code } from 'lucide-react';
 import { Database } from 'lucide-react';
 import { Users } from 'lucide-react';
 import { BarChart3 } from 'lucide-react';
 import { Settings } from 'lucide-react';
-import { Play } from 'lucide-react';
 import { Copy } from 'lucide-react';
-import { ExternalLink } from 'lucide-react';
 import { CheckCircle } from 'lucide-react';
-import { AlertCircle } from 'lucide-react';
-import { Info } from 'lucide-react';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import { StatusBadge } from './ui/StatusBadge';
@@ -273,7 +268,15 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
     ],
   };
 
-  const renderEndpoint = (endpoint: any, index: number) => (
+  interface ApiEndpoint {
+    method: string;
+    endpoint: string;
+    description: string;
+    request: string | Record<string, string>;
+    response: string | Record<string, string>;
+  }
+
+  const renderEndpoint = (endpoint: ApiEndpoint, index: number) => (
     <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center space-x-3">
