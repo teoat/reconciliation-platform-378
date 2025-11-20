@@ -136,7 +136,7 @@ App → ErrorBoundary → ReduxProvider → WebSocketProvider → AuthProvider �
 
 ### **API & Architecture**
 
-- **[docs/API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md)** - REST and WebSocket API reference
+- **[docs/API_REFERENCE.md](./docs/API_REFERENCE.md)** - REST and WebSocket API reference
 - **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - System architecture overview
 - **[docs/INFRASTRUCTURE.md](./docs/INFRASTRUCTURE.md)** - Infrastructure topology
 
