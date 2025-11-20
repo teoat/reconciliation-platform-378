@@ -16,7 +16,11 @@ export const createMockStore = (initialState: Record<string, unknown> = {}) => {
 // Custom render function that includes providers
 export const render = (
   ui: ReactElement,
-  { initialState = {}, store = createMockStore(initialState), ...renderOptions }: Record<string, unknown> = {}
+  {
+    initialState = {},
+    store = createMockStore(initialState),
+    ...renderOptions
+  }: Record<string, unknown> = {}
 ) => {
   const Wrapper = ({ children }: { children: ReactNode }) => (
     <Provider store={store}>

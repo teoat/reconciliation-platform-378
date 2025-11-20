@@ -70,7 +70,9 @@ export class SecurityEventLogger {
   }
 
   async retryFailedEvents(): Promise<void> {
-    const failedEvents: FailedEvent[] = JSON.parse(localStorage.getItem('failedSecurityEvents') || '[]');
+    const failedEvents: FailedEvent[] = JSON.parse(
+      localStorage.getItem('failedSecurityEvents') || '[]'
+    );
     if (failedEvents.length === 0) return;
 
     const remainingEvents: FailedEvent[] = [];
@@ -178,7 +180,9 @@ export class SecurityEventLogger {
     metadata?: Record<string, unknown>
   ): Promise<void> {
     const severity =
-      type === SecurityEventType.MALICIOUS_FILE_DETECTED ? SecuritySeverity.HIGH : SecuritySeverity.LOW;
+      type === SecurityEventType.MALICIOUS_FILE_DETECTED
+        ? SecuritySeverity.HIGH
+        : SecuritySeverity.LOW;
 
     await this.logSecurityEvent({
       type,
@@ -228,4 +232,3 @@ export class SecurityEventLogger {
     return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
   }
 }
-

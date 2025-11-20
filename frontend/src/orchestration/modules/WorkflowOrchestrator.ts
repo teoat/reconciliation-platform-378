@@ -30,10 +30,7 @@ export class WorkflowOrchestrator {
   /**
    * Update workflow state
    */
-  async updateWorkflowState(
-    workflowId: string,
-    updates: Partial<WorkflowState>
-  ): Promise<void> {
+  async updateWorkflowState(workflowId: string, updates: Partial<WorkflowState>): Promise<void> {
     const currentState = this.getWorkflowState(workflowId);
     if (!currentState) {
       logger.warn('Workflow not found', { workflowId });
@@ -43,7 +40,10 @@ export class WorkflowOrchestrator {
     const updatedState: WorkflowState = {
       ...currentState,
       ...updates,
-      progress: this.calculateProgress(updates.completedSteps || currentState.completedSteps, currentState.totalSteps),
+      progress: this.calculateProgress(
+        updates.completedSteps || currentState.completedSteps,
+        currentState.totalSteps
+      ),
     };
 
     this.workflowStates.set(workflowId, updatedState);
@@ -121,4 +121,3 @@ export function getWorkflowOrchestrator(): WorkflowOrchestrator {
   }
   return workflowOrchestratorInstance;
 }
-

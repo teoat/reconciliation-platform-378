@@ -32,12 +32,12 @@ export class ApiService {
 
   /**
    * Authenticates a user with email and password.
-   * 
+   *
    * @param email - User's email address
    * @param password - User's password
    * @returns Promise resolving to authentication response with token and user data
    * @throws {ApiError} If authentication fails (invalid credentials, user not found, etc.)
-   * 
+   *
    * @example
    * ```typescript
    * try {
@@ -57,7 +57,7 @@ export class ApiService {
 
   /**
    * Registers a new user account.
-   * 
+   *
    * @param userData - User registration data
    * @param userData.email - User's email address (must be unique)
    * @param userData.password - User's password (min 8 characters)
@@ -66,7 +66,7 @@ export class ApiService {
    * @param userData.role - Optional user role (default: 'user')
    * @returns Promise resolving to registration response with user data
    * @throws {ApiError} If registration fails (email exists, validation error, etc.)
-   * 
+   *
    * @example
    * ```typescript
    * const response = await ApiService.register({
@@ -90,9 +90,9 @@ export class ApiService {
 
   /**
    * Logs out the current user and invalidates the session token.
-   * 
+   *
    * @returns Promise resolving when logout is complete
-   * 
+   *
    * @example
    * ```typescript
    * await ApiService.logout();
@@ -106,10 +106,10 @@ export class ApiService {
 
   /**
    * Gets the currently authenticated user's information.
-   * 
+   *
    * @returns Promise resolving to current user data
    * @throws {ApiError} If user is not authenticated or token is invalid
-   * 
+   *
    * @example
    * ```typescript
    * const user = await ApiService.getCurrentUser();
@@ -122,13 +122,13 @@ export class ApiService {
 
   /**
    * Changes the password for the currently authenticated user.
-   * 
+   *
    * @param passwordData - Password change data
    * @param passwordData.currentPassword - User's current password
    * @param passwordData.newPassword - New password (min 8 characters)
    * @returns Promise resolving when password is changed
    * @throws {ApiError} If current password is incorrect or new password doesn't meet requirements
-   * 
+   *
    * @example
    * ```typescript
    * await ApiService.changePassword({
@@ -147,7 +147,7 @@ export class ApiService {
 
   /**
    * Gets a paginated list of users with optional filtering.
-   * 
+   *
    * @param params - Query parameters for filtering and pagination
    * @param params.page - Page number (1-based, default: 1)
    * @param params.per_page - Items per page (default: 10, max: 100)
@@ -155,7 +155,7 @@ export class ApiService {
    * @param params.role - Filter by user role (user, analyst, manager, admin)
    * @param params.status - Filter by status (active, inactive)
    * @returns Promise resolving to paginated list of users
-   * 
+   *
    * @example
    * ```typescript
    * const users = await ApiService.getUsers({
@@ -166,23 +166,25 @@ export class ApiService {
    * });
    * ```
    */
-  static async getUsers(params: {
-    page?: number;
-    per_page?: number;
-    search?: string;
-    role?: string;
-    status?: string;
-  } = {}) {
+  static async getUsers(
+    params: {
+      page?: number;
+      per_page?: number;
+      search?: string;
+      role?: string;
+      status?: string;
+    } = {}
+  ) {
     return ApiService.usersService.getUsers(params);
   }
 
   /**
    * Gets a single user by their ID.
-   * 
+   *
    * @param userId - UUID of the user
    * @returns Promise resolving to user data
    * @throws {ApiError} If user is not found or access is denied
-   * 
+   *
    * @example
    * ```typescript
    * const user = await ApiService.getUserById('123e4567-e89b-12d3-a456-426614174000');
@@ -223,12 +225,14 @@ export class ApiService {
   // PROJECT MANAGEMENT SERVICE
   // ============================================================================
 
-  static async getProjects(params: {
-    page?: number;
-    per_page?: number;
-    search?: string;
-    status?: string;
-  } = {}) {
+  static async getProjects(
+    params: {
+      page?: number;
+      per_page?: number;
+      search?: string;
+      status?: string;
+    } = {}
+  ) {
     return ApiService.projectsService.getProjects(params);
   }
 
@@ -267,11 +271,7 @@ export class ApiService {
     return ApiService.filesService.getDataSources(projectId);
   }
 
-  static async uploadFile(
-    projectId: string,
-    file: File,
-    dataSourceName?: string
-  ) {
+  static async uploadFile(projectId: string, file: File, dataSourceName?: string) {
     return ApiService.filesService.uploadFile(projectId, file, dataSourceName);
   }
 
@@ -333,7 +333,11 @@ export class ApiService {
       status?: 'matched' | 'unmatched' | 'discrepancy' | 'resolved';
     }
   ) {
-    return ApiService.reconciliationService.updateReconciliationMatch(projectId, matchId, matchData);
+    return ApiService.reconciliationService.updateReconciliationMatch(
+      projectId,
+      matchId,
+      matchData
+    );
   }
 
   static async approveMatch(projectId: string, matchId: string) {
@@ -419,10 +423,10 @@ export class ApiService {
 
   static async healthCheck() {
     try {
-        const response = await apiClient.healthCheck();
-        if (!response.success || response.error) {
-          const errorMessage = getErrorMessageFromApiError(response.error);
-          throw new Error(errorMessage);
+      const response = await apiClient.healthCheck();
+      if (!response.success || response.error) {
+        const errorMessage = getErrorMessageFromApiError(response.error);
+        throw new Error(errorMessage);
       }
       return response.data;
     } catch (error) {
@@ -461,4 +465,3 @@ export class ApiService {
 }
 
 export default ApiService;
-

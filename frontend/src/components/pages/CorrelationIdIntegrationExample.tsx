@@ -5,11 +5,7 @@ import { logger } from '../services/logger'; * Correlation ID Integration Exampl
  */
 
 import React, { useState } from 'react';
-import {
-  UserFriendlyError,
-  ErrorCodeDisplay,
-  ErrorHistory,
-} from '../ui';
+import { UserFriendlyError, ErrorCodeDisplay, ErrorHistory } from '../ui';
 import { useApiErrorHandler } from '../../hooks/useApiErrorHandler';
 import { extractErrorFromFetchResponseAsync } from '../../utils/errorExtractionAsync';
 
@@ -32,19 +28,16 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
   const fetchDataWithAutoExtraction = async () => {
     setLoading(true);
     try {
-      const result = await handleApiCall(
-        fetch('/api/data'),
-        {
-          onSuccess: (data) => {
-            setData(data);
-            logger.info('Success:', data);
-          },
-          onError: (extracted) => {
-            logger.info('Error with correlation ID:', extracted.correlationId);
-          },
-        }
-      );
-      
+      const result = await handleApiCall(fetch('/api/data'), {
+        onSuccess: (data) => {
+          setData(data);
+          logger.info('Success:', data);
+        },
+        onError: (extracted) => {
+          logger.info('Error with correlation ID:', extracted.correlationId);
+        },
+      });
+
       if (result) {
         setData(result);
       }
@@ -58,24 +51,20 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
     setLoading(true);
     try {
       const response = await fetch('/api/data');
-      
+
       if (!response.ok) {
         // Extract error with correlation ID
         const extracted = await extractErrorFromFetchResponseAsync(
           response,
           new Error('Request failed')
         );
-        
+
         // Set error with correlation ID
-        actions.setError(
-          extracted.error,
-          extracted.errorCode,
-          extracted.correlationId
-        );
-        
+        actions.setError(extracted.error, extracted.errorCode, extracted.correlationId);
+
         logger.info('Correlation ID:', extracted.correlationId);
         logger.info('Error Code:', extracted.errorCode);
-        
+
         return;
       }
 
@@ -95,23 +84,23 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
     setLoading(true);
     try {
       const response = await fetch('/api/data');
-      
+
       // Extract correlation ID directly from headers
       const correlationId =
         response.headers.get('x-correlation-id') ||
         response.headers.get('X-Correlation-ID') ||
         undefined;
-      
+
       logger.info('Correlation ID from headers:', correlationId);
-      
+
       if (!response.ok) {
         const extracted = await extractErrorFromFetchResponseAsync(response);
-        
+
         // Verify correlation ID was extracted
         if (correlationId && extracted.correlationId === correlationId) {
           logger.info('✅ Correlation ID matches!');
         }
-        
+
         actions.setError(extracted.error, extracted.errorCode, extracted.correlationId);
         return;
       }
@@ -227,9 +216,7 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
       {data && (
         <div className="bg-gray-50 border rounded p-4">
           <h3 className="font-semibold mb-2">Response Data</h3>
-          <pre className="text-xs overflow-auto">
-            {JSON.stringify(data, null, 2)}
-          </pre>
+          <pre className="text-xs overflow-auto">{JSON.stringify(data, null, 2)}</pre>
         </div>
       )}
     </div>
@@ -237,5 +224,3 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
 };
 
 export default CorrelationIdIntegrationExample;
-
-

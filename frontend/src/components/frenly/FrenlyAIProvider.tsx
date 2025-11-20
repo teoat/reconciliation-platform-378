@@ -1,121 +1,121 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
-import { logger } from '@/services/logger'
-import { FrenlyGuidance, FrenlyTips } from './FrenlyGuidance'
-import { FrenlyProvider as OriginalFrenlyProvider } from './FrenlyProvider'
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { logger } from '@/services/logger';
+import { FrenlyGuidance, FrenlyTips } from './FrenlyGuidance';
+import { FrenlyProvider as OriginalFrenlyProvider } from './FrenlyProvider';
 
 export interface FrenlyAIContextType {
   // Progress tracking
-  userProgress: string[]
-  updateProgress: (stepId: string) => void
-  resetProgress: () => void
-  
+  userProgress: string[];
+  updateProgress: (stepId: string) => void;
+  resetProgress: () => void;
+
   // Tutorial system
-  isTutorialActive: boolean
-  startTutorial: () => void
-  stopTutorial: () => void
-  
+  isTutorialActive: boolean;
+  startTutorial: () => void;
+  stopTutorial: () => void;
+
   // Tips system
-  showTips: boolean
-  toggleTips: () => void
-  
+  showTips: boolean;
+  toggleTips: () => void;
+
   // Current context
-  currentPage: string
-  updatePage: (page: string) => void
-  
+  currentPage: string;
+  updatePage: (page: string) => void;
+
   // AI personality
   personality: {
-    mood: 'happy' | 'excited' | 'concerned' | 'proud' | 'curious'
-    energy: 'low' | 'medium' | 'high'
-    helpfulness: number
-  }
-  updatePersonality: (updates: Partial<FrenlyAIContextType['personality']>) => void
+    mood: 'happy' | 'excited' | 'concerned' | 'proud' | 'curious';
+    energy: 'low' | 'medium' | 'high';
+    helpfulness: number;
+  };
+  updatePersonality: (updates: Partial<FrenlyAIContextType['personality']>) => void;
 }
 
-const FrenlyAIContext = createContext<FrenlyAIContextType | undefined>(undefined)
+const FrenlyAIContext = createContext<FrenlyAIContextType | undefined>(undefined);
 
 export const useFrenlyAI = () => {
-  const context = useContext(FrenlyAIContext)
+  const context = useContext(FrenlyAIContext);
   if (!context) {
-    throw new Error('useFrenlyAI must be used within a FrenlyAIProvider')
+    throw new Error('useFrenlyAI must be used within a FrenlyAIProvider');
   }
-  return context
-}
+  return context;
+};
 
 interface FrenlyAIProviderProps {
-  children: ReactNode
-  initialProgress?: string[]
-  enableTips?: boolean
-  enableTutorial?: boolean
+  children: ReactNode;
+  initialProgress?: string[];
+  enableTips?: boolean;
+  enableTutorial?: boolean;
 }
 
 export const FrenlyAIProvider: React.FC<FrenlyAIProviderProps> = ({
   children,
   initialProgress = [],
   enableTips = true,
-  enableTutorial = true
+  enableTutorial = true,
 }) => {
-  const [userProgress, setUserProgress] = useState<string[]>(initialProgress)
-  const [isTutorialActive, setIsTutorialActive] = useState(false)
-  const [showTips, setShowTips] = useState(enableTips)
-  const [currentPage, setCurrentPage] = useState('dashboard')
+  const [userProgress, setUserProgress] = useState<string[]>(initialProgress);
+  const [isTutorialActive, setIsTutorialActive] = useState(false);
+  const [showTips, setShowTips] = useState(enableTips);
+  const [currentPage, setCurrentPage] = useState('dashboard');
   const [personality, setPersonality] = useState({
     mood: 'happy' as const,
     energy: 'medium' as const,
-    helpfulness: 8
-  })
+    helpfulness: 8,
+  });
 
   // Load progress from localStorage
   useEffect(() => {
-    const savedProgress = localStorage.getItem('frenly-progress')
+    const savedProgress = localStorage.getItem('frenly-progress');
     if (savedProgress) {
       try {
-        setUserProgress(JSON.parse(savedProgress))
+        setUserProgress(JSON.parse(savedProgress));
       } catch (error) {
-        logger.error('Failed to load Frenly progress:', error)
+        logger.error('Failed to load Frenly progress:', error);
       }
     }
-  }, [])
+  }, []);
 
   // Save progress to localStorage
   useEffect(() => {
-    localStorage.setItem('frenly-progress', JSON.stringify(userProgress))
-  }, [userProgress])
+    localStorage.setItem('frenly-progress', JSON.stringify(userProgress));
+  }, [userProgress]);
 
   const updateProgress = (stepId: string) => {
-    setUserProgress(prev => {
+    setUserProgress((prev) => {
       if (!prev.includes(stepId)) {
-        return [...prev, stepId]
+        return [...prev, stepId];
       }
-      return prev
-    })
-  }
+      return prev;
+    });
+  };
 
   const resetProgress = () => {
-    setUserProgress([])
-    localStorage.removeItem('frenly-progress')
-  }
+    setUserProgress([]);
+    localStorage.removeItem('frenly-progress');
+  };
 
   const startTutorial = () => {
-    setIsTutorialActive(true)
-    setPersonality(prev => ({ ...prev, mood: 'excited', energy: 'high' }))
-  }
+    setIsTutorialActive(true);
+    setPersonality((prev) => ({ ...prev, mood: 'excited', energy: 'high' }));
+  };
 
   const stopTutorial = () => {
-    setIsTutorialActive(false)
-    setPersonality(prev => ({ ...prev, mood: 'proud', energy: 'medium' }))
-  }
+    setIsTutorialActive(false);
+    setPersonality((prev) => ({ ...prev, mood: 'proud', energy: 'medium' }));
+  };
 
   const toggleTips = () => {
-    setShowTips(prev => !prev)
-  }
+    setShowTips((prev) => !prev);
+  };
 
   const updatePage = (page: string) => {
-    setCurrentPage(page)
-  }
+    setCurrentPage(page);
+  };
 
   const updatePersonality = (updates: Partial<FrenlyAIContextType['personality']>) => {
-    setPersonality(prev => ({ ...prev, ...updates }))
-  }
+    setPersonality((prev) => ({ ...prev, ...updates }));
+  };
 
   const contextValue: FrenlyAIContextType = {
     userProgress,
@@ -129,45 +129,47 @@ export const FrenlyAIProvider: React.FC<FrenlyAIProviderProps> = ({
     currentPage,
     updatePage,
     personality,
-    updatePersonality
-  }
+    updatePersonality,
+  };
 
   const tips = [
     {
       id: 'upload-tip',
       title: '💡 Upload Tip',
-      content: 'Make sure your CSV files have headers in the first row for better data recognition.',
+      content:
+        'Make sure your CSV files have headers in the first row for better data recognition.',
       category: 'upload' as const,
-      icon: <span>📁</span>
+      icon: <span>📁</span>,
     },
     {
       id: 'reconciliation-tip',
       title: '⚡ Reconciliation Tip',
-      content: 'Start with a higher tolerance level and gradually reduce it to find the best matches.',
+      content:
+        'Start with a higher tolerance level and gradually reduce it to find the best matches.',
       category: 'reconciliation' as const,
-      icon: <span>🔍</span>
+      icon: <span>🔍</span>,
     },
     {
       id: 'visualization-tip',
       title: '📊 Visualization Tip',
       content: 'Use different chart types to understand your data patterns better.',
       category: 'visualization' as const,
-      icon: <span>📈</span>
+      icon: <span>📈</span>,
     },
     {
       id: 'general-tip',
       title: '🎯 General Tip',
       content: 'Save your work frequently and use the auto-save feature to avoid data loss.',
       category: 'general' as const,
-      icon: <span>💾</span>
-    }
-  ]
+      icon: <span>💾</span>,
+    },
+  ];
 
   return (
     <FrenlyAIContext.Provider value={contextValue}>
       <OriginalFrenlyProvider>
         {children}
-        
+
         {/* Frenly AI Components */}
         {enableTutorial && (
           <FrenlyGuidance
@@ -177,17 +179,12 @@ export const FrenlyAIProvider: React.FC<FrenlyAIProviderProps> = ({
             onStartTutorial={startTutorial}
           />
         )}
-        
-        {enableTips && showTips && (
-          <FrenlyTips
-            tips={tips}
-            currentPage={currentPage}
-          />
-        )}
+
+        {enableTips && showTips && <FrenlyTips tips={tips} currentPage={currentPage} />}
       </OriginalFrenlyProvider>
     </FrenlyAIContext.Provider>
-  )
-}
+  );
+};
 
 // Hook for easy access to Frenly AI features
 export const useFrenlyFeatures = () => {
@@ -199,13 +196,13 @@ export const useFrenlyFeatures = () => {
     stopTutorial,
     showTips,
     toggleTips,
-    personality
-  } = useFrenlyAI()
+    personality,
+  } = useFrenlyAI();
 
   const getProgressPercentage = () => {
-    const totalSteps = 7 // Total number of guidance steps
-    return Math.round((userProgress.length / totalSteps) * 100)
-  }
+    const totalSteps = 7; // Total number of guidance steps
+    return Math.round((userProgress.length / totalSteps) * 100);
+  };
 
   const getNextStep = () => {
     const allSteps = [
@@ -215,23 +212,23 @@ export const useFrenlyFeatures = () => {
       'review-matches',
       'adjudicate-discrepancies',
       'visualize-results',
-      'export-summary'
-    ]
-    return allSteps.find(step => !userProgress.includes(step))
-  }
+      'export-summary',
+    ];
+    return allSteps.find((step) => !userProgress.includes(step));
+  };
 
   const isStepCompleted = (stepId: string) => {
-    return userProgress.includes(stepId)
-  }
+    return userProgress.includes(stepId);
+  };
 
   const getEncouragementMessage = () => {
-    const progress = getProgressPercentage()
-    if (progress === 100) return "🎉 Congratulations! You've mastered the platform!"
-    if (progress >= 75) return "🚀 You're almost there! Just a few more steps!"
-    if (progress >= 50) return "💪 Great progress! You're halfway through!"
-    if (progress >= 25) return "🌟 Nice start! Keep going!"
-    return "👋 Welcome! Let's get you started!"
-  }
+    const progress = getProgressPercentage();
+    if (progress === 100) return "🎉 Congratulations! You've mastered the platform!";
+    if (progress >= 75) return "🚀 You're almost there! Just a few more steps!";
+    if (progress >= 50) return "💪 Great progress! You're halfway through!";
+    if (progress >= 25) return '🌟 Nice start! Keep going!';
+    return "👋 Welcome! Let's get you started!";
+  };
 
   return {
     // Progress
@@ -241,17 +238,17 @@ export const useFrenlyFeatures = () => {
     getNextStep,
     isStepCompleted,
     getEncouragementMessage,
-    
+
     // Tutorial
     isTutorialActive,
     startTutorial,
     stopTutorial,
-    
+
     // Tips
     showTips,
     toggleTips,
-    
+
     // Personality
-    personality
-  }
-}
+    personality,
+  };
+};

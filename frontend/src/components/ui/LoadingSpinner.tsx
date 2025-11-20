@@ -1,26 +1,24 @@
-import React from 'react'
-import { Loader2 } from 'lucide-react'
+import React from 'react';
+import { Loader2 } from 'lucide-react';
 
 // Base loading spinner
 export const LoadingSpinner: React.FC<{
-  size?: 'sm' | 'md' | 'lg'
-  className?: string
+  size?: 'sm' | 'md' | 'lg';
+  className?: string;
 }> = ({ size = 'md', className = '' }) => {
   const sizeClasses = {
     sm: 'h-4 w-4',
     md: 'h-6 w-6',
-    lg: 'h-8 w-8'
-  }
+    lg: 'h-8 w-8',
+  };
 
-  return (
-    <Loader2 className={`animate-spin ${sizeClasses[size]} ${className}`} />
-  )
-}
+  return <Loader2 className={`animate-spin ${sizeClasses[size]} ${className}`} />;
+};
 
 // Full page loading
 export const LoadingPage: React.FC<{
-  message?: string
-  className?: string
+  message?: string;
+  className?: string;
 }> = ({ message = 'Loading...', className = '' }) => (
   <div className={`min-h-screen bg-gray-50 flex items-center justify-center ${className}`}>
     <div className="text-center">
@@ -28,11 +26,11 @@ export const LoadingPage: React.FC<{
       <p className="text-gray-600">{message}</p>
     </div>
   </div>
-)
+);
 
 // Card loading skeleton
 export const LoadingCard: React.FC<{
-  className?: string
+  className?: string;
 }> = ({ className = '' }) => (
   <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
     <div className="animate-pulse">
@@ -44,17 +42,24 @@ export const LoadingCard: React.FC<{
       </div>
     </div>
   </div>
-)
+);
 
 // Button loading state
 export const LoadingButton: React.FC<{
-  loading?: boolean
-  children: React.ReactNode
-  className?: string
-  onClick?: () => void
-  disabled?: boolean
-  type?: 'button' | 'submit' | 'reset'
-}> = ({ loading = false, children, className = '', onClick, disabled = false, type = 'button' }) => (
+  loading?: boolean;
+  children: React.ReactNode;
+  className?: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  type?: 'button' | 'submit' | 'reset';
+}> = ({
+  loading = false,
+  children,
+  className = '',
+  onClick,
+  disabled = false,
+  type = 'button',
+}) => (
   <button
     type={type}
     onClick={onClick}
@@ -64,13 +69,13 @@ export const LoadingButton: React.FC<{
     {loading && <LoadingSpinner size="sm" className="mr-2" />}
     {children}
   </button>
-)
+);
 
 // Table loading skeleton
 export const SkeletonTable: React.FC<{
-  rows?: number
-  columns?: number
-  className?: string
+  rows?: number;
+  columns?: number;
+  className?: string;
 }> = ({ rows = 5, columns = 4, className = '' }) => (
   <div className={`bg-white rounded-lg shadow overflow-hidden ${className}`}>
     <div className="px-6 py-4 border-b border-gray-200">
@@ -94,11 +99,11 @@ export const SkeletonTable: React.FC<{
       ))}
     </div>
   </div>
-)
+);
 
 // Dashboard loading skeleton
 export const SkeletonDashboard: React.FC<{
-  className?: string
+  className?: string;
 }> = ({ className = '' }) => (
   <div className={`space-y-6 ${className}`}>
     {/* Header skeleton */}
@@ -123,12 +128,12 @@ export const SkeletonDashboard: React.FC<{
     {/* Table skeleton */}
     <SkeletonTable />
   </div>
-)
+);
 
 // Form loading skeleton
 export const SkeletonForm: React.FC<{
-  fields?: number
-  className?: string
+  fields?: number;
+  className?: string;
 }> = ({ fields = 4, className = '' }) => (
   <div className={`bg-white rounded-lg shadow p-6 ${className}`}>
     <div className="animate-pulse space-y-6">
@@ -144,7 +149,7 @@ export const SkeletonForm: React.FC<{
       </div>
     </div>
   </div>
-)
+);
 
 // Specific loading states for different sections
 export const ProjectsLoading: React.FC = () => (
@@ -158,7 +163,7 @@ export const ProjectsLoading: React.FC = () => (
       ))}
     </div>
   </div>
-)
+);
 
 export const ReconciliationLoading: React.FC = () => (
   <div className="space-y-6">
@@ -182,7 +187,7 @@ export const ReconciliationLoading: React.FC = () => (
 
     <SkeletonTable rows={8} columns={5} />
   </div>
-)
+);
 
 export const AnalyticsLoading: React.FC = () => (
   <div className="space-y-6">
@@ -214,7 +219,7 @@ export const AnalyticsLoading: React.FC = () => (
 
     <SkeletonTable rows={7} columns={4} />
   </div>
-)
+);
 
 export const UsersLoading: React.FC = () => (
   <div className="space-y-6">
@@ -237,14 +242,14 @@ export const UsersLoading: React.FC = () => (
     {/* Users table skeleton */}
     <SkeletonTable rows={10} columns={6} />
   </div>
-)
+);
 
 // Loading overlay for modals and forms
 export const LoadingOverlay: React.FC<{
-  isLoading: boolean
-  children: React.ReactNode
-  message?: string
-  className?: string
+  isLoading: boolean;
+  children: React.ReactNode;
+  message?: string;
+  className?: string;
 }> = ({ isLoading, children, message = 'Loading...', className = '' }) => (
   <div className={`relative ${className}`}>
     {children}
@@ -257,71 +262,54 @@ export const LoadingOverlay: React.FC<{
       </div>
     )}
   </div>
-)
+);
 
 // Progress bar component
 export const ProgressBar: React.FC<{
-  progress: number
-  className?: string
-  showPercentage?: boolean
-  color?: 'blue' | 'green' | 'yellow' | 'red'
-}> = ({ 
-  progress, 
-  className = '', 
-  showPercentage = true,
-  color = 'blue'
-}) => {
+  progress: number;
+  className?: string;
+  showPercentage?: boolean;
+  color?: 'blue' | 'green' | 'yellow' | 'red';
+}> = ({ progress, className = '', showPercentage = true, color = 'blue' }) => {
   const colorClasses = {
     blue: 'bg-blue-600',
     green: 'bg-green-600',
     yellow: 'bg-yellow-600',
-    red: 'bg-red-600'
-  }
+    red: 'bg-red-600',
+  };
 
   return (
     <div className={`w-full ${className}`}>
       <div className="flex justify-between text-sm text-gray-600 mb-1">
         <span>Progress</span>
-        {showPercentage && (
-          <span>{Math.round(progress)}%</span>
-        )}
+        {showPercentage && <span>{Math.round(progress)}%</span>}
       </div>
       <div className="w-full bg-gray-200 rounded-full h-2">
-        <div 
+        <div
           className={`h-2 rounded-full transition-all duration-300 ${colorClasses[color]}`}
           style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
         />
       </div>
     </div>
-  )
-}
+  );
+};
 
 // Circular progress indicator
 export const CircularProgress: React.FC<{
-  progress: number
-  size?: number
-  strokeWidth?: number
-  className?: string
-  showPercentage?: boolean
-}> = ({ 
-  progress, 
-  size = 40, 
-  strokeWidth = 4, 
-  className = '',
-  showPercentage = true
-}) => {
-  const radius = (size - strokeWidth) / 2
-  const circumference = radius * 2 * Math.PI
-  const strokeDasharray = circumference
-  const strokeDashoffset = circumference - (progress / 100) * circumference
+  progress: number;
+  size?: number;
+  strokeWidth?: number;
+  className?: string;
+  showPercentage?: boolean;
+}> = ({ progress, size = 40, strokeWidth = 4, className = '', showPercentage = true }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDasharray = circumference;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
 
   return (
     <div className={`relative inline-flex items-center justify-center ${className}`}>
-      <svg
-        width={size}
-        height={size}
-        className="transform -rotate-90"
-      >
+      <svg width={size} height={size} className="transform -rotate-90">
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -344,10 +332,8 @@ export const CircularProgress: React.FC<{
         />
       </svg>
       {showPercentage && (
-        <span className="absolute text-xs font-medium text-gray-600">
-          {Math.round(progress)}%
-        </span>
+        <span className="absolute text-xs font-medium text-gray-600">{Math.round(progress)}%</span>
       )}
     </div>
-  )
-}
+  );
+};

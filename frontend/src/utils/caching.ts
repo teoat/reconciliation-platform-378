@@ -1,5 +1,5 @@
 // ============================================================================
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 // CACHING UTILITIES - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
@@ -8,27 +8,27 @@ import { logger } from '@/services/logger'
 // ============================================================================
 
 export interface CacheConfig {
-  maxAge: number
-  staleWhileRevalidate: number
-  maxSize: number
-  ttl: number
+  maxAge: number;
+  staleWhileRevalidate: number;
+  maxSize: number;
+  ttl: number;
 }
 
 export interface CacheEntry<T> {
-  data: T
-  timestamp: number
-  expiresAt: number
-  accessCount: number
-  lastAccessed: number
+  data: T;
+  timestamp: number;
+  expiresAt: number;
+  accessCount: number;
+  lastAccessed: number;
 }
 
 export interface CacheStats {
-  hits: number
-  misses: number
-  size: number
-  maxSize: number
-  hitRate: number
-  missRate: number
+  hits: number;
+  misses: number;
+  size: number;
+  maxSize: number;
+  hitRate: number;
+  missRate: number;
 }
 
 // ============================================================================
@@ -36,12 +36,12 @@ export interface CacheStats {
 // ============================================================================
 
 export class MemoryCache<T = unknown> {
-  private cache = new Map<string, CacheEntry<T>>()
-  private config: CacheConfig
+  private cache = new Map<string, CacheEntry<T>>();
+  private config: CacheConfig;
   private stats = {
     hits: 0,
     misses: 0,
-  }
+  };
 
   constructor(config: Partial<CacheConfig> = {}) {
     this.config = {
@@ -50,17 +50,17 @@ export class MemoryCache<T = unknown> {
       maxSize: 100,
       ttl: 15 * 60 * 1000, // 15 minutes
       ...config,
-    }
+    };
   }
 
   // Set cache entry
   set(key: string, data: T, ttl?: number): void {
-    const now = Date.now()
-    const expiresAt = now + (ttl || this.config.ttl)
+    const now = Date.now();
+    const expiresAt = now + (ttl || this.config.ttl);
 
     // Remove oldest entries if cache is full
     if (this.cache.size >= this.config.maxSize) {
-      this.evictOldest()
+      this.evictOldest();
     }
 
     this.cache.set(key, {
@@ -69,67 +69,67 @@ export class MemoryCache<T = unknown> {
       expiresAt,
       accessCount: 0,
       lastAccessed: now,
-    })
+    });
   }
 
   // Get cache entry
   get(key: string): T | null {
-    const entry = this.cache.get(key)
-    
+    const entry = this.cache.get(key);
+
     if (!entry) {
-      this.stats.misses++
-      return null
+      this.stats.misses++;
+      return null;
     }
 
-    const now = Date.now()
+    const now = Date.now();
 
     // Check if entry is expired
     if (now > entry.expiresAt) {
-      this.cache.delete(key)
-      this.stats.misses++
-      return null
+      this.cache.delete(key);
+      this.stats.misses++;
+      return null;
     }
 
     // Update access statistics
-    entry.accessCount++
-    entry.lastAccessed = now
-    this.stats.hits++
+    entry.accessCount++;
+    entry.lastAccessed = now;
+    this.stats.hits++;
 
-    return entry.data
+    return entry.data;
   }
 
   // Check if key exists and is valid
   has(key: string): boolean {
-    const entry = this.cache.get(key)
-    
+    const entry = this.cache.get(key);
+
     if (!entry) {
-      return false
+      return false;
     }
 
-    const now = Date.now()
+    const now = Date.now();
     if (now > entry.expiresAt) {
-      this.cache.delete(key)
-      return false
+      this.cache.delete(key);
+      return false;
     }
 
-    return true
+    return true;
   }
 
   // Delete cache entry
   delete(key: string): boolean {
-    return this.cache.delete(key)
+    return this.cache.delete(key);
   }
 
   // Clear all cache entries
   clear(): void {
-    this.cache.clear()
-    this.stats.hits = 0
-    this.stats.misses = 0
+    this.cache.clear();
+    this.stats.hits = 0;
+    this.stats.misses = 0;
   }
 
   // Get cache statistics
   getStats(): CacheStats {
-    const total = this.stats.hits + this.stats.misses
+    const total = this.stats.hits + this.stats.misses;
     return {
       hits: this.stats.hits,
       misses: this.stats.misses,
@@ -137,32 +137,32 @@ export class MemoryCache<T = unknown> {
       maxSize: this.config.maxSize,
       hitRate: total > 0 ? this.stats.hits / total : 0,
       missRate: total > 0 ? this.stats.misses / total : 0,
-    }
+    };
   }
 
   // Evict oldest entries
   private evictOldest(): void {
-    let oldestKey = ''
-    let oldestTime = Date.now()
+    let oldestKey = '';
+    let oldestTime = Date.now();
 
     for (const [key, entry] of this.cache.entries()) {
       if (entry.lastAccessed < oldestTime) {
-        oldestTime = entry.lastAccessed
-        oldestKey = key
+        oldestTime = entry.lastAccessed;
+        oldestKey = key;
       }
     }
 
     if (oldestKey) {
-      this.cache.delete(oldestKey)
+      this.cache.delete(oldestKey);
     }
   }
 
   // Clean expired entries
   cleanExpired(): void {
-    const now = Date.now()
+    const now = Date.now();
     for (const [key, entry] of this.cache.entries()) {
       if (now > entry.expiresAt) {
-        this.cache.delete(key)
+        this.cache.delete(key);
       }
     }
   }
@@ -173,25 +173,25 @@ export class MemoryCache<T = unknown> {
 // ============================================================================
 
 export class LocalStorageCache<T = any> {
-  private prefix: string
-  private config: CacheConfig
+  private prefix: string;
+  private config: CacheConfig;
 
   constructor(prefix: string = 'cache_', config: Partial<CacheConfig> = {}) {
-    this.prefix = prefix
+    this.prefix = prefix;
     this.config = {
       maxAge: 5 * 60 * 1000, // 5 minutes
       staleWhileRevalidate: 10 * 60 * 1000, // 10 minutes
       maxSize: 50,
       ttl: 15 * 60 * 1000, // 15 minutes
       ...config,
-    }
+    };
   }
 
   // Set cache entry
   set(key: string, data: T, ttl?: number): void {
     try {
-      const now = Date.now()
-      const expiresAt = now + (ttl || this.config.ttl)
+      const now = Date.now();
+      const expiresAt = now + (ttl || this.config.ttl);
 
       const entry: CacheEntry<T> = {
         data,
@@ -199,120 +199,117 @@ export class LocalStorageCache<T = any> {
         expiresAt,
         accessCount: 0,
         lastAccessed: now,
-      }
+      };
 
-      localStorage.setItem(
-        `${this.prefix}${key}`,
-        JSON.stringify(entry)
-      )
+      localStorage.setItem(`${this.prefix}${key}`, JSON.stringify(entry));
     } catch (error) {
-      logger.warn('Failed to set cache entry:', error)
+      logger.warn('Failed to set cache entry:', error);
     }
   }
 
   // Get cache entry
   get(key: string): T | null {
     try {
-      const stored = localStorage.getItem(`${this.prefix}${key}`)
-      
+      const stored = localStorage.getItem(`${this.prefix}${key}`);
+
       if (!stored) {
-        return null
+        return null;
       }
 
-      const entry: CacheEntry<T> = JSON.parse(stored)
-      const now = Date.now()
+      const entry: CacheEntry<T> = JSON.parse(stored);
+      const now = Date.now();
 
       // Check if entry is expired
       if (now > entry.expiresAt) {
-        localStorage.removeItem(`${this.prefix}${key}`)
-        return null
+        localStorage.removeItem(`${this.prefix}${key}`);
+        return null;
       }
 
       // Update access statistics
-      entry.accessCount++
-      entry.lastAccessed = now
-      localStorage.setItem(`${this.prefix}${key}`, JSON.stringify(entry))
+      entry.accessCount++;
+      entry.lastAccessed = now;
+      localStorage.setItem(`${this.prefix}${key}`, JSON.stringify(entry));
 
-      return entry.data
+      return entry.data;
     } catch (error) {
-      logger.warn('Failed to get cache entry:', error)
-      return null
+      logger.warn('Failed to get cache entry:', error);
+      return null;
     }
   }
 
   // Check if key exists and is valid
   has(key: string): boolean {
     try {
-      const stored = localStorage.getItem(`${this.prefix}${key}`)
-      
+      const stored = localStorage.getItem(`${this.prefix}${key}`);
+
       if (!stored) {
-        return false
+        return false;
       }
 
-      const entry: CacheEntry<T> = JSON.parse(stored)
-      const now = Date.now()
+      const entry: CacheEntry<T> = JSON.parse(stored);
+      const now = Date.now();
 
       if (now > entry.expiresAt) {
-        localStorage.removeItem(`${this.prefix}${key}`)
-        return false
+        localStorage.removeItem(`${this.prefix}${key}`);
+        return false;
       }
 
-      return true
+      return true;
     } catch (error) {
-      logger.warn('Failed to check cache entry:', error)
-      return false
+      logger.warn('Failed to check cache entry:', error);
+      return false;
     }
   }
 
   // Delete cache entry
   delete(key: string): boolean {
     try {
-      localStorage.removeItem(`${this.prefix}${key}`)
-      return true
+      localStorage.removeItem(`${this.prefix}${key}`);
+      return true;
     } catch (error) {
-      logger.warn('Failed to delete cache entry:', error)
-      return false
+      logger.warn('Failed to delete cache entry:', error);
+      return false;
     }
   }
 
   // Clear all cache entries
   clear(): void {
     try {
-      const keys = Object.keys(localStorage)
+      const keys = Object.keys(localStorage);
       for (const key of keys) {
         if (key.startsWith(this.prefix)) {
-          localStorage.removeItem(key)
+          localStorage.removeItem(key);
         }
       }
     } catch (error) {
-      logger.warn('Failed to clear cache:', error)
+      logger.warn('Failed to clear cache:', error);
     }
   }
 
   // Clean expired entries
   cleanExpired(): void {
     try {
-      const keys = Object.keys(localStorage)
-      const now = Date.now()
+      const keys = Object.keys(localStorage);
+      const now = Date.now();
 
       for (const key of keys) {
         if (key.startsWith(this.prefix)) {
-          const stored = localStorage.getItem(key)
+          const stored = localStorage.getItem(key);
           if (stored) {
             try {
-              const entry: CacheEntry<T> = JSON.parse(stored)
+              const entry: CacheEntry<T> = JSON.parse(stored);
               if (now > entry.expiresAt) {
-                localStorage.removeItem(key)
+                localStorage.removeItem(key);
               }
             } catch (error) {
               // Remove corrupted entries
-              localStorage.removeItem(key)
+              localStorage.removeItem(key);
             }
           }
         }
       }
     } catch (error) {
-      logger.warn('Failed to clean expired cache entries:', error)
+      logger.warn('Failed to clean expired cache entries:', error);
     }
   }
 }
@@ -322,25 +319,25 @@ export class LocalStorageCache<T = any> {
 // ============================================================================
 
 export class SessionStorageCache<T = any> {
-  private prefix: string
-  private config: CacheConfig
+  private prefix: string;
+  private config: CacheConfig;
 
   constructor(prefix: string = 'session_cache_', config: Partial<CacheConfig> = {}) {
-    this.prefix = prefix
+    this.prefix = prefix;
     this.config = {
       maxAge: 5 * 60 * 1000, // 5 minutes
       staleWhileRevalidate: 10 * 60 * 1000, // 10 minutes
       maxSize: 50,
       ttl: 15 * 60 * 1000, // 15 minutes
       ...config,
-    }
+    };
   }
 
   // Set cache entry
   set(key: string, data: T, ttl?: number): void {
     try {
-      const now = Date.now()
-      const expiresAt = now + (ttl || this.config.ttl)
+      const now = Date.now();
+      const expiresAt = now + (ttl || this.config.ttl);
 
       const entry: CacheEntry<T> = {
         data,
@@ -348,120 +345,117 @@ export class SessionStorageCache<T = any> {
         expiresAt,
         accessCount: 0,
         lastAccessed: now,
-      }
+      };
 
-      sessionStorage.setItem(
-        `${this.prefix}${key}`,
-        JSON.stringify(entry)
-      )
+      sessionStorage.setItem(`${this.prefix}${key}`, JSON.stringify(entry));
     } catch (error) {
-      logger.warn('Failed to set session cache entry:', error)
+      logger.warn('Failed to set session cache entry:', error);
     }
   }
 
   // Get cache entry
   get(key: string): T | null {
     try {
-      const stored = sessionStorage.getItem(`${this.prefix}${key}`)
-      
+      const stored = sessionStorage.getItem(`${this.prefix}${key}`);
+
       if (!stored) {
-        return null
+        return null;
       }
 
-      const entry: CacheEntry<T> = JSON.parse(stored)
-      const now = Date.now()
+      const entry: CacheEntry<T> = JSON.parse(stored);
+      const now = Date.now();
 
       // Check if entry is expired
       if (now > entry.expiresAt) {
-        sessionStorage.removeItem(`${this.prefix}${key}`)
-        return null
+        sessionStorage.removeItem(`${this.prefix}${key}`);
+        return null;
       }
 
       // Update access statistics
-      entry.accessCount++
-      entry.lastAccessed = now
-      sessionStorage.setItem(`${this.prefix}${key}`, JSON.stringify(entry))
+      entry.accessCount++;
+      entry.lastAccessed = now;
+      sessionStorage.setItem(`${this.prefix}${key}`, JSON.stringify(entry));
 
-      return entry.data
+      return entry.data;
     } catch (error) {
-      logger.warn('Failed to get session cache entry:', error)
-      return null
+      logger.warn('Failed to get session cache entry:', error);
+      return null;
     }
   }
 
   // Check if key exists and is valid
   has(key: string): boolean {
     try {
-      const stored = sessionStorage.getItem(`${this.prefix}${key}`)
-      
+      const stored = sessionStorage.getItem(`${this.prefix}${key}`);
+
       if (!stored) {
-        return false
+        return false;
       }
 
-      const entry: CacheEntry<T> = JSON.parse(stored)
-      const now = Date.now()
+      const entry: CacheEntry<T> = JSON.parse(stored);
+      const now = Date.now();
 
       if (now > entry.expiresAt) {
-        sessionStorage.removeItem(`${this.prefix}${key}`)
-        return false
+        sessionStorage.removeItem(`${this.prefix}${key}`);
+        return false;
       }
 
-      return true
+      return true;
     } catch (error) {
-      logger.warn('Failed to check session cache entry:', error)
-      return false
+      logger.warn('Failed to check session cache entry:', error);
+      return false;
     }
   }
 
   // Delete cache entry
   delete(key: string): boolean {
     try {
-      sessionStorage.removeItem(`${this.prefix}${key}`)
-      return true
+      sessionStorage.removeItem(`${this.prefix}${key}`);
+      return true;
     } catch (error) {
-      logger.warn('Failed to delete session cache entry:', error)
-      return false
+      logger.warn('Failed to delete session cache entry:', error);
+      return false;
     }
   }
 
   // Clear all cache entries
   clear(): void {
     try {
-      const keys = Object.keys(sessionStorage)
+      const keys = Object.keys(sessionStorage);
       for (const key of keys) {
         if (key.startsWith(this.prefix)) {
-          sessionStorage.removeItem(key)
+          sessionStorage.removeItem(key);
         }
       }
     } catch (error) {
-      logger.warn('Failed to clear session cache:', error)
+      logger.warn('Failed to clear session cache:', error);
     }
   }
 
   // Clean expired entries
   cleanExpired(): void {
     try {
-      const keys = Object.keys(sessionStorage)
-      const now = Date.now()
+      const keys = Object.keys(sessionStorage);
+      const now = Date.now();
 
       for (const key of keys) {
         if (key.startsWith(this.prefix)) {
-          const stored = sessionStorage.getItem(key)
+          const stored = sessionStorage.getItem(key);
           if (stored) {
             try {
-              const entry: CacheEntry<T> = JSON.parse(stored)
+              const entry: CacheEntry<T> = JSON.parse(stored);
               if (now > entry.expiresAt) {
-                sessionStorage.removeItem(key)
+                sessionStorage.removeItem(key);
               }
             } catch (error) {
               // Remove corrupted entries
-              sessionStorage.removeItem(key)
+              sessionStorage.removeItem(key);
             }
           }
         }
       }
     } catch (error) {
-      logger.warn('Failed to clean expired session cache entries:', error)
+      logger.warn('Failed to clean expired session cache entries:', error);
     }
   }
 }
@@ -471,10 +465,10 @@ export class SessionStorageCache<T = any> {
 // ============================================================================
 
 export class MultiLevelCache<T = any> {
-  private memoryCache: MemoryCache<T>
-  private localStorageCache: LocalStorageCache<T>
-  private sessionStorageCache: SessionStorageCache<T>
-  private config: CacheConfig
+  private memoryCache: MemoryCache<T>;
+  private localStorageCache: LocalStorageCache<T>;
+  private sessionStorageCache: SessionStorageCache<T>;
+  private config: CacheConfig;
 
   constructor(config: Partial<CacheConfig> = {}) {
     this.config = {
@@ -483,83 +477,85 @@ export class MultiLevelCache<T = any> {
       maxSize: 100,
       ttl: 15 * 60 * 1000, // 15 minutes
       ...config,
-    }
+    };
 
-    this.memoryCache = new MemoryCache(this.config)
-    this.localStorageCache = new LocalStorageCache('ml_cache_', this.config)
-    this.sessionStorageCache = new SessionStorageCache('ml_session_', this.config)
+    this.memoryCache = new MemoryCache(this.config);
+    this.localStorageCache = new LocalStorageCache('ml_cache_', this.config);
+    this.sessionStorageCache = new SessionStorageCache('ml_session_', this.config);
   }
 
   // Set cache entry
   set(key: string, data: T, ttl?: number): void {
-    this.memoryCache.set(key, data, ttl)
-    this.localStorageCache.set(key, data, ttl)
-    this.sessionStorageCache.set(key, data, ttl)
+    this.memoryCache.set(key, data, ttl);
+    this.localStorageCache.set(key, data, ttl);
+    this.sessionStorageCache.set(key, data, ttl);
   }
 
   // Get cache entry
   get(key: string): T | null {
     // Try memory cache first
-    let data = this.memoryCache.get(key)
+    let data = this.memoryCache.get(key);
     if (data !== null) {
-      return data
+      return data;
     }
 
     // Try session storage cache
-    data = this.sessionStorageCache.get(key)
+    data = this.sessionStorageCache.get(key);
     if (data !== null) {
       // Populate memory cache
-      this.memoryCache.set(key, data)
-      return data
+      this.memoryCache.set(key, data);
+      return data;
     }
 
     // Try local storage cache
-    data = this.localStorageCache.get(key)
+    data = this.localStorageCache.get(key);
     if (data !== null) {
       // Populate memory and session caches
-      this.memoryCache.set(key, data)
-      this.sessionStorageCache.set(key, data)
-      return data
+      this.memoryCache.set(key, data);
+      this.sessionStorageCache.set(key, data);
+      return data;
     }
 
-    return null
+    return null;
   }
 
   // Check if key exists and is valid
   has(key: string): boolean {
-    return this.memoryCache.has(key) || 
-           this.sessionStorageCache.has(key) || 
-           this.localStorageCache.has(key)
+    return (
+      this.memoryCache.has(key) ||
+      this.sessionStorageCache.has(key) ||
+      this.localStorageCache.has(key)
+    );
   }
 
   // Delete cache entry
   delete(key: string): boolean {
-    const memoryDeleted = this.memoryCache.delete(key)
-    const sessionDeleted = this.sessionStorageCache.delete(key)
-    const localDeleted = this.localStorageCache.delete(key)
-    
-    return memoryDeleted || sessionDeleted || localDeleted
+    const memoryDeleted = this.memoryCache.delete(key);
+    const sessionDeleted = this.sessionStorageCache.delete(key);
+    const localDeleted = this.localStorageCache.delete(key);
+
+    return memoryDeleted || sessionDeleted || localDeleted;
   }
 
   // Clear all cache entries
   clear(): void {
-    this.memoryCache.clear()
-    this.localStorageCache.clear()
-    this.sessionStorageCache.clear()
+    this.memoryCache.clear();
+    this.localStorageCache.clear();
+    this.sessionStorageCache.clear();
   }
 
   // Clean expired entries
   cleanExpired(): void {
-    this.memoryCache.cleanExpired()
-    this.localStorageCache.cleanExpired()
-    this.sessionStorageCache.cleanExpired()
+    this.memoryCache.cleanExpired();
+    this.localStorageCache.cleanExpired();
+    this.sessionStorageCache.cleanExpired();
   }
 
   // Get combined cache statistics
   getStats(): CacheStats {
-    const memoryStats = this.memoryCache.getStats()
-    const sessionStats = this.sessionStorageCache.getStats()
-    const localStats = this.localStorageCache.getStats()
+    const memoryStats = this.memoryCache.getStats();
+    const sessionStats = this.sessionStorageCache.getStats();
+    const localStats = this.localStorageCache.getStats();
 
     return {
       hits: memoryStats.hits + sessionStats.hits + localStats.hits,
@@ -568,7 +564,7 @@ export class MultiLevelCache<T = any> {
       maxSize: memoryStats.maxSize + sessionStats.maxSize + localStats.maxSize,
       hitRate: (memoryStats.hitRate + sessionStats.hitRate + localStats.hitRate) / 3,
       missRate: (memoryStats.missRate + sessionStats.missRate + localStats.missRate) / 3,
-    }
+    };
   }
 }
 
@@ -577,20 +573,23 @@ export class MultiLevelCache<T = any> {
 // ============================================================================
 
 // Create cache instance
-export const createCache = <T = any>(type: 'memory' | 'localStorage' | 'sessionStorage' | 'multi', config?: Partial<CacheConfig>) => {
+export const createCache = <T = any>(
+  type: 'memory' | 'localStorage' | 'sessionStorage' | 'multi',
+  config?: Partial<CacheConfig>
+) => {
   switch (type) {
     case 'memory':
-      return new MemoryCache<T>(config)
+      return new MemoryCache<T>(config);
     case 'localStorage':
-      return new LocalStorageCache<T>('cache_', config)
+      return new LocalStorageCache<T>('cache_', config);
     case 'sessionStorage':
-      return new SessionStorageCache<T>('session_cache_', config)
+      return new SessionStorageCache<T>('session_cache_', config);
     case 'multi':
-      return new MultiLevelCache<T>(config)
+      return new MultiLevelCache<T>(config);
     default:
-      throw new Error(`Unknown cache type: ${type}`)
+      throw new Error(`Unknown cache type: ${type}`);
   }
-}
+};
 
 // Cache decorator for functions
 export const cacheable = <T extends (...args: unknown[]) => unknown>(
@@ -599,17 +598,17 @@ export const cacheable = <T extends (...args: unknown[]) => unknown>(
   keyGenerator?: (...args: Parameters<T>) => string
 ): T => {
   return ((...args: Parameters<T>) => {
-    const key = keyGenerator ? keyGenerator(...args) : JSON.stringify(args)
-    
-    let result = cache.get(key)
+    const key = keyGenerator ? keyGenerator(...args) : JSON.stringify(args);
+
+    let result = cache.get(key);
     if (result === null) {
-      result = fn(...args)
-      cache.set(key, result)
+      result = fn(...args);
+      cache.set(key, result);
     }
-    
-    return result
-  }) as T
-}
+
+    return result;
+  }) as T;
+};
 
 // ============================================================================
 // EXPORT ALL CACHING UTILITIES
@@ -622,4 +621,4 @@ export default {
   MultiLevelCache,
   createCache,
   cacheable,
-}
+};

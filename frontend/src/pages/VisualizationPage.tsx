@@ -192,11 +192,7 @@ const VisualizationPageContent: React.FC = () => {
   const [isExporting, setIsExporting] = useState(false);
 
   // Page Orchestration with Frenly AI
-  const {
-    updatePageContext,
-    trackFeatureUsage,
-    trackFeatureError,
-  } = usePageOrchestration({
+  const { updatePageContext, trackFeatureUsage, trackFeatureError } = usePageOrchestration({
     pageMetadata: visualizationPageMetadata,
     getPageContext: () =>
       getVisualizationPageContext(
@@ -211,10 +207,11 @@ const VisualizationPageContent: React.FC = () => {
         false // hasCreatedDashboard
       ),
     getWorkflowState: () => getVisualizationWorkflowState(),
-    registerGuidanceHandlers: () => registerVisualizationGuidanceHandlers(
-      () => {},
-      () => {}
-    ),
+    registerGuidanceHandlers: () =>
+      registerVisualizationGuidanceHandlers(
+        () => {},
+        () => {}
+      ),
     getGuidanceContent: (topic) => getVisualizationGuidanceContent(topic),
   });
 

@@ -12,4 +12,3 @@ export interface ResilienceStatus {
   cache: CircuitBreakerMetrics;
   api: CircuitBreakerMetrics;
 }
-

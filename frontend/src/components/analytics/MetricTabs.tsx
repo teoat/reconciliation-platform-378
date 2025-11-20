@@ -14,11 +14,7 @@ interface MetricTabsProps {
   onTabChange: (tabId: string) => void;
 }
 
-export const MetricTabs: React.FC<MetricTabsProps> = ({
-  tabs,
-  selectedTab,
-  onTabChange,
-}) => {
+export const MetricTabs: React.FC<MetricTabsProps> = ({ tabs, selectedTab, onTabChange }) => {
   return (
     <div className="border-b border-gray-200">
       <nav className="-mb-px flex space-x-8" aria-label="Metric tabs">
@@ -45,4 +41,3 @@ export const MetricTabs: React.FC<MetricTabsProps> = ({
     </div>
   );
 };
-

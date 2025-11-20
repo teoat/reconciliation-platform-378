@@ -1,26 +1,17 @@
 import React, { useState } from 'react';
-import {
-  BookOpen,
-  Database,
-  Users,
-  BarChart3,
-  Settings,
-  Copy,
-  CheckCircle,
-} from 'lucide-react';
+import { BookOpen } from 'lucide-react';
+import { Database } from 'lucide-react';
+import { Users } from 'lucide-react';
+import { BarChart3 } from 'lucide-react';
+import { Settings } from 'lucide-react';
+import { Copy } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import Button from './ui/Button';
 import Card from './ui/Card';
 import { StatusBadge } from './ui/StatusBadge';
-import { PageMeta } from './seo/PageMeta';
 
 interface ApiDocumentationProps {
   className?: string;
-}
-
-interface ApiEndpoint {
-  method: string;
-  endpoint: string;
-  description: string;
 }
 
 const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) => {
@@ -277,6 +268,14 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
     ],
   };
 
+  interface ApiEndpoint {
+    method: string;
+    endpoint: string;
+    description: string;
+    request: string | Record<string, string>;
+    response: string | Record<string, string>;
+  }
+
   const renderEndpoint = (endpoint: ApiEndpoint, index: number) => (
     <div key={index} className="border border-gray-200 rounded-lg p-4 mb-4">
       <div className="flex items-center justify-between mb-3">
@@ -350,7 +349,7 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
                     <h3 className="text-lg font-semibold">Base URL</h3>
                   </div>
                   <code className="text-sm bg-gray-100 p-2 rounded block">
-                    {import.meta.env.VITE_API_URL || 'http://localhost:8080/api'}
+                    {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api'}
                   </code>
                 </div>
               </Card>
@@ -409,7 +408,7 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
               <div className="p-6">
                 <h3 className="text-lg font-semibold mb-4">Connection</h3>
                 <code className="text-sm bg-gray-100 p-2 rounded block mb-4">
-                  {import.meta.env.VITE_WS_URL || 'ws://localhost:2000'}
+                  {process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080/ws'}
                 </code>
 
                 <div className="space-y-4">
@@ -418,7 +417,7 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
                       Connection with Authentication
                     </h4>
                     <code className="text-sm bg-gray-100 p-2 rounded block">
-                      ws://localhost:2000?token={'{your_token}'}
+                      ws://localhost:8080/ws?token={'{your_token}'}
                     </code>
                   </div>
 
@@ -496,14 +495,7 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
   };
 
   return (
-    <>
-      <PageMeta
-        title="API Documentation"
-        description="Complete API documentation with endpoints, parameters, and examples."
-        keywords="API, documentation, endpoints, reference, integration"
-      />
-      <main id="main-content" role="main" className={`max-w-7xl mx-auto ${className}`}>
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">API Documentation</h1>
+    <div className={`max-w-7xl mx-auto ${className}`}>
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Sidebar */}
         <div className="lg:col-span-1">
@@ -537,8 +529,7 @@ const ApiDocumentation: React.FC<ApiDocumentationProps> = ({ className = '' }) =
           </Card>
         </div>
       </div>
-    </main>
-    </>
+    </div>
   );
 };
 

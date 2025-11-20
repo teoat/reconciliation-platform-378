@@ -218,7 +218,11 @@ export class MonitoringService {
         )[0] as PerformanceNavigationTiming;
         const paintEntries = performance.getEntriesByType('paint');
 
-        const perfMemory = (performance as unknown as { memory?: { usedJSHeapSize?: number; jsHeapSizeLimit?: number } }).memory;
+        const perfMemory = (
+          performance as unknown as {
+            memory?: { usedJSHeapSize?: number; jsHeapSizeLimit?: number };
+          }
+        ).memory;
         const metrics: PerformanceMetrics = {
           timestamp: new Date().toISOString(),
           pageLoadTime: navigation.loadEventEnd - navigation.loadEventStart,
@@ -276,7 +280,10 @@ export class MonitoringService {
         let clsValue = 0;
         const entries = list.getEntries();
         entries.forEach((entry: PerformanceEntry) => {
-          const layoutShiftEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+          const layoutShiftEntry = entry as PerformanceEntry & {
+            hadRecentInput?: boolean;
+            value?: number;
+          };
           if (!layoutShiftEntry.hadRecentInput && layoutShiftEntry.value !== undefined) {
             clsValue += layoutShiftEntry.value;
           }

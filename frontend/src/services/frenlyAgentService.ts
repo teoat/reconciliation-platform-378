@@ -1,15 +1,23 @@
 /**
  * Frenly Agent Service - Frontend Integration
- * 
+ *
  * Provides a frontend service wrapper for integrating with the FrenlyGuidanceAgent.
  * This service handles communication between React components and the agent backend.
  */
 
-import { FrenlyGuidanceAgent, MessageContext, GeneratedMessage } from '../../../agents/guidance/FrenlyGuidanceAgent';
+import {
+  FrenlyGuidanceAgent,
+  MessageContext,
+  GeneratedMessage,
+} from '../../../agents/guidance/FrenlyGuidanceAgent';
 import { logger } from './logger';
 
 // Import NLU service directly
-let nluService: { processQuery?: (query: string) => Promise<unknown>; understand?: (query: string) => Promise<unknown>; generateResponse?: (intent: string) => Promise<unknown> } | null = null;
+let nluService: {
+  processQuery?: (query: string) => Promise<unknown>;
+  understand?: (query: string) => Promise<unknown>;
+  generateResponse?: (intent: string) => Promise<unknown>;
+} | null = null;
 const getNLUService = async () => {
   if (!nluService) {
     const module = await import('./nluService');
@@ -58,10 +66,7 @@ class FrenlyAgentService {
   /**
    * Retry mechanism with exponential backoff
    */
-  private async retryWithBackoff<T>(
-    fn: () => Promise<T>,
-    options: RetryOptions = {}
-  ): Promise<T> {
+  private async retryWithBackoff<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
     const maxRetries = options.maxRetries ?? this.config.maxRetries ?? this.defaultMaxRetries;
     const retryDelay = options.retryDelay ?? this.config.retryDelay ?? this.defaultRetryDelay;
     const useExponentialBackoff = options.exponentialBackoff ?? true;
@@ -73,14 +78,14 @@ class FrenlyAgentService {
         return await fn();
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
-        
+
         if (attempt < maxRetries) {
-          const delay = useExponentialBackoff 
-            ? retryDelay * Math.pow(2, attempt)
-            : retryDelay;
-          
-          logger.warn(`Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`, { error: lastError });
-          await new Promise(resolve => setTimeout(resolve, delay));
+          const delay = useExponentialBackoff ? retryDelay * Math.pow(2, attempt) : retryDelay;
+
+          logger.warn(`Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`, {
+            error: lastError,
+          });
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
@@ -94,14 +99,15 @@ class FrenlyAgentService {
   private getFallbackMessage(context: MessageContext): GeneratedMessage {
     const pageMessages: Record<string, string> = {
       '/projects': "Ready to create a project? Click 'New Project' to get started!",
-      '/ingestion': "Upload your data files to begin the reconciliation process.",
-      '/reconciliation': "Configure matching rules to find matching records.",
-      '/adjudication': "Review and resolve discrepancies in your data.",
-      '/visualization': "Create visualizations to understand your data better.",
-      '/summary': "Generate comprehensive reports from your reconciliation results.",
+      '/ingestion': 'Upload your data files to begin the reconciliation process.',
+      '/reconciliation': 'Configure matching rules to find matching records.',
+      '/adjudication': 'Review and resolve discrepancies in your data.',
+      '/visualization': 'Create visualizations to understand your data better.',
+      '/summary': 'Generate comprehensive reports from your reconciliation results.',
     };
 
-    const defaultMessage = "I'm here to help! Feel free to ask me anything about the reconciliation process.";
+    const defaultMessage =
+      "I'm here to help! Feel free to ask me anything about the reconciliation process.";
 
     return {
       id: `fallback_${Date.now()}`,
@@ -128,14 +134,17 @@ class FrenlyAgentService {
    */
   private async initializeAgent(): Promise<void> {
     try {
-      await this.retryWithBackoff(async () => {
-        await this.agent.initialize();
-        await this.agent.start();
-      }, {
-        maxRetries: 5,
-        retryDelay: 2000,
-        exponentialBackoff: true,
-      });
+      await this.retryWithBackoff(
+        async () => {
+          await this.agent.initialize();
+          await this.agent.start();
+        },
+        {
+          maxRetries: 5,
+          retryDelay: 2000,
+          exponentialBackoff: true,
+        }
+      );
       logger.info('FrenlyGuidanceAgent initialized successfully');
     } catch (error) {
       logger.error('Failed to initialize FrenlyGuidanceAgent after retries:', { error });
@@ -149,7 +158,7 @@ class FrenlyAgentService {
   async generateMessage(context: MessageContext): Promise<GeneratedMessage> {
     // Create debounce key
     const debounceKey = `${context.userId}_${context.page}_${context.progress?.completedSteps.length || 0}`;
-    
+
     // Clear existing debounce
     const existingDebounce = this.requestDebounce.get(debounceKey);
     if (existingDebounce) {
@@ -176,7 +185,7 @@ class FrenlyAgentService {
           }
         } catch (error) {
           logger.error('Error generating message after retries:', { error });
-          
+
           // Graceful degradation - return fallback message
           try {
             const fallbackMessage = this.getFallbackMessage(context);
@@ -228,13 +237,13 @@ class FrenlyAgentService {
       });
     } catch (error) {
       logger.error('Error handling user query after retries:', { error });
-      
+
       // Fallback to NLU service directly
       try {
         const nlu = await getNLUService();
         const understanding = await nlu.understand(query, context);
         const response = await nlu.generateResponse(understanding.intent, query, context);
-        
+
         return {
           id: `query_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           type: understanding.intent === 'error' ? 'warning' : 'help',
@@ -245,12 +254,13 @@ class FrenlyAgentService {
         };
       } catch (fallbackError) {
         logger.error('Fallback NLU error:', { error: fallbackError });
-        
+
         // Final fallback - generic helpful message
         return {
           id: `fallback_query_${Date.now()}`,
           type: 'help',
-          content: "I'm having trouble understanding that right now. Could you try rephrasing your question? I'm here to help with reconciliation tasks, project management, and data processing.",
+          content:
+            "I'm having trouble understanding that right now. Could you try rephrasing your question? I'm here to help with reconciliation tasks, project management, and data processing.",
           priority: 'medium',
           timestamp: new Date(),
           context: fullContext,
@@ -320,11 +330,7 @@ class FrenlyAgentService {
       await this.retryWithBackoff(async () => {
         // Track onboarding progress
         const userId = localStorage.getItem('userId') || 'unknown';
-        await this.agent.trackInteraction(
-          userId,
-          'onboarding_progress',
-          JSON.stringify(data)
-        );
+        await this.agent.trackInteraction(userId, 'onboarding_progress', JSON.stringify(data));
       });
     } catch (error) {
       logger.error('Error updating onboarding progress:', { error });
@@ -344,11 +350,7 @@ class FrenlyAgentService {
       await this.retryWithBackoff(async () => {
         // Track workflow state
         const userId = localStorage.getItem('userId') || 'unknown';
-        await this.agent.trackInteraction(
-          userId,
-          'workflow_state',
-          JSON.stringify(data)
-        );
+        await this.agent.trackInteraction(userId, 'workflow_state', JSON.stringify(data));
       });
     } catch (error) {
       logger.error('Error updating workflow state:', { error });
@@ -444,4 +446,3 @@ export const frenlyAgentService = FrenlyAgentService.getInstance();
 
 // Export class for testing
 export { FrenlyAgentService };
-

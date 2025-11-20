@@ -49,13 +49,13 @@ export const ErrorHistory: React.FC<ErrorHistoryProps> = ({
 
     // Filter by severity
     if (filterSeverity !== 'all') {
-      filtered = filtered.filter(error => error.severity === filterSeverity);
+      filtered = filtered.filter((error) => error.severity === filterSeverity);
     }
 
     // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(error => {
+      filtered = filtered.filter((error) => {
         const errorMessage = typeof error.error === 'string' ? error.error : error.error.message;
         const title = error.title || '';
         const context = error.context || '';
@@ -86,7 +86,7 @@ export const ErrorHistory: React.FC<ErrorHistoryProps> = ({
   }, [errors, filterSeverity, searchQuery, sortOrder, maxItems]);
 
   const toggleError = (errorId: string) => {
-    setExpandedErrors(prev => {
+    setExpandedErrors((prev) => {
       const next = new Set(prev);
       if (next.has(errorId)) {
         next.delete(errorId);
@@ -132,7 +132,10 @@ export const ErrorHistory: React.FC<ErrorHistoryProps> = ({
       <div className="mb-4 space-y-3">
         {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" aria-hidden="true" />
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400"
+            aria-hidden="true"
+          />
           <input
             type="text"
             value={searchQuery}
@@ -149,7 +152,9 @@ export const ErrorHistory: React.FC<ErrorHistoryProps> = ({
             <Filter className="h-4 w-4 text-gray-400" aria-hidden="true" />
             <select
               value={filterSeverity}
-              onChange={(e) => setFilterSeverity(e.target.value as 'all' | 'error' | 'warning' | 'info')}
+              onChange={(e) =>
+                setFilterSeverity(e.target.value as 'all' | 'error' | 'warning' | 'info')
+              }
               className="border border-gray-300 rounded px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500"
               aria-label="Filter by severity"
             >
@@ -184,9 +189,8 @@ export const ErrorHistory: React.FC<ErrorHistoryProps> = ({
         ) : (
           filteredErrors.map((errorItem) => {
             const isExpanded = expandedErrors.has(errorItem.id);
-            const errorMessage = typeof errorItem.error === 'string' 
-              ? errorItem.error 
-              : errorItem.error.message;
+            const errorMessage =
+              typeof errorItem.error === 'string' ? errorItem.error : errorItem.error.message;
             const severity = errorItem.severity || 'error';
             const severityClass = severityClasses[severity];
 
@@ -200,9 +204,7 @@ export const ErrorHistory: React.FC<ErrorHistoryProps> = ({
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
-                        <h4 className="font-semibold text-sm">
-                          {errorItem.title || 'Error'}
-                        </h4>
+                        <h4 className="font-semibold text-sm">{errorItem.title || 'Error'}</h4>
                         <span className="text-xs opacity-75">
                           {formatTimestamp(errorItem.timestamp)}
                         </span>
@@ -211,9 +213,7 @@ export const ErrorHistory: React.FC<ErrorHistoryProps> = ({
                       <p className="text-sm mb-2">{errorMessage}</p>
 
                       {errorItem.context && (
-                        <p className="text-xs opacity-75 mb-2">
-                          Context: {errorItem.context}
-                        </p>
+                        <p className="text-xs opacity-75 mb-2">Context: {errorItem.context}</p>
                       )}
 
                       {/* Error Code and Correlation ID */}
@@ -278,5 +278,3 @@ export const ErrorHistory: React.FC<ErrorHistoryProps> = ({
 };
 
 export default ErrorHistory;
-
-

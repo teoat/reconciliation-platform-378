@@ -1,4 +1,3 @@
-
 export interface CheckpointData {
   stage: string;
   data: unknown;

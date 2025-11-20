@@ -1,6 +1,6 @@
 /**
  * Onboarding Service
- * 
+ *
  * Centralized service for managing onboarding experiences,
  * progress tracking, and analytics.
  */
@@ -76,7 +76,7 @@ class OnboardingService {
         localStorage.setItem('device_id', storedDeviceId);
       }
       this.deviceId = storedDeviceId;
-      
+
       // Register device with server
       this.registerDevice().catch((err) => {
         logger.debug('Failed to register device', err);
@@ -95,20 +95,19 @@ class OnboardingService {
 
     try {
       const deviceName = navigator.platform || 'Unknown Device';
-      const deviceType = /Mobile|Android|iPhone|iPad/.test(navigator.userAgent) ? 'mobile' : 'desktop';
+      const deviceType = /Mobile|Android|iPhone|iPad/.test(navigator.userAgent)
+        ? 'mobile'
+        : 'desktop';
 
-      await apiClient.makeRequest(
-        '/onboarding/devices',
-        {
-          method: 'POST',
-          body: JSON.stringify({
-            device_id: this.deviceId,
-            device_name: deviceName,
-            device_type: deviceType,
-            user_agent: navigator.userAgent,
-          }),
-        }
-      );
+      await apiClient.makeRequest('/onboarding/devices', {
+        method: 'POST',
+        body: JSON.stringify({
+          device_id: this.deviceId,
+          device_name: deviceName,
+          device_type: deviceType,
+          user_agent: navigator.userAgent,
+        }),
+      });
     } catch (error: unknown) {
       logger.debug('Device registration failed (non-critical)', { error });
     }
@@ -176,13 +175,10 @@ class OnboardingService {
         device_id: this.deviceId || undefined,
       };
 
-      await apiClient.makeRequest(
-        '/onboarding/progress',
-        {
-          method: 'POST',
-          body: JSON.stringify(request),
-        }
-      );
+      await apiClient.makeRequest('/onboarding/progress', {
+        method: 'POST',
+        body: JSON.stringify(request),
+      });
 
       logger.debug(`Onboarding progress synced for ${type}`);
     } catch (error: unknown) {
@@ -202,7 +198,7 @@ class OnboardingService {
     try {
       // Load all onboarding types
       const types: OnboardingType[] = ['initial', 'feature_tour', 'contextual_help', 'empty_state'];
-      
+
       for (const type of types) {
         try {
           const response = await apiClient.makeRequest<{
@@ -218,10 +214,7 @@ class OnboardingService {
             role?: string;
             device_id?: string;
             synced_at: string;
-          }>(
-            `/onboarding/progress?type=${type}`,
-            { method: 'GET' }
-          );
+          }>(`/onboarding/progress?type=${type}`, { method: 'GET' });
 
           if (response.success && response.data) {
             const data = response.data;
@@ -241,7 +234,10 @@ class OnboardingService {
 
             // Merge with local progress (server takes precedence for completed steps)
             const localProgress = this.progress.get(key);
-            if (localProgress && localProgress.completedSteps.length > progress.completedSteps.length) {
+            if (
+              localProgress &&
+              localProgress.completedSteps.length > progress.completedSteps.length
+            ) {
               // Keep local progress if it has more steps
               progress.completedSteps = localProgress.completedSteps;
             }
@@ -353,7 +349,7 @@ class OnboardingService {
   completeOnboarding(type: OnboardingType = 'initial'): void {
     const key = `onboarding_${type}`;
     const progress = this.progress.get(key);
-    
+
     if (progress) {
       progress.completedOnboarding = true;
       progress.completedAt = new Date();
@@ -384,7 +380,7 @@ class OnboardingService {
   skipOnboarding(type: OnboardingType = 'initial', remindLater: boolean = false): void {
     const key = `onboarding_${type}`;
     const progress = this.progress.get(key);
-    
+
     if (progress) {
       if (remindLater) {
         progress.remindLaterAt = new Date();
@@ -408,7 +404,7 @@ class OnboardingService {
    */
   async syncAllProgress(): Promise<void> {
     const types: OnboardingType[] = ['initial', 'feature_tour', 'contextual_help', 'empty_state'];
-    await Promise.all(types.map(type => this.syncToServer(type)));
+    await Promise.all(types.map((type) => this.syncToServer(type)));
   }
 
   /**
@@ -451,23 +447,28 @@ class OnboardingService {
       this.analytics.shift();
     }
 
-      // Send to analytics service
+    // Send to analytics service
     try {
       // Import monitoring service dynamically to avoid circular dependencies
-      import('../services/monitoring').then(({ monitoringService }) => {
-        monitoringService.trackEvent('onboarding_step', {
-          stepId: event.stepId,
-          stepName: event.stepName,
-          duration: event.duration,
-          completed: event.completed,
-          action: event.action,
-          timestamp: event.timestamp.toISOString(),
-        } as Record<string, unknown>);
-      }).catch((err: unknown) => {
-        logger.debug('Failed to send onboarding analytics to monitoring service', { error: err });
-      });
+      import('../services/monitoring')
+        .then(({ monitoringService }) => {
+          monitoringService.trackEvent('onboarding_step', {
+            stepId: event.stepId,
+            stepName: event.stepName,
+            duration: event.duration,
+            completed: event.completed,
+            action: event.action,
+            timestamp: event.timestamp.toISOString(),
+          } as Record<string, unknown>);
+        })
+        .catch((err: unknown) => {
+          logger.debug('Failed to send onboarding analytics to monitoring service', { error: err });
+        });
     } catch (err: unknown) {
-      logger.debug('Onboarding analytics event (monitoring service unavailable)', { event, error: err });
+      logger.debug('Onboarding analytics event (monitoring service unavailable)', {
+        event,
+        error: err,
+      });
     }
 
     logger.debug('Onboarding analytics event', { event });
@@ -496,7 +497,7 @@ class OnboardingService {
     const started = this.analytics.filter((e) => e.stepId === 'start').length;
     const completed = this.analytics.filter((e) => e.stepId === 'complete').length;
     const steps = this.analytics.filter((e) => e.stepId !== 'start' && e.stepId !== 'complete');
-    
+
     const stepDropoffs = new Map<string, number>();
     steps.forEach((event) => {
       if (!event.completed) {
@@ -508,9 +509,8 @@ class OnboardingService {
       .map(([stepId, dropoffCount]) => ({ stepId, dropoffCount }))
       .sort((a, b) => b.dropoffCount - a.dropoffCount);
 
-    const averageDuration = steps.length > 0
-      ? steps.reduce((sum, e) => sum + e.duration, 0) / steps.length
-      : 0;
+    const averageDuration =
+      steps.length > 0 ? steps.reduce((sum, e) => sum + e.duration, 0) / steps.length : 0;
 
     return {
       totalStarted: started,
@@ -540,7 +540,8 @@ class OnboardingService {
 
     // Show if remind later and 24 hours passed
     if (progress?.remindLaterAt) {
-      const hoursSince = (Date.now() - new Date(progress.remindLaterAt).getTime()) / (1000 * 60 * 60);
+      const hoursSince =
+        (Date.now() - new Date(progress.remindLaterAt).getTime()) / (1000 * 60 * 60);
       return hoursSince >= 24;
     }
 
@@ -550,4 +551,3 @@ class OnboardingService {
 }
 
 export const onboardingService = OnboardingService.getInstance();
-

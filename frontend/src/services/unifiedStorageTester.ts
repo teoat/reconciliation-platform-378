@@ -93,10 +93,10 @@ export class UnifiedStorageTester {
    */
   async testAllStorages(): Promise<Record<StorageType, StorageTestResult>> {
     const results: Record<string, StorageTestResult> = {};
-    
+
     results.localStorage = await this.testLocalStorage();
     results.sessionStorage = await this.testSessionStorage();
-    
+
     if (this.isIndexedDBAvailable()) {
       results.indexedDB = await this.testIndexedDB();
     }
@@ -144,8 +144,8 @@ export class UnifiedStorageTester {
       }
 
       // Calculate metrics
-      const successfulOps = operations.filter(op => op.success);
-      const failedOps = operations.filter(op => !op.success);
+      const successfulOps = operations.filter((op) => op.success);
+      const failedOps = operations.filter((op) => !op.success);
       const totalTime = operations.reduce((sum, op) => sum + (op.duration || 0), 0);
       const avgTime = operations.length > 0 ? totalTime / operations.length : 0;
       const totalSize = operations.reduce((sum, op) => sum + (op.size || 0), 0);
@@ -301,7 +301,10 @@ export class UnifiedStorageTester {
   /**
    * Delete data from storage
    */
-  private async deleteFromStorage(storageType: StorageType, key: string): Promise<StorageOperation> {
+  private async deleteFromStorage(
+    storageType: StorageType,
+    key: string
+  ): Promise<StorageOperation> {
     const startTime = Date.now();
     try {
       if (storageType === 'localStorage') {
@@ -360,7 +363,9 @@ export class UnifiedStorageTester {
     const total = this.metrics.totalOperations;
     if (total > 0) {
       this.metrics.averageOperationTime =
-        (this.metrics.averageOperationTime * (total - successful - failed) + avgTime * (successful + failed)) / total;
+        (this.metrics.averageOperationTime * (total - successful - failed) +
+          avgTime * (successful + failed)) /
+        total;
     }
   }
 
@@ -393,4 +398,3 @@ export const localStorageTester = unifiedStorageTester;
 export const sessionStorageTester = unifiedStorageTester;
 
 export default unifiedStorageTester;
-

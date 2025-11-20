@@ -103,7 +103,10 @@ export function getIngestionWorkflowState(
 
   return {
     workflowId: 'ingestion-workflow',
-    currentStep: processingStatus === 'processing' ? 'process' : completedSteps[completedSteps.length - 1] || 'upload',
+    currentStep:
+      processingStatus === 'processing'
+        ? 'process'
+        : completedSteps[completedSteps.length - 1] || 'upload',
     completedSteps,
     totalSteps: steps.length,
     progress: Math.round(progress),
@@ -127,7 +130,8 @@ export function registerIngestionGuidanceHandlers(): GuidanceHandler[] {
           return {
             id: `upload-tip-${Date.now()}`,
             type: 'tip',
-            content: 'Upload your data files to get started. We support CSV, Excel, and JSON formats!',
+            content:
+              'Upload your data files to get started. We support CSV, Excel, and JSON formats!',
             timestamp: new Date(),
             page: 'ingestion',
             priority: 'high',
@@ -226,7 +230,7 @@ export function getIngestionGuidanceContent(topic: string): GuidanceContent[] {
         type: 'tip',
       },
     ],
-    'validation': [
+    validation: [
       {
         id: 'validation-checks',
         title: 'Validation Checks',
@@ -244,4 +248,3 @@ export function getIngestionGuidanceContent(topic: string): GuidanceContent[] {
 
   return guidanceMap[topic] || [];
 }
-

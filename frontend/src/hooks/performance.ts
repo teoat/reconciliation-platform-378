@@ -8,7 +8,7 @@ import { useCallback, useMemo, useRef, useEffect } from 'react';
 /**
  * @deprecated This is just a wrapper around useCallback. Use useCallback directly instead.
  * For stable callbacks that don't change reference, use useStableCallback from usePerformanceOptimizations.ts
- * 
+ *
  * Migration:
  * - Old: useMemoizedCallback(callback, deps)
  * - New: useCallback(callback, deps)

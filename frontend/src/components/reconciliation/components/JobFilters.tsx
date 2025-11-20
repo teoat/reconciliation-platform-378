@@ -53,4 +53,3 @@ export const JobFilters: React.FC<JobFiltersProps> = ({
     </div>
   );
 };
-

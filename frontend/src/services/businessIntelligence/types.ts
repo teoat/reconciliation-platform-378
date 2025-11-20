@@ -340,4 +340,3 @@ export interface QueryMetadata {
   averageExecutionTime: number;
   errorRate: number;
 }
-

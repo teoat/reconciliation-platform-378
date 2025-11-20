@@ -1,12 +1,12 @@
 // Button feedback wrapper for immediate visual feedback
-import React from 'react'
+import React from 'react';
 
 interface ButtonFeedbackProps {
-  children: React.ReactNode
-  className?: string
-  onClick?: (e: React.MouseEvent) => void
-  disabled?: boolean
-  [key: string]: unknown
+  children: React.ReactNode;
+  className?: string;
+  onClick?: (e: React.MouseEvent) => void;
+  disabled?: boolean;
+  [key: string]: unknown;
 }
 
 /**
@@ -22,17 +22,17 @@ export const ButtonFeedback: React.FC<ButtonFeedbackProps> = ({
 }) => {
   const handleMouseDown = (e: React.MouseEvent) => {
     if (!disabled) {
-      e.currentTarget.style.transform = 'scale(0.95)'
+      e.currentTarget.style.transform = 'scale(0.95)';
     }
-  }
+  };
 
   const handleMouseUp = (e: React.MouseEvent) => {
-    e.currentTarget.style.transform = 'scale(1)'
-  }
+    e.currentTarget.style.transform = 'scale(1)';
+  };
 
   const handleMouseLeave = (e: React.MouseEvent) => {
-    e.currentTarget.style.transform = 'scale(1)'
-  }
+    e.currentTarget.style.transform = 'scale(1)';
+  };
 
   return (
     <button
@@ -46,9 +46,8 @@ export const ButtonFeedback: React.FC<ButtonFeedbackProps> = ({
     >
       {children}
     </button>
-  )
-}
+  );
+};
 
 export { ButtonFeedback };
-export default ButtonFeedback
-
+export default ButtonFeedback;

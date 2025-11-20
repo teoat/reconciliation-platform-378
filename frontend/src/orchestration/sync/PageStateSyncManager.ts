@@ -116,4 +116,3 @@ export function getPageStateSyncManager(): PageStateSyncManager {
   }
   return syncManagerInstance;
 }
-

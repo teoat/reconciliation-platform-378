@@ -1,22 +1,13 @@
 'use client';
 import React from 'react';
-import {
-  Loader2,
-  CheckCircle,
-  Activity,
-  XCircle,
-  AlertCircle,
-} from 'lucide-react';
+import { Loader2, CheckCircle, Activity, XCircle, AlertCircle } from 'lucide-react';
 
 interface FileStatusBadgeProps {
   status: string;
   showIcon?: boolean;
 }
 
-export const FileStatusBadge: React.FC<FileStatusBadgeProps> = ({
-  status,
-  showIcon = true,
-}) => {
+export const FileStatusBadge: React.FC<FileStatusBadgeProps> = ({ status, showIcon = true }) => {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'uploading':
@@ -63,4 +54,3 @@ export const FileStatusBadge: React.FC<FileStatusBadgeProps> = ({
     </span>
   );
 };
-

@@ -3,10 +3,10 @@ import { sanitizeHtml } from '@/utils/sanitize';
 
 /**
  * StructuredData Component
- * 
+ *
  * Adds JSON-LD structured data for better search engine understanding.
  * Supports various schema.org types.
- * 
+ *
  * @example
  * ```tsx
  * <StructuredData
@@ -73,4 +73,3 @@ export const createOrganizationSchema = (data: {
     ...(data.description && { description: data.description }),
   };
 };
-

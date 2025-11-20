@@ -74,28 +74,40 @@ export const useErrorRecovery = ({
     const suggestionsList: string[] = [];
 
     // Network errors
-    if (errorMessage.toLowerCase().includes('network') || errorMessage.toLowerCase().includes('fetch')) {
+    if (
+      errorMessage.toLowerCase().includes('network') ||
+      errorMessage.toLowerCase().includes('fetch')
+    ) {
       suggestionsList.push('Check your internet connection');
       suggestionsList.push('Verify that the server is reachable');
       suggestionsList.push('Try again in a few moments');
     }
 
     // Authentication errors
-    if (errorMessage.toLowerCase().includes('auth') || errorMessage.toLowerCase().includes('unauthorized')) {
+    if (
+      errorMessage.toLowerCase().includes('auth') ||
+      errorMessage.toLowerCase().includes('unauthorized')
+    ) {
       suggestionsList.push('Please log in again');
-      suggestionsList.push('Check that your session hasn\'t expired');
+      suggestionsList.push("Check that your session hasn't expired");
       suggestionsList.push('Verify your account permissions');
     }
 
     // Validation errors
-    if (errorMessage.toLowerCase().includes('valid') || errorMessage.toLowerCase().includes('required')) {
+    if (
+      errorMessage.toLowerCase().includes('valid') ||
+      errorMessage.toLowerCase().includes('required')
+    ) {
       suggestionsList.push('Check that all required fields are filled');
       suggestionsList.push('Verify that input values are correct');
       suggestionsList.push('Review the form for highlighted errors');
     }
 
     // Permission errors
-    if (errorMessage.toLowerCase().includes('permission') || errorMessage.toLowerCase().includes('forbidden')) {
+    if (
+      errorMessage.toLowerCase().includes('permission') ||
+      errorMessage.toLowerCase().includes('forbidden')
+    ) {
       suggestionsList.push('Contact your administrator for access');
       suggestionsList.push('Verify that you have the necessary permissions');
     }
@@ -115,10 +127,16 @@ export const useErrorRecovery = ({
     if (errorMessage.toLowerCase().includes('network')) {
       return 'Connection Error';
     }
-    if (errorMessage.toLowerCase().includes('auth') || errorMessage.toLowerCase().includes('unauthorized')) {
+    if (
+      errorMessage.toLowerCase().includes('auth') ||
+      errorMessage.toLowerCase().includes('unauthorized')
+    ) {
       return 'Authentication Error';
     }
-    if (errorMessage.toLowerCase().includes('permission') || errorMessage.toLowerCase().includes('forbidden')) {
+    if (
+      errorMessage.toLowerCase().includes('permission') ||
+      errorMessage.toLowerCase().includes('forbidden')
+    ) {
       return 'Access Denied';
     }
     if (errorMessage.toLowerCase().includes('valid')) {
@@ -139,4 +157,3 @@ export const useErrorRecovery = ({
 };
 
 export default useErrorRecovery;
-

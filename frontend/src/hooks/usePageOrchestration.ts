@@ -33,14 +33,10 @@ export interface UsePageOrchestrationOptions {
 /**
  * React hook for page orchestration
  */
-export function usePageOrchestration(
-  options: UsePageOrchestrationOptions
-) {
+export function usePageOrchestration(options: UsePageOrchestrationOptions) {
   const location = useLocation();
   const lifecycleManager = getPageLifecycleManager();
-  const pageOrchestrationRef = useRef<PageOrchestrationInterface | null>(
-    null
-  );
+  const pageOrchestrationRef = useRef<PageOrchestrationInterface | null>(null);
 
   // Create page orchestration implementation
   const createPageOrchestration = useCallback((): PageOrchestrationInterface => {
@@ -49,8 +45,7 @@ export function usePageOrchestration(
       getPageMetadata: () => options.pageMetadata,
       getPageContext: options.getPageContext,
       getOnboardingSteps: options.getOnboardingSteps || (() => []),
-      getCurrentOnboardingStep:
-        options.getCurrentOnboardingStep || (() => null),
+      getCurrentOnboardingStep: options.getCurrentOnboardingStep || (() => null),
       completeOnboardingStep:
         options.completeOnboardingStep ||
         (async () => {
@@ -61,8 +56,7 @@ export function usePageOrchestration(
         (async () => {
           /* no-op */
         }),
-      registerGuidanceHandlers:
-        options.registerGuidanceHandlers || (() => []),
+      registerGuidanceHandlers: options.registerGuidanceHandlers || (() => []),
       getGuidanceContent: options.getGuidanceContent || (() => []),
       getWorkflowState: options.getWorkflowState || (() => null),
       updateWorkflowState:
@@ -80,10 +74,7 @@ export function usePageOrchestration(
         await lifecycleManager.onPageMount(pageOrchestrationRef.current!);
       },
       onPageUpdate: async (changes: Partial<PageContext>) => {
-        await lifecycleManager.onPageUpdate(
-          pageOrchestrationRef.current!,
-          changes
-        );
+        await lifecycleManager.onPageUpdate(pageOrchestrationRef.current!, changes);
         if (options.onContextChange) {
           options.onContextChange(changes);
         }
@@ -116,11 +107,9 @@ export function usePageOrchestration(
     // Cleanup on unmount
     return () => {
       if (pageOrchestrationRef.current) {
-        lifecycleManager
-          .onPageUnmount(pageOrchestrationRef.current)
-          .catch((error) => {
-            logger.error('Error unmounting page', { error });
-          });
+        lifecycleManager.onPageUnmount(pageOrchestrationRef.current).catch((error) => {
+          logger.error('Error unmounting page', { error });
+        });
       }
     };
   }, [location.pathname, lifecycleManager]);
@@ -130,11 +119,9 @@ export function usePageOrchestration(
     (changes: Partial<PageContext>) => {
       if (!pageOrchestrationRef.current) return;
 
-      lifecycleManager
-        .onPageUpdate(pageOrchestrationRef.current, changes)
-        .catch((error) => {
-          logger.error('Error updating page', { error });
-        });
+      lifecycleManager.onPageUpdate(pageOrchestrationRef.current, changes).catch((error) => {
+        logger.error('Error updating page', { error });
+      });
     },
     [lifecycleManager]
   );
@@ -177,5 +164,3 @@ export function usePageOrchestration(
     pageOrchestration: pageOrchestrationRef.current,
   };
 }
-
-

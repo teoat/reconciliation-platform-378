@@ -1,6 +1,6 @@
-import { lazy, Suspense, ComponentType } from 'react'
-import { logger } from '@/services/logger'
-import { LoadingSpinner } from '../components/ui/LoadingSpinner'
+import { lazy, Suspense, ComponentType } from 'react';
+import { logger } from '@/services/logger';
+import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 // ============================================================================
 // LAZY LOADING UTILITIES
@@ -13,15 +13,15 @@ export function createLazyComponent<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   fallback?: React.ComponentType
 ) {
-  const LazyComponent = lazy(importFn)
-  
+  const LazyComponent = lazy(importFn);
+
   return function LazyWrapper(props: React.ComponentProps<T>) {
     return (
       <Suspense fallback={fallback ? <fallback /> : <LoadingSpinner />}>
         <LazyComponent {...props} />
       </Suspense>
-    )
-  }
+    );
+  };
 }
 
 /**
@@ -31,15 +31,15 @@ export function createLazyComponentWithLoader<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   LoadingComponent: React.ComponentType
 ) {
-  const LazyComponent = lazy(importFn)
-  
+  const LazyComponent = lazy(importFn);
+
   return function LazyWrapper(props: React.ComponentProps<T>) {
     return (
       <Suspense fallback={<LoadingComponent />}>
         <LazyComponent {...props} />
       </Suspense>
-    )
-  }
+    );
+  };
 }
 
 /**
@@ -49,8 +49,8 @@ export function createLazyComponentWithErrorBoundary<T extends ComponentType<any
   importFn: () => Promise<{ default: T }>,
   ErrorComponent: React.ComponentType<{ error: Error; retry: () => void }>
 ) {
-  const LazyComponent = lazy(importFn)
-  
+  const LazyComponent = lazy(importFn);
+
   return function LazyWrapper(props: React.ComponentProps<T>) {
     return (
       <ErrorBoundary fallback={ErrorComponent}>
@@ -58,8 +58,8 @@ export function createLazyComponentWithErrorBoundary<T extends ComponentType<any
           <LazyComponent {...props} />
         </Suspense>
       </ErrorBoundary>
-    )
-  }
+    );
+  };
 }
 
 // ============================================================================
@@ -67,40 +67,40 @@ export function createLazyComponentWithErrorBoundary<T extends ComponentType<any
 // ============================================================================
 
 interface ErrorBoundaryState {
-  hasError: boolean
-  error?: Error
+  hasError: boolean;
+  error?: Error;
 }
 
 interface ErrorBoundaryProps {
-  children: React.ReactNode
-  fallback: React.ComponentType<{ error: Error; retry: () => void }>
+  children: React.ReactNode;
+  fallback: React.ComponentType<{ error: Error; retry: () => void }>;
 }
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: ErrorBoundaryProps) {
-    super(props)
-    this.state = { hasError: false }
+    super(props);
+    this.state = { hasError: false };
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    return { hasError: true, error }
+    return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    logger.error('Error caught by boundary:', error, errorInfo)
+    logger.error('Error caught by boundary:', error, errorInfo);
   }
 
   retry = () => {
-    this.setState({ hasError: false, error: undefined })
-  }
+    this.setState({ hasError: false, error: undefined });
+  };
 
   render() {
     if (this.state.hasError && this.state.error) {
-      const FallbackComponent = this.props.fallback
-      return <FallbackComponent error={this.state.error} retry={this.retry} />
+      const FallbackComponent = this.props.fallback;
+      return <FallbackComponent error={this.state.error} retry={this.retry} />;
     }
 
-    return this.props.children
+    return this.props.children;
   }
 }
 
@@ -114,16 +114,14 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 export function preloadComponent<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>
 ) {
-  return importFn()
+  return importFn();
 }
 
 /**
  * Preloads multiple components
  */
-export function preloadComponents(
-  importFns: Array<() => Promise<any>>
-) {
-  return Promise.all(importFns.map(fn => fn()))
+export function preloadComponents(importFns: Array<() => Promise<any>>) {
+  return Promise.all(importFns.map((fn) => fn()));
 }
 
 /**
@@ -133,19 +131,21 @@ export function createPreloadableComponent<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   preloadTrigger: 'hover' | 'focus' | 'both' = 'hover'
 ) {
-  const LazyComponent = lazy(importFn)
-  let preloaded = false
+  const LazyComponent = lazy(importFn);
+  let preloaded = false;
 
   const preload = () => {
     if (!preloaded) {
-      preloaded = true
-      importFn()
+      preloaded = true;
+      importFn();
     }
-  }
+  };
 
   return function PreloadableWrapper(props: React.ComponentProps<T>) {
-    const handleMouseEnter = preloadTrigger === 'hover' || preloadTrigger === 'both' ? preload : undefined
-    const handleFocus = preloadTrigger === 'focus' || preloadTrigger === 'both' ? preload : undefined
+    const handleMouseEnter =
+      preloadTrigger === 'hover' || preloadTrigger === 'both' ? preload : undefined;
+    const handleFocus =
+      preloadTrigger === 'focus' || preloadTrigger === 'both' ? preload : undefined;
 
     return (
       <div onMouseEnter={handleMouseEnter} onFocus={handleFocus}>
@@ -153,8 +153,8 @@ export function createPreloadableComponent<T extends ComponentType<any>>(
           <LazyComponent {...props} />
         </Suspense>
       </div>
-    )
-  }
+    );
+  };
 }
 
 // ============================================================================
@@ -168,15 +168,15 @@ export function createLazyRoute<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   fallback?: React.ComponentType
 ) {
-  const LazyComponent = lazy(importFn)
-  
+  const LazyComponent = lazy(importFn);
+
   return function LazyRoute(props: React.ComponentProps<T>) {
     return (
       <Suspense fallback={fallback ? <fallback /> : <LoadingSpinner />}>
         <LazyComponent {...props} />
       </Suspense>
-    )
-  }
+    );
+  };
 }
 
 // ============================================================================
@@ -192,23 +192,23 @@ export function createRetryableImport<T>(
   delay: number = 1000
 ): () => Promise<T> {
   return async () => {
-    let lastError: Error
-    
+    let lastError: Error;
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        return await importFn()
+        return await importFn();
       } catch (error) {
-        lastError = error as Error
-        logger.warn(`Import attempt ${attempt} failed:`, error)
-        
+        lastError = error as Error;
+        logger.warn(`Import attempt ${attempt} failed:`, error);
+
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, delay * attempt))
+          await new Promise((resolve) => setTimeout(resolve, delay * attempt));
         }
       }
     }
-    
-    throw lastError!
-  }
+
+    throw lastError!;
+  };
 }
 
 // ============================================================================
@@ -223,17 +223,17 @@ export function measureComponentLoadTime<T extends ComponentType<any>>(
   componentName: string
 ) {
   return async () => {
-    const startTime = performance.now()
+    const startTime = performance.now();
     try {
-      const result = await importFn()
-      const endTime = performance.now()
-      return result
+      const result = await importFn();
+      const endTime = performance.now();
+      return result;
     } catch (error) {
-      const endTime = performance.now()
-      logger.error(`${componentName} failed to load after ${endTime - startTime}ms:`, error)
-      throw error
+      const endTime = performance.now();
+      logger.error(`${componentName} failed to load after ${endTime - startTime}ms:`, error);
+      throw error;
     }
-  }
+  };
 }
 
 /**
@@ -243,19 +243,15 @@ export function createMeasuredLazyComponent<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   componentName: string
 ) {
-  const measuredImport = measureComponentLoadTime(importFn, componentName)
-  return createLazyComponent(measuredImport)
+  const measuredImport = measureComponentLoadTime(importFn, componentName);
+  return createLazyComponent(measuredImport);
 }
 
 // ============================================================================
 // EXPORTS
 // ============================================================================
 
-export {
-  lazy,
-  Suspense,
-  ErrorBoundary
-}
+export { lazy, Suspense, ErrorBoundary };
 
 export default {
   createLazyComponent,
@@ -267,5 +263,5 @@ export default {
   measureComponentLoadTime,
   createMeasuredLazyComponent,
   preloadComponent,
-  preloadComponents
-}
+  preloadComponents,
+};

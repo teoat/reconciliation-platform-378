@@ -6,7 +6,11 @@ import { ReduxProvider } from './store/ReduxProvider';
 import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { WebSocketProvider } from './services/WebSocketProvider';
 import UnifiedFetchInterceptor from './services/unifiedFetchInterceptor';
-import { initializeMemoryMonitoring } from './utils/memoryOptimization';
+// Lazy load memory monitoring to reduce initial bundle
+const initializeMemoryMonitoring = async () => {
+  const { initializeMemoryMonitoring: init } = await import('./utils/memoryOptimization');
+  return init();
+};
 import AppShell from './components/layout/AppShell';
 import AuthPage from './pages/AuthPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
@@ -69,211 +73,213 @@ function App() {
     };
   }, []);
 
-  // Initialize memory monitoring
+  // Initialize memory monitoring (lazy loaded)
   useEffect(() => {
-    const cleanup = initializeMemoryMonitoring(30000); // Monitor every 30 seconds
-    return cleanup;
+    initializeMemoryMonitoring().then((init) => {
+      const cleanup = init(30000); // Monitor every 30 seconds
+      return cleanup;
+    });
   }, []);
 
   return (
     <HelmetProvider>
-    <ErrorBoundary>
-      <ReduxProvider>
-        <WebSocketProvider config={wsConfig}>
-          <AuthProvider>
-            <Router basename={import.meta.env.VITE_BASE_PATH || '/'}>
-              <div className="min-h-screen bg-gray-100">
-                <KeyboardShortcuts />
-                <ToastContainer />
-                <SessionTimeoutHandler />
-                <Routes>
-                  <Route path="/login" element={<AuthPage />} />
-                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                  <Route
-                    path="/"
-                    element={
-                      <ProtectedRoute>
+      <ErrorBoundary>
+        <ReduxProvider>
+          <WebSocketProvider config={wsConfig}>
+            <AuthProvider>
+              <Router basename={import.meta.env.VITE_BASE_PATH || '/'}>
+                <div className="min-h-screen bg-gray-100">
+                  <KeyboardShortcuts />
+                  <ToastContainer />
+                  <SessionTimeoutHandler />
+                  <Routes>
+                    <Route path="/login" element={<AuthPage />} />
+                    <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                    <Route
+                      path="/"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <Dashboard />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/projects/:projectId/reconciliation"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <ReconciliationPage />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/quick-reconciliation"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <QuickReconciliationWizard />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/analytics"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <AnalyticsDashboard />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/projects/new"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <ProjectCreate />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/projects/:id"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <ProjectDetail />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/projects/:id/edit"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <ProjectEdit />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/upload"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <FileUpload />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/users"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <UserManagement />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/api-status"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <ApiIntegrationStatus />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/api-tester"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <ApiTester />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/api-docs"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <ApiDocumentation />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/settings"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <Settings />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <Profile />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="*"
+                      element={
                         <AppLayout>
                           <Suspense fallback={<LoadingSpinner />}>
-                            <Dashboard />
+                            <NotFound />
                           </Suspense>
                         </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/projects/:projectId/reconciliation"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout>
-                          <Suspense fallback={<LoadingSpinner />}>
-                            <ReconciliationPage />
-                          </Suspense>
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/quick-reconciliation"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout>
-                          <Suspense fallback={<LoadingSpinner />}>
-                            <QuickReconciliationWizard />
-                          </Suspense>
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/analytics"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout>
-                          <Suspense fallback={<LoadingSpinner />}>
-                            <AnalyticsDashboard />
-                          </Suspense>
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/projects/new"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout>
-                          <Suspense fallback={<LoadingSpinner />}>
-                            <ProjectCreate />
-                          </Suspense>
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/projects/:id"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout>
-                          <Suspense fallback={<LoadingSpinner />}>
-                            <ProjectDetail />
-                          </Suspense>
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/projects/:id/edit"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout>
-                          <Suspense fallback={<LoadingSpinner />}>
-                            <ProjectEdit />
-                          </Suspense>
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/upload"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout>
-                          <Suspense fallback={<LoadingSpinner />}>
-                            <FileUpload />
-                          </Suspense>
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/users"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout>
-                          <Suspense fallback={<LoadingSpinner />}>
-                            <UserManagement />
-                          </Suspense>
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/api-status"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout>
-                          <Suspense fallback={<LoadingSpinner />}>
-                            <ApiIntegrationStatus />
-                          </Suspense>
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/api-tester"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout>
-                          <Suspense fallback={<LoadingSpinner />}>
-                            <ApiTester />
-                          </Suspense>
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/api-docs"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout>
-                          <Suspense fallback={<LoadingSpinner />}>
-                            <ApiDocumentation />
-                          </Suspense>
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/settings"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout>
-                          <Suspense fallback={<LoadingSpinner />}>
-                            <Settings />
-                          </Suspense>
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="/profile"
-                    element={
-                      <ProtectedRoute>
-                        <AppLayout>
-                          <Suspense fallback={<LoadingSpinner />}>
-                            <Profile />
-                          </Suspense>
-                        </AppLayout>
-                      </ProtectedRoute>
-                    }
-                  />
-                  <Route
-                    path="*"
-                    element={
-                      <AppLayout>
-                        <Suspense fallback={<LoadingSpinner />}>
-                          <NotFound />
-                        </Suspense>
-                      </AppLayout>
-                    }
-                  />
-                </Routes>
-              </div>
-            </Router>
-          </AuthProvider>
-        </WebSocketProvider>
-      </ReduxProvider>
-    </ErrorBoundary>
+                      }
+                    />
+                  </Routes>
+                </div>
+              </Router>
+            </AuthProvider>
+          </WebSocketProvider>
+        </ReduxProvider>
+      </ErrorBoundary>
     </HelmetProvider>
   );
 }

@@ -1,74 +1,73 @@
 // Team Challenge Sharing - Viral Mechanism
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 // Social sharing to increase user acquisition
 
-import React, { useState } from 'react'
-import { Share2 } from 'lucide-react'
-import { Copy } from 'lucide-react'
-import { Check } from 'lucide-react'
-import { Users } from 'lucide-react'
-import { Trophy } from 'lucide-react'
-import { Target } from 'lucide-react'
-import Button from '../ui/Button'
-import Card from '../ui/Card'
+import React, { useState } from 'react';
+import { Share2 } from 'lucide-react';
+import { Copy } from 'lucide-react';
+import { Check } from 'lucide-react';
+import { Users } from 'lucide-react';
+import { Trophy } from 'lucide-react';
+import { Target } from 'lucide-react';
+import Button from '../ui/Button';
+import Card from '../ui/Card';
 
 interface ChallengeStats {
-  completedReconciliations: number
-  streak: number
-  accuracy: number
-  teamSize: number
+  completedReconciliations: number;
+  streak: number;
+  accuracy: number;
+  teamSize: number;
 }
 
 interface TeamChallengeShareProps {
-  userId: string
-  stats: ChallengeStats
+  userId: string;
+  stats: ChallengeStats;
 }
 
 /**
  * Team Challenge Share Component
- * 
+ *
  * Viral sharing mechanism:
  * - Share accomplishments on social media
  * - Invite team members
  * - Challenge others to beat score
  */
 export const TeamChallengeShare: React.FC<TeamChallengeShareProps> = ({ userId, stats }) => {
-  const [copied, setCopied] = useState(false)
-  const [sharing, setSharing] = useState(false)
+  const [copied, setCopied] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
-  const shareUrl = `${window.location.origin}/challenge?ref=${userId}`
-  
-  const shareText = `🔥 I just completed ${stats.completedReconciliations} reconciliations with ${stats.accuracy}% accuracy! Can you beat my ${stats.streak}-day streak? Join the challenge: ${shareUrl}`
+  const shareUrl = `${window.location.origin}/challenge?ref=${userId}`;
+
+  const shareText = `🔥 I just completed ${stats.completedReconciliations} reconciliations with ${stats.accuracy}% accuracy! Can you beat my ${stats.streak}-day streak? Join the challenge: ${shareUrl}`;
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(shareText)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      logger.error('Failed to copy:', error)
+      logger.error('Failed to copy:', error);
     }
-  }
+  };
 
   const handleShare = async () => {
-    setSharing(true)
-    
+    setSharing(true);
+
     if (navigator.share) {
       try {
         await navigator.share({
           title: 'Data Reconciliation Challenge',
           text: shareText,
-          url: shareUrl
-        })
-      } catch (error) {
-      }
+          url: shareUrl,
+        });
+      } catch (error) {}
     } else {
       // Fallback to copy
-      handleCopy()
+      handleCopy();
     }
-    
-    setSharing(false)
-  }
+
+    setSharing(false);
+  };
 
   return (
     <Card className="p-6 bg-gradient-to-br from-blue-50 to-purple-50 border-2 border-blue-200">
@@ -83,12 +82,12 @@ export const TeamChallengeShare: React.FC<TeamChallengeShareProps> = ({ userId, 
           <div className="text-2xl font-bold text-gray-900">{stats.completedReconciliations}</div>
           <div className="text-sm text-gray-600">Reconciliations</div>
         </div>
-        
+
         <div className="text-center p-4 bg-white rounded-lg">
           <div className="text-2xl font-bold text-gray-900">{stats.accuracy}%</div>
           <div className="text-sm text-gray-600">Accuracy</div>
         </div>
-        
+
         <div className="text-center p-4 bg-white rounded-lg">
           <Users className="h-8 w-8 text-purple-500 mx-auto mb-2" />
           <div className="text-2xl font-bold text-gray-900">{stats.teamSize}</div>
@@ -97,21 +96,12 @@ export const TeamChallengeShare: React.FC<TeamChallengeShareProps> = ({ userId, 
       </div>
 
       <div className="space-y-3">
-        <Button
-          variant="primary"
-          onClick={handleShare}
-          disabled={sharing}
-          className="w-full"
-        >
+        <Button variant="primary" onClick={handleShare} disabled={sharing} className="w-full">
           <Share2 className="h-5 w-5 mr-2" />
           {sharing ? 'Sharing...' : 'Share Challenge'}
         </Button>
 
-        <Button
-          variant="outline"
-          onClick={handleCopy}
-          className="w-full"
-        >
+        <Button variant="outline" onClick={handleCopy} className="w-full">
           {copied ? (
             <>
               <Check className="h-5 w-5 mr-2" />
@@ -132,9 +122,7 @@ export const TeamChallengeShare: React.FC<TeamChallengeShareProps> = ({ userId, 
         </p>
       </div>
     </Card>
-  )
-}
+  );
+};
 
-export default TeamChallengeShare
-
-
+export default TeamChallengeShare;

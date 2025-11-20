@@ -135,4 +135,3 @@ export interface NotificationTrigger {
   conditions: RuleCondition[];
   recipients: User[];
 }
-

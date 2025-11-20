@@ -1,15 +1,10 @@
 /**
  * Ingestion Page Orchestration
- * 
+ *
  * Orchestration configuration for the Ingestion page
  */
 
-import type {
-  PageMetadata,
-  PageContext,
-  OnboardingStep,
-  GuidanceHandler,
-} from '../types';
+import type { PageMetadata, PageContext, OnboardingStep, GuidanceHandler } from '../types';
 
 /**
  * Ingestion Page Metadata
@@ -20,17 +15,8 @@ export const ingestionPageMetadata: PageMetadata = {
   description: 'Data import and processing',
   category: 'workflow',
   features: ['file-upload', 'data-validation', 'processing', 'file-management'],
-  onboardingSteps: [
-    'upload-guide',
-    'validation-help',
-    'processing-info',
-  ],
-  guidanceTopics: [
-    'file-formats',
-    'data-quality',
-    'processing-options',
-    'validation',
-  ],
+  onboardingSteps: ['upload-guide', 'validation-help', 'processing-info'],
+  guidanceTopics: ['file-formats', 'data-quality', 'processing-options', 'validation'],
   icon: 'ingestion',
 };
 
@@ -145,9 +131,7 @@ export function registerIngestionGuidanceHandlers(
 /**
  * Get guidance content for ingestion page
  */
-export function getIngestionGuidanceContent(
-  topic: string
-): Array<{
+export function getIngestionGuidanceContent(topic: string): Array<{
   id: string;
   title: string;
   content: string;
@@ -172,7 +156,8 @@ export function getIngestionGuidanceContent(
       {
         id: 'format-requirements',
         title: 'Format Requirements',
-        content: 'CSV files should have headers in the first row. Excel files should have data starting from row 1.',
+        content:
+          'CSV files should have headers in the first row. Excel files should have data starting from row 1.',
         type: 'tip',
       },
     ],
@@ -180,13 +165,15 @@ export function getIngestionGuidanceContent(
       {
         id: 'quality-tips',
         title: 'Data Quality Tips',
-        content: 'Ensure your data is clean: remove empty rows, fix formatting issues, and ensure consistent column names.',
+        content:
+          'Ensure your data is clean: remove empty rows, fix formatting issues, and ensure consistent column names.',
         type: 'tip',
       },
       {
         id: 'validation',
         title: 'Automatic Validation',
-        content: 'Files are automatically validated for format, structure, and data quality issues.',
+        content:
+          'Files are automatically validated for format, structure, and data quality issues.',
         type: 'info',
       },
     ],
@@ -194,13 +181,15 @@ export function getIngestionGuidanceContent(
       {
         id: 'processing-info',
         title: 'Processing',
-        content: 'Files are processed to extract data and prepare it for reconciliation. This may take a few minutes for large files.',
+        content:
+          'Files are processed to extract data and prepare it for reconciliation. This may take a few minutes for large files.',
         type: 'info',
       },
       {
         id: 'processing-status',
         title: 'Status Tracking',
-        content: 'You can track processing status in real-time. You\'ll be notified when processing is complete.',
+        content:
+          "You can track processing status in real-time. You'll be notified when processing is complete.",
         type: 'tip',
       },
     ],
@@ -208,4 +197,3 @@ export function getIngestionGuidanceContent(
 
   return guidanceMap[topic] || [];
 }
-

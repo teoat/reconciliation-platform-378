@@ -49,8 +49,6 @@ class PWAUtils {
         scope: '/',
       });
 
-      
-
       // Handle updates
       this.registration.addEventListener('updatefound', () => {
         const newWorker = this.registration!.installing;
@@ -66,7 +64,6 @@ class PWAUtils {
 
       // Handle controller change
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        
         window.location.reload();
       });
 
@@ -85,16 +82,12 @@ class PWAUtils {
   private handleServiceWorkerMessage(message: ServiceWorkerMessage): void {
     switch (message.type) {
       case 'CACHE_INFO':
-        
         break;
       case 'PERFORMANCE_STATS':
-        
         break;
       case 'CACHE_SIZE':
-        
         break;
       default:
-        
     }
   }
 

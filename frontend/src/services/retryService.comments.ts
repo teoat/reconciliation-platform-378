@@ -7,10 +7,10 @@
 
 /**
  * Example: Complex retry logic with inline comments
- * 
+ *
  * The retry mechanism uses exponential backoff with jitter to prevent
  * thundering herd problems when multiple clients retry simultaneously.
- * 
+ *
  * Algorithm:
  * 1. Calculate base delay: baseDelay * (backoffMultiplier ^ attempt)
  * 2. Cap at maxDelay to prevent excessive wait times
@@ -22,11 +22,11 @@ function calculateDelayWithComments(attempt: number, config: RetryConfig): numbe
   // Formula: delay = baseDelay * (multiplier ^ (attempt - 1))
   // Example: attempt 1 = 1000ms, attempt 2 = 2000ms, attempt 3 = 4000ms
   let delay = config.baseDelay * Math.pow(config.backoffMultiplier, attempt - 1);
-  
+
   // Step 2: Cap delay at maximum to prevent infinite wait times
   // This ensures we don't wait too long even after many retries
   delay = Math.min(delay, config.maxDelay);
-  
+
   // Step 3: Add jitter to prevent synchronized retries
   // Jitter randomizes delay by 50-100% to spread out client retries
   // This prevents all clients from retrying at exactly the same time
@@ -37,7 +37,7 @@ function calculateDelayWithComments(attempt: number, config: RetryConfig): numbe
     const jitterMultiplier = 0.5 + Math.random() * 0.5;
     delay = delay * jitterMultiplier;
   }
-  
+
   // Step 4: Convert to integer milliseconds
   // setTimeout requires integer, so we floor the result
   return Math.floor(delay);
@@ -45,15 +45,15 @@ function calculateDelayWithComments(attempt: number, config: RetryConfig): numbe
 
 /**
  * Circuit Breaker Pattern Explanation:
- * 
+ *
  * The circuit breaker prevents cascading failures by "opening" the circuit
  * when too many failures occur, stopping requests temporarily.
- * 
+ *
  * States:
  * - CLOSED: Normal operation, requests pass through
  * - OPEN: Too many failures, requests are blocked immediately
  * - HALF-OPEN: Testing if service recovered, allows limited requests
- * 
+ *
  * Transition Logic:
  * CLOSED -> OPEN: When failure count >= threshold
  * OPEN -> HALF-OPEN: After recovery timeout expires
@@ -69,15 +69,13 @@ function circuitBreakerLogicWithComments(
     // Normal operation - track failures
     if (!success) {
       state.failureCount++;
-      
+
       // Check if we should open the circuit
       // This prevents overwhelming a failing service
       if (state.failureCount >= config.failureThreshold) {
         state.state = 'open';
         // Set recovery time - try again after timeout
-        state.nextAttemptTime = new Date(
-          Date.now() + config.recoveryTimeout
-        );
+        state.nextAttemptTime = new Date(Date.now() + config.recoveryTimeout);
       }
     } else {
       // Success - reset failure count
@@ -101,12 +99,9 @@ function circuitBreakerLogicWithComments(
     } else {
       // Still failing - open circuit again
       state.state = 'open';
-      state.nextAttemptTime = new Date(
-        Date.now() + config.recoveryTimeout
-      );
+      state.nextAttemptTime = new Date(Date.now() + config.recoveryTimeout);
     }
   }
-  
+
   return state;
 }
-

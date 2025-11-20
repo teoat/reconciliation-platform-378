@@ -102,22 +102,22 @@ export const ErrorReportingForm: React.FC<ErrorReportingFormProps> = ({
     }
   };
 
-  const handleChange = (field: keyof ErrorReport) => (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: e.target.value,
-    }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => {
-        const next = { ...prev };
-        delete next[field];
-        return next;
-      });
-    }
-  };
+  const handleChange =
+    (field: keyof ErrorReport) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: e.target.value,
+      }));
+      // Clear error when user starts typing
+      if (errors[field]) {
+        setErrors((prev) => {
+          const next = { ...prev };
+          delete next[field];
+          return next;
+        });
+      }
+    };
 
   return (
     <form
@@ -153,7 +153,10 @@ export const ErrorReportingForm: React.FC<ErrorReportingFormProps> = ({
       <div>
         <label htmlFor="report-name" className="block text-sm font-medium text-gray-700 mb-1">
           <User className="h-4 w-4 inline mr-1" aria-hidden="true" />
-          Your Name <span className="text-red-600" aria-label="required">*</span>
+          Your Name{' '}
+          <span className="text-red-600" aria-label="required">
+            *
+          </span>
         </label>
         <input
           type="text"
@@ -179,7 +182,10 @@ export const ErrorReportingForm: React.FC<ErrorReportingFormProps> = ({
       <div>
         <label htmlFor="report-email" className="block text-sm font-medium text-gray-700 mb-1">
           <Mail className="h-4 w-4 inline mr-1" aria-hidden="true" />
-          Your Email <span className="text-red-600" aria-label="required">*</span>
+          Your Email{' '}
+          <span className="text-red-600" aria-label="required">
+            *
+          </span>
         </label>
         <input
           type="email"
@@ -203,9 +209,15 @@ export const ErrorReportingForm: React.FC<ErrorReportingFormProps> = ({
 
       {/* Description Field */}
       <div>
-        <label htmlFor="report-description" className="block text-sm font-medium text-gray-700 mb-1">
+        <label
+          htmlFor="report-description"
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
           <MessageSquare className="h-4 w-4 inline mr-1" aria-hidden="true" />
-          Error Description <span className="text-red-600" aria-label="required">*</span>
+          Error Description{' '}
+          <span className="text-red-600" aria-label="required">
+            *
+          </span>
         </label>
         <textarea
           id="report-description"
@@ -230,7 +242,10 @@ export const ErrorReportingForm: React.FC<ErrorReportingFormProps> = ({
       {/* Steps to Reproduce Field */}
       <div>
         <label htmlFor="report-steps" className="block text-sm font-medium text-gray-700 mb-1">
-          Steps to Reproduce <span className="text-red-600" aria-label="required">*</span>
+          Steps to Reproduce{' '}
+          <span className="text-red-600" aria-label="required">
+            *
+          </span>
         </label>
         <textarea
           id="report-steps"
@@ -287,7 +302,10 @@ export const ErrorReportingForm: React.FC<ErrorReportingFormProps> = ({
           disabled={isSubmitting}
           aria-label="Submit error report"
         >
-          <Send className={`h-4 w-4 mr-2 ${isSubmitting ? 'animate-pulse' : ''}`} aria-hidden="true" />
+          <Send
+            className={`h-4 w-4 mr-2 ${isSubmitting ? 'animate-pulse' : ''}`}
+            aria-hidden="true"
+          />
           {isSubmitting ? 'Submitting...' : 'Submit Report'}
         </Button>
       </div>
@@ -296,5 +314,3 @@ export const ErrorReportingForm: React.FC<ErrorReportingFormProps> = ({
 };
 
 export default ErrorReportingForm;
-
-

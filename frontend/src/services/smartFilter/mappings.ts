@@ -48,7 +48,11 @@ export class MappingManager {
     return mapping;
   }
 
-  public updateMapping(contextId: string, sourceField: string, updates: Partial<FieldMapping>): FieldMapping | undefined {
+  public updateMapping(
+    contextId: string,
+    sourceField: string,
+    updates: Partial<FieldMapping>
+  ): FieldMapping | undefined {
     const mappings = this.fieldMappings.get(contextId);
     if (!mappings) return undefined;
 
@@ -104,4 +108,3 @@ export class MappingManager {
     this.persistMappings();
   }
 }
-

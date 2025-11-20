@@ -151,7 +151,7 @@ class ErrorTrackingService {
    */
   private logError(error: ErrorEvent): void {
     const logMessage = `[${error.severity.toUpperCase()}] ${error.message}`;
-    
+
     switch (error.severity) {
       case 'critical':
         logger.error(logMessage, error.context);
@@ -183,22 +183,24 @@ class ErrorTrackingService {
 
     // Check if Sentry or other monitoring service is configured
     if (typeof window !== 'undefined') {
-      const win = window as unknown as { Sentry?: { captureException: (error: Error, options?: unknown) => void } };
+      const win = window as unknown as {
+        Sentry?: { captureException: (error: Error, options?: unknown) => void };
+      };
       if (win.Sentry) {
         try {
           win.Sentry.captureException(new Error(error.message), {
-          contexts: {
-            custom: error.context,
-          },
-          tags: {
-            category: error.category,
-            severity: error.severity,
-          },
-        });
-      } catch (e) {
-        // Sentry not available or error sending
+            contexts: {
+              custom: error.context,
+            },
+            tags: {
+              category: error.category,
+              severity: error.severity,
+            },
+          });
+        } catch (e) {
+          // Sentry not available or error sending
+        }
       }
-    }
     }
 
     // Could also send to custom API endpoint
@@ -216,7 +218,7 @@ class ErrorTrackingService {
    * Get errors by severity
    */
   getErrorsBySeverity(severity: ErrorEvent['severity']): ErrorEvent[] {
-    return this.errors.filter(e => e.severity === severity);
+    return this.errors.filter((e) => e.severity === severity);
   }
 
   /**
@@ -241,4 +243,3 @@ export const errorTracking = new ErrorTrackingService();
 if (typeof window !== 'undefined') {
   errorTracking.init();
 }
-

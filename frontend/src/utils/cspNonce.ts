@@ -1,6 +1,6 @@
 /**
  * CSP Nonce Utility Module
- * 
+ *
  * Provides utilities for generating and managing Content Security Policy nonces
  * for secure inline script and style execution in production.
  */
@@ -12,7 +12,9 @@
 export function generateNonce(): string {
   if (typeof crypto === 'undefined' || !crypto.getRandomValues) {
     // Fallback for environments without crypto API (shouldn't happen in browsers)
-    return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    return (
+      Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15)
+    );
   }
 
   const array = new Uint8Array(16);
@@ -90,15 +92,15 @@ export function injectNonceIntoStyle(styleElement: HTMLStyleElement): void {
 export function createScriptWithNonce(content?: string, src?: string): HTMLScriptElement {
   const script = document.createElement('script');
   script.nonce = getNonce();
-  
+
   if (src) {
     script.src = src;
   }
-  
+
   if (content) {
     script.textContent = content;
   }
-  
+
   return script;
 }
 
@@ -110,11 +112,11 @@ export function createScriptWithNonce(content?: string, src?: string): HTMLScrip
 export function createStyleWithNonce(content?: string): HTMLStyleElement {
   const style = document.createElement('style');
   style.nonce = getNonce();
-  
+
   if (content) {
     style.textContent = content;
   }
-  
+
   return style;
 }
 
@@ -132,11 +134,11 @@ export function buildCSPDirective(
 ): string {
   const nonce = includeNonce ? getNonce() : null;
   const sourceList = [...sources];
-  
+
   if (nonce && includeNonce) {
     sourceList.push(`'nonce-${nonce}'`);
   }
-  
+
   return `${directive} ${sourceList.join(' ')}`;
 }
 
@@ -148,19 +150,19 @@ export function buildCSPDirective(
 export function buildCSPHeader(policy: Record<string, string[]>): string {
   const nonce = getNonce();
   const directives: string[] = [];
-  
+
   Object.entries(policy).forEach(([directive, sources]) => {
-    const processedSources = sources.map(source => {
+    const processedSources = sources.map((source) => {
       // Replace placeholder with actual nonce
       if (source === "'nonce-{nonce}'" || source === 'nonce-{nonce}') {
         return `'nonce-${nonce}'`;
       }
       return source;
     });
-    
+
     directives.push(`${directive} ${processedSources.join(' ')}`);
   });
-  
+
   return directives.join('; ');
 }
 
@@ -170,18 +172,18 @@ export function buildCSPHeader(policy: Record<string, string[]>): string {
  */
 export function updateCSPMetaTag(policy: Record<string, string[]>): void {
   if (typeof document === 'undefined') return;
-  
+
   // Remove existing CSP meta tag
   const existingMeta = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
   if (existingMeta) {
     existingMeta.remove();
   }
-  
+
   // Create new meta tag with nonce
   const meta = document.createElement('meta');
   meta.httpEquiv = 'Content-Security-Policy';
   meta.content = buildCSPHeader(policy);
-  
+
   document.head.appendChild(meta);
 }
 
@@ -191,13 +193,13 @@ export function updateCSPMetaTag(policy: Record<string, string[]>): void {
  */
 export function initializeNonceCSP(): string {
   const nonce = getNonce();
-  
+
   // Store nonce in a data attribute on the root element for easy access
   if (typeof document !== 'undefined') {
     const root = document.documentElement;
     root.setAttribute('data-csp-nonce', nonce);
   }
-  
+
   return nonce;
 }
 

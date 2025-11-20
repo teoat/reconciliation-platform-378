@@ -1,5 +1,11 @@
 // Main Smart Filter Service Orchestrator
-import { FilterPreset, FieldMapping, AIMappingSuggestion, FilterConfig, SmartDefaults } from './types';
+import {
+  FilterPreset,
+  FieldMapping,
+  AIMappingSuggestion,
+  FilterConfig,
+  SmartDefaults,
+} from './types';
 import { PresetManager } from './presets';
 import { MappingManager } from './mappings';
 import { FilterEngine } from './engine';
@@ -70,7 +76,11 @@ class SmartFilterService {
     return this.mappingManager.createMapping(contextId, mapping);
   }
 
-  public updateMapping(contextId: string, sourceField: string, updates: Partial<FieldMapping>): FieldMapping | undefined {
+  public updateMapping(
+    contextId: string,
+    sourceField: string,
+    updates: Partial<FieldMapping>
+  ): FieldMapping | undefined {
     return this.mappingManager.updateMapping(contextId, sourceField, updates);
   }
 
@@ -177,4 +187,3 @@ class SmartFilterService {
 export const smartFilterService = SmartFilterService.getInstance();
 export default smartFilterService;
 export * from './types';
-

@@ -176,4 +176,3 @@ export class SecurityAlertManager extends EventEmitter {
     this.removeAllListeners();
   }
 }
-

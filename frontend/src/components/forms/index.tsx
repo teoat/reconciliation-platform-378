@@ -1,117 +1,117 @@
 // UNIFIED FORM SYSTEM - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
-import React, { useState, useRef, useCallback, forwardRef } from 'react'
-import { Upload } from 'lucide-react'
-import { X } from 'lucide-react'
-import { File } from 'lucide-react'
-import { CheckCircle } from 'lucide-react'
-import { AlertCircle } from 'lucide-react'
-import { Search } from 'lucide-react'
+import React, { useState, useRef, useCallback, forwardRef } from 'react';
+import { Upload } from 'lucide-react';
+import { X } from 'lucide-react';
+import { File } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 // ============================================================================
 // FORM TYPES AND INTERFACES
 // ============================================================================
 
 // Form field value types
-export type FormFieldValue = string | number | boolean | Date | File | null | undefined
+export type FormFieldValue = string | number | boolean | Date | File | null | undefined;
 
 export interface ValidationRule {
-  required?: boolean
-  minLength?: number
-  maxLength?: number
-  pattern?: RegExp
-  email?: boolean
-  custom?: (value: FormFieldValue) => string | null
+  required?: boolean;
+  minLength?: number;
+  maxLength?: number;
+  pattern?: RegExp;
+  email?: boolean;
+  custom?: (value: FormFieldValue) => string | null;
 }
 
 export interface ValidationRules {
-  [key: string]: ValidationRule
+  [key: string]: ValidationRule;
 }
 
 export interface FormData {
-  [key: string]: FormFieldValue
+  [key: string]: FormFieldValue;
 }
 
 export interface FormErrors {
-  [key: string]: string
+  [key: string]: string;
 }
 
 export interface UseFormOptions<T extends FormData = FormData> {
-  initialValues?: T
-  validationRules?: ValidationRules
-  onSubmit?: (values: T) => void | Promise<void>
+  initialValues?: T;
+  validationRules?: ValidationRules;
+  onSubmit?: (values: T) => void | Promise<void>;
 }
 
 export interface UseFormReturn<T extends FormData = FormData> {
-  values: T
-  errors: FormErrors
-  touched: { [key: string]: boolean }
-  isSubmitting: boolean
-  isValid: boolean
-  setValue: (name: string, value: FormFieldValue) => void
-  setError: (name: string, error: string) => void
-  clearError: (name: string) => void
-  handleChange: (name: string, value: FormFieldValue) => void
-  handleBlur: (name: string) => void
-  handleSubmit: (e: React.FormEvent) => void
-  reset: () => void
+  values: T;
+  errors: FormErrors;
+  touched: { [key: string]: boolean };
+  isSubmitting: boolean;
+  isValid: boolean;
+  setValue: (name: string, value: FormFieldValue) => void;
+  setError: (name: string, error: string) => void;
+  clearError: (name: string) => void;
+  handleChange: (name: string, value: FormFieldValue) => void;
+  handleBlur: (name: string) => void;
+  handleSubmit: (e: React.FormEvent) => void;
+  reset: () => void;
 }
 
 export interface FormFieldProps {
-  label?: string
-  error?: string
-  success?: boolean
-  required?: boolean
-  helpText?: string
-  children: React.ReactNode
-  className?: string
+  label?: string;
+  error?: string;
+  success?: boolean;
+  required?: boolean;
+  helpText?: string;
+  children: React.ReactNode;
+  className?: string;
 }
 
 export interface InputFieldProps {
-  name: string
-  type?: string
-  label?: string
-  placeholder?: string
-  error?: string
-  required?: boolean
-  disabled?: boolean
-  className?: string
-  value?: string | number
-  onChange?: (value: string | number) => void
-  onBlur?: () => void
+  name: string;
+  type?: string;
+  label?: string;
+  placeholder?: string;
+  error?: string;
+  required?: boolean;
+  disabled?: boolean;
+  className?: string;
+  value?: string | number;
+  onChange?: (value: string | number) => void;
+  onBlur?: () => void;
 }
 
 export interface FileUploadProps {
-  name: string
-  label?: string
-  accept?: string
-  multiple?: boolean
-  maxSize?: number
-  error?: string
-  required?: boolean
-  disabled?: boolean
-  className?: string
-  onChange?: (files: FileList | null) => void
-  value?: FileList | null
+  name: string;
+  label?: string;
+  accept?: string;
+  multiple?: boolean;
+  maxSize?: number;
+  error?: string;
+  required?: boolean;
+  disabled?: boolean;
+  className?: string;
+  onChange?: (files: FileList | null) => void;
+  value?: FileList | null;
 }
 
 export interface SearchFilterProps {
-  placeholder?: string
-  value: string
-  onChange: (value: string) => void
-  className?: string
+  placeholder?: string;
+  value: string;
+  onChange: (value: string) => void;
+  className?: string;
 }
 
 export interface QuickFilterProps {
-  filters: { [key: string]: string }
-  onFilterChange: (key: string, value: string) => void
+  filters: { [key: string]: string };
+  onFilterChange: (key: string, value: string) => void;
   quickFilters: Array<{
-    key: string
-    label: string
-    options: Array<{ value: string; label: string }>
-  }>
-  className?: string
+    key: string;
+    label: string;
+    options: Array<{ value: string; label: string }>;
+  }>;
+  className?: string;
 }
 
 // ============================================================================
@@ -121,23 +121,23 @@ export interface QuickFilterProps {
 /**
  * @deprecated This hook is duplicated. Please use useForm from '../hooks/useForm.ts' instead.
  * This export will be removed in the next version.
- * 
+ *
  * Migration guide:
  * - Old: import { useForm } from '@/components/forms'
  * - New: import { useForm } from '@/hooks/useForm'
- * 
+ *
  * The API remains the same for backward compatibility.
  */
-export { useForm } from '../hooks/useForm'
+export { useForm } from '../hooks/useForm';
 
 // ============================================================================
 // FORM COMPONENTS
 // ============================================================================
 
 export interface FormProps {
-  onSubmit: (e: React.FormEvent) => void
-  children: React.ReactNode
-  className?: string
+  onSubmit: (e: React.FormEvent) => void;
+  children: React.ReactNode;
+  className?: string;
 }
 
 export const Form: React.FC<FormProps> = ({ onSubmit, children, className = '' }) => {
@@ -145,12 +145,12 @@ export const Form: React.FC<FormProps> = ({ onSubmit, children, className = '' }
     <form onSubmit={onSubmit} className={className} noValidate>
       {children}
     </form>
-  )
-}
+  );
+};
 
 export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
   ({ label, error, success, required, helpText, children, className = '' }, ref) => {
-    const fieldId = React.useId()
+    const fieldId = React.useId();
 
     return (
       <div ref={ref} className={`space-y-1 ${className}`}>
@@ -165,9 +165,8 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
           {React.isValidElement(children) &&
             React.cloneElement(children, {
               id: fieldId,
-              ...children.props
-            })
-          }
+              ...children.props,
+            })}
         </div>
 
         {error && (
@@ -184,15 +183,13 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
           </p>
         )}
 
-        {helpText && !error && (
-          <p className="text-sm text-gray-500">{helpText}</p>
-        )}
+        {helpText && !error && <p className="text-sm text-gray-500">{helpText}</p>}
       </div>
-    )
+    );
   }
-)
+);
 
-FormField.displayName = 'FormField'
+FormField.displayName = 'FormField';
 
 export const InputField: React.FC<InputFieldProps> = ({
   name,
@@ -205,7 +202,7 @@ export const InputField: React.FC<InputFieldProps> = ({
   className = '',
   value,
   onChange,
-  onBlur
+  onBlur,
 }) => {
   return (
     <FormField label={label} error={error} required={required}>
@@ -222,8 +219,8 @@ export const InputField: React.FC<InputFieldProps> = ({
         } ${className}`}
       />
     </FormField>
-  )
-}
+  );
+};
 
 export const FileUpload: React.FC<FileUploadProps> = ({
   name,
@@ -236,47 +233,56 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   disabled,
   className = '',
   onChange,
-  value
+  value,
 }) => {
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const [dragOver, setDragOver] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
 
-    const files = e.dataTransfer.files
-    if (files.length > 0) {
-      onChange?.(files)
-    }
-  }, [onChange])
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        onChange?.(files);
+      }
+    },
+    [onChange]
+  );
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(true)
-  }, [])
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
 
   const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-  }, [])
+    e.preventDefault();
+    setDragOver(false);
+  }, []);
 
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files
-    onChange?.(files)
-  }, [onChange])
+  const handleFileSelect = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const files = e.target.files;
+      onChange?.(files);
+    },
+    [onChange]
+  );
 
-  const removeFile = useCallback((index: number) => {
-    if (value && value.length > 0) {
-      const dt = new DataTransfer()
-      for (let i = 0; i < value.length; i++) {
-        if (i !== index) {
-          dt.items.add(value[i])
+  const removeFile = useCallback(
+    (index: number) => {
+      if (value && value.length > 0) {
+        const dt = new DataTransfer();
+        for (let i = 0; i < value.length; i++) {
+          if (i !== index) {
+            dt.items.add(value[i]);
+          }
         }
+        onChange?.(dt.files);
       }
-      onChange?.(dt.files)
-    }
-  }, [value, onChange])
+    },
+    [value, onChange]
+  );
 
   return (
     <FormField label={label} error={error} required={required} className={className}>
@@ -290,18 +296,10 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         onClick={() => fileInputRef.current?.click()}
       >
         <Upload className="mx-auto h-12 w-12 text-gray-400" />
-        <p className="mt-2 text-sm text-gray-600">
-          Drop files here or click to browse
-        </p>
-        {accept && (
-          <p className="text-xs text-gray-500 mt-1">
-            Accepted: {accept}
-          </p>
-        )}
+        <p className="mt-2 text-sm text-gray-600">Drop files here or click to browse</p>
+        {accept && <p className="text-xs text-gray-500 mt-1">Accepted: {accept}</p>}
         {maxSize && (
-          <p className="text-xs text-gray-500">
-            Max size: {(maxSize / 1024 / 1024).toFixed(1)}MB
-          </p>
+          <p className="text-xs text-gray-500">Max size: {(maxSize / 1024 / 1024).toFixed(1)}MB</p>
         )}
       </div>
 
@@ -339,14 +337,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         </div>
       )}
     </FormField>
-  )
-}
+  );
+};
 
 export const SearchFilter: React.FC<SearchFilterProps> = ({
   placeholder = 'Search...',
   value,
   onChange,
-  className = ''
+  className = '',
 }) => {
   return (
     <div className={`relative ${className}`}>
@@ -359,18 +357,18 @@ export const SearchFilter: React.FC<SearchFilterProps> = ({
         className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
       />
     </div>
-  )
-}
+  );
+};
 
 export const QuickFilter: React.FC<QuickFilterProps> = ({
   filters,
   onFilterChange,
   quickFilters,
-  className = ''
+  className = '',
 }) => {
   return (
     <div className={`flex flex-wrap gap-2 ${className}`}>
-      {quickFilters.map(filter => (
+      {quickFilters.map((filter) => (
         <div key={filter.key} className="flex items-center space-x-2">
           <span className="text-sm text-gray-600">{filter.label}:</span>
           <select
@@ -379,7 +377,7 @@ export const QuickFilter: React.FC<QuickFilterProps> = ({
             className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="">All</option>
-            {filter.options.map(option => (
+            {filter.options.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -388,8 +386,8 @@ export const QuickFilter: React.FC<QuickFilterProps> = ({
         </div>
       ))}
     </div>
-  )
-}
+  );
+};
 
 // ============================================================================
 // EXPORTS
@@ -402,5 +400,5 @@ export default {
   FileUpload,
   SearchFilter,
   QuickFilter,
-  useForm
-}
+  useForm,
+};

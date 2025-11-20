@@ -18,4 +18,3 @@ export * from './pages';
 
 // Re-export for convenience
 export { frenlyAgentService } from '@/services/frenlyAgentService';
-

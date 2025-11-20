@@ -1,16 +1,16 @@
-import { useEffect, useRef, RefObject } from 'react'
+import { useEffect, useRef, RefObject } from 'react';
 
 /**
  * Hook for trapping focus within a container element
  * Useful for modals, dialogs, and other focus-contained components
- * 
+ *
  * @param isActive - Whether focus trapping is active
  * @returns Ref to attach to the container element
- * 
+ *
  * @example
  * ```tsx
  * const modalRef = useFocusTrap(isOpen)
- * 
+ *
  * return (
  *   <div ref={modalRef}>
  *     <button>First</button>
@@ -20,18 +20,18 @@ import { useEffect, useRef, RefObject } from 'react'
  * ```
  */
 export const useFocusTrap = (isActive: boolean): RefObject<HTMLElement> => {
-  const containerRef = useRef<HTMLElement>(null)
-  const previousFocusRef = useRef<HTMLElement | null>(null)
+  const containerRef = useRef<HTMLElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!isActive || !containerRef.current) {
-      return
+      return;
     }
 
-    const container = containerRef.current
+    const container = containerRef.current;
 
     // Save currently focused element
-    previousFocusRef.current = document.activeElement as HTMLElement
+    previousFocusRef.current = document.activeElement as HTMLElement;
 
     // Get focusable elements
     const getFocusableElements = (): HTMLElement[] => {
@@ -42,49 +42,47 @@ export const useFocusTrap = (isActive: boolean): RefObject<HTMLElement> => {
         'select',
         'textarea',
         '[tabindex]:not([tabindex="-1"])',
-      ].join(', ')
+      ].join(', ');
 
-      return Array.from(
-        container.querySelectorAll<HTMLElement>(selector)
-      ).filter(
+      return Array.from(container.querySelectorAll<HTMLElement>(selector)).filter(
         (el) => !el.hasAttribute('disabled') && !el.hasAttribute('aria-hidden')
-      )
-    }
+      );
+    };
 
-    const focusableElements = getFocusableElements()
+    const focusableElements = getFocusableElements();
 
     if (focusableElements.length === 0) {
-      return
+      return;
     }
 
-    const firstElement = focusableElements[0]
-    const lastElement = focusableElements[focusableElements.length - 1]
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
 
     // Focus first element
-    firstElement.focus()
+    firstElement.focus();
 
     // Handle Tab key
     const handleTab = (e: KeyboardEvent) => {
       if (e.key !== 'Tab') {
-        return
+        return;
       }
 
-      const currentFocus = document.activeElement as HTMLElement
+      const currentFocus = document.activeElement as HTMLElement;
 
       if (e.shiftKey) {
         // Shift + Tab: focus previous element
         if (currentFocus === firstElement) {
-          e.preventDefault()
-          lastElement.focus()
+          e.preventDefault();
+          lastElement.focus();
         }
       } else {
         // Tab: focus next element
         if (currentFocus === lastElement) {
-          e.preventDefault()
-          firstElement.focus()
+          e.preventDefault();
+          firstElement.focus();
         }
       }
-    }
+    };
 
     // Handle Escape key
     const handleEscape = (e: KeyboardEvent) => {
@@ -92,22 +90,21 @@ export const useFocusTrap = (isActive: boolean): RefObject<HTMLElement> => {
         // Optionally close modal/dialog
         // This is handled by the component using the hook
       }
-    }
+    };
 
-    container.addEventListener('keydown', handleTab)
-    container.addEventListener('keydown', handleEscape)
+    container.addEventListener('keydown', handleTab);
+    container.addEventListener('keydown', handleEscape);
 
     return () => {
-      container.removeEventListener('keydown', handleTab)
-      container.removeEventListener('keydown', handleEscape)
-      
+      container.removeEventListener('keydown', handleTab);
+      container.removeEventListener('keydown', handleEscape);
+
       // Restore previous focus
       if (previousFocusRef.current) {
-        previousFocusRef.current.focus()
+        previousFocusRef.current.focus();
       }
-    }
-  }, [isActive])
+    };
+  }, [isActive]);
 
-  return containerRef
-}
-
+  return containerRef;
+};

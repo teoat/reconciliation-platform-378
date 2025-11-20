@@ -12,21 +12,21 @@
  */
 export interface RetryConfig {
   /** Maximum number of retry attempts */
-  maxRetries: number
+  maxRetries: number;
   /** Base delay in milliseconds before first retry */
-  baseDelay: number
+  baseDelay: number;
   /** Maximum delay in milliseconds (caps exponential backoff) */
-  maxDelay: number
+  maxDelay: number;
   /** Multiplier for exponential backoff (e.g., 2 = double each attempt) */
-  backoffMultiplier: number
+  backoffMultiplier: number;
   /** Whether to add random jitter to prevent thundering herd */
-  jitter: boolean
+  jitter: boolean;
   /** Function to determine if error is retryable */
-  retryCondition: (error: unknown) => boolean
+  retryCondition: (error: unknown) => boolean;
   /** Optional callback called before each retry */
-  onRetry?: (attempt: number, error: unknown) => void
+  onRetry?: (attempt: number, error: unknown) => void;
   /** Optional callback called when max retries reached */
-  onMaxRetriesReached?: (error: unknown) => void
+  onMaxRetriesReached?: (error: unknown) => void;
 }
 
 /**
@@ -35,28 +35,28 @@ export interface RetryConfig {
  */
 export interface RetryResult<T> {
   /** Whether the operation succeeded */
-  success: boolean
+  success: boolean;
   /** Result data if successful */
-  data?: T
+  data?: T;
   /** Error if failed */
-  error?: unknown
+  error?: unknown;
   /** Number of attempts made */
-  attempts: number
+  attempts: number;
   /** Total time taken in milliseconds */
-  totalTime: number
+  totalTime: number;
 }
 
 export interface CircuitBreakerConfig {
-  failureThreshold: number
-  recoveryTimeout: number // milliseconds
-  monitoringPeriod: number // milliseconds
+  failureThreshold: number;
+  recoveryTimeout: number; // milliseconds
+  monitoringPeriod: number; // milliseconds
 }
 
 export interface CircuitBreakerState {
-  state: 'closed' | 'open' | 'half-open'
-  failureCount: number
-  lastFailureTime?: Date
-  nextAttemptTime?: Date
+  state: 'closed' | 'open' | 'half-open';
+  failureCount: number;
+  lastFailureTime?: Date;
+  nextAttemptTime?: Date;
 }
 
 /**
@@ -73,10 +73,10 @@ export interface CircuitBreakerState {
  * ```
  */
 class RetryService {
-  private static instance: RetryService
-  private circuitBreakers: Map<string, CircuitBreakerState> = new Map()
-  private defaultConfig: RetryConfig
-  private defaultCircuitBreakerConfig: CircuitBreakerConfig
+  private static instance: RetryService;
+  private circuitBreakers: Map<string, CircuitBreakerState> = new Map();
+  private defaultConfig: RetryConfig;
+  private defaultCircuitBreakerConfig: CircuitBreakerConfig;
 
   /**
    * Get singleton instance
@@ -84,9 +84,9 @@ class RetryService {
    */
   public static getInstance(): RetryService {
     if (!RetryService.instance) {
-      RetryService.instance = new RetryService()
+      RetryService.instance = new RetryService();
     }
-    return RetryService.instance
+    return RetryService.instance;
   }
 
   constructor() {
@@ -96,14 +96,14 @@ class RetryService {
       maxDelay: 30000,
       backoffMultiplier: 2,
       jitter: true,
-      retryCondition: (error) => this.isRetryableError(error)
-    }
+      retryCondition: (error) => this.isRetryableError(error),
+    };
 
     this.defaultCircuitBreakerConfig = {
       failureThreshold: 5,
       recoveryTimeout: 60000, // 1 minute
-      monitoringPeriod: 300000 // 5 minutes
-    }
+      monitoringPeriod: 300000, // 5 minutes
+    };
   }
 
   /**
@@ -114,20 +114,20 @@ class RetryService {
   public isRetryableError(error: unknown): boolean {
     // Type guard for error objects
     if (typeof error !== 'object' || error === null) {
-      return false
+      return false;
     }
 
-    const err = error as Record<string, unknown>
+    const err = error as Record<string, unknown>;
 
     // Network errors
     if (err.code === 'NETWORK_ERROR' || err.code === 'TIMEOUT_ERROR') {
-      return true
+      return true;
     }
 
     // HTTP status codes that should be retried
     if (typeof err.status === 'number') {
-      const retryableStatuses = [408, 429, 500, 502, 503, 504]
-      return retryableStatuses.includes(err.status)
+      const retryableStatuses = [408, 429, 500, 502, 503, 504];
+      return retryableStatuses.includes(err.status);
     }
 
     // Specific error messages
@@ -137,29 +137,29 @@ class RetryService {
       'connection',
       'temporary',
       'unavailable',
-      'rate limit'
-    ]
+      'rate limit',
+    ];
 
-    const errorMessage = (typeof err.message === 'string' ? err.message : '').toLowerCase()
-    return retryableMessages.some(msg => errorMessage.includes(msg))
+    const errorMessage = (typeof err.message === 'string' ? err.message : '').toLowerCase();
+    return retryableMessages.some((msg) => errorMessage.includes(msg));
   }
 
   private calculateDelay(attempt: number, config: RetryConfig): number {
-    let delay = config.baseDelay * Math.pow(config.backoffMultiplier, attempt - 1)
-    
+    let delay = config.baseDelay * Math.pow(config.backoffMultiplier, attempt - 1);
+
     // Cap at max delay
-    delay = Math.min(delay, config.maxDelay)
-    
+    delay = Math.min(delay, config.maxDelay);
+
     // Add jitter to prevent thundering herd
     if (config.jitter) {
-      delay = delay * (0.5 + Math.random() * 0.5)
+      delay = delay * (0.5 + Math.random() * 0.5);
     }
-    
-    return Math.floor(delay)
+
+    return Math.floor(delay);
   }
 
   private async sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms))
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -186,9 +186,9 @@ class RetryService {
     config: Partial<RetryConfig> = {},
     circuitBreakerKey?: string
   ): Promise<RetryResult<T>> {
-    const finalConfig = { ...this.defaultConfig, ...config }
-    const startTime = Date.now()
-    let lastError: unknown
+    const finalConfig = { ...this.defaultConfig, ...config };
+    const startTime = Date.now();
+    let lastError: unknown;
 
     // Check circuit breaker
     if (circuitBreakerKey && !this.isCircuitBreakerOpen(circuitBreakerKey)) {
@@ -196,52 +196,52 @@ class RetryService {
         success: false,
         error: new Error('Circuit breaker is open'),
         attempts: 0,
-        totalTime: Date.now() - startTime
-      }
+        totalTime: Date.now() - startTime,
+      };
     }
 
     for (let attempt = 1; attempt <= finalConfig.maxRetries + 1; attempt++) {
       try {
-        const result = await operation()
-        
+        const result = await operation();
+
         // Success - reset circuit breaker
         if (circuitBreakerKey) {
-          this.resetCircuitBreaker(circuitBreakerKey)
+          this.resetCircuitBreaker(circuitBreakerKey);
         }
 
         return {
           success: true,
           data: result,
           attempts: attempt,
-          totalTime: Date.now() - startTime
-        }
+          totalTime: Date.now() - startTime,
+        };
       } catch (error) {
-        lastError = error
+        lastError = error;
 
         // Check if we should retry
         if (attempt > finalConfig.maxRetries || !finalConfig.retryCondition(error)) {
           // Update circuit breaker on failure
           if (circuitBreakerKey) {
-            this.recordCircuitBreakerFailure(circuitBreakerKey)
+            this.recordCircuitBreakerFailure(circuitBreakerKey);
           }
 
           // Call max retries callback
           if (finalConfig.onMaxRetriesReached) {
-            finalConfig.onMaxRetriesReached(error)
+            finalConfig.onMaxRetriesReached(error);
           }
 
-          break
+          break;
         }
 
         // Call retry callback
         if (finalConfig.onRetry) {
-          finalConfig.onRetry(attempt, error)
+          finalConfig.onRetry(attempt, error);
         }
 
         // Wait before retry (except on last attempt)
         if (attempt <= finalConfig.maxRetries) {
-          const delay = this.calculateDelay(attempt, finalConfig)
-          await this.sleep(delay)
+          const delay = this.calculateDelay(attempt, finalConfig);
+          await this.sleep(delay);
         }
       }
     }
@@ -250,62 +250,62 @@ class RetryService {
       success: false,
       error: lastError,
       attempts: finalConfig.maxRetries + 1,
-      totalTime: Date.now() - startTime
-    }
+      totalTime: Date.now() - startTime,
+    };
   }
 
   // Circuit Breaker Methods
   private isCircuitBreakerOpen(key: string): boolean {
-    const state = this.circuitBreakers.get(key)
-    if (!state) return false
+    const state = this.circuitBreakers.get(key);
+    if (!state) return false;
 
     if (state.state === 'open') {
       // Check if we should transition to half-open
       if (state.nextAttemptTime && new Date() >= state.nextAttemptTime) {
-        state.state = 'half-open'
-        state.nextAttemptTime = undefined
+        state.state = 'half-open';
+        state.nextAttemptTime = undefined;
       }
     }
 
-    return state.state === 'open'
+    return state.state === 'open';
   }
 
   private recordCircuitBreakerFailure(key: string): void {
     const state = this.circuitBreakers.get(key) || {
       state: 'closed',
-      failureCount: 0
-    }
+      failureCount: 0,
+    };
 
-    state.failureCount++
-    state.lastFailureTime = new Date()
+    state.failureCount++;
+    state.lastFailureTime = new Date();
 
     if (state.failureCount >= this.defaultCircuitBreakerConfig.failureThreshold) {
-      state.state = 'open'
+      state.state = 'open';
       state.nextAttemptTime = new Date(
         Date.now() + this.defaultCircuitBreakerConfig.recoveryTimeout
-      )
+      );
     }
 
-    this.circuitBreakers.set(key, state)
+    this.circuitBreakers.set(key, state);
   }
 
   private resetCircuitBreaker(key: string): void {
-    const state = this.circuitBreakers.get(key)
+    const state = this.circuitBreakers.get(key);
     if (state) {
-      state.state = 'closed'
-      state.failureCount = 0
-      state.lastFailureTime = undefined
-      state.nextAttemptTime = undefined
-      this.circuitBreakers.set(key, state)
+      state.state = 'closed';
+      state.failureCount = 0;
+      state.lastFailureTime = undefined;
+      state.nextAttemptTime = undefined;
+      this.circuitBreakers.set(key, state);
     }
   }
 
   public getCircuitBreakerState(key: string): CircuitBreakerState | undefined {
-    return this.circuitBreakers.get(key)
+    return this.circuitBreakers.get(key);
   }
 
   public resetCircuitBreakerManually(key: string): void {
-    this.resetCircuitBreaker(key)
+    this.resetCircuitBreaker(key);
   }
 
   // Predefined retry configurations
@@ -316,8 +316,8 @@ class RetryService {
       maxDelay: 30000,
       backoffMultiplier: 2,
       jitter: true,
-      retryCondition: (error) => this.isRetryableError(error)
-    }
+      retryCondition: (error) => this.isRetryableError(error),
+    };
   }
 
   public getFileUploadRetryConfig(): RetryConfig {
@@ -327,8 +327,8 @@ class RetryService {
       maxDelay: 60000,
       backoffMultiplier: 2,
       jitter: true,
-      retryCondition: (error) => this.isRetryableError(error)
-    }
+      retryCondition: (error) => this.isRetryableError(error),
+    };
   }
 
   public getAPIRetryConfig(): RetryConfig {
@@ -338,8 +338,8 @@ class RetryService {
       maxDelay: 10000,
       backoffMultiplier: 1.5,
       jitter: true,
-      retryCondition: (error) => this.isRetryableError(error)
-    }
+      retryCondition: (error) => this.isRetryableError(error),
+    };
   }
 
   public getCriticalOperationRetryConfig(): RetryConfig {
@@ -349,8 +349,8 @@ class RetryService {
       maxDelay: 60000,
       backoffMultiplier: 2,
       jitter: true,
-      retryCondition: (error) => this.isRetryableError(error)
-    }
+      retryCondition: (error) => this.isRetryableError(error),
+    };
   }
 
   // Utility methods
@@ -359,8 +359,8 @@ class RetryService {
     config: Partial<RetryConfig> = {}
   ): (...args: T) => Promise<RetryResult<R>> {
     return async (...args: T): Promise<RetryResult<R>> => {
-      return this.executeWithRetry(() => fn(...args), config)
-    }
+      return this.executeWithRetry(() => fn(...args), config);
+    };
   }
 
   public withCircuitBreaker<T extends unknown[], R>(
@@ -369,70 +369,70 @@ class RetryService {
     config: Partial<RetryConfig> = {}
   ): (...args: T) => Promise<RetryResult<R>> {
     return async (...args: T): Promise<RetryResult<R>> => {
-      return this.executeWithRetry(() => fn(...args), config, circuitBreakerKey)
-    }
+      return this.executeWithRetry(() => fn(...args), config, circuitBreakerKey);
+    };
   }
 
   public getRetryStats(): {
-    totalRetries: number
-    successfulRetries: number
-    failedRetries: number
-    circuitBreakerStates: Record<string, CircuitBreakerState>
+    totalRetries: number;
+    successfulRetries: number;
+    failedRetries: number;
+    circuitBreakerStates: Record<string, CircuitBreakerState>;
   } {
     // This would track actual retry statistics
     // For now, return circuit breaker states
-    const circuitBreakerStates: Record<string, CircuitBreakerState> = {}
+    const circuitBreakerStates: Record<string, CircuitBreakerState> = {};
     this.circuitBreakers.forEach((state, key) => {
-      circuitBreakerStates[key] = { ...state }
-    })
+      circuitBreakerStates[key] = { ...state };
+    });
 
     return {
       totalRetries: 0,
       successfulRetries: 0,
       failedRetries: 0,
-      circuitBreakerStates
-    }
+      circuitBreakerStates,
+    };
   }
 }
 
 // React hook for retry functionality
 export const useRetry = () => {
-  const service = RetryService.getInstance()
+  const service = RetryService.getInstance();
 
   const executeWithRetry = <T>(
     operation: () => Promise<T>,
     config: Partial<RetryConfig> = {},
     circuitBreakerKey?: string
   ) => {
-    return service.executeWithRetry(operation, config, circuitBreakerKey)
-  }
+    return service.executeWithRetry(operation, config, circuitBreakerKey);
+  };
 
   const createRetryableFunction = <T extends unknown[], R>(
     fn: (...args: T) => Promise<R>,
     config: Partial<RetryConfig> = {}
   ) => {
-    return service.createRetryableFunction(fn, config)
-  }
+    return service.createRetryableFunction(fn, config);
+  };
 
   const withCircuitBreaker = <T extends unknown[], R>(
     fn: (...args: T) => Promise<R>,
     circuitBreakerKey: string,
     config: Partial<RetryConfig> = {}
   ) => {
-    return service.withCircuitBreaker(fn, circuitBreakerKey, config)
-  }
+    return service.withCircuitBreaker(fn, circuitBreakerKey, config);
+  };
 
   const getCircuitBreakerState = (key: string) => {
-    return service.getCircuitBreakerState(key)
-  }
+    return service.getCircuitBreakerState(key);
+  };
 
   const resetCircuitBreaker = (key: string) => {
-    service.resetCircuitBreakerManually(key)
-  }
+    service.resetCircuitBreakerManually(key);
+  };
 
   const getRetryStats = () => {
-    return service.getRetryStats()
-  }
+    return service.getRetryStats();
+  };
 
   return {
     executeWithRetry,
@@ -440,12 +440,12 @@ export const useRetry = () => {
     withCircuitBreaker,
     getCircuitBreakerState,
     resetCircuitBreaker,
-    getRetryStats
-  }
-}
+    getRetryStats,
+  };
+};
 
 // Export singleton instance
-export const retryService = RetryService.getInstance()
+export const retryService = RetryService.getInstance();
 
 // ============================================================================
 // CONVENIENCE FUNCTIONS (from enhancedRetryService for backward compatibility)
@@ -533,12 +533,12 @@ export function createRetryableFetch(
     const result = await service.executeWithRetry(
       async () => {
         const response = await fetchFn(input, init);
-        
+
         // Treat 5xx errors as retryable
         if (response.status >= 500 && response.status < 600) {
           throw new Error(`HTTP ${response.status}: ${response.statusText}`);
         }
-        
+
         return response;
       },
       {
@@ -559,4 +559,4 @@ export function createRetryableFetch(
 }
 
 // Export default for backward compatibility
-export default retryService
+export default retryService;

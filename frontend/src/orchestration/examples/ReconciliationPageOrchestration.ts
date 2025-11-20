@@ -1,6 +1,6 @@
 /**
  * Reconciliation Page Orchestration Example
- * 
+ *
  * This file demonstrates how to integrate a page with the Frenly AI
  * orchestration system. This can be used as a reference for other pages.
  */
@@ -22,18 +22,8 @@ export const reconciliationPageMetadata: PageMetadata = {
   description: 'Data reconciliation workflow',
   category: 'workflow',
   features: ['upload', 'configure', 'run-jobs', 'results'],
-  onboardingSteps: [
-    'upload-guide',
-    'configuration-help',
-    'job-execution',
-    'results-review',
-  ],
-  guidanceTopics: [
-    'data-upload',
-    'matching-strategies',
-    'job-management',
-    'results-analysis',
-  ],
+  onboardingSteps: ['upload-guide', 'configuration-help', 'job-execution', 'results-review'],
+  guidanceTopics: ['data-upload', 'matching-strategies', 'job-management', 'results-analysis'],
   icon: 'reconciliation',
 };
 
@@ -190,8 +180,7 @@ export function registerReconciliationGuidanceHandlers(
           return {
             id: `job-tip-${Date.now()}`,
             type: 'tip',
-            content:
-              'Jobs run in the background. You can continue working while they process!',
+            content: 'Jobs run in the background. You can continue working while they process!',
             timestamp: new Date(),
             page: 'reconciliation',
             priority: 'medium',
@@ -228,9 +217,7 @@ export function registerReconciliationGuidanceHandlers(
 /**
  * Get guidance content for reconciliation page
  */
-export function getReconciliationGuidanceContent(
-  topic: string
-): Array<{
+export function getReconciliationGuidanceContent(topic: string): Array<{
   id: string;
   title: string;
   content: string;
@@ -277,8 +264,7 @@ export function getReconciliationGuidanceContent(
       {
         id: 'matching-algorithms',
         title: 'Matching Algorithms',
-        content:
-          'We use fuzzy matching, exact matching, and machine learning for best results',
+        content: 'We use fuzzy matching, exact matching, and machine learning for best results',
         type: 'info',
       },
     ],
@@ -321,7 +307,7 @@ export function getReconciliationGuidanceContent(
 
 /**
  * Example usage in ReconciliationPage component:
- * 
+ *
  * ```typescript
  * import { usePageOrchestration } from '@/hooks/usePageOrchestration';
  * import {
@@ -332,12 +318,12 @@ export function getReconciliationGuidanceContent(
  *   registerReconciliationGuidanceHandlers,
  *   getReconciliationGuidanceContent,
  * } from '@/orchestration/examples/ReconciliationPageOrchestration';
- * 
+ *
  * const ReconciliationPage: React.FC = () => {
  *   const { projectId } = useParams();
  *   const [activeTab, setActiveTab] = useState('upload');
  *   // ... other state
- * 
+ *
  *   // Use orchestration hook
  *   const {
  *     updatePageContext,
@@ -373,7 +359,7 @@ export function getReconciliationGuidanceContent(
  *       // Handle context changes if needed
  *     },
  *   });
- * 
+ *
  *   // Track feature usage
  *   const handleFileUpload = async (files: File[]) => {
  *     trackFeatureUsage('upload', 'file-upload-started', { fileCount: files.length });
@@ -384,15 +370,13 @@ export function getReconciliationGuidanceContent(
  *       trackFeatureError('upload', error);
  *     }
  *   };
- * 
+ *
  *   // Update context when tab changes
  *   useEffect(() => {
  *     updatePageContext({ activeTab });
  *   }, [activeTab, updatePageContext]);
- * 
+ *
  *   // ... rest of component
  * };
  * ```
  */
-
-

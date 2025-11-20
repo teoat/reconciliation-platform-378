@@ -26,21 +26,19 @@ export const AccessibleFormField: React.FC<AccessibleFormFieldProps> = ({
   const labelId = `${id}-label`;
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
-  const describedBy = [hint ? hintId : null, error ? errorId : null]
-    .filter(Boolean)
-    .join(' ');
+  const describedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ');
 
   const accessibleLabel = getAccessibleLabel(id, label, required);
 
   return (
     <div className="mb-4">
-      <label
-        id={labelId}
-        htmlFor={id}
-        className="block text-sm font-medium text-gray-700 mb-1"
-      >
+      <label id={labelId} htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
         {label}
-        {required && <span className="text-red-500 ml-1" aria-label="required">*</span>}
+        {required && (
+          <span className="text-red-500 ml-1" aria-label="required">
+            *
+          </span>
+        )}
       </label>
       {hint && (
         <p id={hintId} className="text-sm text-gray-500 mb-1">
@@ -62,4 +60,3 @@ export const AccessibleFormField: React.FC<AccessibleFormFieldProps> = ({
     </div>
   );
 };
-

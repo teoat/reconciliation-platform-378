@@ -33,7 +33,9 @@ export class QueryManager {
     }
   }
 
-  async createQuery(query: Omit<AnalyticsQuery, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async createQuery(
+    query: Omit<AnalyticsQuery, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
     const id = `query-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const now = new Date();
 
@@ -87,7 +89,10 @@ export class QueryManager {
   async executeQuery(
     id: string,
     parameters?: Metadata,
-    queryExecutor: (query: AnalyticsQuery, parameters?: Metadata) => Promise<Array<Record<string, unknown>>>
+    queryExecutor: (
+      query: AnalyticsQuery,
+      parameters?: Metadata
+    ) => Promise<Array<Record<string, unknown>>>
   ): Promise<Array<Record<string, unknown>>> {
     const query = this.queries.get(id);
     if (!query) {
@@ -101,7 +106,8 @@ export class QueryManager {
 
       query.metadata.executionCount++;
       query.metadata.averageExecutionTime =
-        (query.metadata.averageExecutionTime * (query.metadata.executionCount - 1) + executionTime) /
+        (query.metadata.averageExecutionTime * (query.metadata.executionCount - 1) +
+          executionTime) /
         query.metadata.executionCount;
 
       await this.saveQueries();
@@ -113,5 +119,3 @@ export class QueryManager {
     }
   }
 }
-
-

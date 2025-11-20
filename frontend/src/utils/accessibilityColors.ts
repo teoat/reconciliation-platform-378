@@ -1,7 +1,7 @@
 /**
  * Accessibility Color Utilities
  * Provides WCAG AA compliant color combinations
- * 
+ *
  * Based on contrast analysis:
  * - Primary-500 (#3b82f6) on white = 3.68:1 (FAIL - use primary-600)
  * - Primary-600 (#2563eb) on white = 5.17:1 (PASS - WCAG AA)
@@ -61,4 +61,3 @@ export const CONTRAST_RECOMMENDATIONS = {
     className: 'text-blue-600 hover:text-blue-700',
   },
 } as const;
-

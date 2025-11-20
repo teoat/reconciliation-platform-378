@@ -5,4 +5,4 @@
 // This file is kept for backward compatibility during migration.
 
 // Re-export everything from the new modular apiClient
-export * from './apiClient/index'
+export * from './apiClient/index';

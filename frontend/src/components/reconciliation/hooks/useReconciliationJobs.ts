@@ -36,10 +36,18 @@ export const useReconciliationJobs = ({
       name: bj.name || 'Unnamed Job',
       description: bj.description,
       project_id: bj.project_id || projectId,
-      source_data_source_id: (bj as BackendReconciliationJob & { source_a_id?: string; source_data_source_id?: string }).source_a_id || 
-                            (bj as BackendReconciliationJob & { source_data_source_id?: string }).source_data_source_id || '',
-      target_data_source_id: (bj as BackendReconciliationJob & { source_b_id?: string; target_data_source_id?: string }).source_b_id || 
-                             (bj as BackendReconciliationJob & { target_data_source_id?: string }).target_data_source_id || '',
+      source_data_source_id:
+        (bj as BackendReconciliationJob & { source_a_id?: string; source_data_source_id?: string })
+          .source_a_id ||
+        (bj as BackendReconciliationJob & { source_data_source_id?: string })
+          .source_data_source_id ||
+        '',
+      target_data_source_id:
+        (bj as BackendReconciliationJob & { source_b_id?: string; target_data_source_id?: string })
+          .source_b_id ||
+        (bj as BackendReconciliationJob & { target_data_source_id?: string })
+          .target_data_source_id ||
+        '',
       confidence_threshold: bj.confidence_threshold || 80,
       status: bj.status || 'pending',
       progress: bj.progress || 0,
@@ -66,9 +74,10 @@ export const useReconciliationJobs = ({
           async () => {
             const response = await apiClient.getReconciliationJobs(projectId);
             if (response.error) {
-              const errorMessage = typeof response.error === 'string' 
-                ? response.error 
-                : response.error?.message || 'Failed to load jobs';
+              const errorMessage =
+                typeof response.error === 'string'
+                  ? response.error
+                  : response.error?.message || 'Failed to load jobs';
               throw new Error(errorMessage);
             }
             const backendJobs: BackendReconciliationJob[] = response.data || [];
@@ -86,7 +95,10 @@ export const useReconciliationJobs = ({
               );
             },
             onRetry: (attempt, error) => {
-              logger.warning('Retrying loadJobs', { attempt, error: error.message || String(error) });
+              logger.warning('Retrying loadJobs', {
+                attempt,
+                error: error.message || String(error),
+              });
             },
           }
         );
@@ -145,7 +157,7 @@ export const useReconciliationJobs = ({
             matching_rules: [],
             settings: jobData.settings || {},
           };
-            const response = await apiClient.createReconciliationJob(projectId, backendJobData);
+          const response = await apiClient.createReconciliationJob(projectId, backendJobData);
           if (response.error) {
             throw new Error(getErrorMessageFromApiError(response.error));
           }
@@ -181,9 +193,10 @@ export const useReconciliationJobs = ({
           setError(null);
           const response = await apiClient.startReconciliationJob(projectId, jobId);
           if (response.error) {
-            const errorMessage = typeof response.error === 'string' 
-              ? response.error 
-              : response.error?.message || 'Operation failed';
+            const errorMessage =
+              typeof response.error === 'string'
+                ? response.error
+                : response.error?.message || 'Operation failed';
             throw new Error(errorMessage);
           }
 
@@ -221,9 +234,10 @@ export const useReconciliationJobs = ({
           setError(null);
           const response = await apiClient.stopReconciliationJob(projectId, jobId);
           if (response.error) {
-            const errorMessage = typeof response.error === 'string' 
-              ? response.error 
-              : response.error?.message || 'Operation failed';
+            const errorMessage =
+              typeof response.error === 'string'
+                ? response.error
+                : response.error?.message || 'Operation failed';
             throw new Error(errorMessage);
           }
 
@@ -257,9 +271,10 @@ export const useReconciliationJobs = ({
           setError(null);
           const response = await apiClient.deleteReconciliationJob(projectId, jobId);
           if (response.error) {
-            const errorMessage = typeof response.error === 'string' 
-              ? response.error 
-              : response.error?.message || 'Operation failed';
+            const errorMessage =
+              typeof response.error === 'string'
+                ? response.error
+                : response.error?.message || 'Operation failed';
             throw new Error(errorMessage);
           }
 
@@ -341,7 +356,11 @@ export const useReconciliationJobs = ({
                 updated_at: new Date().toISOString(),
               };
 
-              if (progressData.status === 'completed' && job.status !== 'completed' && onJobUpdate) {
+              if (
+                progressData.status === 'completed' &&
+                job.status !== 'completed' &&
+                onJobUpdate
+              ) {
                 onJobUpdate(updatedJob);
               }
 
@@ -382,4 +401,3 @@ export const useReconciliationJobs = ({
     deleteJob,
   };
 };
-

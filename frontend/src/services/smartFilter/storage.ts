@@ -1,4 +1,3 @@
-
 // localStorage wrapper
 const storage = {
   getItem: (key: string): string | null => {

@@ -137,11 +137,7 @@ export const DashboardPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Page Orchestration with Frenly AI
-  const {
-    updatePageContext,
-    trackFeatureUsage,
-    trackFeatureError,
-  } = usePageOrchestration({
+  const { updatePageContext, trackFeatureUsage, trackFeatureError } = usePageOrchestration({
     pageMetadata: dashboardPageMetadata,
     getPageContext: () =>
       getDashboardPageContext(
@@ -153,7 +149,8 @@ export const DashboardPage: React.FC = () => {
     getOnboardingSteps: () =>
       getDashboardOnboardingSteps(
         (dashboardData?.prioritized_projects?.length || 0) > 0,
-        (dashboardData?.prioritized_projects?.filter((p) => p.status === 'completed').length || 0) > 0
+        (dashboardData?.prioritized_projects?.filter((p) => p.status === 'completed').length || 0) >
+          0
       ),
     registerGuidanceHandlers: () => registerDashboardGuidanceHandlers(),
     getGuidanceContent: (topic) => getDashboardGuidanceContent(topic),
@@ -262,7 +259,9 @@ export const DashboardPage: React.FC = () => {
                       <div className="flex-1">
                         <h3 className="font-medium text-gray-900">{String(project.name)}</h3>
                         {project.description && (
-                          <p className="text-sm text-gray-600 mt-1">{String(project.description)}</p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            {String(project.description)}
+                          </p>
                         )}
                       </div>
                       <div className="flex items-center space-x-2">
@@ -278,7 +277,10 @@ export const DashboardPage: React.FC = () => {
                           {String(project.status)}
                         </span>
                         <span className="text-sm font-medium text-blue-600">
-                          {typeof project.priority_score === 'number' ? Math.round(project.priority_score * 100) : 0}%
+                          {typeof project.priority_score === 'number'
+                            ? Math.round(project.priority_score * 100)
+                            : 0}
+                          %
                         </span>
                       </div>
                     </div>
@@ -286,13 +288,20 @@ export const DashboardPage: React.FC = () => {
                     <div className="mt-3">
                       <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
                         <span>Priority Score</span>
-                        <span>{typeof project.priority_score === 'number' ? Math.round(project.priority_score * 100) : 0}%</span>
+                        <span>
+                          {typeof project.priority_score === 'number'
+                            ? Math.round(project.priority_score * 100)
+                            : 0}
+                          %
+                        </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-blue-500 h-2 rounded-full"
                           // Dynamic width for progress bar - acceptable inline style
-                          style={{ width: `${typeof project.priority_score === 'number' ? project.priority_score * 100 : 0}%` }}
+                          style={{
+                            width: `${typeof project.priority_score === 'number' ? project.priority_score * 100 : 0}%`,
+                          }}
                         ></div>
                       </div>
                     </div>

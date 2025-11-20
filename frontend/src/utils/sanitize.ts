@@ -13,13 +13,13 @@ import DOMPurify from 'dompurify';
 export const sanitizeHtml = (dirty: string): string => {
   return DOMPurify.sanitize(dirty, {
     ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li'],
-    ALLOWED_ATTR: ['href', 'target', 'rel']
+    ALLOWED_ATTR: ['href', 'target', 'rel'],
   });
 };
 
 /**
  * Sanitize for React dangerouslySetInnerHTML
- * @param dirty - Untrusted HTML string  
+ * @param dirty - Untrusted HTML string
  * @returns Object with __html property
  */
 export const sanitizeForReact = (dirty: string) => {

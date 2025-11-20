@@ -66,4 +66,3 @@ export const JobActions: React.FC<JobActionsProps> = ({
     </div>
   );
 };
-

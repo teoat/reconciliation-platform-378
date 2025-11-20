@@ -1,6 +1,18 @@
 // React Hooks for Monitoring
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { monitoringService, SystemMetrics, Alert, LogEntry, PerformanceMetrics, ErrorMetrics, UserMetrics, ApiMetrics, DatabaseMetrics, CacheMetrics, WebSocketMetrics } from '../services/monitoringService';
+import {
+  monitoringService,
+  SystemMetrics,
+  Alert,
+  LogEntry,
+  PerformanceMetrics,
+  ErrorMetrics,
+  UserMetrics,
+  ApiMetrics,
+  DatabaseMetrics,
+  CacheMetrics,
+  WebSocketMetrics,
+} from '../services/monitoringService';
 
 // System Metrics Hook
 export const useSystemMetrics = (refreshInterval = 5000) => {
@@ -52,7 +64,7 @@ export const useAlerts = (refreshInterval = 10000) => {
   const resolveAlert = useCallback(async (alertId: string) => {
     try {
       await monitoringService.resolveAlert(alertId);
-      setAlerts(prev => prev.filter(alert => alert.id !== alertId));
+      setAlerts((prev) => prev.filter((alert) => alert.id !== alertId));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to resolve alert');
     }
@@ -61,11 +73,11 @@ export const useAlerts = (refreshInterval = 10000) => {
   const suppressAlert = useCallback(async (alertId: string) => {
     try {
       await monitoringService.suppressAlert(alertId);
-      setAlerts(prev => prev.map(alert => 
-        alert.id === alertId 
-          ? { ...alert, status: 'suppressed' as const }
-          : alert
-      ));
+      setAlerts((prev) =>
+        prev.map((alert) =>
+          alert.id === alertId ? { ...alert, status: 'suppressed' as const } : alert
+        )
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to suppress alert');
     }
@@ -77,13 +89,13 @@ export const useAlerts = (refreshInterval = 10000) => {
     return () => clearInterval(interval);
   }, [fetchAlerts, refreshInterval]);
 
-  return { 
-    alerts, 
-    isLoading, 
-    error, 
-    refetch: fetchAlerts, 
-    resolveAlert, 
-    suppressAlert 
+  return {
+    alerts,
+    isLoading,
+    error,
+    refetch: fetchAlerts,
+    resolveAlert,
+    suppressAlert,
   };
 };
 
@@ -346,12 +358,12 @@ export const useRealTimeMonitoring = (refreshInterval = 1000) => {
     return () => stopMonitoring();
   }, [startMonitoring, stopMonitoring]);
 
-  return { 
-    isConnected, 
-    lastUpdate, 
-    error, 
-    startMonitoring, 
-    stopMonitoring 
+  return {
+    isConnected,
+    lastUpdate,
+    error,
+    startMonitoring,
+    stopMonitoring,
   };
 };
 
@@ -401,12 +413,12 @@ export const useAlertManagement = () => {
     }
   }, []);
 
-  return { 
-    createAlert, 
-    updateAlert, 
-    deleteAlert, 
-    isLoading, 
-    error 
+  return {
+    createAlert,
+    updateAlert,
+    deleteAlert,
+    isLoading,
+    error,
   };
 };
 
@@ -437,10 +449,10 @@ export const useMonitoringService = () => {
     };
   }, []);
 
-  return { 
-    isInitialized, 
-    isLoading, 
-    error 
+  return {
+    isInitialized,
+    isLoading,
+    error,
   };
 };
 

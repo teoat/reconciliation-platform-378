@@ -1,5 +1,14 @@
 import React, { useState, useCallback } from 'react';
-import { Play, Code, Copy, Download, Database, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import {
+  Play,
+  Code,
+  Copy,
+  Download,
+  Database,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+} from 'lucide-react';
 
 import ApiService from '../services/ApiService';
 import Button from './ui/Button';

@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react'
-import { X, Menu } from 'lucide-react'
+import React, { useState, useEffect } from 'react';
+import { X, Menu } from 'lucide-react';
 
 export interface SidebarProps {
-  children: React.ReactNode
-  isOpen: boolean
-  onClose: () => void
-  title?: string
-  className?: string
-  overlay?: boolean
-  position?: 'left' | 'right'
-  size?: 'sm' | 'md' | 'lg' | 'xl'
+  children: React.ReactNode;
+  isOpen: boolean;
+  onClose: () => void;
+  title?: string;
+  className?: string;
+  overlay?: boolean;
+  position?: 'left' | 'right';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -20,43 +20,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
   className = '',
   overlay = true,
   position = 'right',
-  size = 'md'
+  size = 'md',
 }) => {
-  const [isVisible, setIsVisible] = useState(false)
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setIsVisible(true)
-      document.body.style.overflow = 'hidden'
+      setIsVisible(true);
+      document.body.style.overflow = 'hidden';
     } else {
-      const timer = setTimeout(() => setIsVisible(false), 300)
-      document.body.style.overflow = 'unset'
-      return () => clearTimeout(timer)
+      const timer = setTimeout(() => setIsVisible(false), 300);
+      document.body.style.overflow = 'unset';
+      return () => clearTimeout(timer);
     }
 
     return () => {
-      document.body.style.overflow = 'unset'
-    }
-  }, [isOpen])
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
 
   const sizeClasses = {
     sm: 'w-64',
     md: 'w-80',
     lg: 'w-96',
-    xl: 'w-[28rem]'
-  }
+    xl: 'w-[28rem]',
+  };
 
   const positionClasses = {
     left: 'left-0',
-    right: 'right-0'
-  }
+    right: 'right-0',
+  };
 
   const transformClasses = {
     left: isOpen ? 'translate-x-0' : '-translate-x-full',
-    right: isOpen ? 'translate-x-0' : 'translate-x-full'
-  }
+    right: isOpen ? 'translate-x-0' : 'translate-x-full',
+  };
 
-  if (!isVisible) return null
+  if (!isVisible) return null;
 
   return (
     <>
@@ -71,7 +71,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           tabIndex={0}
           onKeyDown={(e) => {
             if (e.key === 'Escape') {
-              onClose()
+              onClose();
             }
           }}
           aria-label="Close sidebar"
@@ -111,19 +111,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
     </>
-  )
-}
+  );
+};
 
 export interface SidebarTriggerProps {
-  onClick: () => void
-  className?: string
-  children?: React.ReactNode
+  onClick: () => void;
+  className?: string;
+  children?: React.ReactNode;
 }
 
 export const SidebarTrigger: React.FC<SidebarTriggerProps> = ({
   onClick,
   className = '',
-  children
+  children,
 }) => {
   return (
     <button
@@ -133,5 +133,5 @@ export const SidebarTrigger: React.FC<SidebarTriggerProps> = ({
     >
       {children || <Menu className="h-5 w-5" aria-hidden="true" />}
     </button>
-  )
-}
+  );
+};

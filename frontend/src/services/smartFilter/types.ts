@@ -22,7 +22,16 @@ export interface FilterPreset {
 
 export interface FilterConfig {
   field: string;
-  operator: 'equals' | 'contains' | 'starts_with' | 'ends_with' | 'greater_than' | 'less_than' | 'between' | 'in' | 'not_in';
+  operator:
+    | 'equals'
+    | 'contains'
+    | 'starts_with'
+    | 'ends_with'
+    | 'greater_than'
+    | 'less_than'
+    | 'between'
+    | 'in'
+    | 'not_in';
   value: unknown;
   label: string;
   isRequired: boolean;
@@ -68,4 +77,3 @@ export interface SmartDefaults {
   viewMode: 'table' | 'cards' | 'timeline';
   columns: string[];
 }
-

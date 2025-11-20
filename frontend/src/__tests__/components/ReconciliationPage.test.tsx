@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
-import { BrowserRouter } from 'react-router-dom'
-import ReconciliationPage from '../../pages/ReconciliationPage'
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+import ReconciliationPage from '../../pages/ReconciliationPage';
 
 // Mock hooks
 vi.mock('../../hooks/useApi', () => ({
@@ -23,43 +23,42 @@ vi.mock('../../hooks/useApi', () => ({
     matches: [],
     updateMatch: vi.fn(),
   })),
-}))
+}));
 
 // Mock navigate
-const mockNavigate = vi.fn()
+const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual('react-router-dom')
+  const actual = await vi.importActual('react-router-dom');
   return {
     ...actual,
     useParams: () => ({ projectId: '1' }),
     useNavigate: () => mockNavigate,
-  }
-})
+  };
+});
 
 describe('ReconciliationPage', () => {
   beforeEach(() => {
-    vi.clearAllMocks()
-  })
+    vi.clearAllMocks();
+  });
 
   it('renders without crashing', () => {
     render(
       <BrowserRouter>
         <ReconciliationPage />
       </BrowserRouter>
-    )
-    expect(screen).toBeDefined()
-  })
+    );
+    expect(screen).toBeDefined();
+  });
 
   it('displays project information', async () => {
     render(
       <BrowserRouter>
         <ReconciliationPage />
       </BrowserRouter>
-    )
-    
-    await waitFor(() => {
-      expect(screen.getByText(/reconciliation/i)).toBeInTheDocument()
-    })
-  })
-})
+    );
 
+    await waitFor(() => {
+      expect(screen.getByText(/reconciliation/i)).toBeInTheDocument();
+    });
+  });
+});

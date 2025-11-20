@@ -214,7 +214,10 @@ export class ApiClient {
     }
   ): Promise<ApiResponse<Record<string, unknown>>> {
     const config = this.requestBuilder.method('PUT').body(matchData).build();
-    return this.makeRequest<Record<string, unknown>>(`/projects/${projectId}/matches/${matchId}`, config);
+    return this.makeRequest<Record<string, unknown>>(
+      `/projects/${projectId}/matches/${matchId}`,
+      config
+    );
   }
 
   // ============================================================================
@@ -242,7 +245,11 @@ export class ApiClient {
   }
 
   async googleOAuth(idToken: string): Promise<ApiResponse<LoginResponse>> {
-    const config = this.requestBuilder.method('POST').body({ id_token: idToken }).skipAuth().build();
+    const config = this.requestBuilder
+      .method('POST')
+      .body({ id_token: idToken })
+      .skipAuth()
+      .build();
     return this.makeRequest<LoginResponse>('/auth/google', config);
   }
 
@@ -453,19 +460,19 @@ export class ApiClient {
     return this.makeRequest<{ message: string }>(`/projects/${projectId}/jobs/${jobId}`, config);
   }
 
-  async getReconciliationJobProgress(
-    jobId: string
-  ): Promise<ApiResponse<{
-    job_id: string;
-    status: string;
-    progress: number;
-    total_records?: number;
-    processed_records: number;
-    matched_records: number;
-    unmatched_records: number;
-    current_phase: string;
-    estimated_completion?: string;
-  }>> {
+  async getReconciliationJobProgress(jobId: string): Promise<
+    ApiResponse<{
+      job_id: string;
+      status: string;
+      progress: number;
+      total_records?: number;
+      processed_records: number;
+      matched_records: number;
+      unmatched_records: number;
+      current_phase: string;
+      estimated_completion?: string;
+    }>
+  > {
     const config = this.requestBuilder.method('GET').build();
     return this.makeRequest<{
       job_id: string;
@@ -484,22 +491,24 @@ export class ApiClient {
     jobId: string,
     page = 1,
     perPage = 20
-  ): Promise<ApiResponse<{
-    data?: Array<{
-      id: string;
-      job_id: string;
-      source_record_id: string;
-      target_record_id: string;
-      match_type: 'exact' | 'fuzzy' | 'manual' | 'unmatched';
-      confidence_score: number;
-      status: 'matched' | 'unmatched' | 'discrepancy' | 'resolved';
-      created_at: string;
-      updated_at: string;
-    }>;
-    page?: number;
-    per_page?: number;
-    total?: number;
-  }>> {
+  ): Promise<
+    ApiResponse<{
+      data?: Array<{
+        id: string;
+        job_id: string;
+        source_record_id: string;
+        target_record_id: string;
+        match_type: 'exact' | 'fuzzy' | 'manual' | 'unmatched';
+        confidence_score: number;
+        status: 'matched' | 'unmatched' | 'discrepancy' | 'resolved';
+        created_at: string;
+        updated_at: string;
+      }>;
+      page?: number;
+      per_page?: number;
+      total?: number;
+    }>
+  > {
     const config = this.requestBuilder.method('GET').build();
     return this.makeRequest<{
       data?: Array<{

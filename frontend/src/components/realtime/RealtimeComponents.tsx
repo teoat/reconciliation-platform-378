@@ -1,11 +1,16 @@
 // Real-time UI Components
 import React, { useState, useEffect } from 'react';
-import { useRealtimeConnection, useUserPresence, useComments, useNotifications } from '../hooks/useRealtime';
-import { Bell } from 'lucide-react'
-import { Users } from 'lucide-react'
-import { MessageCircle } from 'lucide-react'
-import { Wifi } from 'lucide-react'
-import { WifiOff } from 'lucide-react'
+import {
+  useRealtimeConnection,
+  useUserPresence,
+  useComments,
+  useNotifications,
+} from '../hooks/useRealtime';
+import { Bell } from 'lucide-react';
+import { Users } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
+import { Wifi } from 'lucide-react';
+import { WifiOff } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
 
 // Connection Status Indicator
@@ -32,7 +37,9 @@ export const ConnectionStatus: React.FC = () => {
       case 'connected':
         return <Wifi className="w-4 h-4" />;
       case 'connecting':
-        return <div className="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />;
+        return (
+          <div className="w-4 h-4 border-2 border-yellow-500 border-t-transparent rounded-full animate-spin" />
+        );
       case 'disconnected':
       case 'error':
         return <WifiOff className="w-4 h-4" />;
@@ -88,7 +95,8 @@ export const UserPresenceIndicator: React.FC<{ page: string }> = ({ page }) => {
 
 // Notifications Panel
 export const NotificationsPanel: React.FC = () => {
-  const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotification } = useNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead, clearNotification } =
+    useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
   const getNotificationIcon = (level: string) => {
@@ -149,9 +157,7 @@ export const NotificationsPanel: React.FC = () => {
 
           <div className="max-h-96 overflow-y-auto">
             {notifications.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                No notifications yet
-              </div>
+              <div className="p-4 text-center text-gray-500">No notifications yet</div>
             ) : (
               notifications.map((notification) => (
                 <div
@@ -164,12 +170,8 @@ export const NotificationsPanel: React.FC = () => {
                   <div className="flex items-start space-x-3">
                     {getNotificationIcon(notification.level)}
                     <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-gray-900">
-                        {notification.title}
-                      </h4>
-                      <p className="text-sm text-gray-600 mt-1">
-                        {notification.message}
-                      </p>
+                      <h4 className="text-sm font-medium text-gray-900">{notification.title}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
                       <p className="text-xs text-gray-400 mt-2">
                         {new Date(notification.created_at).toLocaleString()}
                       </p>
@@ -231,9 +233,7 @@ export const LiveCommentsPanel: React.FC<{ page: string }> = ({ page }) => {
 
           <div className="max-h-96 overflow-y-auto p-4">
             {comments.length === 0 ? (
-              <div className="text-center text-gray-500">
-                No comments yet
-              </div>
+              <div className="text-center text-gray-500">No comments yet</div>
             ) : (
               <div className="space-y-3">
                 {comments.map((comment) => (
@@ -242,9 +242,7 @@ export const LiveCommentsPanel: React.FC<{ page: string }> = ({ page }) => {
                       <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
                         {comment.username.charAt(0).toUpperCase()}
                       </div>
-                      <span className="text-sm font-medium text-gray-900">
-                        {comment.username}
-                      </span>
+                      <span className="text-sm font-medium text-gray-900">{comment.username}</span>
                       <span className="text-xs text-gray-400">
                         {new Date(comment.created_at).toLocaleTimeString()}
                       </span>
@@ -281,7 +279,7 @@ export const LiveCommentsPanel: React.FC<{ page: string }> = ({ page }) => {
 };
 
 // Progress Indicator for Real-time Updates
-export const ProgressIndicator: React.FC<{ 
+export const ProgressIndicator: React.FC<{
   type: 'reconciliation' | 'upload';
   jobId: string;
   progress: number;
@@ -321,14 +319,14 @@ export const ProgressIndicator: React.FC<{
         </h4>
         <span className="text-sm text-gray-500">{Math.round(progress * 100)}%</span>
       </div>
-      
+
       <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
         <div
           className={`h-2 rounded-full transition-all duration-300 ${getStatusColor()}`}
           style={{ width: `${progress * 100}%` }}
         />
       </div>
-      
+
       <div className="flex items-center justify-between">
         <span className="text-xs text-gray-500">{getStatusText()}</span>
         <span className="text-xs text-gray-400">{jobId}</span>
@@ -344,7 +342,7 @@ export const ActivityFeed: React.FC = () => {
   useEffect(() => {
     // This would integrate with the real-time updates
     const handleActivity = (data: Record<string, unknown>) => {
-      setActivities(prev => [data, ...prev.slice(0, 49)]); // Keep last 50 activities
+      setActivities((prev) => [data, ...prev.slice(0, 49)]); // Keep last 50 activities
     };
 
     // Add event listeners for various activities
@@ -362,12 +360,10 @@ export const ActivityFeed: React.FC = () => {
       <div className="p-4 border-b border-gray-200">
         <h3 className="text-lg font-semibold text-gray-900">Activity Feed</h3>
       </div>
-      
+
       <div className="max-h-96 overflow-y-auto">
         {activities.length === 0 ? (
-          <div className="p-4 text-center text-gray-500">
-            No recent activity
-          </div>
+          <div className="p-4 text-center text-gray-500">No recent activity</div>
         ) : (
           <div className="divide-y divide-gray-200">
             {activities.map((activity, index) => (

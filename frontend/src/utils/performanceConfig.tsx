@@ -96,7 +96,7 @@ export const performanceConfig = {
     offlineFallback: true,
     updateCheckInterval: 60000, // 1 minute
   },
-}
+};
 
 // ============================================================================
 // PERFORMANCE OPTIMIZATION UTILITIES
@@ -106,9 +106,11 @@ export const performanceConfig = {
  * Checks if performance optimizations are enabled
  */
 export function isPerformanceOptimizationEnabled(): boolean {
-  return performanceConfig.lazyLoading.enabled &&
-         performanceConfig.codeSplitting.enabled &&
-         performanceConfig.virtualScrolling.enabled
+  return (
+    performanceConfig.lazyLoading.enabled &&
+    performanceConfig.codeSplitting.enabled &&
+    performanceConfig.virtualScrolling.enabled
+  );
 }
 
 /**
@@ -116,40 +118,40 @@ export function isPerformanceOptimizationEnabled(): boolean {
  */
 export function getOptimalChunkSize(): number {
   if ('connection' in navigator) {
-    const connection = (navigator as any).connection
-    const effectiveType = connection.effectiveType
+    const connection = (navigator as any).connection;
+    const effectiveType = connection.effectiveType;
 
     switch (effectiveType) {
       case 'slow-2g':
-        return 100000 // 100KB
+        return 100000; // 100KB
       case '2g':
-        return 150000 // 150KB
+        return 150000; // 150KB
       case '3g':
-        return 200000 // 200KB
+        return 200000; // 200KB
       case '4g':
-        return 300000 // 300KB
+        return 300000; // 300KB
       default:
-        return performanceConfig.codeSplitting.chunkSize
+        return performanceConfig.codeSplitting.chunkSize;
     }
   }
 
-  return performanceConfig.codeSplitting.chunkSize
+  return performanceConfig.codeSplitting.chunkSize;
 }
 
 /**
  * Gets the optimal debounce delay based on input type
  */
 export function getOptimalDebounceDelay(inputType: string): number {
-  const delays = performanceConfig.debouncing
-  return delays[inputType as keyof typeof delays] || delays.input
+  const delays = performanceConfig.debouncing;
+  return delays[inputType as keyof typeof delays] || delays.input;
 }
 
 /**
  * Gets the optimal throttle delay based on event type
  */
 export function getOptimalThrottleDelay(eventType: string): number {
-  const delays = performanceConfig.throttling
-  return delays[eventType as keyof typeof delays] || delays.scroll
+  const delays = performanceConfig.throttling;
+  return delays[eventType as keyof typeof delays] || delays.scroll;
 }
 
 /**
@@ -157,42 +159,42 @@ export function getOptimalThrottleDelay(eventType: string): number {
  */
 export function isResourceLimitedDevice(): boolean {
   if ('memory' in performance) {
-    const memory = (performance as any).memory
-    const availableMemory = memory.jsHeapSizeLimit - memory.usedJSHeapSize
-    return availableMemory < 50 * 1024 * 1024 // 50MB
+    const memory = (performance as any).memory;
+    const availableMemory = memory.jsHeapSizeLimit - memory.usedJSHeapSize;
+    return availableMemory < 50 * 1024 * 1024; // 50MB
   }
 
   if ('connection' in navigator) {
-    const connection = (navigator as any).connection
-    return connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g'
+    const connection = (navigator as any).connection;
+    return connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g';
   }
 
-  return false
+  return false;
 }
 
 /**
  * Gets performance optimization recommendations
  */
 export function getPerformanceRecommendations(): string[] {
-  const recommendations: string[] = []
+  const recommendations: string[] = [];
 
   if (isResourceLimitedDevice()) {
-    recommendations.push('Enable aggressive lazy loading')
-    recommendations.push('Reduce chunk sizes')
-    recommendations.push('Enable virtual scrolling')
-    recommendations.push('Disable non-essential features')
+    recommendations.push('Enable aggressive lazy loading');
+    recommendations.push('Reduce chunk sizes');
+    recommendations.push('Enable virtual scrolling');
+    recommendations.push('Disable non-essential features');
   }
 
   if ('connection' in navigator) {
-    const connection = (navigator as any).connection
+    const connection = (navigator as any).connection;
     if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
-      recommendations.push('Enable offline caching')
-      recommendations.push('Reduce image quality')
-      recommendations.push('Use compressed assets')
+      recommendations.push('Enable offline caching');
+      recommendations.push('Reduce image quality');
+      recommendations.push('Use compressed assets');
     }
   }
 
-  return recommendations
+  return recommendations;
 }
 
 // ============================================================================
@@ -203,24 +205,24 @@ export function getPerformanceRecommendations(): string[] {
  * Hook for performance optimization
  */
 export function usePerformanceOptimization() {
-  const [isEnabled, setIsEnabled] = useState(isPerformanceOptimizationEnabled())
-  const [recommendations, setRecommendations] = useState<string[]>([])
+  const [isEnabled, setIsEnabled] = useState(isPerformanceOptimizationEnabled());
+  const [recommendations, setRecommendations] = useState<string[]>([]);
 
   useEffect(() => {
-    setRecommendations(getPerformanceRecommendations())
-  }, [])
+    setRecommendations(getPerformanceRecommendations());
+  }, []);
 
   const enableOptimizations = useCallback(() => {
-    setIsEnabled(true)
-  }, [])
+    setIsEnabled(true);
+  }, []);
 
   const disableOptimizations = useCallback(() => {
-    setIsEnabled(false)
-  }, [])
+    setIsEnabled(false);
+  }, []);
 
   const toggleOptimizations = useCallback(() => {
-    setIsEnabled(prev => !prev)
-  }, [])
+    setIsEnabled((prev) => !prev);
+  }, []);
 
   return {
     isEnabled,
@@ -228,7 +230,7 @@ export function usePerformanceOptimization() {
     enableOptimizations,
     disableOptimizations,
     toggleOptimizations,
-  }
+  };
 }
 
 // ============================================================================
@@ -244,4 +246,4 @@ export default {
   isResourceLimitedDevice,
   getPerformanceRecommendations,
   usePerformanceOptimization,
-}
+};

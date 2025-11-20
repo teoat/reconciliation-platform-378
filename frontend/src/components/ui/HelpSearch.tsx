@@ -1,6 +1,6 @@
 /**
  * Help Search Component
- * 
+ *
  * Searchable help system with keyword matching and related articles.
  */
 
@@ -52,19 +52,25 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
     return () => clearTimeout(timeoutId);
   }, [query]);
 
-  const handleSelect = useCallback((content: HelpContent) => {
-    helpContentService.trackView(content.id);
-    if (onContentSelect) {
-      onContentSelect(content);
-    }
-    onClose();
-  }, [onContentSelect, onClose]);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
+  const handleSelect = useCallback(
+    (content: HelpContent) => {
+      helpContentService.trackView(content.id);
+      if (onContentSelect) {
+        onContentSelect(content);
+      }
       onClose();
-    }
-  }, [onClose]);
+    },
+    [onContentSelect, onClose]
+  );
+
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    },
+    [onClose]
+  );
 
   if (!isOpen) return null;
 
@@ -129,11 +135,7 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
 
         {/* Results */}
         <div className="max-h-96 overflow-y-auto p-4">
-          {isSearching && (
-            <div className="text-center py-8 text-gray-500">
-              Searching...
-            </div>
-          )}
+          {isSearching && <div className="text-center py-8 text-gray-500">Searching...</div>}
 
           {!isSearching && query.length >= 2 && results.length === 0 && (
             <div className="text-center py-8 text-gray-500">
@@ -155,12 +157,8 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900 mb-1">
-                        {content.title}
-                      </h4>
-                      <p className="text-xs text-gray-600 line-clamp-2">
-                        {content.content}
-                      </p>
+                      <h4 className="text-sm font-medium text-gray-900 mb-1">{content.title}</h4>
+                      <p className="text-xs text-gray-600 line-clamp-2">{content.content}</p>
                       <div className="flex items-center space-x-2 mt-2">
                         <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded">
                           {content.category}
@@ -182,9 +180,7 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
 
           {!query && popular.length > 0 && (
             <div className="space-y-2">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">
-                Popular Articles
-              </h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">Popular Articles</h3>
               {popular.map((content) => (
                 <button
                   key={content.id}
@@ -193,12 +189,8 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-900 mb-1">
-                        {content.title}
-                      </h4>
-                      <p className="text-xs text-gray-600 line-clamp-2">
-                        {content.content}
-                      </p>
+                      <h4 className="text-sm font-medium text-gray-900 mb-1">{content.title}</h4>
+                      <p className="text-xs text-gray-600 line-clamp-2">{content.content}</p>
                     </div>
                     <ChevronRight className="h-5 w-5 text-gray-400 ml-2 flex-shrink-0" />
                   </div>
@@ -213,4 +205,3 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
 };
 
 export default HelpSearch;
-

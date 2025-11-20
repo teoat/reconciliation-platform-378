@@ -252,16 +252,14 @@ const SummaryPageContent: React.FC = () => {
   const [exportFormat, setExportFormat] = useState<'csv' | 'pdf' | 'json'>('csv');
 
   // Page Orchestration with Frenly AI
-  const {
-    updatePageContext,
-    trackFeatureUsage,
-    trackFeatureError,
-  } = usePageOrchestration({
+  const { updatePageContext, trackFeatureUsage, trackFeatureError } = usePageOrchestration({
     pageMetadata: summaryPageMetadata,
     getPageContext: () =>
       getSummaryPageContext(
         undefined, // projectId
-        data ? Number((data.reconciliationSummary as Record<string, unknown>)?.totalRecords ?? 0) : 0,
+        data
+          ? Number((data.reconciliationSummary as Record<string, unknown>)?.totalRecords ?? 0)
+          : 0,
         0, // exportedReportsCount
         undefined // projectName
       ),
@@ -271,10 +269,11 @@ const SummaryPageContent: React.FC = () => {
         false // hasExportedData
       ),
     getWorkflowState: () => getSummaryWorkflowState(),
-    registerGuidanceHandlers: () => registerSummaryGuidanceHandlers(
-      () => setShowExportModal(true),
-      () => setShowExportModal(true)
-    ),
+    registerGuidanceHandlers: () =>
+      registerSummaryGuidanceHandlers(
+        () => setShowExportModal(true),
+        () => setShowExportModal(true)
+      ),
     getGuidanceContent: (topic) => getSummaryGuidanceContent(topic),
   });
 
@@ -297,19 +296,25 @@ const SummaryPageContent: React.FC = () => {
         },
         {
           title: 'Matched',
-          value: Number((data.reconciliationSummary as Record<string, unknown>)?.matchedRecords ?? 0),
+          value: Number(
+            (data.reconciliationSummary as Record<string, unknown>)?.matchedRecords ?? 0
+          ),
           icon: CheckCircle,
           color: 'bg-green-100 text-green-600',
         },
         {
           title: 'Unmatched',
-          value: Number((data.reconciliationSummary as Record<string, unknown>)?.unmatchedRecords ?? 0),
+          value: Number(
+            (data.reconciliationSummary as Record<string, unknown>)?.unmatchedRecords ?? 0
+          ),
           icon: AlertCircle,
           color: 'bg-red-100 text-red-600',
         },
         {
           title: 'Discrepancies',
-          value: Number((data.reconciliationSummary as Record<string, unknown>)?.discrepancyRecords ?? 0),
+          value: Number(
+            (data.reconciliationSummary as Record<string, unknown>)?.discrepancyRecords ?? 0
+          ),
           icon: AlertCircle,
           color: 'bg-yellow-100 text-yellow-600',
         },
@@ -424,40 +429,42 @@ const SummaryPageContent: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {(Array.isArray(data?.systemBreakdown) ? data.systemBreakdown : []).map((system: Record<string, unknown>, index: number) => {
-                const matched = Number(system.matched ?? 0);
-                const records = Number(system.records ?? 0);
-                const matchRate = records > 0 ? (matched / records) * 100 : 0;
-                return (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {String(system.system ?? 'Unknown')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {records}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {matched}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {Number(system.unmatched ?? 0)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      <span
-                        className={`font-medium ${
-                          matchRate >= 90
-                            ? 'text-green-600'
-                            : matchRate >= 70
-                              ? 'text-yellow-600'
-                              : 'text-red-600'
-                        }`}
-                      >
-                        {matchRate.toFixed(1)}%
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })}
+              {(Array.isArray(data?.systemBreakdown) ? data.systemBreakdown : []).map(
+                (system: Record<string, unknown>, index: number) => {
+                  const matched = Number(system.matched ?? 0);
+                  const records = Number(system.records ?? 0);
+                  const matchRate = records > 0 ? (matched / records) * 100 : 0;
+                  return (
+                    <tr key={index} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                        {String(system.system ?? 'Unknown')}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {records}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {matched}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {Number(system.unmatched ?? 0)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span
+                          className={`font-medium ${
+                            matchRate >= 90
+                              ? 'text-green-600'
+                              : matchRate >= 70
+                                ? 'text-yellow-600'
+                                : 'text-red-600'
+                          }`}
+                        >
+                          {matchRate.toFixed(1)}%
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                }
+              )}
             </tbody>
           </table>
         </div>
@@ -474,12 +481,14 @@ const SummaryPageContent: React.FC = () => {
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {(Array.isArray(data?.recommendations) ? data.recommendations : []).map((recommendation: string, index: number) => (
-                <div key={index} className="flex items-start space-x-3">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm text-gray-700">{recommendation}</p>
-                </div>
-              ))}
+              {(Array.isArray(data?.recommendations) ? data.recommendations : []).map(
+                (recommendation: string, index: number) => (
+                  <div key={index} className="flex items-start space-x-3">
+                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <p className="text-sm text-gray-700">{recommendation}</p>
+                  </div>
+                )
+              )}
             </div>
           </div>
         </div>
@@ -493,14 +502,16 @@ const SummaryPageContent: React.FC = () => {
           </div>
           <div className="p-6">
             <div className="space-y-3">
-              {(Array.isArray(data?.nextSteps) ? data.nextSteps : []).map((step: string, index: number) => (
-                <div key={index} className="flex items-start space-x-3">
-                  <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-xs font-medium text-blue-600">{index + 1}</span>
+              {(Array.isArray(data?.nextSteps) ? data.nextSteps : []).map(
+                (step: string, index: number) => (
+                  <div key={index} className="flex items-start space-x-3">
+                    <div className="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-medium text-blue-600">{index + 1}</span>
+                    </div>
+                    <p className="text-sm text-gray-700">{step}</p>
                   </div>
-                  <p className="text-sm text-gray-700">{step}</p>
-                </div>
-              ))}
+                )
+              )}
             </div>
           </div>
         </div>
@@ -515,7 +526,9 @@ const SummaryPageContent: React.FC = () => {
       >
         <div className="space-y-4">
           <div>
-            <label htmlFor="export-format" className="block text-sm font-medium text-gray-700 mb-2">Export Format</label>
+            <label htmlFor="export-format" className="block text-sm font-medium text-gray-700 mb-2">
+              Export Format
+            </label>
             <select
               id="export-format"
               value={exportFormat}

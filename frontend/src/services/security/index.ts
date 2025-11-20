@@ -68,14 +68,20 @@ class SecurityService extends EventEmitter {
     this.sessionStartTime = Date.now();
     this.lastActivity = Date.now();
 
-    this.eventLogger = new SecurityEventLogger(this.generateId.bind(this), this.getSessionId.bind(this));
+    this.eventLogger = new SecurityEventLogger(
+      this.generateId.bind(this),
+      this.getSessionId.bind(this)
+    );
     this.cspManager = new CSPManager(this.logSecurityEvent.bind(this), this.generateId.bind(this));
     this.xssManager = new XSSProtectionManager(
       this.logSecurityEvent.bind(this),
       this.generateId.bind(this),
       () => this.validationManager.sanitizeInput('')
     );
-    this.csrfManager = new CSRFProtectionManager(this.logSecurityEvent.bind(this), this.generateId.bind(this));
+    this.csrfManager = new CSRFProtectionManager(
+      this.logSecurityEvent.bind(this),
+      this.generateId.bind(this)
+    );
     this.sessionManager = new SessionManager(
       this.sessionStartTime,
       this.config.maxSessionDuration,
@@ -83,9 +89,15 @@ class SecurityService extends EventEmitter {
       this.generateId.bind(this),
       this.logout.bind(this)
     );
-    this.validationManager = new ValidationManager(this.logSecurityEvent.bind(this), this.generateId.bind(this));
+    this.validationManager = new ValidationManager(
+      this.logSecurityEvent.bind(this),
+      this.generateId.bind(this)
+    );
     this.anomalyDetector = new AnomalyDetector();
-    this.alertManager = new SecurityAlertManager(this.logSecurityEvent.bind(this), this.generateId.bind(this));
+    this.alertManager = new SecurityAlertManager(
+      this.logSecurityEvent.bind(this),
+      this.generateId.bind(this)
+    );
 
     this.initializeSecurity();
   }
@@ -205,7 +217,14 @@ class SecurityService extends EventEmitter {
     userId?: string,
     metadata?: Record<string, unknown>
   ): Promise<void> {
-    await this.eventLogger.logDataAccessEvent(type, resource, operation, recordCount, userId, metadata);
+    await this.eventLogger.logDataAccessEvent(
+      type,
+      resource,
+      operation,
+      recordCount,
+      userId,
+      metadata
+    );
   }
 
   public sanitizeInput(input: string): string {
@@ -271,4 +290,3 @@ class SecurityService extends EventEmitter {
 export const securityService = SecurityService.getInstance();
 export default securityService;
 export * from './types';
-

@@ -40,7 +40,7 @@ export const useApiErrorHandler = (options: ApiErrorHandlerOptions = {}) => {
 
   // Handle fetch API calls with automatic error extraction
   const handleApiCall = useCallback(
-    async <T,>(
+    async <T>(
       fetchCall: Promise<Response>,
       options?: {
         onSuccess?: (data: T) => void;
@@ -59,11 +59,7 @@ export const useApiErrorHandler = (options: ApiErrorHandlerOptions = {}) => {
           );
 
           // Set error with correlation ID
-          actions.setError(
-            extracted.error,
-            extracted.errorCode,
-            extracted.correlationId
-          );
+          actions.setError(extracted.error, extracted.errorCode, extracted.correlationId);
 
           // Call custom error handler if provided
           if (options?.onError) {
@@ -94,17 +90,10 @@ export const useApiErrorHandler = (options: ApiErrorHandlerOptions = {}) => {
         return data;
       } catch (error) {
         // Handle network errors and other exceptions
-        const extracted = await extractErrorFromFetchCall(
-          fetchCall,
-          options?.defaultError
-        );
+        const extracted = await extractErrorFromFetchCall(fetchCall, options?.defaultError);
 
         // Set error with correlation ID
-        actions.setError(
-          extracted.error,
-          extracted.errorCode,
-          extracted.correlationId
-        );
+        actions.setError(extracted.error, extracted.errorCode, extracted.correlationId);
 
         // Call custom error handler if provided
         if (options?.onError) {
@@ -126,4 +115,3 @@ export const useApiErrorHandler = (options: ApiErrorHandlerOptions = {}) => {
 };
 
 export default useApiErrorHandler;
-

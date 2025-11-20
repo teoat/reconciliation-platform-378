@@ -1,98 +1,98 @@
-import React, { useEffect, useState } from 'react'
-import { X } from 'lucide-react'
-import { CheckCircle } from 'lucide-react'
-import { AlertCircle } from 'lucide-react'
-import { AlertTriangle } from 'lucide-react'
-import { Info } from 'lucide-react'
-import { Bell } from 'lucide-react'
-import { useNotifications, useNotificationHelpers } from './hooks'
-import Button from '../components/ui/Button'
+import React, { useEffect, useState } from 'react';
+import { X } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import { Info } from 'lucide-react';
+import { Bell } from 'lucide-react';
+import { useNotifications, useNotificationHelpers } from './hooks';
+import Button from '../components/ui/Button';
 
 interface NotificationItemProps {
   notification: {
-    id: string
-    type: 'success' | 'error' | 'warning' | 'info'
-    title: string
-    message: string
-    timestamp: string
-    read: boolean
+    id: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    title: string;
+    message: string;
+    timestamp: string;
+    read: boolean;
     action?: {
-      label: string
-      url: string
-    }
-  }
-  onMarkAsRead: (id: string) => void
-  onRemove: (id: string) => void
+      label: string;
+      url: string;
+    };
+  };
+  onMarkAsRead: (id: string) => void;
+  onRemove: (id: string) => void;
 }
 
 const NotificationItem: React.FC<NotificationItemProps> = ({
   notification,
   onMarkAsRead,
-  onRemove
+  onRemove,
 }) => {
-  const [isVisible, setIsVisible] = useState(false)
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     // Animate in
-    const timer = setTimeout(() => setIsVisible(true), 100)
-    return () => clearTimeout(timer)
-  }, [])
+    const timer = setTimeout(() => setIsVisible(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   const handleMarkAsRead = () => {
     if (!notification.read) {
-      onMarkAsRead(notification.id)
+      onMarkAsRead(notification.id);
     }
-  }
+  };
 
   const handleRemove = () => {
-    setIsVisible(false)
-    setTimeout(() => onRemove(notification.id), 300)
-  }
+    setIsVisible(false);
+    setTimeout(() => onRemove(notification.id), 300);
+  };
 
   const getIcon = () => {
     switch (notification.type) {
       case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-500" />
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'error':
-        return <AlertCircle className="h-5 w-5 text-red-500" />
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
       case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />
+        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
       case 'info':
-        return <Info className="h-5 w-5 text-blue-500" />
+        return <Info className="h-5 w-5 text-blue-500" />;
       default:
-        return <Info className="h-5 w-5 text-gray-500" />
+        return <Info className="h-5 w-5 text-gray-500" />;
     }
-  }
+  };
 
   const getBackgroundColor = () => {
     switch (notification.type) {
       case 'success':
-        return 'bg-green-50 border-green-200'
+        return 'bg-green-50 border-green-200';
       case 'error':
-        return 'bg-red-50 border-red-200'
+        return 'bg-red-50 border-red-200';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200'
+        return 'bg-yellow-50 border-yellow-200';
       case 'info':
-        return 'bg-blue-50 border-blue-200'
+        return 'bg-blue-50 border-blue-200';
       default:
-        return 'bg-gray-50 border-gray-200'
+        return 'bg-gray-50 border-gray-200';
     }
-  }
+  };
 
   const getTextColor = () => {
     switch (notification.type) {
       case 'success':
-        return 'text-green-800'
+        return 'text-green-800';
       case 'error':
-        return 'text-red-800'
+        return 'text-red-800';
       case 'warning':
-        return 'text-yellow-800'
+        return 'text-yellow-800';
       case 'info':
-        return 'text-blue-800'
+        return 'text-blue-800';
       default:
-        return 'text-gray-800'
+        return 'text-gray-800';
     }
-  }
+  };
 
   return (
     <div
@@ -105,42 +105,36 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
       onClick={handleMarkAsRead}
     >
       <div className="flex items-start space-x-3">
-        <div className="flex-shrink-0">
-          {getIcon()}
-        </div>
-        
+        <div className="flex-shrink-0">{getIcon()}</div>
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <h4 className={`text-sm font-medium ${getTextColor()}`}>
-              {notification.title}
-            </h4>
+            <h4 className={`text-sm font-medium ${getTextColor()}`}>{notification.title}</h4>
             <button
               onClick={(e) => {
-                e.stopPropagation()
-                handleRemove()
+                e.stopPropagation();
+                handleRemove();
               }}
               className="flex-shrink-0 ml-2 text-gray-400 hover:text-gray-600"
             >
               <X className="h-4 w-4" />
             </button>
           </div>
-          
-          <p className={`mt-1 text-sm ${getTextColor()} opacity-80`}>
-            {notification.message}
-          </p>
-          
+
+          <p className={`mt-1 text-sm ${getTextColor()} opacity-80`}>{notification.message}</p>
+
           <div className="mt-2 flex items-center justify-between">
             <span className="text-xs text-gray-500">
               {new Date(notification.timestamp).toLocaleTimeString()}
             </span>
-            
+
             {notification.action && (
               <Button
                 size="sm"
                 variant="outline"
                 onClick={(e) => {
-                  e.stopPropagation()
-                  window.location.href = notification.action!.url
+                  e.stopPropagation();
+                  window.location.href = notification.action!.url;
                 }}
                 className="text-xs"
               >
@@ -151,31 +145,31 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
 interface NotificationSystemProps {
-  className?: string
+  className?: string;
 }
 
 const NotificationSystem: React.FC<NotificationSystemProps> = ({ className = '' }) => {
-  const { items, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotifications()
-  const [isOpen, setIsOpen] = useState(false)
+  const { items, unreadCount, markAsRead, markAllAsRead, removeNotification } = useNotifications();
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleMarkAsRead = (id: string) => {
-    markAsRead(id)
-  }
+    markAsRead(id);
+  };
 
   const handleRemove = (id: string) => {
-    removeNotification(id)
-  }
+    removeNotification(id);
+  };
 
   const handleMarkAllAsRead = () => {
-    markAllAsRead()
-  }
+    markAllAsRead();
+  };
 
-  const unreadNotifications = items.filter(n => !n.read)
-  const recentNotifications = items.slice(0, 10) // Show only recent 10
+  const unreadNotifications = items.filter((n) => !n.read);
+  const recentNotifications = items.slice(0, 10); // Show only recent 10
 
   return (
     <div className={`relative ${className}`}>
@@ -196,11 +190,8 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({ className = '' 
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div
-            className="fixed inset-0 z-40"
-            onClick={() => setIsOpen(false)}
-          />
-          
+          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+
           {/* Dropdown */}
           <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden">
             {/* Header */}
@@ -258,89 +249,89 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({ className = '' 
         </>
       )}
     </div>
-  )
-}
+  );
+};
 
 // Toast Notifications Component
 interface ToastNotificationProps {
   notification: {
-    id: string
-    type: 'success' | 'error' | 'warning' | 'info'
-    title: string
-    message: string
-    timestamp: string
-  }
-  onRemove: (id: string) => void
-  duration?: number
+    id: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    title: string;
+    message: string;
+    timestamp: string;
+  };
+  onRemove: (id: string) => void;
+  duration?: number;
 }
 
 export const ToastNotification: React.FC<ToastNotificationProps> = ({
   notification,
   onRemove,
-  duration = 5000
+  duration = 5000,
 }) => {
-  const [isVisible, setIsVisible] = useState(false)
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
     // Animate in
-    const showTimer = setTimeout(() => setIsVisible(true), 100)
-    
+    const showTimer = setTimeout(() => setIsVisible(true), 100);
+
     // Auto remove
     const hideTimer = setTimeout(() => {
-      setIsVisible(false)
-      setTimeout(() => onRemove(notification.id), 300)
-    }, duration)
+      setIsVisible(false);
+      setTimeout(() => onRemove(notification.id), 300);
+    }, duration);
 
     return () => {
-      clearTimeout(showTimer)
-      clearTimeout(hideTimer)
-    }
-  }, [notification.id, duration, onRemove])
+      clearTimeout(showTimer);
+      clearTimeout(hideTimer);
+    };
+  }, [notification.id, duration, onRemove]);
 
   const getIcon = () => {
     switch (notification.type) {
       case 'success':
-        return <CheckCircle className="h-5 w-5 text-green-500" />
+        return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'error':
-        return <AlertCircle className="h-5 w-5 text-red-500" />
+        return <AlertCircle className="h-5 w-5 text-red-500" />;
       case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />
+        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
       case 'info':
-        return <Info className="h-5 w-5 text-blue-500" />
+        return <Info className="h-5 w-5 text-blue-500" />;
       default:
-        return <Info className="h-5 w-5 text-gray-500" />
+        return <Info className="h-5 w-5 text-gray-500" />;
     }
-  }
+  };
 
   const getBackgroundColor = () => {
     switch (notification.type) {
       case 'success':
-        return 'bg-green-50 border-green-200'
+        return 'bg-green-50 border-green-200';
       case 'error':
-        return 'bg-red-50 border-red-200'
+        return 'bg-red-50 border-red-200';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-200'
+        return 'bg-yellow-50 border-yellow-200';
       case 'info':
-        return 'bg-blue-50 border-blue-200'
+        return 'bg-blue-50 border-blue-200';
       default:
-        return 'bg-gray-50 border-gray-200'
+        return 'bg-gray-50 border-gray-200';
     }
-  }
+  };
 
   const getTextColor = () => {
     switch (notification.type) {
       case 'success':
-        return 'text-green-800'
+        return 'text-green-800';
       case 'error':
-        return 'text-red-800'
+        return 'text-red-800';
       case 'warning':
-        return 'text-yellow-800'
+        return 'text-yellow-800';
       case 'info':
-        return 'text-blue-800'
+        return 'text-blue-800';
       default:
-        return 'text-gray-800'
+        return 'text-gray-800';
     }
-  }
+  };
 
   return (
     <div
@@ -351,23 +342,17 @@ export const ToastNotification: React.FC<ToastNotificationProps> = ({
       `}
     >
       <div className="flex items-start space-x-3">
-        <div className="flex-shrink-0">
-          {getIcon()}
-        </div>
-        
+        <div className="flex-shrink-0">{getIcon()}</div>
+
         <div className="flex-1 min-w-0">
-          <h4 className={`text-sm font-medium ${getTextColor()}`}>
-            {notification.title}
-          </h4>
-          <p className={`mt-1 text-sm ${getTextColor()} opacity-80`}>
-            {notification.message}
-          </p>
+          <h4 className={`text-sm font-medium ${getTextColor()}`}>{notification.title}</h4>
+          <p className={`mt-1 text-sm ${getTextColor()} opacity-80`}>{notification.message}</p>
         </div>
-        
+
         <button
           onClick={() => {
-            setIsVisible(false)
-            setTimeout(() => onRemove(notification.id), 300)
+            setIsVisible(false);
+            setTimeout(() => onRemove(notification.id), 300);
           }}
           className="flex-shrink-0 text-gray-400 hover:text-gray-600"
         >
@@ -375,53 +360,49 @@ export const ToastNotification: React.FC<ToastNotificationProps> = ({
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
 // Toast Container Component
 interface ToastContainerProps {
   notifications: Array<{
-    id: string
-    type: 'success' | 'error' | 'warning' | 'info'
-    title: string
-    message: string
-    timestamp: string
-  }>
-  onRemove: (id: string) => void
-  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
+    id: string;
+    type: 'success' | 'error' | 'warning' | 'info';
+    title: string;
+    message: string;
+    timestamp: string;
+  }>;
+  onRemove: (id: string) => void;
+  position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left';
 }
 
 export const ToastContainer: React.FC<ToastContainerProps> = ({
   notifications,
   onRemove,
-  position = 'top-right'
+  position = 'top-right',
 }) => {
   const getPositionClasses = () => {
     switch (position) {
       case 'top-right':
-        return 'top-4 right-4'
+        return 'top-4 right-4';
       case 'top-left':
-        return 'top-4 left-4'
+        return 'top-4 left-4';
       case 'bottom-right':
-        return 'bottom-4 right-4'
+        return 'bottom-4 right-4';
       case 'bottom-left':
-        return 'bottom-4 left-4'
+        return 'bottom-4 left-4';
       default:
-        return 'top-4 right-4'
+        return 'top-4 right-4';
     }
-  }
+  };
 
   return (
     <div className={`fixed ${getPositionClasses()} z-50 w-80 sm:w-96`}>
       {notifications.map((notification) => (
-        <ToastNotification
-          key={notification.id}
-          notification={notification}
-          onRemove={onRemove}
-        />
+        <ToastNotification key={notification.id} notification={notification} onRemove={onRemove} />
       ))}
     </div>
-  )
-}
+  );
+};
 
-export default NotificationSystem
+export default NotificationSystem;

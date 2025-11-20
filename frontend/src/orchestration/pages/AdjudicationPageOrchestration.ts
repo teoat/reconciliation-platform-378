@@ -21,7 +21,12 @@ export const adjudicationPageMetadata: PageMetadata = {
   category: 'workflow',
   features: ['match-review', 'discrepancy-resolution', 'approval', 'batch-processing'],
   onboardingSteps: ['review-guide', 'resolution-help', 'approval-process'],
-  guidanceTopics: ['match-review', 'resolution-strategies', 'approval-workflow', 'batch-processing'],
+  guidanceTopics: [
+    'match-review',
+    'resolution-strategies',
+    'approval-workflow',
+    'batch-processing',
+  ],
   icon: 'adjudication',
 };
 
@@ -147,7 +152,8 @@ export function registerAdjudicationGuidanceHandlers(): GuidanceHandler[] {
           return {
             id: `resolution-tip-${Date.now()}`,
             type: 'tip',
-            content: 'Review discrepancies carefully. You can accept, reject, or request more information.',
+            content:
+              'Review discrepancies carefully. You can accept, reject, or request more information.',
             timestamp: new Date(),
             page: 'adjudication',
             priority: 'medium',
@@ -166,7 +172,8 @@ export function registerAdjudicationGuidanceHandlers(): GuidanceHandler[] {
           return {
             id: `approval-tip-${Date.now()}`,
             type: 'tip',
-            content: 'Once you\'ve reviewed all matches, approve them to complete the adjudication process.',
+            content:
+              "Once you've reviewed all matches, approve them to complete the adjudication process.",
             timestamp: new Date(),
             page: 'adjudication',
             priority: 'low',
@@ -189,13 +196,15 @@ export function getAdjudicationGuidanceContent(topic: string): GuidanceContent[]
       {
         id: 'review-process',
         title: 'Review Process',
-        content: 'Review matches by confidence score. High confidence matches can be auto-approved.',
+        content:
+          'Review matches by confidence score. High confidence matches can be auto-approved.',
         type: 'tip',
       },
       {
         id: 'review-tips',
         title: 'Review Tips',
-        content: 'Focus on matches with lower confidence scores first. Check for data quality issues.',
+        content:
+          'Focus on matches with lower confidence scores first. Check for data quality issues.',
         type: 'tip',
       },
     ],
@@ -217,7 +226,8 @@ export function getAdjudicationGuidanceContent(topic: string): GuidanceContent[]
       {
         id: 'approval-process',
         title: 'Approval Process',
-        content: 'Approve resolved matches to finalize the adjudication. You can approve individually or in batches.',
+        content:
+          'Approve resolved matches to finalize the adjudication. You can approve individually or in batches.',
         type: 'info',
       },
       {
@@ -245,4 +255,3 @@ export function getAdjudicationGuidanceContent(topic: string): GuidanceContent[]
 
   return guidanceMap[topic] || [];
 }
-

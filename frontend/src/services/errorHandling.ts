@@ -46,7 +46,7 @@ export interface ErrorHandlingOptions {
 
 /**
  * Standardized error handler for API services
- * 
+ *
  * @example
  * ```typescript
  * try {
@@ -142,9 +142,7 @@ export function handleServiceError<T>(
 
   // Track error in context service
   if (trackContext) {
-    const errorObj = errorOrResponse instanceof Error 
-      ? errorOrResponse 
-      : new Error(errorMessage);
+    const errorObj = errorOrResponse instanceof Error ? errorOrResponse : new Error(errorMessage);
     errorContextService.trackError(errorObj, {
       component,
       action,
@@ -162,7 +160,7 @@ export function handleServiceError<T>(
 
 /**
  * Wrapper for async service methods with standardized error handling
- * 
+ *
  * @example
  * ```typescript
  * static async getUsers() {
@@ -253,4 +251,3 @@ export function createSuccessResponse<T>(data: T): ErrorHandlingResult<T> {
     data,
   };
 }
-

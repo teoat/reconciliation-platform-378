@@ -337,9 +337,7 @@ const WorkflowOrchestrator = ({
 
       <WorkflowControls
         canGoPrevious={workflowStages.findIndex((stage) => stage.isActive) > 0}
-        canGoNext={
-          workflowStages.findIndex((stage) => stage.isActive) < workflowStages.length - 1
-        }
+        canGoNext={workflowStages.findIndex((stage) => stage.isActive) < workflowStages.length - 1}
         isAutoAdvancing={isAutoAdvancing}
         estimatedTimeRemaining={workflowProgress.estimatedTimeRemaining}
         onPrevious={goToPreviousStage}

@@ -4,7 +4,11 @@ import { logger } from '@/services/logger';
 
 import { EventEmitter } from 'events';
 
-const createPerformanceMemory = (usedJSHeapSize: number, totalJSHeapSize: number, jsHeapSizeLimit: number) => ({
+const createPerformanceMemory = (
+  usedJSHeapSize: number,
+  totalJSHeapSize: number,
+  jsHeapSizeLimit: number
+) => ({
   usedJSHeapSize,
   totalJSHeapSize,
   jsHeapSizeLimit,
@@ -34,14 +38,24 @@ export const createPerformanceMetrics = (
   timestamp,
 });
 
-export const createBundleAnalysis = (totalSize: number, gzippedSize: number, chunks: unknown[], duplicates: unknown[]) => ({
+export const createBundleAnalysis = (
+  totalSize: number,
+  gzippedSize: number,
+  chunks: unknown[],
+  duplicates: unknown[]
+) => ({
   totalSize,
   gzippedSize,
   chunks,
   duplicates,
 });
 
-export const createCacheStrategy = (name: string, maxAge: number, maxSize: number, strategy: string) => ({
+export const createCacheStrategy = (
+  name: string,
+  maxAge: number,
+  maxSize: number,
+  strategy: string
+) => ({
   name,
   maxAge,
   maxSize,

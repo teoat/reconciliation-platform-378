@@ -47,4 +47,3 @@ export const WorkflowBreadcrumbs: React.FC<WorkflowBreadcrumbsProps> = ({ stages
     </nav>
   );
 };
-

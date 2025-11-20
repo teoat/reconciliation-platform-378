@@ -679,9 +679,7 @@ const WorkflowAutomation = ({ project, onProgressUpdate }: WorkflowAutomationPro
                       </div>
                       <div>
                         <span className="text-secondary-600">Executions:</span>
-                        <span className="ml-2 text-secondary-900">
-                          {rule.executionCount}
-                        </span>
+                        <span className="ml-2 text-secondary-900">{rule.executionCount}</span>
                       </div>
                       <div>
                         <span className="text-secondary-600">Success Rate:</span>

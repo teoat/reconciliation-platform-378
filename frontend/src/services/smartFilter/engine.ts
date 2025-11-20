@@ -2,11 +2,17 @@
 import { FilterConfig, FilterPreset } from './types';
 
 export class FilterEngine {
-  public applyFilter(data: Array<Record<string, unknown>>, filter: FilterConfig): Array<Record<string, unknown>> {
+  public applyFilter(
+    data: Array<Record<string, unknown>>,
+    filter: FilterConfig
+  ): Array<Record<string, unknown>> {
     return data.filter((item) => this.evaluateFilter(item, filter));
   }
 
-  public applyFilters(data: Array<Record<string, unknown>>, filters: FilterConfig[]): Array<Record<string, unknown>> {
+  public applyFilters(
+    data: Array<Record<string, unknown>>,
+    filters: FilterConfig[]
+  ): Array<Record<string, unknown>> {
     let result = data;
     for (const filter of filters) {
       result = this.applyFilter(result, filter);
@@ -14,7 +20,10 @@ export class FilterEngine {
     return result;
   }
 
-  public applyPreset(data: Array<Record<string, unknown>>, preset: FilterPreset): Array<Record<string, unknown>> {
+  public applyPreset(
+    data: Array<Record<string, unknown>>,
+    preset: FilterPreset
+  ): Array<Record<string, unknown>> {
     return this.applyFilters(data, preset.filters);
   }
 
@@ -69,11 +78,17 @@ export class FilterEngine {
       errors.push('Value is required');
     }
 
-    if (filter.operator === 'between' && (!Array.isArray(filter.value) || filter.value.length !== 2)) {
+    if (
+      filter.operator === 'between' &&
+      (!Array.isArray(filter.value) || filter.value.length !== 2)
+    ) {
       errors.push('Between operator requires an array of two values');
     }
 
-    if ((filter.operator === 'in' || filter.operator === 'not_in') && !Array.isArray(filter.value)) {
+    if (
+      (filter.operator === 'in' || filter.operator === 'not_in') &&
+      !Array.isArray(filter.value)
+    ) {
       errors.push(`${filter.operator} operator requires an array value`);
     }
 
@@ -107,4 +122,3 @@ export class FilterEngine {
     };
   }
 }
-

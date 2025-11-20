@@ -1,6 +1,6 @@
 /**
  * Orchestration Analytics Utilities
- * 
+ *
  * Provides analytics tracking and reporting for Frenly AI orchestration.
  */
 
@@ -45,12 +45,7 @@ export class AnalyticsCollector {
   /**
    * Track feature usage
    */
-  trackFeatureUsage(
-    featureId: string,
-    action: string,
-    success: boolean,
-    duration?: number
-  ): void {
+  trackFeatureUsage(featureId: string, action: string, success: boolean, duration?: number): void {
     const stats = this.featureUsage.get(featureId) || {
       featureId,
       usageCount: 0,
@@ -68,9 +63,7 @@ export class AnalyticsCollector {
 
     if (duration !== undefined) {
       stats.averageTime =
-        stats.averageTime !== undefined
-          ? (stats.averageTime + duration) / 2
-          : duration;
+        stats.averageTime !== undefined ? (stats.averageTime + duration) / 2 : duration;
     }
 
     stats.lastUsed = Date.now();
@@ -93,8 +86,7 @@ export class AnalyticsCollector {
     };
 
     analytics.visitCount++;
-    analytics.averageSessionDuration =
-      (analytics.averageSessionDuration + duration) / 2;
+    analytics.averageSessionDuration = (analytics.averageSessionDuration + duration) / 2;
     analytics.lastVisit = Date.now();
 
     this.pageAnalytics.set(pageId, analytics);
@@ -184,13 +176,9 @@ export function generateAnalyticsReport(): {
   const totalErrors = features.reduce((sum, f) => sum + f.errorCount, 0);
   const errorRate = totalUsage > 0 ? totalErrors / totalUsage : 0;
 
-  const topFeatures = features
-    .sort((a, b) => b.usageCount - a.usageCount)
-    .slice(0, 10);
+  const topFeatures = features.sort((a, b) => b.usageCount - a.usageCount).slice(0, 10);
 
-  const topPages = pages
-    .sort((a, b) => b.visitCount - a.visitCount)
-    .slice(0, 10);
+  const topPages = pages.sort((a, b) => b.visitCount - a.visitCount).slice(0, 10);
 
   return {
     summary: {
@@ -203,4 +191,3 @@ export function generateAnalyticsReport(): {
     topPages,
   };
 }
-

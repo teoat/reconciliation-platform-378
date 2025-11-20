@@ -63,13 +63,10 @@ export class ErrorBoundary extends Component<Props, State> {
       });
 
       // Try to translate error for better user experience
-      const translation = errorTranslationService.translateError(
-        error.name || 'UNKNOWN_ERROR',
-        {
-          component: 'ErrorBoundary',
-          action: 'error_boundary_catch',
-        }
-      );
+      const translation = errorTranslationService.translateError(error.name || 'UNKNOWN_ERROR', {
+        component: 'ErrorBoundary',
+        action: 'error_boundary_catch',
+      });
 
       // Store translation for display
       if (translation) {
@@ -85,16 +82,17 @@ export class ErrorBoundary extends Component<Props, State> {
       }
     } catch (contextError) {
       // Fail silently if context service fails
-      const errorObj = contextError instanceof Error ? contextError : new Error(String(contextError));
+      const errorObj =
+        contextError instanceof Error ? contextError : new Error(String(contextError));
       logger.warn('Failed to track error context:', { error: errorObj.message });
     }
 
     // Log error to console in development
     if (import.meta.env.DEV) {
-      logger.error('ErrorBoundary caught an error:', { 
-        error: error.message, 
+      logger.error('ErrorBoundary caught an error:', {
+        error: error.message,
         stack: error.stack,
-        componentStack: errorInfo.componentStack 
+        componentStack: errorInfo.componentStack,
       });
     }
 
@@ -109,7 +107,9 @@ export class ErrorBoundary extends Component<Props, State> {
       (async () => {
         try {
           // Check if Sentry is available via window object (if loaded via script tag)
-          const win = window as unknown as { Sentry?: { captureException: (error: Error, options?: unknown) => void } };
+          const win = window as unknown as {
+            Sentry?: { captureException: (error: Error, options?: unknown) => void };
+          };
           if (win.Sentry?.captureException) {
             win.Sentry.captureException(error, {
               contexts: {
@@ -120,27 +120,27 @@ export class ErrorBoundary extends Component<Props, State> {
             });
           } else {
             // Sentry not available - use logger
-            logger.error('Production error:', { 
-              error: error.message, 
+            logger.error('Production error:', {
+              error: error.message,
               stack: error.stack,
-              componentStack: errorInfo.componentStack 
+              componentStack: errorInfo.componentStack,
             });
           }
         } catch (importError) {
           // Sentry not available or not configured - use logger
-          logger.error('Production error:', { 
-            error: error.message, 
+          logger.error('Production error:', {
+            error: error.message,
             stack: error.stack,
-            componentStack: errorInfo.componentStack 
+            componentStack: errorInfo.componentStack,
           });
         }
       })();
     } else {
       // Always log in development
-      logger.error('Development error:', { 
-        error: error.message, 
+      logger.error('Development error:', {
+        error: error.message,
         stack: error.stack,
-        componentStack: errorInfo.componentStack 
+        componentStack: errorInfo.componentStack,
       });
     }
   }
@@ -220,19 +220,19 @@ export class ErrorBoundary extends Component<Props, State> {
 // Hook for functional components to handle errors
 export const useErrorHandler = () => {
   const handleError = (error: Error, errorInfo?: string) => {
-    logger.error('Error caught by useErrorHandler:', { 
-      error: error.message, 
+    logger.error('Error caught by useErrorHandler:', {
+      error: error.message,
       stack: error.stack,
-      errorInfo 
+      errorInfo,
     });
 
     // Log to external service in production
     if (import.meta.env.PROD) {
       // Send to error tracking service
-      logger.error('Production error:', { 
-        error: error.message, 
+      logger.error('Production error:', {
+        error: error.message,
         stack: error.stack,
-        errorInfo 
+        errorInfo,
       });
     }
   };

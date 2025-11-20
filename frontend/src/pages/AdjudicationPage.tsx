@@ -105,7 +105,6 @@ const BasePage: React.FC<BasePageProps> = ({
 }) => {
   const [filterValues, setFilterValues] = useState<Record<string, string>>({});
 
-
   const handleFilterChange = (key: string, value: string) => {
     setFilterValues((prev) => ({ ...prev, [key]: value }));
   };
@@ -180,10 +179,7 @@ const BasePage: React.FC<BasePageProps> = ({
                 </div>
               </div>
               {stat.progress !== undefined && (
-                <ProgressBar
-                  progress={stat.progress}
-                  title={stat.title}
-                />
+                <ProgressBar progress={stat.progress} title={stat.title} />
               )}
             </div>
           ))}
@@ -284,9 +280,7 @@ const AdjudicationPageContent: React.FC = () => {
   const [selectedRecord, setSelectedRecord] = useState<ReconciliationRecord | null>(null);
 
   // Page Orchestration with Frenly AI
-  const {
-    updatePageContext,
-  } = usePageOrchestration({
+  const { updatePageContext } = usePageOrchestration({
     pageMetadata: adjudicationPageMetadata,
     getPageContext: () =>
       getAdjudicationPageContext(
@@ -324,7 +318,8 @@ const AdjudicationPageContent: React.FC = () => {
   useEffect(() => {
     updatePageContext({
       matchesCount: records.length,
-      resolvedCount: records.filter((r) => r.status === 'approved' || r.status === 'resolved').length,
+      resolvedCount: records.filter((r) => r.status === 'approved' || r.status === 'resolved')
+        .length,
       pendingCount: records.filter((r) => r.status === 'pending').length,
     });
   }, [records, updatePageContext]);
@@ -344,9 +339,9 @@ const AdjudicationPageContent: React.FC = () => {
       toast.success('Records refreshed successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to refresh records';
-      logger.error('Refresh failed', { 
+      logger.error('Refresh failed', {
         error: errorMessage,
-        projectId: currentProject?.id 
+        projectId: currentProject?.id,
       });
       toast.error(errorMessage);
     } finally {
@@ -415,10 +410,10 @@ const AdjudicationPageContent: React.FC = () => {
       toast.success('Record approved successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to approve record';
-      logger.error('Approve failed', { 
+      logger.error('Approve failed', {
         error: errorMessage,
         recordId,
-        projectId: currentProject?.id 
+        projectId: currentProject?.id,
       });
       toast.error(errorMessage);
     }
@@ -435,10 +430,10 @@ const AdjudicationPageContent: React.FC = () => {
       toast.success('Record rejected successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to reject record';
-      logger.error('Reject failed', { 
+      logger.error('Reject failed', {
         error: errorMessage,
         recordId,
-        projectId: currentProject?.id 
+        projectId: currentProject?.id,
       });
       toast.error(errorMessage);
     }

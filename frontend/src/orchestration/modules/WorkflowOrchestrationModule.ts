@@ -1,6 +1,6 @@
 /**
  * Workflow Orchestration Module
- * 
+ *
  * Coordinates multi-page workflows with Frenly AI assistance
  */
 
@@ -144,7 +144,11 @@ export class WorkflowStateManager {
     });
 
     if (!allDependenciesMet) {
-      logger.warn('Workflow step dependencies not met', { workflowId, stepId, dependencies: step.dependencies });
+      logger.warn('Workflow step dependencies not met', {
+        workflowId,
+        stepId,
+        dependencies: step.dependencies,
+      });
       return;
     }
 
@@ -253,7 +257,10 @@ export class WorkflowGuidanceEngine {
       // Convert GeneratedMessage to FrenlyMessage
       const message: FrenlyMessage = {
         id: generatedMessage.id,
-        type: generatedMessage.type === 'help' ? 'tip' : (generatedMessage.type as FrenlyMessage['type']),
+        type:
+          generatedMessage.type === 'help'
+            ? 'tip'
+            : (generatedMessage.type as FrenlyMessage['type']),
         content: generatedMessage.content,
         timestamp: generatedMessage.timestamp,
         page: currentStep.pageId,
@@ -395,4 +402,3 @@ export function getWorkflowSyncService(): WorkflowSyncService {
   }
   return syncServiceInstance;
 }
-

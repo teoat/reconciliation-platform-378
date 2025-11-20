@@ -1,10 +1,5 @@
 // Report Management Module
-import {
-  ReportConfig,
-  ReportFilter,
-  ReportAggregation,
-  ReportMetadata,
-} from './types';
+import { ReportConfig, ReportFilter, ReportAggregation, ReportMetadata } from './types';
 import { Metadata } from '@/types/metadata';
 import { logger } from '../logger';
 
@@ -94,8 +89,15 @@ export class ReportManager {
   async executeReport(
     id: string,
     parameters?: Metadata,
-    queryExecutor: (report: ReportConfig, parameters?: Metadata) => Promise<Array<Record<string, unknown>>>,
-    filterApplier: (data: Array<Record<string, unknown>>, filters: ReportFilter[], parameters?: Metadata) => Array<Record<string, unknown>>
+    queryExecutor: (
+      report: ReportConfig,
+      parameters?: Metadata
+    ) => Promise<Array<Record<string, unknown>>>,
+    filterApplier: (
+      data: Array<Record<string, unknown>>,
+      filters: ReportFilter[],
+      parameters?: Metadata
+    ) => Array<Record<string, unknown>>
   ): Promise<Record<string, unknown>> {
     const report = this.reports.get(id);
     if (!report) {
@@ -118,4 +120,3 @@ export class ReportManager {
     }
   }
 }
-

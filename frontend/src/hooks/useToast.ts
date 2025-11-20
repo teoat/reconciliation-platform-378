@@ -44,7 +44,7 @@ class ToastManager {
   }
 
   private notify() {
-    this.listeners.forEach(listener => listener([...this.toasts]));
+    this.listeners.forEach((listener) => listener([...this.toasts]));
   }
 
   show(message: string, type: ToastType = 'info', options: ToastOptions = {}) {
@@ -68,7 +68,7 @@ class ToastManager {
   }
 
   remove(id: string) {
-    this.toasts = this.toasts.filter(t => t.id !== id);
+    this.toasts = this.toasts.filter((t) => t.id !== id);
     this.notify();
   }
 
@@ -93,11 +93,11 @@ export const useToast = () => {
     // Support both simple string and complex notification object
     let message: string;
     let type: ToastType = 'info';
-    
+
     if (typeof notification === 'string') {
       message = notification;
     } else {
-      message = notification.title 
+      message = notification.title
         ? `${notification.title}: ${notification.description}`
         : notification.description;
       type = notification.variant || 'info';

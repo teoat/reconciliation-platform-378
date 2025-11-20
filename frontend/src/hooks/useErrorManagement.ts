@@ -175,43 +175,46 @@ export const useErrorManagement = (
     setShowErrorReporting(false);
   }, []);
 
-  const submitErrorReport = useCallback(async (report: ErrorReport) => {
-    try {
-      // Format error for reporting
-      const formattedError = formatErrorForReporting(
-        currentError || new Error('Unknown error'),
-        { component, action }
-      );
-
-      // Submit to backend or error tracking service
-      const response = await fetch('/api/errors/report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...report,
-          formattedError,
-          errorCode,
-          correlationId,
+  const submitErrorReport = useCallback(
+    async (report: ErrorReport) => {
+      try {
+        // Format error for reporting
+        const formattedError = formatErrorForReporting(currentError || new Error('Unknown error'), {
           component,
           action,
-          timestamp: new Date().toISOString(),
-        }),
-      });
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to submit error report');
+        // Submit to backend or error tracking service
+        const response = await fetch('/api/errors/report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            ...report,
+            formattedError,
+            errorCode,
+            correlationId,
+            component,
+            action,
+            timestamp: new Date().toISOString(),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to submit error report');
+        }
+
+        // Close reporting form
+        setShowErrorReporting(false);
+
+        // Optionally clear error after successful report
+        // clearError();
+      } catch (error) {
+        logger.error('Failed to submit error report:', { error });
+        throw error;
       }
-
-      // Close reporting form
-      setShowErrorReporting(false);
-
-      // Optionally clear error after successful report
-      // clearError();
-    } catch (error) {
-      logger.error('Failed to submit error report:', { error });
-      throw error;
-    }
-  }, [currentError, component, action, errorCode, correlationId]);
+    },
+    [currentError, component, action, errorCode, correlationId]
+  );
 
   // Retry action
   const retry = useCallback(async () => {
@@ -271,4 +274,3 @@ export const useErrorManagement = (
 };
 
 export default useErrorManagement;
-

@@ -124,7 +124,7 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
   // Filter visible steps based on conditions and dependencies
   const getVisibleSteps = (): TourStep[] => {
     const completedSteps = getCompletedSteps();
-    
+
     return steps.filter((step) => {
       // Check conditional visibility
       if (step.conditional && !step.conditional()) {
@@ -133,9 +133,7 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
 
       // Check dependencies - all must be completed
       if (step.dependsOn && step.dependsOn.length > 0) {
-        const allDependenciesMet = step.dependsOn.every((depId) => 
-          completedSteps.includes(depId)
-        );
+        const allDependenciesMet = step.dependsOn.every((depId) => completedSteps.includes(depId));
         if (!allDependenciesMet) {
           return false;
         }

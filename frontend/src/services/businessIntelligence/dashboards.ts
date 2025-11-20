@@ -1,9 +1,5 @@
 // Dashboard Management Module
-import {
-  DashboardConfig,
-  DashboardWidget,
-  DashboardMetadata,
-} from './types';
+import { DashboardConfig, DashboardWidget, DashboardMetadata } from './types';
 import { Metadata } from '@/types/metadata';
 import { logger } from '../logger';
 
@@ -93,8 +89,16 @@ export class DashboardManager {
   async renderDashboard(
     id: string,
     filters?: Metadata,
-    widgetRenderer: (widget: DashboardWidget, filters?: Metadata) => Promise<Record<string, unknown>>
-  ): Promise<DashboardConfig & { widgets: Array<DashboardWidget & { data: Record<string, unknown> }>; loadTime: number }> {
+    widgetRenderer: (
+      widget: DashboardWidget,
+      filters?: Metadata
+    ) => Promise<Record<string, unknown>>
+  ): Promise<
+    DashboardConfig & {
+      widgets: Array<DashboardWidget & { data: Record<string, unknown> }>;
+      loadTime: number;
+    }
+  > {
     const dashboard = this.dashboards.get(id);
     if (!dashboard) {
       throw new Error(`Dashboard ${id} not found`);
@@ -133,4 +137,3 @@ export class DashboardManager {
     }
   }
 }
-

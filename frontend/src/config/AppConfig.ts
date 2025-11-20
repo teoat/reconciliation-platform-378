@@ -19,18 +19,18 @@ const getEnvVar = (key: string, fallback: string): string => {
   } catch (e) {
     // import.meta not available (shouldn't happen in ES modules, but handle gracefully)
   }
-  
+
   // Priority 2: Try NEXT_PUBLIC_ prefix (for backward compatibility during migration)
   const nextPublicKey = `NEXT_PUBLIC_${key.replace('VITE_', '')}`;
   if (typeof process !== 'undefined' && process.env?.[nextPublicKey]) {
     return process.env[nextPublicKey];
   }
-  
+
   // Priority 3: Try process.env with original key (legacy support)
   if (typeof process !== 'undefined' && process.env?.[key]) {
     return process.env[key];
   }
-  
+
   return fallback;
 };
 

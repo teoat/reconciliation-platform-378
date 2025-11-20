@@ -1,6 +1,6 @@
 /**
  * AI Service - OpenAI/Anthropic Integration
- * 
+ *
  * Provides AI model integration for advanced message generation
  * and natural language understanding.
  */
@@ -60,10 +60,10 @@ class AIService {
       temperature: 0.7,
       maxTokens: 500,
     };
-    
+
     // Load API key from environment
     this.loadApiKey();
-    
+
     // Start periodic cache cleanup
     this.startCacheCleanup();
   }
@@ -72,9 +72,12 @@ class AIService {
    * Start periodic cache cleanup
    */
   private startCacheCleanup(): void {
-    setInterval(() => {
-      this.cleanupCache();
-    }, 60 * 60 * 1000); // Cleanup every hour
+    setInterval(
+      () => {
+        this.cleanupCache();
+      },
+      60 * 60 * 1000
+    ); // Cleanup every hour
   }
 
   /**
@@ -90,13 +93,14 @@ class AIService {
       }
     }
 
-    expiredKeys.forEach(key => this.responseCache.delete(key));
+    expiredKeys.forEach((key) => this.responseCache.delete(key));
 
     // If still too many, remove oldest
     if (this.responseCache.size > this.maxCacheSize) {
-      const entries = Array.from(this.responseCache.entries())
-        .sort((a, b) => a[1].timestamp - b[1].timestamp);
-      
+      const entries = Array.from(this.responseCache.entries()).sort(
+        (a, b) => a[1].timestamp - b[1].timestamp
+      );
+
       const toRemove = this.responseCache.size - this.maxCacheSize;
       for (let i = 0; i < toRemove; i++) {
         this.responseCache.delete(entries[i][0]);
@@ -117,11 +121,12 @@ class AIService {
   private loadApiKey(): void {
     // Try to load from environment variables
     if (typeof process !== 'undefined' && process.env) {
-      this.apiKey = process.env.OPENAI_API_KEY || 
-                    process.env.ANTHROPIC_API_KEY || 
-                    process.env.VITE_OPENAI_API_KEY || 
-                    process.env.VITE_ANTHROPIC_API_KEY || 
-                    null;
+      this.apiKey =
+        process.env.OPENAI_API_KEY ||
+        process.env.ANTHROPIC_API_KEY ||
+        process.env.VITE_OPENAI_API_KEY ||
+        process.env.VITE_ANTHROPIC_API_KEY ||
+        null;
     }
 
     // Try to load from localStorage as fallback
@@ -135,7 +140,7 @@ class AIService {
    */
   configure(config: Partial<AIConfig>): void {
     this.config = { ...this.config, ...config };
-    
+
     // Update API key if provided
     if (config.apiKey) {
       this.apiKey = config.apiKey;
@@ -152,10 +157,10 @@ class AIService {
     try {
       // Create cache key from prompt
       const cacheKey = this.getCacheKey(prompt);
-      
+
       // Check cache
       const cached = this.responseCache.get(cacheKey);
-      if (cached && (Date.now() - cached.timestamp) < this.cacheTimeout) {
+      if (cached && Date.now() - cached.timestamp < this.cacheTimeout) {
         return cached.response;
       }
 
@@ -209,7 +214,7 @@ class AIService {
 
       // Store pending request
       this.pendingRequests.set(cacheKey, requestPromise);
-      
+
       return requestPromise;
     } catch (error) {
       logger.error('AI generation error:', error);
@@ -226,7 +231,7 @@ class AIService {
     let hash = 0;
     for (let i = 0; i < promptStr.length; i++) {
       const char = promptStr.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
+      hash = (hash << 5) - hash + char;
       hash = hash & hash; // Convert to 32-bit integer
     }
     return `ai_${hash}_${this.config.provider}_${this.config.model}`;
@@ -255,7 +260,7 @@ Respond with JSON: {"intent": "intent_name", "confidence": 0.0-1.0, "entities": 
       };
 
       const response = await this.generateText(prompt);
-      
+
       // Parse JSON response
       try {
         const parsed = JSON.parse(response.content);
@@ -280,18 +285,18 @@ Respond with JSON: {"intent": "intent_name", "confidence": 0.0-1.0, "entities": 
    */
   private async generateWithOpenAI(prompt: AIPrompt): Promise<AIResponse> {
     const messages = [];
-    
+
     if (prompt.system) {
       messages.push({ role: 'system', content: prompt.system });
     }
-    
+
     messages.push({ role: 'user', content: prompt.user });
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
         model: this.config.model || 'gpt-3.5-turbo',
@@ -306,14 +311,16 @@ Respond with JSON: {"intent": "intent_name", "confidence": 0.0-1.0, "entities": 
     }
 
     const data = await response.json();
-    
+
     return {
       content: data.choices[0]?.message?.content || '',
-      usage: data.usage ? {
-        promptTokens: data.usage.prompt_tokens || 0,
-        completionTokens: data.usage.completion_tokens || 0,
-        totalTokens: data.usage.total_tokens || 0,
-      } : undefined,
+      usage: data.usage
+        ? {
+            promptTokens: data.usage.prompt_tokens || 0,
+            completionTokens: data.usage.completion_tokens || 0,
+            totalTokens: data.usage.total_tokens || 0,
+          }
+        : undefined,
       model: data.model,
       finishReason: data.choices[0]?.finish_reason,
     };
@@ -347,14 +354,16 @@ Respond with JSON: {"intent": "intent_name", "confidence": 0.0-1.0, "entities": 
     }
 
     const data = await response.json();
-    
+
     return {
       content: data.content[0]?.text || '',
-      usage: data.usage ? {
-        promptTokens: data.usage.input_tokens || 0,
-        completionTokens: data.usage.output_tokens || 0,
-        totalTokens: (data.usage.input_tokens || 0) + (data.usage.output_tokens || 0),
-      } : undefined,
+      usage: data.usage
+        ? {
+            promptTokens: data.usage.input_tokens || 0,
+            completionTokens: data.usage.output_tokens || 0,
+            totalTokens: (data.usage.input_tokens || 0) + (data.usage.output_tokens || 0),
+          }
+        : undefined,
       model: data.model,
       finishReason: data.stop_reason,
     };
@@ -364,30 +373,37 @@ Respond with JSON: {"intent": "intent_name", "confidence": 0.0-1.0, "entities": 
    * Generate response with Gemini
    */
   private async generateWithGemini(prompt: AIPrompt): Promise<AIResponse> {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${this.config.model || 'gemini-pro'}:generateContent?key=${this.apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `${prompt.system ? `${prompt.system}\n\n` : ''}${prompt.user}`,
-          }],
-        }],
-        generationConfig: {
-          temperature: this.config.temperature || 0.7,
-          maxOutputTokens: this.config.maxTokens || 500,
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${this.config.model || 'gemini-pro'}:generateContent?key=${this.apiKey}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-      }),
-    });
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [
+                {
+                  text: `${prompt.system ? `${prompt.system}\n\n` : ''}${prompt.user}`,
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            temperature: this.config.temperature || 0.7,
+            maxOutputTokens: this.config.maxTokens || 500,
+          },
+        }),
+      }
+    );
 
     if (!response.ok) {
       throw new Error(`Gemini API error: ${response.statusText}`);
     }
 
     const data = await response.json();
-    
+
     return {
       content: data.candidates[0]?.content?.parts[0]?.text || '',
       model: this.config.model,
@@ -400,28 +416,31 @@ Respond with JSON: {"intent": "intent_name", "confidence": 0.0-1.0, "entities": 
   private generateFallbackResponse(prompt: AIPrompt): AIResponse {
     // Rule-based fallback that analyzes the prompt
     const userQuery = prompt.user.toLowerCase();
-    
+
     if (userQuery.includes('help') || userQuery.includes('how')) {
       return {
         content: "I'm here to help! What would you like to know about reconciliation?",
       };
     }
-    
+
     if (userQuery.includes('error') || userQuery.includes('problem')) {
       return {
-        content: "Let me help you troubleshoot. Can you describe what error or problem you're experiencing?",
+        content:
+          "Let me help you troubleshoot. Can you describe what error or problem you're experiencing?",
       };
     }
-    
+
     if (userQuery.includes('create') || userQuery.includes('new')) {
       return {
-        content: "I can help you create a new reconciliation project. Would you like step-by-step guidance?",
+        content:
+          'I can help you create a new reconciliation project. Would you like step-by-step guidance?',
       };
     }
-    
+
     // Default response
     return {
-      content: "I'm Frenly, your AI assistant! I'm here to help you with reconciliation tasks. What would you like to do?",
+      content:
+        "I'm Frenly, your AI assistant! I'm here to help you with reconciliation tasks. What would you like to do?",
     };
   }
 
@@ -430,28 +449,36 @@ Respond with JSON: {"intent": "intent_name", "confidence": 0.0-1.0, "entities": 
    */
   private fallbackIntentRecognition(query: string): NLUIntent {
     const lowerQuery = query.toLowerCase();
-    
+
     // Simple keyword-based intent recognition
     if (lowerQuery.includes('help') || lowerQuery.includes('how') || lowerQuery.includes('what')) {
       return { intent: 'help', confidence: 0.7 };
     }
-    
+
     if (lowerQuery.includes('search') || lowerQuery.includes('find')) {
       return { intent: 'search', confidence: 0.7 };
     }
-    
+
     if (lowerQuery.includes('create') || lowerQuery.includes('new') || lowerQuery.includes('add')) {
       return { intent: 'action', confidence: 0.8, parameters: { action: 'create' } };
     }
-    
-    if (lowerQuery.includes('go to') || lowerQuery.includes('navigate') || lowerQuery.includes('open')) {
+
+    if (
+      lowerQuery.includes('go to') ||
+      lowerQuery.includes('navigate') ||
+      lowerQuery.includes('open')
+    ) {
       return { intent: 'navigation', confidence: 0.7 };
     }
-    
-    if (lowerQuery.includes('error') || lowerQuery.includes('problem') || lowerQuery.includes('issue')) {
+
+    if (
+      lowerQuery.includes('error') ||
+      lowerQuery.includes('problem') ||
+      lowerQuery.includes('issue')
+    ) {
       return { intent: 'error', confidence: 0.8 };
     }
-    
+
     return { intent: 'information', confidence: 0.5 };
   }
 
@@ -475,4 +502,3 @@ export const aiService = AIService.getInstance();
 
 // Export class for testing
 export { AIService };
-

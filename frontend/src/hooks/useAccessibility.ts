@@ -48,42 +48,45 @@ export function useKeyboardNavigation(handlers: {
   onHome?: () => void;
   onEnd?: () => void;
 }) {
-  return useCallback((e: React.KeyboardEvent) => {
-    switch (e.key) {
-      case 'Enter':
-      case ' ':
-        e.preventDefault();
-        handlers.onEnter?.();
-        break;
-      case 'Escape':
-        handlers.onEscape?.();
-        break;
-      case 'ArrowUp':
-        e.preventDefault();
-        handlers.onArrowUp?.();
-        break;
-      case 'ArrowDown':
-        e.preventDefault();
-        handlers.onArrowDown?.();
-        break;
-      case 'ArrowLeft':
-        e.preventDefault();
-        handlers.onArrowLeft?.();
-        break;
-      case 'ArrowRight':
-        e.preventDefault();
-        handlers.onArrowRight?.();
-        break;
-      case 'Home':
-        e.preventDefault();
-        handlers.onHome?.();
-        break;
-      case 'End':
-        e.preventDefault();
-        handlers.onEnd?.();
-        break;
-    }
-  }, [handlers]);
+  return useCallback(
+    (e: React.KeyboardEvent) => {
+      switch (e.key) {
+        case 'Enter':
+        case ' ':
+          e.preventDefault();
+          handlers.onEnter?.();
+          break;
+        case 'Escape':
+          handlers.onEscape?.();
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          handlers.onArrowUp?.();
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          handlers.onArrowDown?.();
+          break;
+        case 'ArrowLeft':
+          e.preventDefault();
+          handlers.onArrowLeft?.();
+          break;
+        case 'ArrowRight':
+          e.preventDefault();
+          handlers.onArrowRight?.();
+          break;
+        case 'Home':
+          e.preventDefault();
+          handlers.onHome?.();
+          break;
+        case 'End':
+          e.preventDefault();
+          handlers.onEnd?.();
+          break;
+      }
+    },
+    [handlers]
+  );
 }
 
 /**
@@ -92,8 +95,10 @@ export function useKeyboardNavigation(handlers: {
 export function useAriaLiveRegion(priority: 'polite' | 'assertive' = 'polite') {
   const announce = useScreenReaderAnnouncement();
 
-  return useCallback((message: string) => {
-    announce(message, priority);
-  }, [announce, priority]);
+  return useCallback(
+    (message: string) => {
+      announce(message, priority);
+    },
+    [announce, priority]
+  );
 }
-

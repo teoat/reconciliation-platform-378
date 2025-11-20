@@ -157,7 +157,9 @@ export class NetworkSimulation {
     return true;
   }
 
-  static async checkWorkflowStateRecovery(_workflowState: Record<string, unknown>): Promise<boolean> {
+  static async checkWorkflowStateRecovery(
+    _workflowState: Record<string, unknown>
+  ): Promise<boolean> {
     // Mock implementation
     return true;
   }
@@ -172,12 +174,16 @@ export class NetworkSimulation {
     return true;
   }
 
-  static async checkApplicationStatePreservation(_appState: Record<string, unknown>): Promise<boolean> {
+  static async checkApplicationStatePreservation(
+    _appState: Record<string, unknown>
+  ): Promise<boolean> {
     // Mock implementation
     return true;
   }
 
-  static async checkApplicationStateRestoration(_appState: Record<string, unknown>): Promise<boolean> {
+  static async checkApplicationStateRestoration(
+    _appState: Record<string, unknown>
+  ): Promise<boolean> {
     // Mock implementation
     return true;
   }
@@ -222,7 +228,7 @@ export class NetworkSimulation {
   static createRecoveryAction(
     type: RecoveryAction['type'],
     success: boolean = true,
-      details?: Record<string, unknown>
+    details?: Record<string, unknown>
   ): RecoveryAction {
     return {
       type,

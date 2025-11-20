@@ -4,4 +4,3 @@ export {
   createWebApplicationSchema,
   createOrganizationSchema,
 } from './StructuredData';
-

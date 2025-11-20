@@ -27,11 +27,14 @@ export class FilesApiService {
     }
   }
 
-  static async getFiles(projectId: string, params: {
-    page?: number;
-    per_page?: number;
-    type?: string;
-  } = {}) {
+  static async getFiles(
+    projectId: string,
+    params: {
+      page?: number;
+      per_page?: number;
+      type?: string;
+    } = {}
+  ) {
     try {
       const { page = 1, per_page = 20, type } = params;
       const response = await apiClient.get(`/api/projects/${projectId}/files`, {
@@ -106,4 +109,3 @@ export class FilesApiService {
     }
   }
 }
-

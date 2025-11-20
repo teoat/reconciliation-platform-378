@@ -21,7 +21,13 @@ interface OnboardingAnalyticsDashboardProps {
 }
 
 interface AnalyticsData {
-  stepCompletion: Array<{ step: string; completed: number; started: number; dropOff: number; completionRate: number }>;
+  stepCompletion: Array<{
+    step: string;
+    completed: number;
+    started: number;
+    dropOff: number;
+    completionRate: number;
+  }>;
   timeSpent: Array<{ step: string; averageTime: number; medianTime: number }>;
   completionRate: number;
   averageCompletionTime: number;
@@ -106,11 +112,10 @@ export const OnboardingAnalyticsDashboard: React.FC<OnboardingAnalyticsDashboard
       const durations = data.durations.filter((d) => d > 0);
       return {
         step,
-        averageTime: durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0,
+        averageTime:
+          durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : 0,
         medianTime:
-          durations.length > 0
-            ? [...durations].sort()[Math.floor(durations.length / 2)]
-            : 0,
+          durations.length > 0 ? [...durations].sort()[Math.floor(durations.length / 2)] : 0,
       };
     });
 
@@ -334,4 +339,3 @@ export const OnboardingAnalyticsDashboard: React.FC<OnboardingAnalyticsDashboard
 };
 
 export default OnboardingAnalyticsDashboard;
-

@@ -41,12 +41,12 @@ export const CircuitBreakerStatus: React.FC<CircuitBreakerStatusProps> = ({
 
   // Announce status changes to screen readers
   useEffect(() => {
-    const statusMessage = 
-      status === 'open' 
+    const statusMessage =
+      status === 'open'
         ? `${service} circuit breaker is open`
         : status === 'half-open'
-        ? `${service} circuit breaker is half-open`
-        : `${service} circuit breaker is closed`;
+          ? `${service} circuit breaker is half-open`
+          : `${service} circuit breaker is closed`;
 
     ariaLiveRegionsService?.announceStatus?.(statusMessage, {
       componentId: `circuit-breaker-${service}`,
@@ -122,7 +122,7 @@ export const CircuitBreakerStatus: React.FC<CircuitBreakerStatusProps> = ({
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
-    
+
     if (diffMins < 1) return 'just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     return formatTime(date);
@@ -132,17 +132,13 @@ export const CircuitBreakerStatus: React.FC<CircuitBreakerStatusProps> = ({
     <div className="space-y-2 text-xs">
       <div className="font-semibold">{service}</div>
       <div>{config.description}</div>
-      {failureCount > 0 && (
-        <div>Failure count: {failureCount}</div>
-      )}
-      {lastFailureTime && (
-        <div>Last failure: {getRelativeTime(lastFailureTime)}</div>
-      )}
-      {nextRetryTime && status === 'open' && (
-        <div>Next retry: {formatTime(nextRetryTime)}</div>
-      )}
+      {failureCount > 0 && <div>Failure count: {failureCount}</div>}
+      {lastFailureTime && <div>Last failure: {getRelativeTime(lastFailureTime)}</div>}
+      {nextRetryTime && status === 'open' && <div>Next retry: {formatTime(nextRetryTime)}</div>}
     </div>
-  ) : config.description;
+  ) : (
+    config.description
+  );
 
   return (
     <div className={`inline-flex items-center ${className}`}>
@@ -159,13 +155,9 @@ export const CircuitBreakerStatus: React.FC<CircuitBreakerStatusProps> = ({
           onBlur={() => setTooltipOpen(false)}
         >
           <Icon className={`${sizeClasses[size]} ${config.color}`} aria-hidden="true" />
-          <span className={`font-medium ${config.color}`}>
-            {config.label}
-          </span>
+          <span className={`font-medium ${config.color}`}>{config.label}</span>
           {showDetails && failureCount > 0 && (
-            <span className={`${config.color} text-xs opacity-75`}>
-              ({failureCount})
-            </span>
+            <span className={`${config.color} text-xs opacity-75`}>({failureCount})</span>
           )}
         </div>
       </Tooltip>
@@ -178,9 +170,9 @@ export const CircuitBreakerStatus: React.FC<CircuitBreakerStatusProps> = ({
           className="ml-2 text-gray-600 hover:text-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded"
           aria-label="Retry service connection"
         >
-          <RefreshCw 
-            className={`${sizeClasses[size]} ${isRetrying ? 'animate-spin' : ''}`} 
-            aria-hidden="true" 
+          <RefreshCw
+            className={`${sizeClasses[size]} ${isRetrying ? 'animate-spin' : ''}`}
+            aria-hidden="true"
           />
           <span className="sr-only">Retry connection</span>
         </button>
@@ -190,5 +182,3 @@ export const CircuitBreakerStatus: React.FC<CircuitBreakerStatusProps> = ({
 };
 
 export default CircuitBreakerStatus;
-
-

@@ -52,21 +52,21 @@ export interface ListParams {
 
 /**
  * Project-related types
- * 
+ *
  * NOTE: This is a simplified Project type for service layer usage.
  * For backend API integration, use the Project type from '@/types/backend-aligned' instead.
  * For enhanced project features, use EnhancedProject from '@/types/project' instead.
- * 
+ *
  * Use this type when:
  * - Working with simplified project data in service layer
  * - You only need basic project information (id, name, description, metadata)
  * - Working with frontend-only project state
- * 
+ *
  * Use backend-aligned Project type when:
  * - Making API calls to backend endpoints
  * - Working with full project data from database
  * - Need access to owner_id, status, settings, timestamps, etc.
- * 
+ *
  * Use EnhancedProject type when:
  * - Working with UI components that need rich project data
  * - Need project analytics, progress, alerts, templates
@@ -152,15 +152,15 @@ export interface ListReconciliationsParams extends ListParams {
 
 /**
  * User-related types
- * 
+ *
  * NOTE: This is a simplified User type for service layer usage.
  * For backend API integration, use the User type from '@/types/backend-aligned' instead.
- * 
+ *
  * Use this type when:
  * - Working with simplified user data in service layer
  * - You only need basic user information (id, email, name)
  * - Working with frontend-only user state
- * 
+ *
  * Use backend-aligned User type when:
  * - Making API calls to backend
  * - Working with full user data from database
@@ -194,4 +194,3 @@ export interface RegisterRequest {
   password: string;
   name?: string;
 }
-

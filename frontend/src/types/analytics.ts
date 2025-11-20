@@ -93,4 +93,3 @@ export interface Alert {
   acknowledgedBy?: User;
   resolvedBy?: User;
 }
-

@@ -1,6 +1,13 @@
 // Workflow Management Module
 import { useMemo, useCallback } from 'react';
-import { WorkflowState, WorkflowStage, WorkflowProgress, ValidationResult, ValidationError, ValidationWarning } from './types';
+import {
+  WorkflowState,
+  WorkflowStage,
+  WorkflowProgress,
+  ValidationResult,
+  ValidationError,
+  ValidationWarning,
+} from './types';
 import { CrossPageData } from './types';
 
 export const useWorkflowProgress = (workflowState: WorkflowState | null): WorkflowProgress => {
@@ -12,13 +19,20 @@ export const useWorkflowProgress = (workflowState: WorkflowState | null): Workfl
         percentage: 0,
         estimatedTimeRemaining: 0,
         completedStages: [],
-        upcomingStages: ['ingestion', 'reconciliation', 'adjudication', 'analytics', 'security', 'api'],
+        upcomingStages: [
+          'ingestion',
+          'reconciliation',
+          'adjudication',
+          'analytics',
+          'security',
+          'api',
+        ],
       };
     }
-    
+
     const stages = ['ingestion', 'reconciliation', 'adjudication', 'analytics', 'security', 'api'];
     const currentIndex = stages.indexOf(workflowState.currentStage.name);
-    
+
     return {
       currentStage: currentIndex + 1,
       totalStages: stages.length,
@@ -38,12 +52,18 @@ export const useWorkflowValidation = (
   const validateWorkflowConsistency = useCallback((): ValidationResult => {
     const errors: ValidationError[] = [];
     const warnings: ValidationWarning[] = [];
-    const suggestions: Array<{ field: string; currentValue: unknown; suggestedValue: unknown; reason: string; confidence: number }> = [];
-    
+    const suggestions: Array<{
+      field: string;
+      currentValue: unknown;
+      suggestedValue: unknown;
+      reason: string;
+      confidence: number;
+    }> = [];
+
     // Check data consistency across pages
     const ingestionData = crossPageData.ingestion;
     const reconciliationData = crossPageData.reconciliation;
-    
+
     if (ingestionData.processedData.length !== reconciliationData.records.length) {
       errors.push({
         field: 'recordCount',
@@ -52,7 +72,7 @@ export const useWorkflowValidation = (
         page: 'system',
       });
     }
-    
+
     return {
       isValid: errors.length === 0,
       errors,
@@ -66,12 +86,14 @@ export const useWorkflowValidation = (
       if (!workflowState) {
         return {
           isValid: false,
-          errors: [{
-            field: 'workflowState',
-            message: 'No workflow state available',
-            severity: 'error',
-            page: 'system',
-          }],
+          errors: [
+            {
+              field: 'workflowState',
+              message: 'No workflow state available',
+              severity: 'error',
+              page: 'system',
+            },
+          ],
           warnings: [],
           suggestions: [],
         };
@@ -109,4 +131,3 @@ export const createInitialWorkflowState = (): WorkflowState => ({
   status: 'active',
   lastUpdated: new Date(),
 });
-

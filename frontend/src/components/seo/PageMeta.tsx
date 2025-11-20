@@ -2,7 +2,7 @@ import { Helmet } from 'react-helmet-async';
 
 /**
  * PageMeta Component
- * 
+ *
  * Reusable component for managing page SEO metadata including:
  * - Page title
  * - Meta description
@@ -10,7 +10,7 @@ import { Helmet } from 'react-helmet-async';
  * - Twitter Card tags
  * - Canonical URLs
  * - Keywords
- * 
+ *
  * @example
  * ```tsx
  * <PageMeta
@@ -86,4 +86,3 @@ export const PageMeta: React.FC<PageMetaProps> = ({
     </Helmet>
   );
 };
-

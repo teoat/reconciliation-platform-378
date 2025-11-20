@@ -300,7 +300,11 @@ export const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        const payload = action.payload as { user: BackendUser; token: string; refreshToken?: string };
+        const payload = action.payload as {
+          user: BackendUser;
+          token: string;
+          refreshToken?: string;
+        };
         state.user = payload.user;
         state.token = payload.token;
         state.refreshToken = payload.refreshToken || null;
@@ -320,7 +324,11 @@ export const authSlice = createSlice({
       })
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
-        const payload = action.payload as { user: BackendUser; token: string; refreshToken?: string };
+        const payload = action.payload as {
+          user: BackendUser;
+          token: string;
+          refreshToken?: string;
+        };
         state.user = payload.user;
         state.token = payload.token;
         state.refreshToken = payload.refreshToken || null;
@@ -388,7 +396,10 @@ export const projectsSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     },
-    fetchProjectsSuccess: (state, action: PayloadAction<{ projects: BackendProject[]; pagination: ProjectsState['pagination'] }>) => {
+    fetchProjectsSuccess: (
+      state,
+      action: PayloadAction<{ projects: BackendProject[]; pagination: ProjectsState['pagination'] }>
+    ) => {
       state.projects = action.payload.projects;
       state.pagination = action.payload.pagination;
       state.isLoading = false;
@@ -408,7 +419,12 @@ export const projectsSlice = createSlice({
       })
       .addCase(fetchProjects.fulfilled, (state, action) => {
         state.isLoading = false;
-        const payload = action.payload as { data?: BackendProject[]; projects?: BackendProject[]; metadata?: { pagination?: ProjectsState['pagination'] }; pagination?: ProjectsState['pagination'] };
+        const payload = action.payload as {
+          data?: BackendProject[];
+          projects?: BackendProject[];
+          metadata?: { pagination?: ProjectsState['pagination'] };
+          pagination?: ProjectsState['pagination'];
+        };
         state.projects = payload.data || payload.projects || [];
         state.pagination = payload.metadata?.pagination || payload.pagination || state.pagination;
         state.error = null;
@@ -581,7 +597,8 @@ export const reconciliationSlice = createSlice({
       if (job) {
         job.status = 'failed';
         // Note: error_message may not exist on type, but we'll set it for compatibility
-        (job as BackendReconciliationJob & { error_message?: string }).error_message = action.payload.error;
+        (job as BackendReconciliationJob & { error_message?: string }).error_message =
+          action.payload.error;
       }
     },
     // Compatibility actions for useApiEnhanced.ts (reconciliationRecordsActions)
@@ -589,7 +606,13 @@ export const reconciliationSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     },
-    fetchRecordsSuccess: (state, action: PayloadAction<{ records: ReconciliationRecord[]; pagination?: { page: number; per_page: number; total: number; total_pages: number } }>) => {
+    fetchRecordsSuccess: (
+      state,
+      action: PayloadAction<{
+        records: ReconciliationRecord[];
+        pagination?: { page: number; per_page: number; total: number; total_pages: number };
+      }>
+    ) => {
       state.records = action.payload.records;
       state.isLoading = false;
       state.error = null;
@@ -610,7 +633,13 @@ export const reconciliationSlice = createSlice({
       state.isLoading = true;
       state.error = null;
     },
-    fetchMatchesSuccess: (state, action: PayloadAction<{ matches: ReconciliationMatch[]; pagination?: { page: number; per_page: number; total: number; total_pages: number } }>) => {
+    fetchMatchesSuccess: (
+      state,
+      action: PayloadAction<{
+        matches: ReconciliationMatch[];
+        pagination?: { page: number; per_page: number; total: number; total_pages: number };
+      }>
+    ) => {
       if (!state.matches) {
         state.matches = [];
       }
@@ -689,7 +718,10 @@ export const reconciliationSlice = createSlice({
       })
       .addCase(fetchReconciliationRecords.fulfilled, (state, action) => {
         state.isLoading = false;
-        const payload = action.payload as { data?: BackendReconciliationRecord[]; records?: BackendReconciliationRecord[] };
+        const payload = action.payload as {
+          data?: BackendReconciliationRecord[];
+          records?: BackendReconciliationRecord[];
+        };
         state.records = payload.data || payload.records || [];
         state.error = null;
       })
@@ -795,7 +827,15 @@ export const uiSlice = createSlice({
     ) => {
       state.loadingStates[action.payload.key] = action.payload.loading;
     },
-    addError: (state, action: PayloadAction<{ message: string; timestamp: string; id?: string; dismissed?: boolean }>) => {
+    addError: (
+      state,
+      action: PayloadAction<{
+        message: string;
+        timestamp: string;
+        id?: string;
+        dismissed?: boolean;
+      }>
+    ) => {
       state.errors.push(action.payload);
     },
     dismissError: (state, action: PayloadAction<string>) => {

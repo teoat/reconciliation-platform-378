@@ -189,9 +189,9 @@ export class RequestExecutor {
 
   private async handleResponse<T = unknown>(response: Response): Promise<T> {
     const contentType = response.headers.get('content-type');
-    
+
     // Extract correlation ID from response headers (Agent 1 Task 1.19)
-    const correlationId = 
+    const correlationId =
       response.headers.get('x-correlation-id') ||
       response.headers.get('X-Correlation-ID') ||
       undefined;
@@ -202,7 +202,11 @@ export class RequestExecutor {
       if (!response.ok) {
         // Backend sends errors as: { error: "title", message: "user-friendly message", code: "ERROR_CODE" }
         const errorMessage = data.message || data.error || `HTTP ${response.status}`;
-        const error = new Error(errorMessage) as Error & { correlationId?: string; statusCode?: number; responseData?: unknown };
+        const error = new Error(errorMessage) as Error & {
+          correlationId?: string;
+          statusCode?: number;
+          responseData?: unknown;
+        };
         error.statusCode = response.status;
         error.correlationId = correlationId;
         error.responseData = data;
@@ -212,7 +216,10 @@ export class RequestExecutor {
       return data;
     } else {
       if (!response.ok) {
-        const error = new Error(`HTTP ${response.status}: ${response.statusText}`) as Error & { correlationId?: string; statusCode?: number };
+        const error = new Error(`HTTP ${response.status}: ${response.statusText}`) as Error & {
+          correlationId?: string;
+          statusCode?: number;
+        };
         error.statusCode = response.status;
         error.correlationId = correlationId;
         throw error;
@@ -226,7 +233,10 @@ export class RequestExecutor {
     const errorMessage = getErrorMessage(error);
     const apiError = {
       message: errorMessage,
-      statusCode: error instanceof Error && 'statusCode' in error ? (error as Error & { statusCode?: number }).statusCode : 0,
+      statusCode:
+        error instanceof Error && 'statusCode' in error
+          ? (error as Error & { statusCode?: number }).statusCode
+          : 0,
       timestamp: new Date().toISOString(),
       path: endpoint,
       method: config.method || 'GET',

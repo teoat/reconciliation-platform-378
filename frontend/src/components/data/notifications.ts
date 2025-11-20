@@ -12,7 +12,7 @@ export const useNotifications = () => {
       id: `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date(),
     };
-    
+
     // Use circular buffer to limit memory
     notificationsBufferRef.current.push(newNotification);
     const allNotifications = notificationsBufferRef.current.getAll();
@@ -34,14 +34,14 @@ export const useAlerts = () => {
       id: `alert-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       timestamp: new Date(),
     };
-    
+
     setAlerts((prev) => [newAlert, ...prev.slice(0, 19)]); // Keep last 20
   }, []);
 
   const dismissAlert = useCallback((alertId: string) => {
-    setAlerts((prev) => prev.map((alert) => 
-      alert.id === alertId ? { ...alert, isDismissed: true } : alert
-    ));
+    setAlerts((prev) =>
+      prev.map((alert) => (alert.id === alertId ? { ...alert, isDismissed: true } : alert))
+    );
   }, []);
 
   return {
@@ -50,4 +50,3 @@ export const useAlerts = () => {
     dismissAlert,
   };
 };
-

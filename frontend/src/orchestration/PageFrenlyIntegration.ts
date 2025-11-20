@@ -80,9 +80,7 @@ export class PageFrenlyIntegration {
         : undefined,
       preferences: this.getUserPreferences(),
       behavior: {
-        sessionDuration: sessionStart
-          ? Date.now() - parseInt(sessionStart)
-          : 0,
+        sessionDuration: sessionStart ? Date.now() - parseInt(sessionStart) : 0,
         actionsPerformed: this.getActionCount(),
         errors: this.getErrorCount(),
       },
@@ -106,10 +104,7 @@ export class PageFrenlyIntegration {
       // Convert to FrenlyMessage format
       const frenlyMessage: FrenlyMessage = {
         id: agentMessage.id,
-        type:
-          agentMessage.type === 'help'
-            ? 'tip'
-            : (agentMessage.type as FrenlyMessage['type']),
+        type: agentMessage.type === 'help' ? 'tip' : (agentMessage.type as FrenlyMessage['type']),
         content: agentMessage.content,
         timestamp: agentMessage.timestamp,
         page: context.page,
@@ -119,11 +114,7 @@ export class PageFrenlyIntegration {
       };
 
       // Track message shown
-      await frenlyAgentService.trackInteraction(
-        context.userId,
-        'message_shown',
-        agentMessage.id
-      );
+      await frenlyAgentService.trackInteraction(context.userId, 'message_shown', agentMessage.id);
 
       // Add to history
       this.messageHistory.push(frenlyMessage);
@@ -183,11 +174,7 @@ export class PageFrenlyIntegration {
     switch (event.type) {
       case 'mount':
         // Track page view
-        await frenlyAgentService.trackInteraction(
-          context.userId,
-          'page_view',
-          event.pageId
-        );
+        await frenlyAgentService.trackInteraction(context.userId, 'page_view', event.pageId);
         // Generate welcome message
         const message = await this.generateContextualMessage();
         await this.showMessage(message);
@@ -213,11 +200,7 @@ export class PageFrenlyIntegration {
 
       case 'user-action':
         // Track user action
-        await frenlyAgentService.trackInteraction(
-          context.userId,
-          'user_action',
-          event.action
-        );
+        await frenlyAgentService.trackInteraction(context.userId, 'user_action', event.action);
         break;
     }
   }
@@ -288,9 +271,7 @@ export class PageFrenlyIntegration {
   /**
    * Generate error recovery message
    */
-  private async generateErrorMessage(
-    event: PageEvent
-  ): Promise<FrenlyMessage | null> {
+  private async generateErrorMessage(event: PageEvent): Promise<FrenlyMessage | null> {
     if (event.type !== 'feature-error') return null;
 
     const context = await this.collectPageContext();
@@ -319,18 +300,11 @@ export class PageFrenlyIntegration {
   /**
    * Check if message should be generated based on changes
    */
-  private shouldGenerateMessage(
-    changes?: Record<string, any>
-  ): boolean {
+  private shouldGenerateMessage(changes?: Record<string, any>): boolean {
     if (!changes) return false;
 
     // Generate message for significant changes
-    const significantKeys = [
-      'currentStep',
-      'completedSteps',
-      'workflowState',
-      'error',
-    ];
+    const significantKeys = ['currentStep', 'completedSteps', 'workflowState', 'error'];
     return significantKeys.some((key) => key in changes);
   }
 
@@ -368,5 +342,3 @@ export class PageFrenlyIntegration {
     return count ? parseInt(count, 10) : 0;
   }
 }
-
-

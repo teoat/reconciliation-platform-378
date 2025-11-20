@@ -23,12 +23,9 @@ export class SchedulingManager {
     executor: (reportId: string) => Promise<void>,
     updater: (reportId: string, updates: Partial<ReportConfig>) => Promise<void>
   ): void {
-    this.reportSchedulingInterval = setInterval(
-      () => {
-        this.checkScheduledReports(reports, executor, updater);
-      },
-      60000
-    ) as unknown as NodeJS.Timeout;
+    this.reportSchedulingInterval = setInterval(() => {
+      this.checkScheduledReports(reports, executor, updater);
+    }, 60000) as unknown as NodeJS.Timeout;
   }
 
   private async monitorKPIs(
@@ -107,5 +104,3 @@ export class SchedulingManager {
     }
   }
 }
-
-

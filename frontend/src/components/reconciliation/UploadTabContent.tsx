@@ -5,12 +5,12 @@ import Button from '@/components/ui/Button';
 import MetricCard from '@/components/ui/MetricCard';
 import { DataTable, Column } from '@/components/ui/DataTable';
 import { ContextualHelp } from '@/components/ui/ContextualHelp';
-import { BackendDataSource } from '@/services/apiClient';
+import { BackendDataSource, BackendReconciliationJob, BackendReconciliationMatch } from '@/services/apiClient';
 
 interface UploadTabContentProps {
   dataSources: BackendDataSource[] | undefined;
-  jobs: any[] | undefined;
-  matches: any[] | undefined;
+  jobs: BackendReconciliationJob[] | undefined;
+  matches: BackendReconciliationMatch[] | undefined;
   dataSourceColumns: Column<BackendDataSource>[];
   onUploadClick: () => void;
 }

@@ -10,9 +10,9 @@ export const monitoringConfig = {
     metrics: {
       // Core Web Vitals
       LCP: { threshold: 2500 }, // Largest Contentful Paint
-      FID: { threshold: 100 },  // First Input Delay
+      FID: { threshold: 100 }, // First Input Delay
       CLS: { threshold: 0.1 }, // Cumulative Layout Shift
-      
+
       // Custom metrics
       pageLoadTime: { threshold: 3000 },
       apiResponseTime: { threshold: 2000 },
@@ -22,7 +22,7 @@ export const monitoringConfig = {
       endpoint: '/api/analytics/performance',
       batchSize: 10,
       flushInterval: 30000, // 30 seconds
-    }
+    },
   },
 
   // Error Monitoring
@@ -39,7 +39,7 @@ export const monitoringConfig = {
       endpoint: '/api/analytics/errors',
       maxErrors: 100,
       flushInterval: 60000, // 1 minute
-    }
+    },
   },
 
   // User Analytics
@@ -57,7 +57,7 @@ export const monitoringConfig = {
       endpoint: '/api/analytics/events',
       batchSize: 20,
       flushInterval: 60000, // 1 minute
-    }
+    },
   },
 
   // Real-time Monitoring
@@ -72,19 +72,15 @@ export const monitoringConfig = {
       connectionStatus: true,
       messageLatency: true,
       errorRate: true,
-    }
+    },
   },
 
   // Health Checks
   healthChecks: {
     enabled: true,
-    endpoints: [
-      '/api/health',
-      '/api/auth/health',
-      '/api/projects/health',
-    ],
+    endpoints: ['/api/health', '/api/auth/health', '/api/projects/health'],
     interval: 30000, // 30 seconds
-    timeout: 5000,   // 5 seconds
+    timeout: 5000, // 5 seconds
     retries: 3,
   },
 
@@ -93,15 +89,12 @@ export const monitoringConfig = {
     enabled: true,
     channels: ['email', 'slack', 'webhook'],
     thresholds: {
-      errorRate: 0.1,        // 10%
-      responseTime: 5000,    // 5 seconds
-      availability: 0.99,    // 99%
-      memoryUsage: 0.8,      // 80%
+      errorRate: 0.1, // 10%
+      responseTime: 5000, // 5 seconds
+      availability: 0.99, // 99%
+      memoryUsage: 0.8, // 80%
     },
-    recipients: [
-      'dev-team@company.com',
-      'ops-team@company.com',
-    ],
+    recipients: ['dev-team@company.com', 'ops-team@company.com'],
   },
 
   // Logging
@@ -118,9 +111,8 @@ export const monitoringConfig = {
     filters: {
       exclude: ['password', 'token', 'secret'],
       include: ['userId', 'sessionId', 'requestId'],
-    }
-  }
-}
+    },
+  },
+};
 
-export default monitoringConfig
-
+export default monitoringConfig;

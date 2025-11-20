@@ -5,11 +5,7 @@
 import { logger } from '@/services/logger';
 import { frenlyAgentService } from '@/services/frenlyAgentService';
 import { onboardingService } from '@/services/onboardingService';
-import type {
-  OnboardingStep,
-  OnboardingProgress,
-  PageOrchestrationInterface,
-} from './types';
+import type { OnboardingStep, OnboardingProgress, PageOrchestrationInterface } from './types';
 
 export interface OnboardingOrchestrationConfig {
   pageId: string;
@@ -44,28 +40,21 @@ export class OnboardingOrchestrator {
   /**
    * Get onboarding steps for a page
    */
-  getOnboardingSteps(
-    page: PageOrchestrationInterface
-  ): OnboardingStep[] {
+  getOnboardingSteps(page: PageOrchestrationInterface): OnboardingStep[] {
     return page.getOnboardingSteps();
   }
 
   /**
    * Get current onboarding step
    */
-  getCurrentStep(
-    page: PageOrchestrationInterface
-  ): OnboardingStep | null {
+  getCurrentStep(page: PageOrchestrationInterface): OnboardingStep | null {
     return page.getCurrentOnboardingStep();
   }
 
   /**
    * Complete an onboarding step
    */
-  async completeStep(
-    page: PageOrchestrationInterface,
-    stepId: string
-  ): Promise<void> {
+  async completeStep(page: PageOrchestrationInterface, stepId: string): Promise<void> {
     try {
       // Complete step in page
       await page.completeOnboardingStep(stepId);
@@ -135,14 +124,10 @@ export class OnboardingOrchestrator {
   /**
    * Sync onboarding progress with backend and Frenly AI
    */
-  async syncProgress(
-    page: PageOrchestrationInterface
-  ): Promise<void> {
+  async syncProgress(page: PageOrchestrationInterface): Promise<void> {
     try {
       const steps = this.getOnboardingSteps(page);
-      const completedSteps = steps
-        .filter((step) => step.completed)
-        .map((step) => step.id);
+      const completedSteps = steps.filter((step) => step.completed).map((step) => step.id);
 
       const progress: OnboardingProgress = {
         pageId: this.config.pageId,
@@ -206,9 +191,7 @@ export class OnboardingOrchestrator {
     const steps = this.getOnboardingSteps(page);
     if (steps.length === 0) return 100;
 
-    const completedCount = steps.filter(
-      (step) => step.completed || step.skipped
-    ).length;
+    const completedCount = steps.filter((step) => step.completed || step.skipped).length;
     return Math.round((completedCount / steps.length) * 100);
   }
 
@@ -252,10 +235,7 @@ export class OnboardingOrchestrator {
   /**
    * Get next step ID after current step
    */
-  private getNextStepId(
-    page: PageOrchestrationInterface,
-    currentStepId: string
-  ): string | null {
+  private getNextStepId(page: PageOrchestrationInterface, currentStepId: string): string | null {
     const steps = this.getOnboardingSteps(page);
     const currentIndex = steps.findIndex((step) => step.id === currentStepId);
     if (currentIndex === -1 || currentIndex === steps.length - 1) {
@@ -326,14 +306,11 @@ export class OnboardingOrchestrator {
   /**
    * Generate skip message
    */
-  private async generateSkipMessage(
-    _stepId: string,
-    remindLater?: boolean
-  ): Promise<void> {
+  private async generateSkipMessage(_stepId: string, remindLater?: boolean): Promise<void> {
     try {
       const content = remindLater
         ? "No problem! I'll remind you about this step later."
-        : "Got it! You can always come back to this step if you need help.";
+        : 'Got it! You can always come back to this step if you need help.';
 
       const message = await frenlyAgentService.generateMessage({
         userId: this.config.userId,
@@ -370,4 +347,3 @@ export function getOnboardingOrchestrator(
   }
   return orchestrators.get(key)!;
 }
-

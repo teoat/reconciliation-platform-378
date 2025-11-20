@@ -1,15 +1,10 @@
 /**
  * Dashboard Page Orchestration
- * 
+ *
  * Orchestration configuration for the Dashboard page
  */
 
-import type {
-  PageMetadata,
-  PageContext,
-  OnboardingStep,
-  GuidanceHandler,
-} from '../types';
+import type { PageMetadata, PageContext, OnboardingStep, GuidanceHandler } from '../types';
 
 /**
  * Dashboard Page Metadata
@@ -20,18 +15,8 @@ export const dashboardPageMetadata: PageMetadata = {
   description: 'Main dashboard with project overview',
   category: 'core',
   features: ['project-overview', 'quick-actions', 'recent-activity', 'statistics'],
-  onboardingSteps: [
-    'welcome',
-    'project-creation',
-    'navigation',
-    'quick-actions',
-  ],
-  guidanceTopics: [
-    'getting-started',
-    'project-management',
-    'quick-tips',
-    'navigation',
-  ],
+  onboardingSteps: ['welcome', 'project-creation', 'navigation', 'quick-actions'],
+  guidanceTopics: ['getting-started', 'project-management', 'quick-tips', 'navigation'],
   icon: 'dashboard',
 };
 
@@ -150,9 +135,7 @@ export function registerDashboardGuidanceHandlers(): GuidanceHandler[] {
 /**
  * Get guidance content for dashboard page
  */
-export function getDashboardGuidanceContent(
-  topic: string
-): Array<{
+export function getDashboardGuidanceContent(topic: string): Array<{
   id: string;
   title: string;
   content: string;
@@ -185,7 +168,8 @@ export function getDashboardGuidanceContent(
       {
         id: 'project-creation',
         title: 'Creating Projects',
-        content: 'Projects help you organize your reconciliation work. Each project can have multiple data sources and jobs.',
+        content:
+          'Projects help you organize your reconciliation work. Each project can have multiple data sources and jobs.',
         type: 'tip',
       },
       {
@@ -205,7 +189,7 @@ export function getDashboardGuidanceContent(
       {
         id: 'recent-activity',
         title: 'Recent Activity',
-        content: 'Check the recent activity section to see what you\'ve been working on.',
+        content: "Check the recent activity section to see what you've been working on.",
         type: 'info',
       },
     ],

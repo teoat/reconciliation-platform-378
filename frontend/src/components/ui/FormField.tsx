@@ -5,7 +5,7 @@ import { memo } from 'react';
 /**
  * FormField Component
  * Accessible form field wrapper with proper ARIA attributes
- * 
+ *
  * @param label - Field label (required)
  * @param error - Error message to display
  * @param success - Success message to display
@@ -30,7 +30,20 @@ export interface FormFieldProps {
 
 export const FormField = memo(
   forwardRef<HTMLDivElement, FormFieldProps>(
-    ({ label, error, success, required, helpText, children, className = '', legend, fieldset = false }, ref) => {
+    (
+      {
+        label,
+        error,
+        success,
+        required,
+        helpText,
+        children,
+        className = '',
+        legend,
+        fieldset = false,
+      },
+      ref
+    ) => {
       const fieldId = React.useId();
       const errorId = `${fieldId}-error`;
       const helpId = `${fieldId}-help`;
@@ -118,7 +131,10 @@ export const FormField = memo(
 
       if (fieldset) {
         return (
-          <fieldset ref={ref as React.RefObject<HTMLFieldSetElement>} className={`space-y-2 ${className}`}>
+          <fieldset
+            ref={ref as React.RefObject<HTMLFieldSetElement>}
+            className={`space-y-2 ${className}`}
+          >
             {content}
           </fieldset>
         );

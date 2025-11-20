@@ -78,64 +78,61 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
   });
 
   // Load job results with pagination and retry logic
-  const loadJobResults = useCallback(
-    async (jobId: string, page = 1, perPage = 20) => {
-      setResultsLoading(true);
-      try {
-        await RetryUtility.withRetry(
-          async () => {
-            const response = await apiClient.getReconciliationJobResults(jobId, page, perPage);
-            if (response.error) {
-              const { getErrorMessageFromApiError } = await import('../../utils/errorExtraction');
-              throw new Error(getErrorMessageFromApiError(response.error));
-            }
-
-            const data = response.data as
-              | {
-                  data?: ReconciliationResult[];
-                  page?: number;
-                  per_page?: number;
-                  total?: number;
-                }
-              | undefined;
-            setResults(data?.data || []);
-          },
-          {
-            retryCondition: (error: Error | unknown) => {
-              if (!(error instanceof Error)) return false;
-              return (
-                error.name === 'NetworkError' ||
-                error.message.includes('timeout') ||
-                error.message.includes('502') ||
-                error.message.includes('503') ||
-                error.message.includes('504')
-              );
-            },
-            onRetry: (attempt, error) => {
-              const errorMessage = error instanceof Error ? error.message : String(error);
-              logger.warning('Retrying loadJobResults', {
-                jobId,
-                page,
-                perPage,
-                attempt,
-                error: errorMessage,
-              });
-            },
+  const loadJobResults = useCallback(async (jobId: string, page = 1, perPage = 20) => {
+    setResultsLoading(true);
+    try {
+      await RetryUtility.withRetry(
+        async () => {
+          const response = await apiClient.getReconciliationJobResults(jobId, page, perPage);
+          if (response.error) {
+            const { getErrorMessageFromApiError } = await import('../../utils/errorExtraction');
+            throw new Error(getErrorMessageFromApiError(response.error));
           }
-        );
-      } catch (err) {
-        logger.error('Failed to load job results', {
-          jobId,
-          page,
-          perPage,
-          error: err,
-        });
-      } finally {
-        setResultsLoading(false);
-      }
-    },
-    []
-  );
+
+          const data = response.data as
+            | {
+                data?: ReconciliationResult[];
+                page?: number;
+                per_page?: number;
+                total?: number;
+              }
+            | undefined;
+          setResults(data?.data || []);
+        },
+        {
+          retryCondition: (error: Error | unknown) => {
+            if (!(error instanceof Error)) return false;
+            return (
+              error.name === 'NetworkError' ||
+              error.message.includes('timeout') ||
+              error.message.includes('502') ||
+              error.message.includes('503') ||
+              error.message.includes('504')
+            );
+          },
+          onRetry: (attempt, error) => {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logger.warning('Retrying loadJobResults', {
+              jobId,
+              page,
+              perPage,
+              attempt,
+              error: errorMessage,
+            });
+          },
+        }
+      );
+    } catch (err) {
+      logger.error('Failed to load job results', {
+        jobId,
+        page,
+        perPage,
+        error: err,
+      });
+    } finally {
+      setResultsLoading(false);
+    }
+  }, []);
 
   // Handle results modal open/close
   const handleOpenResults = useCallback(

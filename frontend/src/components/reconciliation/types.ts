@@ -61,4 +61,3 @@ export interface ReconciliationInterfaceProps {
   onJobUpdate?: (job: ReconciliationJob) => void;
   onJobDelete?: (jobId: string) => void;
 }
-

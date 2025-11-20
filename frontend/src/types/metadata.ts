@@ -6,13 +6,7 @@
 /**
  * Base metadata value type - union of all allowed metadata value types
  */
-export type MetadataValue = 
-  | string 
-  | number 
-  | boolean 
-  | null 
-  | Metadata 
-  | MetadataValue[];
+export type MetadataValue = string | number | boolean | null | Metadata | MetadataValue[];
 
 /**
  * Metadata object - key-value pairs where values are MetadataValue
@@ -23,10 +17,10 @@ export interface Metadata {
 
 /**
  * Project-specific metadata
- * 
+ *
  * This is a generic metadata structure for projects.
  * Used by the simplified Project type in '@/types/service'.
- * 
+ *
  * For full project data, use '@/types/backend-aligned::Project' instead.
  */
 export interface ProjectMetadata {
@@ -96,17 +90,17 @@ export function isValidMetadata(value: unknown): value is Metadata {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) {
     return false;
   }
-  
+
   for (const [key, val] of Object.entries(value)) {
     if (typeof key !== 'string') {
       return false;
     }
-    
+
     if (!isValidMetadataValue(val)) {
       return false;
     }
   }
-  
+
   return true;
 }
 
@@ -119,7 +113,7 @@ function isValidMetadataValue(value: unknown): value is MetadataValue {
     return true;
   }
   if (Array.isArray(value)) {
-    return value.every(item => isValidMetadataValue(item));
+    return value.every((item) => isValidMetadataValue(item));
   }
   if (typeof value === 'object') {
     return isValidMetadata(value);
@@ -145,14 +139,9 @@ export function getMetadataValue<T extends MetadataValue>(
 /**
  * Safely set metadata value
  */
-export function setMetadataValue(
-  metadata: Metadata,
-  key: string,
-  value: MetadataValue
-): Metadata {
+export function setMetadataValue(metadata: Metadata, key: string, value: MetadataValue): Metadata {
   return {
     ...metadata,
     [key]: value,
   };
 }
-

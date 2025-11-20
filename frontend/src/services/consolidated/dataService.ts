@@ -453,7 +453,9 @@ export class DataService {
 
   // Reconciliation Data
   async getReconciliationRecords(projectId: string): Promise<ReconciliationRecord[]> {
-    const response = await apiClient.get<{ records: ReconciliationRecord[] }>(`/api/projects/${projectId}/reconciliation`);
+    const response = await apiClient.get<{ records: ReconciliationRecord[] }>(
+      `/api/projects/${projectId}/reconciliation`
+    );
     return response.data?.records ?? [];
   }
 

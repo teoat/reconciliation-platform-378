@@ -2,7 +2,7 @@
 // CENTRALIZED COMPONENTS - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
-import React, { FC } from 'react'
+import React, { FC } from 'react';
 // Hook imports removed - not used in this export file
 // Individual components can import hooks as needed
 
@@ -11,13 +11,13 @@ import React, { FC } from 'react'
 // ============================================================================
 
 export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'outline'
-  size?: 'sm' | 'md' | 'lg'
-  loading?: boolean
-  disabled?: boolean
-  fullWidth?: boolean
-  icon?: React.ReactNode
-  iconPosition?: 'left' | 'right'
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'outline';
+  size?: 'sm' | 'md' | 'lg';
+  loading?: boolean;
+  disabled?: boolean;
+  fullWidth?: boolean;
+  icon?: React.ReactNode;
+  iconPosition?: 'left' | 'right';
 }
 
 // NOTE: Button component moved to components/ui/Button.tsx (SSOT - memoized, optimized)
@@ -27,13 +27,13 @@ export { Button } from './ui/Button';
 export type { ButtonProps } from './ui/Button';
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string
-  error?: string
-  helperText?: string
-  fullWidth?: boolean
-  leftIcon?: React.ReactNode
-  rightIcon?: React.ReactNode
-  variant?: 'default' | 'error' | 'success'
+  label?: string;
+  error?: string;
+  helperText?: string;
+  fullWidth?: boolean;
+  leftIcon?: React.ReactNode;
+  rightIcon?: React.ReactNode;
+  variant?: 'default' | 'error' | 'success';
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -47,62 +47,54 @@ export const Input: React.FC<InputProps> = ({
   className = '',
   ...props
 }) => {
-  const baseClasses = 'block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2'
-  
+  const baseClasses =
+    'block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2';
+
   const variantClasses = {
     default: 'border-gray-300 focus:ring-blue-500 focus:border-blue-500',
     error: 'border-red-300 focus:ring-red-500 focus:border-red-500',
-    success: 'border-green-300 focus:ring-green-500 focus:border-green-500'
-  }
-  
-  const fullWidthClasses = 'w-full'
-  
+    success: 'border-green-300 focus:ring-green-500 focus:border-green-500',
+  };
+
+  const fullWidthClasses = 'w-full';
+
   const classes = [
     baseClasses,
     variantClasses[variant],
     fullWidth ? fullWidthClasses : '',
-    className
-  ].filter(Boolean).join(' ')
-  
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div className={fullWidth ? 'w-full' : ''}>
-      {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {label}
-        </label>
-      )}
+      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
       <div className="relative">
         {leftIcon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             {leftIcon}
           </div>
         )}
-        <input
-          className={classes}
-          {...props}
-        />
+        <input className={classes} {...props} />
         {rightIcon && (
           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
             {rightIcon}
           </div>
         )}
       </div>
-      {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
-      )}
-      {helperText && !error && (
-        <p className="mt-1 text-sm text-gray-500">{helperText}</p>
-      )}
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
     </div>
-  )
-}
+  );
+};
 
 export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
-  label?: string
-  error?: string
-  helperText?: string
-  fullWidth?: boolean
-  variant?: 'default' | 'error' | 'success'
+  label?: string;
+  error?: string;
+  helperText?: string;
+  fullWidth?: boolean;
+  variant?: 'default' | 'error' | 'success';
 }
 
 export const Textarea: React.FC<TextareaProps> = ({
@@ -114,52 +106,44 @@ export const Textarea: React.FC<TextareaProps> = ({
   className = '',
   ...props
 }) => {
-  const baseClasses = 'block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2'
-  
+  const baseClasses =
+    'block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2';
+
   const variantClasses = {
     default: 'border-gray-300 focus:ring-blue-500 focus:border-blue-500',
     error: 'border-red-300 focus:ring-red-500 focus:border-red-500',
-    success: 'border-green-300 focus:ring-green-500 focus:border-green-500'
-  }
-  
-  const fullWidthClasses = 'w-full'
-  
+    success: 'border-green-300 focus:ring-green-500 focus:border-green-500',
+  };
+
+  const fullWidthClasses = 'w-full';
+
   const classes = [
     baseClasses,
     variantClasses[variant],
     fullWidth ? fullWidthClasses : '',
-    className
-  ].filter(Boolean).join(' ')
-  
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div className={fullWidth ? 'w-full' : ''}>
-      {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {label}
-        </label>
-      )}
-      <textarea
-        className={classes}
-        {...props}
-      />
-      {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
-      )}
-      {helperText && !error && (
-        <p className="mt-1 text-sm text-gray-500">{helperText}</p>
-      )}
+      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+      <textarea className={classes} {...props} />
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
     </div>
-  )
-}
+  );
+};
 
 export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  label?: string
-  error?: string
-  helperText?: string
-  fullWidth?: boolean
-  options: { value: string; label: string; disabled?: boolean }[]
-  placeholder?: string
-  variant?: 'default' | 'error' | 'success'
+  label?: string;
+  error?: string;
+  helperText?: string;
+  fullWidth?: boolean;
+  options: { value: string; label: string; disabled?: boolean }[];
+  placeholder?: string;
+  variant?: 'default' | 'error' | 'success';
 }
 
 export const Select: React.FC<SelectProps> = ({
@@ -173,65 +157,53 @@ export const Select: React.FC<SelectProps> = ({
   className = '',
   ...props
 }) => {
-  const baseClasses = 'block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2'
-  
+  const baseClasses =
+    'block w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2';
+
   const variantClasses = {
     default: 'border-gray-300 focus:ring-blue-500 focus:border-blue-500',
     error: 'border-red-300 focus:ring-red-500 focus:border-red-500',
-    success: 'border-green-300 focus:ring-green-500 focus:border-green-500'
-  }
-  
-  const fullWidthClasses = 'w-full'
-  
+    success: 'border-green-300 focus:ring-green-500 focus:border-green-500',
+  };
+
+  const fullWidthClasses = 'w-full';
+
   const classes = [
     baseClasses,
     variantClasses[variant],
     fullWidth ? fullWidthClasses : '',
-    className
-  ].filter(Boolean).join(' ')
-  
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div className={fullWidth ? 'w-full' : ''}>
-      {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          {label}
-        </label>
-      )}
-      <select
-        className={classes}
-        {...props}
-      >
+      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+      <select className={classes} {...props}>
         {placeholder && (
           <option value="" disabled>
             {placeholder}
           </option>
         )}
         {options.map((option) => (
-          <option
-            key={option.value}
-            value={option.value}
-            disabled={option.disabled}
-          >
+          <option key={option.value} value={option.value} disabled={option.disabled}>
             {option.label}
           </option>
         ))}
       </select>
-      {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
-      )}
-      {helperText && !error && (
-        <p className="mt-1 text-sm text-gray-500">{helperText}</p>
-      )}
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
     </div>
-  )
-}
+  );
+};
 
 export interface CheckboxProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string
-  error?: string
-  helperText?: string
-  fullWidth?: boolean
-  variant?: 'default' | 'error' | 'success'
+  label?: string;
+  error?: string;
+  helperText?: string;
+  fullWidth?: boolean;
+  variant?: 'default' | 'error' | 'success';
 }
 
 export const Checkbox: React.FC<CheckboxProps> = ({
@@ -243,54 +215,44 @@ export const Checkbox: React.FC<CheckboxProps> = ({
   className = '',
   ...props
 }) => {
-  const baseClasses = 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded'
-  
+  const baseClasses = 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded';
+
   const variantClasses = {
     default: 'border-gray-300 focus:ring-blue-500',
     error: 'border-red-300 focus:ring-red-500',
-    success: 'border-green-300 focus:ring-green-500'
-  }
-  
-  const fullWidthClasses = 'w-full'
-  
+    success: 'border-green-300 focus:ring-green-500',
+  };
+
+  const fullWidthClasses = 'w-full';
+
   const classes = [
     baseClasses,
     variantClasses[variant],
     fullWidth ? fullWidthClasses : '',
-    className
-  ].filter(Boolean).join(' ')
-  
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div className={fullWidth ? 'w-full' : ''}>
       <div className="flex items-center">
-        <input
-          type="checkbox"
-          className={classes}
-          {...props}
-        />
-        {label && (
-          <label className="ml-2 block text-sm font-medium text-gray-700">
-            {label}
-          </label>
-        )}
+        <input type="checkbox" className={classes} {...props} />
+        {label && <label className="ml-2 block text-sm font-medium text-gray-700">{label}</label>}
       </div>
-      {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
-      )}
-      {helperText && !error && (
-        <p className="mt-1 text-sm text-gray-500">{helperText}</p>
-      )}
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
     </div>
-  )
-}
+  );
+};
 
 export interface RadioProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string
-  error?: string
-  helperText?: string
-  fullWidth?: boolean
-  options: { value: string; label: string; disabled?: boolean }[]
-  variant?: 'default' | 'error' | 'success'
+  label?: string;
+  error?: string;
+  helperText?: string;
+  fullWidth?: boolean;
+  options: { value: string; label: string; disabled?: boolean }[];
+  variant?: 'default' | 'error' | 'success';
 }
 
 export const Radio: React.FC<RadioProps> = ({
@@ -303,30 +265,28 @@ export const Radio: React.FC<RadioProps> = ({
   className = '',
   ...props
 }) => {
-  const baseClasses = 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300'
-  
+  const baseClasses = 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300';
+
   const variantClasses = {
     default: 'border-gray-300 focus:ring-blue-500',
     error: 'border-red-300 focus:ring-red-500',
-    success: 'border-green-300 focus:ring-green-500'
-  }
-  
-  const fullWidthClasses = 'w-full'
-  
+    success: 'border-green-300 focus:ring-green-500',
+  };
+
+  const fullWidthClasses = 'w-full';
+
   const classes = [
     baseClasses,
     variantClasses[variant],
     fullWidth ? fullWidthClasses : '',
-    className
-  ].filter(Boolean).join(' ')
-  
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div className={fullWidth ? 'w-full' : ''}>
-      {label && (
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          {label}
-        </label>
-      )}
+      {label && <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>}
       <div className="space-y-2">
         {options.map((option) => (
           <div key={option.value} className="flex items-center">
@@ -337,38 +297,32 @@ export const Radio: React.FC<RadioProps> = ({
               disabled={option.disabled}
               {...props}
             />
-            <label className="ml-2 block text-sm font-medium text-gray-700">
-              {option.label}
-            </label>
+            <label className="ml-2 block text-sm font-medium text-gray-700">{option.label}</label>
           </div>
         ))}
       </div>
-      {error && (
-        <p className="mt-1 text-sm text-red-600">{error}</p>
-      )}
-      {helperText && !error && (
-        <p className="mt-1 text-sm text-gray-500">{helperText}</p>
-      )}
+      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
     </div>
-  )
-}
+  );
+};
 
 // ============================================================================
 // LAYOUT COMPONENTS
 // ============================================================================
 
 export interface ContainerProps {
-  children: React.ReactNode
-  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full'
-  padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl'
-  className?: string
+  children: React.ReactNode;
+  maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'full';
+  padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  className?: string;
 }
 
 export const Container: React.FC<ContainerProps> = ({
   children,
   maxWidth = 'xl',
   padding = 'md',
-  className = ''
+  className = '',
 }) => {
   const maxWidthClasses = {
     sm: 'max-w-sm',
@@ -376,44 +330,32 @@ export const Container: React.FC<ContainerProps> = ({
     lg: 'max-w-lg',
     xl: 'max-w-xl',
     '2xl': 'max-w-2xl',
-    full: 'max-w-full'
-  }
-  
+    full: 'max-w-full',
+  };
+
   const paddingClasses = {
     none: '',
     sm: 'px-4 py-2',
     md: 'px-6 py-4',
     lg: 'px-8 py-6',
-    xl: 'px-12 py-8'
-  }
-  
-  const classes = [
-    'mx-auto',
-    maxWidthClasses[maxWidth],
-    paddingClasses[padding],
-    className
-  ].filter(Boolean).join(' ')
-  
-  return (
-    <div className={classes}>
-      {children}
-    </div>
-  )
-}
+    xl: 'px-12 py-8',
+  };
+
+  const classes = ['mx-auto', maxWidthClasses[maxWidth], paddingClasses[padding], className]
+    .filter(Boolean)
+    .join(' ');
+
+  return <div className={classes}>{children}</div>;
+};
 
 export interface GridProps {
-  children: React.ReactNode
-  cols?: 1 | 2 | 3 | 4 | 5 | 6 | 12
-  gap?: 'none' | 'sm' | 'md' | 'lg' | 'xl'
-  className?: string
+  children: React.ReactNode;
+  cols?: 1 | 2 | 3 | 4 | 5 | 6 | 12;
+  gap?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  className?: string;
 }
 
-export const Grid: React.FC<GridProps> = ({
-  children,
-  cols = 1,
-  gap = 'md',
-  className = ''
-}) => {
+export const Grid: React.FC<GridProps> = ({ children, cols = 1, gap = 'md', className = '' }) => {
   const colsClasses = {
     1: 'grid-cols-1',
     2: 'grid-cols-2',
@@ -421,39 +363,30 @@ export const Grid: React.FC<GridProps> = ({
     4: 'grid-cols-4',
     5: 'grid-cols-5',
     6: 'grid-cols-6',
-    12: 'grid-cols-12'
-  }
-  
+    12: 'grid-cols-12',
+  };
+
   const gapClasses = {
     none: 'gap-0',
     sm: 'gap-2',
     md: 'gap-4',
     lg: 'gap-6',
-    xl: 'gap-8'
-  }
-  
-  const classes = [
-    'grid',
-    colsClasses[cols],
-    gapClasses[gap],
-    className
-  ].filter(Boolean).join(' ')
-  
-  return (
-    <div className={classes}>
-      {children}
-    </div>
-  )
-}
+    xl: 'gap-8',
+  };
+
+  const classes = ['grid', colsClasses[cols], gapClasses[gap], className].filter(Boolean).join(' ');
+
+  return <div className={classes}>{children}</div>;
+};
 
 export interface FlexProps {
-  children: React.ReactNode
-  direction?: 'row' | 'column' | 'row-reverse' | 'column-reverse'
-  justify?: 'start' | 'end' | 'center' | 'between' | 'around' | 'evenly'
-  align?: 'start' | 'end' | 'center' | 'baseline' | 'stretch'
-  wrap?: 'nowrap' | 'wrap' | 'wrap-reverse'
-  gap?: 'none' | 'sm' | 'md' | 'lg' | 'xl'
-  className?: string
+  children: React.ReactNode;
+  direction?: 'row' | 'column' | 'row-reverse' | 'column-reverse';
+  justify?: 'start' | 'end' | 'center' | 'between' | 'around' | 'evenly';
+  align?: 'start' | 'end' | 'center' | 'baseline' | 'stretch';
+  wrap?: 'nowrap' | 'wrap' | 'wrap-reverse';
+  gap?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  className?: string;
 }
 
 export const Flex: React.FC<FlexProps> = ({
@@ -463,46 +396,46 @@ export const Flex: React.FC<FlexProps> = ({
   align = 'start',
   wrap = 'nowrap',
   gap = 'none',
-  className = ''
+  className = '',
 }) => {
   const directionClasses = {
     row: 'flex-row',
     column: 'flex-col',
     'row-reverse': 'flex-row-reverse',
-    'column-reverse': 'flex-col-reverse'
-  }
-  
+    'column-reverse': 'flex-col-reverse',
+  };
+
   const justifyClasses = {
     start: 'justify-start',
     end: 'justify-end',
     center: 'justify-center',
     between: 'justify-between',
     around: 'justify-around',
-    evenly: 'justify-evenly'
-  }
-  
+    evenly: 'justify-evenly',
+  };
+
   const alignClasses = {
     start: 'items-start',
     end: 'items-end',
     center: 'items-center',
     baseline: 'items-baseline',
-    stretch: 'items-stretch'
-  }
-  
+    stretch: 'items-stretch',
+  };
+
   const wrapClasses = {
     nowrap: 'flex-nowrap',
     wrap: 'flex-wrap',
-    'wrap-reverse': 'flex-wrap-reverse'
-  }
-  
+    'wrap-reverse': 'flex-wrap-reverse',
+  };
+
   const gapClasses = {
     none: 'gap-0',
     sm: 'gap-2',
     md: 'gap-4',
     lg: 'gap-6',
-    xl: 'gap-8'
-  }
-  
+    xl: 'gap-8',
+  };
+
   const classes = [
     'flex',
     directionClasses[direction],
@@ -510,24 +443,22 @@ export const Flex: React.FC<FlexProps> = ({
     alignClasses[align],
     wrapClasses[wrap],
     gapClasses[gap],
-    className
-  ].filter(Boolean).join(' ')
-  
-  return (
-    <div className={classes}>
-      {children}
-    </div>
-  )
-}
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
+  return <div className={classes}>{children}</div>;
+};
 
 export interface CardProps {
-  children: React.ReactNode
-  title?: string
-  subtitle?: string
-  actions?: React.ReactNode
-  padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl'
-  shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl'
-  className?: string
+  children: React.ReactNode;
+  title?: string;
+  subtitle?: string;
+  actions?: React.ReactNode;
+  padding?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  shadow?: 'none' | 'sm' | 'md' | 'lg' | 'xl';
+  className?: string;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -537,64 +468,60 @@ export const Card: React.FC<CardProps> = ({
   actions,
   padding = 'md',
   shadow = 'md',
-  className = ''
+  className = '',
 }) => {
   const paddingClasses = {
     none: '',
     sm: 'p-4',
     md: 'p-6',
     lg: 'p-8',
-    xl: 'p-12'
-  }
-  
+    xl: 'p-12',
+  };
+
   const shadowClasses = {
     none: '',
     sm: 'shadow-sm',
     md: 'shadow-md',
     lg: 'shadow-lg',
-    xl: 'shadow-xl'
-  }
-  
+    xl: 'shadow-xl',
+  };
+
   const classes = [
     'bg-white rounded-lg border border-gray-200',
     paddingClasses[padding],
     shadowClasses[shadow],
-    className
-  ].filter(Boolean).join(' ')
-  
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div className={classes}>
       {(title || subtitle || actions) && (
         <div className="flex items-center justify-between mb-4">
           <div>
-            {title && (
-              <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-            )}
-            {subtitle && (
-              <p className="text-sm text-gray-600">{subtitle}</p>
-            )}
+            {title && <h3 className="text-lg font-semibold text-gray-900">{title}</h3>}
+            {subtitle && <p className="text-sm text-gray-600">{subtitle}</p>}
           </div>
-          {actions && (
-            <div className="flex items-center space-x-2">{actions}</div>
-          )}
+          {actions && <div className="flex items-center space-x-2">{actions}</div>}
         </div>
       )}
       {children}
     </div>
-  )
-}
+  );
+};
 
 // ============================================================================
 // FEEDBACK COMPONENTS
 // ============================================================================
 
 export interface AlertProps {
-  children: React.ReactNode
-  type?: 'info' | 'success' | 'warning' | 'error'
-  title?: string
-  dismissible?: boolean
-  onDismiss?: () => void
-  className?: string
+  children: React.ReactNode;
+  type?: 'info' | 'success' | 'warning' | 'error';
+  title?: string;
+  dismissible?: boolean;
+  onDismiss?: () => void;
+  className?: string;
 }
 
 export const Alert: React.FC<AlertProps> = ({
@@ -603,63 +530,71 @@ export const Alert: React.FC<AlertProps> = ({
   title,
   dismissible = false,
   onDismiss,
-  className = ''
+  className = '',
 }) => {
   const typeClasses = {
     info: 'bg-blue-50 border-blue-200 text-blue-800',
     success: 'bg-green-50 border-green-200 text-green-800',
     warning: 'bg-yellow-50 border-yellow-200 text-yellow-800',
-    error: 'bg-red-50 border-red-200 text-red-800'
-  }
-  
+    error: 'bg-red-50 border-red-200 text-red-800',
+  };
+
   const iconClasses = {
     info: 'text-blue-400',
     success: 'text-green-400',
     warning: 'text-yellow-400',
-    error: 'text-red-400'
-  }
-  
+    error: 'text-red-400',
+  };
+
   const icons = {
     info: (
       <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+        <path
+          fillRule="evenodd"
+          d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+          clipRule="evenodd"
+        />
       </svg>
     ),
     success: (
       <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+        <path
+          fillRule="evenodd"
+          d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+          clipRule="evenodd"
+        />
       </svg>
     ),
     warning: (
       <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+        <path
+          fillRule="evenodd"
+          d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+          clipRule="evenodd"
+        />
       </svg>
     ),
     error: (
       <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+        <path
+          fillRule="evenodd"
+          d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+          clipRule="evenodd"
+        />
       </svg>
-    )
-  }
-  
-  const classes = [
-    'border rounded-md p-4',
-    typeClasses[type],
-    className
-  ].filter(Boolean).join(' ')
-  
+    ),
+  };
+
+  const classes = ['border rounded-md p-4', typeClasses[type], className].filter(Boolean).join(' ');
+
   return (
     <div className={classes}>
       <div className="flex">
         <div className="flex-shrink-0">
-          <span className={iconClasses[type]}>
-            {icons[type]}
-          </span>
+          <span className={iconClasses[type]}>{icons[type]}</span>
         </div>
         <div className="ml-3 flex-1">
-          {title && (
-            <h3 className="text-sm font-medium mb-1">{title}</h3>
-          )}
+          {title && <h3 className="text-sm font-medium mb-1">{title}</h3>}
           <div className="text-sm">{children}</div>
         </div>
         {dismissible && onDismiss && (
@@ -672,7 +607,11 @@ export const Alert: React.FC<AlertProps> = ({
               >
                 <span className="sr-only">Dismiss</span>
                 <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                  <path
+                    fillRule="evenodd"
+                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clipRule="evenodd"
+                  />
                 </svg>
               </button>
             </div>
@@ -680,49 +619,45 @@ export const Alert: React.FC<AlertProps> = ({
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
 export interface LoadingProps {
-  size?: 'sm' | 'md' | 'lg'
-  text?: string
-  className?: string
+  size?: 'sm' | 'md' | 'lg';
+  text?: string;
+  className?: string;
 }
 
-export const Loading: React.FC<LoadingProps> = ({
-  size = 'md',
-  text,
-  className = ''
-}) => {
+export const Loading: React.FC<LoadingProps> = ({ size = 'md', text, className = '' }) => {
   const sizeClasses = {
     sm: 'h-4 w-4',
     md: 'h-8 w-8',
-    lg: 'h-12 w-12'
-  }
-  
+    lg: 'h-12 w-12',
+  };
+
   const classes = [
     'animate-spin rounded-full border-2 border-gray-300 border-t-blue-600',
     sizeClasses[size],
-    className
-  ].filter(Boolean).join(' ')
-  
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div className="flex items-center justify-center">
       <div className={classes} />
-      {text && (
-        <span className="ml-2 text-sm text-gray-600">{text}</span>
-      )}
+      {text && <span className="ml-2 text-sm text-gray-600">{text}</span>}
     </div>
-  )
-}
+  );
+};
 
 export interface ProgressProps {
-  value: number
-  max?: number
-  size?: 'sm' | 'md' | 'lg'
-  color?: 'blue' | 'green' | 'yellow' | 'red'
-  showLabel?: boolean
-  className?: string
+  value: number;
+  max?: number;
+  size?: 'sm' | 'md' | 'lg';
+  color?: 'blue' | 'green' | 'yellow' | 'red';
+  showLabel?: boolean;
+  className?: string;
 }
 
 export const Progress: React.FC<ProgressProps> = ({
@@ -731,29 +666,27 @@ export const Progress: React.FC<ProgressProps> = ({
   size = 'md',
   color = 'blue',
   showLabel = false,
-  className = ''
+  className = '',
 }) => {
   const sizeClasses = {
     sm: 'h-2',
     md: 'h-4',
-    lg: 'h-6'
-  }
-  
+    lg: 'h-6',
+  };
+
   const colorClasses = {
     blue: 'bg-blue-600',
     green: 'bg-green-600',
     yellow: 'bg-yellow-600',
-    red: 'bg-red-600'
-  }
-  
-  const percentage = Math.min(Math.max((value / max) * 100, 0), 100)
-  
-  const classes = [
-    'w-full bg-gray-200 rounded-full overflow-hidden',
-    sizeClasses[size],
-    className
-  ].filter(Boolean).join(' ')
-  
+    red: 'bg-red-600',
+  };
+
+  const percentage = Math.min(Math.max((value / max) * 100, 0), 100);
+
+  const classes = ['w-full bg-gray-200 rounded-full overflow-hidden', sizeClasses[size], className]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div className="w-full">
       {showLabel && (
@@ -769,27 +702,27 @@ export const Progress: React.FC<ProgressProps> = ({
         />
       </div>
     </div>
-  )
-}
+  );
+};
 
 // ============================================================================
 // DATA DISPLAY COMPONENTS
 // ============================================================================
 
 export interface TableProps {
-  data: Record<string, unknown>[]
+  data: Record<string, unknown>[];
   columns: {
-    key: string
-    label: string
-    sortable?: boolean
-    render?: (value: unknown, row: Record<string, unknown>) => React.ReactNode
-  }[]
-  sortBy?: string
-  sortDirection?: 'asc' | 'desc'
-  onSort?: (key: string, direction: 'asc' | 'desc') => void
-  loading?: boolean
-  emptyMessage?: string
-  className?: string
+    key: string;
+    label: string;
+    sortable?: boolean;
+    render?: (value: unknown, row: Record<string, unknown>) => React.ReactNode;
+  }[];
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
+  onSort?: (key: string, direction: 'asc' | 'desc') => void;
+  loading?: boolean;
+  emptyMessage?: string;
+  className?: string;
 }
 
 export const Table: React.FC<TableProps> = ({
@@ -800,36 +733,29 @@ export const Table: React.FC<TableProps> = ({
   onSort,
   loading = false,
   emptyMessage = 'No data available',
-  className = ''
+  className = '',
 }) => {
   const handleSort = (key: string) => {
-    if (!onSort) return
-    
-    const newDirection = sortBy === key && sortDirection === 'asc' ? 'desc' : 'asc'
-    onSort(key, newDirection)
-  }
-  
-  const classes = [
-    'min-w-full divide-y divide-gray-200',
-    className
-  ].filter(Boolean).join(' ')
-  
+    if (!onSort) return;
+
+    const newDirection = sortBy === key && sortDirection === 'asc' ? 'desc' : 'asc';
+    onSort(key, newDirection);
+  };
+
+  const classes = ['min-w-full divide-y divide-gray-200', className].filter(Boolean).join(' ');
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-32">
         <Loading text="Loading..." />
       </div>
-    )
+    );
   }
-  
+
   if (data.length === 0) {
-    return (
-      <div className="text-center py-8 text-gray-500">
-        {emptyMessage}
-      </div>
-    )
+    return <div className="text-center py-8 text-gray-500">{emptyMessage}</div>;
   }
-  
+
   return (
     <div className="overflow-x-auto">
       <table className={classes}>
@@ -847,7 +773,12 @@ export const Table: React.FC<TableProps> = ({
                   <span>{column.label}</span>
                   {column.sortable && (
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+                      />
                     </svg>
                   )}
                 </div>
@@ -868,17 +799,17 @@ export const Table: React.FC<TableProps> = ({
         </tbody>
       </table>
     </div>
-  )
-}
+  );
+};
 
 export interface PaginationProps {
-  currentPage: number
-  totalPages: number
-  onPageChange: (page: number) => void
-  showFirstLast?: boolean
-  showPrevNext?: boolean
-  maxVisiblePages?: number
-  className?: string
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  showFirstLast?: boolean;
+  showPrevNext?: boolean;
+  maxVisiblePages?: number;
+  className?: string;
 }
 
 export const Pagination: React.FC<PaginationProps> = ({
@@ -888,33 +819,35 @@ export const Pagination: React.FC<PaginationProps> = ({
   showFirstLast = true,
   showPrevNext = true,
   maxVisiblePages = 5,
-  className = ''
+  className = '',
 }) => {
   const getVisiblePages = () => {
-    const pages: number[] = []
-    const half = Math.floor(maxVisiblePages / 2)
-    
-    let start = Math.max(1, currentPage - half)
-    let end = Math.min(totalPages, start + maxVisiblePages - 1)
-    
+    const pages: number[] = [];
+    const half = Math.floor(maxVisiblePages / 2);
+
+    let start = Math.max(1, currentPage - half);
+    let end = Math.min(totalPages, start + maxVisiblePages - 1);
+
     if (end - start + 1 < maxVisiblePages) {
-      start = Math.max(1, end - maxVisiblePages + 1)
+      start = Math.max(1, end - maxVisiblePages + 1);
     }
-    
+
     for (let i = start; i <= end; i++) {
-      pages.push(i)
+      pages.push(i);
     }
-    
-    return pages
-  }
-  
-  const visiblePages = getVisiblePages()
-  
+
+    return pages;
+  };
+
+  const visiblePages = getVisiblePages();
+
   const classes = [
     'flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6',
-    className
-  ].filter(Boolean).join(' ')
-  
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ');
+
   return (
     <div className={classes}>
       <div className="flex items-center">
@@ -932,7 +865,7 @@ export const Pagination: React.FC<PaginationProps> = ({
             First
           </button>
         )}
-        
+
         {showPrevNext && currentPage > 1 && (
           <button
             onClick={() => onPageChange(currentPage - 1)}
@@ -941,7 +874,7 @@ export const Pagination: React.FC<PaginationProps> = ({
             Previous
           </button>
         )}
-        
+
         {visiblePages.map((page) => (
           <button
             key={page}
@@ -955,7 +888,7 @@ export const Pagination: React.FC<PaginationProps> = ({
             {page}
           </button>
         ))}
-        
+
         {showPrevNext && currentPage < totalPages && (
           <button
             onClick={() => onPageChange(currentPage + 1)}
@@ -964,7 +897,7 @@ export const Pagination: React.FC<PaginationProps> = ({
             Next
           </button>
         )}
-        
+
         {showFirstLast && currentPage < totalPages && (
           <button
             onClick={() => onPageChange(totalPages)}
@@ -975,25 +908,25 @@ export const Pagination: React.FC<PaginationProps> = ({
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
 // ============================================================================
 // EXPORT ALL COMPONENTS
 // ============================================================================
 
 // Export existing components
-export { default as UnifiedNavigation } from './layout/UnifiedNavigation'
-export { default as FrenlyAI } from './FrenlyAI'
-export { DataProvider } from './DataProvider'
-export { FrenlyProvider } from './FrenlyProvider'
-export * from './ProjectComponents'
-export { default as AdvancedFilters } from './AdvancedFilters'
-export { default as ReconciliationAnalytics } from './ReconciliationAnalytics'
-export { default as DataAnalysis } from './DataAnalysis'
-export { default as EnhancedIngestionPage } from './EnhancedIngestionPage'
+export { default as UnifiedNavigation } from './layout/UnifiedNavigation';
+export { default as FrenlyAI } from './FrenlyAI';
+export { DataProvider } from './DataProvider';
+export { FrenlyProvider } from './FrenlyProvider';
+export * from './ProjectComponents';
+export { default as AdvancedFilters } from './AdvancedFilters';
+export { default as ReconciliationAnalytics } from './ReconciliationAnalytics';
+export { default as DataAnalysis } from './DataAnalysis';
+export { default as EnhancedIngestionPage } from './EnhancedIngestionPage';
 // SynchronizedReconciliationPage removed - use ReconciliationInterface instead
-export { default as IntegrationSettings } from './IntegrationSettings'
+export { default as IntegrationSettings } from './IntegrationSettings';
 // MobileNavigation removed - using UnifiedNavigation instead
 
 // Context providers moved - use hooks directly or import from individual files

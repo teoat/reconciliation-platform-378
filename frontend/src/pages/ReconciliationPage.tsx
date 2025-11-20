@@ -625,10 +625,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
 
           {/* Results Tab */}
           {activeTab === 'results' && (
-            <ResultsTabContent
-              matches={matches}
-              matchColumns={matchColumns}
-            />
+            <ResultsTabContent matches={matches} matchColumns={matchColumns} />
           )}
         </main>
 

@@ -1,11 +1,11 @@
-import React from 'react'
-import { useSessionTimeoutWarning, SessionTimeoutWarning } from './ui/SessionTimeoutWarning'
+import React from 'react';
+import { useSessionTimeoutWarning, SessionTimeoutWarning } from './ui/SessionTimeoutWarning';
 
 // Component to handle session timeout warnings
 export const SessionTimeoutHandler: React.FC = () => {
-  const { showWarning, remainingMinutes, handleExtend, handleLogout } = useSessionTimeoutWarning()
+  const { showWarning, remainingMinutes, handleExtend, handleLogout } = useSessionTimeoutWarning();
 
-  if (!showWarning) return null
+  if (!showWarning) return null;
 
   return (
     <SessionTimeoutWarning
@@ -13,6 +13,5 @@ export const SessionTimeoutHandler: React.FC = () => {
       onExtend={handleExtend}
       onLogout={handleLogout}
     />
-  )
-}
-
+  );
+};

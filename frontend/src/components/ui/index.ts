@@ -50,49 +50,45 @@ export { default as FallbackContent } from './FallbackContent';
 export { default as CircuitBreakerStatus } from './CircuitBreakerStatus';
 
 // Feature Components
-export { 
-  FeatureGate, 
+export {
+  FeatureGate,
   FeatureBadge,
   useFeatureGate,
   type FeatureGateProps,
   type FeatureBadgeProps,
   type FeatureGateConfig,
   type UserRole as FeatureUserRole,
-  type FeaturePermission
+  type FeaturePermission,
 } from './FeatureGate';
 
-export { 
-  FeatureTour,
-  type FeatureTourProps,
-  type TourStep
-} from './FeatureTour';
+export { FeatureTour, type FeatureTourProps, type TourStep } from './FeatureTour';
 
-export { 
+export {
   EnhancedFeatureTour,
   type EnhancedFeatureTourProps,
-  type TourStep as EnhancedTourStep
+  type TourStep as EnhancedTourStep,
 } from './EnhancedFeatureTour';
 
 // Onboarding Components
-export { 
+export {
   EnhancedContextualHelp,
-  type EnhancedContextualHelpProps
+  type EnhancedContextualHelpProps,
 } from '../onboarding/EnhancedContextualHelp';
 
-export { 
+export {
   OnboardingAnalyticsDashboard,
-  type OnboardingAnalyticsDashboardProps
+  type OnboardingAnalyticsDashboardProps,
 } from '../onboarding/OnboardingAnalyticsDashboard';
 
-export { 
+export {
   EmptyStateGuidance,
   type EmptyStateGuidanceProps,
-  type EmptyStateType
+  type EmptyStateType,
 } from '../onboarding/EmptyStateGuidance';
 
-export { 
+export {
   EnhancedFrenlyOnboarding,
-  type EnhancedFrenlyOnboardingProps
+  type EnhancedFrenlyOnboardingProps,
 } from '../onboarding/EnhancedFrenlyOnboarding';
 
 // Component Props Types

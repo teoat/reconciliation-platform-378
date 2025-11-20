@@ -96,4 +96,3 @@ export interface AlertRule {
   cooldownMinutes: number;
   lastTriggered?: number;
 }
-

@@ -1,13 +1,7 @@
 // Main Business Intelligence Service Orchestrator
 import React from 'react';
 import { logger } from '../logger';
-import {
-  ReportConfig,
-  DashboardConfig,
-  KPIDefinition,
-  AnalyticsQuery,
-  KPIAlert,
-} from './types';
+import { ReportConfig, DashboardConfig, KPIDefinition, AnalyticsQuery, KPIAlert } from './types';
 import { ReportManager } from './reports';
 import { DashboardManager } from './dashboards';
 import { KPIManager } from './kpis';
@@ -56,12 +50,9 @@ class BusinessIntelligenceService {
       await this.kpiManager.loadKPIs();
       await this.queryManager.loadQueries();
 
-      this.schedulingManager.startKPIMonitoring(
-        this.getKPIMap(),
-        async (kpi: KPIDefinition) => {
-          await this.calculateKPI(kpi.id);
-        }
-      );
+      this.schedulingManager.startKPIMonitoring(this.getKPIMap(), async (kpi: KPIDefinition) => {
+        await this.calculateKPI(kpi.id);
+      });
 
       this.schedulingManager.startReportScheduling(
         this.getReportMap(),
@@ -157,19 +148,24 @@ class BusinessIntelligenceService {
     return this.dashboardManager.getAllDashboards();
   }
 
-  public async renderDashboard(id: string, filters?: Metadata): Promise<DashboardConfig & {
-    widgets: Array<import('./types').DashboardWidget & { data: Record<string, unknown> }>;
-    loadTime: number;
-  }> {
-    return this.dashboardManager.renderDashboard(
-      id,
-      filters,
-      (widget, filters) => this.queryExecutors.renderWidget(widget, filters)
+  public async renderDashboard(
+    id: string,
+    filters?: Metadata
+  ): Promise<
+    DashboardConfig & {
+      widgets: Array<import('./types').DashboardWidget & { data: Record<string, unknown> }>;
+      loadTime: number;
+    }
+  > {
+    return this.dashboardManager.renderDashboard(id, filters, (widget, filters) =>
+      this.queryExecutors.renderWidget(widget, filters)
     );
   }
 
   // KPI Management
-  public async createKPI(kpi: Omit<KPIDefinition, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  public async createKPI(
+    kpi: Omit<KPIDefinition, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
     const id = await this.kpiManager.createKPI(kpi);
     this.eventManager.emit('kpiCreated', this.kpiManager.getKPI(id));
     return id;
@@ -193,7 +189,10 @@ class BusinessIntelligenceService {
     return this.kpiManager.getAllKPIs();
   }
 
-  public async calculateKPI(id: string, parameters?: Metadata): Promise<{
+  public async calculateKPI(
+    id: string,
+    parameters?: Metadata
+  ): Promise<{
     kpi: KPIDefinition;
     value: number;
     calculationTime: number;
@@ -214,7 +213,9 @@ class BusinessIntelligenceService {
   }
 
   // Query Management
-  public async createQuery(query: Omit<AnalyticsQuery, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  public async createQuery(
+    query: Omit<AnalyticsQuery, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
     const id = await this.queryManager.createQuery(query);
     this.eventManager.emit('queryCreated', this.queryManager.getQuery(id));
     return id;
@@ -238,11 +239,12 @@ class BusinessIntelligenceService {
     return this.queryManager.getAllQueries();
   }
 
-  public async executeQuery(id: string, parameters?: Metadata): Promise<Array<Record<string, unknown>>> {
-    return this.queryManager.executeQuery(
-      id,
-      parameters,
-      (query, params) => this.queryExecutors.executeAnalyticsQuery(query, params)
+  public async executeQuery(
+    id: string,
+    parameters?: Metadata
+  ): Promise<Array<Record<string, unknown>>> {
+    return this.queryManager.executeQuery(id, parameters, (query, params) =>
+      this.queryExecutors.executeAnalyticsQuery(query, params)
     );
   }
 
@@ -383,5 +385,3 @@ export const useBusinessIntelligence = () => {
 export const businessIntelligenceService = BusinessIntelligenceService.getInstance();
 export default businessIntelligenceService;
 export * from './types';
-
-

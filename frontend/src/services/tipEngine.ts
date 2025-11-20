@@ -1,6 +1,6 @@
 /**
  * Tip Engine Service
- * 
+ *
  * Provides intelligent tip delivery system with:
  * - Priority scoring
  * - User behavior analysis
@@ -343,4 +343,3 @@ export const tipEngine = new TipEngine();
 
 // Export default instance
 export default tipEngine;
-

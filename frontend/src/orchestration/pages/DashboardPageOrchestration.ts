@@ -168,7 +168,8 @@ export function getDashboardGuidanceContent(topic: string): GuidanceContent[] {
       {
         id: 'project-creation',
         title: 'Create Projects',
-        content: 'Click "New Project" to create a new reconciliation project. Give it a descriptive name.',
+        content:
+          'Click "New Project" to create a new reconciliation project. Give it a descriptive name.',
         type: 'tip',
       },
       {
@@ -192,11 +193,12 @@ export function getDashboardGuidanceContent(topic: string): GuidanceContent[] {
         type: 'info',
       },
     ],
-    'productivity': [
+    productivity: [
       {
         id: 'productivity-score',
         title: 'Productivity Score',
-        content: 'Your productivity score is calculated based on project completion and efficiency.',
+        content:
+          'Your productivity score is calculated based on project completion and efficiency.',
         type: 'info',
       },
       {
@@ -210,4 +212,3 @@ export function getDashboardGuidanceContent(topic: string): GuidanceContent[] {
 
   return guidanceMap[topic] || [];
 }
-

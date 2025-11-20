@@ -1,6 +1,6 @@
 /**
  * Feature Gate Component
- * 
+ *
  * Provides feature gating functionality for:
  * - Permission-based access control
  * - Role-based feature access
@@ -39,7 +39,7 @@ export interface FeatureGateProps {
 
 /**
  * Feature Gate Component
- * 
+ *
  * Gates feature access based on:
  * - User role
  * - User permissions
@@ -114,7 +114,11 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
   }
 
   // All checks passed - render children
-  return <div className={className} data-feature-id={featureId}>{children}</div>;
+  return (
+    <div className={className} data-feature-id={featureId}>
+      {children}
+    </div>
+  );
 };
 
 /**
@@ -134,7 +138,13 @@ export const useFeatureGate = (
     userRole?: string;
     userPermissions?: string[];
   }
-  const { requiredRole = [], requiredPermissions = [], requiredFlag, userRole, userPermissions = [] } = config as FeatureGateConfigInternal;
+  const {
+    requiredRole = [],
+    requiredPermissions = [],
+    requiredFlag,
+    userRole,
+    userPermissions = [],
+  } = config as FeatureGateConfigInternal;
 
   // Check feature flag
   if (requiredFlag) {
@@ -175,7 +185,7 @@ export const useFeatureGate = (
 
 /**
  * Feature Badge Component
- * 
+ *
  * Displays badges for new features, unlocked features, etc.
  */
 export interface FeatureBadgeProps {
@@ -184,11 +194,7 @@ export interface FeatureBadgeProps {
   className?: string;
 }
 
-export const FeatureBadge: React.FC<FeatureBadgeProps> = ({
-  type,
-  label,
-  className = '',
-}) => {
+export const FeatureBadge: React.FC<FeatureBadgeProps> = ({ type, label, className = '' }) => {
   const badges = {
     new: { text: label || 'New', color: 'bg-green-100 text-green-800' },
     beta: { text: label || 'Beta', color: 'bg-blue-100 text-blue-800' },
@@ -208,4 +214,3 @@ export const FeatureBadge: React.FC<FeatureBadgeProps> = ({
 };
 
 export default FeatureGate;
-

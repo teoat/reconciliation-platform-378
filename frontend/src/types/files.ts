@@ -24,4 +24,3 @@ export interface FileInfo {
   lastModified: Timestamp;
   path: string;
 }
-

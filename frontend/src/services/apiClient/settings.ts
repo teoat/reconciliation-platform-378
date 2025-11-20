@@ -2,15 +2,15 @@
 // SETTINGS API CLIENT
 // ============================================================================
 
-import { apiClient } from './index'
-import { ApiResponse, UpdateSettingsRequest, SettingsResponse } from './types'
+import { apiClient } from './index';
+import { ApiResponse, UpdateSettingsRequest, SettingsResponse } from './types';
 
 /**
  * Get user settings
  * @returns Promise with user settings
  */
 export async function getSettings(): Promise<ApiResponse<SettingsResponse>> {
-  return apiClient.get<SettingsResponse>('/api/user/settings')
+  return apiClient.get<SettingsResponse>('/api/user/settings');
 }
 
 /**
@@ -21,7 +21,7 @@ export async function getSettings(): Promise<ApiResponse<SettingsResponse>> {
 export async function updateSettings(
   settings: UpdateSettingsRequest
 ): Promise<ApiResponse<SettingsResponse>> {
-  return apiClient.put<SettingsResponse>('/api/user/settings', settings)
+  return apiClient.put<SettingsResponse>('/api/user/settings', settings);
 }
 
 /**
@@ -32,7 +32,7 @@ export async function updateSettings(
 export async function updatePreferences(
   preferences: UpdateSettingsRequest['preferences']
 ): Promise<ApiResponse<SettingsResponse>> {
-  return updateSettings({ preferences })
+  return updateSettings({ preferences });
 }
 
 /**
@@ -43,7 +43,7 @@ export async function updatePreferences(
 export async function updateNotifications(
   notifications: UpdateSettingsRequest['notifications']
 ): Promise<ApiResponse<SettingsResponse>> {
-  return updateSettings({ notifications })
+  return updateSettings({ notifications });
 }
 
 /**
@@ -54,6 +54,5 @@ export async function updateNotifications(
 export async function updateSecuritySettings(
   security: UpdateSettingsRequest['security']
 ): Promise<ApiResponse<SettingsResponse>> {
-  return updateSettings({ security })
+  return updateSettings({ security });
 }
-

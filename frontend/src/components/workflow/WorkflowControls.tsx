@@ -73,4 +73,3 @@ export const WorkflowControls: React.FC<WorkflowControlsProps> = ({
     </div>
   );
 };
-

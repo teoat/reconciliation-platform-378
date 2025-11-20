@@ -9,25 +9,25 @@
 // - serviceIntegrationService.ts (unified error handling)
 // ============================================================================
 
-import { logger } from '@/services/logger'
-import { errorContextService, type ErrorContext as ErrorContextType } from './errorContextService'
-import { errorTranslationService, type ErrorTranslation } from './errorTranslationService'
+import { logger } from '@/services/logger';
+import { errorContextService, type ErrorContext as ErrorContextType } from './errorContextService';
+import { errorTranslationService, type ErrorTranslation } from './errorTranslationService';
 
 export interface UnifiedApiError {
-  error: string           // Error type
-  message: string         // User-friendly message
-  code: string           // Error code
-  details?: unknown      // Additional context
-  timestamp?: string     // When error occurred
-  requestId?: string     // Request identifier
+  error: string; // Error type
+  message: string; // User-friendly message
+  code: string; // Error code
+  details?: unknown; // Additional context
+  timestamp?: string; // When error occurred
+  requestId?: string; // Request identifier
 }
 
 export interface ErrorContext {
-  userId?: string
-  projectId?: string
-  component?: string
-  action?: string
-  [key: string]: unknown
+  userId?: string;
+  projectId?: string;
+  component?: string;
+  action?: string;
+  [key: string]: unknown;
 }
 
 /**
@@ -58,21 +58,21 @@ export class UnifiedErrorService {
         error: error.name || 'Error',
         message: error.message || 'An error occurred',
         code: 'ERROR',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      };
     }
 
     // Handle API error responses
     if (typeof error === 'object' && error !== null) {
-      const err = error as Record<string, unknown>
+      const err = error as Record<string, unknown>;
       return {
         error: (err.error as string) || 'Error',
         message: (err.message as string) || 'An error occurred',
         code: (err.code as string) || 'UNKNOWN_ERROR',
         details: err.details,
         timestamp: (err.timestamp as string) || new Date().toISOString(),
-        requestId: (err.request_id as string) || (err.requestId as string)
-      }
+        requestId: (err.request_id as string) || (err.requestId as string),
+      };
     }
 
     // Fallback
@@ -80,16 +80,16 @@ export class UnifiedErrorService {
       error: 'Unknown Error',
       message: 'An unknown error occurred',
       code: 'UNKNOWN_ERROR',
-      timestamp: new Date().toISOString()
-    }
+      timestamp: new Date().toISOString(),
+    };
   }
 
   /**
    * Handle error with logging, context tracking, translation, and reporting
    */
   static handleError(error: unknown, context?: ErrorContext): void {
-    const parsed = this.parseError(error)
-    
+    const parsed = this.parseError(error);
+
     // Set error context if provided
     if (context) {
       errorContextService.setContext({
@@ -107,15 +107,17 @@ export class UnifiedErrorService {
       action: context?.action,
       data: context,
     });
-    
+
     // Log error
     logger.error('Error occurred', { error: parsed, context });
-    
+
     // Report to monitoring service (if available)
     if (typeof window !== 'undefined') {
       const win = window as unknown as Record<string, unknown>;
       if (win.monitoring && typeof win.monitoring === 'object') {
-        const monitoring = win.monitoring as { reportError?: (error: unknown, context?: unknown) => void };
+        const monitoring = win.monitoring as {
+          reportError?: (error: unknown, context?: unknown) => void;
+        };
         monitoring.reportError?.(parsed, context);
       }
     }
@@ -129,7 +131,7 @@ export class UnifiedErrorService {
     context?: ErrorContext
   ): { parsed: UnifiedApiError; translation?: ErrorTranslation; userMessage: string } {
     const parsed = this.parseError(error);
-    
+
     // Get translation
     const translation = errorTranslationService.translateError(parsed.code, {
       component: context?.component,
@@ -151,7 +153,7 @@ export class UnifiedErrorService {
    * Format error message for user display
    */
   static formatErrorMessage(error: UnifiedApiError): string {
-    return `${error.error}: ${error.message}`
+    return `${error.error}: ${error.message}`;
   }
 
   /**
@@ -159,7 +161,7 @@ export class UnifiedErrorService {
    */
   static getUserFriendlyMessage(error: unknown, context?: ErrorContext): string {
     const parsed = this.parseError(error);
-    
+
     // Use translation service for better messages
     const translation = errorTranslationService.translateError(parsed.code, {
       component: context?.component,
@@ -181,16 +183,11 @@ export class UnifiedErrorService {
    * Check if error is retryable
    */
   static isRetryable(error: unknown): boolean {
-    const parsed = this.parseError(error)
-    
-    const retryableCodes = [
-      'NETWORK_ERROR',
-      'TIMEOUT',
-      'SERVER_ERROR',
-      'SERVICE_UNAVAILABLE'
-    ]
+    const parsed = this.parseError(error);
 
-    return retryableCodes.includes(parsed.code)
+    const retryableCodes = ['NETWORK_ERROR', 'TIMEOUT', 'SERVER_ERROR', 'SERVICE_UNAVAILABLE'];
+
+    return retryableCodes.includes(parsed.code);
   }
 
   /**
@@ -198,17 +195,17 @@ export class UnifiedErrorService {
    */
   static getStatusCode(error: UnifiedApiError): number {
     const codeMap: Record<string, number> = {
-      'VALIDATION_ERROR': 400,
-      'AUTHENTICATION_ERROR': 401,
-      'AUTHORIZATION_ERROR': 403,
-      'NOT_FOUND': 404,
-      'CONFLICT': 409,
-      'RATE_LIMIT_EXCEEDED': 429,
-      'SERVER_ERROR': 500,
-      'SERVICE_UNAVAILABLE': 503
-    }
+      VALIDATION_ERROR: 400,
+      AUTHENTICATION_ERROR: 401,
+      AUTHORIZATION_ERROR: 403,
+      NOT_FOUND: 404,
+      CONFLICT: 409,
+      RATE_LIMIT_EXCEEDED: 429,
+      SERVER_ERROR: 500,
+      SERVICE_UNAVAILABLE: 503,
+    };
 
-    return codeMap[error.code] || 500
+    return codeMap[error.code] || 500;
   }
 }
 
@@ -217,4 +214,3 @@ export const unifiedErrorService = UnifiedErrorService.getInstance();
 
 // Export for convenience
 export default unifiedErrorService;
-

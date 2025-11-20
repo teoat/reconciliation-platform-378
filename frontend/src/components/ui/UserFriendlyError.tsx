@@ -58,19 +58,19 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
     if (error) {
       // Build comprehensive announcement message
       let announcement = `${severity === 'error' ? 'Error' : severity === 'warning' ? 'Warning' : 'Information'}: ${errorTitle}`;
-      
+
       if (errorMessage && errorMessage !== errorTitle) {
         announcement += `. ${errorMessage}`;
       }
-      
+
       if (context) {
         announcement += `. Context: ${context}`;
       }
-      
+
       if (recoveryActions.length > 0) {
         announcement += `. ${recoveryActions.length} recovery option${recoveryActions.length > 1 ? 's' : ''} available`;
       }
-      
+
       if (suggestions.length > 0) {
         announcement += `. ${suggestions.length} suggestion${suggestions.length > 1 ? 's' : ''} available`;
       }
@@ -78,10 +78,24 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
       ariaLiveRegionsService.announceError(announcement, {
         componentId: errorId,
         action: 'error-displayed',
-        currentState: { severity, context, hasRecoveryActions: recoveryActions.length > 0, hasSuggestions: suggestions.length > 0 },
+        currentState: {
+          severity,
+          context,
+          hasRecoveryActions: recoveryActions.length > 0,
+          hasSuggestions: suggestions.length > 0,
+        },
       });
     }
-  }, [error, errorMessage, errorTitle, severity, context, errorId, recoveryActions.length, suggestions.length]);
+  }, [
+    error,
+    errorMessage,
+    errorTitle,
+    severity,
+    context,
+    errorId,
+    recoveryActions.length,
+    suggestions.length,
+  ]);
 
   const handleRecovery = async (action: ErrorRecoveryAction) => {
     setIsRecovering(true);
@@ -121,11 +135,16 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
       id={errorId ? `error-${errorId}` : undefined}
     >
       <div className="flex items-start">
-        <AlertCircle className={`h-5 w-5 ${iconColors[severity]} flex-shrink-0 mt-0.5`} aria-hidden="true" />
-        
+        <AlertCircle
+          className={`h-5 w-5 ${iconColors[severity]} flex-shrink-0 mt-0.5`}
+          aria-hidden="true"
+        />
+
         <div className="flex-1 ml-3">
           <div className="flex items-center justify-between">
-            <h3 className={`text-sm font-semibold ${severity === 'error' ? 'text-red-900' : severity === 'warning' ? 'text-yellow-900' : 'text-blue-900'}`}>
+            <h3
+              className={`text-sm font-semibold ${severity === 'error' ? 'text-red-900' : severity === 'warning' ? 'text-yellow-900' : 'text-blue-900'}`}
+            >
               {errorTitle}
             </h3>
             <div className="flex items-center space-x-2">
@@ -166,7 +185,7 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
           </div>
 
           <p className="mt-1 text-sm">{errorMessage}</p>
-          
+
           {context && (
             <p className="mt-2 text-sm opacity-90">
               <span className="font-medium">Context:</span> {context}
@@ -209,8 +228,8 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
                             action.variant === 'primary'
                               ? 'bg-blue-600 text-white hover:bg-blue-700'
                               : action.variant === 'secondary'
-                              ? 'bg-gray-200 text-gray-900 hover:bg-gray-300'
-                              : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                ? 'bg-gray-200 text-gray-900 hover:bg-gray-300'
+                                : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
                           }
                           disabled:opacity-50 disabled:cursor-not-allowed
                         `}
@@ -256,4 +275,3 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
 };
 
 export default UserFriendlyError;
-

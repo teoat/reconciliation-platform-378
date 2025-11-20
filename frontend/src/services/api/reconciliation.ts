@@ -8,11 +8,14 @@ import type { ReconciliationMatch } from '../../store/unifiedStore';
 import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
 
 export class ReconciliationApiService {
-  static async getReconciliationJobs(projectId: string, params: {
-    page?: number;
-    per_page?: number;
-    status?: string;
-  } = {}) {
+  static async getReconciliationJobs(
+    projectId: string,
+    params: {
+      page?: number;
+      per_page?: number;
+      status?: string;
+    } = {}
+  ) {
     try {
       const { page = 1, per_page = 20, status } = params;
       const response = await apiClient.get(`/api/projects/${projectId}/reconciliation/jobs`, {
@@ -33,7 +36,9 @@ export class ReconciliationApiService {
         },
       };
     } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch reconciliation jobs');
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to fetch reconciliation jobs'
+      );
     }
   }
 
@@ -45,7 +50,9 @@ export class ReconciliationApiService {
       }
       return response.data;
     } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch reconciliation job');
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to fetch reconciliation job'
+      );
     }
   }
 
@@ -65,13 +72,18 @@ export class ReconciliationApiService {
     }
   ) {
     try {
-      const response = await apiClient.post(`/api/projects/${projectId}/reconciliation/jobs`, jobData);
+      const response = await apiClient.post(
+        `/api/projects/${projectId}/reconciliation/jobs`,
+        jobData
+      );
       if (response.error) {
         throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to start reconciliation job');
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to start reconciliation job'
+      );
     }
   }
 
@@ -87,11 +99,14 @@ export class ReconciliationApiService {
     }
   }
 
-  static async getReconciliationResults(jobId: string, params: {
-    page?: number;
-    per_page?: number;
-    status?: string;
-  } = {}) {
+  static async getReconciliationResults(
+    jobId: string,
+    params: {
+      page?: number;
+      per_page?: number;
+      status?: string;
+    } = {}
+  ) {
     try {
       const { page = 1, per_page = 20, status } = params;
       const response = await apiClient.get(`/api/reconciliation/jobs/${jobId}/results`, {
@@ -112,7 +127,9 @@ export class ReconciliationApiService {
         },
       };
     } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch reconciliation results');
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to fetch reconciliation results'
+      );
     }
   }
 
@@ -124,7 +141,9 @@ export class ReconciliationApiService {
       }
       return response.data as ReconciliationStats;
     } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch reconciliation stats');
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to fetch reconciliation stats'
+      );
     }
   }
 
@@ -136,20 +155,25 @@ export class ReconciliationApiService {
       }
       return response.data;
     } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to approve reconciliation record');
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to approve reconciliation record'
+      );
     }
   }
 
   static async rejectReconciliationRecord(recordId: string, reason?: string) {
     try {
-      const response = await apiClient.post(`/api/reconciliation/records/${recordId}/reject`, { reason });
+      const response = await apiClient.post(`/api/reconciliation/records/${recordId}/reject`, {
+        reason,
+      });
       if (response.error) {
         throw new Error(getErrorMessageFromApiError(response.error));
       }
       return response.data;
     } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to reject reconciliation record');
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to reject reconciliation record'
+      );
     }
   }
 }
-

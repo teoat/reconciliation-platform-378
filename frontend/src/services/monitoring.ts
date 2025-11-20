@@ -1,49 +1,52 @@
 // ============================================================================
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 // MONITORING SERVICE
 // ============================================================================
 
-import { monitoringConfig } from '../config/monitoring'
+import { monitoringConfig } from '../config/monitoring';
 
 interface Metric {
-  name: string
-  value: number
-  timestamp: number
-  tags?: Record<string, string>
+  name: string;
+  value: number;
+  timestamp: number;
+  tags?: Record<string, string>;
 }
 
 interface ErrorReport {
-  message: string
-  stack?: string
-  url: string
-  userAgent: string
-  timestamp: number
-  userId?: string
-  sessionId?: string
+  message: string;
+  stack?: string;
+  url: string;
+  userAgent: string;
+  timestamp: number;
+  userId?: string;
+  sessionId?: string;
 }
 
 interface AnalyticsEvent {
-  event: string
-  properties: Record<string, unknown>
-  timestamp: number
-  userId?: string
-  sessionId?: string
+  event: string;
+  properties: Record<string, unknown>;
+  timestamp: number;
+  userId?: string;
+  sessionId?: string;
 }
 
 class MonitoringService {
-  private metrics: Metric[] = []
-  private errors: ErrorReport[] = []
-  private events: AnalyticsEvent[] = []
-  private sessionId: string
-  private userId?: string
-  private isEnabled: boolean
+  private metrics: Metric[] = [];
+  private errors: ErrorReport[] = [];
+  private events: AnalyticsEvent[] = [];
+  private sessionId: string;
+  private userId?: string;
+  private isEnabled: boolean;
 
   constructor() {
-    this.sessionId = this.generateSessionId()
-    this.isEnabled = monitoringConfig.performance.enabled || monitoringConfig.errors.enabled || monitoringConfig.analytics.enabled
-    
+    this.sessionId = this.generateSessionId();
+    this.isEnabled =
+      monitoringConfig.performance.enabled ||
+      monitoringConfig.errors.enabled ||
+      monitoringConfig.analytics.enabled;
+
     if (this.isEnabled) {
-      this.initializeMonitoring()
+      this.initializeMonitoring();
     }
   }
 
@@ -54,21 +57,21 @@ class MonitoringService {
   private initializeMonitoring() {
     // Initialize performance monitoring
     if (monitoringConfig.performance.enabled) {
-      this.initializePerformanceMonitoring()
+      this.initializePerformanceMonitoring();
     }
 
     // Initialize error monitoring
     if (monitoringConfig.errors.enabled) {
-      this.initializeErrorMonitoring()
+      this.initializeErrorMonitoring();
     }
 
     // Initialize analytics
     if (monitoringConfig.analytics.enabled) {
-      this.initializeAnalytics()
+      this.initializeAnalytics();
     }
 
     // Start periodic reporting
-    this.startPeriodicReporting()
+    this.startPeriodicReporting();
   }
 
   private initializePerformanceMonitoring() {
@@ -76,40 +79,40 @@ class MonitoringService {
     if ('PerformanceObserver' in window) {
       // Largest Contentful Paint (LCP)
       new PerformanceObserver((list) => {
-        const entries = list.getEntries()
-        const lastEntry = entries[entries.length - 1]
-        this.recordMetric('lcp', lastEntry.startTime)
-      }).observe({ entryTypes: ['largest-contentful-paint'] })
+        const entries = list.getEntries();
+        const lastEntry = entries[entries.length - 1];
+        this.recordMetric('lcp', lastEntry.startTime);
+      }).observe({ entryTypes: ['largest-contentful-paint'] });
 
       // First Input Delay (FID)
       new PerformanceObserver((list) => {
-        const entries = list.getEntries()
+        const entries = list.getEntries();
         entries.forEach((entry) => {
-          this.recordMetric('fid', entry.processingStart - entry.startTime)
-        })
-      }).observe({ entryTypes: ['first-input'] })
+          this.recordMetric('fid', entry.processingStart - entry.startTime);
+        });
+      }).observe({ entryTypes: ['first-input'] });
 
       // Cumulative Layout Shift (CLS)
-      let clsValue = 0
+      let clsValue = 0;
       new PerformanceObserver((list) => {
-        const entries = list.getEntries()
+        const entries = list.getEntries();
         entries.forEach((entry) => {
           if (!entry.hadRecentInput) {
-            clsValue += entry.value
+            clsValue += entry.value;
           }
-        })
-        this.recordMetric('cls', clsValue)
-      }).observe({ entryTypes: ['layout-shift'] })
+        });
+        this.recordMetric('cls', clsValue);
+      }).observe({ entryTypes: ['layout-shift'] });
     }
 
     // Monitor page load time
     window.addEventListener('load', () => {
-      const loadTime = performance.now()
-      this.recordMetric('pageLoadTime', loadTime)
-    })
+      const loadTime = performance.now();
+      this.recordMetric('pageLoadTime', loadTime);
+    });
 
     // Monitor API response times
-    this.interceptFetch()
+    this.interceptFetch();
   }
 
   private initializeErrorMonitoring() {
@@ -124,9 +127,9 @@ class MonitoringService {
           timestamp: Date.now(),
           userId: this.userId,
           sessionId: this.sessionId,
-        })
+        });
       }
-    })
+    });
 
     // Capture uncaught exceptions
     window.addEventListener('error', (event) => {
@@ -139,9 +142,9 @@ class MonitoringService {
           timestamp: Date.now(),
           userId: this.userId,
           sessionId: this.sessionId,
-        })
+        });
       }
-    })
+    });
   }
 
   private initializeAnalytics() {
@@ -151,12 +154,12 @@ class MonitoringService {
         url: window.location.href,
         title: document.title,
         referrer: document.referrer,
-      })
+      });
     }
 
     // Track user interactions
     if (monitoringConfig.analytics.trackUserInteractions) {
-      this.trackUserInteractions()
+      this.trackUserInteractions();
     }
   }
 
@@ -165,39 +168,39 @@ class MonitoringService {
   // ============================================================================
 
   recordMetric(name: string, value: number, tags?: Record<string, string>) {
-    if (!this.isEnabled) return
+    if (!this.isEnabled) return;
 
     const metric: Metric = {
       name,
       value,
       timestamp: Date.now(),
       tags,
-    }
+    };
 
-    this.metrics.push(metric)
+    this.metrics.push(metric);
 
     // Check thresholds
-    const threshold = monitoringConfig.performance.metrics[name]?.threshold
+    const threshold = monitoringConfig.performance.metrics[name]?.threshold;
     if (threshold && value > threshold) {
-      logger.warn(`Performance metric ${name} exceeded threshold: ${value} > ${threshold}`)
+      logger.warn(`Performance metric ${name} exceeded threshold: ${value} > ${threshold}`);
     }
   }
 
   recordError(error: ErrorReport) {
-    if (!this.isEnabled) return
+    if (!this.isEnabled) return;
 
     // Filter out common non-critical errors
-    const shouldFilter = monitoringConfig.errors.filters.some(filter => 
+    const shouldFilter = monitoringConfig.errors.filters.some((filter) =>
       error.message.includes(filter)
-    )
+    );
 
     if (!shouldFilter) {
-      this.errors.push(error)
+      this.errors.push(error);
     }
   }
 
   trackEvent(event: string, properties: Record<string, unknown>) {
-    if (!this.isEnabled || !monitoringConfig.analytics.trackCustomEvents) return
+    if (!this.isEnabled || !monitoringConfig.analytics.trackCustomEvents) return;
 
     const analyticsEvent: AnalyticsEvent = {
       event,
@@ -205,9 +208,9 @@ class MonitoringService {
       timestamp: Date.now(),
       userId: this.userId,
       sessionId: this.sessionId,
-    }
+    };
 
-    this.events.push(analyticsEvent)
+    this.events.push(analyticsEvent);
   }
 
   // ============================================================================
@@ -215,84 +218,84 @@ class MonitoringService {
   // ============================================================================
 
   private generateSessionId(): string {
-    return 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now()
+    return 'session_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
   }
 
   private interceptFetch() {
-    const originalFetch = window.fetch
+    const originalFetch = window.fetch;
     window.fetch = async (...args) => {
-      const startTime = performance.now()
-      
+      const startTime = performance.now();
+
       try {
-        const response = await originalFetch(...args)
-        const endTime = performance.now()
-        const duration = endTime - startTime
-        
+        const response = await originalFetch(...args);
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+
         this.recordMetric('apiResponseTime', duration, {
           url: args[0] as string,
           method: args[1]?.method || 'GET',
           status: response.status.toString(),
-        })
-        
-        return response
+        });
+
+        return response;
       } catch (error) {
-        const endTime = performance.now()
-        const duration = endTime - startTime
-        
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+
         this.recordMetric('apiResponseTime', duration, {
           url: args[0] as string,
           method: args[1]?.method || 'GET',
           status: 'error',
-        })
-        
-        throw error
+        });
+
+        throw error;
       }
-    }
+    };
   }
 
   private trackUserInteractions() {
     // Track clicks
     document.addEventListener('click', (event) => {
-      const target = event.target as HTMLElement
+      const target = event.target as HTMLElement;
       this.trackEvent('click', {
         element: target.tagName,
         id: target.id,
         className: target.className,
         text: target.textContent?.substring(0, 100),
-      })
-    })
+      });
+    });
 
     // Track form submissions
     document.addEventListener('submit', (event) => {
-      const form = event.target as HTMLFormElement
+      const form = event.target as HTMLFormElement;
       this.trackEvent('form_submit', {
         formId: form.id,
         formAction: form.action,
         formMethod: form.method,
-      })
-    })
+      });
+    });
   }
 
   private startPeriodicReporting() {
     // Report performance metrics
     if (monitoringConfig.performance.enabled) {
       setInterval(() => {
-        this.reportMetrics()
-      }, monitoringConfig.performance.reporting.flushInterval)
+        this.reportMetrics();
+      }, monitoringConfig.performance.reporting.flushInterval);
     }
 
     // Report errors
     if (monitoringConfig.errors.enabled) {
       setInterval(() => {
-        this.reportErrors()
-      }, monitoringConfig.errors.reporting.flushInterval)
+        this.reportErrors();
+      }, monitoringConfig.errors.reporting.flushInterval);
     }
 
     // Report analytics events
     if (monitoringConfig.analytics.enabled) {
       setInterval(() => {
-        this.reportEvents()
-      }, monitoringConfig.analytics.reporting.flushInterval)
+        this.reportEvents();
+      }, monitoringConfig.analytics.reporting.flushInterval);
     }
   }
 
@@ -301,10 +304,10 @@ class MonitoringService {
   // ============================================================================
 
   private async reportMetrics() {
-    if (this.metrics.length === 0) return
+    if (this.metrics.length === 0) return;
 
-    const batchSize = monitoringConfig.performance.reporting.batchSize
-    const batch = this.metrics.splice(0, batchSize)
+    const batchSize = monitoringConfig.performance.reporting.batchSize;
+    const batch = this.metrics.splice(0, batchSize);
 
     try {
       await fetch(monitoringConfig.performance.reporting.endpoint, {
@@ -317,19 +320,19 @@ class MonitoringService {
           sessionId: this.sessionId,
           userId: this.userId,
         }),
-      })
+      });
     } catch (error) {
-      logger.error('Failed to report metrics:', error)
+      logger.error('Failed to report metrics:', error);
       // Re-add metrics to queue for retry
-      this.metrics.unshift(...batch)
+      this.metrics.unshift(...batch);
     }
   }
 
   private async reportErrors() {
-    if (this.errors.length === 0) return
+    if (this.errors.length === 0) return;
 
-    const maxErrors = monitoringConfig.errors.reporting.maxErrors
-    const batch = this.errors.splice(0, maxErrors)
+    const maxErrors = monitoringConfig.errors.reporting.maxErrors;
+    const batch = this.errors.splice(0, maxErrors);
 
     try {
       await fetch(monitoringConfig.errors.reporting.endpoint, {
@@ -342,19 +345,19 @@ class MonitoringService {
           sessionId: this.sessionId,
           userId: this.userId,
         }),
-      })
+      });
     } catch (error) {
-      logger.error('Failed to report errors:', error)
+      logger.error('Failed to report errors:', error);
       // Re-add errors to queue for retry
-      this.errors.unshift(...batch)
+      this.errors.unshift(...batch);
     }
   }
 
   private async reportEvents() {
-    if (this.events.length === 0) return
+    if (this.events.length === 0) return;
 
-    const batchSize = monitoringConfig.analytics.reporting.batchSize
-    const batch = this.events.splice(0, batchSize)
+    const batchSize = monitoringConfig.analytics.reporting.batchSize;
+    const batch = this.events.splice(0, batchSize);
 
     try {
       await fetch(monitoringConfig.analytics.reporting.endpoint, {
@@ -367,11 +370,11 @@ class MonitoringService {
           sessionId: this.sessionId,
           userId: this.userId,
         }),
-      })
+      });
     } catch (error) {
-      logger.error('Failed to report events:', error)
+      logger.error('Failed to report events:', error);
       // Re-add events to queue for retry
-      this.events.unshift(...batch)
+      this.events.unshift(...batch);
     }
   }
 
@@ -380,29 +383,29 @@ class MonitoringService {
   // ============================================================================
 
   setUserId(userId: string) {
-    this.userId = userId
+    this.userId = userId;
   }
 
   getSessionId(): string {
-    return this.sessionId
+    return this.sessionId;
   }
 
   getMetrics(): Metric[] {
-    return [...this.metrics]
+    return [...this.metrics];
   }
 
   getErrors(): ErrorReport[] {
-    return [...this.errors]
+    return [...this.errors];
   }
 
   getEvents(): AnalyticsEvent[] {
-    return [...this.events]
+    return [...this.events];
   }
 
   clearData() {
-    this.metrics = []
-    this.errors = []
-    this.events = []
+    this.metrics = [];
+    this.errors = [];
+    this.events = [];
   }
 }
 
@@ -410,6 +413,5 @@ class MonitoringService {
 // SINGLETON INSTANCE
 // ============================================================================
 
-export const monitoringService = new MonitoringService()
-export default monitoringService
-
+export const monitoringService = new MonitoringService();
+export default monitoringService;

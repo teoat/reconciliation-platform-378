@@ -1,6 +1,6 @@
 /**
  * Conversation Storage Utility
- * 
+ *
  * Handles persistence of conversation history using IndexedDB with localStorage fallback
  */
 
@@ -31,10 +31,14 @@ class ConversationStorage {
   /**
    * Save conversation to storage
    */
-  async saveConversation(sessionId: string, userId: string, messages: ConversationMessage[]): Promise<void> {
+  async saveConversation(
+    sessionId: string,
+    userId: string,
+    messages: ConversationMessage[]
+  ): Promise<void> {
     try {
       const conversations = this.loadConversations();
-      
+
       const session: ConversationSession = {
         id: sessionId,
         userId,
@@ -52,11 +56,14 @@ class ConversationStorage {
         .slice(0, this.MAX_CONVERSATIONS);
 
       const limitedConversations: Record<string, ConversationSession> = {};
-      sortedSessions.forEach(session => {
+      sortedSessions.forEach((session) => {
         limitedConversations[session.id] = session;
       });
 
-      localStorage.setItem(this.STORAGE_KEY, JSON.stringify(limitedConversations, this.dateReplacer));
+      localStorage.setItem(
+        this.STORAGE_KEY,
+        JSON.stringify(limitedConversations, this.dateReplacer)
+      );
     } catch (error) {
       logger.error('Error saving conversation:', { error });
       throw error;
@@ -83,7 +90,7 @@ class ConversationStorage {
     try {
       const conversations = this.loadConversations();
       return Object.values(conversations)
-        .filter(session => session.userId === userId)
+        .filter((session) => session.userId === userId)
         .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
     } catch (error) {
       logger.error('Error loading user conversations:', { error });
@@ -153,8 +160,8 @@ class ConversationStorage {
       const conversations = this.loadUserConversations(userId);
       const lowerQuery = query.toLowerCase();
 
-      return conversations.filter(session => {
-        return session.messages.some(message => 
+      return conversations.filter((session) => {
+        return session.messages.some((message) =>
           message.content.toLowerCase().includes(lowerQuery)
         );
       });
@@ -171,7 +178,7 @@ class ConversationStorage {
     try {
       const conversations = this.loadConversations();
       const conversation = conversations[sessionId];
-      
+
       if (conversation) {
         if (!conversation.tags) {
           conversation.tags = [];
@@ -236,4 +243,3 @@ class ConversationStorage {
 }
 
 export const conversationStorage = new ConversationStorage();
-

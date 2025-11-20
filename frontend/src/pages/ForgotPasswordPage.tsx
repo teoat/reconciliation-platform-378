@@ -1,91 +1,94 @@
-import React, { useState } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { useNavigate, useSearchParams } from 'react-router-dom'
-import { Lock, Mail, ArrowLeft, CheckCircle } from 'lucide-react'
-import { AuthApiService } from '../services/api/auth'
-import { useToast } from '../hooks/useToast'
-import { PageMeta } from '../components/seo/PageMeta'
+import React, { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Lock, Mail, ArrowLeft, CheckCircle } from 'lucide-react';
+import { AuthApiService } from '../services/api/auth';
+import { useToast } from '../hooks/useToast';
+import { PageMeta } from '../components/seo/PageMeta';
 
 const requestResetSchema = z.object({
   email: z.string().email('Invalid email address'),
-})
+});
 
-const resetPasswordSchema = z.object({
-  password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number')
-    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
-  confirmPassword: z.string(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-})
+const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+      .regex(/[0-9]/, 'Password must contain at least one number')
+      .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ['confirmPassword'],
+  });
 
-type RequestResetForm = z.infer<typeof requestResetSchema>
-type ResetPasswordForm = z.infer<typeof resetPasswordSchema>
+type RequestResetForm = z.infer<typeof requestResetSchema>;
+type ResetPasswordForm = z.infer<typeof resetPasswordSchema>;
 
 const ForgotPasswordPage: React.FC = () => {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
-  const token = searchParams.get('token')
-  const toast = useToast()
-  const [isLoading, setIsLoading] = useState(false)
-  const [emailSent, setEmailSent] = useState(false)
-  const [resetSuccess, setResetSuccess] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
+  const toast = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const [resetSuccess, setResetSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const requestForm = useForm<RequestResetForm>({
     resolver: zodResolver(requestResetSchema),
-  })
+  });
 
   const resetForm = useForm<ResetPasswordForm>({
     resolver: zodResolver(resetPasswordSchema),
-  })
+  });
 
   const onRequestReset = async (data: RequestResetForm) => {
     try {
-      setIsLoading(true)
-      await AuthApiService.requestPasswordReset(data.email)
-      setEmailSent(true)
-      toast.success('Password reset instructions sent to your email')
+      setIsLoading(true);
+      await AuthApiService.requestPasswordReset(data.email);
+      setEmailSent(true);
+      toast.success('Password reset instructions sent to your email');
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Failed to send reset email'
-      toast.error(errorMsg)
-      requestForm.setError('email', { message: errorMsg })
+      const errorMsg = error instanceof Error ? error.message : 'Failed to send reset email';
+      toast.error(errorMsg);
+      requestForm.setError('email', { message: errorMsg });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const onResetPassword = async (data: ResetPasswordForm) => {
     if (!token) {
-      toast.error('Invalid reset token')
-      return
+      toast.error('Invalid reset token');
+      return;
     }
 
     try {
-      setIsLoading(true)
-      await AuthApiService.confirmPasswordReset(token, data.password)
-      setResetSuccess(true)
-      toast.success('Password reset successfully')
-      
+      setIsLoading(true);
+      await AuthApiService.confirmPasswordReset(token, data.password);
+      setResetSuccess(true);
+      toast.success('Password reset successfully');
+
       // Redirect to login after 3 seconds
       setTimeout(() => {
-        navigate('/login', { replace: true })
-      }, 3000)
+        navigate('/login', { replace: true });
+      }, 3000);
     } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Failed to reset password'
-      toast.error(errorMsg)
-      resetForm.setError('password', { message: errorMsg })
+      const errorMsg = error instanceof Error ? error.message : 'Failed to reset password';
+      toast.error(errorMsg);
+      resetForm.setError('password', { message: errorMsg });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   // If token is provided, show reset password form
   if (token) {
@@ -103,7 +106,8 @@ const ForgotPasswordPage: React.FC = () => {
               </div>
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Password Reset Successful</h1>
               <p className="text-gray-600 mb-6">
-                Your password has been reset successfully. You will be redirected to the login page shortly.
+                Your password has been reset successfully. You will be redirected to the login page
+                shortly.
               </p>
               <button
                 onClick={() => navigate('/login', { replace: true })}
@@ -114,7 +118,7 @@ const ForgotPasswordPage: React.FC = () => {
             </div>
           </main>
         </>
-      )
+      );
     }
 
     return (
@@ -153,7 +157,7 @@ const ForgotPasswordPage: React.FC = () => {
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowPassword(!showPassword)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? (
                       <span className="text-gray-400">👁️</span>
@@ -163,15 +167,21 @@ const ForgotPasswordPage: React.FC = () => {
                   </button>
                 </div>
                 {resetForm.formState.errors.password && (
-                  <p className="mt-1 text-sm text-red-600">{resetForm.formState.errors.password.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {resetForm.formState.errors.password.message}
+                  </p>
                 )}
                 <p className="mt-1 text-xs text-gray-500">
-                  Must be at least 8 characters with uppercase, lowercase, number, and special character
+                  Must be at least 8 characters with uppercase, lowercase, number, and special
+                  character
                 </p>
               </div>
 
               <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-sm font-medium text-gray-700 mb-2"
+                >
                   Confirm Password
                 </label>
                 <div className="relative">
@@ -189,7 +199,9 @@ const ForgotPasswordPage: React.FC = () => {
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                    aria-label={
+                      showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'
+                    }
                   >
                     {showConfirmPassword ? (
                       <span className="text-gray-400">👁️</span>
@@ -199,7 +211,9 @@ const ForgotPasswordPage: React.FC = () => {
                   </button>
                 </div>
                 {resetForm.formState.errors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600">{resetForm.formState.errors.confirmPassword.message}</p>
+                  <p className="mt-1 text-sm text-red-600">
+                    {resetForm.formState.errors.confirmPassword.message}
+                  </p>
                 )}
               </div>
 
@@ -210,7 +224,10 @@ const ForgotPasswordPage: React.FC = () => {
               >
                 {isLoading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" aria-hidden="true"></div>
+                    <div
+                      className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                      aria-hidden="true"
+                    ></div>
                     Resetting Password...
                   </>
                 ) : (
@@ -232,7 +249,7 @@ const ForgotPasswordPage: React.FC = () => {
           </div>
         </main>
       </>
-    )
+    );
   }
 
   // Show request reset form
@@ -250,7 +267,8 @@ const ForgotPasswordPage: React.FC = () => {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Check Your Email</h1>
             <p className="text-gray-600 mb-6">
-              We've sent password reset instructions to your email address. Please check your inbox and follow the link to reset your password.
+              We've sent password reset instructions to your email address. Please check your inbox
+              and follow the link to reset your password.
             </p>
             <p className="text-sm text-gray-500 mb-6">
               Didn't receive the email? Check your spam folder or try again.
@@ -272,7 +290,7 @@ const ForgotPasswordPage: React.FC = () => {
           </div>
         </main>
       </>
-    )
+    );
   }
 
   return (
@@ -311,7 +329,9 @@ const ForgotPasswordPage: React.FC = () => {
                 />
               </div>
               {requestForm.formState.errors.email && (
-                <p className="mt-1 text-sm text-red-600">{requestForm.formState.errors.email.message}</p>
+                <p className="mt-1 text-sm text-red-600">
+                  {requestForm.formState.errors.email.message}
+                </p>
               )}
             </div>
 
@@ -322,7 +342,10 @@ const ForgotPasswordPage: React.FC = () => {
             >
               {isLoading ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" aria-hidden="true"></div>
+                  <div
+                    className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"
+                    aria-hidden="true"
+                  ></div>
                   Sending...
                 </>
               ) : (
@@ -344,8 +367,7 @@ const ForgotPasswordPage: React.FC = () => {
         </div>
       </main>
     </>
-  )
-}
+  );
+};
 
-export default ForgotPasswordPage
-
+export default ForgotPasswordPage;

@@ -15,7 +15,9 @@ export interface ApiError {
   status?: number;
 }
 
-export const handleApiError = (error: Error | unknown | { response?: { data?: { message?: string } }; message?: string }): string => {
+export const handleApiError = (
+  error: Error | unknown | { response?: { data?: { message?: string } }; message?: string }
+): string => {
   if (error?.response?.data?.message) {
     return error.response.data.message;
   }
@@ -46,23 +48,26 @@ export const createGetThunk = <TData = unknown>(
 ) => {
   const { requiresAuth = true, cache = true, transformResponse } = options;
 
-  return createAsyncThunk(actionType, async (params?: Record<string, unknown>, { rejectWithValue }) => {
-    try {
-      const url = typeof endpoint === 'function' ? endpoint(params) : endpoint;
-      const config = requiresAuth ? {} : { skipAuth: true };
+  return createAsyncThunk(
+    actionType,
+    async (params?: Record<string, unknown>, { rejectWithValue }) => {
+      try {
+        const url = typeof endpoint === 'function' ? endpoint(params) : endpoint;
+        const config = requiresAuth ? {} : { skipAuth: true };
 
-      const response = await apiClient.get(url, params);
+        const response = await apiClient.get(url, params);
 
-      if (response.error) {
-        return rejectWithValue(handleApiError(response.error));
+        if (response.error) {
+          return rejectWithValue(handleApiError(response.error));
+        }
+
+        const data = transformResponse ? transformResponse(response.data) : response.data;
+        return data;
+      } catch (error) {
+        return rejectWithValue(handleApiError(error));
       }
-
-      const data = transformResponse ? transformResponse(response.data) : response.data;
-      return data;
-    } catch (error) {
-      return rejectWithValue(handleApiError(error));
     }
-  });
+  );
 };
 
 /**
@@ -219,7 +224,11 @@ export const createFileUploadThunk = (
   return createAsyncThunk(
     actionType,
     async (
-      { projectId, file, metadata }: { projectId: string; file: File; metadata?: Record<string, unknown> },
+      {
+        projectId,
+        file,
+        metadata,
+      }: { projectId: string; file: File; metadata?: Record<string, unknown> },
       { rejectWithValue }
     ) => {
       try {

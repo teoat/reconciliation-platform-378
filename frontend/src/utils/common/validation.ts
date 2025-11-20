@@ -12,10 +12,10 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Validates an email address format.
- * 
+ *
  * @param email - Email address to validate
  * @returns True if email is valid, false otherwise
- * 
+ *
  * @example
  * ```typescript
  * validateEmail('user@example.com'); // Returns: true
@@ -31,7 +31,7 @@ export function validateEmail(email: string): boolean {
 
 /**
  * Email validation schema using Zod.
- * 
+ *
  * @example
  * ```typescript
  * const result = emailSchema.safeParse('user@example.com');
@@ -53,7 +53,7 @@ export const emailSchema = z
  * - At least one lowercase letter
  * - At least one number
  * - At least one special character
- * 
+ *
  * @example
  * ```typescript
  * const result = passwordSchema.safeParse('MyP@ssw0rd');
@@ -72,10 +72,10 @@ export const passwordSchema = z
 
 /**
  * Validates a password against the password schema.
- * 
+ *
  * @param password - Password to validate
  * @returns Validation result with isValid flag and error messages
- * 
+ *
  * @example
  * ```typescript
  * const result = validatePassword('weak');
@@ -105,19 +105,17 @@ export function validatePassword(password: string): {
 
 /**
  * Calculates password strength based on various criteria.
- * 
+ *
  * @param password - Password to evaluate
  * @returns Password strength: 'weak', 'medium', or 'strong'
- * 
+ *
  * @example
  * ```typescript
  * getPasswordStrength('MyP@ssw0rd'); // Returns: 'strong'
  * getPasswordStrength('password'); // Returns: 'weak'
  * ```
  */
-export function getPasswordStrength(
-  password: string
-): 'weak' | 'medium' | 'strong' {
+export function getPasswordStrength(password: string): 'weak' | 'medium' | 'strong' {
   let score = 0;
 
   if (password.length >= 8) score++;
@@ -134,10 +132,10 @@ export function getPasswordStrength(
 
 /**
  * Gets password validation feedback with individual checks.
- * 
+ *
  * @param password - Password to evaluate
  * @returns Object with checks array and strength indicator
- * 
+ *
  * @example
  * ```typescript
  * const feedback = getPasswordFeedback('MyP@ssw0rd');
@@ -193,11 +191,11 @@ export interface FileValidationOptions {
 
 /**
  * Validates a file against specified criteria.
- * 
+ *
  * @param file - File to validate
  * @param options - Validation options
  * @returns Validation result with valid flag and optional error message
- * 
+ *
  * @example
  * ```typescript
  * const result = validateFile(file, {
@@ -238,9 +236,7 @@ export function validateFile(
   // Check file extension
   if (allowedExtensions.length > 0) {
     const fileName = file.name.toLowerCase();
-    const hasValidExtension = allowedExtensions.some((ext) =>
-      fileName.endsWith(ext.toLowerCase())
-    );
+    const hasValidExtension = allowedExtensions.some((ext) => fileName.endsWith(ext.toLowerCase()));
     if (!hasValidExtension) {
       return {
         valid: false,
@@ -265,11 +261,11 @@ export function validateFile(
 
 /**
  * Validates file type against allowed extensions.
- * 
+ *
  * @param file - File to validate
  * @param allowedTypes - Array of allowed file extensions (e.g., ['.csv', '.xlsx'])
  * @returns True if file type is allowed
- * 
+ *
  * @example
  * ```typescript
  * validateFileType(file, ['.csv', '.xlsx', '.xls', '.json']); // Returns: true/false
@@ -285,27 +281,24 @@ export function validateFileType(
 
 /**
  * Validates file size against maximum size.
- * 
+ *
  * @param file - File to validate
  * @param maxSizeMB - Maximum file size in megabytes (default: 50MB)
  * @returns True if file size is within limit
- * 
+ *
  * @example
  * ```typescript
  * validateFileSize(file, 50); // Returns: true/false
  * ```
  */
-export function validateFileSize(
-  file: File,
-  maxSizeMB: number = 50
-): boolean {
+export function validateFileSize(file: File, maxSizeMB: number = 50): boolean {
   const maxSizeBytes = maxSizeMB * 1024 * 1024;
   return file.size <= maxSizeBytes;
 }
 
 /**
  * Name validation schema using Zod.
- * 
+ *
  * @example
  * ```typescript
  * const result = nameSchema.safeParse('John Doe');
@@ -321,23 +314,21 @@ export const nameSchema = z
 
 /**
  * Text validation schema using Zod.
- * 
+ *
  * @example
  * ```typescript
  * const result = textSchema.safeParse('Some text content');
  * ```
  */
-export const textSchema = z
-  .string()
-  .max(5000, { message: 'Text too long' });
+export const textSchema = z.string().max(5000, { message: 'Text too long' });
 
 /**
  * Generic form input validation using Zod schema.
- * 
+ *
  * @param schema - Zod schema to validate against
  * @param input - Input data to validate
  * @returns Validation result with success flag, data, or errors
- * 
+ *
  * @example
  * ```typescript
  * const result = validateFormInput(emailSchema, 'user@example.com');
@@ -360,4 +351,3 @@ export function validateFormInput<T extends z.ZodTypeAny>(
 
   return { success: false, errors: result.error };
 }
-

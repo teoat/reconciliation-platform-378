@@ -36,7 +36,7 @@ export const ErrorHandlingExample: React.FC = () => {
   const handleApiCall = async () => {
     try {
       const response = await fetch('/api/data');
-      
+
       if (!response.ok) {
         // Extract error from response
         const errorData = await response.json().catch(() => ({ message: 'Request failed' }));
@@ -50,38 +50,31 @@ export const ErrorHandlingExample: React.FC = () => {
           },
           new Error('API request failed')
         );
-        
+
         // Set error with extracted information
-        actions.setError(
-          extracted.error,
-          extracted.errorCode,
-          extracted.correlationId
-        );
-        
+        actions.setError(extracted.error, extracted.errorCode, extracted.correlationId);
+
         // Update service status on failure
         if (response.status >= 500) {
           setServiceStatus('open');
         }
-        
+
         return;
       }
 
       const data = await response.json();
       logger.info('Success:', data);
-      
+
       // Cache data for fallback
       setCachedData(data);
-      
+
       // Clear error on success
       actions.clearError();
       setServiceStatus('closed');
     } catch (error) {
       // Extract error from exception
-      const extracted = extractErrorFromApiResponse(
-        error,
-        new Error('Network error occurred')
-      );
-      
+      const extracted = extractErrorFromApiResponse(error, new Error('Network error occurred'));
+
       // Set error with extracted information
       actions.setError(extracted.error, extracted.errorCode, extracted.correlationId);
       setServiceStatus('open');
@@ -138,9 +131,7 @@ export const ErrorHandlingExample: React.FC = () => {
         >
           <div className="p-4 bg-gray-50 rounded">
             <h4 className="font-semibold mb-2">Cached Data</h4>
-            <pre className="text-xs overflow-auto">
-              {JSON.stringify(cachedData, null, 2)}
-            </pre>
+            <pre className="text-xs overflow-auto">{JSON.stringify(cachedData, null, 2)}</pre>
           </div>
         </FallbackContent>
       )}
@@ -229,4 +220,3 @@ export const ErrorHandlingExample: React.FC = () => {
 };
 
 export default ErrorHandlingExample;
-

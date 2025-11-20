@@ -148,7 +148,8 @@ export function getSummaryGuidanceContent(topic: string): GuidanceContent[] {
       {
         id: 'report-types',
         title: 'Report Types',
-        content: 'Generate summary reports, detailed reports, or custom reports based on your needs.',
+        content:
+          'Generate summary reports, detailed reports, or custom reports based on your needs.',
         type: 'info',
       },
       {
@@ -162,17 +163,19 @@ export function getSummaryGuidanceContent(topic: string): GuidanceContent[] {
       {
         id: 'export-formats',
         title: 'Export Formats',
-        content: 'Export to CSV for data analysis, Excel for spreadsheets, or PDF for presentations.',
+        content:
+          'Export to CSV for data analysis, Excel for spreadsheets, or PDF for presentations.',
         type: 'info',
       },
       {
         id: 'export-tips',
         title: 'Export Tips',
-        content: 'Filter and sort data before exporting for best results. Large exports may take time.',
+        content:
+          'Filter and sort data before exporting for best results. Large exports may take time.',
         type: 'tip',
       },
     ],
-    'analytics': [
+    analytics: [
       {
         id: 'analytics-overview',
         title: 'Analytics Overview',
@@ -182,7 +185,8 @@ export function getSummaryGuidanceContent(topic: string): GuidanceContent[] {
       {
         id: 'analytics-features',
         title: 'Analytics Features',
-        content: 'Explore interactive charts, filters, and drill-down capabilities for deeper insights.',
+        content:
+          'Explore interactive charts, filters, and drill-down capabilities for deeper insights.',
         type: 'tip',
       },
     ],
@@ -196,7 +200,8 @@ export function getSummaryGuidanceContent(topic: string): GuidanceContent[] {
       {
         id: 'visualization-tips',
         title: 'Visualization Tips',
-        content: 'Choose appropriate chart types based on your data. Use filters to focus on specific insights.',
+        content:
+          'Choose appropriate chart types based on your data. Use filters to focus on specific insights.',
         type: 'tip',
       },
     ],
@@ -204,4 +209,3 @@ export function getSummaryGuidanceContent(topic: string): GuidanceContent[] {
 
   return guidanceMap[topic] || [];
 }
-

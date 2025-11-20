@@ -57,9 +57,12 @@ class PerformanceMonitoringService {
     try {
       const observer = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        const lastEntry = entries[entries.length - 1] as PerformanceEntry & { renderTime?: number; loadTime?: number };
+        const lastEntry = entries[entries.length - 1] as PerformanceEntry & {
+          renderTime?: number;
+          loadTime?: number;
+        };
         const lcp = lastEntry.renderTime || lastEntry.loadTime || 0;
-        
+
         this.recordMetric({
           name: 'LCP',
           value: lcp,
@@ -91,7 +94,7 @@ class PerformanceMonitoringService {
           // FID entries have processingStart property
           const fidEntry = entry as PerformanceEntry & { processingStart?: number };
           const fid = (fidEntry.processingStart ?? fidEntry.startTime) - entry.startTime;
-          
+
           this.recordMetric({
             name: 'FID',
             value: fid,
@@ -123,7 +126,10 @@ class PerformanceMonitoringService {
 
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          const layoutShiftEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+          const layoutShiftEntry = entry as PerformanceEntry & {
+            hadRecentInput?: boolean;
+            value?: number;
+          };
           if (!layoutShiftEntry.hadRecentInput) {
             clsValue += layoutShiftEntry.value ?? 0;
           }
@@ -159,7 +165,7 @@ class PerformanceMonitoringService {
         for (const entry of list.getEntries()) {
           if (entry.name === 'first-contentful-paint') {
             const fcp = entry.startTime;
-            
+
             this.recordMetric({
               name: 'FCP',
               value: fcp,
@@ -223,7 +229,7 @@ class PerformanceMonitoringService {
       const observer = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
           const duration = entry.duration;
-          
+
           // Log long tasks (> 50ms)
           if (duration > 50) {
             logger.warn(`Long task detected: ${duration.toFixed(2)}ms`);
@@ -264,10 +270,10 @@ class PerformanceMonitoringService {
    * Get Core Web Vitals
    */
   getCoreWebVitals(): CoreWebVitals {
-    const lcp = this.metrics.find(m => m.name === 'LCP');
-    const fid = this.metrics.find(m => m.name === 'FID');
-    const cls = this.metrics.find(m => m.name === 'CLS');
-    const fcp = this.metrics.find(m => m.name === 'FCP');
+    const lcp = this.metrics.find((m) => m.name === 'LCP');
+    const fid = this.metrics.find((m) => m.name === 'FID');
+    const cls = this.metrics.find((m) => m.name === 'CLS');
+    const fcp = this.metrics.find((m) => m.name === 'FCP');
 
     return {
       lcp: lcp?.value,
@@ -312,7 +318,7 @@ class PerformanceMonitoringService {
    * Get metrics by name
    */
   getMetricsByName(name: string): PerformanceMetric[] {
-    return this.metrics.filter(m => m.name === name);
+    return this.metrics.filter((m) => m.name === name);
   }
 
   /**
@@ -326,7 +332,7 @@ class PerformanceMonitoringService {
    * Disconnect all observers
    */
   disconnect(): void {
-    this.observers.forEach(observer => observer.disconnect());
+    this.observers.forEach((observer) => observer.disconnect());
     this.observers = [];
   }
 
@@ -350,4 +356,3 @@ export const performanceMonitoring = new PerformanceMonitoringService();
 if (typeof window !== 'undefined') {
   performanceMonitoring.init();
 }
-

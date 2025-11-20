@@ -1,60 +1,60 @@
 // Subscription Service - Frontend interface for billing
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 // Manages subscription tiers and payment flows
 
-import { apiClient } from './apiClient'
+import { apiClient } from './apiClient';
 
 export enum SubscriptionTier {
   FREE = 'free',
   STARTER = 'starter',
   PROFESSIONAL = 'professional',
-  ENTERPRISE = 'enterprise'
+  ENTERPRISE = 'enterprise',
 }
 
 export interface Subscription {
-  id: string
-  userId: string
-  tier: SubscriptionTier
-  status: 'active' | 'cancelled' | 'past_due' | 'trialing'
-  billingCycle: 'monthly' | 'yearly'
-  startsAt: Date
-  endsAt?: Date
-  cancelAtPeriodEnd: boolean
+  id: string;
+  userId: string;
+  tier: SubscriptionTier;
+  status: 'active' | 'cancelled' | 'past_due' | 'trialing';
+  billingCycle: 'monthly' | 'yearly';
+  startsAt: Date;
+  endsAt?: Date;
+  cancelAtPeriodEnd: boolean;
 }
 
 export interface UsageMetrics {
-  reconciliationCount: number
-  reconciliationLimit?: number
-  storageBytes: number
-  storageLimitBytes: number
-  projectCount: number
-  projectLimit?: number
+  reconciliationCount: number;
+  reconciliationLimit?: number;
+  storageBytes: number;
+  storageLimitBytes: number;
+  projectCount: number;
+  projectLimit?: number;
 }
 
 export interface BillingInfo {
-  customerId: string
-  email: string
+  customerId: string;
+  email: string;
   paymentMethod: {
-    last4: string
-    brand: string
-    expMonth: number
-    expYear: number
-  }
+    last4: string;
+    brand: string;
+    expMonth: number;
+    expYear: number;
+  };
   address?: {
-    line1: string
-    line2?: string
-    city: string
-    state: string
-    postalCode: string
-    country: string
-  }
+    line1: string;
+    line2?: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    country: string;
+  };
 }
 
 const TIER_FEATURES = {
   [SubscriptionTier.FREE]: {
     name: 'Free',
     price: { monthly: 0, yearly: 0 },
-    features: ['1 Project', '10 Reconciliations/month', '1 GB Storage', 'Basic Support']
+    features: ['1 Project', '10 Reconciliations/month', '1 GB Storage', 'Basic Support'],
   },
   [SubscriptionTier.STARTER]: {
     name: 'Starter',
@@ -64,8 +64,8 @@ const TIER_FEATURES = {
       '100 Reconciliations/month',
       '10 GB Storage',
       'Email Support',
-      'Basic Analytics'
-    ]
+      'Basic Analytics',
+    ],
   },
   [SubscriptionTier.PROFESSIONAL]: {
     name: 'Professional',
@@ -77,8 +77,8 @@ const TIER_FEATURES = {
       'Priority Support',
       'Advanced Analytics',
       'API Access',
-      'Custom Integrations'
-    ]
+      'Custom Integrations',
+    ],
   },
   [SubscriptionTier.ENTERPRISE]: {
     name: 'Enterprise',
@@ -91,145 +91,149 @@ const TIER_FEATURES = {
       'Advanced Analytics',
       'API Access',
       'Custom Integrations',
-      '99.9% SLA'
-    ]
-  }
-}
+      '99.9% SLA',
+    ],
+  },
+};
 
 /**
  * Subscription Service
  * Handles subscription management and billing
  */
 export class SubscriptionService {
-  private subscription: Subscription | null = null
-  private usageMetrics: UsageMetrics | null = null
-  private listeners: Set<(subscription: Subscription | null) => void> = new Set()
+  private subscription: Subscription | null = null;
+  private usageMetrics: UsageMetrics | null = null;
+  private listeners: Set<(subscription: Subscription | null) => void> = new Set();
 
   /**
    * Load current subscription
    */
   async loadSubscription(): Promise<Subscription | null> {
     try {
-      const response = await apiClient.get('/subscriptions/current')
+      const response = await apiClient.get('/subscriptions/current');
       if (response.success && response.data) {
-        this.subscription = response.data
-        this.notifyListeners()
-        return this.subscription
+        this.subscription = response.data;
+        this.notifyListeners();
+        return this.subscription;
       }
     } catch (error) {
-      logger.error('Failed to load subscription:', error)
+      logger.error('Failed to load subscription:', error);
     }
-    return null
+    return null;
   }
 
   /**
    * Get current subscription
    */
   getCurrentSubscription(): Subscription | null {
-    return this.subscription
+    return this.subscription;
   }
 
   /**
    * Check if user has active subscription
    */
   hasActiveSubscription(): boolean {
-    return this.subscription !== null && this.subscription.status === 'active'
+    return this.subscription !== null && this.subscription.status === 'active';
   }
 
   /**
    * Get tier features
    */
   getTierFeatures(tier: SubscriptionTier) {
-    return TIER_FEATURES[tier]
+    return TIER_FEATURES[tier];
   }
 
   /**
    * Create checkout session for subscription upgrade
    */
-  async createCheckoutSession(tier: SubscriptionTier, billingCycle: 'monthly' | 'yearly'): Promise<string> {
+  async createCheckoutSession(
+    tier: SubscriptionTier,
+    billingCycle: 'monthly' | 'yearly'
+  ): Promise<string> {
     const response = await apiClient.post('/billing/checkout', {
       tier,
-      billingCycle
-    })
+      billingCycle,
+    });
 
     if (response.success && response.data) {
-      return response.data.url
+      return response.data.url;
     }
-    
-    throw new Error('Failed to create checkout session')
+
+    throw new Error('Failed to create checkout session');
   }
 
   /**
    * Cancel subscription
    */
   async cancelSubscription(immediately: boolean = false): Promise<void> {
-    if (!this.subscription) throw new Error('No active subscription')
-    
-    await apiClient.post(`/subscriptions/${this.subscription.id}/cancel`, {
-      immediately
-    })
+    if (!this.subscription) throw new Error('No active subscription');
 
-    this.subscription = null
-    this.notifyListeners()
+    await apiClient.post(`/subscriptions/${this.subscription.id}/cancel`, {
+      immediately,
+    });
+
+    this.subscription = null;
+    this.notifyListeners();
   }
 
   /**
    * Load usage metrics
    */
   async loadUsageMetrics(): Promise<UsageMetrics> {
-    const response = await apiClient.get('/subscriptions/usage')
-    
+    const response = await apiClient.get('/subscriptions/usage');
+
     if (response.success && response.data) {
-      this.usageMetrics = response.data
-      return this.usageMetrics
+      this.usageMetrics = response.data;
+      return this.usageMetrics;
     }
-    
-    throw new Error('Failed to load usage metrics')
+
+    throw new Error('Failed to load usage metrics');
   }
 
   /**
    * Get usage metrics
    */
   getUsageMetrics(): UsageMetrics | null {
-    return this.usageMetrics
+    return this.usageMetrics;
   }
 
   /**
    * Check if usage is within limits
    */
   isWithinLimits(): boolean {
-    if (!this.usageMetrics) return true
-    
-    const reconciliationOk = !this.usageMetrics.reconciliationLimit || 
-      this.usageMetrics.reconciliationCount <= this.usageMetrics.reconciliationLimit
-    
-    const storageOk = this.usageMetrics.storageBytes <= this.usageMetrics.storageLimitBytes
-    
-    const projectOk = !this.usageMetrics.projectLimit ||
-      this.usageMetrics.projectCount <= this.usageMetrics.projectLimit
-    
-    return reconciliationOk && storageOk && projectOk
+    if (!this.usageMetrics) return true;
+
+    const reconciliationOk =
+      !this.usageMetrics.reconciliationLimit ||
+      this.usageMetrics.reconciliationCount <= this.usageMetrics.reconciliationLimit;
+
+    const storageOk = this.usageMetrics.storageBytes <= this.usageMetrics.storageLimitBytes;
+
+    const projectOk =
+      !this.usageMetrics.projectLimit ||
+      this.usageMetrics.projectCount <= this.usageMetrics.projectLimit;
+
+    return reconciliationOk && storageOk && projectOk;
   }
 
   /**
    * Subscribe to subscription updates
    */
   subscribe(callback: (subscription: Subscription | null) => void): () => void {
-    this.listeners.add(callback)
-    return () => this.listeners.delete(callback)
+    this.listeners.add(callback);
+    return () => this.listeners.delete(callback);
   }
 
   private notifyListeners() {
-    this.listeners.forEach(listener => {
+    this.listeners.forEach((listener) => {
       try {
-        listener(this.subscription)
+        listener(this.subscription);
       } catch (error) {
-        logger.error('Error notifying listener:', error)
+        logger.error('Error notifying listener:', error);
       }
-    })
+    });
   }
 }
 
 // Export singleton instance
-export const subscriptionService = new SubscriptionService()
-
+export const subscriptionService = new SubscriptionService();

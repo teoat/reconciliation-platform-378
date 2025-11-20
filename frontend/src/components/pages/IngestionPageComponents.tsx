@@ -120,7 +120,10 @@ export const UploadStatistics: React.FC<{
       <Card>
         <div className="p-4">
           <p className="text-sm text-gray-600 mb-1">Total Files</p>
-          <p className="text-2xl font-semibold text-gray-900" aria-label={`Total files: ${totalFiles}`}>
+          <p
+            className="text-2xl font-semibold text-gray-900"
+            aria-label={`Total files: ${totalFiles}`}
+          >
             {totalFiles}
           </p>
         </div>
@@ -128,7 +131,10 @@ export const UploadStatistics: React.FC<{
       <Card>
         <div className="p-4">
           <p className="text-sm text-gray-600 mb-1">Processed</p>
-          <p className="text-2xl font-semibold text-green-600" aria-label={`Processed files: ${processedFiles}`}>
+          <p
+            className="text-2xl font-semibold text-green-600"
+            aria-label={`Processed files: ${processedFiles}`}
+          >
             {processedFiles}
           </p>
         </div>
@@ -136,7 +142,10 @@ export const UploadStatistics: React.FC<{
       <Card>
         <div className="p-4">
           <p className="text-sm text-gray-600 mb-1">Total Size</p>
-          <p className="text-2xl font-semibold text-gray-900" aria-label={`Total size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`}>
+          <p
+            className="text-2xl font-semibold text-gray-900"
+            aria-label={`Total size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`}
+          >
             {(totalSize / 1024 / 1024).toFixed(2)} MB
           </p>
         </div>
@@ -144,4 +153,3 @@ export const UploadStatistics: React.FC<{
     </div>
   );
 };
-

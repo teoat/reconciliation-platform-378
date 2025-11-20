@@ -2,20 +2,20 @@
 import { logger } from '@/services/logger';
 
 import { useState, useEffect, useCallback } from 'react';
-import { 
-  FileText, 
-  Plus, 
-  Trash2, 
-  Download, 
-  Share, 
-  Filter, 
-  BarChart3, 
-  PieChart, 
-  TrendingUp, 
-  Save, 
-  Eye, 
-  Settings, 
-  X 
+import {
+  FileText,
+  Plus,
+  Trash2,
+  Download,
+  Share,
+  Filter,
+  BarChart3,
+  PieChart,
+  TrendingUp,
+  Save,
+  Eye,
+  Settings,
+  X,
 } from 'lucide-react';
 import { useData } from './DataProvider';
 import type { BackendProject } from '../services/apiClient/types';
@@ -308,7 +308,7 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
         return report.filters.every((filter) => {
           const recordValue = (record as unknown as Record<string, unknown>)[filter.field];
           const filterValue = filter.value;
-          
+
           switch (filter.operator) {
             case 'equals':
               return recordValue === filterValue;
@@ -321,14 +321,14 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
             case 'between':
               if (Array.isArray(filterValue) && filterValue.length >= 2) {
                 return (
-                  Number(recordValue) >= Number(filterValue[0]) && 
+                  Number(recordValue) >= Number(filterValue[0]) &&
                   Number(recordValue) <= Number(filterValue[1])
                 );
               }
               return false;
             case 'in':
-              return Array.isArray(filterValue) && typeof recordValue !== 'undefined' 
-                ? filterValue.some(val => {
+              return Array.isArray(filterValue) && typeof recordValue !== 'undefined'
+                ? filterValue.some((val) => {
                     const valStr = String(val);
                     const recordStr = String(recordValue);
                     return val === recordValue || valStr === recordStr;
@@ -349,14 +349,13 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
             break;
           case 'sum':
             if (metric.field) {
-              metricsData[metric.id] = data.reduce(
-                (sum: number, record: unknown) => {
-                  const recordObj = record as Record<string, unknown>;
-                  const fieldValue = recordObj?.[metric.field!];
-                  return sum + (typeof fieldValue === 'number' ? fieldValue : Number(fieldValue) || 0);
-                },
-                0
-              );
+              metricsData[metric.id] = data.reduce((sum: number, record: unknown) => {
+                const recordObj = record as Record<string, unknown>;
+                const fieldValue = recordObj?.[metric.field!];
+                return (
+                  sum + (typeof fieldValue === 'number' ? fieldValue : Number(fieldValue) || 0)
+                );
+              }, 0);
             }
             break;
           case 'average': {
@@ -592,7 +591,10 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
 
             <div className="mt-4 pt-4 border-t border-secondary-200">
               <div className="flex items-center justify-between text-xs text-secondary-500">
-                <span>Updated: {report.updatedAt ? new Date(report.updatedAt).toLocaleDateString() : 'N/A'}</span>
+                <span>
+                  Updated:{' '}
+                  {report.updatedAt ? new Date(report.updatedAt).toLocaleDateString() : 'N/A'}
+                </span>
                 {report.schedule && (
                   <span className="text-primary-600">{report.schedule.frequency} report</span>
                 )}

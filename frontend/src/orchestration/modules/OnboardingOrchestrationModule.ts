@@ -1,6 +1,6 @@
 /**
  * Onboarding Orchestration Module
- * 
+ *
  * Unified onboarding experience across all pages with Frenly AI guidance
  */
 
@@ -268,14 +268,17 @@ export class OnboardingProgressSync {
  * Onboarding Analytics
  */
 export class OnboardingAnalytics {
-  private analytics: Map<string, {
-    pageId: string;
-    stepCompletions: Map<string, number>;
-    stepSkips: Map<string, number>;
-    averageTimePerStep: Map<string, number>;
-    totalTime: number;
-    startedAt: number;
-  }> = new Map();
+  private analytics: Map<
+    string,
+    {
+      pageId: string;
+      stepCompletions: Map<string, number>;
+      stepSkips: Map<string, number>;
+      averageTimePerStep: Map<string, number>;
+      totalTime: number;
+      startedAt: number;
+    }
+  > = new Map();
 
   /**
    * Track step completion
@@ -374,4 +377,3 @@ export function getOnboardingAnalytics(): OnboardingAnalytics {
   }
   return analyticsInstance;
 }
-

@@ -3,11 +3,7 @@
  */
 
 import { logger } from '@/services/logger';
-import type {
-  PageOrchestrationInterface,
-  PageEvent,
-  PageContext,
-} from './types';
+import type { PageOrchestrationInterface, PageEvent, PageContext } from './types';
 import { PageFrenlyIntegration } from './PageFrenlyIntegration';
 
 export class PageLifecycleManager {
@@ -76,8 +72,7 @@ export class PageLifecycleManager {
 
       // Generate contextual message if needed
       if (this.shouldGenerateMessage(changes)) {
-        const message =
-          await this.frenlyIntegration.generateContextualMessage();
+        const message = await this.frenlyIntegration.generateContextualMessage();
         await this.frenlyIntegration.showMessage(message);
       }
 
@@ -166,10 +161,7 @@ export class PageLifecycleManager {
   /**
    * Track feature error
    */
-  async trackFeatureError(
-    featureId: string,
-    error: Error
-  ): Promise<void> {
+  async trackFeatureError(featureId: string, error: Error): Promise<void> {
     try {
       if (this.frenlyIntegration) {
         await this.frenlyIntegration.handlePageEvents([
@@ -254,17 +246,9 @@ export class PageLifecycleManager {
   /**
    * Check if message should be generated
    */
-  private shouldGenerateMessage(
-    changes: Partial<PageContext>
-  ): boolean {
+  private shouldGenerateMessage(changes: Partial<PageContext>): boolean {
     // Generate message for significant changes
-    const significantKeys = [
-      'currentStep',
-      'completedSteps',
-      'workflowState',
-      'error',
-      'progress',
-    ];
+    const significantKeys = ['currentStep', 'completedSteps', 'workflowState', 'error', 'progress'];
     return significantKeys.some((key) => key in changes);
   }
 
@@ -301,5 +285,3 @@ export function getPageLifecycleManager(): PageLifecycleManager {
   }
   return lifecycleManagerInstance;
 }
-
-

@@ -172,7 +172,8 @@ export class BehaviorAnalyzer {
    * Assess usage frequency
    */
   private assessUsageFrequency(behavior: UserBehavior): 'low' | 'medium' | 'high' {
-    const actionsPerMinute = behavior.actionsPerformed / Math.max(behavior.sessionDuration / 60000, 1);
+    const actionsPerMinute =
+      behavior.actionsPerformed / Math.max(behavior.sessionDuration / 60000, 1);
 
     if (actionsPerMinute < 1) return 'low';
     if (actionsPerMinute > 5) return 'high';
@@ -213,7 +214,9 @@ export class PersonalizationEngine {
   /**
    * Get communication style based on patterns
    */
-  private getCommunicationStyle(patterns: BehaviorPattern): 'brief' | 'detailed' | 'conversational' {
+  private getCommunicationStyle(
+    patterns: BehaviorPattern
+  ): 'brief' | 'detailed' | 'conversational' {
     if (patterns.skillLevel === 'advanced') return 'brief';
     if (patterns.skillLevel === 'beginner') return 'detailed';
     return 'conversational';
@@ -246,4 +249,3 @@ export function getPersonalizationEngine(): PersonalizationEngine {
   }
   return personalizationEngineInstance;
 }
-

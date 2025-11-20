@@ -1,15 +1,15 @@
 // Simplified Touch Targets Component
 // Reduced from 708 lines to ~100 lines by focusing on essential functionality
 
-import React from 'react'
-import { uiService } from '../services/uiService'
+import React from 'react';
+import { uiService } from '../services/uiService';
 
 export interface TouchTargetProps {
-  children: React.ReactNode
-  size?: 'sm' | 'md' | 'lg' | 'xl'
-  disabled?: boolean
-  onClick?: () => void
-  className?: string
+  children: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  disabled?: boolean;
+  onClick?: () => void;
+  className?: string;
 }
 
 export const TouchTarget: React.FC<TouchTargetProps> = ({
@@ -17,34 +17,34 @@ export const TouchTarget: React.FC<TouchTargetProps> = ({
   size = 'md',
   disabled = false,
   onClick,
-  className = ''
+  className = '',
 }) => {
   const getSizeClasses = () => {
     const sizes = {
       sm: 'min-h-8 min-w-8 p-2',
       md: 'min-h-10 min-w-10 p-3',
       lg: 'min-h-12 min-w-12 p-4',
-      xl: 'min-h-14 min-w-14 p-5'
-    }
-    return sizes[size]
-  }
+      xl: 'min-h-14 min-w-14 p-5',
+    };
+    return sizes[size];
+  };
 
   const getDisabledClasses = () => {
-    return disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50'
-  }
+    return disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-gray-50';
+  };
 
   const handleClick = () => {
     if (!disabled && onClick) {
-      onClick()
+      onClick();
     }
-  }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      handleClick()
+      e.preventDefault();
+      handleClick();
     }
-  }
+  };
 
   return (
     <div
@@ -63,18 +63,18 @@ export const TouchTarget: React.FC<TouchTargetProps> = ({
     >
       {children}
     </div>
-  )
-}
+  );
+};
 
 // Simplified Touch Button Component
 export interface TouchButtonProps {
-  children: React.ReactNode
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost'
-  size?: 'sm' | 'md' | 'lg' | 'xl'
-  disabled?: boolean
-  loading?: boolean
-  onClick?: () => void
-  className?: string
+  children: React.ReactNode;
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  disabled?: boolean;
+  loading?: boolean;
+  onClick?: () => void;
+  className?: string;
 }
 
 export const TouchButton: React.FC<TouchButtonProps> = ({
@@ -84,37 +84,37 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
   disabled = false,
   loading = false,
   onClick,
-  className = ''
+  className = '',
 }) => {
   const getVariantClasses = () => {
     const variants = {
       primary: 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500',
       secondary: 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-gray-500',
       outline: 'border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-blue-500',
-      ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-blue-500'
-    }
-    return variants[variant]
-  }
+      ghost: 'text-gray-700 hover:bg-gray-100 focus:ring-blue-500',
+    };
+    return variants[variant];
+  };
 
   const getSizeClasses = () => {
     const sizes = {
       sm: 'min-h-8 px-3 py-2 text-sm',
       md: 'min-h-10 px-4 py-3 text-sm',
       lg: 'min-h-12 px-6 py-4 text-base',
-      xl: 'min-h-14 px-8 py-5 text-lg'
-    }
-    return sizes[size]
-  }
+      xl: 'min-h-14 px-8 py-5 text-lg',
+    };
+    return sizes[size];
+  };
 
   const getDisabledClasses = () => {
-    return disabled || loading ? 'opacity-50 cursor-not-allowed' : ''
-  }
+    return disabled || loading ? 'opacity-50 cursor-not-allowed' : '';
+  };
 
   const handleClick = () => {
     if (!disabled && !loading && onClick) {
-      onClick()
+      onClick();
     }
-  }
+  };
 
   return (
     <button
@@ -134,17 +134,17 @@ export const TouchButton: React.FC<TouchButtonProps> = ({
       )}
       {children}
     </button>
-  )
-}
+  );
+};
 
 // Simplified Touch Input Component
 export interface TouchInputProps {
-  value: string
-  onChange: (value: string) => void
-  placeholder?: string
-  size?: 'sm' | 'md' | 'lg' | 'xl'
-  disabled?: boolean
-  className?: string
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  disabled?: boolean;
+  className?: string;
 }
 
 export const TouchInput: React.FC<TouchInputProps> = ({
@@ -153,21 +153,21 @@ export const TouchInput: React.FC<TouchInputProps> = ({
   placeholder,
   size = 'md',
   disabled = false,
-  className = ''
+  className = '',
 }) => {
   const getSizeClasses = () => {
     const sizes = {
       sm: 'min-h-8 px-3 py-2 text-sm',
       md: 'min-h-10 px-4 py-3 text-sm',
       lg: 'min-h-12 px-6 py-4 text-base',
-      xl: 'min-h-14 px-8 py-5 text-lg'
-    }
-    return sizes[size]
-  }
+      xl: 'min-h-14 px-8 py-5 text-lg',
+    };
+    return sizes[size];
+  };
 
   const getDisabledClasses = () => {
-    return disabled ? 'opacity-50 cursor-not-allowed' : ''
-  }
+    return disabled ? 'opacity-50 cursor-not-allowed' : '';
+  };
 
   return (
     <input
@@ -184,16 +184,16 @@ export const TouchInput: React.FC<TouchInputProps> = ({
         ${className}
       `}
     />
-  )
-}
+  );
+};
 
 // Simplified Touch Card Component
 export interface TouchCardProps {
-  children: React.ReactNode
-  size?: 'sm' | 'md' | 'lg' | 'xl'
-  interactive?: boolean
-  onClick?: () => void
-  className?: string
+  children: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg' | 'xl';
+  interactive?: boolean;
+  onClick?: () => void;
+  className?: string;
 }
 
 export const TouchCard: React.FC<TouchCardProps> = ({
@@ -201,27 +201,27 @@ export const TouchCard: React.FC<TouchCardProps> = ({
   size = 'md',
   interactive = false,
   onClick,
-  className = ''
+  className = '',
 }) => {
   const getSizeClasses = () => {
     const sizes = {
       sm: 'p-3',
       md: 'p-4',
       lg: 'p-6',
-      xl: 'p-8'
-    }
-    return sizes[size]
-  }
+      xl: 'p-8',
+    };
+    return sizes[size];
+  };
 
   const getInteractiveClasses = () => {
-    return interactive ? 'cursor-pointer hover:shadow-md transition-shadow' : ''
-  }
+    return interactive ? 'cursor-pointer hover:shadow-md transition-shadow' : '';
+  };
 
   const handleClick = () => {
     if (interactive && onClick) {
-      onClick()
+      onClick();
     }
-  }
+  };
 
   return (
     <div
@@ -235,5 +235,5 @@ export const TouchCard: React.FC<TouchCardProps> = ({
     >
       {children}
     </div>
-  )
-}
+  );
+};

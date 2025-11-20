@@ -108,15 +108,15 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
         try {
           const { apiClient } = await import('../../services/apiClient');
           const response = await apiClient.getCurrentUser();
-          
+
           if (response.data) {
             const user = response.data;
             const roleMap: Record<string, UserRole> = {
-              'admin': 'admin',
-              'administrator': 'admin',
-              'analyst': 'analyst',
-              'viewer': 'viewer',
-              'user': 'analyst',
+              admin: 'admin',
+              administrator: 'admin',
+              analyst: 'analyst',
+              viewer: 'viewer',
+              user: 'analyst',
             };
             const detectedRole = roleMap[user.role?.toLowerCase() || 'analyst'] || 'analyst';
             setUserData((prev) => ({ ...prev, role: detectedRole }));
@@ -186,7 +186,7 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
                 setCreatedProjectId(projectId);
                 return true;
               }
-              
+
               // Check API for projects (more reliable than localStorage)
               try {
                 const { apiClient } = await import('../../services/apiClient');
@@ -199,7 +199,7 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
               } catch {
                 // Ignore API errors
               }
-              
+
               // Fallback: Check localStorage for recently created project
               const recentProjects = localStorage.getItem('recent_projects');
               if (recentProjects) {
@@ -386,10 +386,10 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
         try {
           const user = JSON.parse(userStr);
           const roleMap: Record<string, UserRole> = {
-            'admin': 'admin',
-            'administrator': 'admin',
-            'analyst': 'analyst',
-            'viewer': 'viewer',
+            admin: 'admin',
+            administrator: 'admin',
+            analyst: 'analyst',
+            viewer: 'viewer',
           };
           return roleMap[user.role?.toLowerCase() || 'analyst'] || 'analyst';
         } catch {

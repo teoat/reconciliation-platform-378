@@ -19,9 +19,9 @@ const Checkbox: React.FC<CheckboxProps> = ({
 }) => {
   const checkboxId = id || `checkbox-${Math.random().toString(36).substr(2, 9)}`;
 
-  const errorId = error ? `${checkboxId}-error` : undefined
-  const helperTextId = helperText ? `${checkboxId}-helper` : undefined
-  const describedBy = [errorId, helperTextId].filter(Boolean).join(' ') || undefined
+  const errorId = error ? `${checkboxId}-error` : undefined;
+  const helperTextId = helperText ? `${checkboxId}-helper` : undefined;
+  const describedBy = [errorId, helperTextId].filter(Boolean).join(' ') || undefined;
 
   return (
     <div className={fullWidth ? 'w-full' : ''}>
@@ -44,7 +44,9 @@ const Checkbox: React.FC<CheckboxProps> = ({
             <label htmlFor={checkboxId} className="font-medium text-gray-700">
               {label}
               {props.required && (
-                <span className="text-red-500 ml-1" aria-label="required">*</span>
+                <span className="text-red-500 ml-1" aria-label="required">
+                  *
+                </span>
               )}
             </label>
           </div>

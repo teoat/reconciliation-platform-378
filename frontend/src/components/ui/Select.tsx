@@ -33,9 +33,9 @@ const Select: React.FC<SelectProps> = ({
 
   const selectClasses = `${baseClasses} ${stateClasses} ${widthClasses} ${className}`.trim();
 
-  const errorId = error ? `${selectId}-error` : undefined
-  const helperTextId = helperText ? `${selectId}-helper` : undefined
-  const describedBy = [errorId, helperTextId].filter(Boolean).join(' ') || undefined
+  const errorId = error ? `${selectId}-error` : undefined;
+  const helperTextId = helperText ? `${selectId}-helper` : undefined;
+  const describedBy = [errorId, helperTextId].filter(Boolean).join(' ') || undefined;
 
   return (
     <div className={fullWidth ? 'w-full' : ''}>
@@ -43,7 +43,9 @@ const Select: React.FC<SelectProps> = ({
         <label htmlFor={selectId} className="block text-sm font-medium text-gray-700 mb-1">
           {label}
           {props.required && (
-            <span className="text-red-500 ml-1" aria-label="required">*</span>
+            <span className="text-red-500 ml-1" aria-label="required">
+              *
+            </span>
           )}
         </label>
       )}
@@ -70,7 +72,10 @@ const Select: React.FC<SelectProps> = ({
           ))}
         </select>
 
-        <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none" aria-hidden="true">
+        <div
+          className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none"
+          aria-hidden="true"
+        >
           <ChevronDown className="w-4 h-4 text-gray-400" />
         </div>
       </div>

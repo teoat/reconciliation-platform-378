@@ -55,4 +55,3 @@ export interface Breadcrumb {
   path: string;
   active: boolean;
 }
-

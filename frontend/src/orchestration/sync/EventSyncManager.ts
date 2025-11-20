@@ -7,7 +7,6 @@ import { frenlyAgentService } from '@/services/frenlyAgentService';
 import type { PageEvent } from '../types';
 
 export class EventSyncManager {
-
   constructor() {
     this.setupEventListeners();
   }
@@ -98,11 +97,7 @@ export class EventSyncManager {
     // Track significant updates
     if (event.data && Object.keys(event.data).length > 0) {
       const userId = localStorage.getItem('userId') || 'unknown';
-      await frenlyAgentService.trackInteraction(
-        userId,
-        'page_update',
-        event.pageId
-      );
+      await frenlyAgentService.trackInteraction(userId, 'page_update', event.pageId);
     }
   }
 
@@ -148,10 +143,7 @@ export class EventSyncManager {
   /**
    * Handle feature used
    */
-  private async handleFeatureUsed(
-    featureId: string,
-    _action: string
-  ): Promise<void> {
+  private async handleFeatureUsed(featureId: string, _action: string): Promise<void> {
     try {
       const userId = localStorage.getItem('userId') || 'unknown';
       await frenlyAgentService.trackInteraction(userId, 'feature_used', featureId);
@@ -182,4 +174,3 @@ export function getEventSyncManager(): EventSyncManager {
   }
   return eventSyncInstance;
 }
-

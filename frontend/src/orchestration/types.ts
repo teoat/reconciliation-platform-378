@@ -79,7 +79,14 @@ export interface MessageContext {
 
 export interface FrenlyMessage {
   id: string;
-  type: 'greeting' | 'tip' | 'warning' | 'celebration' | 'question' | 'instruction' | 'encouragement';
+  type:
+    | 'greeting'
+    | 'tip'
+    | 'warning'
+    | 'celebration'
+    | 'question'
+    | 'instruction'
+    | 'encouragement';
   content: string;
   action?: {
     text: string;
@@ -153,24 +160,24 @@ export interface PageOrchestrationInterface {
   // Page identification
   getPageId(): string;
   getPageMetadata(): PageMetadata;
-  
+
   // Context provision
   getPageContext(): PageContext;
-  
+
   // Onboarding integration
   getOnboardingSteps(): OnboardingStep[];
   getCurrentOnboardingStep(): OnboardingStep | null;
   completeOnboardingStep(stepId: string): Promise<void>;
   skipOnboardingStep(stepId: string): Promise<void>;
-  
+
   // Guidance integration
   registerGuidanceHandlers(): GuidanceHandler[];
   getGuidanceContent(topic: string): GuidanceContent[];
-  
+
   // Workflow integration
   getWorkflowState(): WorkflowState | null;
   updateWorkflowState(state: Partial<WorkflowState>): Promise<void>;
-  
+
   // Synchronization
   syncWithFrenly(): Promise<void>;
   onPageMount(): Promise<void>;
@@ -221,5 +228,3 @@ export interface UserActionEvent extends PageEvent {
   action: string;
   target?: string;
 }
-
-

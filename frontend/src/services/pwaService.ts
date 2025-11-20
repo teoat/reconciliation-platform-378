@@ -1,57 +1,57 @@
 // PWA Service for Offline Support and Progressive Web App Features
-import { logger } from '@/services/logger'
-import { secureStorage } from './secureStorage'
+import { logger } from '@/services/logger';
+import { secureStorage } from './secureStorage';
 // Manages service worker registration, offline data, and PWA functionality
 
-import React from 'react'
+import React from 'react';
 
 // PWA configuration
 interface PWAConfig {
-  enabled: boolean
-  serviceWorkerPath: string
-  updateCheckInterval: number
-  offlineDataRetention: number
-  syncInterval: number
-  notificationPermission: boolean
-  installPrompt: boolean
+  enabled: boolean;
+  serviceWorkerPath: string;
+  updateCheckInterval: number;
+  offlineDataRetention: number;
+  syncInterval: number;
+  notificationPermission: boolean;
+  installPrompt: boolean;
 }
 
 // Offline data interface
 interface OfflineData {
-  id: string
-  type: 'create' | 'update' | 'delete'
-  endpoint: string
-  data: unknown
-  timestamp: Date
-  retryCount: number
-  maxRetries: number
+  id: string;
+  type: 'create' | 'update' | 'delete';
+  endpoint: string;
+  data: unknown;
+  timestamp: Date;
+  retryCount: number;
+  maxRetries: number;
 }
 
 // PWA status interface
 interface PWAStatus {
-  isOnline: boolean
-  isInstalled: boolean
-  canInstall: boolean
-  hasUpdate: boolean
-  serviceWorkerReady: boolean
-  offlineDataCount: number
-  lastSync: Date | null
+  isOnline: boolean;
+  isInstalled: boolean;
+  canInstall: boolean;
+  hasUpdate: boolean;
+  serviceWorkerReady: boolean;
+  offlineDataCount: number;
+  lastSync: Date | null;
 }
 
 class PWAService {
-  private static instance: PWAService
-  private config: PWAConfig
-  private status: PWAStatus
-  private offlineData: OfflineData[] = []
-  private updateAvailable = false
-  private installPrompt: unknown | null = null
-  private listeners = new Map<string, Array<(...args: unknown[]) => void>>()
+  private static instance: PWAService;
+  private config: PWAConfig;
+  private status: PWAStatus;
+  private offlineData: OfflineData[] = [];
+  private updateAvailable = false;
+  private installPrompt: unknown | null = null;
+  private listeners = new Map<string, Array<(...args: unknown[]) => void>>();
 
   public static getInstance(): PWAService {
     if (!PWAService.instance) {
-      PWAService.instance = new PWAService()
+      PWAService.instance = new PWAService();
     }
-    return PWAService.instance
+    return PWAService.instance;
   }
 
   constructor() {
@@ -63,7 +63,7 @@ class PWAService {
       syncInterval: 60000, // 1 minute
       notificationPermission: false,
       installPrompt: true,
-    }
+    };
 
     this.status = {
       isOnline: navigator.onLine,
@@ -73,246 +73,250 @@ class PWAService {
       serviceWorkerReady: false,
       offlineDataCount: 0,
       lastSync: null,
-    }
+    };
 
-    this.init()
+    this.init();
   }
 
   private async init(): Promise<void> {
-    if (!this.config.enabled) return
+    if (!this.config.enabled) return;
 
     try {
       // Register service worker
-      await this.registerServiceWorker()
-      
+      await this.registerServiceWorker();
+
       // Setup event listeners
-      this.setupEventListeners()
-      
+      this.setupEventListeners();
+
       // Load offline data
-      await this.loadOfflineData()
-      
+      await this.loadOfflineData();
+
       // Setup periodic sync
-      this.setupPeriodicSync()
-      
+      this.setupPeriodicSync();
+
       // Check for updates
-      this.checkForUpdates()
-      
-      logger.info('PWA Service initialized successfully')
+      this.checkForUpdates();
+
+      logger.info('PWA Service initialized successfully');
     } catch (error: unknown) {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to initialize PWA Service', { error: errorObj.message })
+      logger.error('Failed to initialize PWA Service', { error: errorObj.message });
     }
   }
 
   private async registerServiceWorker(): Promise<void> {
     if (!('serviceWorker' in navigator)) {
-      logger.warning('Service Worker not supported')
-      return
+      logger.warning('Service Worker not supported');
+      return;
     }
 
     try {
-      const registration = await navigator.serviceWorker.register(this.config.serviceWorkerPath)
-      
-      logger.info('Service Worker registered', { scope: registration.scope })
-      
+      const registration = await navigator.serviceWorker.register(this.config.serviceWorkerPath);
+
+      logger.info('Service Worker registered', { scope: registration.scope });
+
       // Handle service worker updates
       registration.addEventListener('updatefound', () => {
-        const newWorker = registration.installing
+        const newWorker = registration.installing;
         if (newWorker) {
           newWorker.addEventListener('statechange', () => {
             if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-              this.updateAvailable = true
-              this.status.hasUpdate = true
-              this.emit('updateAvailable')
+              this.updateAvailable = true;
+              this.status.hasUpdate = true;
+              this.emit('updateAvailable');
             }
-          })
+          });
         }
-      })
+      });
 
       // Handle service worker ready
       if (registration.active) {
-        this.status.serviceWorkerReady = true
-        this.emit('serviceWorkerReady')
+        this.status.serviceWorkerReady = true;
+        this.emit('serviceWorkerReady');
       }
 
       // Handle service worker messages
       navigator.serviceWorker.addEventListener('message', (event) => {
-        this.handleServiceWorkerMessage(event.data)
-      })
-
+        this.handleServiceWorkerMessage(event.data);
+      });
     } catch (error) {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      logger.error('Service Worker registration failed:', { error: errorObj.message })
+      logger.error('Service Worker registration failed:', { error: errorObj.message });
     }
   }
 
   private setupEventListeners(): void {
     // Online/offline status
     window.addEventListener('online', () => {
-      this.status.isOnline = true
-      this.emit('online')
-      this.syncOfflineData()
-    })
+      this.status.isOnline = true;
+      this.emit('online');
+      this.syncOfflineData();
+    });
 
     window.addEventListener('offline', () => {
-      this.status.isOnline = false
-      this.emit('offline')
-    })
+      this.status.isOnline = false;
+      this.emit('offline');
+    });
 
     // Install prompt
     window.addEventListener('beforeinstallprompt', (event) => {
-      event.preventDefault()
-      this.installPrompt = event
-      this.status.canInstall = true
-      this.emit('canInstall')
-    })
+      event.preventDefault();
+      this.installPrompt = event;
+      this.status.canInstall = true;
+      this.emit('canInstall');
+    });
 
     // App installed
     window.addEventListener('appinstalled', () => {
-      this.status.isInstalled = true
-      this.status.canInstall = false
-      this.installPrompt = null
-      this.emit('installed')
-    })
+      this.status.isInstalled = true;
+      this.status.canInstall = false;
+      this.installPrompt = null;
+      this.emit('installed');
+    });
 
     // Visibility change (for background sync)
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.status.isOnline) {
-        this.syncOfflineData()
+        this.syncOfflineData();
       }
-    })
+    });
   }
 
   private async loadOfflineData(): Promise<void> {
     try {
-      const data = secureStorage.getItem<OfflineData[]>('pwa_offline_data', false)
+      const data = secureStorage.getItem<OfflineData[]>('pwa_offline_data', false);
       if (data) {
         this.offlineData = data.map((item: OfflineData) => ({
           ...item,
           timestamp: new Date(item.timestamp),
-        }))
-        this.status.offlineDataCount = this.offlineData.length
+        }));
+        this.status.offlineDataCount = this.offlineData.length;
       }
     } catch (error) {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to load offline data:', { error: errorObj.message })
-      this.offlineData = []
+      logger.error('Failed to load offline data:', { error: errorObj.message });
+      this.offlineData = [];
     }
   }
 
   private async saveOfflineData(): Promise<void> {
     try {
-      secureStorage.setItem('pwa_offline_data', this.offlineData, false)
-      this.status.offlineDataCount = this.offlineData.length
+      secureStorage.setItem('pwa_offline_data', this.offlineData, false);
+      this.status.offlineDataCount = this.offlineData.length;
     } catch (error) {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to save offline data:', { error: errorObj.message })
+      logger.error('Failed to save offline data:', { error: errorObj.message });
     }
   }
 
   private setupPeriodicSync(): void {
     setInterval(() => {
       if (this.status.isOnline) {
-        this.syncOfflineData()
+        this.syncOfflineData();
       }
-    }, this.config.syncInterval)
+    }, this.config.syncInterval);
   }
 
   private checkForUpdates(): void {
     setInterval(() => {
       if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({ type: 'CHECK_UPDATE' })
+        navigator.serviceWorker.controller.postMessage({ type: 'CHECK_UPDATE' });
       }
-    }, this.config.updateCheckInterval)
+    }, this.config.updateCheckInterval);
   }
 
   private handleServiceWorkerMessage(data: Record<string, unknown>): void {
     switch (data.type) {
       case 'CACHE_SIZE':
-        this.emit('cacheSize', data.size)
-        break
+        this.emit('cacheSize', data.size);
+        break;
       case 'UPDATE_AVAILABLE':
-        this.updateAvailable = true
-        this.status.hasUpdate = true
-        this.emit('updateAvailable')
-        break
+        this.updateAvailable = true;
+        this.status.hasUpdate = true;
+        this.emit('updateAvailable');
+        break;
       default:
-        logger.info('Unknown service worker message', { type: data.type })
+        logger.info('Unknown service worker message', { type: data.type });
     }
   }
 
   // Public methods
   public async install(): Promise<boolean> {
-    if (!this.installPrompt) return false
+    if (!this.installPrompt) return false;
 
     try {
-      const prompt = this.installPrompt as { prompt: () => Promise<{ userChoice: Promise<{ outcome: string }> }> } | null;
+      const prompt = this.installPrompt as {
+        prompt: () => Promise<{ userChoice: Promise<{ outcome: string }> }>;
+      } | null;
       if (!prompt) return false;
-      const result = await prompt.prompt()
-      const choiceResult = await result.userChoice
-      
+      const result = await prompt.prompt();
+      const choiceResult = await result.userChoice;
+
       if (choiceResult.outcome === 'accepted') {
-        this.status.isInstalled = true
-        this.status.canInstall = false
-        this.installPrompt = null
-        this.emit('installed')
-        return true
+        this.status.isInstalled = true;
+        this.status.canInstall = false;
+        this.installPrompt = null;
+        this.emit('installed');
+        return true;
       }
-      
-      return false
+
+      return false;
     } catch (error) {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      logger.error('Install prompt failed:', { error: errorObj.message })
-      return false
+      logger.error('Install prompt failed:', { error: errorObj.message });
+      return false;
     }
   }
 
   public async update(): Promise<void> {
-    if (!this.updateAvailable) return
+    if (!this.updateAvailable) return;
 
     try {
       if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' })
-        
+        navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+
         // Reload page after update
-        window.location.reload()
+        window.location.reload();
       }
     } catch (error) {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      logger.error('Update failed:', { error: errorObj.message })
+      logger.error('Update failed:', { error: errorObj.message });
     }
   }
 
   public async requestNotificationPermission(): Promise<boolean> {
     if (!('Notification' in window)) {
-      logger.warn('Notifications not supported')
-      return false
+      logger.warn('Notifications not supported');
+      return false;
     }
 
     if (Notification.permission === 'granted') {
-      this.config.notificationPermission = true
-      return true
+      this.config.notificationPermission = true;
+      return true;
     }
 
     if (Notification.permission === 'denied') {
-      return false
+      return false;
     }
 
     try {
-      const permission = await Notification.requestPermission()
-      this.config.notificationPermission = permission === 'granted'
-      return this.config.notificationPermission
+      const permission = await Notification.requestPermission();
+      this.config.notificationPermission = permission === 'granted';
+      return this.config.notificationPermission;
     } catch (error) {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      logger.error('Notification permission request failed:', { error: errorObj.message })
-      return false
+      logger.error('Notification permission request failed:', { error: errorObj.message });
+      return false;
     }
   }
 
-  public async sendNotification(title: string, options?: NotificationOptions & { icon?: string; badge?: string }): Promise<void> {
+  public async sendNotification(
+    title: string,
+    options?: NotificationOptions & { icon?: string; badge?: string }
+  ): Promise<void> {
     if (!this.config.notificationPermission) {
-      const hasPermission = await this.requestNotificationPermission()
-      if (!hasPermission) return
+      const hasPermission = await this.requestNotificationPermission();
+      if (!hasPermission) return;
     }
 
     try {
@@ -320,15 +324,15 @@ class PWAService {
         icon: '/icon-192x192.png',
         badge: '/badge-72x72.png',
         ...options,
-      })
+      });
 
       notification.onclick = () => {
-        window.focus()
-        notification.close()
-      }
+        window.focus();
+        notification.close();
+      };
     } catch (error) {
       const errorObj = error instanceof Error ? error : new Error(String(error));
-      logger.error('Failed to send notification:', { error: errorObj.message })
+      logger.error('Failed to send notification:', { error: errorObj.message });
     }
   }
 
@@ -337,7 +341,7 @@ class PWAService {
       navigator.serviceWorker.controller.postMessage({
         type: 'CACHE_URLS',
         urls: [url],
-      })
+      });
     }
   }
 
@@ -346,32 +350,35 @@ class PWAService {
       navigator.serviceWorker.controller.postMessage({
         type: 'CLEAR_CACHE',
         cacheName,
-      })
+      });
     }
   }
 
   public async getCacheSize(): Promise<number> {
     return new Promise((resolve) => {
       if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-        const messageChannel = new MessageChannel()
-        
+        const messageChannel = new MessageChannel();
+
         messageChannel.port1.onmessage = (event) => {
           if (event.data.type === 'CACHE_SIZE') {
-            resolve(event.data.size)
+            resolve(event.data.size);
           }
-        }
-        
-        navigator.serviceWorker.controller.postMessage(
-          { type: 'GET_CACHE_SIZE' },
-          [messageChannel.port2]
-        )
+        };
+
+        navigator.serviceWorker.controller.postMessage({ type: 'GET_CACHE_SIZE' }, [
+          messageChannel.port2,
+        ]);
       } else {
-        resolve(0)
+        resolve(0);
       }
-    })
+    });
   }
 
-  public addOfflineAction(type: 'create' | 'update' | 'delete', endpoint: string, data: unknown): void {
+  public addOfflineAction(
+    type: 'create' | 'update' | 'delete',
+    endpoint: string,
+    data: unknown
+  ): void {
     const offlineAction: OfflineData = {
       id: `offline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       type,
@@ -380,45 +387,45 @@ class PWAService {
       timestamp: new Date(),
       retryCount: 0,
       maxRetries: 3,
-    }
+    };
 
-    this.offlineData.push(offlineAction)
-    this.saveOfflineData()
-    this.emit('offlineActionAdded', offlineAction)
+    this.offlineData.push(offlineAction);
+    this.saveOfflineData();
+    this.emit('offlineActionAdded', offlineAction);
 
     // Try to sync immediately if online
     if (this.status.isOnline) {
-      this.syncOfflineData()
+      this.syncOfflineData();
     }
   }
 
   public async syncOfflineData(): Promise<void> {
-    if (!this.status.isOnline || this.offlineData.length === 0) return
+    if (!this.status.isOnline || this.offlineData.length === 0) return;
 
-    const actionsToSync = [...this.offlineData]
-    const syncedActions: string[] = []
+    const actionsToSync = [...this.offlineData];
+    const syncedActions: string[] = [];
 
     for (const action of actionsToSync) {
       try {
-        await this.syncAction(action)
-        syncedActions.push(action.id)
+        await this.syncAction(action);
+        syncedActions.push(action.id);
       } catch (error) {
         const errorObj = error instanceof Error ? error : new Error(String(error));
-        logger.error('Failed to sync action:', { error: errorObj.message })
-        action.retryCount++
-        
+        logger.error('Failed to sync action:', { error: errorObj.message });
+        action.retryCount++;
+
         if (action.retryCount >= action.maxRetries) {
-          syncedActions.push(action.id)
-          this.emit('offlineActionFailed', action)
+          syncedActions.push(action.id);
+          this.emit('offlineActionFailed', action);
         }
       }
     }
 
     // Remove synced actions
-    this.offlineData = this.offlineData.filter(action => !syncedActions.includes(action.id))
-    this.saveOfflineData()
-    this.status.lastSync = new Date()
-    this.emit('offlineDataSynced', syncedActions.length)
+    this.offlineData = this.offlineData.filter((action) => !syncedActions.includes(action.id));
+    this.saveOfflineData();
+    this.status.lastSync = new Date();
+    this.emit('offlineDataSynced', syncedActions.length);
   }
 
   private async syncAction(action: OfflineData): Promise<void> {
@@ -427,100 +434,102 @@ class PWAService {
       headers: {
         'Content-Type': 'application/json',
       },
-    }
+    };
 
     if (action.data) {
-      options.body = JSON.stringify(action.data)
+      options.body = JSON.stringify(action.data);
     }
 
-    const response = await fetch(action.endpoint, options)
-    
+    const response = await fetch(action.endpoint, options);
+
     if (!response.ok) {
-      throw new Error(`Sync failed: ${response.statusText}`)
+      throw new Error(`Sync failed: ${response.statusText}`);
     }
   }
 
   public getStatus(): PWAStatus {
-    return { ...this.status }
+    return { ...this.status };
   }
 
   public getOfflineDataCount(): number {
-    return this.offlineData.length
+    return this.offlineData.length;
   }
 
   public clearOfflineData(): void {
-    this.offlineData = []
-    this.saveOfflineData()
-    this.emit('offlineDataCleared')
+    this.offlineData = [];
+    this.saveOfflineData();
+    this.emit('offlineDataCleared');
   }
 
   // Event system
   public on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.listeners.has(event)) {
-      this.listeners.set(event, [])
+      this.listeners.set(event, []);
     }
-    this.listeners.get(event)!.push(callback)
+    this.listeners.get(event)!.push(callback);
   }
 
   public off(event: string, callback: (...args: unknown[]) => void): void {
-    const callbacks = this.listeners.get(event)
+    const callbacks = this.listeners.get(event);
     if (callbacks) {
-      const index = callbacks.indexOf(callback)
+      const index = callbacks.indexOf(callback);
       if (index > -1) {
-        callbacks.splice(index, 1)
+        callbacks.splice(index, 1);
       }
     }
   }
 
   private emit(event: string, ...args: unknown[]): void {
-    const callbacks = this.listeners.get(event)
+    const callbacks = this.listeners.get(event);
     if (callbacks) {
-      callbacks.forEach(callback => callback(...args))
+      callbacks.forEach((callback) => callback(...args));
     }
   }
 
   private checkIfInstalled(): boolean {
-    return window.matchMedia('(display-mode: standalone)').matches ||
-           (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
-           document.referrer.includes('android-app://')
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as unknown as { standalone?: boolean }).standalone === true ||
+      document.referrer.includes('android-app://')
+    );
   }
 }
 
 // React hook for PWA functionality
 export const usePWA = () => {
   const [status, setStatus] = React.useState<PWAStatus>(() => {
-    const pwa = PWAService.getInstance()
-    return pwa.getStatus()
-  })
+    const pwa = PWAService.getInstance();
+    return pwa.getStatus();
+  });
 
   React.useEffect(() => {
-    const pwa = PWAService.getInstance()
-    
+    const pwa = PWAService.getInstance();
+
     const updateStatus = () => {
-      setStatus(pwa.getStatus())
-    }
+      setStatus(pwa.getStatus());
+    };
 
     // Listen for status changes
-    pwa.on('online', updateStatus)
-    pwa.on('offline', updateStatus)
-    pwa.on('canInstall', updateStatus)
-    pwa.on('installed', updateStatus)
-    pwa.on('updateAvailable', updateStatus)
-    pwa.on('serviceWorkerReady', updateStatus)
-    pwa.on('offlineDataSynced', updateStatus)
+    pwa.on('online', updateStatus);
+    pwa.on('offline', updateStatus);
+    pwa.on('canInstall', updateStatus);
+    pwa.on('installed', updateStatus);
+    pwa.on('updateAvailable', updateStatus);
+    pwa.on('serviceWorkerReady', updateStatus);
+    pwa.on('offlineDataSynced', updateStatus);
 
     return () => {
-      pwa.off('online', updateStatus)
-      pwa.off('offline', updateStatus)
-      pwa.off('canInstall', updateStatus)
-      pwa.off('installed', updateStatus)
-      pwa.off('updateAvailable', updateStatus)
-      pwa.off('serviceWorkerReady', updateStatus)
-      pwa.off('offlineDataSynced', updateStatus)
-    }
-  }, [])
+      pwa.off('online', updateStatus);
+      pwa.off('offline', updateStatus);
+      pwa.off('canInstall', updateStatus);
+      pwa.off('installed', updateStatus);
+      pwa.off('updateAvailable', updateStatus);
+      pwa.off('serviceWorkerReady', updateStatus);
+      pwa.off('offlineDataSynced', updateStatus);
+    };
+  }, []);
 
-  const pwa = PWAService.getInstance()
+  const pwa = PWAService.getInstance();
 
   return {
     status,
@@ -535,11 +544,10 @@ export const usePWA = () => {
     syncOfflineData: pwa.syncOfflineData.bind(pwa),
     getOfflineDataCount: pwa.getOfflineDataCount.bind(pwa),
     clearOfflineData: pwa.clearOfflineData.bind(pwa),
-  }
-}
+  };
+};
 
 // Export singleton instance
-export const pwaService = PWAService.getInstance()
+export const pwaService = PWAService.getInstance();
 
-export default pwaService
-
+export default pwaService;

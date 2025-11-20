@@ -1,7 +1,7 @@
 import React from 'react';
-import { AlertTriangle } from 'lucide-react'
-import { CheckCircle } from 'lucide-react'
-import { Info } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
+import { Info } from 'lucide-react';
 import { XCircle } from 'lucide-react';
 import { memo } from 'react';
 

@@ -1,6 +1,6 @@
 /**
  * Natural Language Understanding Service
- * 
+ *
  * Provides intent recognition and entity extraction for user queries.
  */
 
@@ -92,7 +92,7 @@ class NLUService {
       // Try AI-powered understanding first
       if (aiService.isAvailable()) {
         const aiIntent = await aiService.understandIntent(query, context);
-        
+
         if (aiIntent.confidence > 0.6) {
           return {
             intent: aiIntent.intent,
@@ -125,15 +125,15 @@ class NLUService {
     // Check each intent pattern
     for (const [intent, patterns] of this.intentPatterns.entries()) {
       let matchCount = 0;
-      
+
       for (const pattern of patterns) {
         if (pattern.test(query)) {
           matchCount++;
         }
       }
-      
+
       if (matchCount > 0) {
-        const confidence = Math.min(0.9, 0.5 + (matchCount * 0.1));
+        const confidence = Math.min(0.9, 0.5 + matchCount * 0.1);
         if (confidence > bestConfidence) {
           bestIntent = intent;
           bestConfidence = confidence;
@@ -217,11 +217,7 @@ class NLUService {
   /**
    * Generate contextual response based on understanding
    */
-  async generateResponse(
-    intent: string,
-    query: string,
-    context?: QueryContext
-  ): Promise<string> {
+  async generateResponse(intent: string, query: string, context?: QueryContext): Promise<string> {
     try {
       if (aiService.isAvailable()) {
         const prompt = {
@@ -250,11 +246,11 @@ Be concise, conversational, and action-oriented.`,
       case 'help':
         return "I'm here to help! What would you like to know about reconciliation?";
       case 'navigation':
-        return "I can help you navigate! Which page would you like to go to?";
+        return 'I can help you navigate! Which page would you like to go to?';
       case 'action':
-        return "I can help you with that action! What would you like to create or modify?";
+        return 'I can help you with that action! What would you like to create or modify?';
       case 'search':
-        return "I can help you search! What are you looking for?";
+        return 'I can help you search! What are you looking for?';
       case 'information':
         return "I'd be happy to share information! What would you like to know?";
       case 'error':
@@ -270,4 +266,3 @@ export const nluService = NLUService.getInstance();
 
 // Export class for testing
 export { NLUService };
-

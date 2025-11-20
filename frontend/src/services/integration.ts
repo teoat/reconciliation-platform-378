@@ -2,98 +2,95 @@
 import type { Project } from '@/types/backend-aligned';
 
 export interface ExportOptions {
-  format: 'csv' | 'excel' | 'pdf' | 'json'
-  includeMetadata: boolean
-  includeComments: boolean
-  includeHistory: boolean
+  format: 'csv' | 'excel' | 'pdf' | 'json';
+  includeMetadata: boolean;
+  includeComments: boolean;
+  includeHistory: boolean;
   dateRange?: {
-    start: string
-    end: string
-  }
-  filters?: ProjectFilters
+    start: string;
+    end: string;
+  };
+  filters?: ProjectFilters;
 }
 
 export interface ProjectFilters {
-  status?: string[]
-  category?: string[]
-  department?: string[]
+  status?: string[];
+  category?: string[];
+  department?: string[];
 }
 
 export interface IntegrationConfig {
-  id: string
-  name: string
-  type: 'calendar' | 'email' | 'slack' | 'teams' | 'api'
-  enabled: boolean
-  settings: Record<string, unknown>
-  lastSync?: string
+  id: string;
+  name: string;
+  type: 'calendar' | 'email' | 'slack' | 'teams' | 'api';
+  enabled: boolean;
+  settings: Record<string, unknown>;
+  lastSync?: string;
 }
 
 export interface ExportResult {
-  success: boolean
-  fileUrl?: string
-  fileName: string
-  fileSize: number
-  recordCount: number
-  error?: string
+  success: boolean;
+  fileUrl?: string;
+  fileName: string;
+  fileSize: number;
+  recordCount: number;
+  error?: string;
 }
 
 export interface SyncResult {
-  success: boolean
-  syncedItems: number
-  errors: string[]
-  lastSync: string
+  success: boolean;
+  syncedItems: number;
+  errors: string[];
+  lastSync: string;
 }
 
 export class ProjectExportService {
-  static async exportProjects(
-    projects: Project[], 
-    options: ExportOptions
-  ): Promise<ExportResult> {
+  static async exportProjects(projects: Project[], options: ExportOptions): Promise<ExportResult> {
     try {
       // Simulate export process
-      const filteredProjects = this.filterProjects(projects, options.filters)
-      const exportData = this.formatData(filteredProjects, options)
-      
-      const fileName = `projects_export_${new Date().toISOString().split('T')[0]}.${options.format}`
-      const fileSize = JSON.stringify(exportData).length
-      
+      const filteredProjects = this.filterProjects(projects, options.filters);
+      const exportData = this.formatData(filteredProjects, options);
+
+      const fileName = `projects_export_${new Date().toISOString().split('T')[0]}.${options.format}`;
+      const fileSize = JSON.stringify(exportData).length;
+
       // In a real implementation, this would generate actual files
       return {
         success: true,
         fileName,
         fileSize,
-        recordCount: filteredProjects.length
-      }
+        recordCount: filteredProjects.length,
+      };
     } catch (error) {
       return {
         success: false,
         fileName: '',
         fileSize: 0,
         recordCount: 0,
-        error: error instanceof Error ? error.message : 'Unknown error'
-      }
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
     }
   }
 
   private static filterProjects(projects: Project[], filters?: ProjectFilters): Project[] {
-    if (!filters) return projects
-    
-    return projects.filter(project => {
+    if (!filters) return projects;
+
+    return projects.filter((project) => {
       if (filters.status && filters.status.length > 0) {
-        if (!filters.status.includes(project.status)) return false
+        if (!filters.status.includes(project.status)) return false;
       }
       if (filters.category && filters.category.length > 0) {
-        if (!filters.category.includes(project.category)) return false
+        if (!filters.category.includes(project.category)) return false;
       }
       if (filters.department && filters.department.length > 0) {
-        if (!filters.department.includes(project.department)) return false
+        if (!filters.department.includes(project.department)) return false;
       }
-      return true
-    })
+      return true;
+    });
   }
 
   private static formatData(projects: Project[], options: ExportOptions) {
-    return projects.map(project => {
+    return projects.map((project) => {
       const baseData = {
         id: project.id,
         name: project.name,
@@ -104,8 +101,8 @@ export class ProjectExportService {
         department: project.department,
         createdDate: project.createdDate,
         createdBy: project.createdBy,
-        lastModified: project.lastModified
-      }
+        lastModified: project.lastModified,
+      };
 
       if (options.includeMetadata) {
         Object.assign(baseData, {
@@ -113,22 +110,26 @@ export class ProjectExportService {
           recordCount: project.recordCount,
           matchRate: project.matchRate,
           budget: project.budget,
-          actualCost: project.actualCost
-        })
+          actualCost: project.actualCost,
+        });
       }
 
       if (options.includeComments) {
         Object.assign(baseData, {
-          comments: (project as unknown as { comments?: Array<{ userId: string; content: string; timestamp: string }> }).comments?.map((c) => ({
+          comments: (
+            project as unknown as {
+              comments?: Array<{ userId: string; content: string; timestamp: string }>;
+            }
+          ).comments?.map((c) => ({
             user: c.userId,
             content: c.content,
-            timestamp: c.timestamp
-          }))
-        })
+            timestamp: c.timestamp,
+          })),
+        });
       }
 
-      return baseData
-    })
+      return baseData;
+    });
   }
 }
 
@@ -141,8 +142,8 @@ export class IntegrationService {
       enabled: false,
       settings: {
         apiKey: '',
-        calendarId: ''
-      }
+        calendarId: '',
+      },
     },
     {
       id: 'email',
@@ -153,8 +154,8 @@ export class IntegrationService {
         smtpServer: '',
         smtpPort: 587,
         username: '',
-        password: ''
-      }
+        password: '',
+      },
     },
     {
       id: 'slack',
@@ -163,66 +164,66 @@ export class IntegrationService {
       enabled: false,
       settings: {
         webhookUrl: '',
-        channel: '#reconciliation'
-      }
-    }
-  ]
+        channel: '#reconciliation',
+      },
+    },
+  ];
 
   static getIntegrations(): IntegrationConfig[] {
-    return this.integrations
+    return this.integrations;
   }
 
   static updateIntegration(id: string, settings: Record<string, unknown>): boolean {
-    const integration = this.integrations.find(i => i.id === id)
+    const integration = this.integrations.find((i) => i.id === id);
     if (integration) {
-      integration.settings = { ...integration.settings, ...settings }
-      integration.lastSync = new Date().toISOString()
-      return true
+      integration.settings = { ...integration.settings, ...settings };
+      integration.lastSync = new Date().toISOString();
+      return true;
     }
-    return false
+    return false;
   }
 
   static toggleIntegration(id: string): boolean {
-    const integration = this.integrations.find(i => i.id === id)
+    const integration = this.integrations.find((i) => i.id === id);
     if (integration) {
-      integration.enabled = !integration.enabled
-      return true
+      integration.enabled = !integration.enabled;
+      return true;
     }
-    return false
+    return false;
   }
 
   static async syncWithCalendar(projects: Project[]): Promise<SyncResult> {
     // Simulate calendar sync
-    const calendarIntegration = this.integrations.find(i => i.type === 'calendar' && i.enabled)
+    const calendarIntegration = this.integrations.find((i) => i.type === 'calendar' && i.enabled);
     if (!calendarIntegration) {
       return {
         success: false,
         syncedItems: 0,
         errors: ['Calendar integration not enabled'],
-        lastSync: new Date().toISOString()
-      }
+        lastSync: new Date().toISOString(),
+      };
     }
 
     // Simulate sync process
-    const syncedItems = projects.filter(p => p.status === 'active').length
-    
+    const syncedItems = projects.filter((p) => p.status === 'active').length;
+
     return {
       success: true,
       syncedItems,
       errors: [],
-      lastSync: new Date().toISOString()
-    }
+      lastSync: new Date().toISOString(),
+    };
   }
 
   static async sendSlackNotification(_message: string): Promise<SyncResult> {
-    const slackIntegration = this.integrations.find(i => i.type === 'slack' && i.enabled)
+    const slackIntegration = this.integrations.find((i) => i.type === 'slack' && i.enabled);
     if (!slackIntegration) {
       return {
         success: false,
         syncedItems: 0,
         errors: ['Slack integration not enabled'],
-        lastSync: new Date().toISOString()
-      }
+        lastSync: new Date().toISOString(),
+      };
     }
 
     // Simulate Slack notification
@@ -230,8 +231,8 @@ export class IntegrationService {
       success: true,
       syncedItems: 1,
       errors: [],
-      lastSync: new Date().toISOString()
-    }
+      lastSync: new Date().toISOString(),
+    };
   }
 
   static async sendEmailNotification(
@@ -239,14 +240,14 @@ export class IntegrationService {
     _subject: string,
     _content: string
   ): Promise<SyncResult> {
-    const emailIntegration = this.integrations.find(i => i.type === 'email' && i.enabled)
+    const emailIntegration = this.integrations.find((i) => i.type === 'email' && i.enabled);
     if (!emailIntegration) {
       return {
         success: false,
         syncedItems: 0,
         errors: ['Email integration not enabled'],
-        lastSync: new Date().toISOString()
-      }
+        lastSync: new Date().toISOString(),
+      };
     }
 
     // Simulate email sending
@@ -254,8 +255,8 @@ export class IntegrationService {
       success: true,
       syncedItems: 1,
       errors: [],
-      lastSync: new Date().toISOString()
-    }
+      lastSync: new Date().toISOString(),
+    };
   }
 }
 

@@ -174,17 +174,9 @@ export const KeyboardShortcuts: React.FC = () => {
   }, []);
 
   // Keyboard shortcut to open this dialog
-  useKeyboardShortcut(
-    platform === 'mac' ? 'Cmd+K' : 'Ctrl+K',
-    () => setIsOpen(true),
-    true
-  );
+  useKeyboardShortcut(platform === 'mac' ? 'Cmd+K' : 'Ctrl+K', () => setIsOpen(true), true);
 
-  useKeyboardShortcut(
-    platform === 'mac' ? 'Cmd+/' : 'Ctrl+/',
-    () => setIsOpen(true),
-    true
-  );
+  useKeyboardShortcut(platform === 'mac' ? 'Cmd+/' : 'Ctrl+/', () => setIsOpen(true), true);
 
   // Close on Escape
   useKeyboardShortcut('Escape', () => setIsOpen(false), isOpen);
@@ -195,7 +187,10 @@ export const KeyboardShortcuts: React.FC = () => {
       shortcut.keys.some((key) => key.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesCategory = !selectedCategory || shortcut.category === selectedCategory;
     const matchesPlatform =
-      platform === 'all' || !shortcut.platform || shortcut.platform === platform || shortcut.platform === 'all';
+      platform === 'all' ||
+      !shortcut.platform ||
+      shortcut.platform === platform ||
+      shortcut.platform === 'all';
 
     return matchesSearch && matchesCategory && matchesPlatform;
   });
@@ -280,7 +275,10 @@ export const KeyboardShortcuts: React.FC = () => {
         {/* Search and Filters */}
         <div className="p-6 border-b border-gray-200 space-y-4">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" aria-hidden="true" />
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400"
+              aria-hidden="true"
+            />
             <input
               type="text"
               placeholder="Search shortcuts..."
@@ -362,11 +360,15 @@ export const KeyboardShortcuts: React.FC = () => {
         {/* Footer */}
         <div className="p-4 border-t border-gray-200 bg-gray-50">
           <p className="text-sm text-gray-600 text-center">
-            Press <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-white border border-gray-300 rounded">
+            Press{' '}
+            <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-white border border-gray-300 rounded">
               {platform === 'mac' ? '⌘' : 'Ctrl'}+K
-            </kbd> or <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-white border border-gray-300 rounded">
+            </kbd>{' '}
+            or{' '}
+            <kbd className="px-2 py-1 text-xs font-semibold text-gray-800 bg-white border border-gray-300 rounded">
               {platform === 'mac' ? '⌘' : 'Ctrl'}+/
-            </kbd> to open this dialog anytime
+            </kbd>{' '}
+            to open this dialog anytime
           </p>
         </div>
       </div>
@@ -375,4 +377,3 @@ export const KeyboardShortcuts: React.FC = () => {
 };
 
 export default KeyboardShortcuts;
-

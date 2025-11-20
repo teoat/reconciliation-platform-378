@@ -29,9 +29,10 @@ export class AISuggestionEngine {
       }
     }
 
-    const avgConfidence = confidenceScores.length > 0
-      ? confidenceScores.reduce((a, b) => a + b, 0) / confidenceScores.length
-      : 0;
+    const avgConfidence =
+      confidenceScores.length > 0
+        ? confidenceScores.reduce((a, b) => a + b, 0) / confidenceScores.length
+        : 0;
 
     return {
       id: `suggestion-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -151,4 +152,3 @@ export class AISuggestionEngine {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
-

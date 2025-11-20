@@ -33,7 +33,7 @@ export interface LogDestination {
 class ConsoleDestination implements LogDestination {
   name = 'console';
   enabled = true;
-    private readonly isDevelopment = import.meta?.env?.DEV === true;
+  private readonly isDevelopment = import.meta?.env?.DEV === true;
 
   async write(entry: LogEntry): Promise<void> {
     // Only log to console in development
@@ -70,7 +70,9 @@ class ConsoleDestination implements LogDestination {
     }
   }
 
-  private sanitizeForProduction(context?: Record<string, unknown>): Record<string, unknown> | undefined {
+  private sanitizeForProduction(
+    context?: Record<string, unknown>
+  ): Record<string, unknown> | undefined {
     if (!context) return undefined;
 
     const sanitized = { ...context };
@@ -243,10 +245,10 @@ class FileDownloadDestination implements LogDestination {
 
 /**
  * Main Logger class - Singleton pattern for application-wide logging.
- * 
+ *
  * Provides structured logging with multiple destinations (console, localStorage, API, file download).
  * Automatically sanitizes sensitive data in production environments.
- * 
+ *
  * @example
  * ```typescript
  * const logger = Logger.getInstance();
@@ -263,9 +265,9 @@ class Logger {
   /**
    * Gets the singleton Logger instance.
    * Creates a new instance if one doesn't exist.
-   * 
+   *
    * @returns The Logger singleton instance
-   * 
+   *
    * @example
    * ```typescript
    * const logger = Logger.getInstance();
@@ -390,7 +392,11 @@ class Logger {
     });
   }
 
-  public logPerformance(operation: string, duration: number, context?: Record<string, unknown>): void {
+  public logPerformance(
+    operation: string,
+    duration: number,
+    context?: Record<string, unknown>
+  ): void {
     const level = duration > 1000 ? 'warn' : 'info';
     this.log(level, `Performance: ${operation} took ${duration}ms`, 'performance', {
       ...context,
@@ -540,21 +546,21 @@ class Logger {
 // React hooks for logging
 /**
  * React hook for accessing the logger instance.
- * 
+ *
  * Provides all logger methods bound to the singleton instance.
  * Use this hook in React components for consistent logging.
- * 
+ *
  * @returns Object containing all logger methods
- * 
+ *
  * @example
  * ```typescript
  * function MyComponent() {
  *   const logger = useLogger();
- *   
+ *
  *   useEffect(() => {
  *     logger.info('Component mounted');
  *   }, []);
- *   
+ *
  *   return <div>Content</div>;
  * }
  * ```
@@ -583,12 +589,12 @@ export const useLogger = () => {
 
 /**
  * Performance logging decorator for class methods.
- * 
+ *
  * Automatically measures and logs the execution time of async methods.
- * 
+ *
  * @param operation - Name of the operation being measured
  * @returns Decorator function
- * 
+ *
  * @example
  * ```typescript
  * class ApiService {

@@ -56,11 +56,14 @@ export function monitorMemoryUsage(thresholdMB: number = 150): void {
     const usagePercent = (usedMB / limitMB) * 100;
 
     if (usedMB > thresholdMB) {
-      logger.warning(`High memory usage: ${usedMB.toFixed(2)}MB (${usagePercent.toFixed(1)}% of limit)`, {
-        usedMB,
-        limitMB,
-        usagePercent,
-      });
+      logger.warning(
+        `High memory usage: ${usedMB.toFixed(2)}MB (${usagePercent.toFixed(1)}% of limit)`,
+        {
+          usedMB,
+          limitMB,
+          usagePercent,
+        }
+      );
     }
 
     // Log memory metrics
@@ -82,10 +85,7 @@ export function monitorMemoryUsage(thresholdMB: number = 150): void {
 /**
  * Hook to cleanup resources on unmount to prevent memory leaks
  */
-export function useMemoryCleanup(
-  cleanupFn: () => void,
-  deps: React.DependencyList = []
-): void {
+export function useMemoryCleanup(cleanupFn: () => void, deps: React.DependencyList = []): void {
   useEffect(() => {
     return cleanupFn;
   }, deps);
@@ -97,12 +97,14 @@ export function useMemoryCleanup(
 export function useComprehensiveCleanup() {
   const timersRef = useRef<Set<NodeJS.Timeout | number>>(new Set());
   const subscriptionsRef = useRef<Set<() => void>>(new Set());
-  const listenersRef = useRef<Array<{
-    element: HTMLElement | Window | Document;
-    event: string;
-    handler: EventListener;
-    options?: boolean | AddEventListenerOptions;
-  }>>([]);
+  const listenersRef = useRef<
+    Array<{
+      element: HTMLElement | Window | Document;
+      event: string;
+      handler: EventListener;
+      options?: boolean | AddEventListenerOptions;
+    }>
+  >([]);
 
   const addTimer = useCallback((timer: NodeJS.Timeout | number) => {
     timersRef.current.add(timer);
@@ -412,4 +414,3 @@ export default {
   useMemoryEfficientState,
   useDebounce,
 };
-

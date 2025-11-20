@@ -35,7 +35,7 @@ export const ErrorCodeDisplay: React.FC<ErrorCodeDisplayProps> = ({
       await navigator.clipboard.writeText(text);
       setCopied(true);
       setCopiedItem(item);
-      
+
       // Announce to screen readers
       ariaLiveRegionsService?.announceStatus?.(`${item} copied to clipboard`, {
         componentId: 'error-code-display',
@@ -156,5 +156,3 @@ export const ErrorCodeDisplay: React.FC<ErrorCodeDisplayProps> = ({
 };
 
 export default ErrorCodeDisplay;
-
-

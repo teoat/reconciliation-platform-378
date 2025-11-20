@@ -17,14 +17,14 @@ export type Priority = 'low' | 'medium' | 'high' | 'critical';
 
 /**
  * User type aligned with backend database schema.
- * 
+ *
  * This is the comprehensive User type that matches the backend User model.
  * Use this type when:
  * - Making API calls to backend endpoints
  * - Working with full user data from database
  * - Need access to all user fields (status, email_verified, timestamps, etc.)
  * - Working with user management/admin features
- * 
+ *
  * For simplified service layer usage, see '@/types/service::User' instead.
  */
 export interface User {
@@ -113,14 +113,14 @@ export interface ProjectSettings {
 
 /**
  * Project type aligned with backend database schema.
- * 
+ *
  * This is the comprehensive Project type that matches the backend Project model.
  * Use this type when:
  * - Making API calls to backend endpoints
  * - Working with full project data from database
  * - Need access to all project fields (owner_id, status, settings, timestamps, etc.)
  * - Working with project CRUD operations
- * 
+ *
  * For simplified service layer usage, see '@/types/service::Project' instead.
  * For enhanced project features (analytics, progress, alerts), see '@/types/project::EnhancedProject' instead.
  */

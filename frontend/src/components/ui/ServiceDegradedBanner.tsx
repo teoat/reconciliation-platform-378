@@ -46,12 +46,12 @@ export const ServiceDegradedBanner: React.FC<ServiceDegradedBannerProps> = ({
 
   // Announce service status to screen readers
   useEffect(() => {
-    const statusMessage = 
-      status === 'open' 
+    const statusMessage =
+      status === 'open'
         ? `${service} is currently unavailable`
         : status === 'half-open'
-        ? `${service} is partially available`
-        : `${service} is available`;
+          ? `${service} is partially available`
+          : `${service} is available`;
 
     ariaLiveRegionsService?.announceError?.(statusMessage, {
       componentId: `service-${service}`,
@@ -62,7 +62,7 @@ export const ServiceDegradedBanner: React.FC<ServiceDegradedBannerProps> = ({
 
   const handleRetry = async () => {
     if (!onRetry) return;
-    
+
     setIsRetrying(true);
     try {
       await onRetry();
@@ -104,10 +104,10 @@ export const ServiceDegradedBanner: React.FC<ServiceDegradedBannerProps> = ({
   const Icon = config.icon;
 
   // Calculate time until recovery
-  const timeUntilRecovery = estimatedRecovery 
+  const timeUntilRecovery = estimatedRecovery
     ? Math.max(0, Math.ceil((estimatedRecovery.getTime() - Date.now()) / 1000))
     : null;
-  
+
   const minutesUntilRecovery = timeUntilRecovery ? Math.ceil(timeUntilRecovery / 60) : null;
 
   return (
@@ -120,7 +120,7 @@ export const ServiceDegradedBanner: React.FC<ServiceDegradedBannerProps> = ({
     >
       <div className="flex items-start">
         <Icon className={`h-5 w-5 ${config.color} flex-shrink-0 mt-0.5`} aria-hidden="true" />
-        
+
         <div className="flex-1 ml-3">
           <div className="flex items-center justify-between">
             <h3 className={`text-sm font-semibold ${config.color}`}>
@@ -152,15 +152,14 @@ export const ServiceDegradedBanner: React.FC<ServiceDegradedBannerProps> = ({
             </div>
           </div>
 
-          {message && (
-            <p className="mt-2 text-sm text-gray-700">{message}</p>
-          )}
+          {message && <p className="mt-2 text-sm text-gray-700">{message}</p>}
 
           {estimatedRecovery && minutesUntilRecovery !== null && minutesUntilRecovery > 0 && (
             <div className="mt-2 flex items-center space-x-2 text-sm text-gray-600">
               <Clock className="h-4 w-4" aria-hidden="true" />
               <span>
-                Estimated recovery: {minutesUntilRecovery} {minutesUntilRecovery === 1 ? 'minute' : 'minutes'}
+                Estimated recovery: {minutesUntilRecovery}{' '}
+                {minutesUntilRecovery === 1 ? 'minute' : 'minutes'}
               </span>
             </div>
           )}
@@ -175,9 +174,9 @@ export const ServiceDegradedBanner: React.FC<ServiceDegradedBannerProps> = ({
                   className="mr-2"
                   aria-label="Retry service connection"
                 >
-                  <RefreshCw 
-                    className={`h-4 w-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`} 
-                    aria-hidden="true" 
+                  <RefreshCw
+                    className={`h-4 w-4 mr-2 ${isRetrying ? 'animate-spin' : ''}`}
+                    aria-hidden="true"
                   />
                   {isRetrying ? 'Retrying...' : 'Retry Connection'}
                 </Button>
@@ -206,4 +205,3 @@ export const ServiceDegradedBanner: React.FC<ServiceDegradedBannerProps> = ({
 };
 
 export default ServiceDegradedBanner;
-

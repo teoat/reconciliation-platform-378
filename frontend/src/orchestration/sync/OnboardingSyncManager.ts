@@ -11,10 +11,7 @@ export class OnboardingSyncManager {
   /**
    * Sync onboarding progress
    */
-  async syncOnboardingProgress(
-    pageId: string,
-    progress: OnboardingProgress
-  ): Promise<void> {
+  async syncOnboardingProgress(pageId: string, progress: OnboardingProgress): Promise<void> {
     try {
       // Sync to backend
       await onboardingService.syncToServer('initial');
@@ -61,11 +58,7 @@ export class OnboardingSyncManager {
   /**
    * Complete onboarding step
    */
-  async completeStep(
-    pageId: string,
-    stepId: string,
-    stepName: string
-  ): Promise<void> {
+  async completeStep(pageId: string, stepId: string, stepName: string): Promise<void> {
     try {
       // Complete step in onboarding service
       onboardingService.completeStep(stepId, stepName, 0, 'initial');
@@ -118,4 +111,3 @@ export function getOnboardingSyncManager(): OnboardingSyncManager {
   }
   return onboardingSyncInstance;
 }
-

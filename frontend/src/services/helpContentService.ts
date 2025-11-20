@@ -1,6 +1,6 @@
 /**
  * Help Content Service
- * 
+ *
  * Provides centralized help content management:
  * - Help content creation and storage
  * - Content search functionality
@@ -488,8 +488,8 @@ console.log('Job created:', job.id);`,
    * Get content by feature
    */
   getContentByFeature(featureId: string): HelpContent[] {
-    return Array.from(this.content.values()).filter(
-      (content) => content.relatedFeatures?.includes(featureId)
+    return Array.from(this.content.values()).filter((content) =>
+      content.relatedFeatures?.includes(featureId)
     );
   }
 
@@ -509,9 +509,7 @@ console.log('Job created:', job.id);`,
       const matchedFields: string[] = [];
 
       // Search in title (highest weight)
-      const titleMatches = searchTerms.filter((term) =>
-        content.title.toLowerCase().includes(term)
-      );
+      const titleMatches = searchTerms.filter((term) => content.title.toLowerCase().includes(term));
       if (titleMatches.length > 0) {
         relevance += titleMatches.length * 10;
         matchedFields.push('title');

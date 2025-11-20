@@ -27,14 +27,21 @@ export class ResponseHandler {
     );
   }
 
-  handleError(error: Error | Record<string, unknown>, endpoint: string, method: string): ApiResponse {
+  handleError(
+    error: Error | Record<string, unknown>,
+    endpoint: string,
+    method: string
+  ): ApiResponse {
     // ✅ ERROR TRANSLATION: Use translation service for backend error context
     let translatedMessage = error.message || error.error || 'An error occurred';
     let errorCode = error.code;
-    
+
     // Extract correlation ID from error (Agent 1 Task 1.19)
-    const correlationId = (error as Error & { correlationId?: string }).correlationId ||
-                          (typeof error === 'object' && 'correlationId' in error ? String(error.correlationId) : undefined);
+    const correlationId =
+      (error as Error & { correlationId?: string }).correlationId ||
+      (typeof error === 'object' && 'correlationId' in error
+        ? String(error.correlationId)
+        : undefined);
 
     // Handle backend error response format: { error, message, code }
     if (error.code) {

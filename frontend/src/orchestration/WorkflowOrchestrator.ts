@@ -4,11 +4,7 @@
 
 import { logger } from '@/services/logger';
 import { frenlyAgentService } from '@/services/frenlyAgentService';
-import type {
-  WorkflowState,
-  PageOrchestrationInterface,
-  PageContext,
-} from './types';
+import type { WorkflowState, PageOrchestrationInterface, PageContext } from './types';
 
 export interface WorkflowOrchestrationConfig {
   workflowId: string;
@@ -79,7 +75,7 @@ export class WorkflowOrchestrator {
       if (!this.currentState) {
         this.initializeState();
       }
-      
+
       const current = this.currentState!;
       this.currentState = {
         workflowId: current.workflowId,
@@ -121,17 +117,14 @@ export class WorkflowOrchestrator {
   /**
    * Complete a workflow step
    */
-  async completeStep(
-    page: PageOrchestrationInterface,
-    stepId: string
-  ): Promise<void> {
+  async completeStep(page: PageOrchestrationInterface, stepId: string): Promise<void> {
     try {
       if (!this.currentState) {
         this.initializeState();
       }
 
       const current = this.currentState!;
-      
+
       // Add to completed steps
       if (!current.completedSteps.includes(stepId)) {
         current.completedSteps.push(stepId);
@@ -144,9 +137,7 @@ export class WorkflowOrchestrator {
       }
 
       // Update progress
-      current.progress = Math.round(
-        (current.completedSteps.length / current.totalSteps) * 100
-      );
+      current.progress = Math.round((current.completedSteps.length / current.totalSteps) * 100);
 
       // Sync state
       if (this.currentState) {
@@ -174,9 +165,7 @@ export class WorkflowOrchestrator {
    * Get next step after current step
    */
   getNextStep(currentStepId: string): WorkflowStep | null {
-    const currentIndex = this.steps.findIndex(
-      (step) => step.id === currentStepId
-    );
+    const currentIndex = this.steps.findIndex((step) => step.id === currentStepId);
     if (currentIndex === -1 || currentIndex === this.steps.length - 1) {
       return null;
     }
@@ -188,9 +177,7 @@ export class WorkflowOrchestrator {
    */
   isWorkflowComplete(): boolean {
     if (!this.currentState) return false;
-    return (
-      this.currentState.completedSteps.length >= this.currentState.totalSteps
-    );
+    return this.currentState.completedSteps.length >= this.currentState.totalSteps;
   }
 
   /**
@@ -204,9 +191,7 @@ export class WorkflowOrchestrator {
   /**
    * Sync workflow state with Frenly AI
    */
-  async syncWithFrenly(
-    _page: PageOrchestrationInterface
-  ): Promise<void> {
+  async syncWithFrenly(_page: PageOrchestrationInterface): Promise<void> {
     try {
       if (!this.currentState) return;
 
@@ -228,9 +213,7 @@ export class WorkflowOrchestrator {
   /**
    * Generate workflow guidance
    */
-  private async generateWorkflowGuidance(
-    _page: PageOrchestrationInterface
-  ): Promise<void> {
+  private async generateWorkflowGuidance(_page: PageOrchestrationInterface): Promise<void> {
     try {
       if (!this.currentState) return;
 
@@ -272,8 +255,7 @@ export class WorkflowOrchestrator {
       const celebrationMessage = {
         ...message,
         type: 'celebration' as const,
-        content:
-          "🎉 Amazing! You've completed the entire workflow. Great job!",
+        content: "🎉 Amazing! You've completed the entire workflow. Great job!",
         priority: 'high' as const,
       };
 
@@ -342,10 +324,7 @@ export class WorkflowOrchestrator {
         pageStates: Object.fromEntries(this.pageStates),
         timestamp: Date.now(),
       };
-      localStorage.setItem(
-        `workflow:${this.config.workflowId}`,
-        JSON.stringify(state)
-      );
+      localStorage.setItem(`workflow:${this.config.workflowId}`, JSON.stringify(state));
     } catch (error) {
       logger.error('Error saving workflow state', { error });
     }
@@ -371,9 +350,7 @@ export class WorkflowOrchestrator {
 // Singleton instances per workflow
 const orchestrators: Map<string, WorkflowOrchestrator> = new Map();
 
-export function getWorkflowOrchestrator(
-  config: WorkflowOrchestrationConfig
-): WorkflowOrchestrator {
+export function getWorkflowOrchestrator(config: WorkflowOrchestrationConfig): WorkflowOrchestrator {
   if (!orchestrators.has(config.workflowId)) {
     const orchestrator = new WorkflowOrchestrator(config);
     orchestrator.loadState();
@@ -381,4 +358,3 @@ export function getWorkflowOrchestrator(
   }
   return orchestrators.get(config.workflowId)!;
 }
-

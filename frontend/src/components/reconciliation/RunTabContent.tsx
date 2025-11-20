@@ -3,10 +3,10 @@ import { Play } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import { DataTable, Column } from '@/components/ui/DataTable';
-import { BackendReconciliationJob } from '@/services/apiClient';
+import { BackendReconciliationJob, BackendDataSource } from '@/services/apiClient';
 
 interface RunTabContentProps {
-  dataSources: any[] | undefined;
+  dataSources: BackendDataSource[] | undefined;
   jobs: BackendReconciliationJob[] | undefined;
   jobColumns: Column<BackendReconciliationJob>[];
   onStartReconciliation: () => void;

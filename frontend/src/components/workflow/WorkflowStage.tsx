@@ -112,10 +112,7 @@ export const WorkflowStageComponent: React.FC<WorkflowStageProps> = ({
         {validationResult && (
           <div className="mt-2">
             {validationResult.errors.map((error, errorIndex) => (
-              <div
-                key={errorIndex}
-                className="flex items-center space-x-2 text-sm text-red-600"
-              >
+              <div key={errorIndex} className="flex items-center space-x-2 text-sm text-red-600">
                 <XCircle className="w-4 h-4" />
                 <span>{error.message}</span>
               </div>
@@ -135,7 +132,12 @@ export const WorkflowStageComponent: React.FC<WorkflowStageProps> = ({
 
       {!isLast && (
         <div className="flex-shrink-0">
-          <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg
+            className="w-5 h-5 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
           </svg>
         </div>
@@ -143,4 +145,3 @@ export const WorkflowStageComponent: React.FC<WorkflowStageProps> = ({
     </div>
   );
 };
-

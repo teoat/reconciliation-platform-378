@@ -7,7 +7,10 @@ import { logger } from '../logger';
 import { withErrorHandling, handleServiceError, type ErrorHandlingResult } from '../errorHandling';
 
 export class AuthApiService {
-  static async authenticate(email: string, password: string): Promise<ErrorHandlingResult<unknown>> {
+  static async authenticate(
+    email: string,
+    password: string
+  ): Promise<ErrorHandlingResult<unknown>> {
     return withErrorHandling(
       async () => {
         const response = await apiClient.login({ email, password });
@@ -61,7 +64,10 @@ export class AuthApiService {
     );
   }
 
-  static async changePassword(passwordData: { currentPassword: string; newPassword: string }): Promise<ErrorHandlingResult<unknown>> {
+  static async changePassword(passwordData: {
+    currentPassword: string;
+    newPassword: string;
+  }): Promise<ErrorHandlingResult<unknown>> {
     return withErrorHandling(
       async () => {
         const response = await apiClient.post('/api/auth/change-password', passwordData);
@@ -87,12 +93,15 @@ export class AuthApiService {
     );
   }
 
-  static async confirmPasswordReset(token: string, newPassword: string): Promise<ErrorHandlingResult<unknown>> {
+  static async confirmPasswordReset(
+    token: string,
+    newPassword: string
+  ): Promise<ErrorHandlingResult<unknown>> {
     return withErrorHandling(
       async () => {
-        const response = await apiClient.post('/api/auth/password-reset/confirm', { 
-          token, 
-          new_password: newPassword 
+        const response = await apiClient.post('/api/auth/password-reset/confirm', {
+          token,
+          new_password: newPassword,
         });
         if (response.error) {
           throw new Error(response.error);
@@ -103,4 +112,3 @@ export class AuthApiService {
     );
   }
 }
-

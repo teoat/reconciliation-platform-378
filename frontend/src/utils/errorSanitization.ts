@@ -1,6 +1,6 @@
 /**
  * Error Message Sanitization Utilities
- * 
+ *
  * Sanitizes error messages to prevent information leakage and security issues.
  * Removes sensitive data like passwords, tokens, SQL queries, and stack traces
  * from error messages before displaying them to users.
@@ -14,27 +14,27 @@ const SENSITIVE_PATTERNS = [
   /password\s*[:=]\s*['"]?[^'"]+['"]?/gi,
   /pwd\s*[:=]\s*['"]?[^'"]+['"]?/gi,
   /passwd\s*[:=]\s*['"]?[^'"]+['"]?/gi,
-  
+
   // Token patterns
   /token\s*[:=]\s*['"]?[a-zA-Z0-9_-]{20,}['"]?/gi,
   /api[_-]?key\s*[:=]\s*['"]?[a-zA-Z0-9_-]{20,}['"]?/gi,
   /auth[_-]?token\s*[:=]\s*['"]?[a-zA-Z0-9_-]{20,}['"]?/gi,
   /bearer\s+[a-zA-Z0-9_-]{20,}/gi,
-  
+
   // SQL query patterns
   /SELECT\s+.+\s+FROM/gi,
   /INSERT\s+INTO/gi,
   /UPDATE\s+.+\s+SET/gi,
   /DELETE\s+FROM/gi,
-  
+
   // File paths (may contain sensitive info)
   /\/[\w\/.-]+\.(key|pem|p12|pfx|crt|cer)/gi,
   /C:\\[\w\\.-]+\.(key|pem|p12|pfx|crt|cer)/gi,
-  
+
   // Stack traces
   /at\s+[^\n]+\([^\n]+\)/g,
   /Stack\s+Trace:/gi,
-  
+
   // Internal paths
   /\/home\/[^\/]+\/[^:]+/gi,
   /\/Users\/[^\/]+\/[^:]+/gi,
@@ -56,7 +56,10 @@ export function sanitizeErrorMessage(message: string): string {
   }
 
   // Remove email addresses (may contain sensitive info)
-  sanitized = sanitized.replace(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, '[EMAIL_REDACTED]');
+  sanitized = sanitized.replace(
+    /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+    '[EMAIL_REDACTED]'
+  );
 
   // Remove IP addresses
   sanitized = sanitized.replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, '[IP_REDACTED]');
@@ -95,10 +98,10 @@ export function sanitizeError(error: unknown): string {
 
   if (typeof error === 'object') {
     const err = error as Record<string, unknown>;
-    
+
     // Try to get message from common properties
     const message = err.message || err.error || err.msg || err.toString();
-    
+
     if (message) {
       return sanitizeErrorMessage(String(message));
     }
@@ -123,4 +126,3 @@ export function containsSensitiveInfo(message: string): boolean {
 
   return false;
 }
-

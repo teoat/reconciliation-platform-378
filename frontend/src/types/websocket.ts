@@ -18,4 +18,3 @@ export interface WebSocketConfig {
   maxReconnectAttempts?: number;
   heartbeatInterval?: number;
 }
-

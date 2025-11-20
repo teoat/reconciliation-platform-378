@@ -116,6 +116,7 @@ State is synchronized with Frenly AI:
 React hook for page orchestration.
 
 **Options:**
+
 - `pageMetadata: PageMetadata` - Page metadata
 - `getPageContext: () => PageContext` - Function to get page context
 - `getOnboardingSteps?: () => OnboardingStep[]` - Get onboarding steps
@@ -124,6 +125,7 @@ React hook for page orchestration.
 - `onContextChange?: (changes: Partial<PageContext>) => void` - Context change callback
 
 **Returns:**
+
 - `updatePageContext(changes)` - Update page context
 - `trackFeatureUsage(featureId, action, data?)` - Track feature usage
 - `trackFeatureError(featureId, error)` - Track feature error
@@ -135,6 +137,7 @@ React hook for page orchestration.
 Manages page lifecycle events.
 
 **Methods:**
+
 - `onPageMount(page)` - Handle page mount
 - `onPageUpdate(page, changes)` - Handle page update
 - `onPageUnmount(page)` - Handle page unmount
@@ -146,6 +149,7 @@ Manages page lifecycle events.
 Handles Frenly AI integration for a page.
 
 **Methods:**
+
 - `initialize()` - Initialize integration
 - `collectPageContext()` - Collect page context
 - `generateContextualMessage()` - Generate contextual message
@@ -175,5 +179,3 @@ See `examples/ReconciliationPageOrchestration.ts` for a complete example.
 
 - [Orchestration Proposal](../../../docs/architecture/FRENLY_AI_ORCHESTRATION_PROPOSAL.md)
 - [Frenly AI Analysis](../../../docs/features/frenly-ai/FRENLY_AI_COMPREHENSIVE_ANALYSIS.md)
-
-

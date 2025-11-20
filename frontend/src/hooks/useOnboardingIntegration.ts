@@ -1,6 +1,6 @@
 /**
  * Onboarding Integration Hook
- * 
+ *
  * Hook for integrating onboarding components with user API and role detection.
  */
 
@@ -50,7 +50,7 @@ export const useOnboardingIntegration = (): {
       // Use actual API call to get current user
       const { apiClient } = await import('../services/apiClient');
       const response = await apiClient.getCurrentUser();
-      
+
       if (response.error || !response.data) {
         // Fallback to localStorage if API fails
         const userStr = localStorage.getItem('user');
@@ -68,13 +68,13 @@ export const useOnboardingIntegration = (): {
       // Map backend role to UserRole
       const user = response.data;
       const roleMap: Record<string, UserRole> = {
-        'admin': 'admin',
-        'administrator': 'admin',
-        'analyst': 'analyst',
-        'viewer': 'viewer',
-        'user': 'analyst', // Default user to analyst
+        admin: 'admin',
+        administrator: 'admin',
+        analyst: 'analyst',
+        viewer: 'viewer',
+        user: 'analyst', // Default user to analyst
       };
-      
+
       return roleMap[user.role?.toLowerCase() || 'analyst'] || 'analyst';
     } catch (error) {
       // Fallback to localStorage on error
@@ -153,11 +153,11 @@ export const useOnboardingIntegration = (): {
       // Map backend user to UserProfile
       const user = response.data;
       const roleMap: Record<string, UserRole> = {
-        'admin': 'admin',
-        'administrator': 'admin',
-        'analyst': 'analyst',
-        'viewer': 'viewer',
-        'user': 'analyst',
+        admin: 'admin',
+        administrator: 'admin',
+        analyst: 'analyst',
+        viewer: 'viewer',
+        user: 'analyst',
       };
 
       const profile: UserProfile = {
@@ -238,4 +238,3 @@ export const useOnboardingIntegration = (): {
     skipOnboarding,
   };
 };
-

@@ -88,7 +88,7 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
           logger.error('Error saving conversation:', error);
         }
       };
-      
+
       // Debounce saves to avoid excessive writes
       const timeout = setTimeout(saveConversation, 1000);
       return () => clearTimeout(timeout);
@@ -108,7 +108,7 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
       timestamp: new Date(),
     };
 
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputValue('');
     setIsTyping(true);
 
@@ -117,11 +117,13 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
       const context: MessageContext = {
         userId,
         page: currentPage,
-        progress: userProgress ? {
-          completedSteps: userProgress.completedSteps,
-          totalSteps: userProgress.totalSteps,
-          currentStep: userProgress.currentStep,
-        } : undefined,
+        progress: userProgress
+          ? {
+              completedSteps: userProgress.completedSteps,
+              totalSteps: userProgress.totalSteps,
+              currentStep: userProgress.currentStep,
+            }
+          : undefined,
         preferences: {
           communicationStyle: 'conversational',
           messageFrequency: 'medium',
@@ -129,7 +131,11 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
       };
 
       // Handle query with NLU
-      const agentMessage = await frenlyAgentService.handleUserQuery(userId, userMessage.content, context);
+      const agentMessage = await frenlyAgentService.handleUserQuery(
+        userId,
+        userMessage.content,
+        context
+      );
 
       const assistantMessage: ConversationMessage = {
         id: agentMessage.id,
@@ -139,15 +145,17 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
         type: agentMessage.type,
       };
 
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
 
       // Track interaction
-      await frenlyAgentService.trackInteraction(userId, 'message_sent', agentMessage.id).catch(err => {
-        logger.warn('Failed to track interaction:', err);
-      });
+      await frenlyAgentService
+        .trackInteraction(userId, 'message_sent', agentMessage.id)
+        .catch((err) => {
+          logger.warn('Failed to track interaction:', err);
+        });
     } catch (error) {
       logger.error('Error handling query:', error);
-      
+
       const errorMessage: ConversationMessage = {
         id: `error_${Date.now()}`,
         role: 'assistant',
@@ -155,8 +163,8 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
         timestamp: new Date(),
         type: 'warning',
       };
-      
-      setMessages(prev => [...prev, errorMessage]);
+
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
       inputRef.current?.focus();
@@ -166,50 +174,56 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
   /**
    * Handle input key press
    */
-  const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
-  }, [handleSend]);
+  const handleKeyPress = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    },
+    [handleSend]
+  );
 
   /**
    * Export conversation
    */
-  const handleExport = useCallback((format: 'json' | 'text') => {
-    if (!sessionId) return;
+  const handleExport = useCallback(
+    (format: 'json' | 'text') => {
+      if (!sessionId) return;
 
-    try {
-      let content: string | null = null;
-      let filename: string;
-      let mimeType: string;
+      try {
+        let content: string | null = null;
+        let filename: string;
+        let mimeType: string;
 
-      if (format === 'json') {
-        content = conversationStorage.exportConversation(sessionId);
-        filename = `frenly-conversation-${sessionId}.json`;
-        mimeType = 'application/json';
-      } else {
-        content = conversationStorage.exportConversationAsText(sessionId);
-        filename = `frenly-conversation-${sessionId}.txt`;
-        mimeType = 'text/plain';
+        if (format === 'json') {
+          content = conversationStorage.exportConversation(sessionId);
+          filename = `frenly-conversation-${sessionId}.json`;
+          mimeType = 'application/json';
+        } else {
+          content = conversationStorage.exportConversationAsText(sessionId);
+          filename = `frenly-conversation-${sessionId}.txt`;
+          mimeType = 'text/plain';
+        }
+
+        if (content) {
+          const blob = new Blob([content], { type: mimeType });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          URL.revokeObjectURL(url);
+          setShowExportMenu(false);
+        }
+      } catch (error) {
+        logger.error('Error exporting conversation:', error);
       }
-
-      if (content) {
-        const blob = new Blob([content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        setShowExportMenu(false);
-      }
-    } catch (error) {
-      logger.error('Error exporting conversation:', error);
-    }
-  }, [sessionId]);
+    },
+    [sessionId]
+  );
 
   if (!isOpen) {
     return (
@@ -227,7 +241,9 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
   return (
     <div
       className={`fixed bottom-6 right-6 z-50 transition-all duration-300 ${
-        isMinimized ? 'w-16 h-16 sm:w-80 sm:h-16' : 'w-[calc(100vw-3rem)] sm:w-96 h-[calc(100vh-8rem)] sm:h-[600px] max-w-md'
+        isMinimized
+          ? 'w-16 h-16 sm:w-80 sm:h-16'
+          : 'w-[calc(100vw-3rem)] sm:w-96 h-[calc(100vh-8rem)] sm:h-[600px] max-w-md'
       } ${className}`}
       role="dialog"
       aria-label="Frenly AI Conversational Interface"
@@ -326,19 +342,28 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
                   </div>
                 </div>
               ))}
-              
+
               {isTyping && (
                 <div className="flex justify-start">
                   <div className="bg-white border border-gray-200 rounded-lg p-3">
                     <div className="flex space-x-1">
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: '0ms' }}
+                      />
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: '150ms' }}
+                      />
+                      <div
+                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: '300ms' }}
+                      />
                     </div>
                   </div>
                 </div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </div>
 
@@ -377,4 +402,3 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
     </div>
   );
 };
-

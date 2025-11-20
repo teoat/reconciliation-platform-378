@@ -63,7 +63,7 @@ export const designSystem = {
       900: '#78350f',
     },
   },
-  
+
   // Typography
   typography: {
     fontFamily: {
@@ -93,7 +93,7 @@ export const designSystem = {
       relaxed: '1.75',
     },
   },
-  
+
   // Spacing
   spacing: {
     0: '0',
@@ -111,7 +111,7 @@ export const designSystem = {
     24: '6rem',
     32: '8rem',
   },
-  
+
   // Border Radius
   borderRadius: {
     none: '0',
@@ -123,7 +123,7 @@ export const designSystem = {
     '2xl': '1rem',
     full: '9999px',
   },
-  
+
   // Shadows
   shadows: {
     sm: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
@@ -132,7 +132,7 @@ export const designSystem = {
     lg: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
     xl: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
   },
-  
+
   // Breakpoints
   breakpoints: {
     sm: '640px',
@@ -141,7 +141,7 @@ export const designSystem = {
     xl: '1280px',
     '2xl': '1536px',
   },
-  
+
   // Animation
   animation: {
     duration: {
@@ -156,7 +156,7 @@ export const designSystem = {
       easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
     },
   },
-  
+
   // Z-Index
   zIndex: {
     dropdown: 1000,
@@ -166,7 +166,7 @@ export const designSystem = {
     popover: 1050,
     tooltip: 1060,
   },
-}
+};
 
 // Component Variants
 export const componentVariants = {
@@ -184,7 +184,7 @@ export const componentVariants = {
       lg: 'px-6 py-3 text-base',
     },
   },
-  
+
   input: {
     variants: {
       default: 'border-gray-300 focus:border-blue-500 focus:ring-blue-500',
@@ -192,7 +192,7 @@ export const componentVariants = {
       success: 'border-green-300 focus:border-green-500 focus:ring-green-500',
     },
   },
-  
+
   alert: {
     variants: {
       success: 'bg-green-50 border-green-200 text-green-800',
@@ -201,30 +201,30 @@ export const componentVariants = {
       info: 'bg-blue-50 border-blue-200 text-blue-800',
     },
   },
-}
+};
 
 // Utility Functions
 export const getColor = (color: string, shade: number = 500) => {
-  const colorPath = color.split('.')
-  let colorValue = designSystem.colors
-  
+  const colorPath = color.split('.');
+  let colorValue = designSystem.colors;
+
   for (const part of colorPath) {
-    colorValue = colorValue[part as keyof typeof colorValue]
+    colorValue = colorValue[part as keyof typeof colorValue];
   }
-  
-  return colorValue[shade as keyof typeof colorValue] || colorValue
-}
+
+  return colorValue[shade as keyof typeof colorValue] || colorValue;
+};
 
 export const getSpacing = (size: number) => {
-  return designSystem.spacing[size as keyof typeof designSystem.spacing] || `${size * 0.25}rem`
-}
+  return designSystem.spacing[size as keyof typeof designSystem.spacing] || `${size * 0.25}rem`;
+};
 
 export const getShadow = (size: keyof typeof designSystem.shadows) => {
-  return designSystem.shadows[size]
-}
+  return designSystem.shadows[size];
+};
 
 export const getBorderRadius = (size: keyof typeof designSystem.borderRadius) => {
-  return designSystem.borderRadius[size]
-}
+  return designSystem.borderRadius[size];
+};
 
-export default designSystem
+export default designSystem;

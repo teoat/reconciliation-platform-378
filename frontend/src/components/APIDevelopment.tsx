@@ -482,12 +482,14 @@ const APIDevelopment = ({ project, onProgressUpdate }: APIDevelopmentProps) => {
       <div className="card mb-6">
         <div className="border-b border-secondary-200">
           <nav className="flex space-x-8">
-            {([
-              { id: 'endpoints', label: 'API Endpoints', icon: Server },
-              { id: 'webhooks', label: 'Webhooks', icon: Zap },
-              { id: 'logs', label: 'API Logs', icon: Activity },
-              { id: 'documentation', label: 'Documentation', icon: File },
-            ] as const).map((tab) => {
+            {(
+              [
+                { id: 'endpoints', label: 'API Endpoints', icon: Server },
+                { id: 'webhooks', label: 'Webhooks', icon: Zap },
+                { id: 'logs', label: 'API Logs', icon: Activity },
+                { id: 'documentation', label: 'Documentation', icon: File },
+              ] as const
+            ).map((tab) => {
               const Icon = tab.icon;
               return (
                 <button

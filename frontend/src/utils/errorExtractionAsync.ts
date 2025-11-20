@@ -4,7 +4,11 @@
  * Ready for Agent 1's correlation ID implementation
  */
 
-import { ExtractedErrorInfo, getErrorCodeFromStatusCode, extractCorrelationIdFromResponse } from './errorExtraction';
+import {
+  ExtractedErrorInfo,
+  getErrorCodeFromStatusCode,
+  extractCorrelationIdFromResponse,
+} from './errorExtraction';
 
 /**
  * Extract error from fetch Response object asynchronously
@@ -22,10 +26,11 @@ export async function extractErrorFromFetchResponseAsync(
   const errorCode = response.status ? getErrorCodeFromStatusCode(response.status) : undefined;
 
   // Try to parse error message from response body
-  let errorMessage = defaultError instanceof Error ? defaultError.message : defaultError || 'Request failed';
+  let errorMessage =
+    defaultError instanceof Error ? defaultError.message : defaultError || 'Request failed';
   let bodyErrorCode = errorCode;
   let bodyCorrelationId = correlationId;
-  
+
   try {
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
@@ -75,14 +80,17 @@ export async function extractErrorFromFetchCall<T>(
 ): Promise<ExtractedErrorInfo> {
   try {
     const response = await fetchCall;
-    
+
     if (!response.ok) {
       return await extractErrorFromFetchResponseAsync(response, defaultError);
     }
-    
+
     // If response is ok, there's no error
     return {
-      error: defaultError instanceof Error ? defaultError : new Error(String(defaultError || 'No error')),
+      error:
+        defaultError instanceof Error
+          ? defaultError
+          : new Error(String(defaultError || 'No error')),
       timestamp: new Date(),
     };
   } catch (error) {
@@ -90,16 +98,16 @@ export async function extractErrorFromFetchCall<T>(
     if (error instanceof Response) {
       return await extractErrorFromFetchResponseAsync(error, defaultError);
     }
-    
+
     // Fall back to regular error extraction
     const { extractErrorFromApiResponse } = await import('./errorExtraction');
     const result = extractErrorFromApiResponse(error, defaultError);
-    
+
     // Handle both sync and async results
     if (result instanceof Promise) {
       return await result;
     }
-    
+
     return result;
   }
 }
@@ -113,5 +121,3 @@ export function createFetchErrorHandler(defaultError?: Error | string) {
     return await extractErrorFromFetchResponseAsync(response, defaultError);
   };
 }
-
-

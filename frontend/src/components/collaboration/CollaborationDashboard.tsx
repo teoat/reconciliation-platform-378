@@ -104,23 +104,32 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
         logger.logUserAction('join_collaboration_session', 'CollaborationDashboard', { sessionId });
 
         // Subscribe to session updates
-        const subId = subscribe(`collaboration:session:${sessionId}`, (data: {
-          type: 'user_joined' | 'user_left' | 'activity' | 'comment' | 'cursor_move' | 'selection_change';
-          user?: { id: string; name: string; email: string };
-          userId?: string;
-          activity?: { id: string; userId: string; action: string; timestamp: string };
-          comment?: { id: string; userId: string; message: string; timestamp: string };
-        }) => {
-          if (data.type === 'user_joined') {
-            setActiveUsers((prev) => [...prev, data.user]);
-          } else if (data.type === 'user_left') {
-            setActiveUsers((prev) => prev.filter((u) => u.id !== data.userId));
-          } else if (data.type === 'activity') {
-            setActivities((prev) => [data.activity, ...prev].slice(0, 100));
-          } else if (data.type === 'comment') {
-            setComments((prev) => [data.comment, ...prev]);
+        const subId = subscribe(
+          `collaboration:session:${sessionId}`,
+          (data: {
+            type:
+              | 'user_joined'
+              | 'user_left'
+              | 'activity'
+              | 'comment'
+              | 'cursor_move'
+              | 'selection_change';
+            user?: { id: string; name: string; email: string };
+            userId?: string;
+            activity?: { id: string; userId: string; action: string; timestamp: string };
+            comment?: { id: string; userId: string; message: string; timestamp: string };
+          }) => {
+            if (data.type === 'user_joined') {
+              setActiveUsers((prev) => [...prev, data.user]);
+            } else if (data.type === 'user_left') {
+              setActiveUsers((prev) => prev.filter((u) => u.id !== data.userId));
+            } else if (data.type === 'activity') {
+              setActivities((prev) => [data.activity, ...prev].slice(0, 100));
+            } else if (data.type === 'comment') {
+              setComments((prev) => [data.comment, ...prev]);
+            }
           }
-        });
+        );
         setSessionSubscriptionId(subId);
 
         logger.info('Joined collaboration session', { sessionId });
@@ -233,24 +242,36 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
       setIsLoading(true);
 
       // Subscribe to collaboration updates
-      const usersSubId = subscribe('collaboration:users', (data: {
-        type: 'users_update';
-        users: Array<{ id: string; name: string; email: string; lastSeen: string }>;
-      }) => {
-        if (data.type === 'users_update') {
-          setActiveUsers(data.users);
+      const usersSubId = subscribe(
+        'collaboration:users',
+        (data: {
+          type: 'users_update';
+          users: Array<{ id: string; name: string; email: string; lastSeen: string }>;
+        }) => {
+          if (data.type === 'users_update') {
+            setActiveUsers(data.users);
+          }
         }
-      });
+      );
       setUsersSubscriptionId(usersSubId);
 
-      const activitiesSubId = subscribe('collaboration:activities', (data: {
-        type: 'activity';
-        activity: { id: string; userId: string; action: string; timestamp: string; details?: Record<string, unknown> };
-      }) => {
-        if (data.type === 'activity') {
-          setActivities((prev) => [data.activity, ...prev].slice(0, 100));
+      const activitiesSubId = subscribe(
+        'collaboration:activities',
+        (data: {
+          type: 'activity';
+          activity: {
+            id: string;
+            userId: string;
+            action: string;
+            timestamp: string;
+            details?: Record<string, unknown>;
+          };
+        }) => {
+          if (data.type === 'activity') {
+            setActivities((prev) => [data.activity, ...prev].slice(0, 100));
+          }
         }
-      });
+      );
       setActivitiesSubscriptionId(activitiesSubId);
 
       logger.info('Collaboration dashboard initialized', { projectId });
@@ -350,7 +371,9 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
             {recentActivities.length > 0 ? (
               <DataTable
                 data={recentActivities as unknown as Record<string, unknown>[]}
-                columns={activityColumns as Array<{ key: string; label: string; [key: string]: unknown }>}
+                columns={
+                  activityColumns as Array<{ key: string; label: string; [key: string]: unknown }>
+                }
                 searchable={false}
                 pagination={false}
                 emptyMessage="No recent activities"

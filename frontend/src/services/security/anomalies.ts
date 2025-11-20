@@ -257,4 +257,3 @@ export class AnomalyDetector {
     return anomalies;
   }
 }
-

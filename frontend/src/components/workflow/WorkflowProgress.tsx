@@ -35,4 +35,3 @@ export const WorkflowProgress: React.FC<WorkflowProgressProps> = ({
     </div>
   );
 };
-

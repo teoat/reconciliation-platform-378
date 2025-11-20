@@ -133,4 +133,3 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
     </div>
   );
 };
-

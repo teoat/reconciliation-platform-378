@@ -2,7 +2,7 @@
 // UTILITIES INDEX - SINGLE SOURCE OF TRUTH
 // Organized by domain for better maintainability
 // ============================================================================
-// 
+//
 // ⚠️ NOTE: Some modules have overlapping exports (e.g., performanceConfig, debounce, throttle).
 // If you encounter import conflicts, import directly from the specific module:
 //   import { debounce } from '@/utils/performance';

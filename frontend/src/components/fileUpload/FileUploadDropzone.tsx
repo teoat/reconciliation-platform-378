@@ -34,17 +34,13 @@ export const FileUploadDropzone: React.FC<FileUploadDropzoneProps> = ({
       onDragEnter={onDragEnter}
       onDragLeave={onDragLeave}
       className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-        dragActive
-          ? 'border-blue-400 bg-blue-50'
-          : 'border-gray-300 hover:border-gray-400'
+        dragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
       }`}
       role="region"
       aria-label="File upload drop zone"
     >
       <Upload className="w-12 h-12 mx-auto text-gray-400 mb-4" aria-hidden="true" />
-      <h3 className="text-lg font-medium text-gray-900 mb-2">
-        Drop files here or click to upload
-      </h3>
+      <h3 className="text-lg font-medium text-gray-900 mb-2">Drop files here or click to upload</h3>
       <p className="text-gray-600 mb-4">
         Support for CSV, Excel files up to {Math.round(maxFileSize / 1024 / 1024)}MB
       </p>
@@ -73,4 +69,3 @@ export const FileUploadDropzone: React.FC<FileUploadDropzoneProps> = ({
     </div>
   );
 };
-

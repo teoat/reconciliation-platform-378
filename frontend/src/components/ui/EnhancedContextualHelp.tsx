@@ -51,13 +51,22 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
       setHelpContent(content);
 
       // Track view (if method exists)
-      if ('trackView' in helpContentService && typeof (helpContentService as { trackView?: (id: string) => void }).trackView === 'function') {
+      if (
+        'trackView' in helpContentService &&
+        typeof (helpContentService as { trackView?: (id: string) => void }).trackView === 'function'
+      ) {
         (helpContentService as { trackView: (id: string) => void }).trackView(content.id);
       }
 
       // Load related content (if method exists)
-      if ('getRelated' in helpContentService && typeof (helpContentService as { getRelated?: (id: string, limit: number) => HelpContent[] }).getRelated === 'function') {
-        const related = (helpContentService as { getRelated: (id: string, limit: number) => HelpContent[] }).getRelated(content.id, 3);
+      if (
+        'getRelated' in helpContentService &&
+        typeof (helpContentService as { getRelated?: (id: string, limit: number) => HelpContent[] })
+          .getRelated === 'function'
+      ) {
+        const related = (
+          helpContentService as { getRelated: (id: string, limit: number) => HelpContent[] }
+        ).getRelated(content.id, 3);
         setRelatedContent(related || []);
       } else {
         // Fallback: get content by category
@@ -211,9 +220,7 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
             {/* Interactive Example */}
             {helpContent.interactiveExample && (
               <div className="mb-3 border-t border-gray-200 pt-3">
-                <h4 className="text-xs font-semibold text-gray-600 mb-2">
-                  Interactive Example:
-                </h4>
+                <h4 className="text-xs font-semibold text-gray-600 mb-2">Interactive Example:</h4>
                 <div className="bg-gray-50 rounded p-2 text-xs">
                   <div className="font-medium text-gray-700 mb-1">
                     {helpContent.interactiveExample.title}

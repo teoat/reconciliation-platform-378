@@ -132,4 +132,3 @@ export interface IngestionStatistics {
   averageRecordSize: number;
   throughput: number;
 }
-

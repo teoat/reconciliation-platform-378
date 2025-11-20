@@ -1,5 +1,5 @@
 // ============================================================================
-import { logger } from '@/services/logger'
+import { logger } from '@/services/logger';
 // ICON REGISTRY - Optimized Icon Management
 // ============================================================================
 
@@ -8,14 +8,14 @@ import { logger } from '@/services/logger'
  * Imports icons only when needed, improving tree-shaking and bundle size
  */
 
-import { lazy, ComponentType } from 'react'
-import * as LucideIcons from 'lucide-react'
+import { lazy, ComponentType } from 'react';
+import * as LucideIcons from 'lucide-react';
 
 // Icon registry with lazy loading support
 export interface IconConfig {
-  name: string
-  component: ComponentType<React.SVGProps<SVGSVGElement>>
-  category: 'navigation' | 'action' | 'status' | 'file' | 'ui' | 'other'
+  name: string;
+  component: ComponentType<React.SVGProps<SVGSVGElement>>;
+  category: 'navigation' | 'action' | 'status' | 'file' | 'ui' | 'other';
 }
 
 // Lazy load only commonly used icons
@@ -24,11 +24,15 @@ export const IconRegistry: Record<string, IconConfig> = {
   Home: { name: 'Home', component: LucideIcons.Home, category: 'navigation' },
   Menu: { name: 'Menu', component: LucideIcons.Menu, category: 'navigation' },
   X: { name: 'X', component: LucideIcons.X, category: 'navigation' },
-  ChevronRight: { name: 'ChevronRight', component: LucideIcons.ChevronRight, category: 'navigation' },
+  ChevronRight: {
+    name: 'ChevronRight',
+    component: LucideIcons.ChevronRight,
+    category: 'navigation',
+  },
   ChevronLeft: { name: 'ChevronLeft', component: LucideIcons.ChevronLeft, category: 'navigation' },
   ChevronUp: { name: 'ChevronUp', component: LucideIcons.ChevronUp, category: 'navigation' },
   ChevronDown: { name: 'ChevronDown', component: LucideIcons.ChevronDown, category: 'navigation' },
-  
+
   // Action
   Search: { name: 'Search', component: LucideIcons.Search, category: 'action' },
   Filter: { name: 'Filter', component: LucideIcons.Filter, category: 'action' },
@@ -39,32 +43,40 @@ export const IconRegistry: Record<string, IconConfig> = {
   Trash2: { name: 'Trash2', component: LucideIcons.Trash2, category: 'action' },
   Plus: { name: 'Plus', component: LucideIcons.Plus, category: 'action' },
   Minus: { name: 'Minus', component: LucideIcons.Minus, category: 'action' },
-  
+
   // Status
   CheckCircle: { name: 'CheckCircle', component: LucideIcons.CheckCircle, category: 'status' },
   XCircle: { name: 'XCircle', component: LucideIcons.XCircle, category: 'status' },
-  AlertTriangle: { name: 'AlertTriangle', component: LucideIcons.AlertTriangle, category: 'status' },
+  AlertTriangle: {
+    name: 'AlertTriangle',
+    component: LucideIcons.AlertTriangle,
+    category: 'status',
+  },
   AlertCircle: { name: 'AlertCircle', component: LucideIcons.AlertCircle, category: 'status' },
   Info: { name: 'Info', component: LucideIcons.Info, category: 'status' },
-  
+
   // UI
   Bell: { name: 'Bell', component: LucideIcons.Bell, category: 'ui' },
   User: { name: 'User', component: LucideIcons.User, category: 'ui' },
   Settings: { name: 'Settings', component: LucideIcons.Settings, category: 'ui' },
-  
+
   // File
   FileText: { name: 'FileText', component: LucideIcons.FileText, category: 'file' },
   FolderOpen: { name: 'FolderOpen', component: LucideIcons.FolderOpen, category: 'file' },
-  
+
   // Other
   BarChart3: { name: 'BarChart3', component: LucideIcons.BarChart3, category: 'other' },
   Users: { name: 'Users', component: LucideIcons.Users, category: 'other' },
-  
+
   // Reconciliation-specific icons (from ReconciliationInterface.tsx)
   GitCompare: { name: 'GitCompare', component: LucideIcons.GitCompare, category: 'action' },
   Eye: { name: 'Eye', component: LucideIcons.Eye, category: 'action' },
   ArrowUpDown: { name: 'ArrowUpDown', component: LucideIcons.ArrowUpDown, category: 'action' },
-  MoreHorizontal: { name: 'MoreHorizontal', component: LucideIcons.MoreHorizontal, category: 'action' },
+  MoreHorizontal: {
+    name: 'MoreHorizontal',
+    component: LucideIcons.MoreHorizontal,
+    category: 'action',
+  },
   Clock: { name: 'Clock', component: LucideIcons.Clock, category: 'status' },
   Target: { name: 'Target', component: LucideIcons.Target, category: 'status' },
   TrendingUp: { name: 'TrendingUp', component: LucideIcons.TrendingUp, category: 'other' },
@@ -118,69 +130,76 @@ export const IconRegistry: Record<string, IconConfig> = {
   GitBranch: { name: 'GitBranch', component: LucideIcons.GitBranch, category: 'other' },
   GitCommit: { name: 'GitCommit', component: LucideIcons.GitCommit, category: 'other' },
   GitMerge: { name: 'GitMerge', component: LucideIcons.GitMerge, category: 'other' },
-  GitPullRequest: { name: 'GitPullRequest', component: LucideIcons.GitPullRequest, category: 'other' },
+  GitPullRequest: {
+    name: 'GitPullRequest',
+    component: LucideIcons.GitPullRequest,
+    category: 'other',
+  },
   Network: { name: 'Network', component: LucideIcons.Network, category: 'other' },
   FileArchive: { name: 'FileArchive', component: LucideIcons.FileArchive, category: 'file' },
   FileImage: { name: 'FileImage', component: LucideIcons.FileImage, category: 'file' },
   FileVideo: { name: 'FileVideo', component: LucideIcons.FileVideo, category: 'file' },
   FileAudio: { name: 'FileAudio', component: LucideIcons.FileAudio, category: 'file' },
-  FileSpreadsheet: { name: 'FileSpreadsheet', component: LucideIcons.FileSpreadsheet, category: 'file' },
+  FileSpreadsheet: {
+    name: 'FileSpreadsheet',
+    component: LucideIcons.FileSpreadsheet,
+    category: 'file',
+  },
   FileCode: { name: 'FileCode', component: LucideIcons.FileCode, category: 'file' },
   FileJson: { name: 'FileJson', component: LucideIcons.FileJson, category: 'file' },
   Play: { name: 'Play', component: LucideIcons.Play, category: 'action' },
   Pause: { name: 'Pause', component: LucideIcons.Pause, category: 'action' },
   // Additional icons used in ReconciliationInterface
   FileText: { name: 'FileText', component: LucideIcons.FileText, category: 'file' },
-}
+};
 
 // Export Square as StopIcon from LucideIcons
-export const StopIcon = LucideIcons.Square
+export const StopIcon = LucideIcons.Square;
 
 /**
  * Get icon component by name
  */
 export const getIcon = (name: string): ComponentType<React.SVGProps<SVGSVGElement>> | undefined => {
-  return IconRegistry[name]?.component
-}
+  return IconRegistry[name]?.component;
+};
 
 /**
  * Render icon by name
  */
 export interface IconProps {
-  name: string
-  className?: string
-  size?: number | string
-  color?: string
-  [key: string]: unknown
+  name: string;
+  className?: string;
+  size?: number | string;
+  color?: string;
+  [key: string]: unknown;
 }
 
 export const Icon: React.FC<IconProps> = ({ name, className = '', size = 20, color, ...props }) => {
-  const IconComponent = getIcon(name)
-  
+  const IconComponent = getIcon(name);
+
   if (!IconComponent) {
-    logger.warn(`Icon "${name}" not found in registry`)
-    return null
+    logger.warn(`Icon "${name}" not found in registry`);
+    return null;
   }
-  
+
   return (
-    <IconComponent 
+    <IconComponent
       className={className}
       size={typeof size === 'number' ? size : undefined}
       style={color ? { color } : undefined}
       {...props}
     />
-  )
-}
+  );
+};
 
 /**
  * Hook to use icons efficiently
  */
 export const useIcon = (name: string) => {
-  const IconComponent = getIcon(name)
-  
-  return IconComponent || (() => null)
-}
+  const IconComponent = getIcon(name);
+
+  return IconComponent || (() => null);
+};
 
 export { IconRegistry };
-export default Icon
-
+export default Icon;

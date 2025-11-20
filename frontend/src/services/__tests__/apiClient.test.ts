@@ -32,7 +32,7 @@ describe('API Client', () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': expect.any(String),
+          Authorization: expect.any(String),
         },
       });
       expect(result).toEqual(mockResponse);
@@ -78,7 +78,7 @@ describe('API Client', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': expect.any(String),
+          Authorization: expect.any(String),
         },
         body: JSON.stringify(mockData),
       });
@@ -113,7 +113,7 @@ describe('API Client', () => {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': expect.any(String),
+          Authorization: expect.any(String),
         },
         body: JSON.stringify(updateData),
       });
@@ -135,7 +135,7 @@ describe('API Client', () => {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': expect.any(String),
+          Authorization: expect.any(String),
         },
       });
       expect(result).toEqual(mockResponse);
@@ -164,7 +164,7 @@ describe('API Client', () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer mock-jwt-token',
+          Authorization: 'Bearer mock-jwt-token',
         },
       });
     });
@@ -237,7 +237,7 @@ describe('API Client', () => {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': expect.any(String),
+          Authorization: expect.any(String),
           'X-Custom-Header': 'custom-value',
         },
       });

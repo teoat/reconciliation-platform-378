@@ -43,7 +43,11 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
       <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-medium text-gray-900">Create Reconciliation Job</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close modal">
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600"
+            aria-label="Close modal"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -56,7 +60,9 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="job-name" className="block text-sm font-medium text-gray-700">Job Name</label>
+            <label htmlFor="job-name" className="block text-sm font-medium text-gray-700">
+              Job Name
+            </label>
             <input
               id="job-name"
               type="text"
@@ -71,7 +77,9 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
           </div>
 
           <div>
-            <label htmlFor="job-description" className="block text-sm font-medium text-gray-700">Description</label>
+            <label htmlFor="job-description" className="block text-sm font-medium text-gray-700">
+              Description
+            </label>
             <textarea
               id="job-description"
               value={formData.description}
@@ -85,7 +93,12 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
           </div>
 
           <div>
-            <label htmlFor="source-data-source-id" className="block text-sm font-medium text-gray-700">Source Data Source ID</label>
+            <label
+              htmlFor="source-data-source-id"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Source Data Source ID
+            </label>
             <input
               id="source-data-source-id"
               type="text"
@@ -102,7 +115,12 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
           </div>
 
           <div>
-            <label htmlFor="target-data-source-id" className="block text-sm font-medium text-gray-700">Target Data Source ID</label>
+            <label
+              htmlFor="target-data-source-id"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Target Data Source ID
+            </label>
             <input
               id="target-data-source-id"
               type="text"
@@ -119,7 +137,10 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
           </div>
 
           <div>
-            <label htmlFor="confidence-threshold" className="block text-sm font-medium text-gray-700">
+            <label
+              htmlFor="confidence-threshold"
+              className="block text-sm font-medium text-gray-700"
+            >
               Confidence Threshold (%)
             </label>
             <input
@@ -162,4 +183,3 @@ export const CreateJobModal: React.FC<CreateJobModalProps> = ({
     </div>
   );
 };
-

@@ -1,7 +1,5 @@
 // Initial Data State
-import {
-  CrossPageData,
-} from './types';
+import { CrossPageData } from './types';
 
 export const createInitialCrossPageData = (): CrossPageData => ({
   ingestion: {
@@ -36,8 +34,22 @@ export const createInitialCrossPageData = (): CrossPageData => ({
     policies: [],
     auditLogs: [],
     complianceStatus: {
-      sox: { id: '', name: '', status: 'partial', requirements: [], lastAudit: new Date(), nextAudit: new Date() },
-      gdpr: { id: '', name: '', status: 'partial', requirements: [], lastAudit: new Date(), nextAudit: new Date() },
+      sox: {
+        id: '',
+        name: '',
+        status: 'partial',
+        requirements: [],
+        lastAudit: new Date(),
+        nextAudit: new Date(),
+      },
+      gdpr: {
+        id: '',
+        name: '',
+        status: 'partial',
+        requirements: [],
+        lastAudit: new Date(),
+        nextAudit: new Date(),
+      },
       lastAudit: new Date(),
       nextAudit: new Date(),
     },
@@ -52,4 +64,3 @@ export const createInitialCrossPageData = (): CrossPageData => ({
     lastUpdated: new Date(),
   },
 });
-

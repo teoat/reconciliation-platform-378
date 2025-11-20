@@ -25,33 +25,36 @@ const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Use orchestration hook
-  const {
-    updatePageContext,
-    trackFeatureUsage,
-    trackFeatureError,
-    trackUserAction,
-  } = usePageOrchestration({
-    pageMetadata: dashboardPageMetadata,
-    getPageContext: () => getDashboardPageContext(
-      projects.length,
-      projects.filter(p => p.status === 'active').length,
-      projects.filter(p => p.status === 'completed').length,
-      productivityScore
-    ),
-    getOnboardingSteps: () => getDashboardOnboardingSteps(
-      projects.length > 0,
-      projects.filter(p => p.status === 'completed').length > 0
-    ),
-    registerGuidanceHandlers: () => registerDashboardGuidanceHandlers(
-      () => {/* show project help */},
-      () => {/* show insights help */}
-    ),
-    getGuidanceContent: (topic) => getDashboardGuidanceContent(topic),
-    onContextChange: (changes) => {
-      // Handle context changes if needed
-      console.log('Context changed:', changes);
-    },
-  });
+  const { updatePageContext, trackFeatureUsage, trackFeatureError, trackUserAction } =
+    usePageOrchestration({
+      pageMetadata: dashboardPageMetadata,
+      getPageContext: () =>
+        getDashboardPageContext(
+          projects.length,
+          projects.filter((p) => p.status === 'active').length,
+          projects.filter((p) => p.status === 'completed').length,
+          productivityScore
+        ),
+      getOnboardingSteps: () =>
+        getDashboardOnboardingSteps(
+          projects.length > 0,
+          projects.filter((p) => p.status === 'completed').length > 0
+        ),
+      registerGuidanceHandlers: () =>
+        registerDashboardGuidanceHandlers(
+          () => {
+            /* show project help */
+          },
+          () => {
+            /* show insights help */
+          }
+        ),
+      getGuidanceContent: (topic) => getDashboardGuidanceContent(topic),
+      onContextChange: (changes) => {
+        // Handle context changes if needed
+        console.log('Context changed:', changes);
+      },
+    });
 
   // Track feature usage
   const handleCreateProject = async () => {
@@ -78,31 +81,37 @@ const DashboardPage: React.FC = () => {
 ## Available Page Orchestrations
 
 ### Dashboard
+
 - **File**: `@/orchestration/pages/DashboardPageOrchestration`
 - **Metadata**: `dashboardPageMetadata`
 - **Features**: Project overview, quick actions, recent activity, smart insights
 
 ### Reconciliation
+
 - **File**: `@/orchestration/pages/ReconciliationPageOrchestration` (example)
 - **Metadata**: `reconciliationPageMetadata`
 - **Features**: Upload, configure, run jobs, results
 
 ### Ingestion
+
 - **File**: `@/orchestration/pages/IngestionPageOrchestration`
 - **Metadata**: `ingestionPageMetadata`
 - **Features**: File upload, data validation, processing
 
 ### Adjudication
+
 - **File**: `@/orchestration/pages/AdjudicationPageOrchestration`
 - **Metadata**: `adjudicationPageMetadata`
 - **Features**: Match review, discrepancy resolution, approval
 
 ### Summary
+
 - **File**: `@/orchestration/pages/SummaryPageOrchestration`
 - **Metadata**: `summaryPageMetadata`
 - **Features**: Report generation, export, analytics
 
 ### Visualization
+
 - **File**: `@/orchestration/pages/VisualizationPageOrchestration`
 - **Metadata**: `visualizationPageMetadata`
 - **Features**: Chart creation, dashboard, interactive visualizations
@@ -112,10 +121,7 @@ const DashboardPage: React.FC = () => {
 ### Basic Integration
 
 ```typescript
-const {
-  updatePageContext,
-  trackFeatureUsage,
-} = usePageOrchestration({
+const { updatePageContext, trackFeatureUsage } = usePageOrchestration({
   pageMetadata: yourPageMetadata,
   getPageContext: () => yourPageContextFunction(),
 });
@@ -124,10 +130,7 @@ const {
 ### With Onboarding
 
 ```typescript
-const {
-  updatePageContext,
-  trackFeatureUsage,
-} = usePageOrchestration({
+const { updatePageContext, trackFeatureUsage } = usePageOrchestration({
   pageMetadata: yourPageMetadata,
   getPageContext: () => yourPageContextFunction(),
   getOnboardingSteps: () => yourOnboardingStepsFunction(),
@@ -143,10 +146,7 @@ const {
 ### With Workflow State
 
 ```typescript
-const {
-  updatePageContext,
-  trackFeatureUsage,
-} = usePageOrchestration({
+const { updatePageContext, trackFeatureUsage } = usePageOrchestration({
   pageMetadata: yourPageMetadata,
   getPageContext: () => yourPageContextFunction(),
   getWorkflowState: () => yourWorkflowStateFunction(),
@@ -159,10 +159,7 @@ const {
 ### With Guidance Handlers
 
 ```typescript
-const {
-  updatePageContext,
-  trackFeatureUsage,
-} = usePageOrchestration({
+const { updatePageContext, trackFeatureUsage } = usePageOrchestration({
   pageMetadata: yourPageMetadata,
   getPageContext: () => yourPageContextFunction(),
   registerGuidanceHandlers: () => yourGuidanceHandlersFunction(),
@@ -281,4 +278,3 @@ tracker.trackError(userId, 'error-type');
 - [Frenly AI Orchestration Proposal](../../docs/architecture/FRENLY_AI_ORCHESTRATION_PROPOSAL.md)
 - [Frenly AI Comprehensive Analysis](../../docs/features/frenly-ai/FRENLY_AI_COMPREHENSIVE_ANALYSIS.md)
 - [Onboarding Architecture](../../docs/features/onboarding/ONBOARDING_ARCHITECTURE.md)
-

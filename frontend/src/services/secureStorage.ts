@@ -27,22 +27,28 @@ class EncryptionService {
   constructor() {
     // Use a secure key from environment - required for production
     const envKey = import.meta.env.VITE_STORAGE_KEY;
-    
+
     // Development/preview fallback (not secure, but allows development and testing)
     const isDevelopment = import.meta.env.DEV;
     // Allow fallback for localhost or when not in strict production mode
-    const isLocalhost = typeof window !== 'undefined' && 
+    const isLocalhost =
+      typeof window !== 'undefined' &&
       (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1');
     const isPreview = import.meta.env.MODE === 'preview' || isLocalhost;
     const allowFallback = isDevelopment || isPreview;
-    const fallbackKey = allowFallback ? 'dev-storage-key-not-secure-change-in-production' : undefined;
-    
+    const fallbackKey = allowFallback
+      ? 'dev-storage-key-not-secure-change-in-production'
+      : undefined;
+
     if (!envKey || envKey === 'default-key-change-in-production') {
       if (allowFallback && fallbackKey) {
-        logger.warn('VITE_STORAGE_KEY is not set. Using development fallback. This is NOT secure for production.', {
-          component: 'EncryptionService',
-          category: 'security',
-        });
+        logger.warn(
+          'VITE_STORAGE_KEY is not set. Using development fallback. This is NOT secure for production.',
+          {
+            component: 'EncryptionService',
+            category: 'security',
+          }
+        );
         this.key = fallbackKey;
         return;
       }

@@ -106,7 +106,8 @@ export function registerVisualizationGuidanceHandlers(
           return {
             id: `chart-tip-${Date.now()}`,
             type: 'tip',
-            content: 'Create your first chart to visualize reconciliation data. Choose from various chart types!',
+            content:
+              'Create your first chart to visualize reconciliation data. Choose from various chart types!',
             timestamp: new Date(),
             page: 'visualization',
             priority: 'medium',
@@ -148,7 +149,8 @@ export function getVisualizationGuidanceContent(topic: string): GuidanceContent[
       {
         id: 'chart-selection',
         title: 'Chart Selection',
-        content: 'Choose appropriate chart types: bar charts for comparisons, line charts for trends, pie charts for proportions.',
+        content:
+          'Choose appropriate chart types: bar charts for comparisons, line charts for trends, pie charts for proportions.',
         type: 'tip',
       },
       {
@@ -176,7 +178,8 @@ export function getVisualizationGuidanceContent(topic: string): GuidanceContent[
       {
         id: 'filters',
         title: 'Filters',
-        content: 'Use filters to focus on specific data subsets. Filters apply across all charts in a dashboard.',
+        content:
+          'Use filters to focus on specific data subsets. Filters apply across all charts in a dashboard.',
         type: 'info',
       },
       {
@@ -204,4 +207,3 @@ export function getVisualizationGuidanceContent(topic: string): GuidanceContent[
 
   return guidanceMap[topic] || [];
 }
-

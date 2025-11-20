@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import { vi } from 'vitest';
+import { rootReducer } from '../store/unifiedStore';
 
 // Custom render function with router and common providers
 interface CustomRenderOptions {
@@ -19,7 +20,7 @@ export function renderWithRouter(
   const { route = '/', initialEntries = [route], store } = options;
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
-    <Provider store={store || configureStore({ reducer: {} })}>
+    <Provider store={store || configureStore({ reducer: rootReducer })}>
       <BrowserRouter>{children}</BrowserRouter>
     </Provider>
   );

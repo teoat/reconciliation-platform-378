@@ -63,7 +63,10 @@ export function trapFocus(container: HTMLElement): () => void {
 /**
  * Announce message to screen readers
  */
-export function announceToScreenReader(message: string, priority: 'polite' | 'assertive' = 'polite'): void {
+export function announceToScreenReader(
+  message: string,
+  priority: 'polite' | 'assertive' = 'polite'
+): void {
   const announcement = document.createElement('div');
   announcement.setAttribute('role', 'status');
   announcement.setAttribute('aria-live', priority);
@@ -81,11 +84,15 @@ export function announceToScreenReader(message: string, priority: 'polite' | 'as
 /**
  * Skip link component helper
  */
-export function createSkipLink(targetId: string, label: string = 'Skip to main content'): HTMLAnchorElement {
+export function createSkipLink(
+  targetId: string,
+  label: string = 'Skip to main content'
+): HTMLAnchorElement {
   const skipLink = document.createElement('a');
   skipLink.href = `#${targetId}`;
   skipLink.textContent = label;
-  skipLink.className = 'sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:p-4 focus:bg-blue-600 focus:text-white';
+  skipLink.className =
+    'sr-only focus:not-sr-only focus:absolute focus:top-0 focus:left-0 focus:z-50 focus:p-4 focus:bg-blue-600 focus:text-white';
   return skipLink;
 }
 
@@ -160,4 +167,3 @@ export function checkColorContrast(foreground: string, background: string): bool
   // Returns true if contrast is sufficient (WCAG AA: 4.5:1 for normal text)
   return true; // Placeholder - implement proper contrast calculation
 }
-

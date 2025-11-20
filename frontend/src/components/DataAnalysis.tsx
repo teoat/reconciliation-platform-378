@@ -1,169 +1,176 @@
-'use client'
-import { logger } from '@/services/logger'
+'use client';
+import { logger } from '@/services/logger';
 
-import { useState, useEffect, useCallback } from 'react'
-import { BarChart3 } from 'lucide-react'
-import { Target } from 'lucide-react'
-import { Shield } from 'lucide-react'
-import { Database } from 'lucide-react'
-import { Tag } from 'lucide-react'
-import { Calendar } from 'lucide-react'
-import { Eye } from 'lucide-react'
-import { RefreshCw } from 'lucide-react'
-import { Phone } from 'lucide-react'
-import { User } from 'lucide-react'
-import { UserCheck } from 'lucide-react'
-import { UserX } from 'lucide-react'
-import { UserPlus } from 'lucide-react'
-import { UserMinus } from 'lucide-react'
-import { Crown } from 'lucide-react'
-import { Bell } from 'lucide-react'
-import { BellOff } from 'lucide-react'
-import { Bookmark } from 'lucide-react'
-import { Share2 } from 'lucide-react'
-import { ExternalLink } from 'lucide-react'
-import { File } from 'lucide-react'
-import { FileCheck } from 'lucide-react'
-import { FileX } from 'lucide-react'
-import { FilePlus } from 'lucide-react'
-import { FileMinus } from 'lucide-react'
-import { FileEdit } from 'lucide-react'
-import { FileSearch } from 'lucide-react'
-import { Download } from 'lucide-react'
-import { Upload } from 'lucide-react'
-import { FileArchive } from 'lucide-react'
-import { FileImage } from 'lucide-react'
-import { FileVideo } from 'lucide-react'
-import { FileAudio } from 'lucide-react'
-import { FileText } from 'lucide-react'
-import { FileSpreadsheet } from 'lucide-react'
-import { FileCode } from 'lucide-react'
-import { FileJson } from 'lucide-react'
-import { X } from 'lucide-react'
-import { 
-  IndonesianDataProcessor, 
-  ProcessedExpenseRecord, 
-  ProcessedBankRecord, 
-  IndonesianMatchingResult 
-} from '../utils/indonesianDataProcessor'
+import { useState, useEffect, useCallback } from 'react';
+import { BarChart3 } from 'lucide-react';
+import { Target } from 'lucide-react';
+import { Shield } from 'lucide-react';
+import { Database } from 'lucide-react';
+import { Tag } from 'lucide-react';
+import { Calendar } from 'lucide-react';
+import { Eye } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+import { Phone } from 'lucide-react';
+import { User } from 'lucide-react';
+import { UserCheck } from 'lucide-react';
+import { UserX } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
+import { UserMinus } from 'lucide-react';
+import { Crown } from 'lucide-react';
+import { Bell } from 'lucide-react';
+import { BellOff } from 'lucide-react';
+import { Bookmark } from 'lucide-react';
+import { Share2 } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
+import { File } from 'lucide-react';
+import { FileCheck } from 'lucide-react';
+import { FileX } from 'lucide-react';
+import { FilePlus } from 'lucide-react';
+import { FileMinus } from 'lucide-react';
+import { FileEdit } from 'lucide-react';
+import { FileSearch } from 'lucide-react';
+import { Download } from 'lucide-react';
+import { Upload } from 'lucide-react';
+import { FileArchive } from 'lucide-react';
+import { FileImage } from 'lucide-react';
+import { FileVideo } from 'lucide-react';
+import { FileAudio } from 'lucide-react';
+import { FileText } from 'lucide-react';
+import { FileSpreadsheet } from 'lucide-react';
+import { FileCode } from 'lucide-react';
+import { FileJson } from 'lucide-react';
+import { X } from 'lucide-react';
+import {
+  IndonesianDataProcessor,
+  ProcessedExpenseRecord,
+  ProcessedBankRecord,
+  IndonesianMatchingResult,
+} from '../utils/indonesianDataProcessor';
 
 interface DataAnalysisProps {
-  isVisible: boolean
-  onClose: () => void
-  expensesData?: ProcessedExpenseRecord[]
-  bankData?: ProcessedBankRecord[]
+  isVisible: boolean;
+  onClose: () => void;
+  expensesData?: ProcessedExpenseRecord[];
+  bankData?: ProcessedBankRecord[];
 }
 
 const DataAnalysis: React.FC<DataAnalysisProps> = ({
   isVisible,
   onClose,
   expensesData = [],
-  bankData = []
+  bankData = [],
 }) => {
-  const [processedExpenses, setProcessedExpenses] = useState<ProcessedExpenseRecord[]>([])
-  const [processedBankRecords, setProcessedBankRecords] = useState<ProcessedBankRecord[]>([])
-  const [matches, setMatches] = useState<Array<{
-    expense: ProcessedExpenseRecord
-    bank: ProcessedBankRecord
-    match: IndonesianMatchingResult
-  }>>([])
+  const [processedExpenses, setProcessedExpenses] = useState<ProcessedExpenseRecord[]>([]);
+  const [processedBankRecords, setProcessedBankRecords] = useState<ProcessedBankRecord[]>([]);
+  const [matches, setMatches] = useState<
+    Array<{
+      expense: ProcessedExpenseRecord;
+      bank: ProcessedBankRecord;
+      match: IndonesianMatchingResult;
+    }>
+  >([]);
   interface CategoryData {
-    count: number
-    totalAmount: number
+    count: number;
+    totalAmount: number;
   }
-  
+
   interface ReconciliationSummary {
     categories: {
-      expenses: Record<string, CategoryData>
-      bankRecords: Record<string, CategoryData>
-    }
-    totalExpenses: number
-    totalBankTransactions: number
-    matchedAmount: number
-    unmatchedExpenses: number
-    unmatchedBankTransactions: number
+      expenses: Record<string, CategoryData>;
+      bankRecords: Record<string, CategoryData>;
+    };
+    totalExpenses: number;
+    totalBankTransactions: number;
+    matchedAmount: number;
+    unmatchedExpenses: number;
+    unmatchedBankTransactions: number;
   }
-  
-  const [summary, setSummary] = useState<ReconciliationSummary | null>(null)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [processingProgress, setProcessingProgress] = useState(0)
-  const [activeTab, setActiveTab] = useState<'overview' | 'matching' | 'categories' | 'timeline'>('overview')
+
+  const [summary, setSummary] = useState<ReconciliationSummary | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const [activeTab, setActiveTab] = useState<'overview' | 'matching' | 'categories' | 'timeline'>(
+    'overview'
+  );
 
   // Process data when component mounts or data changes
   const processData = useCallback(async () => {
-    setIsProcessing(true)
-    setProcessingProgress(0)
+    setIsProcessing(true);
+    setProcessingProgress(0);
 
     try {
       // Process expenses data
       if (expensesData.length > 0) {
-        setProcessingProgress(25)
-        const processedExpenses = IndonesianDataProcessor.processExpensesData(expensesData)
-        setProcessedExpenses(processedExpenses)
+        setProcessingProgress(25);
+        const processedExpenses = IndonesianDataProcessor.processExpensesData(expensesData);
+        setProcessedExpenses(processedExpenses);
       }
 
       // Process bank data
       if (bankData.length > 0) {
-        setProcessingProgress(50)
-        const processedBankRecords = IndonesianDataProcessor.processBankData(bankData)
-        setProcessedBankRecords(processedBankRecords)
+        setProcessingProgress(50);
+        const processedBankRecords = IndonesianDataProcessor.processBankData(bankData);
+        setProcessedBankRecords(processedBankRecords);
       }
 
       // Perform matching
       if (processedExpenses.length > 0 && processedBankRecords.length > 0) {
-        setProcessingProgress(75)
-        const matches = IndonesianDataProcessor.batchMatchRecords(processedExpenses, processedBankRecords)
-        setMatches(matches)
+        setProcessingProgress(75);
+        const matches = IndonesianDataProcessor.batchMatchRecords(
+          processedExpenses,
+          processedBankRecords
+        );
+        setMatches(matches);
       }
 
       // Generate summary
-      setProcessingProgress(90)
+      setProcessingProgress(90);
       const summary = IndonesianDataProcessor.generateReconciliationSummary(
         processedExpenses,
         processedBankRecords,
         matches
-      )
-      setSummary(summary)
+      );
+      setSummary(summary);
 
-      setProcessingProgress(100)
+      setProcessingProgress(100);
     } catch (error) {
-      logger.error('Error processing data:', error)
-     } finally {
-       setIsProcessing(false)
-     }
-   }, [expensesData, bankData, matches, processedBankRecords, processedExpenses])
+      logger.error('Error processing data:', error);
+    } finally {
+      setIsProcessing(false);
+    }
+  }, [expensesData, bankData, matches, processedBankRecords, processedExpenses]);
 
   useEffect(() => {
     if (expensesData.length > 0 || bankData.length > 0) {
-      processData()
+      processData();
     }
-   }, [expensesData, bankData, processData])
+  }, [expensesData, bankData, processData]);
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
-      minimumFractionDigits: 0
-    }).format(amount)
-  }
+      minimumFractionDigits: 0,
+    }).format(amount);
+  };
 
   const formatNumber = (num: number) => {
-    return new Intl.NumberFormat('id-ID').format(num)
-  }
+    return new Intl.NumberFormat('id-ID').format(num);
+  };
 
   const getConfidenceColor = (confidence: number) => {
-    if (confidence >= 90) return 'text-green-600'
-    if (confidence >= 70) return 'text-yellow-600'
-    return 'text-red-600'
-  }
+    if (confidence >= 90) return 'text-green-600';
+    if (confidence >= 70) return 'text-yellow-600';
+    return 'text-red-600';
+  };
 
   const getConfidenceBgColor = (confidence: number) => {
-    if (confidence >= 90) return 'bg-green-100'
-    if (confidence >= 70) return 'bg-yellow-100'
-    return 'bg-red-100'
-  }
+    if (confidence >= 90) return 'bg-green-100';
+    if (confidence >= 70) return 'bg-yellow-100';
+    return 'bg-red-100';
+  };
 
-  if (!isVisible) return null
+  if (!isVisible) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -172,9 +179,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
         <div className="flex items-center justify-between p-6 border-b border-secondary-200">
           <div className="flex items-center space-x-3">
             <BarChart3 className="w-6 h-6 text-primary-600" />
-            <h2 className="text-xl font-semibold text-secondary-900">
-              Indonesian Data Analysis
-            </h2>
+            <h2 className="text-xl font-semibold text-secondary-900">Indonesian Data Analysis</h2>
           </div>
           <div className="flex items-center space-x-2">
             <button
@@ -185,10 +190,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
               <RefreshCw className={`w-4 h-4 ${isProcessing ? 'animate-spin' : ''}`} />
               <span>Refresh Analysis</span>
             </button>
-            <button
-              onClick={onClose}
-              className="text-secondary-400 hover:text-secondary-600"
-            >
+            <button onClick={onClose} className="text-secondary-400 hover:text-secondary-600">
               <X className="w-6 h-6" />
             </button>
           </div>
@@ -214,12 +216,14 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
         {/* Tabs */}
         <div className="border-b border-secondary-200">
           <nav className="flex space-x-8 px-6">
-            {([
-              { id: 'overview', label: 'Overview', icon: BarChart3 },
-              { id: 'matching', label: 'Matching Results', icon: Target },
-              { id: 'categories', label: 'Categories', icon: Tag },
-              { id: 'timeline', label: 'Timeline', icon: Calendar }
-            ] as const).map(tab => (
+            {(
+              [
+                { id: 'overview', label: 'Overview', icon: BarChart3 },
+                { id: 'matching', label: 'Matching Results', icon: Target },
+                { id: 'categories', label: 'Categories', icon: Tag },
+                { id: 'timeline', label: 'Timeline', icon: Calendar },
+              ] as const
+            ).map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
@@ -256,7 +260,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                     <FileText className="w-8 h-8 text-blue-500" />
                   </div>
                 </div>
-                
+
                 <div className="card">
                   <div className="flex items-center justify-between">
                     <div>
@@ -271,7 +275,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                     <Database className="w-8 h-8 text-green-500" />
                   </div>
                 </div>
-                
+
                 <div className="card">
                   <div className="flex items-center justify-between">
                     <div>
@@ -286,7 +290,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                     <Target className="w-8 h-8 text-green-500" />
                   </div>
                 </div>
-                
+
                 <div className="card">
                   <div className="flex items-center justify-between">
                     <div>
@@ -294,9 +298,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                       <p className="text-2xl font-bold text-blue-600">
                         {summary.quality.averageConfidence.toFixed(1)}%
                       </p>
-                      <p className="text-xs text-secondary-500">
-                        High quality matches
-                      </p>
+                      <p className="text-xs text-secondary-500">High quality matches</p>
                     </div>
                     <Shield className="w-8 h-8 text-blue-500" />
                   </div>
@@ -306,12 +308,16 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
               {/* Matching Quality Breakdown */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="card">
-                  <h3 className="text-lg font-semibold text-secondary-900 mb-4">Matching Quality</h3>
+                  <h3 className="text-lg font-semibold text-secondary-900 mb-4">
+                    Matching Quality
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-secondary-700">High Confidence (≥90%)</span>
+                        <span className="text-sm font-medium text-secondary-700">
+                          High Confidence (≥90%)
+                        </span>
                       </div>
                       <span className="text-sm font-bold text-green-600">
                         {summary.quality.highConfidenceMatches}
@@ -320,7 +326,9 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-secondary-700">Medium Confidence (70-89%)</span>
+                        <span className="text-sm font-medium text-secondary-700">
+                          Medium Confidence (70-89%)
+                        </span>
                       </div>
                       <span className="text-sm font-bold text-yellow-600">
                         {summary.quality.mediumConfidenceMatches}
@@ -329,7 +337,9 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                        <span className="text-sm font-medium text-secondary-700">Low Confidence (&lt;70%)</span>
+                        <span className="text-sm font-medium text-secondary-700">
+                          Low Confidence (&lt;70%)
+                        </span>
                       </div>
                       <span className="text-sm font-bold text-red-600">
                         {summary.quality.lowConfidenceMatches}
@@ -339,7 +349,9 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                 </div>
 
                 <div className="card">
-                  <h3 className="text-lg font-semibold text-secondary-900 mb-4">Unmatched Records</h3>
+                  <h3 className="text-lg font-semibold text-secondary-900 mb-4">
+                    Unmatched Records
+                  </h3>
                   <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-secondary-600">Unmatched Expenses</span>
@@ -374,20 +386,35 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-secondary-200">
-                        <th className="text-left py-3 px-4 font-medium text-secondary-700">Expense</th>
-                        <th className="text-left py-3 px-4 font-medium text-secondary-700">Bank Transaction</th>
-                        <th className="text-left py-3 px-4 font-medium text-secondary-700">Amount</th>
+                        <th className="text-left py-3 px-4 font-medium text-secondary-700">
+                          Expense
+                        </th>
+                        <th className="text-left py-3 px-4 font-medium text-secondary-700">
+                          Bank Transaction
+                        </th>
+                        <th className="text-left py-3 px-4 font-medium text-secondary-700">
+                          Amount
+                        </th>
                         <th className="text-left py-3 px-4 font-medium text-secondary-700">Date</th>
-                        <th className="text-left py-3 px-4 font-medium text-secondary-700">Confidence</th>
-                        <th className="text-left py-3 px-4 font-medium text-secondary-700">Details</th>
+                        <th className="text-left py-3 px-4 font-medium text-secondary-700">
+                          Confidence
+                        </th>
+                        <th className="text-left py-3 px-4 font-medium text-secondary-700">
+                          Details
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {matches.slice(0, 20).map((match, index) => (
-                        <tr key={index} className="border-b border-secondary-100 hover:bg-secondary-50">
+                        <tr
+                          key={index}
+                          className="border-b border-secondary-100 hover:bg-secondary-50"
+                        >
                           <td className="py-3 px-4">
                             <div>
-                              <div className="font-medium text-secondary-900">{match.expense.id}</div>
+                              <div className="font-medium text-secondary-900">
+                                {match.expense.id}
+                              </div>
                               <div className="text-sm text-secondary-600 truncate max-w-32">
                                 {match.expense.description}
                               </div>
@@ -407,22 +434,25 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                             </div>
                           </td>
                           <td className="py-3 px-4">
-                            <div className="text-sm text-secondary-600">
-                              {match.expense.date}
-                            </div>
+                            <div className="text-sm text-secondary-600">{match.expense.date}</div>
                           </td>
                           <td className="py-3 px-4">
                             <div className="flex items-center space-x-2">
                               <div className="w-16 bg-secondary-200 rounded-full h-2">
                                 <div
                                   className={`h-2 rounded-full ${
-                                    match.match.confidence >= 90 ? 'bg-green-500' :
-                                    match.match.confidence >= 70 ? 'bg-yellow-500' : 'bg-red-500'
+                                    match.match.confidence >= 90
+                                      ? 'bg-green-500'
+                                      : match.match.confidence >= 70
+                                        ? 'bg-yellow-500'
+                                        : 'bg-red-500'
                                   }`}
                                   style={{ width: `${match.match.confidence}%` }}
                                 />
                               </div>
-                              <span className={`text-sm font-medium ${getConfidenceColor(match.match.confidence)}`}>
+                              <span
+                                className={`text-sm font-medium ${getConfidenceColor(match.match.confidence)}`}
+                              >
                                 {match.match.confidence}%
                               </span>
                             </div>
@@ -446,40 +476,52 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
             <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="card">
-                  <h3 className="text-lg font-semibold text-secondary-900 mb-4">Expense Categories</h3>
+                  <h3 className="text-lg font-semibold text-secondary-900 mb-4">
+                    Expense Categories
+                  </h3>
                   <div className="space-y-3">
-                    {Object.entries(summary.categories.expenses).slice(0, 10).map(([category, data]: [string, CategoryData]) => (
-                      <div key={category} className="flex items-center justify-between">
-                        <div>
-                          <span className="text-sm font-medium text-secondary-700">{category}</span>
-                          <div className="text-xs text-secondary-500">{data.count} records</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-secondary-900">
-                            {formatCurrency(data.totalAmount)}
+                    {Object.entries(summary.categories.expenses)
+                      .slice(0, 10)
+                      .map(([category, data]: [string, CategoryData]) => (
+                        <div key={category} className="flex items-center justify-between">
+                          <div>
+                            <span className="text-sm font-medium text-secondary-700">
+                              {category}
+                            </span>
+                            <div className="text-xs text-secondary-500">{data.count} records</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-secondary-900">
+                              {formatCurrency(data.totalAmount)}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
 
                 <div className="card">
-                  <h3 className="text-lg font-semibold text-secondary-900 mb-4">Bank Transaction Categories</h3>
+                  <h3 className="text-lg font-semibold text-secondary-900 mb-4">
+                    Bank Transaction Categories
+                  </h3>
                   <div className="space-y-3">
-                    {Object.entries(summary.categories.bankRecords).slice(0, 10).map(([category, data]: [string, CategoryData]) => (
-                      <div key={category} className="flex items-center justify-between">
-                        <div>
-                          <span className="text-sm font-medium text-secondary-700">{category}</span>
-                          <div className="text-xs text-secondary-500">{data.count} records</div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-sm font-bold text-secondary-900">
-                            {formatCurrency(data.totalAmount)}
+                    {Object.entries(summary.categories.bankRecords)
+                      .slice(0, 10)
+                      .map(([category, data]: [string, CategoryData]) => (
+                        <div key={category} className="flex items-center justify-between">
+                          <div>
+                            <span className="text-sm font-medium text-secondary-700">
+                              {category}
+                            </span>
+                            <div className="text-xs text-secondary-500">{data.count} records</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-bold text-secondary-900">
+                              {formatCurrency(data.totalAmount)}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))}
                   </div>
                 </div>
               </div>
@@ -505,10 +547,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
 
         {/* Footer */}
         <div className="flex justify-end space-x-2 p-6 border-t border-secondary-200">
-          <button
-            onClick={onClose}
-            className="btn-secondary"
-          >
+          <button onClick={onClose} className="btn-secondary">
             Close
           </button>
           <button className="btn-primary flex items-center space-x-2">
@@ -518,7 +557,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default DataAnalysis
+export default DataAnalysis;

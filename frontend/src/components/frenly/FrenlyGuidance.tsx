@@ -1,39 +1,39 @@
-import React, { useState, useEffect, useCallback } from 'react'
-import { MessageCircle } from 'lucide-react'
-import { X } from 'lucide-react'
-import { Minimize2 } from 'lucide-react'
-import { Lightbulb } from 'lucide-react'
-import { AlertTriangle } from 'lucide-react'
-import { PartyPopper } from 'lucide-react'
-import { Star } from 'lucide-react'
-import { Smile } from 'lucide-react'
-import { BookOpen } from 'lucide-react'
-import { Target } from 'lucide-react'
-import { CheckCircle } from 'lucide-react'
-import { ArrowRight } from 'lucide-react'
-import { HelpCircle } from 'lucide-react'
-import { Zap } from 'lucide-react'
+import React, { useState, useEffect, useCallback } from 'react';
+import { MessageCircle } from 'lucide-react';
+import { X } from 'lucide-react';
+import { Minimize2 } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
+import { PartyPopper } from 'lucide-react';
+import { Star } from 'lucide-react';
+import { Smile } from 'lucide-react';
+import { BookOpen } from 'lucide-react';
+import { Target } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
+import { Zap } from 'lucide-react';
 
 export interface GuidanceStep {
-  id: string
-  title: string
-  description: string
-  page: string
-  element?: string
+  id: string;
+  title: string;
+  description: string;
+  page: string;
+  element?: string;
   action?: {
-    text: string
-    onClick: () => void
-  }
-  completed: boolean
-  optional: boolean
+    text: string;
+    onClick: () => void;
+  };
+  completed: boolean;
+  optional: boolean;
 }
 
 export interface FrenlyGuidanceProps {
-  currentPage: string
-  userProgress: string[]
-  onStepComplete: (stepId: string) => void
-  onStartTutorial: () => void
-  className?: string
+  currentPage: string;
+  userProgress: string[];
+  onStepComplete: (stepId: string) => void;
+  onStartTutorial: () => void;
+  className?: string;
 }
 
 export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
@@ -41,20 +41,20 @@ export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
   userProgress,
   onStepComplete,
   onStartTutorial,
-  className = ''
+  className = '',
 }) => {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const [currentStep, setCurrentStep] = useState<GuidanceStep | null>(null)
-  const [showCelebration, setShowCelebration] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [currentStep, setCurrentStep] = useState<GuidanceStep | null>(null);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   const guidanceSteps: GuidanceStep[] = [
     {
       id: 'welcome',
       title: 'Welcome to Reconciliation Platform',
-      description: 'Let\'s get you started with a quick tour of the platform',
+      description: "Let's get you started with a quick tour of the platform",
       page: 'dashboard',
       completed: userProgress.includes('welcome'),
-      optional: false
+      optional: false,
     },
     {
       id: 'upload-files',
@@ -63,7 +63,7 @@ export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
       page: 'ingestion',
       element: 'file-upload',
       completed: userProgress.includes('upload-files'),
-      optional: false
+      optional: false,
     },
     {
       id: 'configure-reconciliation',
@@ -72,7 +72,7 @@ export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
       page: 'reconciliation',
       element: 'config-panel',
       completed: userProgress.includes('configure-reconciliation'),
-      optional: false
+      optional: false,
     },
     {
       id: 'review-matches',
@@ -81,7 +81,7 @@ export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
       page: 'reconciliation',
       element: 'matches-table',
       completed: userProgress.includes('review-matches'),
-      optional: false
+      optional: false,
     },
     {
       id: 'adjudicate-discrepancies',
@@ -90,7 +90,7 @@ export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
       page: 'adjudication',
       element: 'discrepancies-list',
       completed: userProgress.includes('adjudicate-discrepancies'),
-      optional: false
+      optional: false,
     },
     {
       id: 'visualize-results',
@@ -99,7 +99,7 @@ export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
       page: 'visualization',
       element: 'charts-section',
       completed: userProgress.includes('visualize-results'),
-      optional: true
+      optional: true,
     },
     {
       id: 'export-summary',
@@ -108,49 +108,53 @@ export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
       page: 'summary',
       element: 'export-buttons',
       completed: userProgress.includes('export-summary'),
-      optional: false
-    }
-  ]
+      optional: false,
+    },
+  ];
 
-  const currentPageSteps = guidanceSteps.filter(step => step.page === currentPage)
-  const completedSteps = guidanceSteps.filter(step => step.completed)
-  const nextStep = guidanceSteps.find(step => !step.completed)
+  const currentPageSteps = guidanceSteps.filter((step) => step.page === currentPage);
+  const completedSteps = guidanceSteps.filter((step) => step.completed);
+  const nextStep = guidanceSteps.find((step) => !step.completed);
 
   useEffect(() => {
     if (nextStep && nextStep.page === currentPage) {
-      setCurrentStep(nextStep)
+      setCurrentStep(nextStep);
     } else {
-      setCurrentStep(null)
+      setCurrentStep(null);
     }
-  }, [currentPage, nextStep])
+  }, [currentPage, nextStep]);
 
-  const handleStepComplete = useCallback((stepId: string) => {
-    onStepComplete(stepId)
-    setShowCelebration(true)
-    setTimeout(() => setShowCelebration(false), 3000)
-  }, [onStepComplete])
+  const handleStepComplete = useCallback(
+    (stepId: string) => {
+      onStepComplete(stepId);
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 3000);
+    },
+    [onStepComplete]
+  );
 
   const getProgressPercentage = () => {
-    return Math.round((completedSteps.length / guidanceSteps.length) * 100)
-  }
+    return Math.round((completedSteps.length / guidanceSteps.length) * 100);
+  };
 
   const getMoodIcon = () => {
-    const progress = getProgressPercentage()
-    if (progress === 100) return <PartyPopper className="h-5 w-5 text-yellow-500" />
-    if (progress >= 75) return <Star className="h-5 w-5 text-blue-500" />
-    if (progress >= 50) return <Smile className="h-5 w-5 text-green-500" />
-    if (progress >= 25) return <Lightbulb className="h-5 w-5 text-orange-500" />
-    return <HelpCircle className="h-5 w-5 text-gray-500" />
-  }
+    const progress = getProgressPercentage();
+    if (progress === 100) return <PartyPopper className="h-5 w-5 text-yellow-500" />;
+    if (progress >= 75) return <Star className="h-5 w-5 text-blue-500" />;
+    if (progress >= 50) return <Smile className="h-5 w-5 text-green-500" />;
+    if (progress >= 25) return <Lightbulb className="h-5 w-5 text-orange-500" />;
+    return <HelpCircle className="h-5 w-5 text-gray-500" />;
+  };
 
   const getEncouragementMessage = () => {
-    const progress = getProgressPercentage()
-    if (progress === 100) return "🎉 Congratulations! You've completed the full reconciliation process!"
-    if (progress >= 75) return "🚀 You're almost there! Just a few more steps to go!"
-    if (progress >= 50) return "💪 Great progress! You're halfway through the process!"
-    if (progress >= 25) return "🌟 Nice start! Keep going, you're doing great!"
-    return "👋 Welcome! Let's get you started with your first reconciliation!"
-  }
+    const progress = getProgressPercentage();
+    if (progress === 100)
+      return "🎉 Congratulations! You've completed the full reconciliation process!";
+    if (progress >= 75) return "🚀 You're almost there! Just a few more steps to go!";
+    if (progress >= 50) return "💪 Great progress! You're halfway through the process!";
+    if (progress >= 25) return "🌟 Nice start! Keep going, you're doing great!";
+    return "👋 Welcome! Let's get you started with your first reconciliation!";
+  };
 
   return (
     <div className={`fixed bottom-6 right-6 z-50 ${className}`}>
@@ -164,9 +168,11 @@ export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
       )}
 
       {/* Main Guidance Panel */}
-      <div className={`bg-white rounded-lg shadow-lg border transition-all duration-300 ${
-        isExpanded ? 'w-80 h-96' : 'w-16 h-16'
-      }`}>
+      <div
+        className={`bg-white rounded-lg shadow-lg border transition-all duration-300 ${
+          isExpanded ? 'w-80 h-96' : 'w-16 h-16'
+        }`}
+      >
         {!isExpanded ? (
           <button
             onClick={() => setIsExpanded(true)}
@@ -244,20 +250,22 @@ export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
                   <div
                     key={step.id}
                     className={`flex items-center space-x-3 p-2 rounded-lg transition-colors ${
-                      step.completed 
-                        ? 'bg-green-50 border border-green-200' 
+                      step.completed
+                        ? 'bg-green-50 border border-green-200'
                         : step.id === currentStep?.id
-                        ? 'bg-blue-50 border border-blue-200'
-                        : 'bg-gray-50'
+                          ? 'bg-blue-50 border border-blue-200'
+                          : 'bg-gray-50'
                     }`}
                   >
-                    <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                      step.completed 
-                        ? 'bg-green-500' 
-                        : step.id === currentStep?.id
-                        ? 'bg-blue-500'
-                        : 'bg-gray-300'
-                    }`}>
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                        step.completed
+                          ? 'bg-green-500'
+                          : step.id === currentStep?.id
+                            ? 'bg-blue-500'
+                            : 'bg-gray-300'
+                      }`}
+                    >
                       {step.completed ? (
                         <CheckCircle className="h-3 w-3 text-white" />
                       ) : (
@@ -265,14 +273,14 @@ export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-medium ${
-                        step.completed ? 'text-green-700' : 'text-gray-700'
-                      }`}>
+                      <p
+                        className={`text-xs font-medium ${
+                          step.completed ? 'text-green-700' : 'text-gray-700'
+                        }`}
+                      >
                         {step.title}
                       </p>
-                      {step.optional && (
-                        <span className="text-xs text-gray-500">(Optional)</span>
-                      )}
+                      {step.optional && <span className="text-xs text-gray-500">(Optional)</span>}
                     </div>
                   </div>
                 ))}
@@ -293,47 +301,42 @@ export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
         )}
       </div>
     </div>
-  )
-}
+  );
+};
 
 export interface FrenlyTipsProps {
   tips: Array<{
-    id: string
-    title: string
-    content: string
-    category: 'general' | 'reconciliation' | 'upload' | 'visualization'
-    icon: React.ReactNode
-  }>
-  currentPage: string
-  className?: string
+    id: string;
+    title: string;
+    content: string;
+    category: 'general' | 'reconciliation' | 'upload' | 'visualization';
+    icon: React.ReactNode;
+  }>;
+  currentPage: string;
+  className?: string;
 }
 
-export const FrenlyTips: React.FC<FrenlyTipsProps> = ({
-  tips,
-  currentPage,
-  className = ''
-}) => {
-  const [currentTip, setCurrentTip] = useState(0)
-  const [isVisible, setIsVisible] = useState(true)
+export const FrenlyTips: React.FC<FrenlyTipsProps> = ({ tips, currentPage, className = '' }) => {
+  const [currentTip, setCurrentTip] = useState(0);
+  const [isVisible, setIsVisible] = useState(true);
 
-  const relevantTips = tips.filter(tip => 
-    tip.category === 'general' || 
-    tip.category === currentPage.toLowerCase()
-  )
+  const relevantTips = tips.filter(
+    (tip) => tip.category === 'general' || tip.category === currentPage.toLowerCase()
+  );
 
   useEffect(() => {
     if (relevantTips.length > 0) {
       const interval = setInterval(() => {
-        setCurrentTip(prev => (prev + 1) % relevantTips.length)
-      }, 10000) // Change tip every 10 seconds
+        setCurrentTip((prev) => (prev + 1) % relevantTips.length);
+      }, 10000); // Change tip every 10 seconds
 
-      return () => clearInterval(interval)
+      return () => clearInterval(interval);
     }
-  }, [relevantTips.length])
+  }, [relevantTips.length]);
 
-  if (!isVisible || relevantTips.length === 0) return null
+  if (!isVisible || relevantTips.length === 0) return null;
 
-  const tip = relevantTips[currentTip]
+  const tip = relevantTips[currentTip];
 
   return (
     <div className={`fixed top-4 right-4 z-40 max-w-sm ${className}`}>
@@ -358,5 +361,5 @@ export const FrenlyTips: React.FC<FrenlyTipsProps> = ({
         </div>
       </div>
     </div>
-  )
-}
+  );
+};

@@ -1,6 +1,6 @@
 /**
  * Orchestration Monitoring Utilities
- * 
+ *
  * Provides utilities for monitoring Frenly AI orchestration integration
  * and tracking system health and performance.
  */
@@ -147,7 +147,9 @@ export class ErrorTracker {
     });
   }
 
-  getRecentErrors(count: number = 10): Array<{ error: Error; timestamp: number; context: Record<string, unknown> }> {
+  getRecentErrors(
+    count: number = 10
+  ): Array<{ error: Error; timestamp: number; context: Record<string, unknown> }> {
     return this.errors.slice(-count);
   }
 
@@ -177,4 +179,3 @@ export function startHealthMonitoring(intervalMs: number = 60000): () => void {
   // Return cleanup function
   return () => clearInterval(interval);
 }
-

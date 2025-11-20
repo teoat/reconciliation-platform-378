@@ -12,10 +12,7 @@ export class WorkflowSyncManager {
   /**
    * Sync workflow state
    */
-  async syncWorkflowState(
-    workflowId: string,
-    state: WorkflowState
-  ): Promise<void> {
+  async syncWorkflowState(workflowId: string, state: WorkflowState): Promise<void> {
     try {
       // Store state locally
       this.workflowStates.set(workflowId, state);
@@ -105,8 +102,7 @@ export class WorkflowSyncManager {
 
     // Show guidance if progress increased significantly
     const lastState = this.workflowStates.get(state.workflowId || '');
-    const progressIncreased =
-      lastState && state.progress > lastState.progress + 10;
+    const progressIncreased = lastState && state.progress > lastState.progress + 10;
 
     return isMilestone || progressIncreased || false;
   }
@@ -129,4 +125,3 @@ export function getWorkflowSyncManager(): WorkflowSyncManager {
   }
   return workflowSyncInstance;
 }
-

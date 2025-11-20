@@ -1,11 +1,5 @@
 // Query and Calculation Executors
-import {
-  ReportConfig,
-  DashboardWidget,
-  KPIDefinition,
-  KPIAlert,
-  AnalyticsQuery,
-} from './types';
+import { ReportConfig, DashboardWidget, KPIDefinition, KPIAlert, AnalyticsQuery } from './types';
 import { Metadata } from '@/types/metadata';
 import { DataGenerators } from './dataGenerators';
 
@@ -52,10 +46,7 @@ export class QueryExecutors {
     }
   }
 
-  async executeKPICalculation(
-    kpi: KPIDefinition,
-    parameters?: Metadata
-  ): Promise<number> {
+  async executeKPICalculation(kpi: KPIDefinition, parameters?: Metadata): Promise<number> {
     await this.delay(2000);
     return Math.random() * 100;
   }
@@ -103,5 +94,3 @@ export class QueryExecutors {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
-
-

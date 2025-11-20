@@ -17,8 +17,6 @@ import { Folder } from 'lucide-react';
 import { GitCompare } from 'lucide-react';
 import { apiClient } from '../services/apiClient';
 import { useWebSocketIntegration } from '../hooks/useWebSocketIntegration';
-import { MetricCard, MetricTabs } from './analytics';
-import { PageMeta } from './seo/PageMeta';
 
 // Lazy load chart components for better performance
 const LineChart = lazy(() => import('./charts').then((module) => ({ default: module.LineChart })));
@@ -108,8 +106,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 }) => {
   // State management
   const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
-  const [projectStats, setProjectStats] = useState<ProjectStats[]>([]);
-  const [userActivityStats, setUserActivityStats] = useState<UserActivityStats[]>([]);
+  const [, setProjectStats] = useState<ProjectStats[]>([]);
+  const [, setUserActivityStats] = useState<UserActivityStats[]>([]);
   const [reconciliationStats, setReconciliationStats] = useState<ReconciliationStats | null>(null);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -129,23 +127,32 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       setError(null);
 
       // Load dashboard metrics
-      const dashboardResponse = await apiClient.get<Record<string, unknown>>('/analytics/dashboard');
+      interface DashboardApiResponse {
+        total_projects?: number;
+        total_users?: number;
+        total_reconciliation_jobs?: number;
+        active_jobs?: number;
+        completed_jobs?: number;
+        failed_jobs?: number;
+        total_matches?: number;
+      }
+      const dashboardResponse = await apiClient.get<DashboardApiResponse>('/analytics/dashboard');
       if (dashboardResponse.error) {
         throw new Error(String(dashboardResponse.error));
       }
       if (dashboardResponse.data) {
-        // Adapt API response to component types with null safety
-        const data = dashboardResponse.data as Record<string, unknown>;
+        // Adapt API response to component types
+        const data = dashboardResponse.data;
         const adaptedData: DashboardMetrics = {
-          total_projects: typeof data.total_projects === 'number' ? data.total_projects : 0,
-          total_users: typeof data.total_users === 'number' ? data.total_users : 0,
+          total_projects: data.total_projects,
+          total_users: data.total_users,
           total_files: 0, // Not in API response
-          total_reconciliation_jobs: typeof data.total_reconciliation_jobs === 'number' ? data.total_reconciliation_jobs : 0,
-          active_jobs: typeof data.active_jobs === 'number' ? data.active_jobs : 0,
-          completed_jobs: typeof data.completed_jobs === 'number' ? data.completed_jobs : 0,
-          failed_jobs: typeof data.failed_jobs === 'number' ? data.failed_jobs : 0,
+          total_reconciliation_jobs: data.total_reconciliation_jobs,
+          active_jobs: data.active_jobs,
+          completed_jobs: data.completed_jobs,
+          failed_jobs: dashboardResponse.data.failed_jobs,
           total_records_processed: 0, // Not in API response
-          total_matches_found: typeof data.total_matches === 'number' ? data.total_matches : 0,
+          total_matches_found: dashboardResponse.data.total_matches,
           average_confidence_score: 0, // Not in API response
           average_processing_time: 0, // Not in API response
           system_uptime: 99.9, // Not in API response
@@ -155,24 +162,37 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       }
 
       // Load reconciliation stats
-      const reconciliationResponse = await apiClient.get<Record<string, unknown>>('/analytics/reconciliation-stats');
+      interface ReconciliationStatsApiResponse {
+        total_jobs?: number;
+        active_jobs?: number;
+        completed_jobs?: number;
+        failed_jobs?: number;
+        total_records?: number;
+        matched_records?: number;
+        unmatched_records?: number;
+        average_confidence?: number;
+        average_processing_time?: number;
+      }
+      const reconciliationResponse = await apiClient.get<ReconciliationStatsApiResponse>(
+        '/analytics/reconciliation-stats'
+      );
       if (reconciliationResponse.error) {
         throw new Error(String(reconciliationResponse.error));
       }
       if (reconciliationResponse.data) {
-        const data = reconciliationResponse.data as Record<string, unknown>;
-        // Adapt API response to component types with null safety
+        const data = reconciliationResponse.data;
+        // Adapt API response to component types
         const adaptedStats: ReconciliationStats = {
-          total_jobs: typeof data.total_jobs === 'number' ? data.total_jobs : 0,
+          total_jobs: data.total_jobs,
           active_jobs: 0, // Not in API response
-          completed_jobs: typeof data.completed_jobs === 'number' ? data.completed_jobs : 0,
-          failed_jobs: typeof data.failed_jobs === 'number' ? data.failed_jobs : 0,
+          completed_jobs: data.completed_jobs,
+          failed_jobs: data.failed_jobs,
           queued_jobs: 0, // Not in API response
           total_records_processed: 0, // Not in API response
-          total_matches_found: typeof data.total_matches === 'number' ? data.total_matches : 0,
-          total_unmatched_records: typeof data.total_unmatched === 'number' ? data.total_unmatched : 0,
-          average_confidence_score: typeof data.average_confidence_score === 'number' ? data.average_confidence_score : 0,
-          average_processing_time: typeof data.average_processing_time_ms === 'number' ? data.average_processing_time_ms : 0,
+          total_matches_found: reconciliationResponse.data.total_matches,
+          total_unmatched_records: reconciliationResponse.data.total_unmatched,
+          average_confidence_score: reconciliationResponse.data.average_confidence_score,
+          average_processing_time: reconciliationResponse.data.average_processing_time_ms,
           success_rate: 0, // Calculated
           throughput_per_hour: 0, // Calculated
         };
@@ -181,13 +201,28 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       // Load project stats if projectId is provided
       if (projectId) {
-        const projectResponse = await apiClient.get<ProjectStats[]>(`/projects/${projectId}/stats`);
+        interface ProjectStatsApiResponse {
+          project_id?: string;
+          project_name?: string;
+          total_files?: number;
+          total_jobs?: number;
+          completed_jobs?: number;
+          failed_jobs?: number;
+          total_records?: number;
+          matched_records?: number;
+          unmatched_records?: number;
+          average_confidence?: number;
+          last_activity?: string;
+          created_at?: string;
+        }
+        const projectResponse = await apiClient.get<ProjectStatsApiResponse>(
+          `/projects/${projectId}/stats`
+        );
         if (projectResponse.error) {
           throw new Error(String(projectResponse.error));
         }
-        if (projectResponse.data && Array.isArray(projectResponse.data)) {
-          setProjectStats(projectResponse.data);
-        } else {
+        if (projectResponse.data) {
+          // Placeholder - project stats API may return different structure
           setProjectStats([]);
         }
       }
@@ -325,13 +360,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
     return 'text-red-600';
   };
 
-  // Get trend icon (for future use)
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _getTrendIcon = (current: number, previous: number) => {
-    if (current > previous) return <TrendingUp className="w-4 h-4 text-green-500" />;
-    if (current < previous) return <TrendingDown className="w-4 h-4 text-red-500" />;
-    return <Activity className="w-4 h-4 text-gray-500" />;
-  };
+  // Get trend icon
 
   if (loading && !dashboardMetrics) {
     return (
@@ -344,7 +373,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-md p-4" data-testid="analytics-dashboard-error">
+      <div className="bg-red-50 border border-red-200 rounded-md p-4">
         <div className="flex">
           <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
           <div className="text-sm text-red-700">{error}</div>
@@ -362,17 +391,11 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   }
 
   return (
-    <>
-      <PageMeta
-        title="Analytics"
-        description="Comprehensive analytics and insights for reconciliation projects and data trends."
-        keywords="analytics, insights, metrics, reconciliation, data trends"
-      />
-      <main id="main-content" className="space-y-6" data-testid="analytics-dashboard">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-            <h1 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h1>
+          <h2 className="text-2xl font-bold text-gray-900">Analytics Dashboard</h2>
           <p className="text-gray-600">Real-time insights and performance metrics</p>
         </div>
         <div className="flex items-center space-x-3">
@@ -414,40 +437,111 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       )}
 
       {/* Metric Tabs */}
-      <MetricTabs
-        tabs={[
-          { id: 'overview', name: 'Overview', icon: BarChart3 },
-          { id: 'projects', name: 'Projects', icon: Folder },
-          { id: 'users', name: 'Users', icon: Users },
-          { id: 'reconciliation', name: 'Reconciliation', icon: GitCompare },
-        ]}
-        selectedTab={selectedMetric}
-        onTabChange={(tabId) => setSelectedMetric(tabId as typeof selectedMetric)}
-      />
+      <div className="border-b border-gray-200">
+        <nav className="-mb-px flex space-x-8">
+          {[
+            { id: 'overview', name: 'Overview', icon: BarChart3 },
+            { id: 'projects', name: 'Projects', icon: Folder },
+            { id: 'users', name: 'Users', icon: Users },
+            { id: 'reconciliation', name: 'Reconciliation', icon: GitCompare },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setSelectedMetric(tab.id as any)}
+                className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
+                  selectedMetric === tab.id
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <Icon className="w-4 h-4 mr-2" />
+                {tab.name}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
 
       {/* Overview Metrics */}
       {selectedMetric === 'overview' && dashboardMetrics && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <MetricCard
-            icon={Folder}
-            label="Total Projects"
-            value={dashboardMetrics.total_projects}
-          />
-          <MetricCard
-            icon={Users}
-            label="Total Users"
-            value={dashboardMetrics.total_users}
-          />
-          <MetricCard
-            icon={Folder}
-            label="Total Files"
-            value={dashboardMetrics.total_files}
-          />
-          <MetricCard
-            icon={GitCompare}
-            label="Total Jobs"
-            value={dashboardMetrics.total_reconciliation_jobs}
-          />
+          {/* Total Projects */}
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <Folder className="h-6 w-6 text-gray-400" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Total Projects</dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {dashboardMetrics.total_projects}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Users */}
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <Users className="h-6 w-6 text-gray-400" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Total Users</dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {dashboardMetrics.total_users}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Files */}
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <Folder className="h-6 w-6 text-gray-400" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Total Files</dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {dashboardMetrics.total_files}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Total Jobs */}
+          <div className="bg-white overflow-hidden shadow rounded-lg">
+            <div className="p-5">
+              <div className="flex items-center">
+                <div className="flex-shrink-0">
+                  <GitCompare className="h-6 w-6 text-gray-400" />
+                </div>
+                <div className="ml-5 w-0 flex-1">
+                  <dl>
+                    <dt className="text-sm font-medium text-gray-500 truncate">Total Jobs</dt>
+                    <dd className="text-lg font-medium text-gray-900">
+                      {dashboardMetrics.total_reconciliation_jobs}
+                    </dd>
+                  </dl>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -783,8 +877,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           Last updated: {new Date(dashboardMetrics.last_updated).toLocaleString()}
         </div>
       )}
-    </main>
-    </>
+    </div>
   );
 };
 

@@ -47,4 +47,3 @@ export interface FormState {
   isSubmitting: boolean;
   isDirty: boolean;
 }
-

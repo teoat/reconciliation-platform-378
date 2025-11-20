@@ -7,13 +7,23 @@ import { logger } from '../services/logger'; * Empty State Guidance Component
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, FileText, Database, Plus, Play, BookOpen, Video, Sparkles, CheckCircle } from 'lucide-react';
+import {
+  Upload,
+  FileText,
+  Database,
+  Plus,
+  Play,
+  BookOpen,
+  Video,
+  Sparkles,
+  CheckCircle,
+} from 'lucide-react';
 
-export type EmptyStateType = 
-  | 'projects' 
-  | 'data_sources' 
-  | 'reconciliation_jobs' 
-  | 'results' 
+export type EmptyStateType =
+  | 'projects'
+  | 'data_sources'
+  | 'reconciliation_jobs'
+  | 'results'
   | 'matches'
   | 'discrepancies'
   | 'exports';
@@ -42,17 +52,21 @@ interface EmptyStateGuidanceProps {
   onCreateJob?: () => void | Promise<void>; // Optional callback for job creation
 }
 
-const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
-  title: string;
-  description: string;
-  getDefaultActions: (
-    navigate: ReturnType<typeof useNavigate>,
-    props: EmptyStateGuidanceProps
-  ) => QuickAction[];
-}> = {
+const DEFAULT_EMPTY_STATES: Record<
+  EmptyStateType,
+  {
+    title: string;
+    description: string;
+    getDefaultActions: (
+      navigate: ReturnType<typeof useNavigate>,
+      props: EmptyStateGuidanceProps
+    ) => QuickAction[];
+  }
+> = {
   projects: {
     title: 'No Projects Yet',
-    description: 'Create your first reconciliation project to get started. Projects help you organize and manage your reconciliation workflows.',
+    description:
+      'Create your first reconciliation project to get started. Projects help you organize and manage your reconciliation workflows.',
     getDefaultActions: (navigate, props) => [
       {
         id: 'create-project',
@@ -81,7 +95,8 @@ const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
   },
   data_sources: {
     title: 'No Data Sources',
-    description: 'Upload or connect your data sources to begin reconciliation. You can upload files or connect to external systems.',
+    description:
+      'Upload or connect your data sources to begin reconciliation. You can upload files or connect to external systems.',
     getDefaultActions: (navigate, props) => [
       {
         id: 'upload-file',
@@ -102,7 +117,11 @@ const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
         label: 'Connect API',
         icon: <Database className="w-5 h-5" />,
         onClick: () => {
-          navigate(props.projectId ? `/projects/${props.projectId}/data-sources/new?type=api` : '/data-sources/new?type=api');
+          navigate(
+            props.projectId
+              ? `/projects/${props.projectId}/data-sources/new?type=api`
+              : '/data-sources/new?type=api'
+          );
         },
         description: 'Connect to external data sources via API',
       },
@@ -110,7 +129,8 @@ const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
   },
   reconciliation_jobs: {
     title: 'No Reconciliation Jobs',
-    description: 'Start your first reconciliation job to match and compare data from different sources.',
+    description:
+      'Start your first reconciliation job to match and compare data from different sources.',
     getDefaultActions: (navigate, props) => [
       {
         id: 'create-job',
@@ -141,7 +161,8 @@ const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
   },
   results: {
     title: 'No Results Yet',
-    description: 'Run a reconciliation job to see results here. Results will show matched and unmatched records.',
+    description:
+      'Run a reconciliation job to see results here. Results will show matched and unmatched records.',
     getDefaultActions: (navigate, props) => [
       {
         id: 'run-reconciliation',
@@ -161,7 +182,8 @@ const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
   },
   matches: {
     title: 'No Matches Found',
-    description: 'Matches will appear here after running a reconciliation job. Check your matching rules if no matches are found.',
+    description:
+      'Matches will appear here after running a reconciliation job. Check your matching rules if no matches are found.',
     getDefaultActions: (navigate, props) => [
       {
         id: 'configure-rules',
@@ -194,12 +216,14 @@ const DEFAULT_EMPTY_STATES: Record<EmptyStateType, {
   },
   discrepancies: {
     title: 'No Discrepancies',
-    description: 'Great job! All records matched successfully. Discrepancies will appear here when records don\'t match perfectly.',
+    description:
+      "Great job! All records matched successfully. Discrepancies will appear here when records don't match perfectly.",
     getDefaultActions: () => [],
   },
   exports: {
     title: 'No Exports',
-    description: 'Export your reconciliation results to CSV, Excel, or PDF. Exports will be listed here for download.',
+    description:
+      'Export your reconciliation results to CSV, Excel, or PDF. Exports will be listed here for download.',
     getDefaultActions: (navigate, props) => [
       {
         id: 'export-results',
@@ -240,13 +264,15 @@ export const EmptyStateGuidance: React.FC<EmptyStateGuidanceProps> = ({
   const emptyStateConfig = DEFAULT_EMPTY_STATES[type];
   const finalTitle = title || emptyStateConfig.title;
   const finalDescription = description || emptyStateConfig.description;
-  const actions = quickActions || emptyStateConfig.getDefaultActions(navigate, {
-    type,
-    projectId,
-    onCreateProject,
-    onUploadFile,
-    onCreateJob,
-  });
+  const actions =
+    quickActions ||
+    emptyStateConfig.getDefaultActions(navigate, {
+      type,
+      projectId,
+      onCreateProject,
+      onUploadFile,
+      onCreateJob,
+    });
 
   const handleAction = async (action: QuickAction) => {
     setActionLoading(action.id);
@@ -279,12 +305,8 @@ export const EmptyStateGuidance: React.FC<EmptyStateGuidanceProps> = ({
 
       {/* Title & Description */}
       <div className="text-center mb-8 max-w-md">
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">
-          {finalTitle}
-        </h3>
-        <p className="text-gray-600 leading-relaxed">
-          {finalDescription}
-        </p>
+        <h3 className="text-2xl font-bold text-gray-900 mb-2">{finalTitle}</h3>
+        <p className="text-gray-600 leading-relaxed">{finalDescription}</p>
       </div>
 
       {/* Quick Actions */}
@@ -297,17 +319,16 @@ export const EmptyStateGuidance: React.FC<EmptyStateGuidanceProps> = ({
               disabled={actionLoading === action.id}
               className={`
                 flex flex-col items-center justify-center p-6 rounded-lg border-2 transition-all
-                ${action.primary
-                  ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-transparent hover:from-purple-600 hover:to-pink-600'
-                  : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
+                ${
+                  action.primary
+                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white border-transparent hover:from-purple-600 hover:to-pink-600'
+                    : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300 hover:bg-purple-50'
                 }
                 disabled:opacity-50 disabled:cursor-not-allowed
                 ${actionLoading === action.id ? 'animate-pulse' : ''}
               `}
             >
-              <div className="mb-3">
-                {action.icon}
-              </div>
+              <div className="mb-3">{action.icon}</div>
               <span className="font-semibold mb-1">{action.label}</span>
               {action.description && (
                 <span className={`text-xs ${action.primary ? 'text-purple-100' : 'text-gray-500'}`}>
@@ -349,4 +370,3 @@ export const EmptyStateGuidance: React.FC<EmptyStateGuidanceProps> = ({
 };
 
 export default EmptyStateGuidance;
-
