@@ -21,15 +21,15 @@ All 31 non-master branches have different commit hashes from master, indicating 
 ### Category 1: Recent Work Branches (3 branches)
 These branches may contain recent work and should be reviewed before consolidation:
 
-1. **audit-report-and-fixes** (`03e3109`)
+1. **audit-report-and-fixes** (`03e3109f88fd546ffe28757a7dc32dd5bc79821f`)
    - Contains: Audit report and fixes
    - Action: Review for valuable changes before deletion
 
-2. **bugfix-frontend-api-and-ui-fixes** (`21f7f08`)
+2. **bugfix-frontend-api-and-ui-fixes** (`21f7f08f85c6dd4277f82a0db43aab7407c559db`)
    - Contains: Frontend API and UI fixes
    - Action: Review for valuable changes before deletion
 
-3. **comprehensive-diagnostic-plan** (`9ee8d73`)
+3. **comprehensive-diagnostic-plan** (`9ee8d73bb6d157cf3667d7859f7bfda388f25b52`)
    - Contains: Diagnostic planning work
    - Action: Review for valuable changes before deletion
 

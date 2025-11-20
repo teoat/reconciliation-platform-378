@@ -171,6 +171,7 @@ review_branch() {
             ;;
         *)
             echo -e "${RED}Invalid choice, skipping${NC}"
+            ((SKIPPED_COUNT++))
             ;;
     esac
 }
