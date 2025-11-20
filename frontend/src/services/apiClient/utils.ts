@@ -30,8 +30,14 @@ export class UrlBuilder {
 
 export class ConfigBuilder {
   static createDefaultConfig(): ApiClientConfig {
+    // Use import.meta.env for Vite compatibility, fallback to process.env for tests/Node, or default
+    const apiUrl =
+      import.meta.env?.VITE_API_URL ||
+      process.env?.NEXT_PUBLIC_API_URL ||
+      'http://localhost:2000/api/v1';
+
     return {
-      baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:2000/api/v1',
+      baseURL: apiUrl,
       timeout: 30000, // 30 seconds
       retryConfig: {
         maxRetries: 3,
