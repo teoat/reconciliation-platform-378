@@ -156,6 +156,7 @@ review_branch() {
             ;;
         2)
             echo -e "${BLUE}⊘ Skipped: $branch${NC}"
+            ((SKIPPED_COUNT++))
             ;;
         3)
             echo ""
@@ -260,6 +261,9 @@ echo "CONSOLIDATION SUMMARY"
 echo "===================================================================${NC}"
 echo -e "${GREEN}Deleted: $DELETED_COUNT${NC}"
 echo -e "${RED}Failed: $FAILED_COUNT${NC}"
+if [ $SKIPPED_COUNT -gt 0 ]; then
+    echo -e "${BLUE}Skipped: $SKIPPED_COUNT${NC}"
+fi
 echo ""
 
 if [ $DELETED_COUNT -gt 0 ]; then
