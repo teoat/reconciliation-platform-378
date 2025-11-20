@@ -1,6 +1,6 @@
 // Real-time UI Components
 import React, { useState, useEffect } from 'react';
-import { useRealtimeConnection, useUserPresence, useComments, useNotifications } from '../hooks/useRealtime';
+import { useRealtimeConnection, useUserPresence, useComments, useNotifications } from '../../hooks/useRealtime';
 import { Bell } from 'lucide-react'
 import { Users } from 'lucide-react'
 import { MessageCircle } from 'lucide-react'

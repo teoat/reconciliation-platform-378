@@ -110,8 +110,8 @@ export const JobList: React.FC<JobListProps> = ({
                     aria-valuenow={job.total_records && job.total_records > 0
                       ? Math.round((job.processed_records / job.total_records) * 100)
                       : 0}
-                    aria-valuemin="0"
-                    aria-valuemax="100"
+                    aria-valuemin={0}
+                    aria-valuemax={100}
                     aria-label={`Job ${job.name} is ${
                       job.total_records
                         ? Math.round((job.processed_records / job.total_records) * 100)

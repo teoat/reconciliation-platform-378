@@ -308,9 +308,9 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
 
         <div className="relative">
           {React.isValidElement(children) &&
-            React.cloneElement(children, {
+            React.cloneElement(children as React.ReactElement<any>, {
               id: fieldId,
-              ...children.props
+              ...(children.props as any)
             })
           }
         </div>

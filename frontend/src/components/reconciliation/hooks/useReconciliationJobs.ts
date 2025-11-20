@@ -143,7 +143,11 @@ export const useReconciliationJobs = ({
             source_a_id: string;
             source_b_id: string;
             confidence_threshold: number;
-            matching_rules: Array<unknown>;
+            matching_rules?: Array<{
+              field: string;
+              algorithm: string;
+              weight?: number;
+            }>;
             settings?: Record<string, unknown>;
           } = {
             name: jobData.name,
