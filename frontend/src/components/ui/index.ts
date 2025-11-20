@@ -27,8 +27,6 @@ export {
   LoadingPage,
   LoadingCard,
   LoadingButton,
-  Skeleton,
-  SkeletonCard,
   SkeletonTable,
 } from './LoadingSpinner';
 
@@ -77,7 +75,7 @@ export {
 export { 
   EnhancedContextualHelp,
   type EnhancedContextualHelpProps
-} from '../onboarding/EnhancedContextualHelp';
+} from './EnhancedContextualHelp';
 
 export { 
   OnboardingAnalyticsDashboard,

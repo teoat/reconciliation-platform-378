@@ -87,7 +87,7 @@ export const Menu: React.FC<MenuProps> = memo(({
 
   return (
     <div className="relative inline-block">
-      {React.cloneElement(trigger, {
+      {React.cloneElement(trigger as React.ReactElement<any>, {
         ref: triggerRef,
         id: triggerId,
         'aria-haspopup': 'menu',
@@ -118,8 +118,8 @@ export const Menu: React.FC<MenuProps> = memo(({
                 onKeyDown: (e: React.KeyboardEvent) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault()
-                    if (child.props.onClick) {
-                      child.props.onClick(e)
+                    if ((child.props as any).onClick) {
+                      (child.props as any).onClick(e)
                     }
                     setIsOpen(false)
                   }

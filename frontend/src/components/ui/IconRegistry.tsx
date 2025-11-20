@@ -129,8 +129,6 @@ export const IconRegistry: Record<string, IconConfig> = {
   FileJson: { name: 'FileJson', component: LucideIcons.FileJson, category: 'file' },
   Play: { name: 'Play', component: LucideIcons.Play, category: 'action' },
   Pause: { name: 'Pause', component: LucideIcons.Pause, category: 'action' },
-  // Additional icons used in ReconciliationInterface
-  FileText: { name: 'FileText', component: LucideIcons.FileText, category: 'file' },
 }
 
 // Export Square as StopIcon from LucideIcons
