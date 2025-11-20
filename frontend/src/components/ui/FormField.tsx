@@ -69,7 +69,7 @@ export const FormField = memo(
           )}
 
           <div className="relative">
-            {React.cloneElement(children as React.ReactElement, {
+            {React.cloneElement(children as React.ReactElement<any>, {
               id: fieldId,
               'aria-describedby':
                 [error ? errorId : '', helpText ? helpId : ''].filter(Boolean).join(' ') ||
