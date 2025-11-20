@@ -42,62 +42,74 @@ use actix_web::web;
 /// Configure all API routes
 /// This is the main entry point for route configuration
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
-    cfg
-        // Authentication routes
-        .service(
-            web::scope("/api/auth")
-                .configure(auth::configure_routes)
-        )
-        // User management routes
-        .service(
-            web::scope("/api/users")
-                .configure(users::configure_routes)
-        )
-        // Project management routes
-        .service(
-            web::scope("/api/projects")
-                .configure(projects::configure_routes)
-        )
-        // Reconciliation routes
-        .service(
-            web::scope("/api/reconciliation")
-                .configure(reconciliation::configure_routes)
-        )
-        // File upload routes
-        .service(
-            web::scope("/api/files")
-                .configure(files::configure_routes)
-        )
-        // Analytics routes
-        .service(
-            web::scope("/api/analytics")
-                .configure(analytics::configure_routes)
-        )
-        // Settings routes
-        .service(
-            web::scope("/api/settings")
-                .configure(settings::configure_routes)
-        )
-        // Profile routes
-        .service(
-            web::scope("/api/profile")
-                .configure(profile::configure_routes)
-        )
-        // System routes
-        .service(
-            web::scope("/api/system")
-                .configure(system::configure_routes)
-        )
-        // Monitoring and alerts routes
-        .service(
-            web::scope("/api/monitoring")
-                .configure(monitoring::configure_routes)
-        )
-        // Offline and sync routes
-        .service(
-            web::scope("/api/sync")
-                .configure(sync::configure_routes)
-        )
-        // Health check routes (from existing health.rs)
-        .configure(health::configure_health_routes);
+    // API v1 Scope
+    cfg.service(
+        web::scope("/api/v1")
+            // Authentication routes
+            .service(
+                web::scope("/auth")
+                    .configure(auth::configure_routes)
+            )
+            // User management routes
+            .service(
+                web::scope("/users")
+                    .configure(users::configure_routes)
+            )
+            // Project management routes
+            .service(
+                web::scope("/projects")
+                    .configure(projects::configure_routes)
+            )
+            // Reconciliation routes
+            .service(
+                web::scope("/reconciliation")
+                    .configure(reconciliation::configure_routes)
+            )
+            // File upload routes
+            .service(
+                web::scope("/files")
+                    .configure(files::configure_routes)
+            )
+            // Analytics routes
+            .service(
+                web::scope("/analytics")
+                    .configure(analytics::configure_routes)
+            )
+            // Settings routes
+            .service(
+                web::scope("/settings")
+                    .configure(settings::configure_routes)
+            )
+            // Profile routes
+            .service(
+                web::scope("/profile")
+                    .configure(profile::configure_routes)
+            )
+            // System routes
+            .service(
+                web::scope("/system")
+                    .configure(system::configure_routes)
+            )
+            // Monitoring and alerts routes
+            .service(
+                web::scope("/monitoring")
+                    .configure(monitoring::configure_routes)
+            )
+            // Offline and sync routes
+            .service(
+                web::scope("/sync")
+                    .configure(sync::configure_routes)
+            )
+    )
+    // Backward compatibility / Legacy routes (optional, but good for safety during migration)
+    .configure(configure_legacy_routes)
+    // Health check routes (keep at root/api level as well for K8s probes)
+    .configure(health::configure_health_routes);
+}
+
+/// Configure legacy routes for backward compatibility
+fn configure_legacy_routes(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::scope("/api/auth").configure(auth::configure_routes)
+    );
 }
