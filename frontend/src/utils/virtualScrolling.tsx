@@ -22,13 +22,29 @@ interface VirtualScrollState {
   }>
 }
 
+export interface VirtualScrollResult {
+  containerRef: React.RefObject<HTMLDivElement>
+  totalHeight: number
+  visibleItems: Array<{
+    index: number
+    top: number
+    height: number
+  }>
+  handleScroll: (e: React.UIEvent<HTMLDivElement>) => void
+  scrollToIndex: (index: number) => void
+  scrollToTop: () => void
+  scrollToBottom: () => void
+  startIndex: number
+  endIndex: number
+}
+
 /**
  * Hook for virtual scrolling
  */
 export function useVirtualScroll<T>(
   items: T[],
   config: VirtualScrollConfig
-) {
+): VirtualScrollResult {
   const [scrollTop, setScrollTop] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
   const { itemHeight, containerHeight, overscan = 5, threshold = 0.1 } = config
