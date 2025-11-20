@@ -112,11 +112,11 @@ spec:
       containers:
       - name: frontend
         ports:
-        - containerPort: 80 # Changed from 3000
+        - containerPort: 1000 # Match Dockerfile EXPOSE
         livenessProbe:
           httpGet:
             path: / # Check root since /healthz is missing in Nginx default
-            port: 80
+            port: 1000
 ---
 # Frontend Service Fixes
 apiVersion: v1
@@ -125,8 +125,8 @@ metadata:
   name: reconciliation-frontend-service
 spec:
   ports:
-  - port: 3000      # Cluster port
-    targetPort: 80  # Container port (Nginx)
+  - port: 3000        # Cluster port
+    targetPort: 1000  # Container port (Nginx)
 ```
 
 ## Docker/K8s Integration Validation
