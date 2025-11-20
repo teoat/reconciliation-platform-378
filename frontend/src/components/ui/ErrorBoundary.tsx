@@ -54,12 +54,11 @@ export class ErrorBoundary extends Component<Props, State> {
     try {
       errorContextService.trackError(error, {
         component: 'ErrorBoundary',
-        severity: 'high',
-        stack: error.stack,
         metadata: {
           componentStack: errorInfo.componentStack,
           errorName: error.name,
           errorMessage: error.message,
+          stack: error.stack,
         },
       });
 
@@ -69,8 +68,7 @@ export class ErrorBoundary extends Component<Props, State> {
         {
           component: 'ErrorBoundary',
           action: 'error_boundary_catch',
-        },
-        error.message
+        }
       );
 
       // Store translation for display
