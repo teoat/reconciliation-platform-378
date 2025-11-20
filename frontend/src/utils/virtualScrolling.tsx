@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 
 // ============================================================================
 // VIRTUAL SCROLLING UTILITIES
@@ -46,7 +46,7 @@ export function useVirtualScroll<T>(
   config: VirtualScrollConfig
 ): VirtualScrollResult {
   const [scrollTop, setScrollTop] = useState(0)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement | null>(null)
   const { itemHeight, containerHeight, overscan = 5, threshold = 0.1 } = config
 
   const totalHeight = items.length * itemHeight

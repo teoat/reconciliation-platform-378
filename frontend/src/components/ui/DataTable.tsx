@@ -1,5 +1,5 @@
 import React, { useState, useMemo, memo, useCallback } from 'react';
-import { useVirtualScroll, type VirtualScrollResult } from '../../utils/virtualScrolling';
+import { useVirtualScroll, VirtualScrollResult } from '../../utils/virtualScrolling';
 import { useKeyboardNavigation } from '../../hooks/useKeyboardNavigation';
 import { ChevronUp } from 'lucide-react';
 import { ChevronDown } from 'lucide-react';
@@ -453,4 +453,4 @@ const DataTableComponent = <T extends Record<string, unknown>>({
 
 export const DataTable = memo(DataTableComponent) as <T extends Record<string, unknown>>(
   props: DataTableProps<T>
-) => JSX.Element;
+) => React.JSX.Element;
