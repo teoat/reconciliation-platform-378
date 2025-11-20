@@ -1,5 +1,5 @@
 // Data transformation utilities for ingestion
-import { UploadedFile } from '../../types/ingestion';
+import { UploadedFile } from '@/types/ingestion';
 
 /**
  * Converts bytes to human readable format

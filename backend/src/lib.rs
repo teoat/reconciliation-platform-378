@@ -4,6 +4,7 @@
 //! It provides all the core functionality for data reconciliation, user management,
 //! authentication, and API services.
 
+pub mod api;
 pub mod config;
 pub mod database;
 pub mod database_migrations;
@@ -16,9 +17,6 @@ pub mod integrations;
 pub mod middleware;
 pub mod utils;
 pub mod websocket;
-pub mod api {
-    pub mod gdpr;
-}
 pub mod startup;
 
 // Test utilities module - always available for test code

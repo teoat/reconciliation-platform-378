@@ -6,8 +6,9 @@
 import { useState, useCallback } from 'react';
 import { ApiService } from '../../services/ApiService';
 import { useToast } from '../useToast';
-import { logger } from '../../services/logger';
-import { UploadedFile } from '../../types/ingestion';
+import { logger } from '@/services/logger';
+import { UploadedFile } from '@/types/ingestion';
+import { getErrorMessage, toError } from '@/utils/errorExtraction';
 
 export interface UseIngestionUploadOptions {
   projectId: string | null;
@@ -66,13 +67,13 @@ export function useIngestionUpload({
         onUploadSuccess?.([uploadedFile]);
         return uploadedFile;
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to upload file';
+        const errorMessage = getErrorMessage(error, 'Failed to upload file');
         logger.error('Upload failed', {
           error: errorMessage,
           projectId,
         });
         toast.error(errorMessage);
-        const uploadError = error instanceof Error ? error : new Error(errorMessage);
+        const uploadError = toError(error, errorMessage);
         onUploadError?.(uploadError);
         return null;
       } finally {
@@ -105,4 +106,3 @@ export function useIngestionUpload({
     uploadFiles,
   };
 }
-

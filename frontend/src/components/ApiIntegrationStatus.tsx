@@ -32,13 +32,12 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
   } = useHealthCheckAPI();
 
   // Get real-time data from Redux store
-  const auth = useAppSelector((state) => state.auth);
   const projects = useAppSelector((state) => state.projects);
   const reconciliation = useAppSelector((state) => state.reconciliation);
   const ui = useAppSelector((state) => state.ui);
 
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-  const [syncStatus, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
+  const [, setSyncStatus] = useState<'synced' | 'syncing' | 'error'>('synced');
 
   // Update user presence when component mounts
   useEffect(() => {
@@ -68,26 +67,26 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
     }, 2000);
   }, []);
 
-  // Memoize color calculations
-  const connectionStatusColor = useMemo(() => {
-    switch (connectionStatus) {
-      case 'connected':
-        return 'text-green-600';
-      case 'connecting':
-        return 'text-yellow-600';
-      case 'error':
-        return 'text-red-600';
-      default:
-        return 'text-gray-600';
-    }
-  }, [connectionStatus]);
+  // Memoize color calculations (kept for potential future use)
+  // const connectionStatusColor = useMemo(() => {
+  //   switch (connectionStatus) {
+  //     case 'connected':
+  //       return 'text-green-600';
+  //     case 'connecting':
+  //       return 'text-yellow-600';
+  //     case 'error':
+  //       return 'text-red-600';
+  //     default:
+  //       return 'text-gray-600';
+  //   }
+  // }, [connectionStatus]);
 
-  const healthStatusColor = useMemo(() => {
-    if (isChecking) return 'text-yellow-600';
-    if (isHealthy === true) return 'text-green-600';
-    if (isHealthy === false) return 'text-red-600';
-    return 'text-gray-600';
-  }, [isChecking, isHealthy]);
+  // const healthStatusColor = useMemo(() => {
+  //   if (isChecking) return 'text-yellow-600';
+  //   if (isHealthy === true) return 'text-green-600';
+  //   if (isHealthy === false) return 'text-red-600';
+  //   return 'text-gray-600';
+  // }, [isChecking, isHealthy]);
 
   return (
     <>

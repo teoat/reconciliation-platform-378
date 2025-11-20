@@ -1,74 +1,164 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '../../test/utils'
-import { Input } from '../Input'
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
+import { Input } from '../Input';
 
-describe('Input Component', () => {
-  it('renders with default props', () => {
-    render(<Input placeholder="Enter text" />)
-    const input = screen.getByPlaceholderText('Enter text')
-    expect(input).toBeInTheDocument()
-    expect(input).toHaveClass('border-gray-300')
-  })
-
-  it('renders with label', () => {
-    render(<Input label="Username" placeholder="Enter username" />)
-    expect(screen.getByLabelText('Username')).toBeInTheDocument()
-  })
-
-  it('shows error state', () => {
-    render(<Input error="This field is required" />)
-    const input = screen.getByRole('textbox')
-    expect(input).toHaveClass('border-red-300')
-    expect(screen.getByText('This field is required')).toBeInTheDocument()
-  })
-
-  it('shows helper text', () => {
-    render(<Input helperText="This is helpful information" />)
-    expect(screen.getByText('This is helpful information')).toBeInTheDocument()
-  })
-
-  it('handles value changes', () => {
-    const handleChange = vi.fn()
-    render(<Input onChange={handleChange} />)
+describe('Input', () => {
+  it('should render with default props', () => {
+    render(<Input />);
     
-    const input = screen.getByRole('textbox')
-    fireEvent.change(input, { target: { value: 'new value' } })
+    const input = screen.getByRole('textbox');
+    expect(input).toBeInTheDocument();
+    expect(input).toHaveAttribute('type', 'text');
+  });
+
+  it('should render with custom type', () => {
+    render(<Input type="email" />);
     
-    expect(handleChange).toHaveBeenCalledWith('new value')
-  })
+    const input = screen.getByRole('textbox');
+    expect(input).toHaveAttribute('type', 'email');
+  });
 
-  it('handles blur events', () => {
-    const handleBlur = vi.fn()
-    render(<Input onBlur={handleBlur} />)
+  it('should render with placeholder', () => {
+    render(<Input placeholder="Enter your name" />);
     
-    const input = screen.getByRole('textbox')
-    fireEvent.blur(input)
+    const input = screen.getByPlaceholderText('Enter your name');
+    expect(input).toBeInTheDocument();
+  });
+
+  it('should render with value', () => {
+    render(<Input value="John Doe" />);
     
-    expect(handleBlur).toHaveBeenCalledTimes(1)
-  })
+    const input = screen.getByDisplayValue('John Doe');
+    expect(input).toBeInTheDocument();
+  });
 
-  it('can be disabled', () => {
-    render(<Input disabled />)
-    const input = screen.getByRole('textbox')
-    expect(input).toBeDisabled()
-    expect(input).toHaveClass('opacity-50', 'cursor-not-allowed')
-  })
+  it('should handle onChange events', () => {
+    const handleChange = vi.fn();
+    render(<Input onChange={handleChange} />);
+    
+    const input = screen.getByRole('textbox');
+    fireEvent.change(input, { target: { value: 'new value' } });
+    
+    expect(handleChange).toHaveBeenCalledTimes(1);
+  });
 
-  it('renders with icon', () => {
-    render(<Input icon={<span data-testid="icon">🔍</span>} />)
-    expect(screen.getByTestId('icon')).toBeInTheDocument()
-  })
+  it('should be disabled when disabled prop is true', () => {
+    render(<Input disabled />);
+    
+    const input = screen.getByRole('textbox');
+    expect(input).toBeDisabled();
+  });
 
-  it('supports different input types', () => {
-    const { rerender } = render(<Input type="email" />)
-    expect(screen.getByRole('textbox')).toHaveAttribute('type', 'email')
+  it('should show error state', () => {
+    render(<Input error="This field is required" />);
+    
+    const input = screen.getByRole('textbox');
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(screen.getByText('This field is required')).toBeInTheDocument();
+  });
 
-    rerender(<Input type="password" />)
-    expect(screen.getByDisplayValue('')).toHaveAttribute('type', 'password')
-  })
+  it('should show success state', () => {
+    render(<Input success />);
+    
+    const input = screen.getByRole('textbox');
+    expect(input).toHaveClass('input-success');
+  });
 
-  it('applies custom className', () => {
-    render(<Input className="custom-class" />)
-    expect(screen.getByRole('textbox')).toHaveClass('custom-class')
-  })
-})
+  it('should render with label', () => {
+    render(<Input label="Full Name" id="fullname" />);
+    
+    expect(screen.getByText('Full Name')).toBeInTheDocument();
+    const input = screen.getByRole('textbox');
+    expect(input).toHaveAttribute('id', 'fullname');
+  });
+
+  it('should render with helper text', () => {
+    render(<Input helperText="Enter your full name" />);
+    
+    expect(screen.getByText('Enter your full name')).toBeInTheDocument();
+  });
+
+  it('should render with left icon', () => {
+    const TestIcon = () => <span data-testid="left-icon">🔍</span>;
+    render(<Input leftIcon={<TestIcon />} />);
+    
+    expect(screen.getByTestId('left-icon')).toBeInTheDocument();
+  });
+
+  it('should render with right icon', () => {
+    const TestIcon = () => <span data-testid="right-icon">✕</span>;
+    render(<Input rightIcon={<TestIcon />} />);
+    
+    expect(screen.getByTestId('right-icon')).toBeInTheDocument();
+  });
+
+  it('should support fullWidth prop', () => {
+    render(<Input fullWidth />);
+    
+    const input = screen.getByRole('textbox');
+    expect(input).toHaveClass('w-full');
+  });
+
+  it('should support size variants', () => {
+    const { rerender } = render(<Input size="sm" />);
+    expect(screen.getByRole('textbox')).toHaveClass('input-sm');
+
+    rerender(<Input size="lg" />);
+    expect(screen.getByRole('textbox')).toHaveClass('input-lg');
+  });
+
+  it('should have proper accessibility attributes', () => {
+    render(
+      <Input 
+        label="Email" 
+        id="email" 
+        error="Invalid email" 
+        required 
+        aria-describedby="email-help"
+      />
+    );
+    
+    const input = screen.getByRole('textbox');
+    expect(input).toHaveAttribute('id', 'email');
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+    expect(input).toHaveAttribute('aria-describedby', 'email-help email-error');
+    expect(input).toHaveAttribute('required');
+  });
+
+  it('should support custom className', () => {
+    render(<Input className="custom-input" />);
+    
+    const input = screen.getByRole('textbox');
+    expect(input).toHaveClass('custom-input');
+  });
+
+  it('should handle focus and blur events', () => {
+    const handleFocus = vi.fn();
+    const handleBlur = vi.fn();
+    
+    render(<Input onFocus={handleFocus} onBlur={handleBlur} />);
+    
+    const input = screen.getByRole('textbox');
+    fireEvent.focus(input);
+    expect(handleFocus).toHaveBeenCalledTimes(1);
+    
+    fireEvent.blur(input);
+    expect(handleBlur).toHaveBeenCalledTimes(1);
+  });
+
+  it('should support maxLength', () => {
+    render(<Input maxLength={10} />);
+    
+    const input = screen.getByRole('textbox');
+    expect(input).toHaveAttribute('maxLength', '10');
+  });
+
+  it('should support pattern validation', () => {
+    render(<Input pattern="[A-Za-z]+" title="Only letters allowed" />);
+    
+    const input = screen.getByRole('textbox');
+    expect(input).toHaveAttribute('pattern', '[A-Za-z]+');
+    expect(input).toHaveAttribute('title', 'Only letters allowed');
+  });
+});

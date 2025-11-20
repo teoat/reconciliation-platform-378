@@ -34,7 +34,7 @@ interface ErrorBoundaryState {
 }
 
 class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
-  private resetTimeoutId: NodeJS.Timeout | null = null;
+  private resetTimeoutId: number | null = null;
 
   constructor(props: ErrorBoundaryProps) {
     super(props);

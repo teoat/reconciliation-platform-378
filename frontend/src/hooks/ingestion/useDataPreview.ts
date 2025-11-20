@@ -1,8 +1,15 @@
 import { useState, useCallback } from 'react';
-import { DataRow, ColumnInfo } from '../../types/ingestion';
-import { sortByProperty, filterByProperty, paginate } from '../../utils/common/filteringSorting';
+import { DataRow, ColumnInfo } from '@/types/ingestion';
+import { sortByProperty, filterByProperty, paginate } from '@/utils/common/filteringSorting';
 
-export type FilterOperator = 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'greaterThan' | 'lessThan' | 'between';
+export type FilterOperator =
+  | 'equals'
+  | 'contains'
+  | 'startsWith'
+  | 'endsWith'
+  | 'greaterThan'
+  | 'lessThan'
+  | 'between';
 
 export interface DataPreviewState {
   data: DataRow[];
@@ -77,12 +84,7 @@ export const useDataPreview = () => {
 
       // Apply filters
       prev.filters.forEach((filter) => {
-        filteredData = filterByProperty(
-          filteredData,
-          filter.field,
-          filter.value,
-          filter.operator
-        );
+        filteredData = filterByProperty(filteredData, filter.field, filter.value, filter.operator);
       });
 
       // Apply sorting
@@ -153,12 +155,7 @@ export const useDataPreview = () => {
 
       let filteredData = prev.data;
       newFilters.forEach((filter) => {
-        filteredData = filterByProperty(
-          filteredData,
-          filter.field,
-          filter.value,
-          filter.operator
-        );
+        filteredData = filterByProperty(filteredData, filter.field, filter.value, filter.operator);
       });
 
       const sortedData = prev.sortField
@@ -186,12 +183,7 @@ export const useDataPreview = () => {
 
       let filteredData = prev.data;
       newFilters.forEach((filter) => {
-        filteredData = filterByProperty(
-          filteredData,
-          filter.field,
-          filter.value,
-          filter.operator
-        );
+        filteredData = filterByProperty(filteredData, filter.field, filter.value, filter.operator);
       });
 
       const sortedData = prev.sortField

@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { EnhancedReconciliationRecord } from '../../types/reconciliation';
+import { EnhancedReconciliationRecord } from '@/types/reconciliation';
 
 // Extended resolution type for conflict resolution
 interface ConflictResolution {

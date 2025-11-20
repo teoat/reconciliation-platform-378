@@ -42,9 +42,10 @@ COPY backend/Cargo.toml backend/Cargo.lock ./
 # Copy cargo registry and git cache (target is handled via cache mount)
 COPY --from=deps /usr/local/cargo /usr/local/cargo
 
-# Copy application source and migrations
+# Copy application source, migrations, and scripts
 COPY backend/src ./src
 COPY backend/migrations ./migrations
+COPY backend/scripts ./scripts
 
 # Build application with cached dependencies
 # Note: target directory is created by cargo build, so we use cache mount
@@ -91,7 +92,8 @@ EXPOSE 2000
 
 # Environment defaults
 ENV RUST_LOG=info \
-    RUST_BACKTRACE=full
+    RUST_BACKTRACE=full \
+    RUST_LOG_STYLE=always
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \

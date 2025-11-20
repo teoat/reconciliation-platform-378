@@ -1,6 +1,5 @@
 import React from 'react';
 import { PageConfig, StatsCard, ActionConfig } from '../../types/common';
-import { LoadingSpinnerComponent } from '../LoadingComponents';
 import { ProgressBar } from './ui/ProgressBar';
 
 interface BasePageProps {

@@ -10,7 +10,7 @@ import { User } from 'lucide-react'
 import { AlertCircle } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useToast } from '@/hooks/useToast'
-import { passwordSchema } from '@/utils/passwordValidation'
+import { passwordSchema, getPasswordFeedback } from '@/utils/common/validation'
 import { logger } from '@/services/logger'
 import { PageMeta } from '@/components/seo/PageMeta'
 import { getPrimaryDemoCredentials, isDemoModeEnabled, DEMO_CREDENTIALS } from '@/config/demoCredentials'
@@ -68,10 +68,12 @@ const AuthPage: React.FC = () => {
   
   const loginForm = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
+    mode: 'onBlur', // Validate on blur for better UX
   })
 
   const registerForm = useForm<RegisterForm>({
     resolver: zodResolver(registerSchema),
+    mode: 'onBlur', // Validate on blur for better UX
   })
 
   // Redirect if already authenticated
@@ -289,9 +291,13 @@ const AuthPage: React.FC = () => {
         toast.error(errorMsg)
       }
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Login failed. Please try again.'
+      // Handle network errors and other exceptions
+      const errorMsg = err instanceof Error 
+        ? (err.message || 'Login failed. Please try again.')
+        : 'Login failed. Please try again.'
       setError(errorMsg)
       toast.error(errorMsg)
+      logger.error('Login error:', { error: err, email: data.email })
     }
   }
 
@@ -351,7 +357,7 @@ const AuthPage: React.FC = () => {
           </div>
 
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center" role="alert" data-testid="auth-error-message">
               <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
               <span className="text-red-700 text-sm">{error}</span>
             </div>
@@ -370,6 +376,7 @@ const AuthPage: React.FC = () => {
                   <input
                     {...loginForm.register('email')}
                     type="email"
+                    id="login-email"
                     className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your email"
                   />
@@ -391,6 +398,7 @@ const AuthPage: React.FC = () => {
                     {...loginForm.register('password')}
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="current-password"
+                    id="login-password"
                     className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your password"
                   />
@@ -538,12 +546,15 @@ const AuthPage: React.FC = () => {
                   <input
                     {...registerForm.register('password', {
                       onChange: (e) => {
-                        setPasswordValue(e.target.value)
-                        setPasswordFeedback(getPasswordFeedback(e.target.value))
+                        const value = e.target.value
+                        setPasswordValue(value)
+                        // Always set feedback, even for empty password
+                        setPasswordFeedback(value ? getPasswordFeedback(value) : null)
                       }
                     })}
                     type={showPassword ? 'text' : 'password'}
                     autoComplete="new-password"
+                    id="register-password"
                     className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     placeholder="Enter your password"
                   />
@@ -566,14 +577,14 @@ const AuthPage: React.FC = () => {
                 
                 {/* Real-time password strength indicator */}
                 {passwordValue && passwordFeedback && (
-                  <div className="mt-2 space-y-2">
+                  <div className="mt-2 space-y-2" data-testid="password-strength-indicator">
                     <div className="flex items-center justify-between">
                       <span className="text-xs text-gray-600">Password strength:</span>
                       <span className={`text-xs font-medium ${
                         passwordFeedback.strength === 'strong' ? 'text-green-600' :
                         passwordFeedback.strength === 'medium' ? 'text-yellow-600' :
                         'text-red-600'
-                      }`}>
+                      }`} data-testid="password-strength-value">
                         {passwordFeedback.strength.toUpperCase()}
                       </span>
                     </div>

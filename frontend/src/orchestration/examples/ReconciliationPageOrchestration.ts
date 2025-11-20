@@ -136,8 +136,8 @@ export function getReconciliationWorkflowState(
  * Register guidance handlers for reconciliation page
  */
 export function registerReconciliationGuidanceHandlers(
-  onUploadHelp: () => void,
-  onConfigureHelp: () => void,
+  _onUploadHelp: () => void,
+  _onConfigureHelp: () => void,
   onJobHelp: () => void,
   onResultsHelp: () => void
 ): GuidanceHandler[] {

@@ -1,11 +1,18 @@
 // Filtering and sorting utilities
-import { UploadedFile } from '../../types/ingestion';
-import { EnhancedReconciliationRecord } from '../../types/reconciliation';
+import { UploadedFile } from '@/types/ingestion';
+import { EnhancedReconciliationRecord } from '@/types/reconciliation';
 
 /**
  * Generic filter function for arrays
  */
-export type FilterOperator = 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'greaterThan' | 'lessThan' | 'between';
+export type FilterOperator =
+  | 'equals'
+  | 'contains'
+  | 'startsWith'
+  | 'endsWith'
+  | 'greaterThan'
+  | 'lessThan'
+  | 'between';
 
 export const filterByProperty = <T>(
   items: T[],

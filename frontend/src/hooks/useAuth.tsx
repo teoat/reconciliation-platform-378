@@ -246,7 +246,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return { success: false, error: 'Login failed' }
     } catch (error) {
       logger.error('Login failed', { error, email })
-      return { success: false, error: error instanceof Error ? error.message : 'Login failed' }
+      
+      // Handle network errors specifically
+      let errorMessage = 'Login failed'
+      if (error instanceof Error) {
+        if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('Failed to fetch')) {
+          errorMessage = 'Unable to connect to server. Please check your connection and try again.'
+        } else {
+          errorMessage = error.message || 'Login failed'
+        }
+      }
+      
+      return { success: false, error: errorMessage }
     } finally {
       setIsLoading(false)
     }

@@ -27,6 +27,7 @@ pub async fn get_metrics(
     _data: web::Data<Database>,
     _config: web::Data<crate::config::Config>,
 ) -> Result<HttpResponse, AppError> {
+    // Note: Parameters are intentionally unused - metrics come from MonitoringService
     use crate::services::monitoring::MonitoringService;
     
     let monitoring_service = MonitoringService::new();

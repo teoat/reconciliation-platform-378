@@ -488,7 +488,29 @@ impl StructuredLogger {
         message: &str,
         metadata: Option<HashMap<String, serde_json::Value>>,
     ) {
+        self.log_with_correlation_id(level, message, None, metadata).await;
+    }
+
+    /// Log with correlation ID (for distributed tracing)
+    pub async fn log_with_correlation_id(
+        &self,
+        level: LogLevel,
+        message: &str,
+        correlation_id: Option<String>,
+        metadata: Option<HashMap<String, serde_json::Value>>,
+    ) {
         if self.should_log(&level) {
+            let mut log_metadata = metadata.unwrap_or_default();
+            
+            // Add correlation ID to metadata if provided
+            let request_id = correlation_id.clone();
+            if let Some(corr_id) = &correlation_id {
+                log_metadata.insert(
+                    "correlation_id".to_string(),
+                    serde_json::Value::String(corr_id.clone()),
+                );
+            }
+
             let log_entry = LogEntry {
                 id: Uuid::new_v4().to_string(),
                 timestamp: SystemTime::now()
@@ -497,7 +519,7 @@ impl StructuredLogger {
                     .unwrap_or(0),
                 level: level.to_string(),
                 message: message.to_string(),
-                request_id: None,
+                request_id,
                 user_id: None,
                 ip_address: None,
                 user_agent: None,
@@ -506,7 +528,7 @@ impl StructuredLogger {
                 status_code: None,
                 response_time_ms: None,
                 error: None,
-                metadata: metadata.unwrap_or_default(),
+                metadata: log_metadata,
             };
 
             let mut logs = self.logs.write().await;

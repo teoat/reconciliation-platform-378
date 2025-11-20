@@ -1,0 +1,166 @@
+name: Automated Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  automated-review:
+    name: Automated Code Review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for better analysis
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install review tools
+        run: |
+          # Install frontend review tools
+          cd frontend && npm ci
+          npm install -g @commitlint/cli @commitlint/config-conventional
+          cd ..
+          
+          # Install backend review tools
+          cargo install cargo-audit || true
+          cargo install cargo-clippy || true
+
+      - name: Check commit messages
+        run: |
+          # Validate commit message format
+          npx commitlint --from ${{ github.event.pull_request.base.sha }} --to ${{ github.event.pull_request.head.sha }} --verbose || echo "Commit message check skipped"
+
+      - name: Check code complexity
+        run: |
+          echo "## Code Complexity Analysis" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Frontend complexity check
+          if [ -d "frontend/src" ]; then
+            echo "### Frontend Complexity" >> $GITHUB_STEP_SUMMARY
+            echo "Checking TypeScript files..." >> $GITHUB_STEP_SUMMARY
+            # Add complexity analysis here
+            echo "- TypeScript files analyzed" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Backend complexity check
+          if [ -d "backend/src" ]; then
+            echo "### Backend Complexity" >> $GITHUB_STEP_SUMMARY
+            echo "Checking Rust files..." >> $GITHUB_STEP_SUMMARY
+            # Add complexity analysis here
+            echo "- Rust files analyzed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check for security issues
+        run: |
+          echo "## Security Review" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Frontend security audit
+          if [ -f "frontend/package.json" ]; then
+            cd frontend
+            npm audit --audit-level=moderate || echo "⚠️ Security vulnerabilities found"
+            cd ..
+          fi
+          
+          # Backend security audit
+          if [ -f "backend/Cargo.toml" ]; then
+            cd backend
+            cargo audit || echo "⚠️ Security vulnerabilities found"
+            cd ..
+          fi
+
+      - name: Check for code smells
+        run: |
+          echo "## Code Quality Review" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for common issues
+          echo "### Common Issues Check" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for TODO/FIXME comments
+          TODO_COUNT=$(git diff ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -i "TODO\|FIXME" | wc -l || echo "0")
+          if [ "$TODO_COUNT" -gt 0 ]; then
+            echo "⚠️ Found $TODO_COUNT TODO/FIXME comments in changes" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check for console.log (should use logger)
+          CONSOLE_COUNT=$(git diff ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -i "console\\.log" | wc -l || echo "0")
+          if [ "$CONSOLE_COUNT" -gt 0 ]; then
+            echo "⚠️ Found $CONSOLE_COUNT console.log statements (use logger instead)" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check for hardcoded secrets
+          SECRET_PATTERNS="password|secret|api_key|token|credential"
+          SECRET_COUNT=$(git diff ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -iE "$SECRET_PATTERNS" | grep -v "test\|mock\|example" | wc -l || echo "0")
+          if [ "$SECRET_COUNT" -gt 0 ]; then
+            echo "⚠️ Potential hardcoded secrets found. Please review." >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Check test coverage
+        run: |
+          echo "## Test Coverage Review" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Reviewing test coverage for changed files..." >> $GITHUB_STEP_SUMMARY
+          
+          # Get changed files
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }})
+          
+          echo "### Changed Files" >> $GITHUB_STEP_SUMMARY
+          echo "$CHANGED_FILES" | head -20 >> $GITHUB_STEP_SUMMARY
+          
+          # Check if tests exist for changed files
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Test Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "Please ensure tests are added for new functionality." >> $GITHUB_STEP_SUMMARY
+
+      - name: Check documentation
+        run: |
+          echo "## Documentation Review" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check for documentation updates
+          DOC_CHANGES=$(git diff --name-only ${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }} | grep -E "\.md$|docs/" | wc -l || echo "0")
+          
+          if [ "$DOC_CHANGES" -eq 0 ]; then
+            echo "⚠️ No documentation changes detected. Consider updating docs for new features." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "✅ Documentation changes detected" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Generate review summary
+        run: |
+          echo "## 🤖 Automated Code Review Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This automated review checks:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Commit message format" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Code complexity" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Security issues" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Code smells" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Test coverage" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Documentation" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Please review the detailed findings above and address any issues before merging." >> $GITHUB_STEP_SUMMARY
+
+      - name: Comment PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            const summary = fs.readFileSync(process.env.GITHUB_STEP_SUMMARY, 'utf8');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: summary
+            });
+

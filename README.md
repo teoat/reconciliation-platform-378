@@ -81,12 +81,97 @@ docker-compose up --build -d
 
 ### Local Development
 
-```bash
-# Backend (requires Rust 1.70+)
-cd backend && cargo run
+#### Prerequisites
 
-# Frontend (requires Node.js 18+)
-cd frontend && npm install && npm run dev
+1. **Install Rust** (1.70+):
+   ```bash
+   curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+   rustup default stable
+   ```
+
+2. **Install Node.js** (18+):
+   ```bash
+   # Using nvm (recommended)
+   nvm install 18
+   nvm use 18
+   ```
+
+3. **Install PostgreSQL** (15+):
+   ```bash
+   # macOS
+   brew install postgresql@15
+   
+   # Ubuntu/Debian
+   sudo apt-get install postgresql-15
+   ```
+
+4. **Install Redis** (7+):
+   ```bash
+   # macOS
+   brew install redis
+   
+   # Ubuntu/Debian
+   sudo apt-get install redis-server
+   ```
+
+#### Setup Steps
+
+1. **Clone and navigate**:
+   ```bash
+   git clone <repository-url>
+   cd reconciliation-platform-378
+   ```
+
+2. **Configure environment variables**:
+   ```bash
+   # Copy consolidated environment file
+   cp env.consolidated .env
+   
+   # Edit .env with your values (see docs/deployment/ENVIRONMENT_VARIABLES.md)
+   # Required variables:
+   # - DATABASE_URL
+   # - JWT_SECRET
+   # - JWT_REFRESH_SECRET
+   ```
+
+3. **Start PostgreSQL and Redis**:
+   ```bash
+   # PostgreSQL
+   pg_ctl -D /usr/local/var/postgresql@15 start
+   
+   # Redis
+   redis-server
+   ```
+
+4. **Run database migrations**:
+   ```bash
+   cd backend
+   cargo run --bin migrate
+   ```
+
+5. **Start backend**:
+   ```bash
+   cd backend
+   cargo run
+   # Backend runs on http://localhost:2000
+   ```
+
+6. **Start frontend** (in a new terminal):
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   # Frontend runs on http://localhost:1000
+   ```
+
+#### Verify Installation
+
+```bash
+# Backend health check
+curl http://localhost:2000/api/health
+
+# Frontend should be accessible at
+open http://localhost:1000
 ```
 
 ### Health Checks
@@ -188,7 +273,7 @@ App → ErrorBoundary → ReduxProvider → WebSocketProvider → AuthProvider �
 - **[docs/API_DOCUMENTATION.md](./docs/API_DOCUMENTATION.md)** - Complete API reference
 - **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)** - Architecture deep dive
 - **[docs/SECURITY_AUDIT_REPORT.md](./docs/SECURITY_AUDIT_REPORT.md)** - Security audit
-- **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** - Comprehensive troubleshooting guide
 
 ---
 
@@ -275,22 +360,31 @@ terraform apply
 
 ### Environment Variables
 
-```env
-# Database
-DATABASE_URL=postgresql://user:password@host:5432/reconciliation_app
+**Required Variables** (must be set):
+- `DATABASE_URL` - PostgreSQL connection string
+- `JWT_SECRET` - Secret key for JWT token signing (generate: `openssl rand -base64 32`)
+- `JWT_REFRESH_SECRET` - Secret key for refresh tokens (must be different from JWT_SECRET)
 
-# Security
-JWT_SECRET=your-secret-key-minimum-32-characters
-CSRF_SECRET=your-csrf-secret-minimum-32-characters
+**Optional Variables** (have defaults):
+- `REDIS_URL` - Redis connection URL (default: `redis://localhost:6379`)
+- `PORT` - Backend port (default: `2000`)
+- `HOST` - Backend host (default: `0.0.0.0`)
+- `VITE_API_URL` - Frontend API URL (default: `http://localhost:2000/api`)
+- `VITE_WS_URL` - WebSocket URL (default: `ws://localhost:2000`)
 
-# Redis
-REDIS_URL=redis://host:6379
+**Quick Setup**:
+```bash
+# Copy environment template
+cp env.consolidated .env
 
-# Application
-NODE_ENV=production
-VITE_API_URL=https://api.example.com/api/v1
-VITE_WS_URL=wss://api.example.com
+# Generate secure secrets
+openssl rand -base64 32  # Use for JWT_SECRET
+openssl rand -base64 32  # Use for JWT_REFRESH_SECRET
+
+# Edit .env and update required variables
 ```
+
+**Full Documentation**: See [docs/deployment/ENVIRONMENT_VARIABLES.md](./docs/deployment/ENVIRONMENT_VARIABLES.md) for complete variable reference.
 
 ---
 

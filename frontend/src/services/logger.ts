@@ -241,13 +241,36 @@ class FileDownloadDestination implements LogDestination {
   }
 }
 
-// Main Logger class
+/**
+ * Main Logger class - Singleton pattern for application-wide logging.
+ * 
+ * Provides structured logging with multiple destinations (console, localStorage, API, file download).
+ * Automatically sanitizes sensitive data in production environments.
+ * 
+ * @example
+ * ```typescript
+ * const logger = Logger.getInstance();
+ * logger.info('User logged in', { userId: '123' });
+ * logger.error('API call failed', { endpoint: '/api/users', status: 500 });
+ * ```
+ */
 class Logger {
   private static instance: Logger;
   private destinations: Map<string, LogDestination> = new Map();
   private isInitialized = false;
   private sessionId: string;
 
+  /**
+   * Gets the singleton Logger instance.
+   * Creates a new instance if one doesn't exist.
+   * 
+   * @returns The Logger singleton instance
+   * 
+   * @example
+   * ```typescript
+   * const logger = Logger.getInstance();
+   * ```
+   */
   public static getInstance(): Logger {
     if (!Logger.instance) {
       Logger.instance = new Logger();
@@ -515,6 +538,27 @@ class Logger {
 }
 
 // React hooks for logging
+/**
+ * React hook for accessing the logger instance.
+ * 
+ * Provides all logger methods bound to the singleton instance.
+ * Use this hook in React components for consistent logging.
+ * 
+ * @returns Object containing all logger methods
+ * 
+ * @example
+ * ```typescript
+ * function MyComponent() {
+ *   const logger = useLogger();
+ *   
+ *   useEffect(() => {
+ *     logger.info('Component mounted');
+ *   }, []);
+ *   
+ *   return <div>Content</div>;
+ * }
+ * ```
+ */
 export const useLogger = () => {
   const logger = Logger.getInstance();
 
@@ -537,7 +581,25 @@ export const useLogger = () => {
   };
 };
 
-// Performance logging decorator
+/**
+ * Performance logging decorator for class methods.
+ * 
+ * Automatically measures and logs the execution time of async methods.
+ * 
+ * @param operation - Name of the operation being measured
+ * @returns Decorator function
+ * 
+ * @example
+ * ```typescript
+ * class ApiService {
+ *   @logPerformance('fetchUsers')
+ *   async fetchUsers() {
+ *     // Method execution time will be logged
+ *     return await api.get('/users');
+ *   }
+ * }
+ * ```
+ */
 export const logPerformance = (operation: string) => {
   return function (target: unknown, propertyName: string, descriptor: PropertyDescriptor) {
     const method = descriptor.value;

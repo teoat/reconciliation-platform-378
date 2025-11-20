@@ -105,6 +105,7 @@ pub async fn get_reconciliation_jobs(
     _data: web::Data<Database>,
     _config: web::Data<Config>,
 ) -> Result<HttpResponse, AppError> {
+    // Note: Parameters are intentionally unused - endpoint returns empty list for now
     // For now, return empty list - implement full listing if needed
     // This endpoint can be enhanced later with pagination and filtering
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -207,6 +208,7 @@ pub async fn update_reconciliation_match(
     _data: web::Data<Database>,
     reconciliation_service: web::Data<crate::services::reconciliation::ReconciliationService>,
 ) -> Result<HttpResponse, AppError> {
+    // Note: _data parameter is intentionally unused - database access via reconciliation_service
     let user_id = extract_user_id(&http_req)?;
     let match_id_val = match_id.into_inner();
 

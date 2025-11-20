@@ -1,196 +1,169 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
-import Modal from '../Modal'
+import React from 'react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { vi } from 'vitest';
+import { Modal } from '../Modal';
 
-describe('Modal Component', () => {
-  const mockOnClose = vi.fn()
-
-  beforeEach(() => {
-    mockOnClose.mockClear()
-  })
+describe('Modal', () => {
+  const defaultProps = {
+    isOpen: true,
+    onClose: vi.fn(),
+    title: 'Test Modal',
+    children: <div>Modal content</div>,
+  };
 
   it('should not render when isOpen is false', () => {
-    const { container } = render(
-      <Modal isOpen={false} onClose={mockOnClose}>
-        <div>Modal content</div>
-      </Modal>
-    )
+    render(<Modal {...defaultProps} isOpen={false} />);
     
-    expect(container.firstChild).toBeNull()
-  })
+    expect(screen.queryByText('Test Modal')).not.toBeInTheDocument();
+  });
 
-  it('should render when isOpen is true', () => {
-    render(
-      <Modal isOpen={true} onClose={mockOnClose}>
-        <div>Modal content</div>
-      </Modal>
-    )
+  it('should render modal when isOpen is true', () => {
+    render(<Modal {...defaultProps} />);
     
-    expect(screen.getByText('Modal content')).toBeInTheDocument()
-  })
+    expect(screen.getByText('Test Modal')).toBeInTheDocument();
+    expect(screen.getByText('Modal content')).toBeInTheDocument();
+  });
+
+  it('should render with custom size', () => {
+    const { rerender } = render(<Modal {...defaultProps} size="sm" />);
+    expect(screen.getByRole('dialog')).toHaveClass('modal-sm');
+
+    rerender(<Modal {...defaultProps} size="lg" />);
+    expect(screen.getByRole('dialog')).toHaveClass('modal-lg');
+
+    rerender(<Modal {...defaultProps} size="xl" />);
+    expect(screen.getByRole('dialog')).toHaveClass('modal-xl');
+  });
 
   it('should call onClose when close button is clicked', () => {
+    render(<Modal {...defaultProps} />);
+    
+    const closeButton = screen.getByRole('button', { name: /close/i });
+    fireEvent.click(closeButton);
+    
+    expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('should call onClose when Escape key is pressed', () => {
+    render(<Modal {...defaultProps} />);
+    
+    fireEvent.keyDown(document, { key: 'Escape' });
+    
+    expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not call onClose when other keys are pressed', () => {
+    render(<Modal {...defaultProps} />);
+    
+    fireEvent.keyDown(document, { key: 'Enter' });
+    
+    expect(defaultProps.onClose).not.toHaveBeenCalled();
+  });
+
+  it('should call onClose when backdrop is clicked', () => {
+    render(<Modal {...defaultProps} />);
+    
+    const backdrop = screen.getByTestId('modal-backdrop');
+    fireEvent.click(backdrop);
+    
+    expect(defaultProps.onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('should not call onClose when modal content is clicked', () => {
+    render(<Modal {...defaultProps} />);
+    
+    const modalContent = screen.getByRole('dialog');
+    fireEvent.click(modalContent);
+    
+    expect(defaultProps.onClose).not.toHaveBeenCalled();
+  });
+
+  it('should render footer when provided', () => {
+    const footer = <button>Save Changes</button>;
+    render(<Modal {...defaultProps} footer={footer} />);
+    
+    expect(screen.getByText('Save Changes')).toBeInTheDocument();
+  });
+
+  it('should render with custom className', () => {
+    render(<Modal {...defaultProps} className="custom-modal" />);
+    
+    const modal = screen.getByRole('dialog');
+    expect(modal).toHaveClass('custom-modal');
+  });
+
+  it('should have proper accessibility attributes', () => {
+    render(<Modal {...defaultProps} />);
+    
+    const modal = screen.getByRole('dialog');
+    expect(modal).toHaveAttribute('aria-modal', 'true');
+    expect(modal).toHaveAttribute('aria-labelledby', 'modal-title');
+    expect(modal).toHaveAttribute('aria-describedby', 'modal-description');
+    
+    const title = screen.getByText('Test Modal');
+    expect(title).toHaveAttribute('id', 'modal-title');
+  });
+
+  it('should focus first focusable element when opened', async () => {
     render(
-      <Modal isOpen={true} onClose={mockOnClose} showCloseButton={true}>
-        <div>Modal content</div>
+      <Modal {...defaultProps}>
+        <button data-testid="first-button">First Button</button>
+        <button data-testid="second-button">Second Button</button>
       </Modal>
-    )
+    );
     
-    const closeButton = screen.getByLabelText('Close modal')
-    fireEvent.click(closeButton)
-    
-    expect(mockOnClose).toHaveBeenCalledTimes(1)
-  })
+    await waitFor(() => {
+      expect(screen.getByTestId('first-button')).toHaveFocus();
+    });
+  });
 
-  it('should call onClose when overlay is clicked and closeOnOverlayClick is true', () => {
-    const { container } = render(
-      <Modal isOpen={true} onClose={mockOnClose} closeOnOverlayClick={true}>
-        <div>Modal content</div>
-      </Modal>
-    )
+  it('should restore focus to previously focused element when closed', async () => {
+    const outsideButton = document.createElement('button');
+    outsideButton.textContent = 'Outside Button';
+    document.body.appendChild(outsideButton);
+    outsideButton.focus();
     
-    // Find the overlay element (first div with fixed inset-0 classes)
-    const overlay = container.querySelector('.fixed.inset-0.transition-opacity')
-    if (overlay) {
-      fireEvent.click(overlay)
-      expect(mockOnClose).toHaveBeenCalledTimes(1)
-    }
-  })
+    const { rerender } = render(<Modal {...defaultProps} isOpen={false} />);
+    
+    rerender(<Modal {...defaultProps} isOpen={true} />);
+    
+    rerender(<Modal {...defaultProps} isOpen={false} />);
+    
+    await waitFor(() => {
+      expect(outsideButton).toHaveFocus();
+    });
+    
+    document.body.removeChild(outsideButton);
+  });
 
-  it('should not call onClose when overlay is clicked and closeOnOverlayClick is false', () => {
-    const { container } = render(
-      <Modal isOpen={true} onClose={mockOnClose} closeOnOverlayClick={false}>
-        <div>Modal content</div>
-      </Modal>
-    )
+  it('should prevent body scroll when open', () => {
+    const originalOverflow = document.body.style.overflow;
     
-    const overlay = container.querySelector('.fixed.inset-0.transition-opacity')
-    if (overlay) {
-      fireEvent.click(overlay)
-      expect(mockOnClose).not.toHaveBeenCalled()
-    }
-  })
+    const { unmount } = render(<Modal {...defaultProps} />);
+    expect(document.body.style.overflow).toBe('hidden');
+    
+    unmount();
+    expect(document.body.style.overflow).toBe(originalOverflow);
+  });
 
-  it('should display title when provided', () => {
-    render(
-      <Modal isOpen={true} onClose={mockOnClose} title="Test Modal Title">
-        <div>Modal content</div>
-      </Modal>
-    )
+  it('should render loading state', () => {
+    render(<Modal {...defaultProps} loading loadingText="Saving..." />);
     
-    expect(screen.getByText('Test Modal Title')).toBeInTheDocument()
-  })
+    expect(screen.getByText('Saving...')).toBeInTheDocument();
+    expect(screen.queryByText('Modal content')).not.toBeInTheDocument();
+  });
 
-  it('should not display close button when showCloseButton is false', () => {
-    render(
-      <Modal isOpen={true} onClose={mockOnClose} showCloseButton={false}>
-        <div>Modal content</div>
-      </Modal>
-    )
+  it('should render with custom close button label', () => {
+    render(<Modal {...defaultProps} closeButtonLabel="Dismiss" />);
     
-    const closeButton = screen.queryByLabelText('Close modal')
-    expect(closeButton).not.toBeInTheDocument()
-  })
+    expect(screen.getByRole('button', { name: /dismiss/i })).toBeInTheDocument();
+  });
 
-  it('should render children content', () => {
-    render(
-      <Modal isOpen={true} onClose={mockOnClose}>
-        <div>
-          <p>First paragraph</p>
-          <p>Second paragraph</p>
-        </div>
-      </Modal>
-    )
+  it('should support controlled open/close state', () => {
+    const { rerender } = render(<Modal {...defaultProps} isOpen={true} />);
+    expect(screen.getByText('Test Modal')).toBeInTheDocument();
     
-    expect(screen.getByText('First paragraph')).toBeInTheDocument()
-    expect(screen.getByText('Second paragraph')).toBeInTheDocument()
-  })
-
-  it('should use medium size by default', () => {
-    const { container } = render(
-      <Modal isOpen={true} onClose={mockOnClose}>
-        <div>Modal content</div>
-      </Modal>
-    )
-    
-    const modal = container.querySelector('.max-w-lg')
-    expect(modal).toBeInTheDocument()
-  })
-
-  it('should apply correct size classes', () => {
-    const { rerender, container } = render(
-      <Modal isOpen={true} onClose={mockOnClose} size="sm">
-        <div>Modal content</div>
-      </Modal>
-    )
-    
-    expect(container.querySelector('.max-w-md')).toBeInTheDocument()
-    
-    rerender(
-      <Modal isOpen={true} onClose={mockOnClose} size="lg">
-        <div>Modal content</div>
-      </Modal>
-    )
-    expect(container.querySelector('.max-w-2xl')).toBeInTheDocument()
-    
-    rerender(
-      <Modal isOpen={true} onClose={mockOnClose} size="xl">
-        <div>Modal content</div>
-      </Modal>
-    )
-    expect(container.querySelector('.max-w-4xl')).toBeInTheDocument()
-    
-    rerender(
-      <Modal isOpen={true} onClose={mockOnClose} size="full">
-        <div>Modal content</div>
-      </Modal>
-    )
-    expect(container.querySelector('.max-w-full.mx-4')).toBeInTheDocument()
-  })
-
-  it('should have correct accessibility attributes', () => {
-    const { container } = render(
-      <Modal isOpen={true} onClose={mockOnClose}>
-        <div>Modal content</div>
-      </Modal>
-    )
-    
-    const overlay = container.querySelector('[aria-hidden="true"]')
-    expect(overlay).toBeInTheDocument()
-    
-    const closeButton = screen.queryByLabelText('Close modal')
-    if (closeButton) {
-      expect(closeButton).toHaveAttribute('aria-label', 'Close modal')
-    }
-  })
-
-  it('should not call onClose when clicking modal content (not overlay)', () => {
-    render(
-      <Modal isOpen={true} onClose={mockOnClose} closeOnOverlayClick={true}>
-        <div>Modal content</div>
-      </Modal>
-    )
-    
-    // Click on the modal content itself, not the overlay
-    const content = screen.getByText('Modal content')
-    fireEvent.click(content)
-    
-    expect(mockOnClose).not.toHaveBeenCalled()
-  })
-
-  it('should handle multiple rapid close button clicks', () => {
-    render(
-      <Modal isOpen={true} onClose={mockOnClose}>
-        <div>Modal content</div>
-      </Modal>
-    )
-    
-    const closeButton = screen.getByLabelText('Close modal')
-    fireEvent.click(closeButton)
-    fireEvent.click(closeButton)
-    fireEvent.click(closeButton)
-    
-    expect(mockOnClose).toHaveBeenCalledTimes(3)
-  })
-})
-
+    rerender(<Modal {...defaultProps} isOpen={false} />);
+    expect(screen.queryByText('Test Modal')).not.toBeInTheDocument();
+  });
+});

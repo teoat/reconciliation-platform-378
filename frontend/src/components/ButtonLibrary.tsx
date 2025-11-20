@@ -160,7 +160,7 @@ export const Button: React.FC<ButtonProps> = ({
   form,
   name,
   value,
-  autoFocus = false,
+  autoFocus: _autoFocus = false,
   tabIndex,
   role,
   'data-testid': dataTestId,
@@ -469,7 +469,7 @@ export const getButtonClasses = (
   variant: keyof ButtonVariant = 'primary',
   size: keyof ButtonSize = 'md',
   fullWidth: boolean = false,
-  disabled: boolean = false,
+  _disabled: boolean = false,
   loading: boolean = false,
   className: string = ''
 ): string => {

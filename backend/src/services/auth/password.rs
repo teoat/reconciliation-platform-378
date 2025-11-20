@@ -1,17 +1,25 @@
 //! Password hashing and validation
 
 use crate::errors::{AppError, AppResult};
-use bcrypt::{hash, verify, DEFAULT_COST};
+use bcrypt::{hash, verify};
 use rand::distributions::Alphanumeric;
 use rand::Rng;
 
 /// Password manager
 pub struct PasswordManager;
 
+/// Bcrypt cost factor for password hashing
+/// Industry standard is 12+ for production systems
+/// DEFAULT_COST in bcrypt crate is typically 10, so we use 12 explicitly
+const BCRYPT_COST: u32 = 12;
+
 impl PasswordManager {
-    /// Hash a password using bcrypt
+    /// Hash a password using bcrypt with cost factor 12
+    /// This provides strong security while maintaining reasonable performance
     pub fn hash_password(password: &str) -> AppResult<String> {
-        hash(password, DEFAULT_COST)
+        // Use explicit cost factor 12 instead of DEFAULT_COST to ensure security
+        // DEFAULT_COST may be 10 in some bcrypt implementations
+        hash(password, BCRYPT_COST)
             .map_err(|e| AppError::Internal(format!("Password hashing failed: {}", e)))
     }
 

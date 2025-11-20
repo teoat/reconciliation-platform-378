@@ -56,13 +56,13 @@ async function runLighthouse() {
     const audits = runnerResult.lhr.audits;
     const issues = {
       performance: Object.entries(audits)
-        .filter(([_, audit]) => audit.score !== null && audit.score < 0.9 && audit.group === 'perf-metric')
+        .filter(([, audit]) => audit.score !== null && audit.score < 0.9 && audit.group === 'perf-metric')
         .map(([key, audit]) => ({ id: key, title: audit.title, score: audit.score, description: audit.description })),
       accessibility: Object.entries(audits)
-        .filter(([_, audit]) => audit.score !== null && audit.score < 1 && audit.group === 'a11y')
+        .filter(([, audit]) => audit.score !== null && audit.score < 1 && audit.group === 'a11y')
         .map(([key, audit]) => ({ id: key, title: audit.title, score: audit.score, description: audit.description })),
       'best-practices': Object.entries(audits)
-        .filter(([_, audit]) => audit.score !== null && audit.score < 1 && audit.group === 'best-practices')
+        .filter(([, audit]) => audit.score !== null && audit.score < 1 && audit.group === 'best-practices')
         .map(([key, audit]) => ({ id: key, title: audit.title, score: audit.score, description: audit.description })),
     };
 

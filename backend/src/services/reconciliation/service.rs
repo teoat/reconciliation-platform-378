@@ -47,7 +47,18 @@ pub struct MatchResolve {
     pub notes: Option<String>,
 }
 
-/// Get active reconciliation jobs
+/// Get list of currently active reconciliation jobs.
+///
+/// Returns UUIDs of all jobs that are currently being processed.
+///
+/// # Returns
+/// `AppResult<Vec<Uuid>>` - List of active job UUIDs
+///
+/// # Example
+/// ```rust
+/// let active_jobs = get_active_jobs(&service).await?;
+/// println!("Active jobs: {:?}", active_jobs);
+/// ```
 pub async fn get_active_jobs(service: &ReconciliationService) -> AppResult<Vec<Uuid>> {
     Ok(service
         .job_processor
@@ -261,7 +272,30 @@ pub async fn delete_reconciliation_job(
     Ok(())
 }
 
-/// Start job via processor
+/// Starts a reconciliation job for processing.
+///
+/// This function initiates the reconciliation process for the specified job.
+/// The job will be queued and processed asynchronously.
+///
+/// # Arguments
+/// * `service` - Reference to the reconciliation service
+/// * `job_id` - UUID of the job to start
+///
+/// # Returns
+/// `AppResult<()>` - Ok if job started successfully
+///
+/// # Errors
+/// Returns `AppError` if:
+/// - Job not found
+/// - Job is already running
+/// - Insufficient permissions
+/// - Database error
+///
+/// # Example
+/// ```rust
+/// let job_id = Uuid::parse_str("123e4567-e89b-12d3-a456-426614174000")?;
+/// start_reconciliation_job(&service, job_id).await?;
+/// ```
 pub async fn start_reconciliation_job(
     service: &ReconciliationService,
     job_id: Uuid,
@@ -270,7 +304,29 @@ pub async fn start_reconciliation_job(
     Ok(())
 }
 
-/// Stop job via processor
+/// Stops a running reconciliation job.
+///
+/// This function gracefully stops a reconciliation job that is currently processing.
+/// The job status will be updated to "stopped" and partial results will be saved.
+///
+/// # Arguments
+/// * `service` - Reference to the reconciliation service
+/// * `job_id` - UUID of the job to stop
+///
+/// # Returns
+/// `AppResult<()>` - Ok if job stopped successfully
+///
+/// # Errors
+/// Returns `AppError` if:
+/// - Job not found
+/// - Job is not running
+/// - Insufficient permissions
+///
+/// # Example
+/// ```rust
+/// let job_id = Uuid::parse_str("123e4567-e89b-12d3-a456-426614174000")?;
+/// stop_reconciliation_job(&service, job_id).await?;
+/// ```
 pub async fn stop_reconciliation_job(
     service: &ReconciliationService,
     job_id: Uuid,
@@ -278,7 +334,33 @@ pub async fn stop_reconciliation_job(
     service.job_processor.stop_job(job_id).await
 }
 
-/// Paged reconciliation results for a job
+/// Gets paginated reconciliation results for a job.
+///
+/// Retrieves reconciliation match results with pagination support.
+/// Results are ordered by match confidence (highest first).
+///
+/// # Arguments
+/// * `service` - Reference to the reconciliation service
+/// * `job_id` - UUID of the reconciliation job
+/// * `page` - Page number (1-based, default: 1)
+/// * `per_page` - Items per page (default: 20, max: 100)
+/// * `_lean` - Reserved for future lean response format
+///
+/// # Returns
+/// `AppResult<Vec<ReconciliationResultDetail>>` - List of reconciliation results
+///
+/// # Errors
+/// Returns `AppError` if:
+/// - Job not found
+/// - Invalid pagination parameters
+/// - Database error
+///
+/// # Example
+/// ```rust
+/// let job_id = Uuid::parse_str("123e4567-e89b-12d3-a456-426614174000")?;
+/// let results = get_reconciliation_results(&service, job_id, Some(1), Some(50), None).await?;
+/// println!("Found {} matches", results.len());
+/// ```
 pub async fn get_reconciliation_results(
     service: &ReconciliationService,
     job_id: Uuid,

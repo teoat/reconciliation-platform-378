@@ -1,29 +1,102 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Run lint-staged
-npx lint-staged
+# ============================================================================
+# Pre-commit Hook - Code Quality Checks
+# ============================================================================
+# This hook runs before every commit to ensure code quality:
+# 1. Linting and formatting (via lint-staged)
+# 2. Type checking
+# 3. Build verification
+# 4. Security audit
+# 5. Tests (in CI only)
+# ============================================================================
 
-# Run technical debt check (warn only)
-npm run audit:debt || echo "⚠️ Technical debt audit failed, continuing..."
+set -e
 
-# Run type checking (fail on error)
-npx tsc --noEmit || exit 1
+echo "🔍 Running pre-commit checks..."
 
-# Run build verification (fail on error in CI, warn in local)
-if [ -n "$CI" ]; then
-  npm run build || exit 1
-else
-  npm run build || echo "⚠️ Build failed, please fix before committing"
+# 1. Run lint-staged (linting, formatting on staged files)
+echo "📝 Running lint-staged (linting & formatting)..."
+npx lint-staged || {
+  echo "❌ lint-staged failed. Please fix the issues above."
+  exit 1
+}
+
+# 2. Run type checking (fail on error)
+echo "🔷 Running TypeScript type check..."
+if [ -f "frontend/package.json" ]; then
+  cd frontend
+  npm run type-check 2>/dev/null || npx tsc --noEmit || {
+    echo "❌ TypeScript type check failed. Please fix type errors."
+    exit 1
+  }
+  cd ..
+elif [ -f "package.json" ]; then
+  npx tsc --noEmit || {
+    echo "❌ TypeScript type check failed. Please fix type errors."
+    exit 1
+  }
 fi
 
-# Run security audit (warn only)
-npm audit --audit-level moderate || echo "⚠️ Security vulnerabilities found, please review"
-
-# Run tests (fail on error in CI, warn in local)
-if [ -n "$CI" ]; then
-  npm run test:ci
-else
-  npm run test || echo "⚠️ Tests failed, please fix before committing"
+# 3. Run Rust type checking (if backend exists)
+if [ -f "backend/Cargo.toml" ]; then
+  echo "🦀 Running Rust type check..."
+  cd backend
+  cargo check --message-format=short 2>&1 | head -20 || {
+    echo "⚠️ Rust type check found issues (non-blocking)"
+  }
+  cd ..
 fi
+
+# 4. Run build verification (fail on error in CI, warn in local)
+echo "🏗️ Running build verification..."
+if [ -n "$CI" ]; then
+  if [ -f "frontend/package.json" ]; then
+    cd frontend && npm run build || exit 1 && cd ..
+  else
+    npm run build || exit 1
+  fi
+else
+  if [ -f "frontend/package.json" ]; then
+    cd frontend && npm run build || echo "⚠️ Build failed, please fix before committing" && cd ..
+  else
+    npm run build || echo "⚠️ Build failed, please fix before committing"
+  fi
+fi
+
+# 5. Run security audit (warn only, don't block)
+echo "🔒 Running security audit..."
+if [ -f "frontend/package.json" ]; then
+  cd frontend
+  npm audit --audit-level moderate || echo "⚠️ Security vulnerabilities found, please review"
+  cd ..
+else
+  npm audit --audit-level moderate || echo "⚠️ Security vulnerabilities found, please review"
+fi
+
+# 6. Run tests (fail on error in CI, warn in local)
+if [ -n "$CI" ]; then
+  echo "🧪 Running tests (CI mode)..."
+  if [ -f "frontend/package.json" ]; then
+    cd frontend && npm run test:ci || exit 1 && cd ..
+  else
+    npm run test:ci || exit 1
+  fi
+else
+  echo "🧪 Running tests (local mode, non-blocking)..."
+  if [ -f "frontend/package.json" ]; then
+    cd frontend && npm run test || echo "⚠️ Tests failed, please fix before committing" && cd ..
+  else
+    npm run test || echo "⚠️ Tests failed, please fix before committing"
+  fi
+fi
+
+# 7. Run technical debt check (warn only)
+if [ -f "package.json" ] && npm run audit:debt >/dev/null 2>&1; then
+  echo "📊 Running technical debt audit..."
+  npm run audit:debt || echo "⚠️ Technical debt audit failed, continuing..."
+fi
+
+echo "✅ Pre-commit checks passed!"
 

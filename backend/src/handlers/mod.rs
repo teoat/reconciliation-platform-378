@@ -42,6 +42,7 @@ use actix_web::web;
 
 /// Configure all API routes
 /// This is the main entry point for route configuration
+/// Note: Auth rate limiting middleware is applied at the App level in main.rs
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     cfg
         // Authentication routes

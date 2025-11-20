@@ -3,8 +3,8 @@ import {
   EnhancedReconciliationRecord,
   MatchingRule,
   ReconciliationMetrics,
-} from '../../types/reconciliation';
-import { findMatches, createReconciliationRecords } from '../../utils/reconciliation/matching';
+} from '@/types/reconciliation';
+import { findMatches, createReconciliationRecords } from '@/utils/reconciliation/matching';
 
 export interface ReconciliationEngineState {
   records: EnhancedReconciliationRecord[];
@@ -56,8 +56,78 @@ export const useReconciliationEngine = () => {
     error: null,
   });
 
+  // Helper functions to reduce complexity
+  const updateProgress = useCallback(
+    (progress: number, step: ReconciliationEngineState['currentStep']) => {
+      setState((prev) => ({ ...prev, progress, currentStep: step }));
+    },
+    []
+  );
+
+  const findMatchesStep = useCallback(
+    (
+      sourceData: Record<string, unknown>[],
+      targetData: Record<string, unknown>[],
+      rules: MatchingRule[],
+      threshold: number
+    ) => {
+      updateProgress(25, 'matching');
+      return findMatches(sourceData, targetData, rules, threshold);
+    },
+    [updateProgress]
+  );
+
+  const createRecordsStep = useCallback(
+    (
+      sourceData: Record<string, unknown>[],
+      targetData: Record<string, unknown>[],
+      matches: any[]
+    ) => {
+      updateProgress(50, 'scoring');
+      return createReconciliationRecords(sourceData, targetData, matches);
+    },
+    [updateProgress]
+  );
+
+  const calculateMetricsStep = useCallback(
+    (records: EnhancedReconciliationRecord[], duration: number) => {
+      updateProgress(75, 'complete');
+      return calculateMetrics(records, duration);
+    },
+    [updateProgress]
+  );
+
+  const completeReconciliation = useCallback(
+    (records: EnhancedReconciliationRecord[], metrics: ReconciliationMetrics) => {
+      setState((prev) => ({
+        ...prev,
+        records,
+        metrics,
+        isProcessing: false,
+        isMatching: false,
+        progress: 100,
+        currentStep: 'complete',
+      }));
+    },
+    []
+  );
+
+  const handleReconciliationError = useCallback((error: unknown) => {
+    setState((prev) => ({
+      ...prev,
+      isProcessing: false,
+      isMatching: false,
+      error: error instanceof Error ? error.message : 'Reconciliation failed',
+    }));
+  }, []);
+
   const startReconciliation = useCallback(
-    async (sourceData: Record<string, unknown>[], targetData: Record<string, unknown>[], rules: MatchingRule[], threshold: number = 80) => {
+    async (
+      sourceData: Record<string, unknown>[],
+      targetData: Record<string, unknown>[],
+      rules: MatchingRule[],
+      threshold: number = 80
+    ) => {
       setState((prev) => ({
         ...prev,
         isProcessing: true,
@@ -70,38 +140,22 @@ export const useReconciliationEngine = () => {
       try {
         const startTime = Date.now();
 
-        // Step 1: Find matches
-        setState((prev) => ({ ...prev, progress: 25 }));
-        const matches = findMatches(sourceData, targetData, rules, threshold);
+        const matches = findMatchesStep(sourceData, targetData, rules, threshold);
+        const records = createRecordsStep(sourceData, targetData, matches);
+        const metrics = calculateMetricsStep(records, Date.now() - startTime);
 
-        // Step 2: Create reconciliation records
-        setState((prev) => ({ ...prev, progress: 50, currentStep: 'scoring' }));
-        const records = createReconciliationRecords(sourceData, targetData, matches);
-
-        // Step 3: Calculate metrics
-        setState((prev) => ({ ...prev, progress: 75 }));
-        const metrics = calculateMetrics(records, Date.now() - startTime);
-
-        // Step 4: Complete
-        setState((prev) => ({
-          ...prev,
-          records,
-          metrics,
-          isProcessing: false,
-          isMatching: false,
-          progress: 100,
-          currentStep: 'complete',
-        }));
+        completeReconciliation(records, metrics);
       } catch (error) {
-        setState((prev) => ({
-          ...prev,
-          isProcessing: false,
-          isMatching: false,
-          error: error instanceof Error ? error.message : 'Reconciliation failed',
-        }));
+        handleReconciliationError(error);
       }
     },
-    []
+    [
+      findMatchesStep,
+      createRecordsStep,
+      calculateMetricsStep,
+      completeReconciliation,
+      handleReconciliationError,
+    ]
   );
 
   const updateRecord = useCallback(

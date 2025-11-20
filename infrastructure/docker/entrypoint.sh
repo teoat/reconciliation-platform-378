@@ -2,6 +2,11 @@
 # Don't exit on error - let the binary handle its own errors
 set +e
 
+# Set unbuffered output for immediate log visibility
+# This ensures logs appear immediately in Docker output
+export RUST_LOG_STYLE=always
+export RUST_BACKTRACE=${RUST_BACKTRACE:-full}
+
 # Print environment for debugging
 echo "🚀 Starting backend with environment:" >&2
 if [ -n "$DATABASE_URL" ]; then
@@ -40,9 +45,12 @@ fi
 
 echo "✅ Binary found and executable" >&2
 
-# Run the backend with explicit output redirection
-echo "▶️  Executing binary..." >&2
+# Run the backend with unbuffered output
 # Use exec to replace shell - this ensures signals are handled correctly
-# The binary will handle its own logging
+# Redirect stderr to stdout for Docker log capture, but keep them unbuffered
+# The binary writes to both stdout and stderr, Docker captures both
+echo "▶️  Executing binary with unbuffered output..." >&2
+# Flush output before exec
+exec 2>&1
 exec /app/reconciliation-backend
 

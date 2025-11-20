@@ -30,10 +30,54 @@ export class ApiService {
   // AUTHENTICATION SERVICE
   // ============================================================================
 
+  /**
+   * Authenticates a user with email and password.
+   * 
+   * @param email - User's email address
+   * @param password - User's password
+   * @returns Promise resolving to authentication response with token and user data
+   * @throws {ApiError} If authentication fails (invalid credentials, user not found, etc.)
+   * 
+   * @example
+   * ```typescript
+   * try {
+   *   const response = await ApiService.authenticate('user@example.com', 'password123');
+   *   if (response.success) {
+   *     // Store token and redirect to dashboard
+   *     localStorage.setItem('token', response.data.token);
+   *   }
+   * } catch (error) {
+   *   console.error('Authentication failed:', error);
+   * }
+   * ```
+   */
   static async authenticate(email: string, password: string) {
     return ApiService.authService.authenticate(email, password);
   }
 
+  /**
+   * Registers a new user account.
+   * 
+   * @param userData - User registration data
+   * @param userData.email - User's email address (must be unique)
+   * @param userData.password - User's password (min 8 characters)
+   * @param userData.first_name - User's first name
+   * @param userData.last_name - User's last name
+   * @param userData.role - Optional user role (default: 'user')
+   * @returns Promise resolving to registration response with user data
+   * @throws {ApiError} If registration fails (email exists, validation error, etc.)
+   * 
+   * @example
+   * ```typescript
+   * const response = await ApiService.register({
+   *   email: 'newuser@example.com',
+   *   password: 'securePassword123',
+   *   first_name: 'John',
+   *   last_name: 'Doe',
+   *   role: 'analyst'
+   * });
+   * ```
+   */
   static async register(userData: {
     email: string;
     password: string;
@@ -44,14 +88,55 @@ export class ApiService {
     return ApiService.authService.register(userData);
   }
 
+  /**
+   * Logs out the current user and invalidates the session token.
+   * 
+   * @returns Promise resolving when logout is complete
+   * 
+   * @example
+   * ```typescript
+   * await ApiService.logout();
+   * localStorage.removeItem('token');
+   * navigate('/login');
+   * ```
+   */
   static async logout() {
     return ApiService.authService.logout();
   }
 
+  /**
+   * Gets the currently authenticated user's information.
+   * 
+   * @returns Promise resolving to current user data
+   * @throws {ApiError} If user is not authenticated or token is invalid
+   * 
+   * @example
+   * ```typescript
+   * const user = await ApiService.getCurrentUser();
+   * console.log(`Welcome, ${user.data.first_name}!`);
+   * ```
+   */
   static async getCurrentUser() {
     return ApiService.authService.getCurrentUser();
   }
 
+  /**
+   * Changes the password for the currently authenticated user.
+   * 
+   * @param passwordData - Password change data
+   * @param passwordData.currentPassword - User's current password
+   * @param passwordData.newPassword - New password (min 8 characters)
+   * @returns Promise resolving when password is changed
+   * @throws {ApiError} If current password is incorrect or new password doesn't meet requirements
+   * 
+   * @example
+   * ```typescript
+   * await ApiService.changePassword({
+   *   currentPassword: 'oldPassword123',
+   *   newPassword: 'newSecurePassword456'
+   * });
+   * ```
+   */
   static async changePassword(passwordData: { currentPassword: string; newPassword: string }) {
     return ApiService.authService.changePassword(passwordData);
   }
@@ -60,6 +145,27 @@ export class ApiService {
   // USER MANAGEMENT SERVICE
   // ============================================================================
 
+  /**
+   * Gets a paginated list of users with optional filtering.
+   * 
+   * @param params - Query parameters for filtering and pagination
+   * @param params.page - Page number (1-based, default: 1)
+   * @param params.per_page - Items per page (default: 10, max: 100)
+   * @param params.search - Search term for email or name
+   * @param params.role - Filter by user role (user, analyst, manager, admin)
+   * @param params.status - Filter by status (active, inactive)
+   * @returns Promise resolving to paginated list of users
+   * 
+   * @example
+   * ```typescript
+   * const users = await ApiService.getUsers({
+   *   page: 1,
+   *   per_page: 20,
+   *   role: 'analyst',
+   *   search: 'john'
+   * });
+   * ```
+   */
   static async getUsers(params: {
     page?: number;
     per_page?: number;
@@ -70,6 +176,18 @@ export class ApiService {
     return ApiService.usersService.getUsers(params);
   }
 
+  /**
+   * Gets a single user by their ID.
+   * 
+   * @param userId - UUID of the user
+   * @returns Promise resolving to user data
+   * @throws {ApiError} If user is not found or access is denied
+   * 
+   * @example
+   * ```typescript
+   * const user = await ApiService.getUserById('123e4567-e89b-12d3-a456-426614174000');
+   * ```
+   */
   static async getUserById(userId: string) {
     return ApiService.usersService.getUserById(userId);
   }

@@ -22,7 +22,7 @@ pub use auth::AuthMiddleware;
 pub use logging::{LoggingConfig, LoggingMiddleware};
 pub use security::metrics::*;
 pub use security::{
-    configure_security_middleware, CsrfProtectionMiddleware, RateLimitMiddleware, SecurityConfig,
+    AuthRateLimitMiddleware, AuthRateLimitConfig, configure_security_middleware, CsrfProtectionMiddleware, RateLimitMiddleware, SecurityConfig,
     SecurityHeadersConfig, SecurityHeadersMiddleware,
 };
 

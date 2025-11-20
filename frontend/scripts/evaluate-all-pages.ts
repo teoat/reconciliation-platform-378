@@ -5,7 +5,7 @@
 // Evaluates all frontend pages using Playwright
 // ============================================================================
 
-import { chromium, Browser, Page } from 'playwright';
+import { chromium, Browser } from 'playwright';
 import { injectAxe, getViolations } from 'axe-playwright';
 
 interface PageEvaluation {

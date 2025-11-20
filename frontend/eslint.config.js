@@ -29,14 +29,21 @@ export default [
       ...tsPlugin.configs.recommended.rules,
       ...jsxA11yPlugin.configs.recommended.rules,
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       'no-console': 'off',
+      'no-undef': 'off', // TypeScript handles this
+      '@typescript-eslint/no-undef': 'off', // TypeScript handles this
     },
   },
   {
     files: ['**/*.test.{ts,tsx}', '**/__tests__/**/*.{ts,tsx}'],
     languageOptions: {
       parser: tsParser,
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true, // Enable JSX parsing for test files
+        },
+      },
       ecmaVersion: 2020,
       sourceType: 'module',
       globals: {
@@ -51,7 +58,7 @@ export default [
     rules: {
       ...tsPlugin.configs.recommended.rules,
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': 'warn',
+      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
       'no-console': 'off',
     },
   },

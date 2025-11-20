@@ -10,12 +10,8 @@ import { Minimize2 } from 'lucide-react'
 import { Maximize2 } from 'lucide-react'
 import { Wifi } from 'lucide-react'
 import { WifiOff } from 'lucide-react'
-import { Clock } from 'lucide-react'
 import { User } from 'lucide-react'
-import { MoreHorizontal } from 'lucide-react'
 import { Reply } from 'lucide-react'
-import { Edit } from 'lucide-react'
-import { Trash2 } from 'lucide-react';
 import { useRealtimeCollaboration } from '../hooks/useWebSocketIntegration';
 
 interface LiveComment {
@@ -81,7 +77,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
     }
   };
 
-  const handleSendReply = (commentId: string) => {
+  const handleSendReply = (_commentId: string) => {
     if (replyText.trim()) {
       // In a real implementation, this would send a reply
       setReplyText('');
@@ -299,7 +295,7 @@ export const CollaborationButton: React.FC<{
   isOpen: boolean;
   onToggle: () => void;
   className?: string;
-}> = ({ page, isOpen, onToggle, className = '' }) => {
+}> = ({ page, isOpen: _isOpen, onToggle, className = '' }) => {
   const { isConnected, activeUsers, liveComments } = useRealtimeCollaboration(page);
 
   return (

@@ -3,6 +3,12 @@ name = "reconciliation-backend"
 version = "0.1.0"
 edition = "2021"
 
+# Optional binary for applying query indexes
+# Uncomment if needed: cargo run --bin apply-query-indexes
+# [[bin]]
+# name = "apply-query-indexes"
+# path = "scripts/apply-query-indexes.rs"
+
 [profile.release]
 opt-level = 3              # Maximum optimization
 lto = true                 # Link-time optimization
@@ -36,7 +42,7 @@ serde_json = "1.0"
 diesel = { version = "2.0", features = ["postgres", "chrono", "uuid", "numeric", "r2d2", "serde_json"] }
 diesel_migrations = "2.0"
 diesel_derives = "2.0"
-sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "chrono", "uuid", "json"] }
+sqlx = { version = "0.8.2", features = ["runtime-tokio", "postgres", "chrono", "uuid", "json", "macros"], default-features = false }
 
 # Additional dependencies
 regex = "1.0"
@@ -83,8 +89,8 @@ log = "0.4"
 lettre = "0.11"
 
 # OpenAPI/Swagger documentation
-utoipa = { version = "3.0", features = ["actix_extras"] }
-utoipa-swagger-ui = { version = "3.0", features = ["actix-web"] }
+utoipa = { version = "4.2", features = ["actix_extras"] }
+utoipa-swagger-ui = { version = "7.1", features = ["actix-web"] }
 
 # Monitoring
 prometheus = "0.14"  # Updated from 0.13 (fixes protobuf vulnerability)
@@ -105,7 +111,7 @@ thiserror = "1.0"
 anyhow = "1.0"
 
 # Configuration
-config = "0.15"  # Updated from 0.13 (fixes yaml-rust unmaintained)
+config = "0.15.8"  # Updated to latest patch version
 dotenvy = "0.15"  # Replaces dotenv 0.15 (unmaintained)
 num_cpus = "1.0"
 

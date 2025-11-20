@@ -185,11 +185,17 @@ services:
       apm-server:
         condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://localhost:2000/health >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:2000/api/health >/dev/null 2>&1 || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "service,environment"
     deploy:
       resources:
         limits:
@@ -198,11 +204,6 @@ services:
         reservations:
           cpus: '1.0'
           memory: 1G
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
     restart: always
 
   # ==========================================================================

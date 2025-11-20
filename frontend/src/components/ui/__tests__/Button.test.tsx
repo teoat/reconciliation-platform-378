@@ -1,63 +1,142 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '../test/utils'
-import { Button } from '../components/ui/Button'
+import React from 'react';
+import { render, screen, fireEvent } from '@testing-library/react';
+import { vi } from 'vitest';
+import { Button } from '../Button';
 
-describe('Button Component', () => {
-  it('renders with default props', () => {
-    render(<Button>Click me</Button>)
-    const button = screen.getByRole('button', { name: /click me/i })
-    expect(button).toBeInTheDocument()
-    expect(button).toHaveClass('bg-blue-600')
-  })
-
-  it('renders with different variants', () => {
-    const { rerender } = render(<Button variant="secondary">Secondary</Button>)
-    expect(screen.getByRole('button')).toHaveClass('bg-gray-600')
-
-    rerender(<Button variant="outline">Outline</Button>)
-    expect(screen.getByRole('button')).toHaveClass('border-gray-300')
-
-    rerender(<Button variant="ghost">Ghost</Button>)
-    expect(screen.getByRole('button')).toHaveClass('bg-transparent')
-  })
-
-  it('renders with different sizes', () => {
-    const { rerender } = render(<Button size="sm">Small</Button>)
-    expect(screen.getByRole('button')).toHaveClass('px-3', 'py-1.5', 'text-sm')
-
-    rerender(<Button size="lg">Large</Button>)
-    expect(screen.getByRole('button')).toHaveClass('px-6', 'py-3', 'text-lg')
-  })
-
-  it('handles click events', () => {
-    const handleClick = vi.fn()
-    render(<Button onClick={handleClick}>Click me</Button>)
+describe('Button', () => {
+  it('should render with default props', () => {
+    render(<Button>Click me</Button>);
     
-    fireEvent.click(screen.getByRole('button'))
-    expect(handleClick).toHaveBeenCalledTimes(1)
-  })
+    const button = screen.getByRole('button', { name: /click me/i });
+    expect(button).toBeInTheDocument();
+    expect(button).toHaveClass('btn-primary');
+  });
 
-  it('shows loading state', () => {
-    render(<Button loading>Loading</Button>)
-    const button = screen.getByRole('button')
-    expect(button).toBeDisabled()
-    expect(button).toHaveClass('opacity-50')
-  })
+  it('should render with different variants', () => {
+    const { rerender } = render(<Button variant="secondary">Secondary</Button>);
+    expect(screen.getByRole('button')).toHaveClass('btn-secondary');
 
-  it('can be disabled', () => {
-    render(<Button disabled>Disabled</Button>)
-    const button = screen.getByRole('button')
-    expect(button).toBeDisabled()
-    expect(button).toHaveClass('opacity-50', 'cursor-not-allowed')
-  })
+    rerender(<Button variant="danger">Danger</Button>);
+    expect(screen.getByRole('button')).toHaveClass('btn-danger');
 
-  it('renders with icon', () => {
-    render(<Button icon={<span data-testid="icon">📁</span>}>With Icon</Button>)
-    expect(screen.getByTestId('icon')).toBeInTheDocument()
-  })
+    rerender(<Button variant="outline">Outline</Button>);
+    expect(screen.getByRole('button')).toHaveClass('btn-outline');
 
-  it('applies custom className', () => {
-    render(<Button className="custom-class">Custom</Button>)
-    expect(screen.getByRole('button')).toHaveClass('custom-class')
-  })
-})
+    rerender(<Button variant="ghost">Ghost</Button>);
+    expect(screen.getByRole('button')).toHaveClass('btn-ghost');
+  });
+
+  it('should render with different sizes', () => {
+    const { rerender } = render(<Button size="sm">Small</Button>);
+    expect(screen.getByRole('button')).toHaveClass('btn-sm');
+
+    rerender(<Button size="lg">Large</Button>);
+    expect(screen.getByRole('button')).toHaveClass('btn-lg');
+
+    rerender(<Button size="md">Medium</Button>);
+    expect(screen.getByRole('button')).toHaveClass('btn-md');
+  });
+
+  it('should handle click events', () => {
+    const handleClick = vi.fn();
+    render(<Button onClick={handleClick}>Click me</Button>);
+    
+    const button = screen.getByRole('button');
+    fireEvent.click(button);
+    
+    expect(handleClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('should be disabled when disabled prop is true', () => {
+    const handleClick = vi.fn();
+    render(<Button disabled onClick={handleClick}>Disabled</Button>);
+    
+    const button = screen.getByRole('button');
+    expect(button).toBeDisabled();
+    
+    fireEvent.click(button);
+    expect(handleClick).not.toHaveBeenCalled();
+  });
+
+  it('should show loading state', () => {
+    render(<Button loading>Loading</Button>);
+    
+    const button = screen.getByRole('button');
+    expect(button).toBeDisabled();
+    expect(button).toHaveClass('btn-loading');
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+  });
+
+  it('should render with custom className', () => {
+    render(<Button className="custom-class">Custom</Button>);
+    
+    const button = screen.getByRole('button');
+    expect(button).toHaveClass('custom-class');
+  });
+
+  it('should render as different HTML element when asChild is used', () => {
+    render(
+      <Button asChild>
+        <a href="/test">Link Button</a>
+      </Button>
+    );
+    
+    const link = screen.getByRole('link');
+    expect(link).toBeInTheDocument();
+    expect(link).toHaveAttribute('href', '/test');
+  });
+
+  it('should support fullWidth prop', () => {
+    render(<Button fullWidth>Full Width</Button>);
+    
+    const button = screen.getByRole('button');
+    expect(button).toHaveClass('w-full');
+  });
+
+  it('should support icon prop', () => {
+    const TestIcon = () => <span data-testid="test-icon">📝</span>;
+    
+    render(<Button icon={<TestIcon />}>With Icon</Button>);
+    
+    expect(screen.getByTestId('test-icon')).toBeInTheDocument();
+    expect(screen.getByText('With Icon')).toBeInTheDocument();
+  });
+
+  it('should support iconPosition', () => {
+    const TestIcon = () => <span data-testid="test-icon">📝</span>;
+    
+    const { rerender } = render(
+      <Button icon={<TestIcon />} iconPosition="left">
+        Left Icon
+      </Button>
+    );
+    
+    let button = screen.getByRole('button');
+    let icon = screen.getByTestId('test-icon');
+    expect(button.firstChild).toBe(icon);
+    
+    rerender(
+      <Button icon={<TestIcon />} iconPosition="right">
+        Right Icon
+      </Button>
+    );
+    
+    button = screen.getByRole('button');
+    icon = screen.getByTestId('test-icon');
+    expect(button.lastChild).toBe(icon);
+  });
+
+  it('should have proper accessibility attributes', () => {
+    render(<Button aria-label="Custom label">Button</Button>);
+    
+    const button = screen.getByRole('button');
+    expect(button).toHaveAttribute('aria-label', 'Custom label');
+  });
+
+  it('should support type attribute', () => {
+    render(<Button type="submit">Submit</Button>);
+    
+    const button = screen.getByRole('button');
+    expect(button).toHaveAttribute('type', 'submit');
+  });
+});

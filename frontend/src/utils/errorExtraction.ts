@@ -49,15 +49,16 @@ export function extractErrorFromApiResponse(
   if (error instanceof Response) {
     // Extract correlation ID from headers (always available)
     const correlationId = extractCorrelationIdFromResponse(error);
-    
+
     // Extract error code from status
     const errorCode = error.status ? getErrorCodeFromStatusCode(error.status) : undefined;
-    
+
     // Use status text or default error message
-    const errorMessage = error.statusText || 
+    const errorMessage =
+      error.statusText ||
       (defaultError instanceof Error ? defaultError.message : defaultError) ||
       'Request failed';
-    
+
     return {
       error: new Error(errorMessage),
       errorCode,
@@ -70,7 +71,7 @@ export function extractErrorFromApiResponse(
   // Handle ApiResponse objects (Agent 1 Task 1.19)
   if (typeof error === 'object' && error !== null) {
     const errorObj = error as any;
-    
+
     // Check for ApiResponse structure (from API client)
     if ('success' in errorObj && !errorObj.success && ('error' in errorObj || 'code' in errorObj)) {
       return {
@@ -105,7 +106,7 @@ export function extractErrorFromApiResponse(
     if (errorObj.status || errorObj.statusText) {
       // Try to extract correlation ID from headers if available
       let correlationId: string | undefined;
-      
+
       if (errorObj.headers) {
         if (errorObj.headers instanceof Headers) {
           correlationId =
@@ -121,7 +122,7 @@ export function extractErrorFromApiResponse(
             undefined;
         }
       }
-      
+
       return {
         error: errorObj.message || new Error('HTTP request failed'),
         errorCode: errorObj.code || extractErrorCodeFromError(errorObj),
@@ -220,24 +221,12 @@ function extractCorrelationIdFromError(error: unknown): string | undefined {
   if (headersObj && typeof headersObj === 'object' && headersObj !== null) {
     const headers = headersObj as Record<string, unknown>;
     const headerId =
-      (typeof headers['x-correlation-id'] === 'string'
-        ? headers['x-correlation-id']
-        : undefined) ||
-      (typeof headers['X-Correlation-ID'] === 'string'
-        ? headers['X-Correlation-ID']
-        : undefined) ||
-      (typeof headers['x-request-id'] === 'string'
-        ? headers['x-request-id']
-        : undefined) ||
-      (typeof headers['X-Request-ID'] === 'string'
-        ? headers['X-Request-ID']
-        : undefined) ||
-      (typeof headers['x-trace-id'] === 'string'
-        ? headers['x-trace-id']
-        : undefined) ||
-      (typeof headers['X-Trace-ID'] === 'string'
-        ? headers['X-Trace-ID']
-        : undefined);
+      (typeof headers['x-correlation-id'] === 'string' ? headers['x-correlation-id'] : undefined) ||
+      (typeof headers['X-Correlation-ID'] === 'string' ? headers['X-Correlation-ID'] : undefined) ||
+      (typeof headers['x-request-id'] === 'string' ? headers['x-request-id'] : undefined) ||
+      (typeof headers['X-Request-ID'] === 'string' ? headers['X-Request-ID'] : undefined) ||
+      (typeof headers['x-trace-id'] === 'string' ? headers['x-trace-id'] : undefined) ||
+      (typeof headers['X-Trace-ID'] === 'string' ? headers['X-Trace-ID'] : undefined);
     if (headerId) {
       return headerId;
     }
@@ -257,12 +246,8 @@ function extractCorrelationIdFromError(error: unknown): string | undefined {
         (typeof headers['X-Correlation-ID'] === 'string'
           ? headers['X-Correlation-ID']
           : undefined) ||
-        (typeof headers['x-request-id'] === 'string'
-          ? headers['x-request-id']
-          : undefined) ||
-        (typeof headers['X-Request-ID'] === 'string'
-          ? headers['X-Request-ID']
-          : undefined);
+        (typeof headers['x-request-id'] === 'string' ? headers['x-request-id'] : undefined) ||
+        (typeof headers['X-Request-ID'] === 'string' ? headers['X-Request-ID'] : undefined);
       if (headerId) {
         return headerId;
       }
@@ -340,7 +325,9 @@ export function extractCorrelationIdFromResponse(response: Response): string | u
  * Safely extract error message from ApiErrorValue type (string | { message: string })
  * Used to safely access response.error.message
  */
-export function getErrorMessageFromApiError(error: string | { message: string } | undefined): string {
+export function getErrorMessageFromApiError(
+  error: string | { message: string } | undefined
+): string {
   if (!error) {
     return 'An error occurred';
   }
@@ -353,3 +340,27 @@ export function getErrorMessageFromApiError(error: string | { message: string } 
   return 'An error occurred';
 }
 
+/**
+ * Safely extracts error message from any error type with fallback
+ * Consolidates the common pattern: error instanceof Error ? error.message : fallback
+ */
+export function getErrorMessage(error: unknown, fallback: string = 'An error occurred'): string {
+  if (error instanceof Error) {
+    return error.message || fallback;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return fallback;
+}
+
+/**
+ * Creates an Error object from any error type
+ * Consolidates the common pattern: error instanceof Error ? error : new Error(String(error))
+ */
+export function toError(error: unknown, fallbackMessage: string = 'An error occurred'): Error {
+  if (error instanceof Error) {
+    return error;
+  }
+  return new Error(typeof error === 'string' ? error : fallbackMessage);
+}

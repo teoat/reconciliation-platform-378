@@ -576,8 +576,6 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
           completedTabs={completedTabs}
           onTabChange={setActiveTab}
         />
-          </div>
-        </div>
 
         {/* Content */}
         <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" role="main">

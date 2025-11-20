@@ -1,18 +1,14 @@
 import { useState, useCallback, useEffect } from 'react';
-import {
-  UploadedFile,
-  DataValidation,
-  DataQualityMetrics,
-  FieldMapping,
-} from '../../types/ingestion';
-import { transformApiFileToUploadedFile } from '../../utils/ingestion/dataTransformation';
+import { UploadedFile, DataValidation, DataQualityMetrics, FieldMapping } from '@/types/ingestion';
+import { transformApiFileToUploadedFile } from '@/utils/ingestion/dataTransformation';
 import {
   validateUploadedFile,
   validateDataset,
   getValidationSummary,
-} from '../../utils/ingestion/validation';
-import { calculateDataQualityMetrics } from '../../utils/ingestion/qualityMetrics';
-import { apiClient } from '../../services/apiClient';
+} from '@/utils/ingestion/validation';
+import { calculateDataQualityMetrics } from '@/utils/ingestion/qualityMetrics';
+import { apiClient } from '@/services/apiClient';
+import { getErrorMessage } from '@/utils/errorExtraction';
 
 export interface IngestionWorkflowState {
   files: UploadedFile[];
@@ -28,16 +24,18 @@ export interface IngestionWorkflowState {
   error: string | null;
 }
 
-export interface IngestionWorkflowActions {
-  uploadFiles: (files: FileList) => Promise<void>;
-  selectFile: (file: UploadedFile) => void;
-  validateFile: (file: UploadedFile) => Promise<void>;
-  updateMappings: (mappings: FieldMapping[]) => void;
-  transformData: () => Promise<void>;
-  resetWorkflow: () => void;
-  deleteFile: (fileId: string) => Promise<void>;
-}
-
+/**
+ * Hook for managing the complete ingestion workflow
+ *
+ * @returns {Object} Ingestion workflow state and functions
+ * @returns {IngestionWorkflowState} returns.state - Current workflow state
+ * @returns {Function} returns.uploadFiles - Function to upload files
+ * @returns {Function} returns.selectFile - Function to select a file for processing
+ * @returns {Function} returns.validateFile - Function to validate selected file
+ * @returns {Function} returns.updateMappings - Function to update field mappings
+ * @returns {Function} returns.transformData - Function to transform data using mappings
+ * @returns {Function} returns.resetWorkflow - Function to reset the workflow
+ */
 export const useIngestionWorkflow = () => {
   const [state, setState] = useState<IngestionWorkflowState>({
     files: [],
@@ -53,7 +51,11 @@ export const useIngestionWorkflow = () => {
     error: null,
   });
 
-  // Upload files
+  /**
+   * Upload files to the ingestion workflow
+   *
+   * @param {FileList} files - Files to upload
+   */
   const uploadFiles = useCallback(async (files: FileList) => {
     setState((prev) => ({ ...prev, isUploading: true, error: null }));
 
@@ -89,12 +91,16 @@ export const useIngestionWorkflow = () => {
       setState((prev) => ({
         ...prev,
         isUploading: false,
-        error: error instanceof Error ? error.message : 'Upload failed',
+        error: getErrorMessage(error, 'Upload failed'),
       }));
     }
   }, []);
 
-  // Select file for processing
+  /**
+   * Select a file for processing in the workflow
+   *
+   * @param {UploadedFile} file - File to select
+   */
   const selectFile = useCallback((file: UploadedFile) => {
     setState((prev) => ({
       ...prev,
@@ -107,6 +113,11 @@ export const useIngestionWorkflow = () => {
   }, []);
 
   // Validate selected file
+  /**
+   * Validate a specific file
+   *
+   * @param {UploadedFile} file - File to validate
+   */
   const validateFile = useCallback(async (file: UploadedFile) => {
     if (!file) return;
 
@@ -181,7 +192,7 @@ export const useIngestionWorkflow = () => {
       setState((prev) => ({
         ...prev,
         isValidating: false,
-        error: error instanceof Error ? error.message : 'Validation failed',
+        error: getErrorMessage(error, 'Validation failed'),
       }));
     }
   }, []);
@@ -195,19 +206,10 @@ export const useIngestionWorkflow = () => {
     }));
   }, []);
 
-  // Transform data using mappings
-  const transformData = useCallback(async () => {
-    const { selectedFile, mappings } = state;
-    if (!selectedFile || !selectedFile.data || mappings.length === 0) return;
-
-    setState((prev) => ({ ...prev, isTransforming: true, error: null }));
-
-    try {
-      // Simulate transformation
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // Apply transformations
-      const transformedData = selectedFile.data.map((row, index) => {
+  // Helper function to apply transformations to data
+  const applyDataTransformations = useCallback(
+    (data: Record<string, unknown>[], mappings: FieldMapping[]): Record<string, unknown>[] => {
+      return data.map((row, index) => {
         const transformedRow = { ...row, id: `transformed_${index}` };
 
         mappings.forEach((mapping) => {
@@ -225,6 +227,22 @@ export const useIngestionWorkflow = () => {
 
         return transformedRow;
       });
+    },
+    []
+  );
+
+  // Transform data using mappings
+  const transformData = useCallback(async () => {
+    const { selectedFile, mappings } = state;
+    if (!selectedFile || !selectedFile.data || mappings.length === 0) return;
+
+    setState((prev) => ({ ...prev, isTransforming: true, error: null }));
+
+    try {
+      // Simulate transformation
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+
+      const transformedData = applyDataTransformations(selectedFile.data, mappings);
 
       // Update file with transformed data
       const updatedFile = {
@@ -244,10 +262,10 @@ export const useIngestionWorkflow = () => {
       setState((prev) => ({
         ...prev,
         isTransforming: false,
-        error: error instanceof Error ? error.message : 'Transformation failed',
+        error: getErrorMessage(error, 'Transformation failed'),
       }));
     }
-  }, [state]);
+  }, [state, applyDataTransformations]);
 
   // Delete file
   const deleteFile = useCallback(async (fileId: string) => {
@@ -267,7 +285,7 @@ export const useIngestionWorkflow = () => {
     } catch (error) {
       setState((prev) => ({
         ...prev,
-        error: error instanceof Error ? error.message : 'Delete failed',
+        error: getErrorMessage(error, 'Delete failed'),
       }));
     }
   }, []);
