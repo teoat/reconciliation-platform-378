@@ -101,25 +101,15 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
                     .configure(sync::configure_routes)
             )
     )
-    // Backward compatibility / Legacy routes for a smoother migration
+    // Backward compatibility / Legacy routes (optional, but good for safety during migration)
     .configure(configure_legacy_routes)
-    // Health check routes (configured at root level for K8s probes, not under /api/v1)
+    // Health check routes (keep at root/api level as well for K8s probes)
     .configure(health::configure_health_routes);
 }
 
-/// Configures all legacy /api routes for backward compatibility.
+/// Configure legacy routes for backward compatibility
 fn configure_legacy_routes(cfg: &mut web::ServiceConfig) {
-    cfg.service(web::scope("/api")
-        .service(web::scope("/auth").configure(auth::configure_routes))
-        .service(web::scope("/users").configure(users::configure_routes))
-        .service(web::scope("/projects").configure(projects::configure_routes))
-        .service(web::scope("/reconciliation").configure(reconciliation::configure_routes))
-        .service(web::scope("/files").configure(files::configure_routes))
-        .service(web::scope("/analytics").configure(analytics::configure_routes))
-        .service(web::scope("/settings").configure(settings::configure_routes))
-        .service(web::scope("/profile").configure(profile::configure_routes))
-        .service(web::scope("/system").configure(system::configure_routes))
-        .service(web::scope("/monitoring").configure(monitoring::configure_routes))
-        .service(web::scope("/sync").configure(sync::configure_routes))
+    cfg.service(
+        web::scope("/api/auth").configure(auth::configure_routes)
     );
 }

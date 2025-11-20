@@ -30,7 +30,8 @@ The codebase exhibits a generally sound microservices architecture with clear se
 ## 2. Containerization Audit (Docker)
 
 ### Dockerfile Efficiency
-*   **Critical:** `Dockerfile.frontend` references `node:25-alpine` (non-existent version), and `Dockerfile.backend` references `rust:1.91-alpine` (non-existent version). **Note:** These Dockerfiles are not part of the changed files in this PR, so this issue remains unresolved.
+*   **Critical:** `Dockerfile.frontend` uses `node:25-alpine`. Node 25 does not exist.
+*   **Critical:** `Dockerfile.backend` uses `rust:1.91-alpine`. Rust 1.91 does not exist.
 *   **Pass:** Multi-stage builds are implemented correctly.
 *   **Pass:** Layer caching is optimized by copying `package.json`/`Cargo.toml` before source code.
 
