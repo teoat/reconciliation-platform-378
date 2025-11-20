@@ -122,9 +122,10 @@ impl ProjectCrudOps {
             .filter(reconciliation_jobs::project_id.eq(project_id))
             .order(reconciliation_jobs::updated_at.desc())
             .select(reconciliation_jobs::updated_at)
-            .first::<chrono::DateTime<chrono::Utc>>(&mut conn)
+            .first::<Option<chrono::DateTime<chrono::Utc>>>(&mut conn)
             .optional()
-            .map_err(AppError::Database)?;
+            .map_err(AppError::Database)?
+            .flatten();
 
         Ok(ProjectInfo {
             id: result.project_id,

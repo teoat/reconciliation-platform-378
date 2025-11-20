@@ -145,7 +145,7 @@ pub async fn login(
             last_name: user.last_name.unwrap_or_default(),
             role: user.role.unwrap_or_else(|| "user".to_string()),
             is_active: user.is_active,
-            last_login: user.last_login,
+            last_login: user.last_login_at,
         },
         expires_at: (chrono::Utc::now().timestamp() + auth_service.as_ref().get_expiration()) as usize,
     };
@@ -198,7 +198,7 @@ pub async fn register(
             last_name: user_info.last_name,
             role: user_info.role,
             is_active: user_info.is_active,
-            last_login: user_info.last_login,
+            last_login: user_info.last_login_at,
         },
         expires_at: (chrono::Utc::now().timestamp() + auth_service.as_ref().get_expiration()) as usize,
     };
@@ -237,16 +237,16 @@ pub async fn refresh_token(
         id: user_id,
         email: claims.email,
         password_hash: String::new(),
-        name: String::new(),
+        username: None,
         first_name: Some(String::new()),
         last_name: Some(String::new()),
-        role: Some(claims.role),
-        permissions: None,
-        preferences: None,
-        is_active: true,
-        last_login: None,
-        created_at: Some(chrono::Utc::now()),
-        updated_at: Some(chrono::Utc::now()),
+        status: "active".to_string(),
+        email_verified: false,
+        email_verified_at: None,
+        last_active_at: None,
+        last_login_at: None,
+        created_at: chrono::Utc::now(),
+        updated_at: chrono::Utc::now(),
     };
     
     let new_token = auth_service.as_ref().generate_token(&user)?;

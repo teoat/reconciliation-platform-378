@@ -136,7 +136,7 @@ impl From<diesel::result::Error> for AppError {
         match err {
             diesel::result::Error::NotFound => AppError::NotFound("Database row not found".into()),
             diesel::result::Error::DatabaseError(kind, ref info) => {
-                AppError::Database(format!("Database error ({}): {}", kind, info.message()))
+                AppError::Database(format!("Database error ({:?}): {}", kind, info.message()))
             }
             _ => AppError::Database(format!("Database error: {}", err)),
         }
