@@ -61,3 +61,19 @@ The audit found no critical vulnerabilities in the project's dependencies.
 
 - **CI/CD Integration:** Integrate the `audit-ci` tool into the CI/CD pipeline to automatically check for vulnerabilities on every build.
 - **Dependency Updates:** Regularly update the project's dependencies to their latest versions to mitigate potential security risks.
+
+### 3.2. Backend Analysis
+
+#### 3.2.1. Security Vulnerabilities
+
+**Findings:**
+
+A security audit was performed using the `cargo audit` tool, and the results are as follows:
+
+- **Vulnerabilities:** 1 medium-severity vulnerability found in the `rsa` crate.
+- **Unmaintained Dependencies:** 2 unmaintained dependencies were identified: `json5` and `proc-macro-error`.
+
+**Recommendations:**
+
+- **Address Vulnerability:** Investigate the `rsa` crate vulnerability and apply the recommended patches or updates.
+- **Replace Unmaintained Dependencies:** Replace the `json5` and `proc-macro-error` dependencies with actively maintained alternatives.

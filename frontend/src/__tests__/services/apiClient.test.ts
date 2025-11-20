@@ -1,19 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { apiClient } from '../../services/apiClient'
 
 // Mock fetch
 global.fetch = vi.fn()
 
-// Type definitions for mock fetch
-interface MockFetchResponse {
-  ok: boolean
-  json: () => Promise<unknown>
-}
-
-interface MockFetch {
-  mockResolvedValueOnce: (value: MockFetchResponse) => void
-  mockRejectedValueOnce: (error: Error) => void
-}
+type MockFetch = Mock<typeof fetch>
 
 describe('apiClient', () => {
   beforeEach(() => {
@@ -26,10 +17,10 @@ describe('apiClient', () => {
     apiClient.setAuthToken(mockToken)
     
     const mockResponse = { data: { id: '1' } }
-    ;(global.fetch as unknown as MockFetch).mockResolvedValueOnce({
+    ;(global.fetch as MockFetch).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
-    })
+    } as Response)
 
     await apiClient.getProjects()
     
@@ -49,10 +40,10 @@ describe('apiClient', () => {
       user: { id: '1', email: 'test@example.com' }
     }
     
-    ;(global.fetch as unknown as MockFetch).mockResolvedValueOnce({
+    ;(global.fetch as MockFetch).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
-    })
+    } as Response)
 
     const response = await apiClient.login({
       email: 'test@example.com',
@@ -69,10 +60,10 @@ describe('apiClient', () => {
       user: { id: '1', email: 'test@example.com' }
     }
     
-    ;(global.fetch as unknown as MockFetch).mockResolvedValueOnce({
+    ;(global.fetch as MockFetch).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
-    })
+    } as Response)
 
     const response = await apiClient.register({
       email: 'test@example.com',
@@ -86,7 +77,7 @@ describe('apiClient', () => {
   })
 
   it('handles errors gracefully', async () => {
-    (global.fetch as unknown as MockFetch).mockRejectedValueOnce(
+    (global.fetch as MockFetch).mockRejectedValueOnce(
       new Error('Network error')
     )
 
