@@ -1,8 +1,10 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { apiClient } from '../../services/apiClient'
 
 // Mock fetch
 global.fetch = vi.fn()
+
+type MockFetch = Mock<typeof fetch>
 
 describe('apiClient', () => {
   beforeEach(() => {
@@ -15,12 +17,12 @@ describe('apiClient', () => {
     apiClient.setAuthToken(mockToken)
     
     const mockResponse = { data: { id: '1' } }
-    ;(global.fetch as any).mockResolvedValueOnce({
+    ;(global.fetch as MockFetch).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
-    })
+    } as Response)
 
-    const response = await apiClient.getProjects()
+    await apiClient.getProjects()
     
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining('/projects'),
@@ -38,10 +40,10 @@ describe('apiClient', () => {
       user: { id: '1', email: 'test@example.com' }
     }
     
-    ;(global.fetch as any).mockResolvedValueOnce({
+    ;(global.fetch as MockFetch).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
-    })
+    } as Response)
 
     const response = await apiClient.login({
       email: 'test@example.com',
@@ -58,10 +60,10 @@ describe('apiClient', () => {
       user: { id: '1', email: 'test@example.com' }
     }
     
-    ;(global.fetch as any).mockResolvedValueOnce({
+    ;(global.fetch as MockFetch).mockResolvedValueOnce({
       ok: true,
       json: async () => mockResponse,
-    })
+    } as Response)
 
     const response = await apiClient.register({
       email: 'test@example.com',
@@ -75,7 +77,7 @@ describe('apiClient', () => {
   })
 
   it('handles errors gracefully', async () => {
-    (global.fetch as any).mockRejectedValueOnce(
+    (global.fetch as MockFetch).mockRejectedValueOnce(
       new Error('Network error')
     )
 

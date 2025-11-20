@@ -289,7 +289,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                         </div>
                       )}
                     </div>
-                    );
+                  );
                   })
                 )}
                 <div ref={commentsEndRef} />
