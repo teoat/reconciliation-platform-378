@@ -557,7 +557,7 @@ export const useReconciliationJobs = (projectId: string | null) => {
     setError(null);
     
     try {
-      const response = await apiClient.createReconciliationJob(projectId, jobData);
+      const response = await apiClient.createReconciliationJob(projectId, jobData as any);
       if (response.data) {
         setJobs(prev => [response.data!, ...prev]);
         return { success: true, job: response.data };
@@ -633,7 +633,7 @@ export const useWebSocket = () => {
       setConnectionStatus('connected');
       wsRef.current = wsClient;
     } catch (error) {
-      logger.error('WebSocket connection failed:', error as Error | unknown);
+      logger.error('WebSocket connection failed:', { error: error instanceof Error ? error.message : String(error) });
       setIsConnected(false);
       setConnectionStatus('error');
     }

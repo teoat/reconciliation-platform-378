@@ -17,7 +17,7 @@ import { FileText } from 'lucide-react'
 import { X } from 'lucide-react'
 import { useData } from '../components/DataProvider'
 import type { BackendProject } from '../services/apiClient/types'
-import type { ReconciliationData } from './data/types'
+import type { ReconciliationData, CashflowData as ImportedCashflowData } from './data/types'
 
 // AI Discrepancy Detection Interfaces
 interface AIDiscrepancyDetectionData {
@@ -75,16 +75,6 @@ interface AIPrediction {
   accuracy?: number
 }
 
-interface CashflowData {
-  records: Array<{
-    id: string
-    amount: number
-    description: string
-    date: string
-    category?: string
-  }>
-}
-
 interface AIDiscrepancyDetectionProps {
   project: BackendProject
   onProgressUpdate?: (step: string) => void
@@ -102,12 +92,15 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
   const [filterSeverity, setFilterSeverity] = useState<string>('all')
   const [filterType, setFilterType] = useState<string>('all')
 
-  const generateAIDetections = useCallback((reconciliationData: ReconciliationData, cashflowData: CashflowData): AIDiscrepancyDetectionData[] => {
+  const generateAIDetections = useCallback((reconciliationData: ReconciliationData, cashflowData: ImportedCashflowData): AIDiscrepancyDetectionData[] => {
     const detections: AIDiscrepancyDetectionData[] = []
 
     // Analyze reconciliation records for discrepancies
     reconciliationData.records.forEach((record, index: number) => {
       if (record.status === 'discrepancy' && record.difference) {
+        const sourceAmount = record.sources[0]?.data?.amount
+        const amount = typeof sourceAmount === 'number' ? sourceAmount : 0
+        
         const detection: AIDiscrepancyDetectionData = {
           id: `ai-detection-${index}`,
           type: 'amount',
@@ -127,9 +120,9 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
             features: ['amount', 'category', 'date'],
             threshold: 0.05,
             context: {
-              expectedRange: [record.sources[0]?.data?.amount * 0.95, record.sources[0]?.data?.amount * 1.05],
-              actualValue: record.sources[0]?.data?.amount,
-              variance: Math.abs(record.difference) / record.sources[0]?.data?.amount,
+              expectedRange: [amount * 0.95, amount * 1.05],
+              actualValue: amount,
+              variance: amount !== 0 ? Math.abs(record.difference) / amount : 0,
               category: record.sources[0]?.data?.category,
               date: record.sources[0]?.data?.date
             }
@@ -139,15 +132,18 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
       }
     })
 
-    // Analyze cashflow data for anomalies
-    cashflowData.records.forEach((record: any, index: number) => {
-      if (record.amount > 5000000) { // High value transaction
+    // Analyze cashflow data for anomalies using ReconciliationRecord structure
+    cashflowData.records.forEach((record, index: number) => {
+      const recordAmount = record.sources[0]?.data?.amount
+      const amount = typeof recordAmount === 'number' ? recordAmount : 0
+      
+      if (amount > 5000000) { // High value transaction
         const detection: AIDiscrepancyDetectionData = {
           id: `ai-detection-cashflow-${index}`,
           type: 'amount',
           severity: 'medium',
           confidence: 87.3,
-          description: `AI detected high-value cashflow transaction: ${record.description}`,
+          description: `AI detected high-value cashflow transaction: ${record.sources[0]?.data?.description || 'Unknown'}`,
           sourceRecord: record.id,
           targetRecord: '',
           difference: 0,
@@ -161,10 +157,10 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
             features: ['amount', 'description', 'date'],
             threshold: 5000000,
             context: {
-              amount: record.amount,
-              description: record.description,
-              date: record.date,
-              category: record.category
+              amount: amount,
+              description: record.sources[0]?.data?.description || '',
+              date: record.sources[0]?.data?.date || '',
+              category: record.sources[0]?.data?.category || ''
             }
           }
         }
@@ -181,10 +177,8 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
       {
         id: 'pred-001',
         modelId: 'reconciliation-predictor',
-        type: 'reconciliation_accuracy',
-        targetDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         input: {
-          historicalData: reconciliationData.metrics,
+          historicalData: reconciliationData.qualityMetrics,
           currentTrends: {
             accuracy: 94.2,
             throughput: 180,
@@ -193,7 +187,11 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
           externalFactors: ['market_volatility', 'regulatory_changes']
         },
         output: {
-          prediction: 'expected',
+          prediction: { 
+            type: 'reconciliation_accuracy',
+            targetDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            value: 'expected'
+          },
           confidence: 0.89,
           probabilities: { normal: 0.89, anomaly: 0.11 },
           explanation: 'Weekly recurring pattern matches historical data'
@@ -539,7 +537,9 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
                 <div className="flex justify-between items-center">
                   <span className="text-sm text-secondary-600">Prediction</span>
                   <span className="text-sm font-semibold text-secondary-900">
-                    {prediction.output.prediction}
+                    {typeof prediction.output.prediction === 'object' && prediction.output.prediction !== null
+                      ? JSON.stringify(prediction.output.prediction)
+                      : String(prediction.output.prediction)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">

@@ -21,10 +21,11 @@ import type { BackendProject } from '../services/apiClient/types';
 
 // Advanced Visualization Interfaces
 interface ChartDataPoint {
-  label: string;
-  value: number;
+  label?: string;
+  value?: number;
   category?: string;
   metadata?: Record<string, unknown>;
+  [key: string]: unknown; // Allow any additional properties
 }
 
 interface FilterConfig {

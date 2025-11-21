@@ -204,15 +204,15 @@ export const componentVariants = {
 }
 
 // Utility Functions
-export const getColor = (color: string, shade: number = 500) => {
+export const getColor = (color: string, shade: number = 500): string => {
   const colorPath = color.split('.')
-  let colorValue = designSystem.colors
+  let colorValue: any = designSystem.colors
   
   for (const part of colorPath) {
-    colorValue = colorValue[part as keyof typeof colorValue]
+    colorValue = colorValue[part]
   }
   
-  return colorValue[shade as keyof typeof colorValue] || colorValue
+  return colorValue[shade] || colorValue
 }
 
 export const getSpacing = (size: number) => {

@@ -32,14 +32,14 @@ export const useAuthAPI = () => {
       dispatch(authActions.loginStart())
       const authData = await ApiService.authenticate(email, password)
       
-      dispatch(authActions.loginSuccess(authData.user))
-      showSuccess('Login Successful', 'Welcome back!')
+      dispatch(authActions.loginSuccess(authData.user as any))
+      showSuccess('Login Successful: Welcome back!')
       
       return { success: true }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed'
       dispatch(authActions.loginFailure(errorMessage))
-      showError('Login Failed', errorMessage)
+      showError(`Login Failed: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -56,14 +56,14 @@ export const useAuthAPI = () => {
       dispatch(authActions.loginStart())
       const authData = await ApiService.register(userData)
       
-      dispatch(authActions.loginSuccess(authData.user))
-      showSuccess('Registration Successful', 'Account created successfully!')
+      dispatch(authActions.loginSuccess(authData.user as any))
+      showSuccess('Registration Successful: Account created successfully!')
       
       return { success: true }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed'
       dispatch(authActions.loginFailure(errorMessage))
-      showError('Registration Failed', errorMessage)
+      showError(`Registration Failed: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -73,7 +73,7 @@ export const useAuthAPI = () => {
     try {
       await ApiService.logout()
       dispatch(authActions.logout())
-      showSuccess('Logged Out', 'You have been logged out successfully')
+      showSuccess('Logged Out: You have been logged out successfully')
     } catch (error) {
       logger.error('Logout error:', error)
       dispatch(authActions.logout()) // Still logout locally even if API call fails
@@ -129,7 +129,7 @@ export const useProjectsAPI = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch projects'
       dispatch(projectsActions.fetchProjectsFailure(errorMessage))
-      showError('Failed to Load Projects', errorMessage)
+      showError(`Failed to Load Projects: ${errorMessage}`)
     }
   }, [dispatch, showError])
 
@@ -141,13 +141,13 @@ export const useProjectsAPI = () => {
   }) => {
     try {
       const newProject = await ApiService.createProject(projectData)
-      dispatch(projectsActions.createProject(newProject))
-      showSuccess('Project Created', `Project "${newProject.name}" created successfully`)
+      dispatch(projectsActions.createProject(newProject as any))
+      showSuccess(`Project Created: Project "${newProject.name}" created successfully`)
       
       return { success: true, project: newProject }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create project'
-      showError('Failed to Create Project', errorMessage)
+      showError(`Failed to Create Project: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -162,13 +162,13 @@ export const useProjectsAPI = () => {
   }) => {
     try {
       const updatedProject = await ApiService.updateProject(projectId, projectData)
-      dispatch(projectsActions.updateProject(updatedProject))
-      showSuccess('Project Updated', `Project "${updatedProject.name}" updated successfully`)
+      dispatch(projectsActions.updateProject(updatedProject as any))
+      showSuccess(`Project Updated: Project "${updatedProject.name}" updated successfully`)
       
       return { success: true, project: updatedProject }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update project'
-      showError('Failed to Update Project', errorMessage)
+      showError(`Failed to Update Project: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -178,12 +178,12 @@ export const useProjectsAPI = () => {
     try {
       await ApiService.deleteProject(projectId)
       dispatch(projectsActions.deleteProject(projectId))
-      showSuccess('Project Deleted', 'Project deleted successfully')
+      showSuccess('Project Deleted: Project deleted successfully')
       
       return { success: true }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete project'
-      showError('Failed to Delete Project', errorMessage)
+      showError(`Failed to Delete Project: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -217,19 +217,19 @@ export const useDataSourcesAPI = (projectId?: string) => {
       dispatch(dataSourcesActions.fetchDataSourcesStart())
       const sources = await ApiService.getDataSources(projectId)
       
-      dispatch(dataSourcesActions.fetchDataSourcesSuccess(sources))
+      dispatch(dataSourcesActions.fetchDataSourcesSuccess(sources as any))
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch data sources'
       dispatch(dataSourcesActions.fetchDataSourcesFailure(errorMessage))
-      showError('Failed to Load Data Sources', errorMessage)
+      showError(`Failed to Load Data Sources: ${errorMessage}`)
     }
   }, [projectId, dispatch, showError])
 
   const uploadFile = useCallback(async (
     file: File,
-    metadata: {
-      name: string
-      source_type: string
+    metadata?: {
+      name?: string
+      source_type?: string
     }
   ) => {
     if (!projectId) return { success: false, error: 'No project ID' }
@@ -238,10 +238,10 @@ export const useDataSourcesAPI = (projectId?: string) => {
       const fileId = `${file.name}-${Date.now()}`
       dispatch(dataSourcesActions.uploadFileStart({ fileId, fileName: file.name }))
       
-      const uploadedFile = await ApiService.uploadFile(projectId, file, metadata)
+      const uploadedFile = await ApiService.uploadFile(projectId, file)
       
-      dispatch(dataSourcesActions.uploadFileSuccess(uploadedFile))
-      showSuccess('File Uploaded', `File "${file.name}" uploaded successfully`)
+      dispatch(dataSourcesActions.uploadFileSuccess(uploadedFile as any))
+      showSuccess(`File Uploaded: File "${file.name}" uploaded successfully`)
       
       return { success: true, dataSource: uploadedFile }
     } catch (error) {
@@ -250,7 +250,7 @@ export const useDataSourcesAPI = (projectId?: string) => {
         fileId: `${file.name}-${Date.now()}`, 
         error: errorMessage 
       }))
-      showError('Upload Failed', errorMessage)
+      showError(`Upload Failed: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -263,8 +263,8 @@ export const useDataSourcesAPI = (projectId?: string) => {
       dispatch(dataSourcesActions.processFileStart(dataSourceId))
       const result = await ApiService.processFile(projectId, dataSourceId)
       
-      dispatch(dataSourcesActions.processFileSuccess(result))
-      showSuccess('File Processed', 'File processed successfully')
+      dispatch(dataSourcesActions.processFileSuccess(result as any))
+      showSuccess('File Processed: File processed successfully')
       
       return { success: true, result }
     } catch (error) {
@@ -273,7 +273,7 @@ export const useDataSourcesAPI = (projectId?: string) => {
         dataSourceId, 
         error: errorMessage 
       }))
-      showError('Processing Failed', errorMessage)
+      showError(`Processing Failed: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -284,12 +284,12 @@ export const useDataSourcesAPI = (projectId?: string) => {
     
     try {
       await ApiService.deleteDataSource(projectId, dataSourceId)
-      showSuccess('Data Source Deleted', 'Data source deleted successfully')
+      showSuccess('Data Source Deleted: Data source deleted successfully')
       
       return { success: true }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete data source'
-      showError('Delete Failed', errorMessage)
+      showError(`Delete Failed: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -333,13 +333,13 @@ export const useReconciliationRecordsAPI = (projectId?: string) => {
       const result = await ApiService.getReconciliationRecords(projectId, params)
       
       dispatch(reconciliationRecordsActions.fetchRecordsSuccess({
-        records: result.records,
+        records: result.records as any,
         pagination: result.pagination
       }))
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch reconciliation records'
       dispatch(reconciliationRecordsActions.fetchRecordsFailure(errorMessage))
-      showError('Failed to Load Records', errorMessage)
+      showError(`Failed to Load Records: ${errorMessage}`)
     }
   }, [projectId, dispatch, showError])
 
@@ -354,7 +354,7 @@ export const useReconciliationRecordsAPI = (projectId?: string) => {
       return { success: true }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update record'
-      showError('Update Failed', errorMessage)
+      showError(`Update Failed: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -397,13 +397,13 @@ export const useReconciliationMatchesAPI = (projectId?: string) => {
       const result = await ApiService.getReconciliationMatches(projectId, params)
       
       dispatch(reconciliationMatchesActions.fetchMatchesSuccess({
-        matches: result.matches,
+        matches: result.matches as any,
         pagination: result.pagination
       }))
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch reconciliation matches'
       dispatch(reconciliationMatchesActions.fetchMatchesFailure(errorMessage))
-      showError('Failed to Load Matches', errorMessage)
+      showError(`Failed to Load Matches: ${errorMessage}`)
     }
   }, [projectId, dispatch, showError])
 
@@ -416,14 +416,14 @@ export const useReconciliationMatchesAPI = (projectId?: string) => {
     if (!projectId) return { success: false, error: 'No project ID' }
     
     try {
-      const newMatch = await ApiService.createReconciliationMatch(projectId, matchData)
-      dispatch(reconciliationMatchesActions.createMatch(newMatch))
-      showSuccess('Match Created', 'Reconciliation match created successfully')
+      const newMatch = await ApiService.createReconciliationMatch(projectId, matchData as any)
+      dispatch(reconciliationMatchesActions.createMatch(newMatch as any))
+      showSuccess('Match Created: Reconciliation match created successfully')
       
       return { success: true, match: newMatch }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create match'
-      showError('Failed to Create Match', errorMessage)
+      showError(`Failed to Create Match: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -437,14 +437,14 @@ export const useReconciliationMatchesAPI = (projectId?: string) => {
     if (!projectId) return { success: false, error: 'No project ID' }
     
     try {
-      const updatedMatch = await ApiService.updateReconciliationMatch(projectId, matchId, matchData)
-      dispatch(reconciliationMatchesActions.updateMatch(updatedMatch))
-      showSuccess('Match Updated', 'Reconciliation match updated successfully')
+      const updatedMatch = await ApiService.updateReconciliationMatch(projectId, matchId, matchData as any)
+      dispatch(reconciliationMatchesActions.updateMatch(updatedMatch as any))
+      showSuccess('Match Updated: Reconciliation match updated successfully')
       
       return { success: true, match: updatedMatch }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to update match'
-      showError('Failed to Update Match', errorMessage)
+      showError(`Failed to Update Match: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -454,12 +454,12 @@ export const useReconciliationMatchesAPI = (projectId?: string) => {
     try {
       const result = await ApiService.approveMatch(projectId!, matchId)
       dispatch(reconciliationMatchesActions.approveMatch(matchId))
-      showSuccess('Match Approved', 'Reconciliation match approved successfully')
+      showSuccess('Match Approved: Reconciliation match approved successfully')
       
       return { success: true, match: result }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to approve match'
-      showError('Failed to Approve Match', errorMessage)
+      showError(`Failed to Approve Match: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -469,12 +469,12 @@ export const useReconciliationMatchesAPI = (projectId?: string) => {
     try {
       const result = await ApiService.rejectMatch(projectId!, matchId)
       dispatch(reconciliationMatchesActions.rejectMatch(matchId))
-      showSuccess('Match Rejected', 'Reconciliation match rejected successfully')
+      showSuccess('Match Rejected: Reconciliation match rejected successfully')
       
       return { success: true, match: result }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to reject match'
-      showError('Failed to Reject Match', errorMessage)
+      showError(`Failed to Reject Match: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -513,11 +513,11 @@ export const useReconciliationJobsAPI = (projectId?: string) => {
       dispatch(reconciliationJobsActions.fetchJobsStart())
       const jobsList = await ApiService.getReconciliationJobs(projectId)
       
-      dispatch(reconciliationJobsActions.fetchJobsSuccess(jobsList))
+      dispatch(reconciliationJobsActions.fetchJobsSuccess(jobsList as any))
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch reconciliation jobs'
       dispatch(reconciliationJobsActions.fetchJobsFailure(errorMessage))
-      showError('Failed to Load Jobs', errorMessage)
+      showError(`Failed to Load Jobs: ${errorMessage}`)
     }
   }, [projectId, dispatch, showError])
 
@@ -529,14 +529,14 @@ export const useReconciliationJobsAPI = (projectId?: string) => {
     if (!projectId) return { success: false, error: 'No project ID' }
     
     try {
-      const newJob = await ApiService.createReconciliationJob(projectId, jobData)
-      dispatch(reconciliationJobsActions.createJob(newJob))
-      showSuccess('Job Created', 'Reconciliation job created successfully')
+      const newJob = await ApiService.createReconciliationJob(projectId, jobData as any)
+      dispatch(reconciliationJobsActions.createJob(newJob as any))
+      showSuccess('Job Created: Reconciliation job created successfully')
       
       return { success: true, job: newJob }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create job'
-      showError('Failed to Create Job', errorMessage)
+      showError(`Failed to Create Job: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -548,12 +548,12 @@ export const useReconciliationJobsAPI = (projectId?: string) => {
     try {
       const updatedJob = await ApiService.startReconciliationJob(projectId, jobId)
       dispatch(reconciliationJobsActions.startJob(jobId))
-      showSuccess('Job Started', 'Reconciliation job started successfully')
+      showSuccess('Job Started: Reconciliation job started successfully')
       
       return { success: true, job: updatedJob }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to start job'
-      showError('Failed to Start Job', errorMessage)
+      showError(`Failed to Start Job: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -564,12 +564,12 @@ export const useReconciliationJobsAPI = (projectId?: string) => {
     
     try {
       const updatedJob = await ApiService.stopReconciliationJob(projectId, jobId)
-      showSuccess('Job Stopped', 'Reconciliation job stopped successfully')
+      showSuccess('Job Stopped: Reconciliation job stopped successfully')
       
       return { success: true, job: updatedJob }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to stop job'
-      showError('Failed to Stop Job', errorMessage)
+      showError(`Failed to Stop Job: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -580,12 +580,12 @@ export const useReconciliationJobsAPI = (projectId?: string) => {
     
     try {
       await ApiService.deleteReconciliationJob(projectId, jobId)
-      showSuccess('Job Deleted', 'Reconciliation job deleted successfully')
+      showSuccess('Job Deleted: Reconciliation job deleted successfully')
       
       return { success: true }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to delete job'
-      showError('Failed to Delete Job', errorMessage)
+      showError(`Failed to Delete Job: ${errorMessage}`)
       
       return { success: false, error: errorMessage }
     }
@@ -628,7 +628,7 @@ export const useAnalyticsAPI = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch dashboard data'
       setError(errorMessage)
-      showError('Failed to Load Dashboard', errorMessage)
+      showError(`Failed to Load Dashboard: ${errorMessage}`)
     } finally {
       setIsLoading(false)
     }
@@ -643,7 +643,7 @@ export const useAnalyticsAPI = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch project stats'
       setError(errorMessage)
-      showError('Failed to Load Project Stats', errorMessage)
+      showError(`Failed to Load Project Stats: ${errorMessage}`)
     } finally {
       setIsLoading(false)
     }
@@ -658,7 +658,7 @@ export const useAnalyticsAPI = () => {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch reconciliation stats'
       setError(errorMessage)
-      showError('Failed to Load Reconciliation Stats', errorMessage)
+      showError(`Failed to Load Reconciliation Stats: ${errorMessage}`)
     } finally {
       setIsLoading(false)
     }
@@ -736,12 +736,12 @@ export const useWebSocketAPI = () => {
       await ApiService.connectWebSocket(token)
       setIsConnected(true)
       setConnectionStatus('connected')
-      showSuccess('WebSocket Connected', 'Real-time updates enabled')
+      showSuccess('WebSocket Connected: Real-time updates enabled')
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'WebSocket connection failed'
       setIsConnected(false)
       setConnectionStatus('error')
-      showError('WebSocket Connection Failed', errorMessage)
+      showError(`WebSocket Connection Failed: ${errorMessage}`)
     }
   }, [showSuccess, showError])
 
@@ -755,11 +755,11 @@ export const useWebSocketAPI = () => {
     ApiService.sendWebSocketMessage(type, data)
   }, [])
 
-  const onMessage = useCallback((eventType: string, handler: Function) => {
+  const onMessage = useCallback((eventType: string, handler: (data: unknown) => void) => {
     ApiService.onWebSocketMessage(eventType, handler)
   }, [])
 
-  const offMessage = useCallback((eventType: string, handler: Function) => {
+  const offMessage = useCallback((eventType: string, handler: (data: unknown) => void) => {
     ApiService.offWebSocketMessage(eventType, handler)
   }, [])
 

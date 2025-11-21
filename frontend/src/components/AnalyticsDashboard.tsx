@@ -187,10 +187,10 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           failed_jobs: data.failed_jobs,
           queued_jobs: 0, // Not in API response
           total_records_processed: 0, // Not in API response
-          total_matches_found: reconciliationResponse.data.total_matches,
-          total_unmatched_records: reconciliationResponse.data.total_unmatched,
-          average_confidence_score: reconciliationResponse.data.average_confidence_score,
-          average_processing_time: reconciliationResponse.data.average_processing_time_ms,
+          total_matches_found: data.matched_records || 0,
+          total_unmatched_records: data.unmatched_records || 0,
+          average_confidence_score: data.average_confidence || 0,
+          average_processing_time: data.average_processing_time || 0,
           success_rate: 0, // Calculated
           throughput_per_hour: 0, // Calculated
         };
