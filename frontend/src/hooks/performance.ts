@@ -23,7 +23,7 @@ export const useRenderCount = () => {
 };
 
 export const useWhyDidYouUpdate = (name: string, props: Record<string, unknown>) => {
-  const previous = useRef<Record<string, unknown>>();
+  const previous = useRef<Record<string, unknown> | undefined>(undefined);
 
   useEffect(() => {
     if (previous.current) {
@@ -40,7 +40,7 @@ export const useWhyDidYouUpdate = (name: string, props: Record<string, unknown>)
       });
 
       if (Object.keys(changedProps).length) {
-        logger.info('[why-did-you-update]', name, changedProps);
+        logger.info('[why-did-you-update]', { component: name, changedProps });
       }
     }
 

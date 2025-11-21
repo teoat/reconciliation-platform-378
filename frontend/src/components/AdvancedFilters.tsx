@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Filter, Save, RefreshCw, Trash2 } from 'lucide-react'
+import { X, Filter, Save, RefreshCw, Trash2, Plus } from 'lucide-react'
 
 interface FilterConfig {
   id: string
