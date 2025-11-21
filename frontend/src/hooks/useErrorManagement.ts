@@ -5,7 +5,8 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { ErrorHistoryItem, ErrorReport } from '../components/ui';
+import { ErrorHistoryItem } from '../components/ui/ErrorHistory';
+import { ErrorReport } from '../components/ui/ErrorReportingForm';
 import { useErrorRecovery } from './useErrorRecovery';
 import { getUserFriendlyError, formatErrorForReporting } from '../utils/errorMessages';
 

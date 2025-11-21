@@ -77,7 +77,7 @@ export const useThrottledCallback = <T extends (...args: any[]) => any>(
   delay: number = 1000
 ): T => {
   const lastExecuted = useRef<number>(0)
-  const timeoutRef = useRef<NodeJS.Timeout>()
+  const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   const throttledCallback = useCallback(
     (...args: Parameters<T>) => {
@@ -113,7 +113,7 @@ export const useThrottledCallback = <T extends (...args: any[]) => any>(
 
 // Previous value hook
 export const usePrevious = <T>(value: T): T | undefined => {
-  const ref = useRef<T>()
+  const ref = useRef<T | undefined>(undefined)
   
   useEffect(() => {
     ref.current = value
