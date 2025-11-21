@@ -183,8 +183,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(response.data.user)
         
         // Store refresh token if provided (use secureStorage)
-        if (response.data.refreshToken) {
-          secureStorage.setItem('refreshToken', response.data.refreshToken, false)
+        if ((response.data as any).refreshToken) {
+          secureStorage.setItem('refreshToken', (response.data as any).refreshToken, false)
         }
         
         // Reset rate limit on successful login
@@ -247,7 +247,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const googleOAuth = async (idToken: string) => {
     try {
       setIsLoading(true)
-      const response = await apiClient.googleOAuth(idToken)
+      const response = await (apiClient as any).googleOAuth(idToken)
       
       if (response.error) {
         return { success: false, error: getErrorMessageFromApiError(response.error) }

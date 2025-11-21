@@ -227,9 +227,9 @@ export const useDataSourcesAPI = (projectId?: string) => {
 
   const uploadFile = useCallback(async (
     file: File,
-    metadata: {
-      name: string
-      source_type: string
+    metadata?: {
+      name?: string
+      source_type?: string
     }
   ) => {
     if (!projectId) return { success: false, error: 'No project ID' }
@@ -238,9 +238,9 @@ export const useDataSourcesAPI = (projectId?: string) => {
       const fileId = `${file.name}-${Date.now()}`
       dispatch(dataSourcesActions.uploadFileStart({ fileId, fileName: file.name }))
       
-      const uploadedFile = await ApiService.uploadFile(projectId, file, metadata)
+      const uploadedFile = await ApiService.uploadFile(projectId, file)
       
-      dispatch(dataSourcesActions.uploadFileSuccess(uploadedFile))
+      dispatch(dataSourcesActions.uploadFileSuccess(uploadedFile as any))
       showSuccess(`File Uploaded: File "${file.name}" uploaded successfully`)
       
       return { success: true, dataSource: uploadedFile }
@@ -263,7 +263,7 @@ export const useDataSourcesAPI = (projectId?: string) => {
       dispatch(dataSourcesActions.processFileStart(dataSourceId))
       const result = await ApiService.processFile(projectId, dataSourceId)
       
-      dispatch(dataSourcesActions.processFileSuccess(result))
+      dispatch(dataSourcesActions.processFileSuccess(result as any))
       showSuccess('File Processed: File processed successfully')
       
       return { success: true, result }
@@ -333,7 +333,7 @@ export const useReconciliationRecordsAPI = (projectId?: string) => {
       const result = await ApiService.getReconciliationRecords(projectId, params)
       
       dispatch(reconciliationRecordsActions.fetchRecordsSuccess({
-        records: result.records,
+        records: result.records as any,
         pagination: result.pagination
       }))
     } catch (error) {
@@ -397,7 +397,7 @@ export const useReconciliationMatchesAPI = (projectId?: string) => {
       const result = await ApiService.getReconciliationMatches(projectId, params)
       
       dispatch(reconciliationMatchesActions.fetchMatchesSuccess({
-        matches: result.matches,
+        matches: result.matches as any,
         pagination: result.pagination
       }))
     } catch (error) {
@@ -416,8 +416,8 @@ export const useReconciliationMatchesAPI = (projectId?: string) => {
     if (!projectId) return { success: false, error: 'No project ID' }
     
     try {
-      const newMatch = await ApiService.createReconciliationMatch(projectId, matchData)
-      dispatch(reconciliationMatchesActions.createMatch(newMatch))
+      const newMatch = await ApiService.createReconciliationMatch(projectId, matchData as any)
+      dispatch(reconciliationMatchesActions.createMatch(newMatch as any))
       showSuccess('Match Created: Reconciliation match created successfully')
       
       return { success: true, match: newMatch }
@@ -437,8 +437,8 @@ export const useReconciliationMatchesAPI = (projectId?: string) => {
     if (!projectId) return { success: false, error: 'No project ID' }
     
     try {
-      const updatedMatch = await ApiService.updateReconciliationMatch(projectId, matchId, matchData)
-      dispatch(reconciliationMatchesActions.updateMatch(updatedMatch))
+      const updatedMatch = await ApiService.updateReconciliationMatch(projectId, matchId, matchData as any)
+      dispatch(reconciliationMatchesActions.updateMatch(updatedMatch as any))
       showSuccess('Match Updated: Reconciliation match updated successfully')
       
       return { success: true, match: updatedMatch }
@@ -513,7 +513,7 @@ export const useReconciliationJobsAPI = (projectId?: string) => {
       dispatch(reconciliationJobsActions.fetchJobsStart())
       const jobsList = await ApiService.getReconciliationJobs(projectId)
       
-      dispatch(reconciliationJobsActions.fetchJobsSuccess(jobsList))
+      dispatch(reconciliationJobsActions.fetchJobsSuccess(jobsList as any))
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to fetch reconciliation jobs'
       dispatch(reconciliationJobsActions.fetchJobsFailure(errorMessage))
@@ -529,8 +529,8 @@ export const useReconciliationJobsAPI = (projectId?: string) => {
     if (!projectId) return { success: false, error: 'No project ID' }
     
     try {
-      const newJob = await ApiService.createReconciliationJob(projectId, jobData)
-      dispatch(reconciliationJobsActions.createJob(newJob))
+      const newJob = await ApiService.createReconciliationJob(projectId, jobData as any)
+      dispatch(reconciliationJobsActions.createJob(newJob as any))
       showSuccess('Job Created: Reconciliation job created successfully')
       
       return { success: true, job: newJob }
@@ -755,11 +755,11 @@ export const useWebSocketAPI = () => {
     ApiService.sendWebSocketMessage(type, data)
   }, [])
 
-  const onMessage = useCallback((eventType: string, handler: Function) => {
+  const onMessage = useCallback((eventType: string, handler: (data: unknown) => void) => {
     ApiService.onWebSocketMessage(eventType, handler)
   }, [])
 
-  const offMessage = useCallback((eventType: string, handler: Function) => {
+  const offMessage = useCallback((eventType: string, handler: (data: unknown) => void) => {
     ApiService.offWebSocketMessage(eventType, handler)
   }, [])
 
