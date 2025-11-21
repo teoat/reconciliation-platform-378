@@ -39,9 +39,9 @@ export const useLoading = (initialState = false): UseLoadingReturn => {
 
   const withLoadingState = useCallback(<T>(
     asyncFn: () => Promise<T>
-  ) => {
+  ): [() => Promise<T>, boolean] => {
     const wrappedFn = async () => withLoading(asyncFn)
-    return [wrappedFn, loading]
+    return [wrappedFn, loading] as [() => Promise<T>, boolean]
   }, [withLoading, loading])
 
   return {
