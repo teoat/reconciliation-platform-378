@@ -182,24 +182,29 @@ export const AutoSaveForm: React.FC<AutoSaveFormProps> = ({
     onDataCompare
   })
 
-  return {
-    formData,
-    updateFormData,
-    setField,
-    getField,
-    clearFormData,
-    resetFormData,
-    isAutoSaving,
-    lastSaved,
-    manualSave,
-    recoveryPrompt,
-    handleRecoveryAction,
-    clearRecovery,
-    showComparison,
-    comparisonData,
-    setShowComparison,
-    handleComparisonRestore
-  }
+  return (
+    <>
+      <AutoSaveRecoveryPrompt formId={formId} onRestore={onDataRestore} onDiscard={clearRecovery} />
+      <DataComparisonModal 
+        isOpen={showComparison}
+        onClose={() => setShowComparison(false)}
+        onSelect={handleComparisonRestore}
+        currentData={formData}
+        savedData={comparisonData}
+      />
+      {children({
+        formData,
+        updateFormData,
+        setField,
+        getField,
+        clearFormData,
+        resetFormData,
+        isAutoSaving,
+        lastSaved,
+        manualSave
+      })}
+    </>
+  )
 }
 
 // Auto-Save Status Indicator Component

@@ -12,13 +12,13 @@ interface CleanupConfig {
  * Prevents memory leaks and stale state
  */
 export function useCleanup(
-  cleanupFn: () => void | (() => void),
+  cleanupFn: () => (() => void) | void,
   deps: React.DependencyList = [],
   config: CleanupConfig = { timers: true, subscriptions: true, stateCleanup: true }
 ) {
   useEffect(() => {
     // Execute cleanup function on unmount
-    return cleanupFn;
+    return cleanupFn() as (() => void) | void;
   }, deps);
 }
 
@@ -30,7 +30,7 @@ export function useTimerCleanup() {
     return () => {
       // Clear all timers on unmount
       // Note: This is best effort - maintain timer references explicitly
-      const highestId = setTimeout(() => {}, 0);
+      const highestId = setTimeout(() => {}, 0) as unknown as number;
       for (let i = 0; i < highestId; i++) {
         clearTimeout(i);
       }
