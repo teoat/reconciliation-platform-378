@@ -58,7 +58,8 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
       const grouped = data.reduce(
         (acc, row) => {
           const value = row[selectedColumn];
-          acc[value] = (acc[value] || 0) + 1;
+          const key = String(value);
+          acc[key] = (Number(acc[key]) || 0) + 1;
           return acc;
         },
         {} as Record<string, number>
@@ -76,10 +77,10 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
 
       const grouped = data.reduce(
         (acc, row) => {
-          const category = row[selectedColumn];
+          const category = String(row[selectedColumn]);
           const value = Number(row[numericCol]);
           if (!isNaN(value)) {
-            acc[category] = (acc[category] || 0) + value;
+            acc[category] = (Number(acc[category]) || 0) + value;
           }
           return acc;
         },
