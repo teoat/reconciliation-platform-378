@@ -102,7 +102,7 @@ export const useDataStorage = (
   }, [dataService, currentProjectInternal, setIsLoading, setError]);
 
   const getIngestionData = useCallback((): IngestionData | null => {
-    return currentProjectInternal?.ingestionData || null;
+    return (currentProjectInternal?.ingestionData as unknown as IngestionData) || null;
   }, [currentProjectInternal]);
 
   const addReconciliationData = useCallback((projectId: string, reconciliationData: ReconciliationData): ProjectData | null => {
@@ -125,7 +125,7 @@ export const useDataStorage = (
   }, [dataService, currentProjectInternal, setIsLoading, setError]);
 
   const getReconciliationData = useCallback((): ReconciliationData | null => {
-    return currentProjectInternal?.reconciliationData || null;
+    return (currentProjectInternal?.reconciliationData as unknown as ReconciliationData) || null;
   }, [currentProjectInternal]);
 
   const addCashflowData = useCallback((projectId: string, cashflowData: CashflowData): ProjectData | null => {
@@ -148,7 +148,7 @@ export const useDataStorage = (
   }, [dataService, currentProjectInternal, setIsLoading, setError]);
 
   const getCashflowData = useCallback((): CashflowData | null => {
-    return currentProjectInternal?.cashflowData || null;
+    return (currentProjectInternal?.cashflowData as unknown as CashflowData) || null;
   }, [currentProjectInternal]);
 
   const transformIngestionToReconciliation = useCallback((projectId: string): ProjectData | null => {
