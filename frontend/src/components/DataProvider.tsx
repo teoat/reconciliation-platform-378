@@ -79,7 +79,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       event.userId,
       event.action,
       event.resource,
-      event.result,
+      event.result === 'denied' ? 'failure' : event.result,
       event.details
     ),
     securityData.encryptData,
@@ -142,6 +142,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     updatePresence,
     // Security integration
     ...securityData,
+    securityPolicies: securityData.securityPolicies as Array<Record<string, unknown>>,
     // Enhanced methods
     advanceWorkflow: enhancedAdvanceWorkflow,
     resetWorkflow: enhancedResetWorkflow,
