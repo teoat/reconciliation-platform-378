@@ -47,8 +47,9 @@ pub mod optimistic_ui;
 pub mod critical_alerts;
 pub mod database_migration;
 
-// Add missing S-Tier service modules  
+// Add missing S-Tier service modules
 pub mod advanced_metrics;
+pub mod ai;
 
 // Add missing service modules
 pub mod security;

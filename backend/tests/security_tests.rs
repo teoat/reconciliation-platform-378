@@ -12,7 +12,7 @@ use reconciliation_backend::middleware::security::{configure_security_middleware
 use reconciliation_backend::services::{AuthService, UserService};
 
 mod test_utils;
-use test_utils::*;
+use test_utils::TestClient;
 
 /// Test suite for authorization security
 #[cfg(test)]

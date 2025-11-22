@@ -1,6 +1,16 @@
 /**
-import { logger } from '../services/logger'; * PWA Utilities for Service Worker Registration and Management
+ * PWA Utilities for Service Worker Registration and Management
+ * 
+ * Provides comprehensive PWA functionality including:
+ * - Service worker registration and update management
+ * - Cache management and performance monitoring
+ * - PWA installation and display mode detection
+ * - Offline analytics queuing
+ * 
+ * @module pwaUtils
  */
+
+import { logger } from '../services/logger';
 
 interface ServiceWorkerMessage {
   type: string;
@@ -23,7 +33,6 @@ interface PerformanceStats {
 
 class PWAUtils {
   private static instance: PWAUtils;
-  private serviceWorker: ServiceWorker | null = null;
   private registration: ServiceWorkerRegistration | null = null;
   private updateAvailable = false;
   private updateCallbacks: Array<(registration: ServiceWorkerRegistration) => void> = [];
@@ -38,9 +47,23 @@ class PWAUtils {
   /**
    * Register service worker
    */
+  /**
+   * Register service worker for PWA functionality
+   * 
+   * Registers the service worker, sets up update listeners, and handles
+   * controller changes. Automatically reloads the page when a new service
+   * worker takes control.
+   * 
+   * @throws {Error} If service worker registration fails
+   * 
+   * @example
+   * ```typescript
+   * await pwaUtils.registerServiceWorker();
+   * ```
+   */
   async registerServiceWorker(): Promise<void> {
     if (!('serviceWorker' in navigator)) {
-      // logger.warn('Service Worker not supported');
+      logger.warn('Service Worker not supported in this browser');
       return;
     }
 
@@ -72,103 +95,241 @@ class PWAUtils {
         this.handleServiceWorkerMessage(event.data);
       });
     } catch (error) {
-      // logger.error('Service Worker registration failed:', error);
+      logger.error('Service Worker registration failed', { error });
+      throw error;
     }
   }
 
   /**
    * Handle messages from service worker
+   * 
+   * Processes messages received from the service worker, including
+   * cache information, performance stats, and other service worker events.
+   * 
+   * @param message - Message received from service worker
+   * 
+   * @private
    */
   private handleServiceWorkerMessage(message: ServiceWorkerMessage): void {
     switch (message.type) {
       case 'CACHE_INFO':
+        logger.debug('Cache info received from service worker', { data: message.data });
         break;
       case 'PERFORMANCE_STATS':
+        logger.debug('Performance stats received from service worker', { data: message.data });
         break;
       case 'CACHE_SIZE':
+        logger.debug('Cache size received from service worker', { data: message.data });
         break;
       default:
+        logger.debug('Unknown message type from service worker', { type: message.type });
     }
   }
 
   /**
-   * Send message to service worker
+   * Send message to service worker using MessageChannel for response
+   * 
+   * Creates a MessageChannel to communicate with the service worker
+   * and receive a response. The promise resolves with the response data
+   * or rejects with an error if the service worker returns an error.
+   * 
+   * @param message - Message to send to service worker
+   * @returns Promise resolving to the service worker's response
+   * @throws {Error} If service worker is not active
+   * 
+   * @private
    */
-  private async sendMessageToSW(message: ServiceWorkerMessage): Promise<any> {
-    if (!this.registration?.active) {
+  private async sendMessageToSW(message: ServiceWorkerMessage): Promise<unknown> {
+    const registration = this.registration;
+    if (!registration?.active) {
+      throw new Error('Service Worker not active');
+    }
+
+    const activeWorker = registration.active;
+    if (!activeWorker) {
       throw new Error('Service Worker not active');
     }
 
     return new Promise((resolve, reject) => {
       const messageChannel = new MessageChannel();
+      const timeout = setTimeout(() => {
+        reject(new Error('Service worker message timeout'));
+      }, 5000); // 5 second timeout
 
       messageChannel.port1.onmessage = (event) => {
-        if (event.data.error) {
-          reject(event.data.error);
+        clearTimeout(timeout);
+        if (event.data?.error) {
+          reject(new Error(event.data.error));
         } else {
           resolve(event.data);
         }
       };
 
-      this.registration!.active!.postMessage(message, [messageChannel.port2]);
+      try {
+        activeWorker.postMessage(message, [messageChannel.port2]);
+      } catch (error) {
+        clearTimeout(timeout);
+        reject(error);
+      }
     });
   }
 
   /**
-   * Get cache information
+   * Get cache information from service worker
+   * 
+   * Retrieves information about all caches including cache names
+   * and entry counts for each cache.
+   * 
+   * @returns Promise resolving to cache information
+   * @throws {Error} If service worker is not active or request fails
+   * 
+   * @example
+   * ```typescript
+   * const cacheInfo = await pwaUtils.getCacheInfo();
+   * console.log(`Found ${cacheInfo.cacheNames.length} caches`);
+   * ```
    */
   async getCacheInfo(): Promise<CacheInfo> {
-    return this.sendMessageToSW({ type: 'GET_CACHE_INFO' });
+    const result = await this.sendMessageToSW({ type: 'GET_CACHE_INFO' });
+    return result as CacheInfo;
   }
 
   /**
-   * Get performance statistics
+   * Get performance statistics from service worker
+   * 
+   * Retrieves performance metrics including cache hit/miss rates,
+   * network request counts, and error statistics.
+   * 
+   * @returns Promise resolving to performance statistics
+   * @throws {Error} If service worker is not active or request fails
+   * 
+   * @example
+   * ```typescript
+   * const stats = await pwaUtils.getPerformanceStats();
+   * console.log(`Cache hit rate: ${stats.hitRate}`);
+   * ```
    */
   async getPerformanceStats(): Promise<PerformanceStats> {
-    return this.sendMessageToSW({ type: 'GET_PERFORMANCE_STATS' });
+    const result = await this.sendMessageToSW({ type: 'GET_PERFORMANCE_STATS' });
+    return result as PerformanceStats;
   }
 
   /**
-   * Clear specific cache
+   * Clear specific cache by name
+   * 
+   * Sends a message to the service worker to clear a specific cache.
+   * 
+   * @param cacheName - Name of the cache to clear
+   * @returns Promise that resolves when cache is cleared
+   * @throws {Error} If service worker is not active or request fails
+   * 
+   * @example
+   * ```typescript
+   * await pwaUtils.clearCache('my-cache');
+   * ```
    */
   async clearCache(cacheName: string): Promise<void> {
-    return this.sendMessageToSW({ type: 'CLEAR_CACHE', data: { cacheName } });
+    await this.sendMessageToSW({ type: 'CLEAR_CACHE', data: { cacheName } });
   }
 
   /**
-   * Clear all caches
+   * Clear all caches managed by the service worker
+   * 
+   * Removes all cached data. Use with caution as this will
+   * force all resources to be re-downloaded.
+   * 
+   * @returns Promise that resolves when all caches are cleared
+   * @throws {Error} If service worker is not active or request fails
+   * 
+   * @example
+   * ```typescript
+   * await pwaUtils.clearAllCaches();
+   * ```
    */
   async clearAllCaches(): Promise<void> {
-    return this.clearCache('all');
+    await this.clearCache('all');
   }
 
   /**
-   * Get cache size
+   * Get total cache size in bytes
+   * 
+   * Retrieves the total size of all caches managed by the service worker.
+   * 
+   * @returns Promise resolving to cache size in bytes
+   * @throws {Error} If service worker is not active or request fails
+   * 
+   * @example
+   * ```typescript
+   * const size = await pwaUtils.getCacheSize();
+   * console.log(`Cache size: ${(size / 1024 / 1024).toFixed(2)} MB`);
+   * ```
    */
   async getCacheSize(): Promise<number> {
     const result = await this.sendMessageToSW({ type: 'GET_CACHE_SIZE' });
-    return result.size;
+    if (typeof result === 'object' && result !== null && 'size' in result) {
+      return (result as { size: number }).size;
+    }
+    throw new Error('Invalid cache size response');
   }
 
   /**
-   * Cache additional URLs
+   * Cache additional URLs for offline access
+   * 
+   * Instructs the service worker to cache the specified URLs
+   * for offline access.
+   * 
+   * @param urls - Array of URLs to cache
+   * @returns Promise that resolves when URLs are queued for caching
+   * @throws {Error} If service worker is not active or request fails
+   * 
+   * @example
+   * ```typescript
+   * await pwaUtils.cacheUrls(['/api/data', '/images/logo.png']);
+   * ```
    */
   async cacheUrls(urls: string[]): Promise<void> {
-    return this.sendMessageToSW({ type: 'CACHE_URLS', data: { urls } });
+    await this.sendMessageToSW({ type: 'CACHE_URLS', data: { urls } });
   }
 
   /**
    * Queue analytics event for offline sending
+   * 
+   * Queues an analytics event to be sent when the connection
+   * is restored. Events are stored in IndexedDB and sent in batch.
+   * 
+   * @param event - Analytics event data to queue
+   * @returns Promise that resolves when event is queued
+   * @throws {Error} If service worker is not active or request fails
+   * 
+   * @example
+   * ```typescript
+   * await pwaUtils.queueAnalyticsEvent({
+   *   action: 'button_click',
+   *   page: '/dashboard'
+   * });
+   * ```
    */
   async queueAnalyticsEvent(event: Record<string, unknown>): Promise<void> {
-    return this.sendMessageToSW({ type: 'QUEUE_ANALYTICS', data: event });
+    await this.sendMessageToSW({ type: 'QUEUE_ANALYTICS', data: event });
   }
 
   /**
-   * Send queued analytics
+   * Send all queued analytics events
+   * 
+   * Instructs the service worker to send all queued analytics
+   * events that were stored while offline.
+   * 
+   * @returns Promise that resolves when send is initiated
+   * @throws {Error} If service worker is not active or request fails
+   * 
+   * @example
+   * ```typescript
+   * // When connection is restored
+   * await pwaUtils.sendQueuedAnalytics();
+   * ```
    */
   async sendQueuedAnalytics(): Promise<void> {
-    return this.sendMessageToSW({ type: 'SEND_QUEUED_ANALYTICS' });
+    await this.sendMessageToSW({ type: 'SEND_QUEUED_ANALYTICS' });
   }
 
   /**
@@ -199,19 +360,58 @@ class PWAUtils {
   }
 
   /**
-   * Check if running as PWA
+   * Check if the app is running as a PWA (installed app)
+   * 
+   * Detects if the app is running in standalone mode (installed as PWA)
+   * by checking CSS media queries and iOS-specific navigator properties.
+   * 
+   * @returns True if running as PWA, false otherwise
+   * 
+   * @example
+   * ```typescript
+   * if (pwaUtils.isPWA()) {
+   *   console.log('Running as installed PWA');
+   * }
+   * ```
    */
   isPWA(): boolean {
-    return (
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true
-    );
+    // Check for standalone display mode (standard PWA detection)
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      return true;
+    }
+    
+    // Check for iOS Safari standalone mode (legacy support)
+    interface NavigatorWithStandalone extends Navigator {
+      standalone?: boolean;
+    }
+    const nav = window.navigator as NavigatorWithStandalone;
+    if (nav.standalone === true) {
+      return true;
+    }
+    
+    return false;
   }
 
   /**
-   * Get PWA display mode
+   * Get the current PWA display mode
+   * 
+   * Determines how the app is being displayed:
+   * - 'standalone': Running as installed PWA (no browser UI)
+   * - 'minimal-ui': Minimal browser UI (address bar only)
+   * - 'browser': Full browser experience
+   * - 'unknown': Unable to determine
+   * 
+   * @returns Display mode string
+   * 
+   * @example
+   * ```typescript
+   * const mode = pwaUtils.getDisplayMode();
+   * if (mode === 'standalone') {
+   *   // Adjust UI for standalone mode
+   * }
+   * ```
    */
-  getDisplayMode(): string {
+  getDisplayMode(): 'standalone' | 'minimal-ui' | 'browser' | 'unknown' {
     if (window.matchMedia('(display-mode: standalone)').matches) {
       return 'standalone';
     }
@@ -268,12 +468,21 @@ class PWAUtils {
 
   /**
    * Unregister service worker
+   * 
+   * Removes the service worker registration. This will disable
+   * all PWA functionality including offline support and caching.
+   * 
+   * @returns Promise that resolves when service worker is unregistered
+   * 
+   * @example
+   * ```typescript
+   * await pwaUtils.unregister();
+   * ```
    */
   async unregister(): Promise<void> {
     if (this.registration) {
       await this.registration.unregister();
       this.registration = null;
-      this.serviceWorker = null;
     }
   }
 

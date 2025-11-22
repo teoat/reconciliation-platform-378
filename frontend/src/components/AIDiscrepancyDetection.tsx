@@ -1,338 +1,325 @@
-'use client';
+'use client'
 
-import { useState, useMemo, useCallback } from 'react';
-import { Brain } from 'lucide-react';
-import { AlertTriangle } from 'lucide-react';
-import { CheckCircle } from 'lucide-react';
-import { XCircle } from 'lucide-react';
-import { Activity } from 'lucide-react';
-import { Eye } from 'lucide-react';
-import { RefreshCw } from 'lucide-react';
-import { Download } from 'lucide-react';
-import { Calendar } from 'lucide-react';
-import { Tag } from 'lucide-react';
-import { AlertCircle } from 'lucide-react';
-import { DollarSign } from 'lucide-react';
-import { FileText } from 'lucide-react';
-import { X } from 'lucide-react';
-import { useData } from '../components/DataProvider';
-import type { BackendProject } from '../services/apiClient/types';
-import type { ReconciliationData } from './data/types';
+import { useState, useMemo, useCallback } from 'react'
+import { Brain } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+import { XCircle } from 'lucide-react'
+import { Activity } from 'lucide-react'
+import { Eye } from 'lucide-react'
+import { RefreshCw } from 'lucide-react'
+import { Download } from 'lucide-react'
+import { Calendar } from 'lucide-react'
+import { Tag } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { DollarSign } from 'lucide-react'
+import { FileText } from 'lucide-react'
+import { X } from 'lucide-react'
+import { useData } from '../components/DataProvider'
+import type { BackendProject } from '../services/apiClient/types'
+import type { ReconciliationData } from './data/types'
 
 // AI Discrepancy Detection Interfaces
 interface AIDiscrepancyDetectionData {
-  id: string;
-  type: 'amount' | 'date' | 'description' | 'category' | 'pattern' | 'anomaly';
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  confidence: number;
-  description: string;
-  sourceRecord: string;
-  targetRecord: string;
-  difference: number;
-  pattern: string;
-  recommendation: string;
-  status: 'detected' | 'investigating' | 'resolved' | 'false_positive';
-  detectedAt: string;
-  assignedTo?: string;
-  resolution?: string;
+  id: string
+  type: 'amount' | 'date' | 'description' | 'category' | 'pattern' | 'anomaly'
+  severity: 'low' | 'medium' | 'high' | 'critical'
+  confidence: number
+  description: string
+  sourceRecord: string
+  targetRecord: string
+  difference: number
+  pattern: string
+  recommendation: string
+  status: 'detected' | 'investigating' | 'resolved' | 'false_positive'
+  detectedAt: string
+  assignedTo?: string
+  resolution?: string
   metadata: {
-    algorithm: string;
-    modelVersion: string;
-    features: string[];
-    threshold: number;
-    context: Record<string, unknown>;
-  };
+    algorithm: string
+    modelVersion: string
+    features: string[]
+    threshold: number
+    context: Record<string, unknown>
+  }
 }
 
 interface AIModel {
-  id: string;
-  name: string;
-  version: string;
-  type: 'classification' | 'regression' | 'anomaly_detection' | 'pattern_recognition';
-  accuracy: number;
-  lastTrained: string;
-  features: string[];
+  id: string
+  name: string
+  version: string
+  type: 'classification' | 'regression' | 'anomaly_detection' | 'pattern_recognition'
+  accuracy: number
+  lastTrained: string
+  features: string[]
   performance: {
-    precision: number;
-    recall: number;
-    f1Score: number;
-    auc: number;
-  };
-  status: 'active' | 'training' | 'deprecated';
+    precision: number
+    recall: number
+    f1Score: number
+    auc: number
+  }
+  status: 'active' | 'training' | 'deprecated'
 }
 
 interface AIPrediction {
-  id: string;
-  modelId: string;
-  input: Record<string, unknown>;
+  id: string
+  modelId: string
+  input: Record<string, unknown>
   output: {
-    prediction: Record<string, unknown>;
-    confidence: number;
-    probabilities: Record<string, number>;
-    explanation: string;
-  };
-  timestamp: string;
-  accuracy?: number;
+    prediction: Record<string, unknown>
+    confidence: number
+    probabilities: Record<string, number>
+    explanation: string
+  }
+  timestamp: string
+  accuracy?: number
 }
 
 interface CashflowData {
   records: Array<{
-    id: string;
-    amount: number;
-    description: string;
-    date: string;
-    category?: string;
-  }>;
+    id: string
+    amount: number
+    description: string
+    date: string
+    category?: string
+  }>
 }
 
 interface AIDiscrepancyDetectionProps {
-  project: BackendProject;
-  onProgressUpdate?: (step: string) => void;
+  project: BackendProject
+  onProgressUpdate?: (step: string) => void
 }
 
 const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDetectionProps) => {
-  const { getReconciliationData, getCashflowData } = useData();
-  const [detections, setDetections] = useState<AIDiscrepancyDetectionData[]>([]);
-  const [models] = useState<AIModel[]>([]);
-  const [predictions, setPredictions] = useState<AIPrediction[]>([]);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [analysisProgress, setAnalysisProgress] = useState(0);
-  const [selectedDetection, setSelectedDetection] = useState<AIDiscrepancyDetectionData | null>(
-    null
-  );
-  const [showDetectionModal, setShowDetectionModal] = useState(false);
-  const [filterSeverity, setFilterSeverity] = useState<string>('all');
-  const [filterType, setFilterType] = useState<string>('all');
+  const { getReconciliationData, getCashflowData } = useData()
+  const [detections, setDetections] = useState<AIDiscrepancyDetectionData[]>([])
+  const [models] = useState<AIModel[]>([])
+  const [predictions, setPredictions] = useState<AIPrediction[]>([])
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [analysisProgress, setAnalysisProgress] = useState(0)
+  const [selectedDetection, setSelectedDetection] = useState<AIDiscrepancyDetectionData | null>(null)
+  const [showDetectionModal, setShowDetectionModal] = useState(false)
+  const [filterSeverity, setFilterSeverity] = useState<string>('all')
+  const [filterType, setFilterType] = useState<string>('all')
 
-  const generateAIDetections = useCallback(
-    (
-      reconciliationData: ReconciliationData,
-      cashflowData: CashflowData
-    ): AIDiscrepancyDetectionData[] => {
-      const detections: AIDiscrepancyDetectionData[] = [];
+  const generateAIDetections = useCallback((reconciliationData: ReconciliationData, cashflowData: CashflowData): AIDiscrepancyDetectionData[] => {
+    const detections: AIDiscrepancyDetectionData[] = []
 
-      // Analyze reconciliation records for discrepancies
-      reconciliationData.records.forEach((record, index: number) => {
-        if (record.status === 'discrepancy' && record.difference) {
-          const detection: AIDiscrepancyDetectionData = {
-            id: `ai-detection-${index}`,
-            type: 'amount',
-            severity: Math.abs(record.difference) > 1000000 ? 'high' : 'medium',
-            confidence: 92.5,
-            description: `AI detected amount discrepancy in ${record.sources[0]?.data?.description || 'transaction'}`,
-            sourceRecord: record.id,
-            targetRecord: record.sources[0]?.recordId || '',
-            difference: record.difference,
-            pattern: 'amount_variance',
-            recommendation: 'Review transaction details and verify with source system',
-            status: 'detected',
-            detectedAt: new Date().toISOString(),
-            metadata: {
-              algorithm: 'amount-anomaly-detector',
-              modelVersion: '2.1.0',
-              features: ['amount', 'category', 'date'],
-              threshold: 0.05,
-              context: {
-                expectedRange: [
-                  record.sources[0]?.data?.amount * 0.95,
-                  record.sources[0]?.data?.amount * 1.05,
-                ],
-                actualValue: record.sources[0]?.data?.amount,
-                variance: Math.abs(record.difference) / record.sources[0]?.data?.amount,
-                category: record.sources[0]?.data?.category,
-                date: record.sources[0]?.data?.date,
-              },
-            },
-          };
-          detections.push(detection);
+    // Analyze reconciliation records for discrepancies
+    reconciliationData.records.forEach((record, index: number) => {
+      if (record.status === 'discrepancy' && record.difference) {
+        const detection: AIDiscrepancyDetectionData = {
+          id: `ai-detection-${index}`,
+          type: 'amount',
+          severity: Math.abs(record.difference) > 1000000 ? 'high' : 'medium',
+          confidence: 92.5,
+          description: `AI detected amount discrepancy in ${record.sources[0]?.data?.description || 'transaction'}`,
+          sourceRecord: record.id,
+          targetRecord: record.sources[0]?.recordId || '',
+          difference: record.difference,
+          pattern: 'amount_variance',
+          recommendation: 'Review transaction details and verify with source system',
+          status: 'detected',
+          detectedAt: new Date().toISOString(),
+          metadata: {
+            algorithm: 'amount-anomaly-detector',
+            modelVersion: '2.1.0',
+            features: ['amount', 'category', 'date'],
+            threshold: 0.05,
+            context: {
+              expectedRange: [record.sources[0]?.data?.amount * 0.95, record.sources[0]?.data?.amount * 1.05],
+              actualValue: record.sources[0]?.data?.amount,
+              variance: Math.abs(record.difference) / record.sources[0]?.data?.amount,
+              category: record.sources[0]?.data?.category,
+              date: record.sources[0]?.data?.date
+            }
+          }
         }
-      });
+        detections.push(detection)
+      }
+    })
 
-      // Analyze cashflow data for anomalies
-      cashflowData.records.forEach((record: any, index: number) => {
-        if (record.amount > 5000000) {
-          // High value transaction
-          const detection: AIDiscrepancyDetectionData = {
-            id: `ai-detection-cashflow-${index}`,
-            type: 'amount',
-            severity: 'medium',
-            confidence: 87.3,
-            description: `AI detected high-value cashflow transaction: ${record.description}`,
-            sourceRecord: record.id,
-            targetRecord: '',
-            difference: 0,
-            pattern: 'high_value_transaction',
-            recommendation: 'Verify transaction authorization and documentation',
-            status: 'detected',
-            detectedAt: new Date().toISOString(),
-            metadata: {
-              algorithm: 'cashflow-anomaly-detector',
-              modelVersion: '1.8.0',
-              features: ['amount', 'description', 'date'],
-              threshold: 5000000,
-              context: {
-                amount: record.amount,
-                description: record.description,
-                date: record.date,
-                category: record.category,
-              },
-            },
-          };
-          detections.push(detection);
+    // Analyze cashflow data for anomalies
+    cashflowData.records.forEach((record: CashflowData['records'][number], index: number) => {
+      if (record.amount > 5000000) { // High value transaction
+        const detection: AIDiscrepancyDetectionData = {
+          id: `ai-detection-cashflow-${index}`,
+          type: 'amount',
+          severity: 'medium',
+          confidence: 87.3,
+          description: `AI detected high-value cashflow transaction: ${record.description}`,
+          sourceRecord: record.id,
+          targetRecord: '',
+          difference: 0,
+          pattern: 'high_value_transaction',
+          recommendation: 'Verify transaction authorization and documentation',
+          status: 'detected',
+          detectedAt: new Date().toISOString(),
+          metadata: {
+            algorithm: 'cashflow-anomaly-detector',
+            modelVersion: '1.8.0',
+            features: ['amount', 'description', 'date'],
+            threshold: 5000000,
+            context: {
+              amount: record.amount,
+              description: record.description,
+              date: record.date,
+              category: record.category
+            }
+          }
         }
-      });
+        detections.push(detection)
+      }
+    })
 
-      return detections;
-    },
-    []
-  );
+    return detections
+  }, [])
 
-  const generateAIPredictions = useCallback(
-    (reconciliationData: ReconciliationData): AIPrediction[] => {
-      // Generate predictions for next week
-      const nextWeekPredictions = [
-        {
-          id: 'pred-001',
-          modelId: 'reconciliation-predictor',
-          type: 'reconciliation_accuracy',
-          targetDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          input: {
-            historicalData: reconciliationData.metrics,
-            currentTrends: {
-              accuracy: 94.2,
-              throughput: 180,
-              errorRate: 1.8,
-            },
-            externalFactors: ['market_volatility', 'regulatory_changes'],
+  const generateAIPredictions = useCallback((reconciliationData: ReconciliationData): AIPrediction[] => {
+    // Generate predictions for next week
+    const nextWeekPredictions = [
+      {
+        id: 'pred-001',
+        modelId: 'reconciliation-predictor',
+        type: 'reconciliation_accuracy',
+        targetDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        input: {
+          historicalData: reconciliationData.metrics,
+          currentTrends: {
+            accuracy: 94.2,
+            throughput: 180,
+            errorRate: 1.8
           },
-          output: {
-            prediction: 'expected',
-            confidence: 0.89,
-            probabilities: { normal: 0.89, anomaly: 0.11 },
-            explanation: 'Weekly recurring pattern matches historical data',
-          },
-          timestamp: new Date().toISOString(),
-          accuracy: 0.91,
+          externalFactors: ['market_volatility', 'regulatory_changes']
         },
-      ];
+        output: {
+          prediction: 'expected',
+          confidence: 0.89,
+          probabilities: { normal: 0.89, anomaly: 0.11 },
+          explanation: 'Weekly recurring pattern matches historical data'
+        },
+        timestamp: new Date().toISOString(),
+        accuracy: 0.91
+      }
+    ]
 
-      return nextWeekPredictions;
-    },
-    []
-  );
+    return nextWeekPredictions
+  }, [])
 
   const runDiscrepancyAnalysis = useCallback(async () => {
-    setIsAnalyzing(true);
-    setAnalysisProgress(0);
-
-    const reconciliationData = getReconciliationData();
-    const cashflowData = getCashflowData();
-
+    setIsAnalyzing(true)
+    setAnalysisProgress(0)
+    
+    const reconciliationData = getReconciliationData()
+    const cashflowData = getCashflowData()
+    
     if (!reconciliationData || !cashflowData) {
-      setIsAnalyzing(false);
-      return;
+      setIsAnalyzing(false)
+      return
     }
 
     // Simulate AI analysis progress
     const interval = setInterval(() => {
-      setAnalysisProgress((prev) => {
-        const newProgress = Math.min(prev + Math.random() * 15, 100);
+      setAnalysisProgress(prev => {
+        const newProgress = Math.min(prev + Math.random() * 15, 100)
         if (newProgress >= 100) {
-          clearInterval(interval);
-          setIsAnalyzing(false);
-
+          clearInterval(interval)
+          setIsAnalyzing(false)
+          
           // Generate AI detections
-          const aiDetections = generateAIDetections(reconciliationData, cashflowData);
-          setDetections(aiDetections);
-
+          const aiDetections = generateAIDetections(reconciliationData, cashflowData)
+          setDetections(aiDetections)
+          
           // Generate predictions
-          const aiPredictions = generateAIPredictions(reconciliationData);
-          setPredictions(aiPredictions);
-
-          onProgressUpdate?.('ai_discrepancy_detection_completed');
+          const aiPredictions = generateAIPredictions(reconciliationData)
+          setPredictions(aiPredictions)
+          
+          onProgressUpdate?.('ai_discrepancy_detection_completed')
         }
-        return newProgress;
-      });
-    }, 300);
-  }, [
-    getReconciliationData,
-    getCashflowData,
-    onProgressUpdate,
-    generateAIDetections,
-    generateAIPredictions,
-  ]);
+        return newProgress
+      })
+    }, 300)
+   }, [getReconciliationData, getCashflowData, onProgressUpdate, generateAIDetections, generateAIPredictions])
+
+
+
+
+
+
+
+
+
+
 
   // Filter detections based on severity and type
   const filteredDetections = useMemo(() => {
-    return detections.filter((detection) => {
-      const severityMatch = filterSeverity === 'all' || detection.severity === filterSeverity;
-      const typeMatch = filterType === 'all' || detection.type === filterType;
-      return severityMatch && typeMatch;
-    });
-  }, [detections, filterSeverity, filterType]);
+    return detections.filter(detection => {
+      const severityMatch = filterSeverity === 'all' || detection.severity === filterSeverity
+      const typeMatch = filterType === 'all' || detection.type === filterType
+      return severityMatch && typeMatch
+    })
+  }, [detections, filterSeverity, filterType])
 
   // Helper functions
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'low':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 text-green-800'
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 text-yellow-800'
       case 'high':
-        return 'bg-orange-100 text-orange-800';
+        return 'bg-orange-100 text-orange-800'
       case 'critical':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800'
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800'
     }
-  };
+  }
 
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'amount':
-        return <DollarSign className="w-4 h-4" />;
+        return <DollarSign className="w-4 h-4" />
       case 'date':
-        return <Calendar className="w-4 h-4" />;
+        return <Calendar className="w-4 h-4" />
       case 'description':
-        return <FileText className="w-4 h-4" />;
+        return <FileText className="w-4 h-4" />
       case 'category':
-        return <Tag className="w-4 h-4" />;
+        return <Tag className="w-4 h-4" />
       case 'pattern':
-        return <Activity className="w-4 h-4" />;
+        return <Activity className="w-4 h-4" />
       case 'anomaly':
-        return <AlertTriangle className="w-4 h-4" />;
+        return <AlertTriangle className="w-4 h-4" />
       default:
-        return <AlertCircle className="w-4 h-4" />;
+        return <AlertCircle className="w-4 h-4" />
     }
-  };
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('id-ID', {
       style: 'currency',
       currency: 'IDR',
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
+      minimumFractionDigits: 0
+    }).format(amount)
+  }
 
   const formatPercentage = (value: number) => {
-    return `${(value * 100).toFixed(1)}%`;
-  };
+    return `${(value * 100).toFixed(1)}%`
+  }
 
   const handleDetectionClick = (detection: AIDiscrepancyDetectionData) => {
-    setSelectedDetection(detection);
-    setShowDetectionModal(true);
-  };
+    setSelectedDetection(detection)
+    setShowDetectionModal(true)
+  }
 
   const handleResolveDetection = (detectionId: string, resolution: string) => {
-    setDetections((prev) =>
-      prev.map((detection) =>
-        detection.id === detectionId
-          ? { ...detection, status: 'resolved' as const, resolution }
-          : detection
-      )
-    );
-    setShowDetectionModal(false);
-  };
+    setDetections(prev => prev.map(detection => 
+      detection.id === detectionId 
+        ? { ...detection, status: 'resolved' as const, resolution }
+        : detection
+    ))
+    setShowDetectionModal(false)
+  }
 
   return (
     <div className="max-w-7xl mx-auto">
@@ -344,8 +331,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
               AI-Powered Discrepancy Detection
             </h1>
             <p className="text-secondary-600">
-              Advanced machine learning algorithms for intelligent discrepancy detection and
-              analysis
+              Advanced machine learning algorithms for intelligent discrepancy detection and analysis
             </p>
           </div>
           <div className="flex items-center space-x-2">
@@ -363,7 +349,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
             </button>
           </div>
         </div>
-
+        
         {project && (
           <div className="text-sm text-primary-600 bg-primary-50 px-3 py-2 rounded-lg inline-block">
             Project: {project.name}
@@ -385,13 +371,9 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
                   <p className="text-xs text-secondary-500">v{model.version}</p>
                 </div>
               </div>
-              <span
-                className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  model.status === 'active'
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-yellow-100 text-yellow-800'
-                }`}
-              >
+              <span className={`px-2 py-1 text-xs font-medium rounded-full ${
+                model.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+              }`}>
                 {model.status}
               </span>
             </div>
@@ -425,7 +407,9 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
           <div className="flex items-center space-x-4">
             <RefreshCw className="w-6 h-6 text-primary-600 animate-spin" />
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-secondary-900 mb-2">Running AI Analysis</h3>
+              <h3 className="text-lg font-semibold text-secondary-900 mb-2">
+                Running AI Analysis
+              </h3>
               <p className="text-secondary-600 mb-3">
                 Machine learning models are analyzing data for discrepancies...
               </p>
@@ -494,9 +478,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
                   {getTypeIcon(detection.type)}
-                  <span
-                    className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(detection.severity)}`}
-                  >
+                  <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(detection.severity)}`}>
                     {detection.severity.toUpperCase()}
                   </span>
                 </div>
@@ -546,7 +528,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
             <div key={prediction.id} className="p-4 bg-secondary-50 rounded-lg">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-medium text-secondary-900">
-                  {models.find((m) => m.id === prediction.modelId)?.name || 'Unknown Model'}
+                  {models.find(m => m.id === prediction.modelId)?.name || 'Unknown Model'}
                 </h4>
                 <span className="text-sm text-secondary-500">
                   {formatPercentage(prediction.output.confidence)}
@@ -577,7 +559,9 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-semibold text-secondary-900">AI Detection Details</h3>
+              <h3 className="text-2xl font-semibold text-secondary-900">
+                AI Detection Details
+              </h3>
               <button
                 onClick={() => setShowDetectionModal(false)}
                 className="text-secondary-400 hover:text-secondary-600"
@@ -588,9 +572,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
-                <h4 className="text-lg font-semibold text-secondary-900 mb-4">
-                  Detection Information
-                </h4>
+                <h4 className="text-lg font-semibold text-secondary-900 mb-4">Detection Information</h4>
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-secondary-600">Type</span>
@@ -598,9 +580,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-secondary-600">Severity</span>
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(selectedDetection.severity)}`}
-                    >
+                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${getSeverityColor(selectedDetection.severity)}`}>
                       {selectedDetection.severity.toUpperCase()}
                     </span>
                   </div>
@@ -628,21 +608,15 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
                 <div className="space-y-3">
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-secondary-600">Algorithm</span>
-                    <span className="text-sm text-secondary-900">
-                      {selectedDetection.metadata.algorithm}
-                    </span>
+                    <span className="text-sm text-secondary-900">{selectedDetection.metadata.algorithm}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-secondary-600">Model Version</span>
-                    <span className="text-sm text-secondary-900">
-                      {selectedDetection.metadata.modelVersion}
-                    </span>
+                    <span className="text-sm text-secondary-900">{selectedDetection.metadata.modelVersion}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-secondary-600">Threshold</span>
-                    <span className="text-sm text-secondary-900">
-                      {selectedDetection.metadata.threshold}
-                    </span>
+                    <span className="text-sm text-secondary-900">{selectedDetection.metadata.threshold}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-sm font-medium text-secondary-600">Features</span>
@@ -657,13 +631,11 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
             <div className="mt-6">
               <h4 className="text-lg font-semibold text-secondary-900 mb-4">Recommendation</h4>
               <p className="text-secondary-700 mb-4">{selectedDetection.recommendation}</p>
-
+              
               {selectedDetection.status === 'detected' && (
                 <div className="flex space-x-2">
                   <button
-                    onClick={() =>
-                      handleResolveDetection(selectedDetection.id, 'Resolved by AI analysis')
-                    }
+                    onClick={() => handleResolveDetection(selectedDetection.id, 'Resolved by AI analysis')}
                     className="btn-primary text-sm"
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
@@ -683,7 +655,10 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
         </div>
       )}
     </div>
-  );
-};
+  )
+}
 
-export default AIDiscrepancyDetection;
+export default AIDiscrepancyDetection
+
+
+

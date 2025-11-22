@@ -122,7 +122,7 @@ pub struct UserStatistics {
 }
 
 /// User creation request
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct CreateUserRequest {
     pub email: String,
     pub password: String,
@@ -138,10 +138,11 @@ pub struct CreateOAuthUserRequest {
     pub first_name: String,
     pub last_name: String,
     pub role: Option<String>,
+    pub picture: Option<String>,
 }
 
 /// User update request
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde::Deserialize, serde::Serialize)]
 pub struct UpdateUserRequest {
     pub email: Option<String>,
     pub first_name: Option<String>,

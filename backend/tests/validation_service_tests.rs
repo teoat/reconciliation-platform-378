@@ -145,8 +145,10 @@ mod validation_service_tests {
         let validator = ValidationServiceDelegate::new().unwrap();
 
         // Edge case passwords
-        assert!(validator.validate_password("A1!a".repeat(2)).is_ok() || validator.validate_password("A1!a".repeat(2)).is_err()); // Exactly 8 chars
-        assert!(validator.validate_password("A".repeat(8) + "1!").is_ok() || validator.validate_password("A".repeat(8) + "1!").is_err());
+        let pwd1 = "A1!a".repeat(2);
+        assert!(validator.validate_password(&pwd1).is_ok() || validator.validate_password(&pwd1).is_err()); // Exactly 8 chars
+        let pwd2 = "A".repeat(8) + "1!";
+        assert!(validator.validate_password(&pwd2).is_ok() || validator.validate_password(&pwd2).is_err());
         
         // Invalid edge cases
         assert!(validator.validate_password("").is_err());
@@ -231,7 +233,7 @@ mod validation_service_tests {
         let edge_valid = r#"{"name": "A", "age": 0}"#; // Min values
         assert!(validator.validate_json_schema(edge_valid, &schema).is_ok());
 
-        let edge_valid2 = r#"{"name": "A".repeat(100), "age": 150}"#; // Max values
+        let _edge_valid2 = r#"{"name": "A".repeat(100), "age": 150}"#; // Max values
         // This might fail due to string literal, but tests the concept
         
         // Invalid edge cases

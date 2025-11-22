@@ -22,6 +22,27 @@ pub struct BackupConfig {
     pub encryption_key: Option<String>,
 }
 
+impl Default for BackupConfig {
+    fn default() -> Self {
+        Self {
+            enabled: false,
+            schedule: BackupSchedule::Manual,
+            retention_policy: RetentionPolicy {
+                daily_retention_days: 7,
+                weekly_retention_weeks: 4,
+                monthly_retention_months: 12,
+                yearly_retention_years: 5,
+            },
+            storage_config: StorageConfig::Local {
+                path: std::path::PathBuf::from("./backups"),
+            },
+            compression: true,
+            encryption: false,
+            encryption_key: None,
+        }
+    }
+}
+
 /// Backup schedule configuration
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum BackupSchedule {

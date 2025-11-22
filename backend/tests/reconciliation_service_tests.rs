@@ -376,9 +376,9 @@ mod reconciliation_service_tests {
 
         let job_id = Uuid::new_v4();
 
-        // Get results with confidence filter
+        // Get results with pagination
         let result = reconciliation_service
-            .get_reconciliation_results(job_id, Some(1), Some(10), Some(0.8))
+            .get_reconciliation_results(job_id, Some(1), Some(10), None)
             .await;
 
         assert!(result.is_ok());
@@ -630,7 +630,7 @@ mod reconciliation_service_tests {
         .await;
 
         // All should complete without panicking
-        results_vec.iter().for_each(|result| {
+        results.iter().for_each(|result| {
             assert!(result.is_ok());
         });
     }

@@ -284,9 +284,16 @@ export const FileUpload: React.FC<FileUploadProps> = ({
     [value, onChange]
   );
 
+  const fieldId = React.useId();
+  const dropzoneId = `${fieldId}-dropzone`;
+
   return (
     <FormField label={label} error={error} required={required} className={className}>
       <div
+        id={dropzoneId}
+        role="button"
+        tabIndex={0}
+        aria-label={label || 'File upload area'}
         className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
           dragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
         } ${error ? 'border-red-300' : ''}`}
@@ -294,6 +301,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onClick={() => fileInputRef.current?.click()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            fileInputRef.current?.click();
+          }
+        }}
       >
         <Upload className="mx-auto h-12 w-12 text-gray-400" />
         <p className="mt-2 text-sm text-gray-600">Drop files here or click to browse</p>
@@ -306,12 +319,14 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       <input
         ref={fileInputRef}
         type="file"
+        id={fieldId}
         name={name}
         accept={accept}
         multiple={multiple}
         onChange={handleFileSelect}
         disabled={disabled}
         className="hidden"
+        aria-label={label || 'File input'}
       />
 
       {value && value.length > 0 && (

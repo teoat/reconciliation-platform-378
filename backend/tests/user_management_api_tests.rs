@@ -413,11 +413,9 @@ mod user_management_api_tests {
         let preferences = reconciliation_backend::services::user::preferences::UserPreferences {
             theme: Some("dark".to_string()),
             language: Some("en".to_string()),
-            notifications: Some(serde_json::json!({
-                "email": true,
-                "push": false
-            })),
             timezone: Some("UTC".to_string()),
+            notifications_enabled: Some(true),
+            email_notifications: Some(true),
         };
 
         let req = test::TestRequest::put()

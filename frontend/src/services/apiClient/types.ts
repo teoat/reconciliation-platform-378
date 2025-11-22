@@ -29,7 +29,7 @@ export type BackendReconciliationJob = ReconciliationJob;
 export interface LoginRequest {
   email: string;
   password: string;
-  rememberMe?: boolean;
+  remember_me?: boolean; // Backend expects snake_case
 }
 
 export interface LoginResponse {

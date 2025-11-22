@@ -8,7 +8,7 @@ import { uiService } from '../services/uiService';
 import { testingService } from '../services/testingService';
 
 // Performance test utilities
-const measurePerformance = async (fn: () => Promise<any> | any) => {
+const measurePerformance = async <T,>(fn: () => Promise<T> | T) => {
   const start = performance.now();
   const result = await fn();
   const end = performance.now();
@@ -348,7 +348,8 @@ describe('Testing Service Performance Tests', () => {
 
 describe('Memory Usage Tests', () => {
   it('should not leak memory with form service', async () => {
-    const initialMemory = (performance as any).memory?.usedJSHeapSize || 0;
+    // TypeScript doesn't have memory in Performance type, but it exists in Chrome
+    const initialMemory = (performance as unknown as { memory?: { usedJSHeapSize?: number } }).memory?.usedJSHeapSize || 0;
 
     // Create and destroy many form data entries
     for (let i = 0; i < 1000; i++) {
@@ -365,7 +366,7 @@ describe('Memory Usage Tests', () => {
 
     formService.cleanup();
 
-    const finalMemory = (performance as any).memory?.usedJSHeapSize || 0;
+    const finalMemory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize || 0;
     const memoryIncrease = finalMemory - initialMemory;
 
     // Memory increase should be minimal (less than 1MB)
@@ -373,7 +374,8 @@ describe('Memory Usage Tests', () => {
   });
 
   it('should not leak memory with file service', async () => {
-    const initialMemory = (performance as any).memory?.usedJSHeapSize || 0;
+    // TypeScript doesn't have memory in Performance type, but it exists in Chrome
+    const initialMemory = (performance as unknown as { memory?: { usedJSHeapSize?: number } }).memory?.usedJSHeapSize || 0;
 
     // Create and destroy many file upload sessions
     for (let i = 0; i < 100; i++) {
@@ -384,7 +386,7 @@ describe('Memory Usage Tests', () => {
 
     fileService.cleanup();
 
-    const finalMemory = (performance as any).memory?.usedJSHeapSize || 0;
+    const finalMemory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize || 0;
     const memoryIncrease = finalMemory - initialMemory;
 
     // Memory increase should be minimal (less than 10MB)
@@ -392,7 +394,8 @@ describe('Memory Usage Tests', () => {
   });
 
   it('should not leak memory with UI service', async () => {
-    const initialMemory = (performance as any).memory?.usedJSHeapSize || 0;
+    // TypeScript doesn't have memory in Performance type, but it exists in Chrome
+    const initialMemory = (performance as unknown as { memory?: { usedJSHeapSize?: number } }).memory?.usedJSHeapSize || 0;
 
     // Create and destroy many themes
     for (let i = 0; i < 1000; i++) {
@@ -440,7 +443,7 @@ describe('Memory Usage Tests', () => {
 
     uiService.cleanup();
 
-    const finalMemory = (performance as any).memory?.usedJSHeapSize || 0;
+    const finalMemory = (performance as Performance & { memory?: { usedJSHeapSize: number } }).memory?.usedJSHeapSize || 0;
     const memoryIncrease = finalMemory - initialMemory;
 
     // Memory increase should be minimal (less than 1MB)

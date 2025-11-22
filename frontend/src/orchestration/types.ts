@@ -31,7 +31,7 @@ export interface WorkflowState {
   completedSteps: string[];
   totalSteps: number;
   progress: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface OnboardingStep {
@@ -122,7 +122,7 @@ export interface GuidanceHandler {
 export interface FeatureContext {
   featureId: string;
   action: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   timestamp: number;
 }
 
@@ -148,7 +148,7 @@ export interface SyncTask {
 export interface PageEvent {
   type: 'mount' | 'update' | 'unmount' | 'feature-used' | 'feature-error' | 'user-action';
   pageId: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
   timestamp: number;
 }
 

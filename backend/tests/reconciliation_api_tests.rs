@@ -49,12 +49,13 @@ mod reconciliation_api_tests {
 
     /// Setup test fixtures (user, project, data sources)
     async fn setup_test_fixtures(
-        db: Database,
+        db: Arc<Database>,
         auth_service: AuthService,
     ) -> (Uuid, Uuid, Uuid, String) {
-        let db_arc = Arc::new(db.clone());
-        let user_service = UserService::new(db_arc, auth_service);
-        let project_service = ProjectService::new(db.clone());
+        let user_service = UserService::new(db.clone(), auth_service.clone());
+        // ProjectService::new expects Database, not Arc<Database>
+        // Since Database implements Clone, we can clone from the Arc
+        let project_service = ProjectService::new((*db).clone());
 
         // Create test user
         let user = user_service
@@ -126,7 +127,7 @@ mod reconciliation_api_tests {
         let auth_service_arc = Arc::new(auth_service.clone());
 
         let (_user_id, project_id, source_a_id, token) =
-            setup_test_fixtures((*db_arc).clone(), (*auth_service_arc).clone()).await;
+            setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let source_b_id = Uuid::new_v4();
 
@@ -184,7 +185,7 @@ mod reconciliation_api_tests {
         let auth_service_arc = Arc::new(auth_service.clone());
 
         let (_, project_id, source_a_id, token) =
-            setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+            setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let source_b_id = Uuid::new_v4();
 
@@ -240,7 +241,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let job_id = Uuid::new_v4();
 
@@ -296,7 +297,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let job_id = Uuid::new_v4();
 
@@ -345,7 +346,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let job_id = Uuid::new_v4();
 
@@ -381,7 +382,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let job_id = Uuid::new_v4();
 
@@ -417,7 +418,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let job_id = Uuid::new_v4();
 
@@ -453,7 +454,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let job_id = Uuid::new_v4();
 
@@ -491,7 +492,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let match_id = Uuid::new_v4();
 
@@ -532,7 +533,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let batch_request = serde_json::json!({
             "resolves": [
@@ -627,7 +628,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let job_id = Uuid::new_v4();
 
@@ -660,7 +661,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let job_id = Uuid::new_v4();
 
@@ -704,7 +705,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let job_id = Uuid::new_v4();
 
@@ -741,7 +742,7 @@ mod reconciliation_api_tests {
         let auth_service_arc = Arc::new(auth_service.clone());
 
         let (_, project_id, _, token) =
-            setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+            setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let onboarding_request = serde_json::json!({
             "project_id": project_id,
@@ -784,7 +785,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let invalid_project_id = Uuid::new_v4();
         let job_request = serde_json::json!({
@@ -828,7 +829,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         // Missing required fields
         let job_request = serde_json::json!({
@@ -897,7 +898,7 @@ mod reconciliation_api_tests {
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
 
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service_arc.clone()).await;
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), (*auth_service_arc).clone()).await;
 
         let invalid_job_id = Uuid::new_v4();
         let update_request = serde_json::json!({
@@ -931,8 +932,10 @@ mod reconciliation_api_tests {
 
     #[tokio::test]
     async fn test_update_reconciliation_job_invalid_data() {
-        let db_arc = Arc::new(setup_test_database().await.0);
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), Arc::new(AuthService::new(db_arc.clone()))).await;
+        let (db, _temp_dir): (Database, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service).await;
 
         let (_, _, _, job_id) = setup_reconciliation_job(db_arc.clone()).await;
         let invalid_request = serde_json::json!({
@@ -966,8 +969,10 @@ mod reconciliation_api_tests {
 
     #[tokio::test]
     async fn test_get_reconciliation_results_empty() {
-        let db_arc = Arc::new(setup_test_database().await.0);
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), Arc::new(AuthService::new(db_arc.clone()))).await;
+        let (db, _temp_dir): (Database, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service).await;
 
         let (_, _, _, job_id) = setup_reconciliation_job(db_arc.clone()).await;
 
@@ -996,8 +1001,10 @@ mod reconciliation_api_tests {
 
     #[tokio::test]
     async fn test_get_reconciliation_results_pagination() {
-        let db_arc = Arc::new(setup_test_database().await.0);
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), Arc::new(AuthService::new(db_arc.clone()))).await;
+        let (db, _temp_dir): (Database, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service).await;
 
         let (_, _, _, job_id) = setup_reconciliation_job(db_arc.clone()).await;
 
@@ -1026,8 +1033,10 @@ mod reconciliation_api_tests {
 
     #[tokio::test]
     async fn test_start_reconciliation_job_already_running() {
-        let db_arc = Arc::new(setup_test_database().await.0);
-        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), Arc::new(AuthService::new(db_arc.clone()))).await;
+        let (db, _temp_dir): (Database, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let (_, _, _, token) = setup_test_fixtures(db_arc.clone(), auth_service).await;
 
         let (_, _, _, job_id) = setup_reconciliation_job(db_arc.clone()).await;
 
@@ -1066,9 +1075,10 @@ mod reconciliation_api_tests {
 
     #[tokio::test]
     async fn test_delete_reconciliation_job_unauthorized() {
-        let db_arc = Arc::new(setup_test_database().await.0);
-        let auth_service = Arc::new(AuthService::new(db_arc.clone()));
-        let (_, _, _, token1) = setup_test_fixtures(db_arc.clone(), auth_service.clone()).await;
+        let (db, _temp_dir): (Database, _) = setup_test_database().await;
+        let db_arc = Arc::new(db);
+        let auth_service = AuthService::new("test_secret".to_string(), 3600);
+        let (_, _, _, token1) = setup_test_fixtures(db_arc.clone(), auth_service).await;
 
         // Create job with user 1
         let (_, _, _, job_id) = setup_reconciliation_job(db_arc.clone()).await;

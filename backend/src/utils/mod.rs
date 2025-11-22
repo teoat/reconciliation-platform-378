@@ -9,6 +9,7 @@ pub mod env_validation;
 pub mod error_handling;
 pub mod error_logging;
 pub mod file;
+pub mod schema_verification;
 pub mod string;
 
 pub use authorization::{

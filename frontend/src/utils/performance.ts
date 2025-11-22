@@ -210,7 +210,8 @@ class PerformanceMonitor {
   private initializeMemoryMonitoring(): void {
     if (!('memory' in performance)) return;
 
-    const memoryInfo = (performance as any).memory;
+    // TypeScript doesn't have memory in Performance type, but it exists in Chrome
+    const memoryInfo = (performance as unknown as { memory?: { usedJSHeapSize?: number; totalJSHeapSize?: number; jsHeapSizeLimit?: number } }).memory;
 
     const metrics: Partial<PerformanceMetrics> = {
       timestamp: Date.now(),

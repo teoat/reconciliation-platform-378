@@ -70,7 +70,7 @@ export function extractErrorFromApiResponse(
 
   // Handle ApiResponse objects (Agent 1 Task 1.19)
   if (typeof error === 'object' && error !== null) {
-    const errorObj = error as any;
+    const errorObj = error as Record<string, unknown>;
 
     // Check for ApiResponse structure (from API client)
     if ('success' in errorObj && !errorObj.success && ('error' in errorObj || 'code' in errorObj)) {

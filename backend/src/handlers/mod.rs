@@ -31,6 +31,9 @@ pub mod health;
 // Password manager handlers
 pub mod password_manager;
 
+// AI handlers
+pub mod ai;
+
 // Onboarding handlers
 pub mod onboarding;
 
@@ -71,6 +74,8 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .service(web::scope("/api/passwords").configure(password_manager::configure_routes))
         // Onboarding routes
         .service(web::scope("/api/onboarding").configure(onboarding::configure_routes))
+        // AI service routes
+        .service(web::scope("/api/ai").configure(ai::configure_routes))
         // Health check routes (from existing health.rs)
         // Register at both /health and /api/health for compatibility
         .configure(health::configure_health_routes)

@@ -300,7 +300,7 @@ export class PageFrenlyIntegration {
   /**
    * Check if message should be generated based on changes
    */
-  private shouldGenerateMessage(changes?: Record<string, any>): boolean {
+  private shouldGenerateMessage(changes?: Record<string, unknown>): boolean {
     if (!changes) return false;
 
     // Generate message for significant changes

@@ -136,7 +136,7 @@ export class PageLifecycleManager {
   async trackFeatureUsage(
     featureId: string,
     action: string,
-    data?: Record<string, any>
+    data?: Record<string, unknown>
   ): Promise<void> {
     try {
       if (this.frenlyIntegration) {
@@ -190,7 +190,7 @@ export class PageLifecycleManager {
   async trackUserAction(
     action: string,
     target?: string,
-    data?: Record<string, any>
+    data?: Record<string, unknown>
   ): Promise<void> {
     try {
       if (this.frenlyIntegration) {

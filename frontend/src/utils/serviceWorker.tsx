@@ -383,24 +383,32 @@ export const useOfflineStatus = (): boolean => {
 // BACKGROUND SYNC UTILITIES
 // ============================================================================
 
+// Extended ServiceWorkerRegistration with sync API
+interface ServiceWorkerRegistrationWithSync extends ServiceWorkerRegistration {
+  sync?: {
+    register: (tag: string) => Promise<void>;
+    getTags: () => Promise<string[]>;
+  };
+}
+
 export const requestBackgroundSync = async (tag: string): Promise<void> => {
-  if (
-    'serviceWorker' in navigator &&
-    'sync' in (window as any).ServiceWorkerRegistration.prototype
-  ) {
+  if ('serviceWorker' in navigator) {
     const registration = await navigator.serviceWorker.ready;
-    await (registration as any).sync.register(tag);
+    const registrationWithSync = registration as ServiceWorkerRegistrationWithSync;
+    if (registrationWithSync.sync) {
+      await registrationWithSync.sync.register(tag);
+    }
   }
 };
 
 export const getBackgroundSyncTags = async (): Promise<string[]> => {
-  if (
-    'serviceWorker' in navigator &&
-    'sync' in (window as any).ServiceWorkerRegistration.prototype
-  ) {
+  if ('serviceWorker' in navigator) {
     const registration = await navigator.serviceWorker.ready;
-    const tags = await (registration as any).sync.getTags();
-    return tags;
+    const registrationWithSync = registration as ServiceWorkerRegistrationWithSync;
+    if (registrationWithSync.sync) {
+      const tags = await registrationWithSync.sync.getTags();
+      return tags;
+    }
   }
   return [];
 };

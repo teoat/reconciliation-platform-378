@@ -138,6 +138,15 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                     integration.enabled ? 'ring-2 ring-green-500 bg-green-50' : ''
                   }`}
                   onClick={() => setSelectedIntegration(integration)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedIntegration(integration);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Select ${integration.name} integration`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
@@ -191,10 +200,11 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label htmlFor="export-format-select" className="block text-sm font-medium text-secondary-700 mb-2">
                       Export Format
                     </label>
                     <select
+                      id="export-format-select"
                       value={exportOptions.format}
                       onChange={(e) =>
                         setExportOptions((prev) => ({
@@ -212,9 +222,9 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-secondary-700 mb-2">
+                    <div className="block text-sm font-medium text-secondary-700 mb-2">
                       Projects to Export
-                    </label>
+                    </div>
                     <div className="text-sm text-secondary-600">
                       {projects.length} project{projects.length !== 1 ? 's' : ''} available
                     </div>
@@ -222,12 +232,13 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-secondary-700 mb-2">
+                  <div className="block text-sm font-medium text-secondary-700 mb-2">
                     Export Options
-                  </label>
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-2">
+                  </div>
+                  <div className="space-y-2" role="group" aria-label="Export Options">
+                    <div className="flex items-center space-x-2">
                       <input
+                        id="export-include-metadata"
                         type="checkbox"
                         checked={exportOptions.includeMetadata}
                         onChange={(e) =>
@@ -238,12 +249,13 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                         }
                         className="rounded border-secondary-300"
                       />
-                      <span className="text-sm text-secondary-700">
+                      <label htmlFor="export-include-metadata" className="text-sm text-secondary-700 cursor-pointer">
                         Include metadata (progress, budget, etc.)
-                      </span>
-                    </label>
-                    <label className="flex items-center space-x-2">
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
                       <input
+                        id="export-include-comments"
                         type="checkbox"
                         checked={exportOptions.includeComments}
                         onChange={(e) =>
@@ -254,10 +266,13 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                         }
                         className="rounded border-secondary-300"
                       />
-                      <span className="text-sm text-secondary-700">Include comments and notes</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
+                      <label htmlFor="export-include-comments" className="text-sm text-secondary-700 cursor-pointer">
+                        Include comments and notes
+                      </label>
+                    </div>
+                    <div className="flex items-center space-x-2">
                       <input
+                        id="export-include-history"
                         type="checkbox"
                         checked={exportOptions.includeHistory}
                         onChange={(e) =>
@@ -268,8 +283,10 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                         }
                         className="rounded border-secondary-300"
                       />
-                      <span className="text-sm text-secondary-700">Include project history</span>
-                    </label>
+                      <label htmlFor="export-include-history" className="text-sm text-secondary-700 cursor-pointer">
+                        Include project history
+                      </label>
+                    </div>
                   </div>
                 </div>
 

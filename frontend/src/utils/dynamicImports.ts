@@ -33,7 +33,7 @@ export const LazyModal = lazy(() => import('../components/ui/Modal'));
 export const LazyLazyModal = lazy(() => import('../components/ui/LazyModal'));
 
 // Utility function to create dynamic imports with error boundaries
-export function createDynamicImport<T extends ComponentType<any>>(
+export function createDynamicImport<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   fallback?: React.ComponentType
 ) {
@@ -52,7 +52,7 @@ export function createDynamicImport<T extends ComponentType<any>>(
 }
 
 // Preload function for critical components
-export function preloadComponent(importFn: () => Promise<any>) {
+export function preloadComponent(importFn: () => Promise<{ default?: React.ComponentType<unknown> }>) {
   // Use requestIdleCallback if available, otherwise setTimeout
   const schedulePreload =
     typeof window !== 'undefined' && 'requestIdleCallback' in window

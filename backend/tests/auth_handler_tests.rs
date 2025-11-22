@@ -7,7 +7,7 @@ use actix_web::{test, web, App};
 use std::sync::Arc;
 
 use reconciliation_backend::handlers::auth::{
-    get_current_user, get_user_settings, google_oauth, login, logout, refresh_token, register,
+    change_password, get_current_user, get_user_settings, google_oauth, login, logout, refresh_token, register,
     request_password_reset, resend_verification, update_user_settings,
 };
 use reconciliation_backend::services::auth::{
@@ -15,7 +15,7 @@ use reconciliation_backend::services::auth::{
 };
 use reconciliation_backend::services::security_monitor::{AnomalyDetectionConfig, SecurityMonitor};
 use reconciliation_backend::services::user::UserService;
-use reconciliation_backend::test_utils::database::setup_test_database;
+use reconciliation_backend::test_utils_export::database::setup_test_database;
 
 /// Test authentication handlers
 #[cfg(test)]
@@ -24,7 +24,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_login_handler_success() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
@@ -75,7 +75,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_login_handler_invalid_credentials() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
@@ -121,7 +121,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_login_handler_with_security_monitoring() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
@@ -164,7 +164,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_register_handler_success() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
@@ -204,7 +204,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_register_handler_duplicate_email() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
@@ -252,7 +252,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_login_handler_inactive_user() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
@@ -312,7 +312,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_refresh_token_handler_success() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
@@ -441,7 +441,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_change_password_handler_success() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let user_service = web::Data::new(Arc::new(UserService::new(
@@ -491,7 +491,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_request_password_reset_handler_success() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let user_service = web::Data::new(Arc::new(UserService::new(
@@ -564,7 +564,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_confirm_password_reset_handler_success() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let user_service = web::Data::new(Arc::new(UserService::new(
@@ -610,7 +610,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_verify_email_handler_success() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let user_service = web::Data::new(Arc::new(UserService::new(
@@ -646,7 +646,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_resend_verification_handler_success() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let user_service = web::Data::new(Arc::new(UserService::new(
@@ -689,7 +689,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_get_current_user_handler_success() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let user_service = web::Data::new(Arc::new(UserService::new(
@@ -755,7 +755,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_get_user_settings_handler_success() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let user_service = web::Data::new(Arc::new(UserService::new(
@@ -800,7 +800,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_update_user_settings_handler_success() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let user_service = web::Data::new(Arc::new(UserService::new(
@@ -903,7 +903,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_register_handler_invalid_password() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
@@ -941,7 +941,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_register_handler_invalid_email() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
@@ -980,7 +980,7 @@ mod auth_handler_tests {
     // Additional edge cases
     #[tokio::test]
     async fn test_login_handler_empty_email_edge_case() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
@@ -1014,7 +1014,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_login_handler_empty_password() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
@@ -1048,7 +1048,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_refresh_token_invalid_token() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
@@ -1080,7 +1080,7 @@ mod auth_handler_tests {
 
     #[tokio::test]
     async fn test_change_password_missing_current() {
-        let (db, _) = setup_test_database().await;
+        let (db, _temp_dir): (reconciliation_backend::Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
         let auth_service_arc = Arc::new(auth_service.clone());
@@ -1115,7 +1115,7 @@ mod auth_handler_tests {
             App::new()
                 .app_data(web::Data::new(auth_service_arc.clone()))
                 .app_data(user_service.clone())
-                .route("/api/auth/change-password", web::post().to(change_password)),
+                .route("/api/auth/change-password", web::post().to(reconciliation_backend::handlers::auth::change_password)),
         )
         .await;
 

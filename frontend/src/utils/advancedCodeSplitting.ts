@@ -78,17 +78,27 @@ export const LazyAdvancedVisualization = lazy(() => import('../components/Advanc
 // ERROR HANDLING FOR CODE SPLITTING
 // ============================================================================
 
+// Type for Sentry on window object
+interface WindowWithSentry extends Window {
+  Sentry?: {
+    captureException: (error: Error, options?: { tags?: Record<string, string> }) => void;
+  };
+}
+
 export function handleCodeSplittingError(error: Error, componentName: string): void {
   // logger.error(`Failed to load component ${componentName}:`, error);
 
   // Send to monitoring service
-  if (typeof window !== 'undefined' && (window as any).Sentry) {
-    (window as any).Sentry.captureException(error, {
-      tags: {
-        component: componentName,
-        type: 'code_splitting',
-      },
-    });
+  if (typeof window !== 'undefined') {
+    const windowWithSentry = window as WindowWithSentry;
+    if (windowWithSentry.Sentry) {
+      windowWithSentry.Sentry.captureException(error, {
+        tags: {
+          component: componentName,
+          type: 'code_splitting',
+        },
+      });
+    }
   }
 }
 

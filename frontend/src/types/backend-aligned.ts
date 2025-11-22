@@ -78,6 +78,7 @@ export interface UpdateUserRequest {
 export interface LoginRequest {
   email: string;
   password: string;
+  remember_me?: boolean; // Backend expects snake_case
 }
 
 export interface RegisterRequest {

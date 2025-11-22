@@ -89,7 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setUser(null);
       apiClient.clearAuthToken();
-      secureStorage.removeItem('refreshToken', false);
+      // Backend doesn't use separate refreshToken, so no need to remove it
       sessionTimeoutRef.current?.destroy();
       tokenRefreshRef.current?.stop();
     }
@@ -123,26 +123,25 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Start token refresh manager
       const refreshFn = async (): Promise<string | null> => {
         try {
-          const refreshToken = secureStorage.getItem<string>('refreshToken', false);
-          if (!refreshToken) return null;
+          const currentToken = apiClient.getAuthToken();
+          if (!currentToken) return null;
 
+          // Backend expects token in Authorization header, not body
           const response = await fetch('/api/auth/refresh', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${currentToken}`,
+            },
           });
 
           if (response.ok) {
             const data = await response.json();
-            const accessToken = data.accessToken || data.token;
-            const newRefreshToken = data.refreshToken;
+            const newToken = data.token; // Backend returns { token, expires_at }
 
-            if (accessToken) {
-              apiClient.setAuthToken(accessToken);
-              if (newRefreshToken) {
-                secureStorage.setItem('refreshToken', newRefreshToken, false);
-              }
-              return accessToken;
+            if (newToken) {
+              apiClient.setAuthToken(newToken);
+              return newToken;
             }
           }
         } catch (error) {
@@ -220,7 +219,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       setIsLoading(true);
-      const response = await apiClient.login({ email, password, rememberMe });
+      const response = await apiClient.login({
+        email,
+        password,
+        remember_me: rememberMe, // Convert camelCase to snake_case for backend
+      });
 
       if (response.error) {
         // Record failed attempt for warning
@@ -242,10 +245,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.data) {
         setUser(response.data.user);
 
-        // Store refresh token if provided (use secureStorage)
-        if (response.data.refreshToken) {
-          secureStorage.setItem('refreshToken', response.data.refreshToken, false);
-        }
+        // Backend doesn't return refreshToken in AuthResponse
+        // Token refresh uses the same token via Authorization header
+        // No need to store separate refreshToken
 
         // Reset rate limit on successful login
         rateLimiter.reset(rateLimitKey);
@@ -265,9 +267,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (
           error.message.includes('fetch') ||
           error.message.includes('network') ||
-          error.message.includes('Failed to fetch')
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('NetworkError') ||
+          error.name === 'TypeError'
         ) {
-          errorMessage = 'Unable to connect to server. Please check your connection and try again.';
+          errorMessage =
+            'Unable to connect to server. Please check your connection and try again.';
         } else {
           errorMessage = error.message || 'Login failed';
         }
@@ -315,9 +320,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       return { success: false, error: 'Registration failed' };
     } catch (error) {
+      logger.error('Registration failed', { error, email: userData.email });
+
+      // Handle network errors specifically
+      let errorMessage = 'Registration failed';
+      if (error instanceof Error) {
+        if (
+          error.message.includes('fetch') ||
+          error.message.includes('network') ||
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('NetworkError') ||
+          error.name === 'TypeError'
+        ) {
+          errorMessage =
+            'Unable to connect to server. Please check your connection and try again.';
+        } else {
+          errorMessage = error.message || 'Registration failed';
+        }
+      }
+
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Registration failed',
+        error: errorMessage,
       };
     } finally {
       setIsLoading(false);

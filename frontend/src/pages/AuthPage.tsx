@@ -105,9 +105,25 @@ const AuthPage: React.FC = () => {
       registerForm.reset();
     }
     setError(null);
+    // Reset Google button loading state when switching forms to allow re-render
+    if (googleButtonRef.current && !googleButtonRef.current.querySelector('iframe')) {
+      setIsGoogleButtonLoading(true);
+      setGoogleButtonError(false);
+    }
   }, [isRegistering, loginForm, registerForm]);
 
-  // Handle Google Sign-In
+  // Handle Google Sign-In - use ref to avoid recreating callback
+  const googleOAuthRef = useRef(googleOAuth);
+  const navigateRef = useRef(navigate);
+  const toastRef = useRef(toast);
+
+  // Update refs when values change
+  useEffect(() => {
+    googleOAuthRef.current = googleOAuth;
+    navigateRef.current = navigate;
+    toastRef.current = toast;
+  }, [googleOAuth, navigate, toast]);
+
   const handleGoogleSignIn = useCallback(
     async (response: { credential: string }) => {
       try {
@@ -115,27 +131,27 @@ const AuthPage: React.FC = () => {
         if (!response.credential) {
           const errorMsg = 'Google sign-in failed. Please try again.';
           setError(errorMsg);
-          toast.error(errorMsg);
+          toastRef.current.error(errorMsg);
           return;
         }
 
-        const result = await googleOAuth(response.credential);
+        const result = await googleOAuthRef.current(response.credential);
         if (result.success) {
-          toast.success('Signed in with Google successfully!');
-          navigate('/', { replace: true });
+          toastRef.current.success('Signed in with Google successfully!');
+          navigateRef.current('/', { replace: true });
         } else {
           const errorMsg = result.error || 'Google sign-in failed. Please try again.';
           setError(errorMsg);
-          toast.error(errorMsg);
+          toastRef.current.error(errorMsg);
         }
       } catch (err) {
         const errorMsg =
           err instanceof Error ? err.message : 'Google sign-in failed. Please try again.';
         setError(errorMsg);
-        toast.error(errorMsg);
+        toastRef.current.error(errorMsg);
       }
     },
-    [googleOAuth, navigate, toast]
+    [] // Empty deps - using refs instead
   );
 
   // Load Google Identity Services script
@@ -163,9 +179,11 @@ const AuthPage: React.FC = () => {
       return; // Skip if no Google Client ID is configured
     }
 
-    // Reset states when starting to load
-    setIsGoogleButtonLoading(true);
-    setGoogleButtonError(false);
+    // Reset states when starting to load - but only if not already loaded
+    if (!googleButtonRef.current?.querySelector('iframe')) {
+      setIsGoogleButtonLoading(true);
+      setGoogleButtonError(false);
+    }
 
     // Function to render Google button with retry logic
     const renderGoogleButton = (retries = 5, delay = 200) => {
@@ -291,12 +309,10 @@ const AuthPage: React.FC = () => {
       // Cleanup: Don't try to remove Google's DOM elements
       // Google manages its own DOM, and React trying to remove them causes conflicts
       // Just reset state, let Google handle its own cleanup
-      setIsGoogleButtonLoading(false);
-      setGoogleButtonError(false);
       // Note: We don't clear the container here because Google's script manages the DOM
       // and React trying to remove it causes "removeChild" errors
     };
-  }, [handleGoogleSignIn]);
+  }, []); // Empty deps - handleGoogleSignIn is stable via refs
 
   const onLoginSubmit = async (data: LoginForm) => {
     try {
@@ -309,12 +325,15 @@ const AuthPage: React.FC = () => {
         const errorMsg = result.error || 'Login failed. Please try again.';
         setError(errorMsg);
         toast.error(errorMsg);
+        logger.error('Login failed', { error: errorMsg, email: data.email });
       }
     } catch (err) {
       // Handle network errors and other exceptions
       const errorMsg =
         err instanceof Error
-          ? err.message || 'Login failed. Please try again.'
+          ? err.message.includes('fetch') || err.message.includes('network')
+            ? 'Unable to connect to server. Please check your connection and try again.'
+            : err.message
           : 'Login failed. Please try again.';
       setError(errorMsg);
       toast.error(errorMsg);
@@ -347,12 +366,18 @@ const AuthPage: React.FC = () => {
         const errorMsg = result.error || 'Registration failed. Please try again.';
         setError(errorMsg);
         toast.error(errorMsg);
+        logger.error('Registration failed', { error: errorMsg, email: data.email });
       }
     } catch (err) {
       const errorMsg =
-        err instanceof Error ? err.message : 'Registration failed. Please try again.';
+        err instanceof Error
+          ? err.message.includes('fetch') || err.message.includes('network')
+            ? 'Unable to connect to server. Please check your connection and try again.'
+            : err.message
+          : 'Registration failed. Please try again.';
       setError(errorMsg);
       toast.error(errorMsg);
+      logger.error('Registration error:', { error: err, email: data.email });
     }
   };
 
@@ -519,7 +544,7 @@ const AuthPage: React.FC = () => {
                   ) : (
                     <div
                       ref={googleButtonRef}
-                      key="google-signin-button"
+                      key={`google-signin-button-${isRegistering ? 'register' : 'login'}`}
                       suppressHydrationWarning
                       style={{ width: '100%' }}
                     />
@@ -795,7 +820,7 @@ const AuthPage: React.FC = () => {
                   ) : (
                     <div
                       ref={googleButtonRef}
-                      key="google-signin-button"
+                      key={`google-signin-button-${isRegistering ? 'register' : 'login'}`}
                       suppressHydrationWarning
                       style={{ width: '100%' }}
                     />

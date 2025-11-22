@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/services/logger';
+import type { User } from '@/types/backend-aligned';
 
 // ============================================================================
 // SECURITY UTILITIES
@@ -295,7 +296,7 @@ export function useSecureForm<T extends Record<string, unknown>>(
  */
 export function useSecureAuth() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

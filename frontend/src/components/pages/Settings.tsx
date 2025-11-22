@@ -250,7 +250,7 @@ const Settings: React.FC = () => {
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           {/* Tabs */}
           <div className="border-b border-gray-200">
-            <nav className="flex -mb-px" aria-label="Tabs" role="tablist">
+            <nav className="flex -mb-px" aria-label="Tabs">
               <button
                 onClick={() => handleTabChange('preferences')}
                 className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${

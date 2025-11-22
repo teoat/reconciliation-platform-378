@@ -173,9 +173,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         average_confidence?: number;
         average_processing_time?: number;
       }
-      const reconciliationResponse = await apiClient.get<ReconciliationStatsApiResponse>(
-        '/analytics/reconciliation-stats'
-      );
+      const reconciliationResponse = await apiClient.get<ReconciliationStatsApiResponse>('/analytics/reconciliation-stats');
       if (reconciliationResponse.error) {
         throw new Error(String(reconciliationResponse.error));
       }
@@ -215,9 +213,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
           last_activity?: string;
           created_at?: string;
         }
-        const projectResponse = await apiClient.get<ProjectStatsApiResponse>(
-          `/projects/${projectId}/stats`
-        );
+        const projectResponse = await apiClient.get<ProjectStatsApiResponse>(`/projects/${projectId}/stats`);
         if (projectResponse.error) {
           throw new Error(String(projectResponse.error));
         }
@@ -449,7 +445,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
             return (
               <button
                 key={tab.id}
-                onClick={() => setSelectedMetric(tab.id as any)}
+                onClick={() => setSelectedMetric(tab.id as 'overview' | 'projects' | 'users' | 'reconciliation')}
                 className={`flex items-center py-2 px-1 border-b-2 font-medium text-sm ${
                   selectedMetric === tab.id
                     ? 'border-blue-500 text-blue-600'

@@ -118,10 +118,11 @@ export function isPerformanceOptimizationEnabled(): boolean {
  */
 export function getOptimalChunkSize(): number {
   if ('connection' in navigator) {
-    const connection = (navigator as any).connection;
-    const effectiveType = connection.effectiveType;
+    // TypeScript doesn't have connection in Navigator type, but it exists in Chrome
+    const connection = (navigator as unknown as { connection?: { effectiveType?: string } }).connection;
+    const effectiveType = connection?.effectiveType;
 
-    switch (effectiveType) {
+    switch (effectiveType || '4g') {
       case 'slow-2g':
         return 100000; // 100KB
       case '2g':
@@ -159,14 +160,17 @@ export function getOptimalThrottleDelay(eventType: string): number {
  */
 export function isResourceLimitedDevice(): boolean {
   if ('memory' in performance) {
-    const memory = (performance as any).memory;
-    const availableMemory = memory.jsHeapSizeLimit - memory.usedJSHeapSize;
-    return availableMemory < 50 * 1024 * 1024; // 50MB
+    // TypeScript doesn't have memory in Performance type, but it exists in Chrome
+    const memory = (performance as unknown as { memory?: { jsHeapSizeLimit?: number; usedJSHeapSize?: number } }).memory;
+    if (memory?.jsHeapSizeLimit && memory?.usedJSHeapSize) {
+      const availableMemory = memory.jsHeapSizeLimit - memory.usedJSHeapSize;
+      return availableMemory < 50 * 1024 * 1024; // 50MB
+    }
   }
 
   if ('connection' in navigator) {
-    const connection = (navigator as any).connection;
-    return connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g';
+    const connection = (navigator as unknown as { connection?: { effectiveType?: string } }).connection;
+    return connection?.effectiveType === 'slow-2g' || connection?.effectiveType === '2g';
   }
 
   return false;
@@ -186,8 +190,8 @@ export function getPerformanceRecommendations(): string[] {
   }
 
   if ('connection' in navigator) {
-    const connection = (navigator as any).connection;
-    if (connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g') {
+    const connection = (navigator as unknown as { connection?: { effectiveType?: string } }).connection;
+    if (connection?.effectiveType === 'slow-2g' || connection?.effectiveType === '2g') {
       recommendations.push('Enable offline caching');
       recommendations.push('Reduce image quality');
       recommendations.push('Use compressed assets');

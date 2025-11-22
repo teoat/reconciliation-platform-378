@@ -69,7 +69,7 @@ export const Input: React.FC<InputProps> = ({
 
   return (
     <div className={fullWidth ? 'w-full' : ''}>
-      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+      {label && <label htmlFor={props.id || `input-${React.useId()}`} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
       <div className="relative">
         {leftIcon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -128,7 +128,7 @@ export const Textarea: React.FC<TextareaProps> = ({
 
   return (
     <div className={fullWidth ? 'w-full' : ''}>
-      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+      {label && <label htmlFor={props.id || `textarea-${React.useId()}`} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
       <textarea className={classes} {...props} />
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
       {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
@@ -179,7 +179,7 @@ export const Select: React.FC<SelectProps> = ({
 
   return (
     <div className={fullWidth ? 'w-full' : ''}>
-      {label && <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+      {label && <label htmlFor={props.id || `select-${React.useId()}`} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
       <select className={classes} {...props}>
         {placeholder && (
           <option value="" disabled>
@@ -238,7 +238,7 @@ export const Checkbox: React.FC<CheckboxProps> = ({
     <div className={fullWidth ? 'w-full' : ''}>
       <div className="flex items-center">
         <input type="checkbox" className={classes} {...props} />
-        {label && <label className="ml-2 block text-sm font-medium text-gray-700">{label}</label>}
+        {label && <label htmlFor={props.id || `checkbox-${React.useId()}`} className="ml-2 block text-sm font-medium text-gray-700">{label}</label>}
       </div>
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
       {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}

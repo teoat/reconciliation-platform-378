@@ -151,6 +151,7 @@ services:
       BACKEND_PORT: 2000
       LOG_FORMAT: json
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-this-refresh-secret-in-production}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:1000}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}

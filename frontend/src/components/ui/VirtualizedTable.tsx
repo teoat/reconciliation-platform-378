@@ -208,9 +208,16 @@ export const VirtualizedTable = React.memo(function VirtualizedTable<T extends {
                     onRowSelect?.(row, virtualRow.index);
                     onRowClick?.(row);
                   }}
-                  role="row"
-                  aria-selected={isSelected}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedRowIndex(virtualRow.index);
+                      onRowSelect?.(row, virtualRow.index);
+                      onRowClick?.(row);
+                    }
+                  }}
                   tabIndex={isSelected ? 0 : -1}
+                  aria-selected={isSelected}
                 >
                   {columns.map((column) => (
                     <td
@@ -221,7 +228,6 @@ export const VirtualizedTable = React.memo(function VirtualizedTable<T extends {
                         minWidth: column.minWidth || 100,
                         maxWidth: column.maxWidth,
                       }}
-                      role="cell"
                     >
                       {column.accessor(row)}
                     </td>

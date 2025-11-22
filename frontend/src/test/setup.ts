@@ -46,24 +46,28 @@ beforeAll(() => {
 
 // Mock localStorage
 beforeAll(() => {
-  const localStorageMock = {
+  const localStorageMock: Storage = {
     getItem: vi.fn(),
     setItem: vi.fn(),
     removeItem: vi.fn(),
     clear: vi.fn(),
+    key: vi.fn(),
+    length: 0,
   };
-  global.localStorage = localStorageMock as any;
+  global.localStorage = localStorageMock;
 });
 
 // Mock sessionStorage
 beforeAll(() => {
-  const sessionStorageMock = {
+  const sessionStorageMock: Storage = {
     getItem: vi.fn(),
     setItem: vi.fn(),
     removeItem: vi.fn(),
     clear: vi.fn(),
+    key: vi.fn(),
+    length: 0,
   };
-  global.sessionStorage = sessionStorageMock as any;
+  global.sessionStorage = sessionStorageMock;
 });
 
 // Mock fetch
@@ -84,12 +88,27 @@ vi.mock('../services/secureStorage', () => ({
 // Mock WebSocket
 beforeAll(() => {
   global.WebSocket = class WebSocket {
-    constructor() {}
-    close() {}
-    send() {}
-    addEventListener() {}
-    removeEventListener() {}
-  } as any;
+    constructor(_url?: string | URL, _protocols?: string | string[]) {}
+    close(_code?: number, _reason?: string) {}
+    send(_data: string | ArrayBufferLike | Blob | ArrayBufferView) {}
+    addEventListener(_type: string, _listener: EventListener | EventListenerObject | null, _options?: boolean | AddEventListenerOptions) {}
+    removeEventListener(_type: string, _listener: EventListener | EventListenerObject | null, _options?: boolean | EventListenerOptions) {}
+    CONNECTING = 0;
+    OPEN = 1;
+    CLOSING = 2;
+    CLOSED = 3;
+    readyState = WebSocket.CONNECTING;
+    url = '';
+    protocol = '';
+    extensions = '';
+    binaryType: BinaryType = 'blob';
+    bufferedAmount = 0;
+    onopen: ((this: WebSocket, ev: Event) => unknown) | null = null;
+    onerror: ((this: WebSocket, ev: Event) => unknown) | null = null;
+    onclose: ((this: WebSocket, ev: CloseEvent) => unknown) | null = null;
+    onmessage: ((this: WebSocket, ev: MessageEvent) => unknown) | null = null;
+    dispatchEvent(_event: Event): boolean { return true; }
+  } as typeof WebSocket;
 });
 
 afterAll(() => {

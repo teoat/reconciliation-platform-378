@@ -172,7 +172,7 @@ export class MemoryCache<T = unknown> {
 // LOCAL STORAGE CACHE IMPLEMENTATION
 // ============================================================================
 
-export class LocalStorageCache<T = any> {
+export class LocalStorageCache<T = unknown> {
   private prefix: string;
   private config: CacheConfig;
 
@@ -318,7 +318,7 @@ export class LocalStorageCache<T = any> {
 // SESSION STORAGE CACHE IMPLEMENTATION
 // ============================================================================
 
-export class SessionStorageCache<T = any> {
+export class SessionStorageCache<T = unknown> {
   private prefix: string;
   private config: CacheConfig;
 
@@ -464,7 +464,7 @@ export class SessionStorageCache<T = any> {
 // MULTI-LEVEL CACHE IMPLEMENTATION
 // ============================================================================
 
-export class MultiLevelCache<T = any> {
+export class MultiLevelCache<T = unknown> {
   private memoryCache: MemoryCache<T>;
   private localStorageCache: LocalStorageCache<T>;
   private sessionStorageCache: SessionStorageCache<T>;
@@ -573,7 +573,7 @@ export class MultiLevelCache<T = any> {
 // ============================================================================
 
 // Create cache instance
-export const createCache = <T = any>(
+export const createCache = <T = unknown>(
   type: 'memory' | 'localStorage' | 'sessionStorage' | 'multi',
   config?: Partial<CacheConfig>
 ) => {

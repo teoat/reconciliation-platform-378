@@ -11,7 +11,7 @@ import { logger } from '../services/logger';
 export interface PageConfig {
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   path: string;
   showStats?: boolean;
   showFilters?: boolean;
@@ -21,7 +21,7 @@ export interface PageConfig {
 export interface StatsCard {
   title: string;
   value: string | number;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   color: string;
   trend?: {
     direction: 'up' | 'down' | 'neutral';
@@ -40,7 +40,7 @@ export interface FilterConfig {
 
 export interface ActionConfig {
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   onClick: () => void;
   variant?: 'primary' | 'secondary' | 'danger';
   loading?: boolean;

@@ -90,8 +90,8 @@ class NLUService {
   async understand(query: string, context?: QueryContext): Promise<UnderstandingResult> {
     try {
       // Try AI-powered understanding first
-      if (aiService.isAvailable()) {
-        const aiIntent = await aiService.understandIntent(query, context);
+      try {
+        const aiIntent = await aiService.detectIntent(query);
 
         if (aiIntent.confidence > 0.6) {
           return {
@@ -102,6 +102,9 @@ class NLUService {
             suggestedAction: this.getSuggestedAction(aiIntent.intent, context),
           };
         }
+      } catch (aiError) {
+        // AI service failed, continue to pattern matching
+        logger.warn('AI intent detection failed, falling back to pattern matching:', aiError);
       }
 
       // Fallback to pattern matching
@@ -219,17 +222,18 @@ class NLUService {
    */
   async generateResponse(intent: string, query: string, context?: QueryContext): Promise<string> {
     try {
-      if (aiService.isAvailable()) {
-        const prompt = {
-          system: `You are Frenly, a helpful AI assistant for a reconciliation platform.
+      const prompt = {
+        user: `You are Frenly, a helpful AI assistant for a reconciliation platform.
 Generate a friendly, helpful response based on the user's intent and query.
-Be concise, conversational, and action-oriented.`,
-          user: `Intent: ${intent}\nQuery: ${query}\nContext: ${JSON.stringify(context || {})}`,
-        };
+Be concise, conversational, and action-oriented.
 
-        const response = await aiService.generateText(prompt);
-        return response.content;
-      }
+Intent: ${intent}
+Query: ${query}
+Context: ${JSON.stringify(context || {})}`,
+      };
+
+      const response = await aiService.generateResponse(prompt);
+      return response.response;
     } catch (error) {
       logger.error('Response generation error:', error);
     }

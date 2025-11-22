@@ -27,7 +27,7 @@ interface WizardStep {
   id: number;
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
   component: React.ReactNode;
 }
 

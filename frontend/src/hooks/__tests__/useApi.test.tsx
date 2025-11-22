@@ -146,10 +146,13 @@ describe('useApi Hooks', () => {
 
     it('should update a project', async () => {
       const { apiClient } = await import('../../services/apiClient');
-      vi.mocked(apiClient.updateProject).mockResolvedValueOnce({
-        data: { id: '1', name: 'Updated Project' },
+      const updatedProject = { id: '1', name: 'Updated Project' };
+      const mockApiResponse: ApiResponse<typeof updatedProject> = {
+        success: true,
+        data: updatedProject,
         error: null,
-      } as any);
+      };
+      vi.mocked(apiClient.updateProject).mockResolvedValueOnce(mockApiResponse);
 
       const { result } = renderHook(() => useProjects());
 
@@ -162,10 +165,12 @@ describe('useApi Hooks', () => {
 
     it('should delete a project', async () => {
       const { apiClient } = await import('../../services/apiClient');
-      vi.mocked(apiClient.deleteProject).mockResolvedValueOnce({
+      const mockApiResponse: ApiResponse<null> = {
+        success: true,
         data: null,
         error: null,
-      } as any);
+      };
+      vi.mocked(apiClient.deleteProject).mockResolvedValueOnce(mockApiResponse);
 
       const { result } = renderHook(() => useProjects());
 
@@ -186,10 +191,12 @@ describe('useApi Hooks', () => {
       };
 
       const { apiClient } = await import('../../services/apiClient');
-      vi.mocked(apiClient.getProjectById).mockResolvedValueOnce({
+      const mockApiResponse: ApiResponse<typeof mockProject> = {
+        success: true,
         data: mockProject,
         error: null,
-      } as any);
+      };
+      vi.mocked(apiClient.getProjectById).mockResolvedValueOnce(mockApiResponse);
 
       const { result } = renderHook(() => useProject('1'));
 
@@ -216,10 +223,13 @@ describe('useApi Hooks', () => {
       ];
 
       const { apiClient } = await import('../../services/apiClient');
-      vi.mocked(apiClient.getDataSources).mockResolvedValueOnce({
-        data: { data_sources: mockDataSources },
+      const dataSourcesResponse = { data_sources: mockDataSources };
+      const mockApiResponse: ApiResponse<typeof dataSourcesResponse> = {
+        success: true,
+        data: dataSourcesResponse,
         error: null,
-      } as any);
+      };
+      vi.mocked(apiClient.getDataSources).mockResolvedValueOnce(mockApiResponse);
 
       const { result } = renderHook(() => useDataSources('proj1'));
 
@@ -238,10 +248,13 @@ describe('useApi Hooks', () => {
       ];
 
       const { apiClient } = await import('../../services/apiClient');
-      vi.mocked(apiClient.getReconciliationRecords).mockResolvedValueOnce({
-        data: { records: mockRecords },
+      const recordsResponse = { records: mockRecords };
+      const mockApiResponse: ApiResponse<typeof recordsResponse> = {
+        success: true,
+        data: recordsResponse,
         error: null,
-      } as any);
+      };
+      vi.mocked(apiClient.getReconciliationRecords).mockResolvedValueOnce(mockApiResponse);
 
       const { result } = renderHook(() => useReconciliationRecords('proj1'));
 
@@ -258,10 +271,13 @@ describe('useApi Hooks', () => {
       const mockJobs = [{ id: '1', name: 'Job 1', status: 'pending', project_id: 'proj1' }];
 
       const { apiClient } = await import('../../services/apiClient');
-      vi.mocked(apiClient.getReconciliationJobs).mockResolvedValueOnce({
-        data: { jobs: mockJobs },
+      const jobsResponse = { jobs: mockJobs };
+      const mockApiResponse: ApiResponse<typeof jobsResponse> = {
+        success: true,
+        data: jobsResponse,
         error: null,
-      } as any);
+      };
+      vi.mocked(apiClient.getReconciliationJobs).mockResolvedValueOnce(mockApiResponse);
 
       const { result } = renderHook(() => useReconciliationJobs('proj1'));
 
@@ -276,10 +292,12 @@ describe('useApi Hooks', () => {
       const mockJob = { id: '1', name: 'New Job', status: 'pending' };
 
       const { apiClient } = await import('../../services/apiClient');
-      vi.mocked(apiClient.createReconciliationJob).mockResolvedValueOnce({
+      const mockApiResponse: ApiResponse<typeof mockJob> = {
+        success: true,
         data: mockJob,
         error: null,
-      } as any);
+      };
+      vi.mocked(apiClient.createReconciliationJob).mockResolvedValueOnce(mockApiResponse);
 
       const { result } = renderHook(() => useReconciliationJobs('proj1'));
 

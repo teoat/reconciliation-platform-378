@@ -50,7 +50,16 @@ echo "✅ Binary found and executable" >&2
 # Redirect stderr to stdout for Docker log capture, but keep them unbuffered
 # The binary writes to both stdout and stderr, Docker captures both
 echo "▶️  Executing binary with unbuffered output..." >&2
-# Flush output before exec
-exec 2>&1
-exec /app/reconciliation-backend
+# Check if JWT_REFRESH_SECRET is set
+if [ -z "$JWT_REFRESH_SECRET" ]; then
+    echo "❌ ERROR: JWT_REFRESH_SECRET is not set!" >&2
+    echo "   This is a required environment variable." >&2
+    exit 1
+fi
+echo "✅ JWT_REFRESH_SECRET is set" >&2
+
+# Try to run the binary and capture output
+# Use exec to replace shell process (proper signal handling)
+# Redirect both stdout and stderr for Docker log capture
+exec /app/reconciliation-backend 2>&1
 

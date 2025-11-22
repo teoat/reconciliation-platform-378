@@ -6,6 +6,8 @@ import {
 } from '@/types/reconciliation';
 import { findMatches, createReconciliationRecords } from '@/utils/reconciliation/matching';
 
+type MatchResult = ReturnType<typeof findMatches>[number];
+
 export interface ReconciliationEngineState {
   records: EnhancedReconciliationRecord[];
   metrics: ReconciliationMetrics;
@@ -81,7 +83,7 @@ export const useReconciliationEngine = () => {
     (
       sourceData: Record<string, unknown>[],
       targetData: Record<string, unknown>[],
-      matches: any[]
+      matches: MatchResult[]
     ) => {
       updateProgress(50, 'scoring');
       return createReconciliationRecords(sourceData, targetData, matches);

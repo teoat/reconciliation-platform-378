@@ -186,7 +186,7 @@ export type KeysOfType<T, U> = {
 
 // Component prop utilities
 export type ComponentProps<T> = T extends React.ComponentType<infer P> ? P : never;
-export type ComponentRef<T> = T extends React.ComponentType<any> ? React.ComponentRef<T> : never;
+export type ComponentRef<T> = T extends React.ComponentType<unknown> ? React.ComponentRef<T> : never;
 
 // API utilities
 export type ApiEndpoint<TRequest = unknown, TResponse = unknown> = {

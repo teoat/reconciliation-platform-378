@@ -160,8 +160,15 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({
         className="fixed inset-0 bg-black bg-opacity-50"
         style={{ zIndex: 9997 }}
         onClick={onClose}
-        role="presentation"
-        aria-hidden="true"
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClose();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label="Close tour"
       />
 
       {/* Highlight Overlay */}
@@ -185,7 +192,6 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({
         aria-modal="true"
         aria-labelledby="tour-title"
         aria-describedby="tour-content"
-        onKeyDown={handleKeyDown}
       >
         {/* Header */}
         <div className="flex items-start justify-between mb-3">

@@ -691,6 +691,7 @@ mod user_service_tests {
             first_name: "OAuth".to_string(),
             last_name: "User".to_string(),
             role: Some("user".to_string()),
+            picture: None,
         };
 
         let result = user_service.create_oauth_user(request).await;
@@ -726,6 +727,7 @@ mod user_service_tests {
             first_name: "OAuth".to_string(),
             last_name: "User".to_string(),
             role: Some("user".to_string()),
+            picture: None,
         };
 
         let result = user_service.create_oauth_user(request).await;

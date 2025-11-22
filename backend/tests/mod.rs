@@ -14,7 +14,7 @@ mod e2e_tests;
 mod integration_tests;
 mod service_tests;
 mod simple_tests;
-mod test_utils;
+pub mod test_utils;
 mod unit_tests;
 
 // Re-export test utilities for use in other test modules
@@ -424,15 +424,16 @@ pub mod utils {
     }
 
     /// Assert API response
-    pub fn assert_api_response(resp: &actix_web::test::TestResponse, expected_status: u16) {
+    pub fn assert_api_response(resp: &actix_web::dev::ServiceResponse<actix_web::body::BoxBody>, expected_status: u16) {
         assert_eq!(resp.status().as_u16(), expected_status);
     }
 
     /// Assert JSON response
-    pub fn assert_json_response<T>(resp: &actix_web::test::TestResponse, expected_data: &T)
+    pub fn assert_json_response<T>(resp: &actix_web::dev::ServiceResponse<actix_web::body::BoxBody>, expected_data: &T)
     where
         T: serde::Serialize + PartialEq,
     {
+        use actix_web::test;
         let body: T = test::read_body_json(resp);
         assert_eq!(body, *expected_data);
     }

@@ -9,7 +9,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 /**
  * Creates a lazy-loaded component with error boundary and loading fallback
  */
-export function createLazyComponent<T extends ComponentType<any>>(
+export function createLazyComponent<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   fallback?: React.ComponentType
 ) {
@@ -27,7 +27,7 @@ export function createLazyComponent<T extends ComponentType<any>>(
 /**
  * Creates a lazy-loaded component with custom loading component
  */
-export function createLazyComponentWithLoader<T extends ComponentType<any>>(
+export function createLazyComponentWithLoader<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   LoadingComponent: React.ComponentType
 ) {
@@ -45,7 +45,7 @@ export function createLazyComponentWithLoader<T extends ComponentType<any>>(
 /**
  * Creates a lazy-loaded component with error boundary
  */
-export function createLazyComponentWithErrorBoundary<T extends ComponentType<any>>(
+export function createLazyComponentWithErrorBoundary<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   ErrorComponent: React.ComponentType<{ error: Error; retry: () => void }>
 ) {
@@ -111,7 +111,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 /**
  * Preloads a component for faster future loading
  */
-export function preloadComponent<T extends ComponentType<any>>(
+export function preloadComponent<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>
 ) {
   return importFn();
@@ -120,14 +120,14 @@ export function preloadComponent<T extends ComponentType<any>>(
 /**
  * Preloads multiple components
  */
-export function preloadComponents(importFns: Array<() => Promise<any>>) {
+export function preloadComponents(importFns: Array<() => Promise<{ default?: React.ComponentType<unknown> }>>) {
   return Promise.all(importFns.map((fn) => fn()));
 }
 
 /**
  * Creates a preloadable component that can be preloaded on hover/focus
  */
-export function createPreloadableComponent<T extends ComponentType<any>>(
+export function createPreloadableComponent<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   preloadTrigger: 'hover' | 'focus' | 'both' = 'hover'
 ) {
@@ -164,7 +164,7 @@ export function createPreloadableComponent<T extends ComponentType<any>>(
 /**
  * Creates lazy-loaded routes for React Router
  */
-export function createLazyRoute<T extends ComponentType<any>>(
+export function createLazyRoute<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   fallback?: React.ComponentType
 ) {
@@ -218,7 +218,7 @@ export function createRetryableImport<T>(
 /**
  * Measures component load time
  */
-export function measureComponentLoadTime<T extends ComponentType<any>>(
+export function measureComponentLoadTime<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   componentName: string
 ) {
@@ -239,7 +239,7 @@ export function measureComponentLoadTime<T extends ComponentType<any>>(
 /**
  * Creates a component with load time measurement
  */
-export function createMeasuredLazyComponent<T extends ComponentType<any>>(
+export function createMeasuredLazyComponent<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   componentName: string
 ) {

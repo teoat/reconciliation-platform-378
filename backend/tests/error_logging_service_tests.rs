@@ -234,9 +234,9 @@ mod error_logging_service_tests {
     #[tokio::test]
     async fn test_log_error_with_metadata() {
         let service = create_test_service();
-        let mut metadata = HashMap::new();
-        metadata.insert("key1".to_string(), "value1".to_string());
-        metadata.insert("key2".to_string(), "value2".to_string());
+        let mut metadata: HashMap<String, serde_json::Value> = HashMap::new();
+        metadata.insert("key1".to_string(), serde_json::json!("value1"));
+        metadata.insert("key2".to_string(), serde_json::json!("value2"));
 
         let context = ErrorLoggingContext {
             operation: None,

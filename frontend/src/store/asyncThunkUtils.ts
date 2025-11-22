@@ -50,7 +50,7 @@ export const createGetThunk = <TData = unknown>(
 
   return createAsyncThunk(
     actionType,
-    async (params?: Record<string, unknown>, { rejectWithValue }) => {
+    async (params: Record<string, unknown> | undefined, { rejectWithValue }) => {
       try {
         const url = typeof endpoint === 'function' ? endpoint(params) : endpoint;
         const config = requiresAuth ? {} : { skipAuth: true };
@@ -84,7 +84,7 @@ export const createPostThunk = <TData = unknown>(
 ) => {
   const { requiresAuth = true, transformRequest, transformResponse } = options;
 
-  return createAsyncThunk(actionType, async (data?: unknown, { rejectWithValue }) => {
+  return createAsyncThunk(actionType, async (data: unknown | undefined, { rejectWithValue }) => {
     try {
       const url = typeof endpoint === 'function' ? endpoint(data) : endpoint;
       const requestData = transformRequest ? transformRequest(data) : data;

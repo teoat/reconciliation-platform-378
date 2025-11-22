@@ -78,8 +78,9 @@ export const FieldMappingEditor: React.FC<FieldMappingEditorProps> = ({
           <h4 className="text-sm font-medium text-gray-900 mb-3">Add New Mapping</h4>
           <div className="flex items-center space-x-4">
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Source Field</label>
+              <label htmlFor="source-field-select" className="block text-xs font-medium text-gray-700 mb-1">Source Field</label>
               <select
+                id="source-field-select"
                 value={selectedSource}
                 onChange={(e) => setSelectedSource(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
@@ -96,8 +97,9 @@ export const FieldMappingEditor: React.FC<FieldMappingEditorProps> = ({
             <ArrowRight className="w-5 h-5 text-gray-400 mt-6" />
 
             <div className="flex-1">
-              <label className="block text-xs font-medium text-gray-700 mb-1">Target Field</label>
+              <label htmlFor="target-field-select" className="block text-xs font-medium text-gray-700 mb-1">Target Field</label>
               <select
+                id="target-field-select"
                 value={selectedTarget}
                 onChange={(e) => setSelectedTarget(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
@@ -177,10 +179,11 @@ export const FieldMappingEditor: React.FC<FieldMappingEditorProps> = ({
 
                 {/* Transformation */}
                 <div className="mt-3">
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
+                  <label htmlFor={`transformation-${index}`} className="block text-xs font-medium text-gray-700 mb-1">
                     Transformation (optional)
                   </label>
                   <input
+                    id={`transformation-${index}`}
                     type="text"
                     value={mapping.transformation || ''}
                     onChange={(e) => handleMappingChange(index, { transformation: e.target.value })}

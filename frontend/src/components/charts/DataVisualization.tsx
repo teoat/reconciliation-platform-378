@@ -199,8 +199,9 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
         {/* Chart Controls */}
         <div className="mb-6 flex flex-wrap items-center gap-4">
           <div className="flex items-center space-x-2">
-            <label className="text-sm font-medium text-gray-700">Chart Type:</label>
+            <label htmlFor="chart-type-select" className="text-sm font-medium text-gray-700">Chart Type:</label>
             <Select
+              id="chart-type-select"
               value={selectedChartType}
               onChange={(e) => setSelectedChartType(e.target.value as 'bar' | 'line' | 'pie')}
               options={chartTypes.map((type) => ({
@@ -212,8 +213,9 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
           </div>
 
           <div className="flex items-center space-x-2">
-            <label className="text-sm font-medium text-gray-700">Column:</label>
+            <label htmlFor="column-select" className="text-sm font-medium text-gray-700">Column:</label>
             <Select
+              id="column-select"
               value={selectedColumn}
               onChange={(e) => setSelectedColumn(e.target.value)}
               options={[

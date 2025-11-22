@@ -269,6 +269,15 @@ impl MonitoringService {
 
         Ok(metrics)
     }
+
+    /// Health check method that returns a simple status map
+    pub fn health_check(&self) -> std::collections::HashMap<String, String> {
+        let mut status = std::collections::HashMap::new();
+        status.insert("status".to_string(), "healthy".to_string());
+        status.insert("uptime_seconds".to_string(), self.start_time.elapsed().as_secs().to_string());
+        status.insert("version".to_string(), env!("CARGO_PKG_VERSION").to_string());
+        status
+    }
 }
 
 impl Default for MonitoringService {

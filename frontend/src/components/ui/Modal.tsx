@@ -107,11 +107,26 @@ const Modal: React.FC<ModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Overlay */}
-      <div
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
-        onClick={closeOnOverlayClick ? onClose : undefined}
-        role="presentation"
-      />
+      {closeOnOverlayClick ? (
+        <button
+          type="button"
+          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity border-0 p-0 cursor-pointer"
+          onClick={onClose}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onClose();
+            }
+          }}
+          aria-label="Close modal overlay"
+        />
+      ) : (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+          role="presentation"
+          aria-hidden="true"
+        />
+      )}
 
       {/* Modal */}
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
@@ -123,6 +138,7 @@ const Modal: React.FC<ModalProps> = ({
           aria-labelledby={title ? 'modal-title' : undefined}
           aria-describedby={children ? 'modal-description' : undefined}
           onClick={(e) => e.stopPropagation()}
+          tabIndex={-1}
           onKeyDown={(e) => {
             // Enhanced keyboard navigation
             if (e.key === 'Escape' && closeOnEscape) {

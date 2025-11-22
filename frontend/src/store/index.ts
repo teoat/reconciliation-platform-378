@@ -802,7 +802,10 @@ export const loginUser = createAsyncThunk(
       if (response.error) {
         return rejectWithValue(getErrorMessageFromApiError(response.error));
       }
-      return response.data as any;
+      if (!response.data) {
+        return rejectWithValue('No data received from login');
+      }
+      return response.data;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Login failed');
     }
@@ -817,7 +820,10 @@ export const getCurrentUser = createAsyncThunk(
       if (response.error) {
         return rejectWithValue(getErrorMessageFromApiError(response.error));
       }
-      return response.data as any;
+      if (!response.data) {
+        return rejectWithValue('No user data received');
+      }
+      return response.data;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to get user');
     }
@@ -841,7 +847,7 @@ export const fetchProjects = createAsyncThunk(
       if (response.error) {
         return rejectWithValue(getErrorMessageFromApiError(response.error));
       }
-      return (response.data as any)?.projects || [];
+      return response.data?.items || [];
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch projects');
     }
@@ -856,7 +862,10 @@ export const createProject = createAsyncThunk(
       if (response.error) {
         return rejectWithValue(getErrorMessageFromApiError(response.error));
       }
-      return response.data as any;
+      if (!response.data) {
+        return rejectWithValue('No project data received');
+      }
+      return response.data;
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to create project');
     }
@@ -887,7 +896,7 @@ export const fetchReconciliationRecords = createAsyncThunk(
       if (response.error) {
         return rejectWithValue(getErrorMessageFromApiError(response.error));
       }
-      return (response.data as any) || [];
+      return response.data?.items || [];
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to fetch records');
     }
@@ -905,7 +914,7 @@ export const startReconciliation = createAsyncThunk(
       if (response.error) {
         return rejectWithValue(getErrorMessageFromApiError(response.error))
       }
-      return response.data as any?.records || []
+      return response.data?.records || []
     } catch (error) {
       return rejectWithValue(error instanceof Error ? error.message : 'Failed to start reconciliation')
     }
@@ -937,7 +946,10 @@ export const fetchDashboardData = createAsyncThunk(
       if (response.error) {
         return rejectWithValue(getErrorMessageFromApiError(response.error));
       }
-      return response.data as any;
+      if (!response.data) {
+        return rejectWithValue('No dashboard data received');
+      }
+      return response.data;
     } catch (error) {
       return rejectWithValue(
         error instanceof Error ? error.message : 'Failed to fetch dashboard data'

@@ -2,6 +2,35 @@
 import { UploadedFile } from '@/types/ingestion';
 
 /**
+ * API file response type (partial, matches what the API returns)
+ */
+export interface ApiFileResponse {
+  id: string;
+  name?: string;
+  filename?: string;
+  size?: number;
+  type?: string;
+  content_type?: string;
+  status?: string;
+  progress?: number;
+  records?: unknown;
+  data?: unknown;
+  columns?: unknown;
+  fileType?: string;
+  qualityMetrics?: unknown;
+  validations?: unknown;
+  mappings?: unknown;
+  cleanedData?: unknown;
+  originalData?: unknown;
+  extractedContent?: unknown;
+  chatMessages?: unknown;
+  contractAnalysis?: unknown;
+  previewUrl?: string;
+  thumbnailUrl?: string;
+  file?: File;
+}
+
+/**
  * Converts bytes to human readable format
  */
 export const formatFileSize = (bytes: number): string => {

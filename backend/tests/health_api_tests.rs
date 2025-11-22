@@ -66,17 +66,11 @@ mod health_api_tests {
     /// Test resilience status endpoint
     #[actix_web::test]
     async fn test_get_resilience_status() {
-        let db = setup_test_database().await;
+        let (db, _temp_dir): (Database, _) = setup_test_database().await;
         let cache = Arc::new(
             MultiLevelCache::new("redis://localhost:6379").unwrap()
         );
-        let resilience = Arc::new(
-            ResilienceManager::new(
-                db.clone(),
-                cache.clone(),
-                Default::default(),
-            )
-        );
+        let resilience = Arc::new(ResilienceManager::new());
 
         let app = test::init_service(
             App::new()
@@ -124,7 +118,7 @@ mod health_api_tests {
     /// Test dependencies status endpoint
     #[actix_web::test]
     async fn test_get_dependencies_status() {
-        let db = setup_test_database().await;
+        let (db, _temp_dir): (Database, _) = setup_test_database().await;
         let cache = Arc::new(
             MultiLevelCache::new("redis://localhost:6379").unwrap()
         );
@@ -226,13 +220,7 @@ mod health_api_tests {
         let cache = Arc::new(
             MultiLevelCache::new("redis://localhost:6379").unwrap()
         );
-        let resilience = Arc::new(
-            ResilienceManager::new(
-                db.clone(),
-                cache.clone(),
-                Default::default(),
-            )
-        );
+        let resilience = Arc::new(ResilienceManager::new());
 
         let app = test::init_service(
             App::new()
@@ -287,9 +275,9 @@ mod health_api_tests {
 
         // Verify ApiResponse structure
         assert_eq!(body["success"], true);
-        assert!(body["data"].is_some());
-        assert!(body["message"].is_null() || body["message"].is_string());
-        assert!(body["error"].is_null() || body["error"].is_object());
+        assert!(body.get("data").is_some());
+        assert!(body.get("message").map_or(true, |v| v.is_null() || v.is_string()));
+        assert!(body.get("error").map_or(true, |v| v.is_null() || v.is_object()));
 
         // Verify health data structure
         let data = body["data"].as_object().unwrap();

@@ -204,8 +204,11 @@ export function useMemoryMonitoring() {
     if (!('memory' in performance)) return;
 
     const updateMemoryUsage = () => {
-      const memory = (performance as any).memory;
-      setMemoryUsage(memory.usedJSHeapSize / 1024 / 1024); // Convert to MB
+      // TypeScript doesn't have memory in Performance type, but it exists in Chrome
+      const memory = (performance as unknown as { memory?: { usedJSHeapSize?: number } }).memory;
+      if (memory?.usedJSHeapSize) {
+        setMemoryUsage(memory.usedJSHeapSize / 1024 / 1024); // Convert to MB
+      }
     };
 
     updateMemoryUsage();
@@ -230,11 +233,12 @@ export function useNetworkMonitoring() {
   useEffect(() => {
     if (!('connection' in navigator)) return;
 
-    const connection = (navigator as any).connection;
+    // TypeScript doesn't have connection in Navigator type, but it exists in Chrome
+    const connection = (navigator as unknown as { connection?: { effectiveType?: string; downlink?: number } }).connection;
     setNetworkInfo({
-      effectiveType: connection.effectiveType,
-      downlink: connection.downlink,
-      rtt: connection.rtt,
+      effectiveType: connection?.effectiveType || 'unknown',
+      downlink: connection?.downlink || 0,
+      rtt: (connection as { rtt?: number })?.rtt || 0,
     });
 
     const handleConnectionChange = () => {

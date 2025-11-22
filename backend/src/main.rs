@@ -20,8 +20,12 @@ use reconciliation_backend::{
     startup::{resilience_config_from_env, AppStartup},
 };
 
-#[actix_web::main]
-async fn main() -> std::io::Result<()> {
+// Add a synchronous main wrapper to ensure we can print before async runtime
+fn main() {
+    // Print IMMEDIATELY - before anything else
+    let _ = std::io::Write::write_all(&mut std::io::stderr(), b"MAIN FUNCTION CALLED\n");
+    let _ = std::io::Write::flush(&mut std::io::stderr());
+    
     // Set up panic handler to capture panics
     std::panic::set_hook(Box::new(|panic_info| {
         eprintln!("PANIC: {:?}", panic_info);
@@ -36,6 +40,23 @@ async fn main() -> std::io::Result<()> {
     // Print to stderr immediately (before logging init) for debugging
     eprintln!("🚀 Backend starting...");
     std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
+    
+    // Now call the async main
+    let rt = match tokio::runtime::Runtime::new() {
+        Ok(runtime) => runtime,
+        Err(e) => {
+            eprintln!("❌ Failed to create Tokio runtime: {}", e);
+            eprintln!("💡 This may indicate a system resource issue or configuration problem");
+            std::process::exit(1);
+        }
+    };
+    if let Err(e) = rt.block_on(async_main()) {
+        eprintln!("❌ Application error: {:?}", e);
+        std::process::exit(1);
+    }
+}
+
+async fn async_main() -> std::io::Result<()> {
 
     // Initialize logging with unbuffered stderr output
     eprintln!("Initializing logging...");
@@ -109,7 +130,6 @@ async fn main() -> std::io::Result<()> {
     };
 
     // Run database migrations before initializing services
-    // Note: Migrations may fail if base tables don't exist yet - that's OK, we'll continue
     log::info!("Running database migrations...");
     match reconciliation_backend::database_migrations::run_migrations(&config.database_url) {
         Ok(_) => {
@@ -121,6 +141,43 @@ async fn main() -> std::io::Result<()> {
             eprintln!("Migration warning (non-fatal): {}", e);
             // Don't exit - allow application to start even if migrations fail
             // This allows the app to work with an empty database
+        }
+    }
+
+    // Verify database connection and critical tables
+    log::info!("Verifying database connection and schema...");
+    match reconciliation_backend::utils::schema_verification::verify_database_connection(&config.database_url) {
+        Ok(_) => {
+            log::info!("Database connection verified");
+        }
+        Err(e) => {
+            eprintln!("❌ Database connection verification failed: {}", e);
+            log::error!("Database connection verification failed: {}", e);
+            eprintln!("💡 Please check DATABASE_URL and ensure PostgreSQL is running");
+            std::process::exit(1);
+        }
+    }
+
+    // Verify critical tables exist (non-fatal in development, fatal in production)
+    let is_production = std::env::var("ENVIRONMENT")
+        .unwrap_or_else(|_| "development".to_string())
+        .to_lowercase() == "production";
+    
+    match reconciliation_backend::utils::schema_verification::verify_critical_tables(&config.database_url) {
+        Ok(_) => {
+            log::info!("Critical database tables verified");
+        }
+        Err(e) => {
+            if is_production {
+                eprintln!("❌ Critical database tables missing: {}", e);
+                log::error!("Critical database tables missing: {}", e);
+                eprintln!("💡 Please run migrations: diesel migration run");
+                std::process::exit(1);
+            } else {
+                log::warn!("Critical database tables missing: {}", e);
+                log::warn!("Continuing in development mode - tables will be created when needed");
+                eprintln!("⚠️  Warning: {}", e);
+            }
         }
     }
 
@@ -187,11 +244,36 @@ async fn main() -> std::io::Result<()> {
     let user_service = Arc::new(user_service_value);
     
     // Initialize password manager
-    let master_key = std::env::var("PASSWORD_MASTER_KEY")
-        .unwrap_or_else(|_| {
-            log::warn!("PASSWORD_MASTER_KEY not set, using default (CHANGE IN PRODUCTION!)");
-            "default-master-key-change-in-production".to_string()
-        }); // Safe: Default value for development
+    let is_production = std::env::var("ENVIRONMENT")
+        .unwrap_or_else(|_| "development".to_string())
+        .to_lowercase() == "production";
+    
+    let master_key = match std::env::var("PASSWORD_MASTER_KEY") {
+        Ok(key) => {
+            // Validate master key strength in production
+            if is_production && key.len() < 32 {
+                eprintln!("❌ PASSWORD_MASTER_KEY must be at least 32 characters in production");
+                log::error!("PASSWORD_MASTER_KEY validation failed: too short");
+                std::process::exit(1);
+            }
+            if is_production && key == "default-master-key-change-in-production" {
+                eprintln!("❌ PASSWORD_MASTER_KEY cannot use default value in production");
+                log::error!("PASSWORD_MASTER_KEY validation failed: using default value");
+                std::process::exit(1);
+            }
+            key
+        }
+        Err(_) => {
+            if is_production {
+                eprintln!("❌ PASSWORD_MASTER_KEY is required in production");
+                log::error!("PASSWORD_MASTER_KEY not set in production");
+                std::process::exit(1);
+            } else {
+                log::warn!("PASSWORD_MASTER_KEY not set, using default (CHANGE IN PRODUCTION!)");
+                "default-master-key-change-in-production".to_string()
+            }
+        }
+    };
     
     let password_manager = Arc::new(PasswordManager::new(
         Arc::new(database.clone()),
@@ -221,12 +303,38 @@ async fn main() -> std::io::Result<()> {
     eprintln!("🔗 Binding server to {}...", bind_addr);
     std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
 
+    // Determine if we're in production
+    let is_production_env = std::env::var("ENVIRONMENT")
+        .unwrap_or_else(|_| "development".to_string())
+        .to_lowercase() == "production";
+    
+    // Clone CORS origins for use in closure
+    let cors_origins = config.cors_origins.clone();
+    
     // Create HTTP server with resilience-protected services
     let server = HttpServer::new(move || {
-        // Configure CORS - use permissive for development (allows all origins)
-        // In production, configure specific origins via CORS_ORIGINS env var
-        // Note: Cors::permissive() allows all origins, methods, and headers
-        let cors = Cors::permissive();
+        // Configure CORS based on environment
+        // In production, use specific origins from CORS_ORIGINS env var
+        // In development, allow all origins for easier testing
+        let cors = if is_production_env {
+            // Production: Use configured origins
+            let mut cors_builder = Cors::default();
+            for origin in &cors_origins {
+                cors_builder = cors_builder.allowed_origin(origin);
+            }
+            cors_builder
+                .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+                .allowed_headers(vec![
+                    actix_web::http::header::AUTHORIZATION,
+                    actix_web::http::header::CONTENT_TYPE,
+                    actix_web::http::header::ACCEPT,
+                ])
+                .supports_credentials()
+                .max_age(3600)
+        } else {
+            // Development: Use permissive CORS
+            Cors::permissive()
+        };
 
         actix_web::App::new()
             // Add correlation ID middleware (must be first to propagate IDs)

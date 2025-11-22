@@ -1,8 +1,9 @@
 // ============================================================================
-import { logger } from '@/services/logger';
-import { csrfManager } from '../authSecurity';
 // API CLIENT INTERCEPTORS
 // ============================================================================
+import { logger } from '@/services/logger';
+import { csrfManager } from '../authSecurity';
+import { secureStorage } from '../secureStorage';
 
 import { RequestConfig, ApiResponse, ApiErrorLike } from './types';
 
@@ -115,8 +116,9 @@ export class AuthInterceptor {
     return localStorage.getItem('authToken');
   }
 
-  private getRefreshToken(): string | null {
-    return localStorage.getItem('refreshToken');
+  private getCurrentToken(): string | null {
+    // Backend refresh uses current token from secureStorage
+    return secureStorage.getItem<string>('authToken', false);
   }
 
   private async refreshAccessToken(): Promise<string | null> {
@@ -139,41 +141,37 @@ export class AuthInterceptor {
 
   private async _doRefreshToken(): Promise<string | null> {
     try {
-      const refreshToken = this.getRefreshToken();
-      if (!refreshToken) {
-        logger.warning('No refresh token available');
+      const currentToken = this.getCurrentToken();
+      if (!currentToken) {
+        logger.warning('No current token available for refresh');
         return null;
       }
 
+      // Backend expects token in Authorization header, not body
       const response = await fetch('/api/auth/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${currentToken}`,
         },
-        body: JSON.stringify({ refreshToken }),
       });
 
       if (response.ok) {
         const data = await response.json();
-        const accessToken = data.accessToken || data.token;
-        const newRefreshToken = data.refreshToken;
+        const newToken = data.token; // Backend returns { token, expires_at }
 
-        if (accessToken) {
-          localStorage.setItem('authToken', accessToken);
-          if (newRefreshToken) {
-            localStorage.setItem('refreshToken', newRefreshToken);
-          }
+        if (newToken) {
+          secureStorage.setItem('authToken', newToken, false);
           logger.info('Token refreshed successfully');
-          return accessToken;
+          return newToken;
         }
       }
     } catch (error) {
       logger.error('Token refresh failed', { error });
     }
 
-    // Refresh failed - clear tokens
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('refreshToken');
+    // Refresh failed - clear token
+    secureStorage.removeItem('authToken', false);
     return null;
   }
 
@@ -229,8 +227,8 @@ export class AuthInterceptor {
       } else {
         // Refresh failed - trigger logout
         logger.error('Token refresh failed, clearing auth');
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('refreshToken');
+        secureStorage.removeItem('authToken', false);
+        // Backend doesn't use separate refreshToken
 
         // Dispatch custom event for logout
         window.dispatchEvent(new CustomEvent('auth:logout-required'));

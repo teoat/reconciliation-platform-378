@@ -631,6 +631,7 @@ pub async fn google_oauth(
         first_name,
         last_name,
         role: None,
+        picture: _picture,
     };
 
     let user_info = user_service

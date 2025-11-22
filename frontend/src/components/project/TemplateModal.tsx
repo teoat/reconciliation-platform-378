@@ -28,6 +28,15 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ templates, onSelec
                 key={template.id}
                 className="card hover:shadow-lg transition-shadow cursor-pointer"
                 onClick={() => onSelect(template)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    onSelect(template);
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                aria-label={`Select ${template.name} template`}
               >
                 <div className="flex items-center space-x-3 mb-4">
                   <div className={`p-3 rounded-lg bg-${template.color}-100`}>

@@ -76,7 +76,7 @@ export function useDebounce<T extends (...args: unknown[]) => unknown>(
   const timeoutRef = useRef<NodeJS.Timeout>();
   const maxTimeoutRef = useRef<NodeJS.Timeout>();
   const lastCallRef = useRef<number>();
-  const lastResultRef = useRef<any>();
+  const lastResultRef = useRef<ReturnType<T>>();
 
   useEffect(() => {
     return () => {
@@ -134,7 +134,7 @@ export function useThrottle<T extends (...args: unknown[]) => unknown>(
   const { leading = true, trailing = true } = options;
   const lastCallRef = useRef<number>();
   const timeoutRef = useRef<NodeJS.Timeout>();
-  const lastResultRef = useRef<any>();
+  const lastResultRef = useRef<ReturnType<T>>();
 
   useEffect(() => {
     return () => {
@@ -386,7 +386,7 @@ export function useResourcePreloader() {
     []
   );
 
-  const preloadComponent = useCallback(async (importFn: () => Promise<any>) => {
+  const preloadComponent = useCallback(async (importFn: () => Promise<{ default?: React.ComponentType<unknown> }>) => {
     try {
       await importFn();
       logger.logPerformance('component-preload', 0, { success: true });

@@ -33,15 +33,16 @@ async fn test_oauth_user_creation() -> AppResult<()> {
         .unwrap_or_else(|_| "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app".to_string());
     
     let db = Database::new(&database_url).await?;
-    let user_service = Arc::new(UserService::new(db.clone()));
+    let auth_service = AuthService::new("test-secret".to_string(), 3600);
+    let user_service = Arc::new(UserService::new(Arc::new(db), auth_service));
     
     // Test OAuth user creation
     let create_request = reconciliation_backend::services::user::CreateOAuthUserRequest {
         email: "oauth-test@example.com".to_string(),
         first_name: "OAuth".to_string(),
         last_name: "Test".to_string(),
-        picture: None,
         role: None,
+        picture: None,
     };
     
     let user = user_service.create_oauth_user(create_request).await?;

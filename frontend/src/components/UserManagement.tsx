@@ -445,49 +445,45 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
             <form onSubmit={handleSubmit(handleCreateUser)} className="p-6">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <Input {...register('email')} type="email" placeholder="user@example.com" />
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                  )}
+                  <Input
+                    {...register('email')}
+                    label="Email Address"
+                    type="email"
+                    placeholder="user@example.com"
+                    error={errors.email?.message}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      First Name
-                    </label>
-                    <Input {...register('first_name')} placeholder="John" />
-                    {errors.first_name && (
-                      <p className="mt-1 text-sm text-red-600">{errors.first_name.message}</p>
-                    )}
+                    <Input
+                      {...register('first_name')}
+                      label="First Name"
+                      placeholder="John"
+                      error={errors.first_name?.message}
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Last Name
-                    </label>
-                    <Input {...register('last_name')} placeholder="Doe" />
-                    {errors.last_name && (
-                      <p className="mt-1 text-sm text-red-600">{errors.last_name.message}</p>
-                    )}
+                    <Input
+                      {...register('last_name')}
+                      label="Last Name"
+                      placeholder="Doe"
+                      error={errors.last_name?.message}
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
                   <Select
                     {...register('role')}
+                    label="Role"
                     options={[
                       { value: 'viewer', label: 'Viewer' },
                       { value: 'user', label: 'User' },
                       { value: 'admin', label: 'Admin' },
                     ]}
+                    error={errors.role?.message}
                   />
-                  {errors.role && (
-                    <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
-                  )}
                 </div>
               </div>
 
@@ -522,49 +518,45 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
             <form onSubmit={handleSubmit(handleEditUser)} className="p-6">
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
-                  <Input {...register('email')} type="email" placeholder="user@example.com" />
-                  {errors.email && (
-                    <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                  )}
+                  <Input
+                    {...register('email')}
+                    label="Email Address"
+                    type="email"
+                    placeholder="user@example.com"
+                    error={errors.email?.message}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      First Name
-                    </label>
-                    <Input {...register('first_name')} placeholder="John" />
-                    {errors.first_name && (
-                      <p className="mt-1 text-sm text-red-600">{errors.first_name.message}</p>
-                    )}
+                    <Input
+                      {...register('first_name')}
+                      label="First Name"
+                      placeholder="John"
+                      error={errors.first_name?.message}
+                    />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Last Name
-                    </label>
-                    <Input {...register('last_name')} placeholder="Doe" />
-                    {errors.last_name && (
-                      <p className="mt-1 text-sm text-red-600">{errors.last_name.message}</p>
-                    )}
+                    <Input
+                      {...register('last_name')}
+                      label="Last Name"
+                      placeholder="Doe"
+                      error={errors.last_name?.message}
+                    />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
                   <Select
                     {...register('role')}
+                    label="Role"
                     options={[
                       { value: 'viewer', label: 'Viewer' },
                       { value: 'user', label: 'User' },
                       { value: 'admin', label: 'Admin' },
                     ]}
+                    error={errors.role?.message}
                   />
-                  {errors.role && (
-                    <p className="mt-1 text-sm text-red-600">{errors.role.message}</p>
-                  )}
                 </div>
               </div>
 

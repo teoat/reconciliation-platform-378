@@ -67,10 +67,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           {/* Basic Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
+              <label htmlFor="project-name-input" className="block text-sm font-medium text-secondary-700 mb-2">
                 Project Name *
               </label>
               <input
+                id="project-name-input"
                 type="text"
                 value={formData.name}
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
@@ -80,8 +81,9 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">Category</label>
+              <label htmlFor="project-category-select" className="block text-sm font-medium text-secondary-700 mb-2">Category</label>
               <select
+                id="project-category-select"
                 value={formData.category}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -102,8 +104,9 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">Description</label>
+            <label htmlFor="project-description-textarea" className="block text-sm font-medium text-secondary-700 mb-2">Description</label>
             <textarea
+              id="project-description-textarea"
               value={formData.description}
               onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
               placeholder="Enter project description"
@@ -115,8 +118,9 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           {/* Status and Priority */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">Status</label>
+              <label htmlFor="project-status-select" className="block text-sm font-medium text-secondary-700 mb-2">Status</label>
               <select
+                id="project-status-select"
                 value={formData.status}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -133,8 +137,9 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">Priority</label>
+              <label htmlFor="project-priority-select" className="block text-sm font-medium text-secondary-700 mb-2">Priority</label>
               <select
+                id="project-priority-select"
                 value={formData.priority}
                 onChange={(e) =>
                   setFormData((prev) => ({
@@ -155,10 +160,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           {/* Department and Fiscal Period */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
+              <label htmlFor="project-department-input" className="block text-sm font-medium text-secondary-700 mb-2">
                 Department
               </label>
               <input
+                id="project-department-input"
                 type="text"
                 value={formData.department}
                 onChange={(e) => setFormData((prev) => ({ ...prev, department: e.target.value }))}
@@ -168,10 +174,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
+              <label htmlFor="project-fiscal-period-input" className="block text-sm font-medium text-secondary-700 mb-2">
                 Fiscal Period
               </label>
               <input
+                id="project-fiscal-period-input"
                 type="text"
                 value={formData.fiscalPeriod}
                 onChange={(e) => setFormData((prev) => ({ ...prev, fiscalPeriod: e.target.value }))}
@@ -183,7 +190,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
 
           {/* Tags */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">Tags</label>
+            <div className="block text-sm font-medium text-secondary-700 mb-2" role="group" aria-label="Tags">Tags</div>
             <div className="flex flex-wrap gap-2 mb-2">
               {formData.tags.map((tag, index) => (
                 <span
@@ -217,10 +224,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
 
           {/* Template Selection */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
+            <label htmlFor="project-template-select" className="block text-sm font-medium text-secondary-700 mb-2">
               Project Template
             </label>
             <select
+              id="project-template-select"
               value={formData.template?.id || ''}
               onChange={(e) => {
                 const template = templates.find((t) => t.id === e.target.value);
@@ -240,10 +248,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           {/* Budget and Duration */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
+              <label htmlFor="project-estimated-duration-input" className="block text-sm font-medium text-secondary-700 mb-2">
                 Estimated Duration
               </label>
               <input
+                id="project-estimated-duration-input"
                 type="text"
                 value={formData.estimatedDuration}
                 onChange={(e) =>
@@ -255,10 +264,11 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
+              <label htmlFor="project-budget-input" className="block text-sm font-medium text-secondary-700 mb-2">
                 Budget ($)
               </label>
               <input
+                id="project-budget-input"
                 type="number"
                 value={formData.budget}
                 onChange={(e) =>

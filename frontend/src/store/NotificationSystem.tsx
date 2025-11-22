@@ -94,6 +94,13 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
     }
   };
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleMarkAsRead();
+    }
+  };
+
   return (
     <div
       className={`
@@ -103,6 +110,10 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
         ${!notification.read ? 'ring-2 ring-blue-200' : ''}
       `}
       onClick={handleMarkAsRead}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={`${notification.title}: ${notification.message}`}
     >
       <div className="flex items-start space-x-3">
         <div className="flex-shrink-0">{getIcon()}</div>

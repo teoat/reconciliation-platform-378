@@ -88,6 +88,12 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
     xl: 'max-w-4xl',
   };
 
+  const handleOverlayKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape' && closeOnOverlayClick) {
+      onClose();
+    }
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto"
@@ -96,17 +102,22 @@ export const AccessibleModal: React.FC<AccessibleModalProps> = ({
       aria-labelledby="modal-title"
       aria-label={ariaLabel}
       aria-describedby={ariaDescribedBy}
-      onClick={(e) => {
-        if (closeOnOverlayClick && e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
     >
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div
-          className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
-          aria-hidden="true"
-        />
+        {closeOnOverlayClick ? (
+          <button
+            type="button"
+            className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 border-0 p-0 cursor-pointer"
+            onClick={onClose}
+            onKeyDown={handleOverlayKeyDown}
+            aria-label="Close modal"
+          />
+        ) : (
+          <div
+            className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+            aria-hidden="true"
+          />
+        )}
 
         <div
           ref={modalRef}

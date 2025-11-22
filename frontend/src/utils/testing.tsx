@@ -143,6 +143,6 @@ export const testingUtils = {
 export const customRender = renderWithRouter;
 export const testButtonComponent = createMockButton;
 export const testInputComponent = createMockInput;
-export const testModalComponent = (Component: React.ComponentType<any>) => Component;
+export const testModalComponent = (Component: React.ComponentType<Record<string, unknown>>) => Component;
 
 export default testingUtils;

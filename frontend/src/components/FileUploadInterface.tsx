@@ -764,7 +764,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
 
           {selectedFiles.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700">Selected Files</label>
+              <div className="block text-sm font-medium text-gray-700">Selected Files</div>
               <div className="mt-1 space-y-2">
                 {selectedFiles.map((file, index) => (
                   <div

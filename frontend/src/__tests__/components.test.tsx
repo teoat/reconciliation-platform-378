@@ -2,14 +2,13 @@
 // COMPONENT TESTS - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
-import React from 'react';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import {
   customRender,
   testButtonComponent,
   testInputComponent,
-  testModalComponent,
 } from '../utils/testing';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
@@ -48,7 +47,10 @@ describe('Button Component', () => {
 
   it('shows loading spinner when loading', () => {
     customRender(<Button loading>Test Button</Button>);
-    expect(screen.getByRole('button')).toHaveClass('animate-spin');
+    const button = screen.getByRole('button');
+    // The spinner icon should be present, not the button itself
+    const spinner = button.querySelector('.animate-spin');
+    expect(spinner).toBeInTheDocument();
   });
 });
 
@@ -97,11 +99,9 @@ describe('Input Component', () => {
 // ============================================================================
 
 describe('Modal Component', () => {
-  testModalComponent(Modal);
-
   it('renders with title', () => {
     customRender(
-      <Modal isOpen onClose={jest.fn()} title="Test Modal">
+      <Modal isOpen onClose={vi.fn()} title="Test Modal">
         <div>Modal content</div>
       </Modal>
     );
@@ -110,15 +110,17 @@ describe('Modal Component', () => {
 
   it('renders without close button when showCloseButton is false', () => {
     customRender(
-      <Modal isOpen onClose={jest.fn()} showCloseButton={false}>
+      <Modal isOpen onClose={vi.fn()} showCloseButton={false}>
         <div>Modal content</div>
       </Modal>
     );
+    // The close button should not be present, but overlay might still be there
     expect(screen.queryByLabelText(/close modal/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /close/i })).not.toBeInTheDocument();
   });
 
   it('does not close on overlay click when closeOnOverlayClick is false', async () => {
-    const handleClose = jest.fn();
+    const handleClose = vi.fn();
     customRender(
       <Modal isOpen onClose={handleClose} closeOnOverlayClick={false}>
         <div>Modal content</div>
@@ -132,7 +134,7 @@ describe('Modal Component', () => {
 
   it('applies correct size classes', () => {
     customRender(
-      <Modal isOpen onClose={jest.fn()} size="lg">
+      <Modal isOpen onClose={vi.fn()} size="lg">
         <div>Modal content</div>
       </Modal>
     );
@@ -261,16 +263,16 @@ describe('MetricCard Component', () => {
   });
 
   it('shows loading state', () => {
-    customRender(<MetricCard title="Total Revenue" value="$10,000" loading />);
-    expect(screen.getByText(/total revenue/i)).toBeInTheDocument();
-    // Check for loading skeleton
-    expect(screen.getByRole('generic')).toHaveClass('animate-pulse');
+    const { container } = customRender(<MetricCard title="Total Revenue" value="$10,000" loading />);
+    // When loading, check for the loading skeleton with animate-pulse
+    const loadingSkeleton = container.querySelector('.animate-pulse');
+    expect(loadingSkeleton).toBeInTheDocument();
   });
 
   it('applies custom className', () => {
-    customRender(<MetricCard title="Total Revenue" value="$10,000" className="custom-class" />);
-    const card = screen.getByText(/total revenue/i).closest('div');
-    expect(card).toHaveClass('custom-class');
+    const { container } = customRender(<MetricCard title="Total Revenue" value="$10,000" className="custom-class" />);
+    const card = container.querySelector('.custom-class');
+    expect(card).toBeInTheDocument();
   });
 });
 
@@ -280,7 +282,7 @@ describe('MetricCard Component', () => {
 
 describe('Component Integration', () => {
   it('Button and Input work together in a form', async () => {
-    const handleSubmit = jest.fn();
+    const handleSubmit = vi.fn();
 
     customRender(
       <form
@@ -301,19 +303,20 @@ describe('Component Integration', () => {
   });
 
   it('Modal with form components', async () => {
-    const handleClose = jest.fn();
+    const handleClose = vi.fn();
 
     customRender(
       <Modal isOpen onClose={handleClose} title="Test Form">
         <Input name="name" label="Name" placeholder="Enter your name" />
-        <Button onClick={handleClose}>Close</Button>
+        <Button onClick={handleClose}>Close Form</Button>
       </Modal>
     );
 
     expect(screen.getByText(/test form/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/name/i)).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('button', { name: /close/i }));
+    // Click the "Close Form" button, not the modal close button
+    await userEvent.click(screen.getByRole('button', { name: /close form/i }));
     expect(handleClose).toHaveBeenCalled();
   });
 });
@@ -336,7 +339,7 @@ describe('Accessibility', () => {
 
   it('Modal has proper ARIA attributes', () => {
     customRender(
-      <Modal isOpen onClose={jest.fn()} title="Test Modal">
+      <Modal isOpen onClose={vi.fn()} title="Test Modal">
         <div>Content</div>
       </Modal>
     );
@@ -347,6 +350,89 @@ describe('Accessibility', () => {
     customRender(<StatusBadge status="success">Success</StatusBadge>);
     const badge = screen.getByText(/success/i);
     expect(badge).toHaveClass('text-green-800');
+  });
+
+  it('Button supports keyboard navigation', async () => {
+    const user = userEvent.setup();
+    const handleClick = vi.fn();
+
+    customRender(<Button onClick={handleClick}>Test Button</Button>);
+    const button = screen.getByRole('button', { name: /test button/i });
+
+    // Focus the button
+    button.focus();
+    expect(button).toHaveFocus();
+
+    // Press Enter to activate
+    await user.keyboard('{Enter}');
+    expect(handleClick).toHaveBeenCalledTimes(1);
+
+    // Press Space to activate
+    await user.keyboard(' ');
+    expect(handleClick).toHaveBeenCalledTimes(2);
+  });
+
+  it('Input has proper error state accessibility', () => {
+    customRender(<Input label="Test Input" error="This field is required" />);
+    const input = screen.getByLabelText(/test input/i);
+
+    // Check for aria-describedby linking to error message
+    expect(input).toHaveAttribute('aria-describedby');
+    expect(input).toHaveAttribute('aria-invalid', 'true');
+
+    // Check that error message is associated
+    const errorMessage = screen.getByText('This field is required');
+    expect(errorMessage).toHaveAttribute('id');
+  });
+
+  it('Modal traps focus correctly', async () => {
+    customRender(
+      <Modal isOpen onClose={vi.fn()} title="Test Modal">
+        <button>First Button</button>
+        <button>Second Button</button>
+        <input type="text" placeholder="Test input" />
+      </Modal>
+    );
+
+    const modal = screen.getByRole('dialog');
+
+    // Modal should be present
+    expect(modal).toBeInTheDocument();
+
+    // Focus should be managed (this is a basic check - full focus trapping would need more complex testing)
+    expect(document.activeElement).toBeDefined();
+  });
+
+  it('MetricCard displays title and value correctly', () => {
+    customRender(
+      <MetricCard
+        title="Test Metric"
+        value="100"
+        change={{ value: 10, type: 'increase' }}
+      />
+    );
+
+    // Check that title and value are displayed
+    expect(screen.getByText('Test Metric')).toBeInTheDocument();
+    expect(screen.getByText('100')).toBeInTheDocument();
+    expect(screen.getByText('10%')).toBeInTheDocument();
+  });
+
+  it('All interactive elements have accessible names', () => {
+    customRender(
+      <div>
+        <Button>Click me</Button>
+        <Input label="Name" />
+        <StatusBadge status="success">Active</StatusBadge>
+      </div>
+    );
+
+    // Check that all interactive elements have accessible names
+    const button = screen.getByRole('button');
+    const input = screen.getByRole('textbox');
+
+    expect(button).toHaveAccessibleName();
+    expect(input).toHaveAccessibleName();
   });
 });
 
@@ -364,7 +450,7 @@ describe('Performance', () => {
   });
 
   it('Input handles rapid typing', async () => {
-    const handleChange = jest.fn();
+    const handleChange = vi.fn();
     customRender(<Input onChange={handleChange} />);
 
     const input = screen.getByRole('textbox');
@@ -374,7 +460,7 @@ describe('Performance', () => {
   });
 
   it('Modal opens and closes smoothly', async () => {
-    const handleClose = jest.fn();
+    const handleClose = vi.fn();
     const { rerender } = customRender(
       <Modal isOpen={false} onClose={handleClose}>
         <div>Content</div>

@@ -81,7 +81,8 @@ mod backup_recovery_service_tests {
     #[tokio::test]
     async fn test_disaster_recovery_service_creation() {
         let config = create_test_backup_config();
-        let service = DisasterRecoveryService::new(config);
+        let backup_service = BackupService::new(config);
+        let service = DisasterRecoveryService::new(backup_service);
         
         // Verify service is created
         assert!(true);
@@ -91,11 +92,11 @@ mod backup_recovery_service_tests {
     async fn test_restore_backup() {
         let config = create_test_backup_config();
         let backup_service = BackupService::new(config);
-        let service = DisasterRecoveryService::new(backup_service);
         let backup_id = uuid::Uuid::new_v4();
 
-        // Restore backup (may fail if backup doesn't exist)
-        let result = service.restore_backup(backup_id).await;
+        // Restore backup using BackupService (restore_backup is on BackupService, not DisasterRecoveryService)
+        // May fail if backup doesn't exist
+        let result = backup_service.restore_backup(backup_id).await;
         
         // Should handle gracefully
         assert!(result.is_ok() || result.is_err());

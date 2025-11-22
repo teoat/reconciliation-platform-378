@@ -53,7 +53,8 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/backend/target \
     cargo build --release && \
-    strip target/release/reconciliation-backend && \
+    # Don't strip binary to preserve debugging info
+    # strip target/release/reconciliation-backend && \
     # Copy the binary to a known location for next stage
     cp target/release/reconciliation-backend /tmp/reconciliation-backend
 
