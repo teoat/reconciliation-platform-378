@@ -9,6 +9,8 @@ import { Shield } from 'lucide-react'
 import { CheckCircle } from 'lucide-react'
 import { Download } from 'lucide-react'
 import { X } from 'lucide-react'
+import { BarChart3 } from 'lucide-react'
+import { Database } from 'lucide-react'
 
 interface ReconciliationMetrics {
   totalRecords: number
