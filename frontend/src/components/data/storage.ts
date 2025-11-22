@@ -14,14 +14,14 @@ export const useDataStorage = (
   setError: React.Dispatch<React.SetStateAction<string | null>>
 ) => {
   const dataService = DataManagementService.getInstance();
-  const [currentProject, setCurrentProjectInternal] = useState<ProjectData | null>(null);
+  const [currentProjectInternal, setCurrentProjectInternal] = useState<ProjectData | null>(null);
 
   // Sync internal state with external state
   useEffect(() => {
-    if (currentProject !== currentProjectInternal) {
-      setCurrentProject(currentProject);
+    if (currentProjectInternal !== null) {
+      setCurrentProject(currentProjectInternal);
     }
-  }, [currentProjectInternal, currentProject, setCurrentProject]);
+  }, [currentProjectInternal, setCurrentProject]);
 
   // Initialize with sample project if none exists
   useEffect(() => {
