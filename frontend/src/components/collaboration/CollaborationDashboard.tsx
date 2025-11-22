@@ -119,10 +119,29 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
             }]);
           } else if (data.type === 'user_left') {
             setActiveUsers((prev) => prev.filter((u) => u.id !== data.userId));
-          } else if (data.type === 'activity') {
-            setActivities((prev) => [data.activity, ...prev].slice(0, 100));
-          } else if (data.type === 'comment') {
-            setComments((prev) => [data.comment, ...prev]);
+          } else if (data.type === 'activity' && data.activity) {
+            const activity: CollaborationActivity = {
+              id: data.activity.id,
+              userId: data.activity.userId,
+              userName: (data.activity as any).userName || 'Unknown',
+              action: (data.activity.action as CollaborationActivity['action']) || 'viewed',
+              target: (data.activity as any).target || '',
+              targetType: ((data.activity as any).targetType as CollaborationActivity['targetType']) || 'project',
+              timestamp: new Date(data.activity.timestamp)
+            };
+            setActivities((prev) => [activity, ...prev].slice(0, 100));
+          } else if (data.type === 'comment' && data.comment) {
+            const comment: CollaborationComment = {
+              id: data.comment.id,
+              userId: data.comment.userId,
+              userName: (data.comment as any).userName || 'Unknown',
+              content: (data.comment as any).message || (data.comment as any).content || '',
+              targetId: (data.comment as any).targetId || '',
+              targetType: ((data.comment as any).targetType as CollaborationComment['targetType']) || 'project',
+              timestamp: new Date(data.comment.timestamp),
+              resolved: (data.comment as any).resolved || false
+            };
+            setComments((prev) => [comment, ...prev]);
           }
         });
         setSessionSubscriptionId(subId);
