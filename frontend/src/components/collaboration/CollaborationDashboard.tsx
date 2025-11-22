@@ -112,7 +112,11 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
           comment?: { id: string; userId: string; message: string; timestamp: string };
         }) => {
           if (data.type === 'user_joined') {
-            setActiveUsers((prev) => [...prev, data.user]);
+            setActiveUsers((prev) => [...prev, {
+              ...data.user,
+              status: 'online' as const,
+              lastActivity: new Date()
+            }]);
           } else if (data.type === 'user_left') {
             setActiveUsers((prev) => prev.filter((u) => u.id !== data.userId));
           } else if (data.type === 'activity') {
