@@ -17,7 +17,9 @@ import { Reply } from 'lucide-react'
 import { Edit } from 'lucide-react'
 import { Trash2 } from 'lucide-react';
 import { useRealtimeCollaboration } from '../hooks/useWebSocketIntegration';
+import type { UserPresenceMessage, CollaborationCommentMessage } from '../../../types/index';
 
+// Map WebSocket types to component-friendly interfaces
 interface LiveComment {
   id: string;
   userId: string;
@@ -34,6 +36,29 @@ interface ActiveUser {
   page: string;
   lastSeen: string;
 }
+
+// Helper to convert WebSocket messages to component types
+const convertToLiveComment = (msg: CollaborationCommentMessage): LiveComment => {
+  const comment = msg.comment as any;
+  return {
+    id: comment?.id || '',
+    userId: comment?.userId || '',
+    userName: comment?.userName || '',
+    message: comment?.message || '',
+    timestamp: comment?.timestamp || new Date().toISOString(),
+    page: msg.projectId || '',
+    replies: comment?.replies || []
+  };
+};
+
+const convertToActiveUser = (msg: UserPresenceMessage): ActiveUser => {
+  return {
+    id: msg.userId,
+    name: msg.userId, // Using userId as name since UserPresenceMessage doesn't have name
+    page: msg.projectId || '',
+    lastSeen: new Date().toISOString()
+  };
+};
 
 interface CollaborationPanelProps {
   page: string;
@@ -56,9 +81,9 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
     updatePresence
   } = useRealtimeCollaboration(page);
 
-  // Cast to expected types for component use
-  const typedComments = liveComments as unknown as LiveComment[];
-  const typedActiveUsers = activeUsers as unknown as ActiveUser[];
+  // Convert WebSocket types to component types using proper converters
+  const typedComments = liveComments.map(convertToLiveComment);
+  const typedActiveUsers = activeUsers.map(convertToActiveUser);
 
   const [newComment, setNewComment] = useState('');
   const [isMinimized, setIsMinimized] = useState(false);
@@ -306,9 +331,9 @@ export const CollaborationButton: React.FC<{
 }> = ({ page, isOpen, onToggle, className = '' }) => {
   const { isConnected, activeUsers, liveComments } = useRealtimeCollaboration(page);
 
-  // Cast to expected types
-  const typedActiveUsers = activeUsers as unknown as ActiveUser[];
-  const typedComments = liveComments as unknown as LiveComment[];
+  // Convert to component types using proper converters
+  const typedActiveUsers = activeUsers.map(convertToActiveUser);
+  const typedComments = liveComments.map(convertToLiveComment);
 
   return (
     <button

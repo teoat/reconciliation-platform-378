@@ -164,7 +164,7 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
   const dropZoneRef = useRef<HTMLDivElement>(null)
 
   // WebSocket integration for real-time updates
-  const { isConnected, sendMessage, subscribe } = useWebSocketIntegration()
+  const { isConnected, subscribe } = useWebSocketIntegration()
 
   // Load files - using unified utilities
   const loadFiles = useCallback(async () => {

@@ -140,7 +140,11 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [showMemberModal, setShowMemberModal] = useState(false);
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('members');
+  
+  // Define valid tab types
+  type TabType = 'members' | 'workspaces' | 'activities' | 'assignments' | 'notifications';
+  const [activeTab, setActiveTab] = useState<TabType>('members');
+  
   const [isCreating, setIsCreating] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState<string>('all');
@@ -628,13 +632,13 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
       <div className="card mb-6">
         <div className="border-b border-secondary-200">
           <nav className="flex space-x-8">
-            {[
-              { id: 'members', label: 'Team Members', icon: Users },
-              { id: 'workspaces', label: 'Workspaces', icon: Building },
-              { id: 'activities', label: 'Activities', icon: Activity },
-              { id: 'assignments', label: 'Assignments', icon: UserCheck },
-              { id: 'notifications', label: 'Notifications', icon: Bell },
-            ].map((tab) => {
+            {([
+              { id: 'members' as TabType, label: 'Team Members', icon: Users },
+              { id: 'workspaces' as TabType, label: 'Workspaces', icon: Building },
+              { id: 'activities' as TabType, label: 'Activities', icon: Activity },
+              { id: 'assignments' as TabType, label: 'Assignments', icon: UserCheck },
+              { id: 'notifications' as TabType, label: 'Notifications', icon: Bell },
+            ]).map((tab) => {
               const Icon = tab.icon;
               return (
                 <button

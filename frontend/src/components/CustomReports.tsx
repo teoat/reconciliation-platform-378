@@ -287,8 +287,9 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       const reconciliationData = getReconciliationData();
       const cashflowData = getCashflowData();
 
-      // Apply filters
-      let data: any[] = [];
+      // Apply filters - using union type for better type safety
+      type ReportDataRecord = ReconciliationRecord | any; // Using any for cashflow/other types not yet fully typed
+      let data: ReportDataRecord[] = [];
       switch (report.dataSource) {
         case 'reconciliation':
           data = reconciliationData?.records || [];

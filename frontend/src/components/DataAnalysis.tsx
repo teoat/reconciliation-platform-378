@@ -85,12 +85,42 @@ type ProcessedExpenseRecord = any;
 type ProcessedBankRecord = any;
 type IndonesianMatchingResult = any;
 class IndonesianDataProcessor {
-  static processExpensesData(data: any[]): any[] { return data; }
-  static processBankData(data: any[]): any[] { return data; }
-  static matchRecords(expenses: any[], bank: any[]): any[] { return []; }
-  static batchMatchRecords(expenses: any[], bank: any[]): any[] { return []; }
-  static generateSummary(expenses: any[], bank: any[], matches: any[]): any { return {}; }
-  static generateReconciliationSummary(expenses: any[], bank: any[], matches: any[]): any { return {}; }
+  /**
+   * @deprecated Stub implementation. Not yet implemented.
+   */
+  static processExpensesData(data: any[]): any[] {
+    throw new Error('IndonesianDataProcessor.processExpensesData is not yet implemented.');
+  }
+  /**
+   * @deprecated Stub implementation. Not yet implemented.
+   */
+  static processBankData(data: any[]): any[] {
+    throw new Error('IndonesianDataProcessor.processBankData is not yet implemented.');
+  }
+  /**
+   * @deprecated Stub implementation. Not yet implemented.
+   */
+  static matchRecords(expenses: any[], bank: any[]): any[] {
+    throw new Error('IndonesianDataProcessor.matchRecords is not yet implemented.');
+  }
+  /**
+   * @deprecated Stub implementation. Not yet implemented.
+   */
+  static batchMatchRecords(expenses: any[], bank: any[]): any[] {
+    throw new Error('IndonesianDataProcessor.batchMatchRecords is not yet implemented.');
+  }
+  /**
+   * @deprecated Stub implementation. Not yet implemented.
+   */
+  static generateSummary(expenses: any[], bank: any[], matches: any[]): any {
+    throw new Error('IndonesianDataProcessor.generateSummary is not yet implemented.');
+  }
+  /**
+   * @deprecated Stub implementation. Not yet implemented.
+   */
+  static generateReconciliationSummary(expenses: any[], bank: any[], matches: any[]): any {
+    throw new Error('IndonesianDataProcessor.generateReconciliationSummary is not yet implemented.');
+  }
 }
 
 interface DataAnalysisProps {

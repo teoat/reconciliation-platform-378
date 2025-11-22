@@ -82,11 +82,24 @@ import { FileAudio } from 'lucide-react'
 import { FileSpreadsheet } from 'lucide-react'
 import { FileCode } from 'lucide-react'
 import { FileJson } from 'lucide-react'
-import { 
-  IndonesianDataProcessor, 
-  ProcessedExpenseRecord, 
-  ProcessedBankRecord 
-} from '../utils/indonesianDataProcessor'
+
+// Temporary stub types and class until indonesianDataProcessor module is implemented
+type ProcessedExpenseRecord = any;
+type ProcessedBankRecord = any;
+class IndonesianDataProcessor {
+  /**
+   * @deprecated Stub implementation. Not yet implemented.
+   */
+  static processExpensesData(data: any[]): any[] {
+    throw new Error('IndonesianDataProcessor.processExpensesData is not yet implemented.');
+  }
+  /**
+   * @deprecated Stub implementation. Not yet implemented.
+   */
+  static processBankData(data: any[]): any[] {
+    throw new Error('IndonesianDataProcessor.processBankData is not yet implemented.');
+  }
+}
 
 // Enhanced Interfaces for Integration
 interface SynchronizedDataState {
@@ -401,7 +414,7 @@ const EnhancedIngestionPage = () => {
         id: item.id,
         type: 'ingestion_to_reconciliation',
         status: 'pending',
-        data: item,
+        data: item as unknown as Record<string, unknown>,
         timestamp: Date.now(),
         source: 'ingestion',
         target: 'reconciliation'
