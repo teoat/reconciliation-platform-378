@@ -205,7 +205,7 @@ mod authorization_security_tests {
                 "POST",
                 &format!("/api/projects/{}/files/upload", project_id),
             )
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
 
@@ -532,7 +532,7 @@ mod input_validation_security_tests {
         // Verify no database corruption occurred
         let req = test_client
             .authenticated_request("GET", "/api/projects")
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
@@ -581,7 +581,7 @@ mod input_validation_security_tests {
         // Try path traversal in project_id path parameter
         let req = test_client
             .authenticated_request("POST", "/api/projects/../../../etc/passwd/files/upload")
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
 

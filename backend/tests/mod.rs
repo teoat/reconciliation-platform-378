@@ -124,7 +124,7 @@ impl TestRunner {
 
     /// Run unit tests
     pub async fn run_unit_tests(&self) -> TestSummary {
-        let mut summary = TestSummary::new();
+        let summary = TestSummary::new();
 
         // This would run all unit tests
         // In a real implementation, you'd use a test runner like cargo test
@@ -134,7 +134,7 @@ impl TestRunner {
 
     /// Run integration tests
     pub async fn run_integration_tests(&self) -> TestSummary {
-        let mut summary = TestSummary::new();
+        let summary = TestSummary::new();
 
         // This would run all integration tests
 
@@ -143,7 +143,7 @@ impl TestRunner {
 
     /// Run end-to-end tests
     pub async fn run_e2e_tests(&self) -> TestSummary {
-        let mut summary = TestSummary::new();
+        let summary = TestSummary::new();
 
         // This would run all end-to-end tests
 
@@ -152,7 +152,7 @@ impl TestRunner {
 
     /// Run performance tests
     pub async fn run_performance_tests(&self) -> TestSummary {
-        let mut summary = TestSummary::new();
+        let summary = TestSummary::new();
 
         // This would run all performance tests
 
@@ -429,12 +429,12 @@ pub mod utils {
     }
 
     /// Assert JSON response
-    pub fn assert_json_response<T>(resp: &actix_web::dev::ServiceResponse<actix_web::body::BoxBody>, expected_data: &T)
+    pub async fn assert_json_response<T>(resp: actix_web::dev::ServiceResponse<actix_web::body::BoxBody>, expected_data: &T)
     where
-        T: serde::Serialize + PartialEq,
+        T: serde::Serialize + PartialEq + std::fmt::Debug + for<'de> serde::Deserialize<'de>,
     {
         use actix_web::test;
-        let body: T = test::read_body_json(resp);
+        let body: T = test::read_body_json(resp).await;
         assert_eq!(body, *expected_data);
     }
 

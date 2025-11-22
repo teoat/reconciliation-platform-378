@@ -288,7 +288,7 @@ mod user_workflow_tests {
         let file_to_delete = &file_ids[0];
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/files/{}", file_to_delete))
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
@@ -296,7 +296,7 @@ mod user_workflow_tests {
         // Step 8: Verify file was deleted
         let req = test_client
             .authenticated_request("GET", &format!("/api/files/{}", file_to_delete))
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
@@ -383,7 +383,7 @@ mod user_workflow_tests {
             // Admin checks status
             let req = admin_client
                 .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id))
-                .await;
+                .to_request();
             let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
             let body: serde_json::Value = test::read_body_json(resp).await;
@@ -490,7 +490,7 @@ mod user_workflow_tests {
         // Step 4: Get all data sources
         let req = test_client
             .authenticated_request("GET", "/api/data-sources")
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
@@ -525,7 +525,7 @@ mod user_workflow_tests {
                     "POST",
                     &format!("/api/data-sources/{}/validate", data_source_id),
                 )
-                .await;
+                .to_request();
             let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
@@ -586,7 +586,7 @@ mod system_integration_tests {
             .unwrap();
         let req = test_client
             .authenticated_request("GET", "/api/system/metrics")
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
@@ -619,7 +619,7 @@ mod system_integration_tests {
             .unwrap();
         let req = test_client
             .authenticated_request("GET", "/api/projects/invalid-id")
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
@@ -900,7 +900,7 @@ mod data_integrity_tests {
         // Verify final state
         let req = client1
             .authenticated_request("GET", &format!("/api/projects/{}", project_id))
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
@@ -958,7 +958,7 @@ mod system_recovery_tests {
         // Simulate system failure by stopping the job
         let req = test_client
             .authenticated_request("POST", &format!("/api/reconciliation/jobs/{}/stop", job_id))
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
@@ -966,7 +966,7 @@ mod system_recovery_tests {
         // Verify system can recover
         let req = test_client
             .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id))
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
@@ -987,7 +987,7 @@ mod system_recovery_tests {
         // Verify job is running again
         let req = test_client
             .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id))
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
         let body: serde_json::Value = test::read_body_json(resp).await;
