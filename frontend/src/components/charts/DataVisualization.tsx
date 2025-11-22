@@ -7,7 +7,7 @@ import { Filter } from 'lucide-react';
 import { DataTable } from '../ui/DataTable';
 import Button from '../ui/Button';
 import Select from '../ui/Select';
-import { BarChart, LineChart, PieChart as PieChartComponent } from './Charts';
+import { BarChart, LineChart, PieChart as PieChartComponent, ChartData } from './Charts';
 
 export interface VisualizableData {
   [key: string]: string | number | boolean | null | undefined;
@@ -50,7 +50,7 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
     });
   }, [data]);
 
-  const chartData = useMemo(() => {
+  const chartData = useMemo<ChartData[]>(() => {
     if (!selectedColumn || data.length === 0) return [];
 
     if (selectedChartType === 'pie') {
@@ -65,9 +65,9 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
         {} as Record<string, number>
       );
 
-      return Object.entries(grouped).map(([label, value]) => ({
+      return Object.entries(grouped).map(([label, value]): ChartData => ({
         label,
-        value,
+        value: Number(value),
         color: getColorForLabel(label),
       }));
     } else {
@@ -87,9 +87,9 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
         {} as Record<string, number>
       );
 
-      return Object.entries(grouped).map(([label, value]) => ({
+      return Object.entries(grouped).map(([label, value]): ChartData => ({
         label,
-        value,
+        value: Number(value),
         color: getColorForLabel(label),
       }));
     }
