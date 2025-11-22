@@ -86,7 +86,7 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
           async () => {
             const response = await apiClient.getReconciliationJobResults(jobId, page, perPage);
             if (response.error) {
-              const { getErrorMessageFromApiError } = await import('../../utils/errorExtraction');
+              const { getErrorMessageFromApiError } = await import('../utils/errorExtraction');
               throw new Error(getErrorMessageFromApiError(response.error));
             }
 
