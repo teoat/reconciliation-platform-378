@@ -234,9 +234,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       render: (value) => (
         <StatusBadge 
           status={value === 'admin' ? 'success' : value === 'user' ? 'info' : 'warning'}
-          variant="outline"
         >
-          {value}
+          {String(value)}
         </StatusBadge>
       )
     },
@@ -248,7 +247,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
         <StatusBadge 
           status={value === 'active' ? 'success' : value === 'pending' ? 'warning' : 'error'}
         >
-          {value}
+          {String(value)}
         </StatusBadge>
       )
     },
@@ -258,7 +257,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       sortable: true,
       render: (value) => (
         <div className="text-sm text-gray-600">
-          {new Date(value).toLocaleDateString()}
+          {new Date(value as string).toLocaleDateString()}
         </div>
       )
     },
@@ -268,7 +267,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       sortable: true,
       render: (value) => (
         <div className="text-sm text-gray-600">
-          {new Date(value).toLocaleDateString()}
+          {new Date(value as string).toLocaleDateString()}
         </div>
       )
     },
@@ -414,20 +413,20 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
                   value={roleFilter}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setRoleFilter(e.target.value)}
                   options={[
-                    { value: '', header: 'All Roles' },
-                    { value: 'admin', header: 'Admin' },
-                    { value: 'user', header: 'User' },
-                    { value: 'viewer', header: 'Viewer' }
+                    { value: '', label: 'All Roles' },
+                    { value: 'admin', label: 'Admin' },
+                    { value: 'user', label: 'User' },
+                    { value: 'viewer', label: 'Viewer' }
                   ]}
                 />
                 <Select
                   value={statusFilter}
                   onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setStatusFilter(e.target.value)}
                   options={[
-                    { value: '', header: 'All Status' },
-                    { value: 'active', header: 'Active' },
-                    { value: 'pending', header: 'Pending' },
-                    { value: 'inactive', header: 'Inactive' }
+                    { value: '', label: 'All Status' },
+                    { value: 'active', label: 'Active' },
+                    { value: 'pending', label: 'Pending' },
+                    { value: 'inactive', label: 'Inactive' }
                   ]}
                 />
             </div>
@@ -438,8 +437,8 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
         <Card>
           <div className="p-6">
             <DataTable
-              data={filteredUsers}
-              columns={userColumns}
+              data={filteredUsers as unknown as Record<string, unknown>[]}
+              columns={userColumns as unknown as Column<Record<string, unknown>>[]}
               emptyMessage="No users found"
             />
           </div>
@@ -504,9 +503,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
                 <Select
                   {...register('role')}
                   options={[
-                    { value: 'viewer', header: 'Viewer' },
-                    { value: 'user', header: 'User' },
-                    { value: 'admin', header: 'Admin' }
+                    { value: 'viewer', label: 'Viewer' },
+                    { value: 'user', label: 'User' },
+                    { value: 'admin', label: 'Admin' }
                   ]}
                 />
                 {errors.role && (
@@ -593,9 +592,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
                 <Select
                   {...register('role')}
                   options={[
-                    { value: 'viewer', header: 'Viewer' },
-                    { value: 'user', header: 'User' },
-                    { value: 'admin', header: 'Admin' }
+                    { value: 'viewer', label: 'Viewer' },
+                    { value: 'user', label: 'User' },
+                    { value: 'admin', label: 'Admin' }
                   ]}
                 />
                 {errors.role && (
