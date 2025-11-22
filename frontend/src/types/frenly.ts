@@ -55,3 +55,24 @@ export interface FrenlyExpression {
   mouth: 'smile' | 'open' | 'frown' | 'neutral' | 'laugh' | 'big-smile'
   accessories: string[]
 }
+
+export interface PageGuidance {
+  page: string
+  title: string
+  description: string
+  steps?: Array<{
+    id: string
+    title: string
+    description: string
+    completed?: boolean
+    tips?: string[]
+  }>
+  tips?: string[]
+  warnings?: string[]
+  celebrations?: string[]
+  actions?: Array<{
+    label: string
+    description: string
+    onClick?: () => void
+  }>
+}
