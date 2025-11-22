@@ -143,6 +143,14 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     // Security integration
     ...securityData,
     securityPolicies: securityData.securityPolicies as Array<Record<string, unknown>>,
+    checkCompliance: (framework: string) => {
+      const requirements = securityData.checkCompliance(framework);
+      return requirements.map(req => ({
+        framework: req.framework,
+        status: req.status,
+        issues: req.status === 'non_compliant' ? [req.requirement] : []
+      }));
+    },
     // Enhanced methods
     advanceWorkflow: enhancedAdvanceWorkflow,
     resetWorkflow: enhancedResetWorkflow,
