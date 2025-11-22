@@ -149,9 +149,13 @@ export const IconRegistry: Record<string, IconConfig> = {
   FileJson: { name: 'FileJson', component: LucideIcons.FileJson, category: 'file' },
   Play: { name: 'Play', component: LucideIcons.Play, category: 'action' },
   Pause: { name: 'Pause', component: LucideIcons.Pause, category: 'action' },
+<<<<<<< HEAD
   // Additional icons used in ReconciliationInterface
   FileText: { name: 'FileText', component: LucideIcons.FileText, category: 'file' },
 };
+=======
+}
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
 // Export Square as StopIcon from LucideIcons
 export const StopIcon = LucideIcons.Square;
@@ -201,5 +205,10 @@ export const useIcon = (name: string) => {
   return IconComponent || (() => null);
 };
 
+<<<<<<< HEAD
 export { IconRegistry };
 export default Icon;
+=======
+export default Icon
+
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1

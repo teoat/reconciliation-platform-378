@@ -50,23 +50,23 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
     });
   }, [data]);
 
-  const chartData = useMemo(() => {
+  const chartData: Array<{ label: string; value: number; color: string }> = useMemo(() => {
     if (!selectedColumn || data.length === 0) return [];
 
     if (selectedChartType === 'pie') {
       // Group data by selected column and count occurrences
       const grouped = data.reduce(
         (acc, row) => {
-          const value = row[selectedColumn];
-          acc[value] = (acc[value] || 0) + 1;
+          const value = String(row[selectedColumn]);
+          acc[value] = ((acc[value] as number) || 0) + 1;
           return acc;
         },
         {} as Record<string, number>
       );
 
-      return Object.entries(grouped).map(([label, value]) => ({
+      return Object.entries(grouped).map(([label, value]): { label: string; value: number; color: string } => ({
         label,
-        value,
+        value: value as number,
         color: getColorForLabel(label),
       }));
     } else {
@@ -76,19 +76,19 @@ export const DataVisualization: React.FC<DataVisualizationProps> = ({
 
       const grouped = data.reduce(
         (acc, row) => {
-          const category = row[selectedColumn];
+          const category = String(row[selectedColumn]);
           const value = Number(row[numericCol]);
           if (!isNaN(value)) {
-            acc[category] = (acc[category] || 0) + value;
+            acc[category] = ((acc[category] as number) || 0) + value;
           }
           return acc;
         },
         {} as Record<string, number>
       );
 
-      return Object.entries(grouped).map(([label, value]) => ({
+      return Object.entries(grouped).map(([label, value]): { label: string; value: number; color: string } => ({
         label,
-        value,
+        value: value as number,
         color: getColorForLabel(label),
       }));
     }

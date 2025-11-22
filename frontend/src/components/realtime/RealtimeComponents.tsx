@@ -1,5 +1,6 @@
 // Real-time UI Components
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import {
   useRealtimeConnection,
   useUserPresence,
@@ -11,6 +12,14 @@ import { Users } from 'lucide-react';
 import { MessageCircle } from 'lucide-react';
 import { Wifi } from 'lucide-react';
 import { WifiOff } from 'lucide-react';
+=======
+import { useRealtimeConnection, useUserPresence, useComments, useNotifications } from '../../hooks/useRealtime';
+import { Bell } from 'lucide-react'
+import { Users } from 'lucide-react'
+import { MessageCircle } from 'lucide-react'
+import { Wifi } from 'lucide-react'
+import { WifiOff } from 'lucide-react'
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 import { AlertCircle } from 'lucide-react';
 
 // Connection Status Indicator

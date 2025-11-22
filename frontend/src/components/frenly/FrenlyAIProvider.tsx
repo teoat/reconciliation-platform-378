@@ -54,6 +54,7 @@ export const FrenlyAIProvider: React.FC<FrenlyAIProviderProps> = ({
   enableTips = true,
   enableTutorial = true,
 }) => {
+<<<<<<< HEAD
   const [userProgress, setUserProgress] = useState<string[]>(initialProgress);
   const [isTutorialActive, setIsTutorialActive] = useState(false);
   const [showTips, setShowTips] = useState(enableTips);
@@ -63,6 +64,17 @@ export const FrenlyAIProvider: React.FC<FrenlyAIProviderProps> = ({
     energy: 'medium' as const,
     helpfulness: 8,
   });
+=======
+  const [userProgress, setUserProgress] = useState<string[]>(initialProgress)
+  const [isTutorialActive, setIsTutorialActive] = useState(false)
+  const [showTips, setShowTips] = useState(enableTips)
+  const [currentPage, setCurrentPage] = useState('dashboard')
+  const [personality, setPersonality] = useState<FrenlyAIContextType['personality']>({
+    mood: 'happy',
+    energy: 'medium',
+    helpfulness: 8
+  })
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
   // Load progress from localStorage
   useEffect(() => {

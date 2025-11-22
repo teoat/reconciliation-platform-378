@@ -22,7 +22,7 @@ mod authorization_security_tests {
 
     #[tokio::test]
     async fn test_unauthorized_project_access() {
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
 
         // Authenticate as user1
         test_client
@@ -37,7 +37,7 @@ mod authorization_security_tests {
             .unwrap();
 
         // Create another test client for user2
-        let mut test_client2 = TestClient::new().await;
+        let mut test_client2 = TestClient::new();
         test_client2
             .authenticate_as("user2@test.com", "password123")
             .await
@@ -46,7 +46,7 @@ mod authorization_security_tests {
         // Try to access user1's project as user2
         let req = test_client2
             .authenticated_request("GET", &format!("/api/projects/{}", project_id))
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
 
@@ -59,7 +59,7 @@ mod authorization_security_tests {
 
     #[tokio::test]
     async fn test_unauthorized_file_access() {
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
         test_client
             .authenticate_as("user1@test.com", "password123")
             .await
@@ -76,7 +76,7 @@ mod authorization_security_tests {
             .unwrap();
 
         // Create another user
-        let mut test_client2 = TestClient::new().await;
+        let mut test_client2 = TestClient::new();
         test_client2
             .authenticate_as("user2@test.com", "password123")
             .await
@@ -85,7 +85,7 @@ mod authorization_security_tests {
         // Try to access file as user2
         let req = test_client2
             .authenticated_request("GET", &format!("/api/files/{}", file_id))
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
 
@@ -95,7 +95,7 @@ mod authorization_security_tests {
 
     #[tokio::test]
     async fn test_unauthorized_job_creation() {
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
         test_client
             .authenticate_as("user1@test.com", "password123")
             .await
@@ -108,7 +108,7 @@ mod authorization_security_tests {
             .unwrap();
 
         // Create another user
-        let mut test_client2 = TestClient::new().await;
+        let mut test_client2 = TestClient::new();
         test_client2
             .authenticate_as("user2@test.com", "password123")
             .await
@@ -138,7 +138,7 @@ mod authorization_security_tests {
 
     #[tokio::test]
     async fn test_unauthorized_data_source_creation() {
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
         test_client
             .authenticate_as("user1@test.com", "password123")
             .await
@@ -151,7 +151,7 @@ mod authorization_security_tests {
             .unwrap();
 
         // Create another user
-        let mut test_client2 = TestClient::new().await;
+        let mut test_client2 = TestClient::new();
         test_client2
             .authenticate_as("user2@test.com", "password123")
             .await
@@ -180,7 +180,7 @@ mod authorization_security_tests {
 
     #[tokio::test]
     async fn test_unauthorized_file_upload() {
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
         test_client
             .authenticate_as("user1@test.com", "password123")
             .await
@@ -193,7 +193,7 @@ mod authorization_security_tests {
             .unwrap();
 
         // Create another user
-        let mut test_client2 = TestClient::new().await;
+        let mut test_client2 = TestClient::new();
         test_client2
             .authenticate_as("user2@test.com", "password123")
             .await
@@ -215,14 +215,14 @@ mod authorization_security_tests {
 
     #[tokio::test]
     async fn test_admin_bypass_authorization() {
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
         test_client
             .authenticate_as("admin@test.com", "admin123")
             .await
             .unwrap();
 
         // Create another user
-        let mut test_client2 = TestClient::new().await;
+        let mut test_client2 = TestClient::new();
         test_client2
             .authenticate_as("user1@test.com", "password123")
             .await
@@ -237,7 +237,7 @@ mod authorization_security_tests {
         // Admin should be able to access any project
         let req = test_client
             .authenticated_request("GET", &format!("/api/projects/{}", project_id))
-            .await;
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
 
@@ -253,7 +253,7 @@ mod rate_limiting_security_tests {
 
     #[tokio::test]
     async fn test_login_rate_limiting() {
-        let test_client = TestClient::new().await;
+        let test_client = TestClient::new();
 
         // Make multiple rapid login attempts
         for i in 0..15 {
@@ -300,7 +300,7 @@ mod rate_limiting_security_tests {
 
     #[tokio::test]
     async fn test_register_rate_limiting() {
-        let test_client = TestClient::new().await;
+        let test_client = TestClient::new();
 
         // Make multiple rapid registration attempts
         for i in 0..10 {
@@ -328,7 +328,7 @@ mod rate_limiting_security_tests {
 
     #[tokio::test]
     async fn test_password_reset_rate_limiting() {
-        let test_client = TestClient::new().await;
+        let test_client = TestClient::new();
 
         // Make multiple rapid password reset requests
         for _ in 0..10 {
@@ -359,7 +359,7 @@ mod csrf_protection_tests {
 
     #[tokio::test]
     async fn test_csrf_protection_missing_token() {
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
         test_client
             .authenticate_as("admin@test.com", "admin123")
             .await
@@ -389,7 +389,7 @@ mod csrf_protection_tests {
 
     #[tokio::test]
     async fn test_csrf_protection_invalid_token() {
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
         test_client
             .authenticate_as("admin@test.com", "admin123")
             .await
@@ -418,7 +418,7 @@ mod csrf_protection_tests {
 
     #[tokio::test]
     async fn test_csrf_protection_valid_token() {
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
         test_client
             .authenticate_as("admin@test.com", "admin123")
             .await
@@ -456,7 +456,7 @@ mod security_headers_tests {
 
     #[tokio::test]
     async fn test_security_headers_present() {
-        let test_client = TestClient::new().await;
+        let test_client = TestClient::new();
 
         let req = test::TestRequest::get().uri("/health").to_request();
         let app = TestClient::get_app().await;
@@ -483,7 +483,7 @@ mod security_headers_tests {
     async fn test_strict_transport_security_https() {
         // This test would require HTTPS setup
         // For now, just verify the header logic exists
-        let test_client = TestClient::new().await;
+        let test_client = TestClient::new();
 
         let req = test::TestRequest::get()
             .uri("/health")
@@ -506,7 +506,7 @@ mod input_validation_security_tests {
 
     #[tokio::test]
     async fn test_sql_injection_prevention() {
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
         test_client
             .authenticate_as("admin@test.com", "admin123")
             .await
@@ -540,7 +540,7 @@ mod input_validation_security_tests {
 
     #[tokio::test]
     async fn test_xss_prevention() {
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
         test_client
             .authenticate_as("admin@test.com", "admin123")
             .await
@@ -572,7 +572,7 @@ mod input_validation_security_tests {
 
     #[tokio::test]
     async fn test_path_traversal_prevention() {
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
         test_client
             .authenticate_as("admin@test.com", "admin123")
             .await

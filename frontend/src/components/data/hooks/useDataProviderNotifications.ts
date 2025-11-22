@@ -1,5 +1,5 @@
 // Data Provider Notifications Hook
-import { useNotifications, useAlerts } from './notifications';
+import { useNotifications, useAlerts } from '../notifications';
 
 export const useDataProviderNotifications = () => {
   const { notifications, addNotification } = useNotifications();

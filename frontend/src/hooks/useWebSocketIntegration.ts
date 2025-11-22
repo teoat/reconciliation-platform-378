@@ -18,7 +18,8 @@ import type {
 // WebSocket integration hook for real-time updates
 export const useWebSocketIntegration = () => {
   const {
-    isConnected,
+    status,
+    isConnected: checkIsConnected,
     subscribe,
     unsubscribe,
     emit,
@@ -32,9 +33,23 @@ export const useWebSocketIntegration = () => {
   const [activeUsers, setActiveUsers] = useState<UserPresenceMessage[]>([]);
   const subscriptions = useRef<Map<string, string>>(new Map());
 
+  useEffect(() => {
+    if (status.connected) {
+      setConnectionStatus('connected');
+    } else if (status.reconnecting) {
+      setConnectionStatus('reconnecting');
+    } else if (status.connecting) {
+      setConnectionStatus('connecting');
+    } else if (status.error) {
+      setConnectionStatus('error');
+    } else {
+      setConnectionStatus('disconnected');
+    }
+  }, [status]);
+
   // Subscribe to WebSocket events
   useEffect(() => {
-    if (!isConnected()) return;
+    if (!checkIsConnected()) return;
 
     // Subscribe to reconciliation job updates
     const reconciliationSubId = subscribe(
@@ -167,8 +182,8 @@ export const useWebSocketIntegration = () => {
         unsubscribe(event, subId);
       });
       subscriptions.current.clear();
-    };
-  }, [isConnected, subscribe, unsubscribe, dispatch]);
+      };
+    }, [checkIsConnected, subscribe, unsubscribe, dispatch]);
 
   // Send reconciliation job start command
   const startReconciliationJob = useCallback(
@@ -386,7 +401,7 @@ export const useWebSocketIntegration = () => {
     connectionStatus,
     _lastMessage,
     activeUsers,
-    isConnected: isConnected(),
+    isConnected: status.connected,
     subscribe,
     unsubscribe,
     startReconciliationJob,

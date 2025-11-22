@@ -1,4 +1,5 @@
 // React Hooks for Real-time Features
+<<<<<<< HEAD
 import { logger } from '@/services/logger';
 import { useState, useEffect, useCallback } from 'react';
 import {
@@ -56,6 +57,11 @@ interface FileUploadEvent {
   error?: string;
   completed_at?: string;
 }
+=======
+import { logger } from '../services/logger'
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { realtimeService, UserPresence, Comment, Notification, RealtimeUpdate } from '../services/realtimeService';
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
 // Real-time Connection Hook
 export const useRealtimeConnection = () => {

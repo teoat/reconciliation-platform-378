@@ -28,7 +28,6 @@ impl TestClient {
         Self {
             auth_token: None,
             user_id: None,
-            app_storage: None,
         }
     }
 
@@ -81,10 +80,11 @@ impl TestClient {
         let req = test::TestRequest::post()
             .uri("/api/auth/login")
             .insert_header(("Content-Type", "application/json"))
-            .set_json(&login_data);
+            .set_json(&login_data)
+            .to_request();
 
         let app = Self::get_app().await;
-        let resp = test::call_service(&app, req.to_request()).await;
+        let resp = test::call_service(&app, req).await;
         
         if resp.status().is_success() {
             let body: serde_json::Value = test::read_body_json(resp).await;
@@ -129,10 +129,11 @@ impl TestClient {
         let req = self
             .authenticated_request("POST", "/api/projects")
             .insert_header(("Content-Type", "application/json"))
-            .set_json(&project_data);
+            .set_json(&project_data)
+            .to_request();
 
         let app = Self::get_app().await;
-        let resp = test::call_service(&app, req.to_request()).await;
+        let resp = test::call_service(&app, req).await;
         
         if resp.status().is_success() {
             let body: serde_json::Value = test::read_body_json(resp).await;
@@ -157,10 +158,11 @@ impl TestClient {
         let req = self
             .authenticated_request("POST", "/api/files/upload")
             .insert_header(("Content-Type", "application/json"))
-            .set_json(&file_data);
+            .set_json(&file_data)
+            .to_request();
 
         let app = Self::get_app().await;
-        let resp = test::call_service(&app, req.to_request()).await;
+        let resp = test::call_service(&app, req).await;
         
         if resp.status().is_success() {
             let body: serde_json::Value = test::read_body_json(resp).await;
@@ -188,10 +190,11 @@ impl TestClient {
         let req = self
             .authenticated_request("POST", &format!("/api/projects/{}/reconciliation-jobs", project_id))
             .insert_header(("Content-Type", "application/json"))
-            .set_json(&job_data);
+            .set_json(&job_data)
+            .to_request();
 
         let app = Self::get_app().await;
-        let resp = test::call_service(&app, req.to_request()).await;
+        let resp = test::call_service(&app, req).await;
         
         if resp.status().is_success() {
             let body: serde_json::Value = test::read_body_json(resp).await;

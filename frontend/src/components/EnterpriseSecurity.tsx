@@ -1,5 +1,6 @@
 'use client';
 
+<<<<<<< HEAD
 import { useState, useEffect } from 'react';
 import {
   Shield,
@@ -10,17 +11,32 @@ import {
   Settings,
   CheckCircle,
   XCircle,
+=======
+import { useState, useEffect } from 'react'
+import { 
+  Shield, 
+  Lock, 
+  Eye, 
+  User, 
+  Users, 
+  Settings, 
+  CheckCircle, 
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
   Activity,
-  X,
-  RefreshCw,
   Download,
-  Upload,
   Edit,
+<<<<<<< HEAD
   Trash2,
   Plus as PlusIcon,
 } from 'lucide-react';
 import { useData } from '../components/DataProvider';
 import type { BackendProject } from '../services/apiClient/types';
+=======
+  Plus as PlusIcon
+} from 'lucide-react'
+import { useData } from '../components/DataProvider'
+import type { BackendProject } from '../services/apiClient/types'
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
 // Enterprise Security Interfaces
 interface SecurityPolicy {

@@ -67,9 +67,13 @@ export const useCrossPageDataUpdates = (
       // Log successful update
       logAuditEvent('current-user', 'update_cross_page_data', page, 'success', {
         page,
+<<<<<<< HEAD
         dataKeys:
           typeof data === 'object' ? Object.keys(data as Record<string, unknown>) : 'unknown',
         encrypted: isSecurityEnabled,
+=======
+        data: typeof data === 'object' ? Object.keys(data as unknown as Record<string, unknown>) : 'unknown',
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
       });
     },
     [
@@ -90,10 +94,51 @@ export const useCrossPageDataUpdates = (
         callback(crossPageData);
       }, 5000); // Update every 5 seconds
 
+<<<<<<< HEAD
       return () => clearInterval(interval);
     },
     [crossPageData]
   );
+=======
+    setCrossPageData((prev) => ({
+      ...prev,
+      [page]: {
+        ...prev[page],
+        ...(processedData as typeof data),
+        lastUpdated: new Date(),
+      },
+    }));
+    
+    // Sync data via WebSocket if connected
+    if (syncConnected) {
+      wsSyncData();
+    }
+    
+    // Log successful update
+    logAuditEvent('current-user', 'update_cross_page_data', page, 'success', {
+      page,
+      dataKeys: typeof data === 'object' ? Object.keys(data as unknown as Record<string, unknown>) : 'unknown',
+      encrypted: isSecurityEnabled,
+    });
+  }, [
+    checkPermission,
+    logAuditEvent,
+    encryptData,
+    isSecurityEnabled,
+    syncConnected,
+    wsSyncData,
+    setCrossPageData,
+  ]);
+
+  const subscribeToUpdates = useCallback((callback: (data: CrossPageData) => void) => {
+    // Simulate real-time updates
+    const interval = setInterval(() => {
+      callback(crossPageData);
+    }, 5000); // Update every 5 seconds
+    
+    return () => clearInterval(interval);
+  }, [crossPageData]);
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
   return {
     updateCrossPageData,

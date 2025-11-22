@@ -137,7 +137,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       // Simulate API call
       const newUser: User = {
         id: Date.now().toString(),
-        ...data,
+        email: data.email,
+        first_name: data.first_name,
+        last_name: data.last_name,
+        role: data.role,
         status: 'pending',
         last_login: new Date().toISOString(),
         created_at: new Date().toISOString(),
@@ -208,7 +211,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
   const userColumns: Column<User>[] = [
     {
       key: 'email',
-      label: 'Email',
+      header: 'Email',
       sortable: true,
       render: (value, row) => (
         <div className="flex items-center space-x-3">
@@ -216,7 +219,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
             <Users className="h-4 w-4 text-blue-600" />
           </div>
           <div>
-            <div className="font-medium text-gray-900">{value}</div>
+            <div className="font-medium text-gray-900">{String(value)}</div>
             <div className="text-sm text-gray-500">
               {row.first_name} {row.last_name}
             </div>
@@ -226,48 +229,61 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
     },
     {
       key: 'role',
-      label: 'Role',
+      header: 'Role',
       sortable: true,
       render: (value) => (
         <StatusBadge
           status={value === 'admin' ? 'success' : value === 'user' ? 'info' : 'warning'}
-          variant="outline"
         >
-          {value}
+          {String(value)}
         </StatusBadge>
       ),
     },
     {
       key: 'status',
-      label: 'Status',
+      header: 'Status',
       sortable: true,
       render: (value) => (
         <StatusBadge
           status={value === 'active' ? 'success' : value === 'pending' ? 'warning' : 'error'}
         >
-          {value}
+          {String(value)}
         </StatusBadge>
       ),
     },
     {
       key: 'last_login',
-      label: 'Last Login',
+      header: 'Last Login',
       sortable: true,
       render: (value) => (
+<<<<<<< HEAD
         <div className="text-sm text-gray-600">{new Date(value).toLocaleDateString()}</div>
       ),
+=======
+        <div className="text-sm text-gray-600">
+          {new Date(String(value)).toLocaleDateString()}
+        </div>
+      )
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
     },
     {
       key: 'created_at',
-      label: 'Created',
+      header: 'Created',
       sortable: true,
       render: (value) => (
+<<<<<<< HEAD
         <div className="text-sm text-gray-600">{new Date(value).toLocaleDateString()}</div>
       ),
+=======
+        <div className="text-sm text-gray-600">
+          {new Date(String(value)).toLocaleDateString()}
+        </div>
+      )
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
     },
     {
       key: 'id' as keyof User,
-      label: 'Actions',
+      header: 'Actions',
       render: (_, row) => (
         <div className="flex items-center space-x-2">
           <Button size="sm" variant="outline" onClick={() => handleEditClick(row)}>
@@ -422,6 +438,47 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
                     { value: 'inactive', label: 'Inactive' },
                   ]}
                 />
+<<<<<<< HEAD
+=======
+            </div>
+          </div>
+        </Card>
+
+        {/* Users Table */}
+        <Card>
+          <div className="p-6">
+            <DataTable
+              data={filteredUsers as unknown as Record<string, unknown>[]}
+              columns={userColumns as unknown as Column<Record<string, unknown>>[]}
+              emptyMessage="No users found"
+            />
+          </div>
+        </Card>
+
+        {/* Create User Modal */}
+        <Modal
+          isOpen={showCreateModal}
+          onClose={() => {
+            setShowCreateModal(false)
+            reset()
+          }}
+          title="Add New User"
+        >
+          <form onSubmit={handleSubmit(handleCreateUser)} className="p-6">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email Address
+                </label>
+                <Input
+                  {...register('email')}
+                  type="email"
+                  placeholder="user@example.com"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                )}
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
               </div>
             </div>
           </Card>

@@ -30,6 +30,7 @@ export class UrlBuilder {
 
 export class ConfigBuilder {
   static createDefaultConfig(): ApiClientConfig {
+<<<<<<< HEAD
     // In development, always use relative URL to leverage Vite proxy
     // In production, use full URL or VITE_API_URL env var
     const baseURL = import.meta.env.DEV
@@ -38,6 +39,16 @@ export class ConfigBuilder {
 
     return {
       baseURL,
+=======
+    // Use import.meta.env for Vite compatibility, fallback to process.env for tests/Node, or default
+    const apiUrl =
+      import.meta.env?.VITE_API_URL ||
+      process.env?.NEXT_PUBLIC_API_URL ||
+      'http://localhost:2000/api/v1';
+
+    return {
+      baseURL: apiUrl,
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
       timeout: 30000, // 30 seconds
       retryConfig: {
         maxRetries: 3,

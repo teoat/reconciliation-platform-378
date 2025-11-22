@@ -83,6 +83,18 @@ export class FilesApiService {
     }
   }
 
+  static async processFile(projectId: string, dataSourceId: string) {
+    try {
+      const response = await apiClient.processFile(projectId, dataSourceId);
+      if (response.error) {
+        throw new Error(getErrorMessageFromApiError(response.error));
+      }
+      return response.data;
+    } catch (error) {
+      throw new Error(error instanceof Error ? error.message : 'Failed to process file');
+    }
+  }
+
   static async getFilePreview(fileId: string) {
     try {
       const response = await apiClient.get(`/api/files/${fileId}/preview`);

@@ -94,6 +94,7 @@ services:
       - reconciliation-network
     restart: unless-stopped
 
+<<<<<<< HEAD
   # ==========================================================================
   # REDIS CACHE
   # ==========================================================================
@@ -206,6 +207,82 @@ services:
           cpus: '1.0'
           memory: 1G
     restart: always
+=======
+    # ==========================================================================
+    # REDIS CACHE
+    # ==========================================================================
+    redis:
+      image: redis:7-alpine
+      container_name: reconciliation-redis
+      volumes:
+        - redis_data:/data
+        - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
+      ports:
+        - "${REDIS_PORT:-6379}:6379"
+      networks:
+        - reconciliation-network
+      restart: unless-stopped
+      environment:
+        REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass}
+      command:
+        - sh
+        - -c
+        - "redis-server /usr/local/etc/redis/redis.conf --requirepass \"$${REDIS_PASSWORD}\""
+      healthcheck:
+        test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping"]
+        interval: 10s
+        timeout: 3s
+        retries: 5
+
+    # ==========================================================================
+    # BACKEND API (Rust)
+    # ==========================================================================
+    backend:
+      build:
+        context: .
+        dockerfile: infrastructure/docker/Dockerfile.backend.optimized
+      container_name: reconciliation-backend
+      environment:
+        DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
+        REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
+        HOST: 0.0.0.0
+        PORT: 2000
+        BACKEND_PORT: 2000
+        LOG_FORMAT: json
+        CUSTOM_CSP: "default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:2000 ws://localhost:2000 http://localhost:1000 ws://localhost:1000 http://localhost:3000 ws://localhost:3000 http://localhost:5173 ws://localhost:5173; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+        JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+        JWT_EXPIRATION: ${JWT_EXPIRATION:-86400}
+        CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:1000,http://localhost:3000,http://localhost:5173}
+        RUST_LOG: ${RUST_LOG:-info}
+        MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
+        UPLOAD_PATH: /app/uploads
+        ELASTIC_APM_SERVER_URL: http://apm-server:8200
+        ELASTIC_APM_SERVICE_NAME: reconciliation-backend
+        ELASTIC_APM_ENVIRONMENT: ${ENVIRONMENT:-development}
+      volumes:
+        - uploads_data:/app/uploads
+        - logs_data:/app/logs
+        - filebeat_data:/var/log/filebeat
+      ports:
+        - "${BACKEND_PORT:-2000}:2000"
+      networks:
+        - reconciliation-network
+      depends_on:
+        postgres:
+          condition: service_started
+        redis:
+          condition: service_healthy
+        logstash:
+          condition: service_started
+        apm-server:
+          condition: service_started
+      restart: unless-stopped
+      healthcheck:
+        test: ["CMD-SHELL", "wget -q -O- http://localhost:2000/ready >/dev/null 2>&1 || exit 1"]
+        interval: 30s
+        timeout: 10s
+        retries: 3
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
   # ==========================================================================
   # FRONTEND (React/Vite) - Multi-stage optimized build
@@ -220,11 +297,19 @@ services:
         VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:2000}
     container_name: reconciliation-frontend
     environment:
+<<<<<<< HEAD
       - NODE_ENV=production
       - DOCKER_BUILDKIT=1
       - ELASTIC_APM_SERVER_URL=http://apm-server:8200
       - ELASTIC_APM_SERVICE_NAME=reconciliation-frontend
       - ELASTIC_APM_ENVIRONMENT=${ENVIRONMENT:-production}
+=======
+      - NODE_ENV=${NODE_ENV:-production}
+      - DOCKER_BUILDKIT=1
+      - ELASTIC_APM_SERVER_URL=http://apm-server:8200
+      - ELASTIC_APM_SERVICE_NAME=reconciliation-frontend
+      - ELASTIC_APM_ENVIRONMENT=${ENVIRONMENT:-development}
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
     volumes:
       - filebeat_frontend_data:/var/log/filebeat
     ports:

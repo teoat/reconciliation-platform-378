@@ -1,5 +1,5 @@
 // Real-time Frontend Service
-import { logger } from '@/services/logger';
+import { logger } from './logger';
 // This service handles WebSocket connections and real-time updates
 
 import { EventEmitter } from 'events';
@@ -175,9 +175,14 @@ class RealtimeService extends EventEmitter {
     switch (message.type) {
       case 'auth_success':
         this.isAuthenticated = true;
+<<<<<<< HEAD
         const data = message.data as Record<string, unknown> | undefined;
         this.userId = (data?.user_id as string | undefined) || null;
         this.username = (data?.username as string | undefined) || null;
+=======
+        this.userId = message.data?.user_id as string;
+        this.username = message.data?.username as string;
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
         this.emit('authenticated', message.data);
         break;
 

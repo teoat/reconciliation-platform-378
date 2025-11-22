@@ -79,6 +79,7 @@ export interface TypographyConfig {
 }
 
 export interface TypographyProps {
+<<<<<<< HEAD
   children: React.ReactNode;
   variant?: keyof TypographyVariant;
   size?: keyof TypographyScale;
@@ -92,6 +93,21 @@ export interface TypographyProps {
   as?: keyof JSX.IntrinsicElements;
   id?: string;
   'data-testid'?: string;
+=======
+  children: React.ReactNode
+  variant?: keyof TypographyVariant
+  size?: keyof TypographyScale
+  weight?: keyof TypographyConfig['fontWeight']
+  color?: string
+  align?: 'left' | 'center' | 'right' | 'justify'
+  transform?: 'uppercase' | 'lowercase' | 'capitalize' | 'normal-case'
+  decoration?: 'underline' | 'line-through' | 'no-underline'
+  truncate?: boolean
+  className?: string
+  as?: keyof React.JSX.IntrinsicElements
+  id?: string
+  'data-testid'?: string
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 }
 
 const defaultConfig: TypographyConfig = {

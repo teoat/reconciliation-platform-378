@@ -24,16 +24,25 @@ interface UseWebSocketIntegrationReturn {
 }
 
 export const useWebSocketIntegration = (): UseWebSocketIntegrationReturn => {
+<<<<<<< HEAD
   const { isConnected, sendMessage: wsSendMessage, lastMessage } = useWebSocket();
   const [progress, setProgress] = useState<ReconciliationProgress | null>(null);
   const [subscribedJobs, setSubscribedJobs] = useState<Set<string>>(new Set());
+=======
+  const { isConnected, sendMessage: wsSendMessage, on, off } = useWebSocket()
+  const [progress, setProgress] = useState<ReconciliationProgress | null>(null)
+  const [subscribedJobs, setSubscribedJobs] = useState<Set<string>>(new Set())
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
   // Handle incoming messages
   useEffect(() => {
-    if (lastMessage) {
+    const handleMessage = (data: any) => {
       try {
+<<<<<<< HEAD
         const data = JSON.parse(lastMessage.data);
 
+=======
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
         switch (data.type) {
           case 'job_progress_update':
             if (subscribedJobs.has(data.job_id)) {
@@ -82,7 +91,19 @@ export const useWebSocketIntegration = (): UseWebSocketIntegrationReturn => {
         logger.error('Error parsing WebSocket message:', error);
       }
     }
+<<<<<<< HEAD
   }, [lastMessage, subscribedJobs]);
+=======
+
+    // Register event listener
+    on('message', handleMessage)
+    
+    // Cleanup
+    return () => {
+      off('message', handleMessage)
+    }
+  }, [on, off, subscribedJobs])
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
   const subscribeToJob = useCallback(
     (jobId: string) => {

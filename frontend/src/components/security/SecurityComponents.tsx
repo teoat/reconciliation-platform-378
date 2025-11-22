@@ -1,5 +1,6 @@
 // Security Monitoring Components
 import React, { useState, useEffect } from 'react';
+<<<<<<< HEAD
 import {
   securityService,
   SecurityEvent,
@@ -12,6 +13,15 @@ import { Lock } from 'lucide-react';
 import { Eye } from 'lucide-react';
 import { EyeOff } from 'lucide-react';
 import { CheckCircle } from 'lucide-react';
+=======
+import { securityService, SecurityEvent, SecuritySeverity, SecurityEventType } from '../../services/security';
+import { Shield } from 'lucide-react'
+import { AlertTriangle } from 'lucide-react'
+import { Lock } from 'lucide-react'
+import { Eye } from 'lucide-react'
+import { EyeOff } from 'lucide-react'
+import { CheckCircle } from 'lucide-react'
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 import { XCircle } from 'lucide-react';
 
 // Security Dashboard Component
@@ -39,7 +49,7 @@ export const SecurityDashboard: React.FC = () => {
 
     // Load initial data
     setSecurityEvents(securityService.getSecurityEvents());
-    setCspViolations(securityService.getCspViolations());
+    setCspViolations(securityService.getCSPViolations());
     setSessionInfo(securityService.getSessionInfo());
 
     return () => {

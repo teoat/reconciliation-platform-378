@@ -10,7 +10,6 @@ import { UsersApiService } from './users';
 import { ProjectsApiService } from './projects';
 import { ReconciliationApiService } from './reconciliation';
 import { FilesApiService } from './files';
-import { logger } from '../logger';
 import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
 
 /**
@@ -19,13 +18,6 @@ import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
  * to modular service classes
  */
 export class ApiService {
-  // Static instances of modular services
-  private static authService = new AuthApiService();
-  private static usersService = new UsersApiService();
-  private static projectsService = new ProjectsApiService();
-  private static reconciliationService = new ReconciliationApiService();
-  private static filesService = new FilesApiService();
-
   // ============================================================================
   // AUTHENTICATION SERVICE
   // ============================================================================
@@ -52,7 +44,7 @@ export class ApiService {
    * ```
    */
   static async authenticate(email: string, password: string) {
-    return ApiService.authService.authenticate(email, password);
+    return AuthApiService.authenticate(email, password);
   }
 
   /**
@@ -85,7 +77,7 @@ export class ApiService {
     last_name: string;
     role?: string;
   }) {
-    return ApiService.authService.register(userData);
+    return AuthApiService.register(userData);
   }
 
   /**
@@ -101,7 +93,7 @@ export class ApiService {
    * ```
    */
   static async logout() {
-    return ApiService.authService.logout();
+    return AuthApiService.logout();
   }
 
   /**
@@ -117,7 +109,7 @@ export class ApiService {
    * ```
    */
   static async getCurrentUser() {
-    return ApiService.authService.getCurrentUser();
+    return AuthApiService.getCurrentUser();
   }
 
   /**
@@ -138,13 +130,14 @@ export class ApiService {
    * ```
    */
   static async changePassword(passwordData: { currentPassword: string; newPassword: string }) {
-    return ApiService.authService.changePassword(passwordData);
+    return AuthApiService.changePassword(passwordData);
   }
 
   // ============================================================================
   // USER MANAGEMENT SERVICE
   // ============================================================================
 
+<<<<<<< HEAD
   /**
    * Gets a paginated list of users with optional filtering.
    *
@@ -176,6 +169,16 @@ export class ApiService {
     } = {}
   ) {
     return ApiService.usersService.getUsers(params);
+=======
+  static async getUsers(params: {
+    page?: number;
+    per_page?: number;
+    search?: string;
+    role?: string;
+    status?: string;
+  } = {}) {
+    return UsersApiService.getUsers(params);
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
   }
 
   /**
@@ -191,7 +194,7 @@ export class ApiService {
    * ```
    */
   static async getUserById(userId: string) {
-    return ApiService.usersService.getUserById(userId);
+    return UsersApiService.getUserById(userId);
   }
 
   static async createUser(userData: {
@@ -201,7 +204,7 @@ export class ApiService {
     last_name: string;
     role?: string;
   }) {
-    return ApiService.usersService.createUser(userData);
+    return UsersApiService.createUser(userData);
   }
 
   static async updateUser(
@@ -214,17 +217,18 @@ export class ApiService {
       is_active?: boolean;
     }
   ) {
-    return ApiService.usersService.updateUser(userId, userData);
+    return UsersApiService.updateUser(userId, userData);
   }
 
   static async deleteUser(userId: string) {
-    return ApiService.usersService.deleteUser(userId);
+    return UsersApiService.deleteUser(userId);
   }
 
   // ============================================================================
   // PROJECT MANAGEMENT SERVICE
   // ============================================================================
 
+<<<<<<< HEAD
   static async getProjects(
     params: {
       page?: number;
@@ -234,10 +238,19 @@ export class ApiService {
     } = {}
   ) {
     return ApiService.projectsService.getProjects(params);
+=======
+  static async getProjects(params: {
+    page?: number;
+    per_page?: number;
+    search?: string;
+    status?: string;
+  } = {}) {
+    return ProjectsApiService.getProjects(params);
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
   }
 
   static async getProjectById(projectId: string) {
-    return ApiService.projectsService.getProjectById(projectId);
+    return ProjectsApiService.getProjectById(projectId);
   }
 
   static async createProject(projectData: {
@@ -245,7 +258,7 @@ export class ApiService {
     description?: string;
     settings?: unknown;
   }) {
-    return ApiService.projectsService.createProject(projectData);
+    return ProjectsApiService.createProject(projectData as any);
   }
 
   static async updateProject(
@@ -256,11 +269,11 @@ export class ApiService {
       settings?: unknown;
     }
   ) {
-    return ApiService.projectsService.updateProject(projectId, projectData);
+    return ProjectsApiService.updateProject(projectId, projectData as any);
   }
 
   static async deleteProject(projectId: string) {
-    return ApiService.projectsService.deleteProject(projectId);
+    return ProjectsApiService.deleteProject(projectId);
   }
 
   // ============================================================================
@@ -268,19 +281,28 @@ export class ApiService {
   // ============================================================================
 
   static async getDataSources(projectId: string) {
-    return ApiService.filesService.getDataSources(projectId);
+    return ProjectsApiService.getDataSources(projectId);
   }
 
+<<<<<<< HEAD
   static async uploadFile(projectId: string, file: File, dataSourceName?: string) {
     return ApiService.filesService.uploadFile(projectId, file, dataSourceName);
+=======
+  static async uploadFile(
+    projectId: string,
+    file: File,
+    dataSourceName?: string
+  ) {
+    return FilesApiService.uploadFile(projectId, file);
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
   }
 
   static async processFile(projectId: string, dataSourceId: string) {
-    return ApiService.filesService.processFile(projectId, dataSourceId);
+    return FilesApiService.processFile(projectId, dataSourceId);
   }
 
   static async deleteDataSource(projectId: string, dataSourceId: string) {
-    return ApiService.filesService.deleteDataSource(projectId, dataSourceId);
+    return ProjectsApiService.deleteDataSource(projectId, dataSourceId);
   }
 
   // ============================================================================
@@ -297,7 +319,7 @@ export class ApiService {
       match_type?: string;
     } = {}
   ) {
-    return ApiService.reconciliationService.getReconciliationRecords(projectId, params);
+    return ReconciliationApiService.getReconciliationRecords(projectId, params);
   }
 
   static async getReconciliationMatches(
@@ -309,7 +331,7 @@ export class ApiService {
       status?: string;
     } = {}
   ) {
-    return ApiService.reconciliationService.getReconciliationMatches(projectId, params);
+    return ReconciliationApiService.getReconciliationMatches(projectId, params);
   }
 
   static async createReconciliationMatch(
@@ -321,7 +343,7 @@ export class ApiService {
       confidence_score?: number;
     }
   ) {
-    return ApiService.reconciliationService.createReconciliationMatch(projectId, matchData);
+    return ReconciliationApiService.createReconciliationMatch(projectId, matchData);
   }
 
   static async updateReconciliationMatch(
@@ -333,23 +355,27 @@ export class ApiService {
       status?: 'matched' | 'unmatched' | 'discrepancy' | 'resolved';
     }
   ) {
+<<<<<<< HEAD
     return ApiService.reconciliationService.updateReconciliationMatch(
       projectId,
       matchId,
       matchData
     );
+=======
+    return ReconciliationApiService.updateReconciliationMatch(projectId, matchId, matchData);
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
   }
 
   static async approveMatch(projectId: string, matchId: string) {
-    return ApiService.reconciliationService.approveMatch(projectId, matchId);
+    return ReconciliationApiService.approveMatch(projectId, matchId);
   }
 
   static async rejectMatch(projectId: string, matchId: string) {
-    return ApiService.reconciliationService.rejectMatch(projectId, matchId);
+    return ReconciliationApiService.rejectMatch(projectId, matchId);
   }
 
   static async getReconciliationJobs(projectId: string) {
-    return ApiService.reconciliationService.getReconciliationJobs(projectId);
+    return ReconciliationApiService.getReconciliationJobs(projectId);
   }
 
   static async createReconciliationJob(
@@ -360,19 +386,19 @@ export class ApiService {
       config?: unknown;
     }
   ) {
-    return ApiService.reconciliationService.createReconciliationJob(projectId, jobData);
+    throw new Error('This method is deprecated and does not support the new API requirements (source IDs). Please use ReconciliationApiService directly.');
   }
 
   static async startReconciliationJob(projectId: string, jobId: string) {
-    return ApiService.reconciliationService.startReconciliationJob(projectId, jobId);
+    return apiClient.startReconciliationJob(projectId, jobId);
   }
 
   static async stopReconciliationJob(projectId: string, jobId: string) {
-    return ApiService.reconciliationService.stopReconciliationJob(projectId, jobId);
+    return ReconciliationApiService.stopReconciliationJob(jobId);
   }
 
   static async deleteReconciliationJob(projectId: string, jobId: string) {
-    return ApiService.reconciliationService.deleteReconciliationJob(projectId, jobId);
+    return apiClient.deleteReconciliationJob(projectId, jobId);
   }
 
   // ============================================================================
@@ -425,8 +451,12 @@ export class ApiService {
     try {
       const response = await apiClient.healthCheck();
       if (!response.success || response.error) {
+<<<<<<< HEAD
         const errorMessage = getErrorMessageFromApiError(response.error);
         throw new Error(errorMessage);
+=======
+        throw new Error(getErrorMessageFromApiError(response.error));
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
       }
       return response.data;
     } catch (error) {

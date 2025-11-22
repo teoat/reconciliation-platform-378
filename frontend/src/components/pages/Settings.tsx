@@ -247,10 +247,92 @@ const Settings: React.FC = () => {
           <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
         </div>
 
+<<<<<<< HEAD
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           {/* Tabs */}
           <div className="border-b border-gray-200">
             <nav className="flex -mb-px" aria-label="Tabs">
+=======
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        {/* Tabs */}
+        <div className="border-b border-gray-200">
+          <nav className="flex -mb-px" aria-label="Tabs" role="tablist">
+            <button
+              onClick={() => handleTabChange('preferences')}
+              className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'preferences'
+                  ? tabClasses.active
+                  : tabClasses.inactive
+              }`}
+              aria-label="Preferences"
+              role="tab"
+              aria-selected={activeTab === 'preferences' ? 'true' : 'false'}
+              type="button"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleTabChange('preferences')
+                }
+              }}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Palette className="w-4 h-4" aria-hidden="true" />
+                <span>Preferences</span>
+              </div>
+            </button>
+            <button
+              onClick={() => handleTabChange('notifications')}
+              className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'notifications'
+                  ? tabClasses.active
+                  : tabClasses.inactive
+              }`}
+              aria-label="Notifications"
+              role="tab"
+              aria-selected={activeTab === 'notifications' ? 'true' : 'false'}
+              type="button"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleTabChange('notifications')
+                }
+              }}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Bell className="w-4 h-4" aria-hidden="true" />
+                <span>Notifications</span>
+              </div>
+            </button>
+            <button
+              onClick={() => handleTabChange('security')}
+              className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
+                activeTab === 'security'
+                  ? tabClasses.active
+                  : tabClasses.inactive
+              }`}
+              aria-label="Security"
+              role="tab"
+              aria-selected={activeTab === 'security' ? 'true' : 'false'}
+              type="button"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  handleTabChange('security')
+                }
+              }}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <Shield className="w-4 h-4" aria-hidden="true" />
+                <span>Security</span>
+              </div>
+            </button>
+            <FeatureGate
+              featureId="onboarding-analytics"
+              requiredRole={['admin']}
+              userRole={((user as { role?: string })?.role || 'user') as 'admin' | 'analyst' | 'viewer'}
+              showUnavailable={false}
+            >
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
               <button
                 onClick={() => handleTabChange('preferences')}
                 className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
@@ -413,6 +495,84 @@ const Settings: React.FC = () => {
                   </select>
                 </div>
               </div>
+<<<<<<< HEAD
+=======
+            </div>
+          )}
+
+          {activeTab === 'security' && (
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label htmlFor="two-factor" className="block text-sm font-medium text-gray-700">
+                    Two-Factor Authentication
+                  </label>
+                  <p className="text-sm text-gray-500">Add an extra layer of security to your account</p>
+                </div>
+                <input
+                  type="checkbox"
+                  id="two-factor"
+                  checked={settings.security.twoFactorEnabled}
+                  onChange={(e) => updateSecurity('twoFactorEnabled', e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                  aria-label="Two-factor authentication"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="session-timeout" className="block text-sm font-medium text-gray-700 mb-2">
+                  Session Timeout (minutes)
+                </label>
+                <input
+                  type="number"
+                  id="session-timeout"
+                  min="15"
+                  max="1440"
+                  value={settings.security.sessionTimeout / 60}
+                  onChange={(e) => updateSecurity('sessionTimeout', parseInt(e.target.value) * 60)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  aria-label="Session timeout in minutes"
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Session will expire after {settings.security.sessionTimeout / 60} minutes of inactivity
+                </p>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'analytics' && (
+            <FeatureGate
+              featureId="onboarding-analytics-dashboard"
+              requiredRole={['admin']}
+              userRole={((user as { role?: string })?.role || 'user') as 'admin' | 'analyst' | 'viewer'}
+              fallback={
+                <div className="text-center py-8 text-gray-500">
+                  <p>Analytics dashboard is only available to administrators.</p>
+                </div>
+              }
+            >
+              <OnboardingAnalyticsDashboard showRealTime={true} />
+            </FeatureGate>
+          )}
+        </div>
+
+        {/* Save Button */}
+        <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-end space-x-4">
+          <Button variant="outline" onClick={() => navigate('/')} disabled={isSaving}>
+            Cancel
+          </Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" aria-hidden="true"></div>
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4 mr-2" />
+                Save Settings
+              </>
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
             )}
 
             {activeTab === 'notifications' && (

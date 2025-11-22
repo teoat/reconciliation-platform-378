@@ -74,9 +74,9 @@ const Profile: React.FC = () => {
       });
 
       if (!response.success) {
-        const errorMsg = response.error || response.message || 'Failed to update profile';
-        setError(errorMsg);
-        toast.error(errorMsg);
+        const errorMsg = (response.error && typeof response.error === 'object' && 'message' in response.error ? response.error.message : response.error) || response.message || 'Failed to update profile';
+        setError(errorMsg as string);
+        toast.error(errorMsg as string);
       } else {
         toast.success('Profile updated successfully');
         setIsEditing(false);
@@ -116,7 +116,8 @@ const Profile: React.FC = () => {
       });
 
       if (!response.success) {
-        throw new Error(response.error || response.message || 'Failed to change password');
+        const errorMsg = (response.error && typeof response.error === 'object' && 'message' in response.error ? response.error.message : response.error) || response.message || 'Failed to change password';
+        throw new Error(errorMsg as string);
       }
       toast.success('Password changed successfully');
       setPasswordData({
@@ -403,6 +404,49 @@ const Profile: React.FC = () => {
               </Button>
             </div>
           </form>
+<<<<<<< HEAD
+=======
+        ) : (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-3">
+              <User className="w-5 h-5 text-gray-400" />
+              <div>
+                <p className="text-sm text-gray-500">Name</p>
+                <p className="text-gray-900 font-medium">
+                  {profileData.first_name} {profileData.last_name}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center space-x-3">
+              <Mail className="w-5 h-5 text-gray-400" />
+              <div>
+                <p className="text-sm text-gray-500">Email</p>
+                <p className="text-gray-900 font-medium">{profileData.email}</p>
+              </div>
+            </div>
+
+            {(user as any)?.role && (
+              <div className="flex items-center space-x-3">
+                <div className="w-5 h-5 flex items-center justify-center">
+                  <span className="text-gray-400 text-xs">Role</span>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-500">Role</p>
+                  <p className="text-gray-900 font-medium capitalize">{(user as any).role}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Change Password */}
+      <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="flex items-center space-x-2 mb-6">
+          <Lock className="w-5 h-5 text-gray-400" />
+          <h2 className="text-xl font-semibold text-gray-900">Change Password</h2>
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
         </div>
       </main>
     </>

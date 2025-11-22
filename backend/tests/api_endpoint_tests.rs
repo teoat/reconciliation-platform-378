@@ -18,7 +18,7 @@ async fn setup_api_test_app() -> impl actix_web::dev::Service<
     actix_web::dev::ServiceRequest,
     Response = actix_web::dev::ServiceResponse<actix_web::body::BoxBody>,
     Error = actix_web::Error,
-> + Clone {
+> {
     let config = Config::from_env().expect("Failed to load test config");
     let db = Database::new(&config.database_url)
         .await

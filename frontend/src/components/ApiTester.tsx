@@ -23,6 +23,7 @@ interface ApiTesterProps {
 }
 
 interface ApiTestResult {
+<<<<<<< HEAD
   endpoint: string;
   method: string;
   status: 'success' | 'error' | 'pending';
@@ -30,6 +31,15 @@ interface ApiTestResult {
   error?: string;
   duration?: number;
   timestamp: Date;
+=======
+  endpoint: string
+  method: string
+  status: 'success' | 'error' | 'pending'
+  response?: unknown
+  error?: string
+  duration?: number
+  timestamp: Date
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 }
 
 const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
@@ -55,6 +65,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
     { value: 'custom', label: 'Custom Endpoint', method: 'GET', endpoint: '' },
   ];
 
+<<<<<<< HEAD
   const runApiTest = useCallback(
     async (endpoint: string, method: string, _body?: Record<string, unknown> | unknown[]) => {
       const startTime = Date.now();
@@ -62,6 +73,53 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
 
       // Add pending result
       const pendingResult: ApiTestResult = {
+=======
+  const runApiTest = useCallback(async (
+    endpoint: string,
+    method: string,
+    body?: Record<string, unknown> | unknown[]
+  ) => {
+    const startTime = Date.now()
+    const timestamp = new Date()
+    
+    // Add pending result
+    const pendingResult: ApiTestResult = {
+      endpoint,
+      method,
+      status: 'pending',
+      timestamp
+    }
+    
+    setTestResults(prev => [pendingResult, ...prev])
+    
+    try {
+      let response: unknown
+      
+      // Execute the appropriate API call based on endpoint
+      switch (endpoint) {
+        case '/health':
+          response = await ApiService.healthCheck()
+          break
+        case '/auth/me':
+          response = await ApiService.getCurrentUser()
+          break
+        case '/projects':
+          response = await ApiService.getProjects()
+          break
+        case '/users':
+          response = await ApiService.getUsers()
+          break
+        case '/analytics/dashboard':
+          response = await ApiService.getDashboardData()
+          break
+        default:
+          throw new Error(`Unknown endpoint: ${endpoint}`)
+      }
+      
+      const duration = Date.now() - startTime
+      
+      const successResult: ApiTestResult = {
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
         endpoint,
         method,
         status: 'pending',
@@ -131,9 +189,45 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
         setResponseBody(JSON.stringify({ error: errorMessage }, null, 2));
         showError('API Test Failed', errorMessage);
       }
+<<<<<<< HEAD
     },
     [showSuccess, showError]
   );
+=======
+      
+      setTestResults(prev => 
+        prev.map(result => 
+          result.timestamp === timestamp ? successResult : result
+        )
+      )
+      
+      setResponseBody(JSON.stringify(response, null, 2))
+      showSuccess(`API Test Successful - Endpoint ${endpoint} responded successfully`)
+      
+    } catch (error) {
+      const duration = Date.now() - startTime
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      
+      const errorResult: ApiTestResult = {
+        endpoint,
+        method,
+        status: 'error',
+        error: errorMessage,
+        duration,
+        timestamp
+      }
+      
+      setTestResults(prev => 
+        prev.map(result => 
+          result.timestamp === timestamp ? errorResult : result
+        )
+      )
+      
+      setResponseBody(JSON.stringify({ error: errorMessage }, null, 2))
+      showError(`API Test Failed - ${errorMessage}`)
+    }
+  }, [showSuccess, showError])
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
   const handleRunTest = useCallback(() => {
     if (!selectedEndpoint) return;
@@ -161,6 +255,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
     }
   }, [runApiTest]);
 
+<<<<<<< HEAD
   const copyToClipboard = useCallback(
     (text: string) => {
       navigator.clipboard.writeText(text);
@@ -168,10 +263,17 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
     },
     [showSuccess]
   );
+=======
+  const copyToClipboard = useCallback((text: string) => {
+    navigator.clipboard.writeText(text)
+    showSuccess('Response copied to clipboard')
+  }, [showSuccess])
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
   const downloadResults = useCallback(() => {
     const data = {
       timestamp: new Date().toISOString(),
+<<<<<<< HEAD
       results: testResults,
     };
 
@@ -187,6 +289,23 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
 
     showSuccess('Downloaded', 'Test results downloaded successfully');
   }, [testResults, showSuccess]);
+=======
+      results: testResults
+    }
+    
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `api-test-results-${Date.now()}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+    
+    showSuccess('Test results downloaded successfully')
+  }, [testResults, showSuccess])
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
   const clearResults = useCallback(() => {
     setTestResults([]);

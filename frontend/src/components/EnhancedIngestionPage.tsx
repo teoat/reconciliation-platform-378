@@ -105,6 +105,7 @@ export interface CSVRecord {
 }
 
 interface ProcessedData {
+<<<<<<< HEAD
   id: string;
   source: 'ingestion' | 'reconciliation' | 'indonesian';
   type: 'expense' | 'bank' | 'mixed';
@@ -113,6 +114,16 @@ interface ProcessedData {
   isIndonesian: boolean;
   processedAt: string;
   metadata: Record<string, string | number | boolean>;
+=======
+  id: string
+  source: 'ingestion' | 'reconciliation' | 'indonesian'
+  type: 'expense' | 'bank' | 'mixed'
+  data: CSVRecord | ProcessedExpenseRecord | ProcessedBankRecord
+  quality: DataQualityMetrics
+  isIndonesian: boolean
+  processedAt: string
+  metadata: Record<string, string | number | boolean>
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 }
 
 interface ReconciliationRecord {
@@ -148,6 +159,7 @@ interface IndonesianProcessedData extends ProcessedData {
 }
 
 interface SynchronizationTask {
+<<<<<<< HEAD
   id: string;
   type: 'ingestion_to_reconciliation' | 'reconciliation_to_ingestion' | 'indonesian_processing';
   data: Record<string, unknown> | unknown[];
@@ -155,6 +167,15 @@ interface SynchronizationTask {
   status: 'pending' | 'processing' | 'completed' | 'error';
   source: string;
   target: string;
+=======
+  id: string
+  type: 'ingestion_to_reconciliation' | 'reconciliation_to_ingestion' | 'indonesian_processing'
+  data: Record<string, unknown> | unknown[] | ProcessedData
+  timestamp: number
+  status: 'pending' | 'processing' | 'completed' | 'error'
+  source: string
+  target: string
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 }
 
 interface DataQualityMetrics {
@@ -245,6 +266,7 @@ const parseCSVContent = (content: string): CSVRecord[] => {
     .filter((record) => Object.values(record).some((value) => value !== ''));
 };
 
+<<<<<<< HEAD
 const calculateIndonesianQualityMetrics = (data: CSVRecord): DataQualityMetrics => {
   const metrics = {
     completeness: 0,
@@ -270,6 +292,33 @@ const calculateIndonesianQualityMetrics = (data: CSVRecord): DataQualityMetrics 
   if (data.deskripsi && String(data.deskripsi).length > 5) accuracyScore += 25;
   if (data.kategori && String(data.kategori).length > 2) accuracyScore += 25;
   metrics.accuracy = accuracyScore;
+=======
+  const calculateIndonesianQualityMetrics = (data: CSVRecord | ProcessedExpenseRecord | ProcessedBankRecord): DataQualityMetrics => {
+    const metrics = {
+      completeness: 0,
+      accuracy: 0,
+      consistency: 0,
+      validity: 0,
+      duplicates: 0,
+      errors: 0,
+      overall: 0
+    }
+
+    const dataRecord = data as Record<string, unknown>;
+    
+    // Calculate completeness based on required fields
+    const requiredFields = ['tanggal', 'deskripsi', 'jumlah', 'kategori', 'date', 'description', 'amount']
+    const filledFields = requiredFields.filter(field => dataRecord[field] && String(dataRecord[field]).trim() !== '')
+    metrics.completeness = (filledFields.length / Math.min(4, requiredFields.length)) * 100
+
+    // Calculate accuracy based on data format validation
+    let accuracyScore = 0
+    if ((dataRecord.tanggal || dataRecord.date) && /^\d{4}-\d{2}-\d{2}/.test(String(dataRecord.tanggal || dataRecord.date))) accuracyScore += 25
+    if ((dataRecord.jumlah || dataRecord.amount) && !isNaN(parseFloat(String(dataRecord.jumlah || dataRecord.amount)))) accuracyScore += 25
+    if ((dataRecord.deskripsi || dataRecord.description) && String(dataRecord.deskripsi || dataRecord.description).length > 5) accuracyScore += 25
+    if ((dataRecord.kategori || dataRecord.category1) && String(dataRecord.kategori || dataRecord.category1).length > 2) accuracyScore += 25
+    metrics.accuracy = accuracyScore
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
   // Calculate consistency (simplified)
   metrics.consistency = metrics.completeness * 0.8 + metrics.accuracy * 0.2;
@@ -325,7 +374,11 @@ const EnhancedIngestionPage = () => {
     let processedData: ProcessedData[];
 
     if (file.name.includes('expenses')) {
+<<<<<<< HEAD
       const expenses = IndonesianDataProcessor.processExpensesData(rawData);
+=======
+      const expenses = IndonesianDataProcessor.processExpenseData(rawData)
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
       processedData = expenses.map((expense: ProcessedExpenseRecord) => ({
         id: expense.id,
         source: 'ingestion' as const,
@@ -407,7 +460,7 @@ const EnhancedIngestionPage = () => {
         id: item.id,
         type: 'ingestion_to_reconciliation',
         status: 'pending',
-        data: item,
+        data: item as unknown as Record<string, unknown>,
         timestamp: Date.now(),
         source: 'ingestion',
         target: 'reconciliation',

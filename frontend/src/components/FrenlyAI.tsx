@@ -70,10 +70,15 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({ currentPage, userProgress, onAction
     accessories: [],
   });
 
+<<<<<<< HEAD
   const [currentAnimation, setCurrentAnimation] = useState<FrenlyAnimation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messageTimeoutRef = useRef<NodeJS.Timeout>();
+=======
+  const [currentAnimation, setCurrentAnimation] = useState<FrenlyAnimation | null>(null)
+  const messageTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
   // Generate contextual messages using FrenlyAgentService
   const createDefaultMessage = useCallback(

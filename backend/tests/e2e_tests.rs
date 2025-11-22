@@ -37,7 +37,7 @@ mod user_workflow_tests {
     #[tokio::test]
     async fn test_complete_reconciliation_workflow() {
         let test_config = TestConfig::default();
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
 
         // Step 1: User registration and authentication
         test_client
@@ -199,7 +199,7 @@ mod user_workflow_tests {
     #[tokio::test]
     async fn test_file_upload_workflow() {
         let test_config = TestConfig::default();
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
 
         // Step 1: User authentication
         test_client
@@ -255,9 +255,10 @@ mod user_workflow_tests {
             let mut attempts = 0;
             while attempts < 10 {
                 let req = test_client
-            .authenticated_request("GET", &format!("/api/files/{}", file_id));
+                    .authenticated_request("GET", &format!("/api/files/{}", file_id))
+                    .to_request();
                 let app = TestClient::get_app().await;
-        let resp = test::call_service(&app, req).await;
+                let resp = test::call_service(&app, req).await;
                 let file_data: serde_json::Value = test::read_body_json(resp).await;
 
                 if file_data["data"]["status"] == "completed"
@@ -308,9 +309,9 @@ mod user_workflow_tests {
         let test_config = TestConfig::default();
 
         // Create multiple test clients for different users
-        let mut admin_client = TestClient::new().await;
-        let mut manager_client = TestClient::new().await;
-        let mut analyst_client = TestClient::new().await;
+        let mut admin_client = TestClient::new();
+        let mut manager_client = TestClient::new();
+        let mut analyst_client = TestClient::new();
 
         // Authenticate users
         admin_client
@@ -418,13 +419,15 @@ mod user_workflow_tests {
 
         // Step 9: Clean up
         let req = admin_client
-            .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id));
+            .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id))
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let req = admin_client
-            .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
+            .authenticated_request("DELETE", &format!("/api/projects/{}", project_id))
+            .to_request();
         let app = TestClient::get_app().await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
@@ -433,7 +436,7 @@ mod user_workflow_tests {
     #[tokio::test]
     async fn test_data_management_workflow() {
         let test_config = TestConfig::default();
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
 
         // Authenticate as admin
         test_client
@@ -532,9 +535,9 @@ mod user_workflow_tests {
         for file_id in file_ids {
             let req = test_client
                 .authenticated_request("DELETE", &format!("/api/files/{}", file_id))
-                .await;
+                .to_request();
             let app = TestClient::get_app().await;
-        let resp = test::call_service(&app, req).await;
+            let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
         }
 
@@ -554,7 +557,7 @@ mod system_integration_tests {
     #[tokio::test]
     async fn test_system_health_monitoring() {
         let test_config = TestConfig::default();
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
 
         // Test health check endpoint
         let req = test::TestRequest::get().uri("/health").to_request();
@@ -595,7 +598,7 @@ mod system_integration_tests {
     #[tokio::test]
     async fn test_error_handling_and_recovery() {
         let test_config = TestConfig::default();
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
 
         // Test invalid authentication
         let req = test::TestRequest::post()
@@ -638,7 +641,7 @@ mod system_integration_tests {
     #[tokio::test]
     async fn test_security_features() {
         let test_config = TestConfig::default();
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
 
         // Test CSRF protection
         let req = test::TestRequest::post()
@@ -690,7 +693,7 @@ mod system_integration_tests {
     #[tokio::test]
     async fn test_performance_under_load() {
         let test_config = TestConfig::default();
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
 
         // Authenticate first
         test_client
@@ -753,7 +756,7 @@ mod data_integrity_tests {
     #[tokio::test]
     async fn test_data_consistency() {
         let test_config = TestConfig::default();
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
 
         // Authenticate as admin
         test_client
@@ -849,8 +852,8 @@ mod data_integrity_tests {
         let test_config = TestConfig::default();
 
         // Create multiple clients
-        let mut client1 = TestClient::new().await;
-        let mut client2 = TestClient::new().await;
+        let mut client1 = TestClient::new();
+        let mut client2 = TestClient::new();
 
         // Authenticate both clients
         client1
@@ -922,7 +925,7 @@ mod system_recovery_tests {
     #[tokio::test]
     async fn test_system_recovery_after_failure() {
         let test_config = TestConfig::default();
-        let mut test_client = TestClient::new().await;
+        let mut test_client = TestClient::new();
 
         // Authenticate
         test_client

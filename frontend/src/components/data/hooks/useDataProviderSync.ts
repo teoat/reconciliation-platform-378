@@ -1,6 +1,6 @@
 // Data Provider Sync Hook
 import React, { useEffect } from 'react';
-import { useSyncStatus } from './sync';
+import { useSyncStatus } from '../sync';
 
 export const useDataProviderSync = (updateOnlineStatus: (isOnline: boolean) => void) => {
   const { syncStatus, performDataSync, updateOnlineStatus: updateStatus } = useSyncStatus();

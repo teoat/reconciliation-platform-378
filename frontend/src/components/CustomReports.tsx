@@ -19,6 +19,39 @@ import {
 } from 'lucide-react';
 import { useData } from './DataProvider';
 import type { BackendProject } from '../services/apiClient/types';
+<<<<<<< HEAD
+=======
+import type { ReconciliationData } from './data/types';
+import type { ReconciliationRecord } from '@/types/index';
+import type { ReconciliationRecord as DataManagementRecord } from '../services/dataManagement/types';
+
+/**
+ * Adapter to convert DataManagement ReconciliationRecord to Report ReconciliationRecord
+ * This bridges the incompatible type definitions from different modules
+ */
+function adaptReconciliationRecord(record: DataManagementRecord): ReconciliationRecord {
+  // Extract first source if available for mapping
+  const firstSource = record.sources?.[0];
+  
+  return {
+    id: record.id,
+    projectId: record.reconciliationId, // Map reconciliationId to projectId
+    sourceId: firstSource?.id || record.id,
+    targetId: record.batchId,
+    sourceSystem: firstSource?.systemName || 'unknown',
+    targetSystem: 'reconciliation',
+    amount: (firstSource?.data as any)?.amount || 0,
+    currency: (firstSource?.data as any)?.currency || 'USD',
+    transactionDate: (firstSource?.data as any)?.date || new Date().toISOString(),
+    description: (firstSource?.data as any)?.description || '',
+    status: record.status as any, // Status types are compatible
+    matchType: undefined,
+    confidence: record.confidence,
+    discrepancies: [], // Would need to map from record.resolution or other fields
+    metadata: record.metadata || {}
+  } as ReconciliationRecord;
+}
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
 // Custom Report Interfaces
 interface ReportFilter {
@@ -286,6 +319,7 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       const cashflowData = getCashflowData();
 
       // Apply filters
+<<<<<<< HEAD
       // Note: Using unknown[] to handle different ReconciliationRecord type definitions
       let data: unknown[] = [];
       switch (report.dataSource) {
@@ -294,6 +328,17 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
           break;
         case 'cashflow':
           data = (cashflowData?.records ?? []) as unknown[];
+=======
+      let data: unknown[] = [];
+      switch (report.dataSource) {
+        case 'reconciliation':
+          // Use adapter function to properly convert types
+          data = (reconciliationData?.records || []).map(adaptReconciliationRecord);
+          break;
+        case 'cashflow':
+          // Use adapter function to properly convert types
+          data = (cashflowData?.records || []).map(adaptReconciliationRecord);
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
           break;
         case 'projects':
           data = []; // Would fetch project data
@@ -304,9 +349,9 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       }
 
       // Apply filters
-      data = data.filter((record) => {
+      data = (data as Record<string, unknown>[]).filter((record) => {
         return report.filters.every((filter) => {
-          const recordValue = (record as unknown as Record<string, unknown>)[filter.field];
+          const recordValue = record[filter.field];
           const filterValue = filter.value;
 
           switch (filter.operator) {
@@ -349,6 +394,7 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
             break;
           case 'sum':
             if (metric.field) {
+<<<<<<< HEAD
               metricsData[metric.id] = data.reduce((sum: number, record: unknown) => {
                 const recordObj = record as Record<string, unknown>;
                 const fieldValue = recordObj?.[metric.field!];
@@ -356,19 +402,33 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
                   sum + (typeof fieldValue === 'number' ? fieldValue : Number(fieldValue) || 0)
                 );
               }, 0);
+=======
+              metricsData[metric.id] = (data as Record<string, unknown>[]).reduce(
+                (sum: number, record) => {
+                  const fieldValue = record[metric.field!];
+                  return sum + (Number(fieldValue) || 0);
+                },
+                0
+              );
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
             }
             break;
           case 'average': {
             if (metric.field) {
-              const values = data
+              const values = (data as Record<string, unknown>[])
                 .map((record) => {
+<<<<<<< HEAD
                   const recordObj = record as unknown as Record<string, unknown>;
                   const fieldValue = recordObj?.[metric.field!];
                   return typeof fieldValue === 'number' ? fieldValue : Number(fieldValue) || 0;
+=======
+                  const fieldValue = record[metric.field!];
+                  return Number(fieldValue) || 0;
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
                 })
                 .filter((v) => v > 0);
               metricsData[metric.id] =
-                values.length > 0 ? values.reduce((sum, val) => sum + val, 0) / values.length : 0;
+                values.length > 0 ? values.reduce((sum: number, val) => sum + val, 0) / values.length : 0;
             }
             break;
           }

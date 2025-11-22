@@ -37,8 +37,14 @@ const ProjectEdit: React.FC = () => {
     try {
       const response = await apiClient.getProjectById(id);
       if (response.error) {
+<<<<<<< HEAD
         setError(response.error.message);
         return;
+=======
+        const errorMsg = typeof response.error === 'object' && 'message' in response.error ? response.error.message : String(response.error);
+        setError(errorMsg)
+        return
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
       }
 
       if (response.data) {
@@ -66,9 +72,12 @@ const ProjectEdit: React.FC = () => {
       const result = await updateProject(id, {
         name: formData.name,
         description: formData.description,
-        status: formData.status,
         is_active: formData.status === 'active',
+<<<<<<< HEAD
       });
+=======
+      } as any)
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
       if (result.success) {
         toast.success('Project updated successfully');

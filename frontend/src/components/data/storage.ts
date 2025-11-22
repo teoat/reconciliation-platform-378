@@ -9,14 +9,12 @@ export const useDataStorage = (
   setError: React.Dispatch<React.SetStateAction<string | null>>
 ) => {
   const dataService = DataManagementService.getInstance();
-  const [currentProject, setCurrentProjectInternal] = useState<ProjectData | null>(null);
+  const [currentProjectInternal, setCurrentProjectInternal] = useState<ProjectData | null>(null);
 
   // Sync internal state with external state
   useEffect(() => {
-    if (currentProject !== currentProjectInternal) {
-      setCurrentProject(currentProject);
-    }
-  }, [currentProjectInternal, currentProject, setCurrentProject]);
+    setCurrentProject(currentProjectInternal);
+  }, [currentProjectInternal, setCurrentProject]);
 
   // Initialize with sample project if none exists
   useEffect(() => {
@@ -106,7 +104,7 @@ export const useDataStorage = (
   );
 
   const getIngestionData = useCallback((): IngestionData | null => {
-    return currentProjectInternal?.ingestionData || null;
+    return currentProjectInternal?.ingestionData as any || null;
   }, [currentProjectInternal]);
 
   const addReconciliationData = useCallback(
@@ -133,7 +131,7 @@ export const useDataStorage = (
   );
 
   const getReconciliationData = useCallback((): ReconciliationData | null => {
-    return currentProjectInternal?.reconciliationData || null;
+    return currentProjectInternal?.reconciliationData as any || null;
   }, [currentProjectInternal]);
 
   const addCashflowData = useCallback(
@@ -159,7 +157,7 @@ export const useDataStorage = (
   );
 
   const getCashflowData = useCallback((): CashflowData | null => {
-    return currentProjectInternal?.cashflowData || null;
+    return currentProjectInternal?.cashflowData as any || null;
   }, [currentProjectInternal]);
 
   const transformIngestionToReconciliation = useCallback(

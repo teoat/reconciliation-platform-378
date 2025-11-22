@@ -301,6 +301,28 @@ const WorkflowOrchestrator = ({
     }
   }, [workflowStages, validateStageTransition, onDataSync, onStageChange]);
 
+  const goToPreviousStage = useCallback(() => {
+    const currentStageIndex = workflowStages.findIndex((stage) => stage.isActive);
+    if (currentStageIndex <= 0) {
+      return;
+    }
+
+    const previousStageData = workflowStages[currentStageIndex - 1];
+
+    setWorkflowStages((prev) =>
+      prev.map((stage) => ({
+        ...stage,
+        isActive: stage.id === previousStageData.id,
+      }))
+    );
+
+    onStageChange(previousStageData.page);
+  }, [workflowStages, onStageChange]);
+
+  const goToNextStage = useCallback(() => {
+    advanceToNextStage();
+  }, [advanceToNextStage]);
+
   return (
     <div
       className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
@@ -314,11 +336,34 @@ const WorkflowOrchestrator = ({
             Workflow Orchestration
           </h3>
         </div>
+<<<<<<< HEAD
         <WorkflowProgress
           completed={workflowProgress.completed}
           total={workflowProgress.total}
           percentage={workflowProgress.percentage}
         />
+=======
+        <div className="flex items-center space-x-2">
+          <div className="text-sm text-gray-600" aria-live="polite" aria-atomic="true">
+            <span className="sr-only">Progress:</span>
+            {workflowProgress.completed}/{workflowProgress.total} stages completed
+          </div>
+          <div
+            className="w-24 bg-gray-200 rounded-full h-2"
+            role="progressbar"
+            aria-valuenow={workflowProgress.percentage}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label={`Workflow progress: ${workflowProgress.percentage}%`}
+          >
+            <div
+              className="progress-bar progress-bar-blue h-2 rounded-full transition-all duration-300"
+              style={{ width: `${workflowProgress.percentage}%` }}
+              aria-hidden="true"
+            />
+          </div>
+        </div>
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
       </div>
 
       <WorkflowBreadcrumbs stages={workflowStages} />

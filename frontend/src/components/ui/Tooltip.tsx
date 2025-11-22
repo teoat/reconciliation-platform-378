@@ -64,6 +64,7 @@ export const Tooltip: React.FC<TooltipProps> = memo(
       right: 'right-full top-1/2 transform -translate-y-1/2 border-r-gray-900',
     };
 
+<<<<<<< HEAD
     return (
       <div className="relative inline-block">
         {React.cloneElement(children, {
@@ -82,6 +83,26 @@ export const Tooltip: React.FC<TooltipProps> = memo(
             }
           },
         })}
+=======
+  return (
+    <div className="relative inline-block">
+      {React.cloneElement(children as React.ReactElement<any>, {
+        id: triggerId,
+        'aria-describedby': tooltipId,
+        'aria-label': typeof content === 'string' ? content : undefined,
+        onMouseEnter: () => setIsHovered(true),
+        onMouseLeave: () => setIsHovered(false),
+        onFocus: () => setIsFocused(true),
+        onBlur: () => setIsFocused(false),
+        onKeyDown: (e: React.KeyboardEvent) => {
+          if (e.key === 'Escape') {
+            setIsVisible(false)
+            setIsHovered(false)
+            setIsFocused(false)
+          }
+        },
+      })}
+>>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
         {isVisible && (
           <div
