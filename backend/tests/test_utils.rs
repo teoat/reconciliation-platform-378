@@ -16,51 +16,24 @@ pub const TEST_DATABASE_URL: &str =
 // ============================================================================
 
 /// Test client for making authenticated API requests
+/// Note: App service is created fresh via get_app() method to avoid complex type storage
 pub struct TestClient {
-    // Store app service - we'll use a helper function to avoid storing the complex type
-    // The app is created fresh for each test method that needs it
     pub auth_token: Option<String>,
     pub user_id: Option<Uuid>,
 }
 
 impl TestClient {
     /// Create a new test client
-    pub async fn new() -> Self {
-        use reconciliation_backend::{config::Config, database::Database, handlers::configure_routes};
-        
-        let config = Config::from_env().unwrap_or_else(|_| {
-            Config {
-                host: "0.0.0.0".to_string(),
-                port: 2000,
-                database_url: TEST_DATABASE_URL.to_string(),
-                redis_url: "redis://localhost:6379".to_string(),
-                jwt_secret: "test-secret-key".to_string(),
-                jwt_expiration: 3600,
-                cors_origins: vec!["http://localhost:3000".to_string()],
-                log_level: "info".to_string(),
-                max_file_size: 10485760,
-                upload_path: "./uploads".to_string(),
-            }
-        });
-        
-        let db = Database::new(&config.database_url)
-            .await
-            .unwrap_or_else(|_| {
-                // Create a mock database for testing
-                panic!("Failed to create test database. Please ensure PostgreSQL is running.");
-            });
-
-        // App is created fresh for each test method that needs it
-        // We don't store it to avoid complex type issues
-        
+    pub fn new() -> Self {
         Self {
             auth_token: None,
             user_id: None,
+            app_storage: None,
         }
     }
 
-    /// Helper function to create test app
-    async fn get_app() -> impl actix_web::dev::Service<
+    /// Get test app service - creates a fresh app for each call
+    pub async fn get_app() -> impl actix_web::dev::Service<
         actix_web::dev::ServiceRequest,
         Response = actix_web::dev::ServiceResponse<actix_web::body::BoxBody>,
         Error = actix_web::Error,
@@ -97,6 +70,7 @@ impl TestClient {
         .await
     }
 
+
     /// Authenticate as a user
     pub async fn authenticate_as(&mut self, email: &str, password: &str) -> Result<(), String> {
         let login_data = json!({
@@ -107,11 +81,10 @@ impl TestClient {
         let req = test::TestRequest::post()
             .uri("/api/auth/login")
             .insert_header(("Content-Type", "application/json"))
-            .set_json(&login_data)
-            .to_request();
+            .set_json(&login_data);
 
         let app = Self::get_app().await;
-        let resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req.to_request()).await;
         
         if resp.status().is_success() {
             let body: serde_json::Value = test::read_body_json(resp).await;
@@ -156,11 +129,10 @@ impl TestClient {
         let req = self
             .authenticated_request("POST", "/api/projects")
             .insert_header(("Content-Type", "application/json"))
-            .set_json(&project_data)
-            .to_request();
+            .set_json(&project_data);
 
         let app = Self::get_app().await;
-        let resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req.to_request()).await;
         
         if resp.status().is_success() {
             let body: serde_json::Value = test::read_body_json(resp).await;
@@ -185,11 +157,10 @@ impl TestClient {
         let req = self
             .authenticated_request("POST", "/api/files/upload")
             .insert_header(("Content-Type", "application/json"))
-            .set_json(&file_data)
-            .to_request();
+            .set_json(&file_data);
 
         let app = Self::get_app().await;
-        let resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req.to_request()).await;
         
         if resp.status().is_success() {
             let body: serde_json::Value = test::read_body_json(resp).await;
@@ -217,11 +188,10 @@ impl TestClient {
         let req = self
             .authenticated_request("POST", &format!("/api/projects/{}/reconciliation-jobs", project_id))
             .insert_header(("Content-Type", "application/json"))
-            .set_json(&job_data)
-            .to_request();
+            .set_json(&job_data);
 
         let app = Self::get_app().await;
-        let resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req.to_request()).await;
         
         if resp.status().is_success() {
             let body: serde_json::Value = test::read_body_json(resp).await;

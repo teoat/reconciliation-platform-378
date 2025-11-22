@@ -9,6 +9,7 @@ use uuid::Uuid;
 
 use reconciliation_backend::{config::Config, database::Database, handlers::configure_routes};
 
+#[path = "test_utils.rs"]
 mod test_utils;
 use test_utils::*;
 

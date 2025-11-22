@@ -25,6 +25,7 @@ use reconciliation_backend::services::{
     AnalyticsService, AuthService, FileService, ProjectService, ReconciliationService, UserService,
 };
 
+#[path = "test_utils.rs"]
 mod test_utils;
 use test_utils::{TestClient, TestConfig};
 
@@ -73,8 +74,9 @@ mod user_workflow_tests {
 
         let req = test_client
             .authenticated_request("POST", "/api/data-sources")
-            .set_json(&data_source1_data);
-        let resp = test::call_service(&test_client.app, req).await;
+            .set_json(&data_source1_data).to_request();
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let data_source2_data = serde_json::json!({
@@ -88,8 +90,9 @@ mod user_workflow_tests {
 
         let req = test_client
             .authenticated_request("POST", "/api/data-sources")
-            .set_json(&data_source2_data);
-        let resp = test::call_service(&test_client.app, req).await;
+            .set_json(&data_source2_data).to_request();
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 5: Create reconciliation job
@@ -117,8 +120,9 @@ mod user_workflow_tests {
 
         let req = test_client
             .authenticated_request("PUT", &format!("/api/reconciliation/jobs/{}", job_id))
-            .set_json(&job_config);
-        let resp = test::call_service(&test_client.app, req).await;
+            .set_json(&job_config).to_request();
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 7: Start reconciliation job
@@ -127,7 +131,8 @@ mod user_workflow_tests {
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
             );
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 8: Monitor job progress
@@ -136,7 +141,8 @@ mod user_workflow_tests {
         while !job_completed && attempts < 30 {
             let req = test_client
                 .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id));
-            let resp = test::call_service(&test_client.app, req).await;
+            let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
             let body: serde_json::Value = test::read_body_json(resp).await;
 
             let status = body["status"].as_str().unwrap();
@@ -159,7 +165,8 @@ mod user_workflow_tests {
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/results", job_id),
             );
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -171,18 +178,21 @@ mod user_workflow_tests {
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/export", job_id),
             );
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 11: Clean up
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id));
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
 
@@ -222,8 +232,10 @@ mod user_workflow_tests {
         // Step 4: Verify all files were uploaded
         for file_id in &file_ids {
             let req = test_client
-            .authenticated_request("GET", &format!("/api/files/{}", file_id));
-            let resp = test::call_service(&test_client.app, req).await;
+                .authenticated_request("GET", &format!("/api/files/{}", file_id))
+                .to_request();
+            let app = TestClient::get_app().await;
+            let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
 
             let file_data: serde_json::Value = test::read_body_json(resp).await;
@@ -233,8 +245,10 @@ mod user_workflow_tests {
         // Step 5: Process files
         for file_id in &file_ids {
             let req = test_client
-            .authenticated_request("POST", &format!("/api/files/{}/process", file_id));
-            let resp = test::call_service(&test_client.app, req).await;
+                .authenticated_request("POST", &format!("/api/files/{}/process", file_id))
+                .to_request();
+            let app = TestClient::get_app().await;
+            let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
 
             // Wait for processing to complete
@@ -242,7 +256,8 @@ mod user_workflow_tests {
             while attempts < 10 {
                 let req = test_client
             .authenticated_request("GET", &format!("/api/files/{}", file_id));
-                let resp = test::call_service(&test_client.app, req).await;
+                let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
                 let file_data: serde_json::Value = test::read_body_json(resp).await;
 
                 if file_data["data"]["status"] == "completed"
@@ -258,9 +273,10 @@ mod user_workflow_tests {
 
         // Step 6: List project files
         let req = test_client
-            .authenticated_request("GET", &format!("/api/files/project/{}", project_id));
-        // Note: TestClient no longer stores app - tests should create app directly
-        // This test needs to be refactored to use setup_test_app() or similar
+            .authenticated_request("GET", &format!("/api/files/project/{}", project_id))
+            .to_request();
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let files_data: serde_json::Value = test::read_body_json(resp).await;
@@ -272,14 +288,16 @@ mod user_workflow_tests {
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/files/{}", file_to_delete))
             .await;
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 8: Verify file was deleted
         let req = test_client
             .authenticated_request("GET", &format!("/api/files/{}", file_to_delete))
             .await;
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
         println!("✅ File upload workflow E2E test passed");
@@ -326,8 +344,9 @@ mod user_workflow_tests {
 
         let req = manager_client
             .authenticated_request("PUT", &format!("/api/projects/{}", project_id))
-            .set_json(&project_settings);
-        let resp = test::call_service(&manager_client.app, req).await;
+            .set_json(&project_settings).to_request();
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 3: Analyst uploads files
@@ -352,7 +371,8 @@ mod user_workflow_tests {
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
             );
-        let resp = test::call_service(&analyst_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 6: All users monitor progress
@@ -363,7 +383,8 @@ mod user_workflow_tests {
             let req = admin_client
                 .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id))
                 .await;
-            let resp = test::call_service(&admin_client.app, req).await;
+            let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
             let body: serde_json::Value = test::read_body_json(resp).await;
 
             let status = body["status"].as_str().unwrap();
@@ -381,7 +402,8 @@ mod user_workflow_tests {
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/results", job_id),
             );
-        let resp = test::call_service(&manager_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 8: Admin exports final results
@@ -390,18 +412,21 @@ mod user_workflow_tests {
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/export", job_id),
             );
-        let resp = test::call_service(&admin_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 9: Clean up
         let req = admin_client
             .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id));
-        let resp = test::call_service(&admin_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let req = admin_client
             .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
-        let resp = test::call_service(&admin_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
 
@@ -453,8 +478,9 @@ mod user_workflow_tests {
 
             let req = test_client
                 .authenticated_request("POST", "/api/data-sources")
-                .set_json(&data_source_data);
-            let resp = test::call_service(&test_client.app, req).await;
+                .set_json(&data_source_data).to_request();
+            let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
         }
 
@@ -462,7 +488,8 @@ mod user_workflow_tests {
         let req = test_client
             .authenticated_request("GET", "/api/data-sources")
             .await;
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -482,8 +509,9 @@ mod user_workflow_tests {
 
         let req = test_client
             .authenticated_request("PUT", &format!("/api/data-sources/{}", data_source_id))
-            .set_json(&updated_schema);
-        let resp = test::call_service(&test_client.app, req).await;
+            .set_json(&updated_schema).to_request();
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 6: Validate data sources
@@ -495,7 +523,8 @@ mod user_workflow_tests {
                     &format!("/api/data-sources/{}/validate", data_source_id),
                 )
                 .await;
-            let resp = test::call_service(&test_client.app, req).await;
+            let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
         }
 
@@ -504,13 +533,15 @@ mod user_workflow_tests {
             let req = test_client
                 .authenticated_request("DELETE", &format!("/api/files/{}", file_id))
                 .await;
-            let resp = test::call_service(&test_client.app, req).await;
+            let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
         }
 
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
 }
@@ -527,7 +558,8 @@ mod system_integration_tests {
 
         // Test health check endpoint
         let req = test::TestRequest::get().uri("/health").to_request();
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -537,7 +569,8 @@ mod system_integration_tests {
         let req = test::TestRequest::get()
             .uri("/api/system/status")
             .to_request();
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -551,7 +584,8 @@ mod system_integration_tests {
         let req = test_client
             .authenticated_request("GET", "/api/system/metrics")
             .await;
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -571,7 +605,8 @@ mod system_integration_tests {
                 "password": "wrong_password"
             }))
             .to_request();
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
         // Test invalid project access
@@ -582,18 +617,21 @@ mod system_integration_tests {
         let req = test_client
             .authenticated_request("GET", "/api/projects/invalid-id")
             .await;
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
         // Test rate limiting
         for _ in 0..20 {
             let req = test::TestRequest::get().uri("/health").to_request();
-            let _resp = test::call_service(&test_client.app, req).await;
+            let app = TestClient::get_app().await;
+            let _resp = test::call_service(&app, req).await;
         }
 
         // Should eventually hit rate limit
         let req = test::TestRequest::get().uri("/health").to_request();
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         // Rate limit might not be hit in this test, but the system should handle it gracefully
     }
 
@@ -610,7 +648,8 @@ mod system_integration_tests {
                 "description": "Test"
             }))
             .to_request();
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         // Should fail without CSRF token
 
         // Test input validation
@@ -623,14 +662,16 @@ mod system_integration_tests {
                 "last_name": "User"
             }))
             .to_request();
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
         // Test SQL injection protection
         let req = test::TestRequest::get()
             .uri("/api/projects/'; DROP TABLE projects; --")
             .to_request();
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         // Should not cause database issues
 
         // Test XSS protection
@@ -641,7 +682,8 @@ mod system_integration_tests {
                 "description": "Test"
             }))
             .to_request();
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         // Should sanitize input
     }
 
@@ -743,7 +785,8 @@ mod data_integrity_tests {
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
             );
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Wait for completion
@@ -752,7 +795,8 @@ mod data_integrity_tests {
         while !job_completed && attempts < 30 {
             let req = test_client
                 .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id));
-            let resp = test::call_service(&test_client.app, req).await;
+            let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
             let body: serde_json::Value = test::read_body_json(resp).await;
 
             let status = body["status"].as_str().unwrap();
@@ -770,7 +814,8 @@ mod data_integrity_tests {
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/results", job_id),
             );
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -788,12 +833,14 @@ mod data_integrity_tests {
         // Clean up
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id));
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
 
@@ -834,13 +881,15 @@ mod data_integrity_tests {
 
         let req1 = client1
             .authenticated_request("PUT", &format!("/api/projects/{}", project_id))
-            .set_json(&update1);
+            .set_json(&update1).to_request();
         let req2 = client2
             .authenticated_request("PUT", &format!("/api/projects/{}", project_id))
-            .set_json(&update2);
+            .set_json(&update2)
+            .to_request();
 
-        let resp1 = test::call_service(&client1.app, req1).await;
-        let resp2 = test::call_service(&client2.app, req2).await;
+        let app = TestClient::get_app().await;
+        let resp1 = test::call_service(&app, req1).await;
+        let resp2 = test::call_service(&app, req2).await;
 
         // At least one should succeed
         assert!(resp1.status().is_success() || resp2.status().is_success());
@@ -849,7 +898,8 @@ mod data_integrity_tests {
         let req = client1
             .authenticated_request("GET", &format!("/api/projects/{}", project_id))
             .await;
-        let resp = test::call_service(&client1.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -858,7 +908,8 @@ mod data_integrity_tests {
         // Clean up
         let req = client1
             .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
-        let resp = test::call_service(&client1.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
 }
@@ -897,21 +948,24 @@ mod system_recovery_tests {
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
             );
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Simulate system failure by stopping the job
         let req = test_client
             .authenticated_request("POST", &format!("/api/reconciliation/jobs/{}/stop", job_id))
             .await;
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Verify system can recover
         let req = test_client
             .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id))
             .await;
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -923,26 +977,30 @@ mod system_recovery_tests {
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
             );
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Verify job is running again
         let req = test_client
             .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id))
             .await;
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         let body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(body["status"].as_str().unwrap(), "running");
 
         // Clean up
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id));
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
 }

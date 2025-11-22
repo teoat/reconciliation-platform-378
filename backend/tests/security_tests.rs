@@ -11,6 +11,7 @@ use reconciliation_backend::handlers::*;
 use reconciliation_backend::middleware::security::{configure_security_middleware, SecurityConfig};
 use reconciliation_backend::services::{AuthService, UserService};
 
+#[path = "test_utils.rs"]
 mod test_utils;
 use test_utils::TestClient;
 
@@ -46,7 +47,8 @@ mod authorization_security_tests {
         let req = test_client2
             .authenticated_request("GET", &format!("/api/projects/{}", project_id))
             .await;
-        let resp = test::call_service(&test_client2.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         // Should return 403 Forbidden
         assert_eq!(resp.status(), 403);
@@ -84,7 +86,8 @@ mod authorization_security_tests {
         let req = test_client2
             .authenticated_request("GET", &format!("/api/files/{}", file_id))
             .await;
-        let resp = test::call_service(&test_client2.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         // Should return 403 Forbidden
         assert_eq!(resp.status(), 403);
@@ -126,7 +129,8 @@ mod authorization_security_tests {
                 &format!("/api/projects/{}/reconciliation-jobs", project_id),
             )
             .set_json(&job_data);
-        let resp = test::call_service(&test_client2.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         // Should return 403 Forbidden
         assert_eq!(resp.status(), 403);
@@ -167,7 +171,8 @@ mod authorization_security_tests {
                 &format!("/api/projects/{}/data-sources", project_id),
             )
             .set_json(&data_source_data);
-        let resp = test::call_service(&test_client2.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         // Should return 403 Forbidden
         assert_eq!(resp.status(), 403);
@@ -201,7 +206,8 @@ mod authorization_security_tests {
                 &format!("/api/projects/{}/files/upload", project_id),
             )
             .await;
-        let resp = test::call_service(&test_client2.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         // Should return 403 Forbidden
         assert_eq!(resp.status(), 403);
@@ -232,7 +238,8 @@ mod authorization_security_tests {
         let req = test_client
             .authenticated_request("GET", &format!("/api/projects/{}", project_id))
             .await;
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         // Should succeed
         assert!(resp.status().is_success());
@@ -260,7 +267,8 @@ mod rate_limiting_security_tests {
                 .set_json(&login_data)
                 .to_request();
 
-            let resp = test::call_service(&test_client.app, req).await;
+            let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
             if i < 10 {
                 // First 10 attempts should fail with 401/400
@@ -284,7 +292,8 @@ mod rate_limiting_security_tests {
             .set_json(&login_data)
             .to_request();
 
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         // Should eventually hit rate limit (429 Too Many Requests)
         // Note: This test may not always hit the limit depending on implementation
     }
@@ -307,7 +316,8 @@ mod rate_limiting_security_tests {
                 .set_json(&register_data)
                 .to_request();
 
-            let resp = test::call_service(&test_client.app, req).await;
+            let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
             // Should eventually hit rate limit
             if resp.status() == 429 {
@@ -331,7 +341,8 @@ mod rate_limiting_security_tests {
                 .set_json(&reset_data)
                 .to_request();
 
-            let resp = test::call_service(&test_client.app, req).await;
+            let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
             // Should eventually hit rate limit
             if resp.status() == 429 {
@@ -366,7 +377,8 @@ mod csrf_protection_tests {
             .set_json(&project_data)
             .to_request();
 
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         // Should return 400 Bad Request due to missing CSRF token
         assert_eq!(resp.status(), 400);
@@ -397,7 +409,8 @@ mod csrf_protection_tests {
             .set_json(&project_data)
             .to_request();
 
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         // Should return 400 Bad Request due to CSRF token mismatch
         assert_eq!(resp.status(), 400);
@@ -428,7 +441,8 @@ mod csrf_protection_tests {
             .set_json(&project_data)
             .to_request();
 
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         // Should succeed with valid CSRF token
         assert!(resp.status().is_success());
@@ -445,7 +459,8 @@ mod security_headers_tests {
         let test_client = TestClient::new().await;
 
         let req = test::TestRequest::get().uri("/health").to_request();
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         assert!(resp.status().is_success());
 
@@ -475,7 +490,8 @@ mod security_headers_tests {
             .insert_header(("X-Forwarded-Proto", "https"))
             .to_request();
 
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         // In a real HTTPS environment, should have Strict-Transport-Security header
         // For this test, we just verify the response is successful
@@ -506,7 +522,8 @@ mod input_validation_security_tests {
         let req = test_client
             .authenticated_request("POST", "/api/projects")
             .set_json(&project_data);
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         // Should either succeed (with sanitized input) or fail gracefully
         // Should NOT cause database errors
@@ -516,7 +533,8 @@ mod input_validation_security_tests {
         let req = test_client
             .authenticated_request("GET", "/api/projects")
             .await;
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
 
@@ -538,7 +556,8 @@ mod input_validation_security_tests {
         let req = test_client
             .authenticated_request("POST", "/api/projects")
             .set_json(&project_data);
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         // Should succeed but with sanitized input
         assert!(resp.status().is_success());
@@ -563,7 +582,8 @@ mod input_validation_security_tests {
         let req = test_client
             .authenticated_request("POST", "/api/projects/../../../etc/passwd/files/upload")
             .await;
-        let resp = test::call_service(&test_client.app, req).await;
+        let app = TestClient::get_app().await;
+        let resp = test::call_service(&app, req).await;
 
         // Should fail with validation error
         assert!(resp.status().is_client_error());
