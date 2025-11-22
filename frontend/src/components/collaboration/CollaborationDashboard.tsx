@@ -260,8 +260,17 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
         type: 'users_update';
         users: Array<{ id: string; name: string; email: string; lastSeen: string }>;
       }) => {
-        if (data.type === 'users_update') {
-          setActiveUsers(data.users);
+        if (data.type === 'users_update' && data.users) {
+          const users: CollaborationUser[] = data.users.map((user: any) => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            avatar: user.avatar,
+            status: (user.status as CollaborationUser['status']) || 'online',
+            currentPage: user.currentPage,
+            lastActivity: user.lastSeen ? new Date(user.lastSeen) : new Date()
+          }));
+          setActiveUsers(users);
         }
       });
       setUsersSubscriptionId(usersSubId);
@@ -270,8 +279,18 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
         type: 'activity';
         activity: { id: string; userId: string; action: string; timestamp: string; details?: Record<string, unknown> };
       }) => {
-        if (data.type === 'activity') {
-          setActivities((prev) => [data.activity, ...prev].slice(0, 100));
+        if (data.type === 'activity' && data.activity) {
+          const activity: CollaborationActivity = {
+            id: data.activity.id,
+            userId: data.activity.userId,
+            userName: (data.activity as any).userName || 'Unknown',
+            action: (data.activity.action as CollaborationActivity['action']) || 'viewed',
+            target: (data.activity as any).target || '',
+            targetType: ((data.activity as any).targetType as CollaborationActivity['targetType']) || 'project',
+            timestamp: new Date(data.activity.timestamp),
+            metadata: (data.activity.details as Record<string, unknown>) || {}
+          };
+          setActivities((prev) => [activity, ...prev].slice(0, 100));
         }
       });
       setActivitiesSubscriptionId(activitiesSubId);
