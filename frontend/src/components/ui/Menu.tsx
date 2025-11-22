@@ -80,22 +80,7 @@ export const Menu: React.FC<MenuProps> = memo(
       end: 'right-0',
     };
 
-<<<<<<< HEAD
-    return (
-      <div className="relative inline-block">
-        {React.cloneElement(trigger, {
-          ref: triggerRef,
-          id: triggerId,
-          'aria-haspopup': 'menu',
-          'aria-expanded': isOpen,
-          'aria-controls': menuId,
-          onClick: () => setIsOpen(!isOpen),
-          onKeyDown: (e: React.KeyboardEvent) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              setIsOpen(!isOpen);
-=======
-  const alignClasses = {
+const alignClasses = {
     start: 'left-0',
     center: 'left-1/2 transform -translate-x-1/2',
     end: 'right-0',
@@ -140,8 +125,7 @@ export const Menu: React.FC<MenuProps> = memo(
                     setIsOpen(false)
                   }
                 },
-              } as any)
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+              } as any)481751c1
             }
           },
         })}

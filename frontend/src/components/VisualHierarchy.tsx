@@ -96,11 +96,7 @@ export const Typography: React.FC<TypographyProps> = ({
     return colors[color];
   };
 
-<<<<<<< HEAD
-  const Component = variant.startsWith('h') ? (variant as keyof JSX.IntrinsicElements) : 'p';
-=======
-  const Component = variant.startsWith('h') ? variant as keyof React.JSX.IntrinsicElements : 'p'
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+const Component = variant.startsWith('h') ? variant as keyof React.JSX.IntrinsicElements : 'p'481751c1
 
   return (
     <Component

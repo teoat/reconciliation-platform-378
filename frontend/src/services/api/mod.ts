@@ -137,39 +137,6 @@ export class ApiService {
   // USER MANAGEMENT SERVICE
   // ============================================================================
 
-<<<<<<< HEAD
-  /**
-   * Gets a paginated list of users with optional filtering.
-   *
-   * @param params - Query parameters for filtering and pagination
-   * @param params.page - Page number (1-based, default: 1)
-   * @param params.per_page - Items per page (default: 10, max: 100)
-   * @param params.search - Search term for email or name
-   * @param params.role - Filter by user role (user, analyst, manager, admin)
-   * @param params.status - Filter by status (active, inactive)
-   * @returns Promise resolving to paginated list of users
-   *
-   * @example
-   * ```typescript
-   * const users = await ApiService.getUsers({
-   *   page: 1,
-   *   per_page: 20,
-   *   role: 'analyst',
-   *   search: 'john'
-   * });
-   * ```
-   */
-  static async getUsers(
-    params: {
-      page?: number;
-      per_page?: number;
-      search?: string;
-      role?: string;
-      status?: string;
-    } = {}
-  ) {
-    return ApiService.usersService.getUsers(params);
-=======
   static async getUsers(params: {
     page?: number;
     per_page?: number;
@@ -178,7 +145,6 @@ export class ApiService {
     status?: string;
   } = {}) {
     return UsersApiService.getUsers(params);
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
   }
 
   /**
@@ -228,17 +194,6 @@ export class ApiService {
   // PROJECT MANAGEMENT SERVICE
   // ============================================================================
 
-<<<<<<< HEAD
-  static async getProjects(
-    params: {
-      page?: number;
-      per_page?: number;
-      search?: string;
-      status?: string;
-    } = {}
-  ) {
-    return ApiService.projectsService.getProjects(params);
-=======
   static async getProjects(params: {
     page?: number;
     per_page?: number;
@@ -246,7 +201,6 @@ export class ApiService {
     status?: string;
   } = {}) {
     return ProjectsApiService.getProjects(params);
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
   }
 
   static async getProjectById(projectId: string) {
@@ -284,17 +238,12 @@ export class ApiService {
     return ProjectsApiService.getDataSources(projectId);
   }
 
-<<<<<<< HEAD
-  static async uploadFile(projectId: string, file: File, dataSourceName?: string) {
-    return ApiService.filesService.uploadFile(projectId, file, dataSourceName);
-=======
   static async uploadFile(
     projectId: string,
     file: File,
     dataSourceName?: string
   ) {
     return FilesApiService.uploadFile(projectId, file);
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
   }
 
   static async processFile(projectId: string, dataSourceId: string) {
@@ -355,15 +304,7 @@ export class ApiService {
       status?: 'matched' | 'unmatched' | 'discrepancy' | 'resolved';
     }
   ) {
-<<<<<<< HEAD
-    return ApiService.reconciliationService.updateReconciliationMatch(
-      projectId,
-      matchId,
-      matchData
-    );
-=======
     return ReconciliationApiService.updateReconciliationMatch(projectId, matchId, matchData);
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
   }
 
   static async approveMatch(projectId: string, matchId: string) {
@@ -451,12 +392,7 @@ export class ApiService {
     try {
       const response = await apiClient.healthCheck();
       if (!response.success || response.error) {
-<<<<<<< HEAD
-        const errorMessage = getErrorMessageFromApiError(response.error);
-        throw new Error(errorMessage);
-=======
         throw new Error(getErrorMessageFromApiError(response.error));
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
       }
       return response.data;
     } catch (error) {

@@ -3,31 +3,12 @@
 //! This module contains comprehensive end-to-end tests that test the
 //! complete user workflows and system integration.
 
-use actix_web::middleware::Logger;
-use actix_web::{test, web, App, HttpRequest, HttpResponse};
-use diesel::prelude::*;
-use diesel::r2d2::{ConnectionManager, Pool};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
-use tokio::sync::RwLock;
-use uuid::Uuid;
-
-use reconciliation_backend::errors::{AppError, AppResult};
-use reconciliation_backend::handlers::*;
-use reconciliation_backend::middleware::{
-    auth::AuthMiddlewareConfig, LoggingConfig, LoggingMiddleware, PerformanceMiddleware,
-    PerformanceMonitoringConfig,
-};
-use reconciliation_backend::services::auth::middleware::SecurityMiddleware;
-use reconciliation_backend::services::{
-    AnalyticsService, AuthService, FileService, ProjectService, ReconciliationService, UserService,
-};
+use actix_web::{test, web, App};
+use std::time::Duration;
 
 #[path = "test_utils.rs"]
 mod test_utils;
-use test_utils::{TestClient, TestConfig};
+use test_utils::{TestClient, TestConfig, get_test_config_and_db};
 use reconciliation_backend::{config::Config, database::Database, handlers::configure_routes};
 
 /// Test suite for complete user workflows
@@ -37,7 +18,7 @@ mod user_workflow_tests {
 
     #[tokio::test]
     async fn test_complete_reconciliation_workflow() {
-        let test_config = TestConfig::default();
+        let _test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Step 1: User registration and authentication
@@ -164,7 +145,8 @@ mod user_workflow_tests {
             .authenticated_request(
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
-            );
+            )
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -181,7 +163,8 @@ mod user_workflow_tests {
         let mut attempts = 0;
         while !job_completed && attempts < 30 {
             let req = test_client
-                .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id));
+                .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id))
+                .to_request();
             let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -212,7 +195,8 @@ mod user_workflow_tests {
             .authenticated_request(
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/results", job_id),
-            );
+            )
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -232,7 +216,8 @@ mod user_workflow_tests {
             .authenticated_request(
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/export", job_id),
-            );
+            )
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -246,7 +231,8 @@ mod user_workflow_tests {
 
         // Step 11: Clean up
         let req = test_client
-            .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id));
+            .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id))
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -259,7 +245,8 @@ mod user_workflow_tests {
         assert!(resp.status().is_success());
 
         let req = test_client
-            .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
+            .authenticated_request("DELETE", &format!("/api/projects/{}", project_id))
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -274,7 +261,7 @@ mod user_workflow_tests {
 
     #[tokio::test]
     async fn test_file_upload_workflow() {
-        let test_config = TestConfig::default();
+        let _test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Step 1: User authentication
@@ -424,7 +411,7 @@ mod user_workflow_tests {
 
     #[tokio::test]
     async fn test_multi_user_collaboration_workflow() {
-        let test_config = TestConfig::default();
+        let _test_config = TestConfig::default();
 
         // Create multiple test clients for different users
         let mut admin_client = TestClient::new();
@@ -476,11 +463,11 @@ mod user_workflow_tests {
         assert!(resp.status().is_success());
 
         // Step 3: Analyst uploads files
-        let file1_id = analyst_client
+        let _file1_id = analyst_client
             .upload_file(&project_id, "./test_data/analyst_file1.csv")
             .await
             .unwrap();
-        let file2_id = analyst_client
+        let _file2_id = analyst_client
             .upload_file(&project_id, "./test_data/analyst_file2.csv")
             .await
             .unwrap();
@@ -496,7 +483,8 @@ mod user_workflow_tests {
             .authenticated_request(
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
-            );
+            )
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -541,7 +529,8 @@ mod user_workflow_tests {
             .authenticated_request(
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/results", job_id),
-            );
+            )
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -558,7 +547,8 @@ mod user_workflow_tests {
             .authenticated_request(
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/export", job_id),
-            );
+            )
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -602,7 +592,7 @@ mod user_workflow_tests {
 
     #[tokio::test]
     async fn test_data_management_workflow() {
-        let test_config = TestConfig::default();
+        let _test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Authenticate as admin
@@ -658,7 +648,7 @@ mod user_workflow_tests {
         )
         .await;
         let resp = test::call_service(&app, req).await;
-            assert!(resp.status().is_success());
+        assert!(resp.status().is_success());
         }
 
         // Step 4: Get all data sources
@@ -723,7 +713,7 @@ mod user_workflow_tests {
         )
         .await;
         let resp = test::call_service(&app, req).await;
-            assert!(resp.status().is_success());
+        assert!(resp.status().is_success());
         }
 
         // Step 7: Clean up
@@ -744,7 +734,8 @@ mod user_workflow_tests {
         }
 
         let req = test_client
-            .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
+            .authenticated_request("DELETE", &format!("/api/projects/{}", project_id))
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -765,7 +756,7 @@ mod system_integration_tests {
 
     #[tokio::test]
     async fn test_system_health_monitoring() {
-        let test_config = TestConfig::default();
+        let _test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Test health check endpoint
@@ -827,7 +818,7 @@ mod system_integration_tests {
 
     #[tokio::test]
     async fn test_error_handling_and_recovery() {
-        let test_config = TestConfig::default();
+        let _test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Test invalid authentication
@@ -879,7 +870,7 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-            let _resp = test::call_service(&app, req).await;
+            let resp = test::call_service(&app, req).await;
         }
 
         // Should eventually hit rate limit
@@ -892,13 +883,13 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         // Rate limit might not be hit in this test, but the system should handle it gracefully
     }
 
     #[tokio::test]
     async fn test_security_features() {
-        let test_config = TestConfig::default();
+        let _test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Test CSRF protection
@@ -917,7 +908,7 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         // Should fail without CSRF token
 
         // Test input validation
@@ -972,13 +963,13 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         // Should sanitize input
     }
 
     #[tokio::test]
     async fn test_performance_under_load() {
-        let test_config = TestConfig::default();
+        let _test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Authenticate first
@@ -1041,7 +1032,7 @@ mod data_integrity_tests {
 
     #[tokio::test]
     async fn test_data_consistency() {
-        let test_config = TestConfig::default();
+        let _test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Authenticate as admin
@@ -1057,7 +1048,7 @@ mod data_integrity_tests {
             .unwrap();
 
         // Upload file
-        let file_id = test_client
+        let _file_id = test_client
             .upload_file(&project_id, "./test_data/consistency_test.csv")
             .await
             .unwrap();
@@ -1073,7 +1064,8 @@ mod data_integrity_tests {
             .authenticated_request(
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
-            );
+            )
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -1090,7 +1082,8 @@ mod data_integrity_tests {
         let mut attempts = 0;
         while !job_completed && attempts < 30 {
             let req = test_client
-                .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id));
+                .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id))
+                .to_request();
             let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -1116,7 +1109,8 @@ mod data_integrity_tests {
             .authenticated_request(
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/results", job_id),
-            );
+            )
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -1141,8 +1135,9 @@ mod data_integrity_tests {
         }
 
         // Clean up
-        let req = test_client
-            .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id));
+            let req = test_client
+                .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id))
+                .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -1155,7 +1150,8 @@ mod data_integrity_tests {
         assert!(resp.status().is_success());
 
         let req = test_client
-            .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
+            .authenticated_request("DELETE", &format!("/api/projects/{}", project_id))
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -1170,7 +1166,7 @@ mod data_integrity_tests {
 
     #[tokio::test]
     async fn test_concurrent_access() {
-        let test_config = TestConfig::default();
+        let _test_config = TestConfig::default();
 
         // Create multiple clients
         let mut client1 = TestClient::new();
@@ -1245,7 +1241,8 @@ mod data_integrity_tests {
 
         // Clean up
         let req = client1
-            .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
+            .authenticated_request("DELETE", &format!("/api/projects/{}", project_id))
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -1266,7 +1263,7 @@ mod system_recovery_tests {
 
     #[tokio::test]
     async fn test_system_recovery_after_failure() {
-        let test_config = TestConfig::default();
+        let _test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Authenticate
@@ -1292,7 +1289,8 @@ mod system_recovery_tests {
             .authenticated_request(
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
-            );
+            )
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -1342,7 +1340,8 @@ mod system_recovery_tests {
             .authenticated_request(
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
-            );
+            )
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -1371,8 +1370,9 @@ mod system_recovery_tests {
         assert_eq!(body["status"].as_str().unwrap(), "running");
 
         // Clean up
-        let req = test_client
-            .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id));
+            let req = test_client
+                .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id))
+                .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -1385,7 +1385,8 @@ mod system_recovery_tests {
         assert!(resp.status().is_success());
 
         let req = test_client
-            .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
+            .authenticated_request("DELETE", &format!("/api/projects/{}", project_id))
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()

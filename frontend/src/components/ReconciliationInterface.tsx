@@ -78,18 +78,7 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
   });
 
   // Load job results with pagination and retry logic
-<<<<<<< HEAD
-  const loadJobResults = useCallback(async (jobId: string, page = 1, perPage = 20) => {
-    setResultsLoading(true);
-    try {
-      await RetryUtility.withRetry(
-        async () => {
-          const response = await apiClient.getReconciliationJobResults(jobId, page, perPage);
-          if (response.error) {
-            const { getErrorMessageFromApiError } = await import('../../utils/errorExtraction');
-            throw new Error(getErrorMessageFromApiError(response.error));
-=======
-  const loadJobResults = useCallback(
+const loadJobResults = useCallback(
     async (jobId: string, page = 1, perPage = 20) => {
       setResultsLoading(true);
       try {
@@ -131,8 +120,7 @@ export const ReconciliationInterface: React.FC<ReconciliationInterfaceProps> = (
                 attempt,
                 error: errorMessage,
               });
-            },
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+            },481751c1
           }
 
           const data = response.data as

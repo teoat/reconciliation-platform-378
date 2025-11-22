@@ -2,9 +2,7 @@
 //! Simplified version without heavy service dependencies
 
 use actix_web::{test, web, App};
-use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::sync::Arc;
 use uuid::Uuid;
 
 // Test configuration

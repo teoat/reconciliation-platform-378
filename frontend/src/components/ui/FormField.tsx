@@ -131,14 +131,7 @@ export const FormField = memo(
 
       if (fieldset) {
         return (
-<<<<<<< HEAD
-          <fieldset
-            ref={ref as React.RefObject<HTMLFieldSetElement>}
-            className={`space-y-2 ${className}`}
-          >
-=======
-          <fieldset ref={ref as any} className={`space-y-2 ${className}`}>
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+<fieldset ref={ref as any} className={`space-y-2 ${className}`}>481751c1
             {content}
           </fieldset>
         );

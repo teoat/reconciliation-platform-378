@@ -357,15 +357,7 @@ export const useReconciliationJobs = ({
 
           setJobProgress(progressData);
 
-<<<<<<< HEAD
-              if (
-                progressData.status === 'completed' &&
-                job.status !== 'completed' &&
-                onJobUpdate
-              ) {
-                onJobUpdate(updatedJob);
-=======
-          setJobs((prev) =>
+setJobs((prev) =>
             prev.map((job) => {
               if (job.id === jobId) {
                 const updatedJob = {
@@ -387,8 +379,7 @@ export const useReconciliationJobs = ({
                   onJobUpdate(updatedJob);
                 }
 
-                return updatedJob;
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+                return updatedJob;481751c1
               }
               return job;
             })

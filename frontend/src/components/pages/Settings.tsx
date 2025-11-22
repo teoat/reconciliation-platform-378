@@ -247,12 +247,6 @@ const Settings: React.FC = () => {
           <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
         </div>
 
-<<<<<<< HEAD
-        <div className="bg-white rounded-lg shadow-md overflow-hidden">
-          {/* Tabs */}
-          <div className="border-b border-gray-200">
-            <nav className="flex -mb-px" aria-label="Tabs">
-=======
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         {/* Tabs */}
         <div className="border-b border-gray-200">
@@ -332,7 +326,6 @@ const Settings: React.FC = () => {
               userRole={((user as { role?: string })?.role || 'user') as 'admin' | 'analyst' | 'viewer'}
               showUnavailable={false}
             >
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
               <button
                 onClick={() => handleTabChange('preferences')}
                 className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
@@ -572,7 +565,6 @@ const Settings: React.FC = () => {
                 <Save className="w-4 h-4 mr-2" />
                 Save Settings
               </>
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
             )}
 
             {activeTab === 'notifications' && (

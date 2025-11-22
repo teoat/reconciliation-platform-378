@@ -256,30 +256,20 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       header: 'Last Login',
       sortable: true,
       render: (value) => (
-<<<<<<< HEAD
-        <div className="text-sm text-gray-600">{new Date(value).toLocaleDateString()}</div>
-      ),
-=======
         <div className="text-sm text-gray-600">
           {new Date(String(value)).toLocaleDateString()}
         </div>
       )
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
     },
     {
       key: 'created_at',
       header: 'Created',
       sortable: true,
       render: (value) => (
-<<<<<<< HEAD
-        <div className="text-sm text-gray-600">{new Date(value).toLocaleDateString()}</div>
-      ),
-=======
         <div className="text-sm text-gray-600">
           {new Date(String(value)).toLocaleDateString()}
         </div>
       )
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
     },
     {
       key: 'id' as keyof User,
@@ -438,8 +428,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
                     { value: 'inactive', label: 'Inactive' },
                   ]}
                 />
-<<<<<<< HEAD
-=======
             </div>
           </div>
         </Card>
@@ -456,41 +444,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
         </Card>
 
         {/* Create User Modal */}
-        <Modal
-          isOpen={showCreateModal}
-          onClose={() => {
-            setShowCreateModal(false)
-            reset()
-          }}
-          title="Add New User"
-        >
-          <form onSubmit={handleSubmit(handleCreateUser)} className="p-6">
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <Input
-                  {...register('email')}
-                  type="email"
-                  placeholder="user@example.com"
-                />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-                )}
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
-              </div>
-            </div>
-          </Card>
-
-          {/* Users Table */}
-          <Card>
-            <div className="p-6">
-              <DataTable data={filteredUsers} columns={userColumns} emptyMessage="No users found" />
-            </div>
-          </Card>
-
-          {/* Create User Modal */}
           <Modal
             isOpen={showCreateModal}
             onClose={() => {

@@ -1,16 +1,5 @@
 'use client';
 
-<<<<<<< HEAD
-import { useState, useEffect } from 'react';
-import { TrendingUp } from 'lucide-react';
-import { Activity } from 'lucide-react';
-import { Target } from 'lucide-react';
-import { Clock } from 'lucide-react';
-import { Shield } from 'lucide-react';
-import { CheckCircle } from 'lucide-react';
-import { Download } from 'lucide-react';
-import { X } from 'lucide-react';
-=======
 import { useState, useEffect } from 'react'
 import { TrendingUp } from 'lucide-react'
 import { BarChart3 } from 'lucide-react'
@@ -21,8 +10,7 @@ import { Shield } from 'lucide-react'
 import { CheckCircle } from 'lucide-react'
 import { Download } from 'lucide-react'
 import { X } from 'lucide-react'
-import { Database } from 'lucide-react'
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+import { Database } from 'lucide-react'481751c1
 
 interface ReconciliationMetrics {
   totalRecords: number;

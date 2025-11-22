@@ -136,25 +136,6 @@ interface JobListProps {
   getStatusIcon: (status: string) => React.ReactNode;
 }
 
-<<<<<<< HEAD
-export const JobList = React.memo<JobListProps>(
-  ({
-    jobs,
-    loading,
-    onRefresh,
-    onViewResults,
-    onStartJob,
-    onStopJob,
-    onDeleteJob,
-    getStatusColor,
-    getStatusIcon,
-  }) => {
-    if (loading && jobs.length === 0) {
-      return (
-        <div className="p-6 text-center">
-          <RefreshCw className="w-6 h-6 animate-spin mx-auto text-gray-400" />
-          <p className="mt-2 text-gray-500">Loading jobs...</p>
-=======
 export const JobList: React.FC<JobListProps> = ({
   jobs,
   loading,
@@ -266,8 +247,7 @@ export const JobList: React.FC<JobListProps> = ({
               onViewResults={onViewResults}
               onDeleteJob={onDeleteJob}
             />
-          </div>
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+          </div>481751c1
         </div>
       );
     }

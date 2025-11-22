@@ -101,15 +101,9 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
     try {
       // Process expenses data
       if (expensesData.length > 0) {
-<<<<<<< HEAD
         setProcessingProgress(25);
-        const processedExpenses = IndonesianDataProcessor.processExpensesData(expensesData);
+        const processedExpenses = IndonesianDataProcessor.processExpenseData(expensesData);
         setProcessedExpenses(processedExpenses);
-=======
-        setProcessingProgress(25)
-        const processedExpenses = IndonesianDataProcessor.processExpenseData(expensesData)
-        setProcessedExpenses(processedExpenses)
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
       }
 
       // Process bank data
@@ -120,26 +114,17 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
       }
 
       // Perform matching
-      let matchingResults: IndonesianMatchingResult[] = []
+      let matchingResults: IndonesianMatchingResult[] = [];
       if (processedExpenses.length > 0 && processedBankRecords.length > 0) {
-<<<<<<< HEAD
         setProcessingProgress(75);
-        const matches = IndonesianDataProcessor.batchMatchRecords(
-          processedExpenses,
-          processedBankRecords
-        );
-        setMatches(matches);
-=======
-        setProcessingProgress(75)
-        matchingResults = IndonesianDataProcessor.matchRecords(processedExpenses, processedBankRecords)
+        matchingResults = IndonesianDataProcessor.matchRecords(processedExpenses, processedBankRecords);
         // Transform to expected shape
         const transformedMatches = matchingResults.map((match) => ({
           expense: match.sourceRecord as unknown as ProcessedExpenseRecord,
           bank: match.targetRecord,
           match
-        }))
-        setMatches(transformedMatches)
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+        }));
+        setMatches(transformedMatches);
       }
 
       // Generate summary
@@ -147,15 +132,9 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
       const summary = IndonesianDataProcessor.generateReconciliationSummary(
         processedExpenses,
         processedBankRecords,
-<<<<<<< HEAD
-        matches
+        matchingResults
       );
       setSummary(summary);
-=======
-        matchingResults
-      )
-      setSummary(summary)
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 
       setProcessingProgress(100);
     } catch (error) {

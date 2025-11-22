@@ -446,7 +446,6 @@ const Profile: React.FC = () => {
         <div className="flex items-center space-x-2 mb-6">
           <Lock className="w-5 h-5 text-gray-400" />
           <h2 className="text-xl font-semibold text-gray-900">Change Password</h2>
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
         </div>
       </main>
     </>

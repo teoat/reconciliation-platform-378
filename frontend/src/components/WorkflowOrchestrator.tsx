@@ -336,14 +336,7 @@ const WorkflowOrchestrator = ({
             Workflow Orchestration
           </h3>
         </div>
-<<<<<<< HEAD
-        <WorkflowProgress
-          completed={workflowProgress.completed}
-          total={workflowProgress.total}
-          percentage={workflowProgress.percentage}
-        />
-=======
-        <div className="flex items-center space-x-2">
+<div className="flex items-center space-x-2">
           <div className="text-sm text-gray-600" aria-live="polite" aria-atomic="true">
             <span className="sr-only">Progress:</span>
             {workflowProgress.completed}/{workflowProgress.total} stages completed
@@ -362,8 +355,7 @@ const WorkflowOrchestrator = ({
               aria-hidden="true"
             />
           </div>
-        </div>
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+        </div>481751c1
       </div>
 
       <WorkflowBreadcrumbs stages={workflowStages} />

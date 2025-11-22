@@ -7,7 +7,7 @@ use actix_web::{test, web, App};
 use std::sync::Arc;
 
 use reconciliation_backend::handlers::auth::{
-    change_password, get_current_user, get_user_settings, google_oauth, login, logout, refresh_token, register,
+    get_current_user, get_user_settings, google_oauth, login, logout, refresh_token, register,
     request_password_reset, resend_verification, update_user_settings,
 };
 use reconciliation_backend::services::auth::{
@@ -330,7 +330,7 @@ mod auth_handler_tests {
             role: Some("user".to_string()),
         };
 
-        let user = user_service.create_user(create_request).await.unwrap();
+        let _user = user_service.create_user(create_request).await.unwrap();
         let user_model = user_service
             .as_ref()
             .get_user_by_email("refresh@example.com")
@@ -464,7 +464,7 @@ mod auth_handler_tests {
             .get_user_by_email("changepass@example.com")
             .await
             .unwrap();
-        let token = auth_service.generate_token(&user_model).unwrap();
+        let _token = auth_service.generate_token(&user_model).unwrap();
 
         let change_request = ChangePasswordRequest {
             current_password: "OldPassword123!".to_string(),

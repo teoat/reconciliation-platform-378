@@ -13,7 +13,8 @@ use reconciliation_backend::services::{AuthService, UserService};
 
 #[path = "test_utils.rs"]
 mod test_utils;
-use test_utils::TestClient;
+use test_utils::{TestClient, get_test_config_and_db};
+use reconciliation_backend::{config::Config, database::Database, handlers::configure_routes};
 
 /// Test suite for authorization security
 #[cfg(test)]
@@ -151,7 +152,7 @@ mod authorization_security_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req.to_request()).await;
 
         // Should return 403 Forbidden
         assert_eq!(resp.status(), 403);
@@ -200,7 +201,7 @@ mod authorization_security_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req.to_request()).await;
 
         // Should return 403 Forbidden
         assert_eq!(resp.status(), 403);
@@ -295,7 +296,7 @@ mod rate_limiting_security_tests {
 
     #[tokio::test]
     async fn test_login_rate_limiting() {
-        let test_client = TestClient::new();
+        let _test_client = TestClient::new();
 
         // Make multiple rapid login attempts
         for i in 0..15 {
@@ -310,14 +311,14 @@ mod rate_limiting_security_tests {
                 .to_request();
 
             let (db, config) = get_test_config_and_db().await;
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(db))
-                .app_data(web::Data::new(config))
-                .configure(configure_routes),
-        )
-        .await;
-        let resp = test::call_service(&app, req).await;
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(db))
+                    .app_data(web::Data::new(config))
+                    .configure(configure_routes),
+            )
+            .await;
+            let resp = test::call_service(&app, req).await;
 
             if i < 10 {
                 // First 10 attempts should fail with 401/400
@@ -339,24 +340,24 @@ mod rate_limiting_security_tests {
         let req = test::TestRequest::post()
             .uri("/api/auth/login")
             .set_json(&login_data)
-            .to_request();
+                .to_request();
 
-        let (db, config) = get_test_config_and_db().await;
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(db))
-                .app_data(web::Data::new(config))
-                .configure(configure_routes),
-        )
-        .await;
-        let resp = test::call_service(&app, req).await;
+            let (db, config) = get_test_config_and_db().await;
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(db))
+                    .app_data(web::Data::new(config))
+                    .configure(configure_routes),
+            )
+            .await;
+            let _resp = test::call_service(&app, req).await;
         // Should eventually hit rate limit (429 Too Many Requests)
         // Note: This test may not always hit the limit depending on implementation
     }
 
     #[tokio::test]
     async fn test_register_rate_limiting() {
-        let test_client = TestClient::new();
+        let _test_client = TestClient::new();
 
         // Make multiple rapid registration attempts
         for i in 0..10 {
@@ -373,14 +374,14 @@ mod rate_limiting_security_tests {
                 .to_request();
 
             let (db, config) = get_test_config_and_db().await;
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(db))
-                .app_data(web::Data::new(config))
-                .configure(configure_routes),
-        )
-        .await;
-        let resp = test::call_service(&app, req).await;
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(db))
+                    .app_data(web::Data::new(config))
+                    .configure(configure_routes),
+            )
+            .await;
+            let resp = test::call_service(&app, req).await;
 
             // Should eventually hit rate limit
             if resp.status() == 429 {
@@ -391,7 +392,7 @@ mod rate_limiting_security_tests {
 
     #[tokio::test]
     async fn test_password_reset_rate_limiting() {
-        let test_client = TestClient::new();
+        let _test_client = TestClient::new();
 
         // Make multiple rapid password reset requests
         for _ in 0..10 {
@@ -405,14 +406,14 @@ mod rate_limiting_security_tests {
                 .to_request();
 
             let (db, config) = get_test_config_and_db().await;
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(db))
-                .app_data(web::Data::new(config))
-                .configure(configure_routes),
-        )
-        .await;
-        let resp = test::call_service(&app, req).await;
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(db))
+                    .app_data(web::Data::new(config))
+                    .configure(configure_routes),
+            )
+            .await;
+            let resp = test::call_service(&app, req).await;
 
             // Should eventually hit rate limit
             if resp.status() == 429 {
@@ -445,17 +446,17 @@ mod csrf_protection_tests {
         let req = test::TestRequest::post()
             .uri("/api/projects")
             .set_json(&project_data)
-            .to_request();
+                .to_request();
 
-        let (db, config) = get_test_config_and_db().await;
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(db))
-                .app_data(web::Data::new(config))
-                .configure(configure_routes),
-        )
-        .await;
-        let resp = test::call_service(&app, req).await;
+            let (db, config) = get_test_config_and_db().await;
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(db))
+                    .app_data(web::Data::new(config))
+                    .configure(configure_routes),
+            )
+            .await;
+            let resp = test::call_service(&app, req).await;
 
         // Should return 400 Bad Request due to missing CSRF token
         assert_eq!(resp.status(), 400);
@@ -484,17 +485,17 @@ mod csrf_protection_tests {
             .insert_header(("X-CSRF-Token", "invalid-token"))
             .insert_header(("Cookie", "csrf-token=different-token"))
             .set_json(&project_data)
-            .to_request();
+                .to_request();
 
-        let (db, config) = get_test_config_and_db().await;
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(db))
-                .app_data(web::Data::new(config))
-                .configure(configure_routes),
-        )
-        .await;
-        let resp = test::call_service(&app, req).await;
+            let (db, config) = get_test_config_and_db().await;
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(db))
+                    .app_data(web::Data::new(config))
+                    .configure(configure_routes),
+            )
+            .await;
+            let resp = test::call_service(&app, req).await;
 
         // Should return 400 Bad Request due to CSRF token mismatch
         assert_eq!(resp.status(), 400);
@@ -523,17 +524,17 @@ mod csrf_protection_tests {
             .insert_header(("X-CSRF-Token", csrf_token))
             .insert_header(("Cookie", format!("csrf-token={}", csrf_token)))
             .set_json(&project_data)
-            .to_request();
+                .to_request();
 
-        let (db, config) = get_test_config_and_db().await;
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(db))
-                .app_data(web::Data::new(config))
-                .configure(configure_routes),
-        )
-        .await;
-        let resp = test::call_service(&app, req).await;
+            let (db, config) = get_test_config_and_db().await;
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(db))
+                    .app_data(web::Data::new(config))
+                    .configure(configure_routes),
+            )
+            .await;
+            let resp = test::call_service(&app, req).await;
 
         // Should succeed with valid CSRF token
         assert!(resp.status().is_success());
@@ -547,7 +548,7 @@ mod security_headers_tests {
 
     #[tokio::test]
     async fn test_security_headers_present() {
-        let test_client = TestClient::new();
+        let _test_client = TestClient::new();
 
         let req = test::TestRequest::get().uri("/health").to_request();
         let (db, config) = get_test_config_and_db().await;
@@ -581,22 +582,22 @@ mod security_headers_tests {
     async fn test_strict_transport_security_https() {
         // This test would require HTTPS setup
         // For now, just verify the header logic exists
-        let test_client = TestClient::new();
+        let _test_client = TestClient::new();
 
         let req = test::TestRequest::get()
             .uri("/health")
             .insert_header(("X-Forwarded-Proto", "https"))
-            .to_request();
+                .to_request();
 
-        let (db, config) = get_test_config_and_db().await;
-        let app = test::init_service(
-            App::new()
-                .app_data(web::Data::new(db))
-                .app_data(web::Data::new(config))
-                .configure(configure_routes),
-        )
-        .await;
-        let resp = test::call_service(&app, req).await;
+            let (db, config) = get_test_config_and_db().await;
+            let app = test::init_service(
+                App::new()
+                    .app_data(web::Data::new(db))
+                    .app_data(web::Data::new(config))
+                    .configure(configure_routes),
+            )
+            .await;
+            let resp = test::call_service(&app, req).await;
 
         // In a real HTTPS environment, should have Strict-Transport-Security header
         // For this test, we just verify the response is successful
@@ -626,7 +627,8 @@ mod input_validation_security_tests {
 
         let req = test_client
             .authenticated_request("POST", "/api/projects")
-            .set_json(&project_data);
+            .set_json(&project_data)
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
@@ -674,7 +676,8 @@ mod input_validation_security_tests {
 
         let req = test_client
             .authenticated_request("POST", "/api/projects")
-            .set_json(&project_data);
+            .set_json(&project_data)
+            .to_request();
         let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()

@@ -165,14 +165,9 @@ export const FormField = forwardRef<HTMLDivElement, FormFieldProps>(
           {React.isValidElement(children) &&
             React.cloneElement(children as React.ReactElement<any>, {
               id: fieldId,
-<<<<<<< HEAD
-              ...children.props,
-            })}
-=======
-              ...(children.props as any)
+...(children.props as any)
             })
-          }
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+          }481751c1
         </div>
 
         {error && (

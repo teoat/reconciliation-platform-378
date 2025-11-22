@@ -23,7 +23,6 @@ interface ApiTesterProps {
 }
 
 interface ApiTestResult {
-<<<<<<< HEAD
   endpoint: string;
   method: string;
   status: 'success' | 'error' | 'pending';
@@ -31,15 +30,6 @@ interface ApiTestResult {
   error?: string;
   duration?: number;
   timestamp: Date;
-=======
-  endpoint: string
-  method: string
-  status: 'success' | 'error' | 'pending'
-  response?: unknown
-  error?: string
-  duration?: number
-  timestamp: Date
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
 }
 
 const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
@@ -65,16 +55,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
     { value: 'custom', label: 'Custom Endpoint', method: 'GET', endpoint: '' },
   ];
 
-<<<<<<< HEAD
-  const runApiTest = useCallback(
-    async (endpoint: string, method: string, _body?: Record<string, unknown> | unknown[]) => {
-      const startTime = Date.now();
-      const timestamp = new Date();
-
-      // Add pending result
-      const pendingResult: ApiTestResult = {
-=======
-  const runApiTest = useCallback(async (
+const runApiTest = useCallback(async (
     endpoint: string,
     method: string,
     body?: Record<string, unknown> | unknown[]
@@ -116,10 +97,9 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
           throw new Error(`Unknown endpoint: ${endpoint}`)
       }
       
-      const duration = Date.now() - startTime
+      const duration = Date.now() - startTime;
       
       const successResult: ApiTestResult = {
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
         endpoint,
         method,
         status: 'pending',
@@ -189,13 +169,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
         setResponseBody(JSON.stringify({ error: errorMessage }, null, 2));
         showError('API Test Failed', errorMessage);
       }
-<<<<<<< HEAD
-    },
-    [showSuccess, showError]
-  );
-=======
-      
-      setTestResults(prev => 
+setTestResults(prev => 
         prev.map(result => 
           result.timestamp === timestamp ? successResult : result
         )
@@ -226,8 +200,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
       setResponseBody(JSON.stringify({ error: errorMessage }, null, 2))
       showError(`API Test Failed - ${errorMessage}`)
     }
-  }, [showSuccess, showError])
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+  }, [showSuccess, showError])481751c1
 
   const handleRunTest = useCallback(() => {
     if (!selectedEndpoint) return;
@@ -255,42 +228,15 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
     }
   }, [runApiTest]);
 
-<<<<<<< HEAD
-  const copyToClipboard = useCallback(
-    (text: string) => {
-      navigator.clipboard.writeText(text);
-      showSuccess('Copied', 'Response copied to clipboard');
-    },
-    [showSuccess]
-  );
-=======
-  const copyToClipboard = useCallback((text: string) => {
+const copyToClipboard = useCallback((text: string) => {
     navigator.clipboard.writeText(text)
     showSuccess('Response copied to clipboard')
-  }, [showSuccess])
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+  }, [showSuccess])481751c1
 
   const downloadResults = useCallback(() => {
     const data = {
       timestamp: new Date().toISOString(),
-<<<<<<< HEAD
-      results: testResults,
-    };
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `api-test-results-${Date.now()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    showSuccess('Downloaded', 'Test results downloaded successfully');
-  }, [testResults, showSuccess]);
-=======
-      results: testResults
+results: testResults
     }
     
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
@@ -304,8 +250,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
     URL.revokeObjectURL(url)
     
     showSuccess('Test results downloaded successfully')
-  }, [testResults, showSuccess])
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+  }, [testResults, showSuccess])481751c1
 
   const clearResults = useCallback(() => {
     setTestResults([]);

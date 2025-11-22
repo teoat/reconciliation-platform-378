@@ -66,8 +66,8 @@ mod health_api_tests {
     /// Test resilience status endpoint
     #[actix_web::test]
     async fn test_get_resilience_status() {
-        let (db, _temp_dir): (Database, _) = setup_test_database().await;
-        let cache = Arc::new(
+        let (_db, _temp_dir): (Database, _) = setup_test_database().await;
+        let _cache = Arc::new(
             MultiLevelCache::new("redis://localhost:6379").unwrap()
         );
         let resilience = Arc::new(ResilienceManager::new());

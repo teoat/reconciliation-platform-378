@@ -26,23 +26,13 @@ export const ButtonFeedback: React.FC<ButtonFeedbackProps> = ({
     }
   };
 
-<<<<<<< HEAD
-  const handleMouseUp = (e: React.MouseEvent) => {
-    e.currentTarget.style.transform = 'scale(1)';
-  };
-
-  const handleMouseLeave = (e: React.MouseEvent) => {
-    e.currentTarget.style.transform = 'scale(1)';
-  };
-=======
-  const handleMouseUp = (e: React.MouseEvent<HTMLButtonElement>) => {
+const handleMouseUp = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'scale(1)'
   }
 
   const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'scale(1)'
-  }
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+  }481751c1
 
   return (
     <button
@@ -59,10 +49,4 @@ export const ButtonFeedback: React.FC<ButtonFeedbackProps> = ({
   );
 };
 
-<<<<<<< HEAD
-export { ButtonFeedback };
-export default ButtonFeedback;
-=======
-export default ButtonFeedback
-
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+export default ButtonFeedback481751c1

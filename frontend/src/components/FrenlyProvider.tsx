@@ -1,9 +1,5 @@
 'use client';
 
-<<<<<<< HEAD
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { FrenlyState, FrenlyMessage, PageGuidance } from '../types/frenly';
-=======
 import React, { createContext, useContext, useState, useEffect } from 'react'
 import { FrenlyState, FrenlyMessage } from '../types/frenly'
 
@@ -22,8 +18,7 @@ interface PageGuidance {
   tips?: string[];
   warnings?: string[];
   celebrations?: string[];
-}
->>>>>>> 26355dbeb6c502c5e28667489dcec2dc481751c1
+}481751c1
 
 interface FrenlyContextType {
   state: FrenlyState;
