@@ -175,7 +175,7 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
         // This would need to be implemented in the API client
         // const response = await apiClient.getProjectFiles(projectId)
         // if (response.error) {
-        //   throw new Error(response.error.message)
+        //   const errorMsg = typeof response.error === 'string' ? response.error : response.error.message; throw new Error(errorMsg)
         // }
         // setFiles(response.data || [])
         
@@ -209,13 +209,13 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
       // Upload file
       const response = await apiClient.uploadFile(projectId, file, {
         name: file.name,
-        description: request.description,
         project_id: request.project_id,
         source_type: 'file'
       })
 
       if (response.error) {
-        throw new Error(response.error.message)
+        const errorMsg = typeof response.error === 'string' ? response.error : response.error.message;
+        throw new Error(errorMsg)
       }
 
       const uploadedFile = response.data
@@ -227,11 +227,11 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
         return newMap
       })
 
-      // Add to files list
-      setFiles(prev => [uploadedFile, ...prev])
+      // Add to files list - cast to FileInfo to match state type
+      setFiles(prev => [uploadedFile as unknown as FileInfo, ...prev])
       
       if (onUploadComplete) {
-        onUploadComplete(uploadedFile)
+        onUploadComplete(uploadedFile as unknown as FileInfo)
       }
 
       return uploadedFile
@@ -257,12 +257,12 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
   // Process file
   const processFile = useCallback(async (fileId: string) => {
     try {
-      setLoading(true)
+      // Loading handled by withLoading
       setError(null)
       
       const response = await apiClient.processFile(projectId, fileId)
       if (response.error) {
-        throw new Error(response.error.message)
+        const errorMsg = typeof response.error === 'string' ? response.error : response.error.message; throw new Error(errorMsg)
       }
       
       const result = response.data
@@ -300,19 +300,19 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
       
       throw err
     } finally {
-      setLoading(false)
+      // Loading handled by withLoading
     }
   }, [projectId, onProcessingComplete])
 
   // Delete file
   const deleteFile = useCallback(async (fileId: string) => {
     try {
-      setLoading(true)
+      // Loading handled by withLoading
       setError(null)
       
       const response = await apiClient.deleteDataSource(projectId, fileId)
       if (response.error) {
-        throw new Error(response.error.message)
+        const errorMsg = typeof response.error === 'string' ? response.error : response.error.message; throw new Error(errorMsg)
       }
       
       setFiles(prev => prev.filter(file => file.id !== fileId))
@@ -325,7 +325,7 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete file')
     } finally {
-      setLoading(false)
+      // Loading handled by withLoading
     }
   }, [projectId])
 
@@ -752,7 +752,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
     if (selectedFiles.length === 0) return
 
     try {
-      setLoading(true)
+      // Loading handled by withLoading
       setError(null)
 
       for (const file of selectedFiles) {
@@ -763,7 +763,7 @@ const UploadModal: React.FC<UploadModalProps> = ({
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Upload failed')
     } finally {
-      setLoading(false)
+      // Loading handled by withLoading
     }
   }
 
