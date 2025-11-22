@@ -16,7 +16,6 @@ import { FileSearch } from 'lucide-react'
 import { X } from 'lucide-react'
 import { CheckCircle } from 'lucide-react'
 import { AlertCircle } from 'lucide-react'
-import { Activity } from 'lucide-react'
 import { XCircle } from 'lucide-react'
 import { AlertTriangle } from 'lucide-react'
 import { Clock } from 'lucide-react'
@@ -704,7 +703,10 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
       {showUploadModal && (
         <UploadModal
           projectId={projectId}
-          onUpload={uploadFile}
+          onUpload={async (file, request) => {
+            const response = await uploadFile(file, request);
+            return response as unknown as FileInfo;
+          }}
           onClose={() => setShowUploadModal(false)}
           maxFileSize={maxFileSize}
           allowedTypes={allowedTypes}
