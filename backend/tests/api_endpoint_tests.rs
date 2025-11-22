@@ -13,32 +13,33 @@ use reconciliation_backend::{config::Config, database::Database, handlers::confi
 mod test_utils;
 use test_utils::*;
 
-/// Test API endpoint setup  
-async fn setup_api_test_app() -> impl actix_web::dev::Service<
-    actix_web::dev::ServiceRequest,
-    Response = actix_web::dev::ServiceResponse<actix_web::body::BoxBody>,
-    Error = actix_web::Error,
-> {
-    let config = Config::from_env().expect("Failed to load test config");
-    let db = Database::new(&config.database_url)
-        .await
-        .expect("Failed to create test database");
+/// Test API endpoint setup macro - avoids type annotation issues
+/// Usage: let app = setup_api_test_app!().await;
+macro_rules! setup_api_test_app {
+    () => {{
+        async {
+            let config = Config::from_env().expect("Failed to load test config");
+            let db = Database::new(&config.database_url)
+                .await
+                .expect("Failed to create test database");
 
-    db.run_migrations().await.expect("Failed to run migrations");
+            db.run_migrations().await.expect("Failed to run migrations");
 
-    test::init_service(
-        App::new()
-            .app_data(web::Data::new(db))
-            .app_data(web::Data::new(config))
-            .configure(configure_routes),
-    )
-    .await
+            test::init_service(
+                App::new()
+                    .app_data(web::Data::new(db))
+                    .app_data(web::Data::new(config))
+                    .configure(configure_routes),
+            )
+            .await
+        }
+    }};
 }
 
 /// Test authentication endpoints
 #[tokio::test]
 async fn test_auth_endpoints() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // Test user registration
     let register_data = json!({
@@ -62,7 +63,7 @@ async fn test_auth_endpoints() {
 /// Test settings endpoints
 #[tokio::test]
 async fn test_settings_endpoints() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // First, create a user and get a token
     let register_data = json!({
@@ -122,7 +123,7 @@ async fn test_settings_endpoints() {
 /// Test profile endpoints
 #[tokio::test]
 async fn test_profile_endpoints() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // First, create a user and get a token
     let register_data = json!({
@@ -180,7 +181,7 @@ async fn test_profile_endpoints() {
 /// Test monitoring endpoints
 #[tokio::test]
 async fn test_monitoring_endpoints() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // First, create an admin user and get a token
     let register_data = json!({
@@ -241,7 +242,7 @@ async fn test_monitoring_endpoints() {
 /// Test sync endpoints
 #[tokio::test]
 async fn test_sync_endpoints() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // First, create a user and get a token
     let register_data = json!({
@@ -297,7 +298,7 @@ async fn test_sync_endpoints() {
 /// Test password manager endpoints
 #[tokio::test]
 async fn test_password_manager_endpoints() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // First, create a user and get a token
     let register_data = json!({
@@ -391,7 +392,7 @@ async fn test_password_manager_endpoints() {
 /// Test onboarding endpoints
 #[tokio::test]
 async fn test_onboarding_endpoints() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // First, create a user and get a token
     let register_data = json!({
@@ -459,7 +460,7 @@ async fn test_onboarding_endpoints() {
 /// Test API endpoint rate limiting
 #[tokio::test]
 async fn test_api_rate_limiting() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // Test login rate limiting
     for i in 0..15 {
@@ -511,7 +512,7 @@ async fn test_api_rate_limiting() {
 /// Test API endpoint input validation
 #[tokio::test]
 async fn test_api_input_validation() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // Test invalid email format
     let invalid_register_data = json!({
@@ -565,7 +566,7 @@ async fn test_api_input_validation() {
 /// Test API endpoint CORS headers
 #[tokio::test]
 async fn test_api_cors_headers() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // Test preflight request
     let req = test::TestRequest::default()
@@ -606,7 +607,7 @@ async fn test_api_cors_headers() {
 /// Test user management endpoints
 #[tokio::test]
 async fn test_user_endpoints() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // First, create a user and get a token
     let register_data = json!({
@@ -718,7 +719,7 @@ async fn test_user_endpoints() {
 /// Test project management endpoints
 #[tokio::test]
 async fn test_project_endpoints() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // First, create a user and get a token
     let register_data = json!({
@@ -817,7 +818,7 @@ async fn test_project_endpoints() {
 /// Test reconciliation endpoints
 #[tokio::test]
 async fn test_reconciliation_endpoints() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // First, create a user and get a token
     let register_data = json!({
@@ -929,7 +930,7 @@ async fn test_reconciliation_endpoints() {
 /// Test file upload endpoints
 #[tokio::test]
 async fn test_file_endpoints() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // First, create a user and get a token
     let register_data = json!({
@@ -996,7 +997,7 @@ async fn test_file_endpoints() {
 /// Test analytics endpoints
 #[tokio::test]
 async fn test_analytics_endpoints() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // First, create a user and get a token
     let register_data = json!({
@@ -1069,7 +1070,7 @@ async fn test_analytics_endpoints() {
 /// Test system endpoints
 #[tokio::test]
 async fn test_system_endpoints() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // Test health check endpoint
     let req = test::TestRequest::get().uri("/health").to_request();
@@ -1110,7 +1111,7 @@ async fn test_system_endpoints() {
 /// Test error handling in endpoints
 #[tokio::test]
 async fn test_endpoint_error_handling() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // Test invalid JSON in request body
     let req = test::TestRequest::post()
@@ -1172,7 +1173,7 @@ async fn test_endpoint_error_handling() {
 /// Test pagination in endpoints
 #[tokio::test]
 async fn test_endpoint_pagination() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // First, create a user and get a token
     let register_data = json!({
@@ -1227,7 +1228,7 @@ async fn test_endpoint_pagination() {
 /// Test concurrent API requests
 #[tokio::test]
 async fn test_concurrent_api_requests() {
-    let app = setup_api_test_app().await;
+    let app = setup_api_test_app!().await;
 
     // Test concurrent health checks
     // Note: Service cannot be cloned, so we create multiple requests sequentially

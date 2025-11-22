@@ -47,7 +47,14 @@ mod authorization_security_tests {
         let req = test_client2
             .authenticated_request("GET", &format!("/api/projects/{}", project_id))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         // Should return 403 Forbidden
@@ -86,7 +93,14 @@ mod authorization_security_tests {
         let req = test_client2
             .authenticated_request("GET", &format!("/api/files/{}", file_id))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         // Should return 403 Forbidden
@@ -129,7 +143,14 @@ mod authorization_security_tests {
                 &format!("/api/projects/{}/reconciliation-jobs", project_id),
             )
             .set_json(&job_data);
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         // Should return 403 Forbidden
@@ -171,7 +192,14 @@ mod authorization_security_tests {
                 &format!("/api/projects/{}/data-sources", project_id),
             )
             .set_json(&data_source_data);
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         // Should return 403 Forbidden
@@ -206,7 +234,14 @@ mod authorization_security_tests {
                 &format!("/api/projects/{}/files/upload", project_id),
             )
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         // Should return 403 Forbidden
@@ -238,7 +273,14 @@ mod authorization_security_tests {
         let req = test_client
             .authenticated_request("GET", &format!("/api/projects/{}", project_id))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         // Should succeed
@@ -267,7 +309,14 @@ mod rate_limiting_security_tests {
                 .set_json(&login_data)
                 .to_request();
 
-            let app = TestClient::get_app().await;
+            let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
             if i < 10 {
@@ -292,7 +341,14 @@ mod rate_limiting_security_tests {
             .set_json(&login_data)
             .to_request();
 
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         // Should eventually hit rate limit (429 Too Many Requests)
         // Note: This test may not always hit the limit depending on implementation
@@ -316,7 +372,14 @@ mod rate_limiting_security_tests {
                 .set_json(&register_data)
                 .to_request();
 
-            let app = TestClient::get_app().await;
+            let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
             // Should eventually hit rate limit
@@ -341,7 +404,14 @@ mod rate_limiting_security_tests {
                 .set_json(&reset_data)
                 .to_request();
 
-            let app = TestClient::get_app().await;
+            let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
             // Should eventually hit rate limit
@@ -377,7 +447,14 @@ mod csrf_protection_tests {
             .set_json(&project_data)
             .to_request();
 
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         // Should return 400 Bad Request due to missing CSRF token
@@ -409,7 +486,14 @@ mod csrf_protection_tests {
             .set_json(&project_data)
             .to_request();
 
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         // Should return 400 Bad Request due to CSRF token mismatch
@@ -441,7 +525,14 @@ mod csrf_protection_tests {
             .set_json(&project_data)
             .to_request();
 
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         // Should succeed with valid CSRF token
@@ -459,7 +550,14 @@ mod security_headers_tests {
         let test_client = TestClient::new();
 
         let req = test::TestRequest::get().uri("/health").to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         assert!(resp.status().is_success());
@@ -490,7 +588,14 @@ mod security_headers_tests {
             .insert_header(("X-Forwarded-Proto", "https"))
             .to_request();
 
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         // In a real HTTPS environment, should have Strict-Transport-Security header
@@ -522,7 +627,14 @@ mod input_validation_security_tests {
         let req = test_client
             .authenticated_request("POST", "/api/projects")
             .set_json(&project_data);
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         // Should either succeed (with sanitized input) or fail gracefully
@@ -533,7 +645,14 @@ mod input_validation_security_tests {
         let req = test_client
             .authenticated_request("GET", "/api/projects")
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
@@ -556,7 +675,14 @@ mod input_validation_security_tests {
         let req = test_client
             .authenticated_request("POST", "/api/projects")
             .set_json(&project_data);
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         // Should succeed but with sanitized input
@@ -582,7 +708,14 @@ mod input_validation_security_tests {
         let req = test_client
             .authenticated_request("POST", "/api/projects/../../../etc/passwd/files/upload")
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
 
         // Should fail with validation error

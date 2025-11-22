@@ -80,6 +80,7 @@ pub fn verify_database_connection(database_url: &str) -> Result<(), String> {
     #[derive(QueryableByName)]
     struct TestQuery {
         #[diesel(sql_type = Integer)]
+        #[allow(dead_code)]
         test: i32,
     }
     

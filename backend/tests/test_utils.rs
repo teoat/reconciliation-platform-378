@@ -10,6 +10,34 @@ use uuid::Uuid;
 // Test configuration
 const TEST_DATABASE_URL: &str = "postgresql://postgres:postgres@localhost:5432/reconciliation_test";
 
+/// Helper function to create test app configuration - can be used from any test
+pub async fn get_test_config_and_db() -> (reconciliation_backend::database::Database, reconciliation_backend::config::Config) {
+    use reconciliation_backend::{config::Config, database::Database};
+    
+    let config = Config::from_env().unwrap_or_else(|_| {
+        Config {
+            host: "0.0.0.0".to_string(),
+            port: 2000,
+            database_url: TEST_DATABASE_URL.to_string(),
+            redis_url: "redis://localhost:6379".to_string(),
+            jwt_secret: "test-secret-key".to_string(),
+            jwt_expiration: 3600,
+            cors_origins: vec!["http://localhost:3000".to_string()],
+            log_level: "info".to_string(),
+            max_file_size: 10485760,
+            upload_path: "./uploads".to_string(),
+        }
+    });
+    
+    let db = Database::new(&config.database_url)
+        .await
+        .unwrap_or_else(|_| {
+            panic!("Failed to create test database. Please ensure PostgreSQL is running.");
+        });
+
+    (db, config)
+}
+
 // ============================================================================
 // TEST CLIENT
 // ============================================================================
@@ -30,33 +58,6 @@ impl TestClient {
         }
     }
 
-    /// Helper function to create test app configuration
-    async fn create_test_app_config() -> (reconciliation_backend::database::Database, reconciliation_backend::config::Config) {
-        use reconciliation_backend::{config::Config, database::Database};
-        
-        let config = Config::from_env().unwrap_or_else(|_| {
-            Config {
-                host: "0.0.0.0".to_string(),
-                port: 2000,
-                database_url: TEST_DATABASE_URL.to_string(),
-                redis_url: "redis://localhost:6379".to_string(),
-                jwt_secret: "test-secret-key".to_string(),
-                jwt_expiration: 3600,
-                cors_origins: vec!["http://localhost:3000".to_string()],
-                log_level: "info".to_string(),
-                max_file_size: 10485760,
-                upload_path: "./uploads".to_string(),
-            }
-        });
-        
-        let db = Database::new(&config.database_url)
-            .await
-            .unwrap_or_else(|_| {
-                panic!("Failed to create test database. Please ensure PostgreSQL is running.");
-            });
-
-        (db, config)
-    }
 
     /// Authenticate as a user
     pub async fn authenticate_as(&mut self, email: &str, password: &str) -> Result<(), String> {
@@ -71,7 +72,7 @@ impl TestClient {
             .set_json(&login_data)
             .to_request();
 
-        let (db, config) = Self::create_test_app_config().await;
+        let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(db))
@@ -127,7 +128,7 @@ impl TestClient {
             .set_json(&project_data)
             .to_request();
 
-        let (db, config) = Self::create_test_app_config().await;
+        let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(db))
@@ -163,7 +164,7 @@ impl TestClient {
             .set_json(&file_data)
             .to_request();
 
-        let (db, config) = Self::create_test_app_config().await;
+        let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(db))
@@ -202,7 +203,7 @@ impl TestClient {
             .set_json(&job_data)
             .to_request();
 
-        let (db, config) = Self::create_test_app_config().await;
+        let (db, config) = get_test_config_and_db().await;
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(db))

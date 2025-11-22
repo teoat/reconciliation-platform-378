@@ -28,6 +28,7 @@ use reconciliation_backend::services::{
 #[path = "test_utils.rs"]
 mod test_utils;
 use test_utils::{TestClient, TestConfig};
+use reconciliation_backend::{config::Config, database::Database, handlers::configure_routes};
 
 /// Test suite for complete user workflows
 #[cfg(test)]
@@ -75,7 +76,26 @@ mod user_workflow_tests {
         let req = test_client
             .authenticated_request("POST", "/api/data-sources")
             .set_json(&data_source1_data).to_request();
-        let app = TestClient::get_app().await;
+        let config = Config::from_env().unwrap_or_else(|_| Config {
+            host: "0.0.0.0".to_string(),
+            port: 2000,
+            database_url: "postgresql://postgres:postgres@localhost:5432/reconciliation_test".to_string(),
+            redis_url: "redis://localhost:6379".to_string(),
+            jwt_secret: "test-secret-key".to_string(),
+            jwt_expiration: 3600,
+            cors_origins: vec!["http://localhost:3000".to_string()],
+            log_level: "info".to_string(),
+            max_file_size: 10485760,
+            upload_path: "./uploads".to_string(),
+        });
+        let db = Database::new(&config.database_url).await.unwrap();
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -91,7 +111,14 @@ mod user_workflow_tests {
         let req = test_client
             .authenticated_request("POST", "/api/data-sources")
             .set_json(&data_source2_data).to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -121,7 +148,14 @@ mod user_workflow_tests {
         let req = test_client
             .authenticated_request("PUT", &format!("/api/reconciliation/jobs/{}", job_id))
             .set_json(&job_config).to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -131,7 +165,14 @@ mod user_workflow_tests {
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
             );
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -141,7 +182,14 @@ mod user_workflow_tests {
         while !job_completed && attempts < 30 {
             let req = test_client
                 .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id));
-            let app = TestClient::get_app().await;
+            let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
             let body: serde_json::Value = test::read_body_json(resp).await;
 
@@ -165,7 +213,14 @@ mod user_workflow_tests {
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/results", job_id),
             );
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -178,20 +233,41 @@ mod user_workflow_tests {
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/export", job_id),
             );
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 11: Clean up
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id));
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
@@ -234,7 +310,14 @@ mod user_workflow_tests {
             let req = test_client
                 .authenticated_request("GET", &format!("/api/files/{}", file_id))
                 .to_request();
-            let app = TestClient::get_app().await;
+            let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
             let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
 
@@ -247,7 +330,14 @@ mod user_workflow_tests {
             let req = test_client
                 .authenticated_request("POST", &format!("/api/files/{}/process", file_id))
                 .to_request();
-            let app = TestClient::get_app().await;
+            let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
             let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
 
@@ -257,7 +347,14 @@ mod user_workflow_tests {
                 let req = test_client
                     .authenticated_request("GET", &format!("/api/files/{}", file_id))
                     .to_request();
-                let app = TestClient::get_app().await;
+                let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
                 let resp = test::call_service(&app, req).await;
                 let file_data: serde_json::Value = test::read_body_json(resp).await;
 
@@ -276,7 +373,14 @@ mod user_workflow_tests {
         let req = test_client
             .authenticated_request("GET", &format!("/api/files/project/{}", project_id))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -289,7 +393,14 @@ mod user_workflow_tests {
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/files/{}", file_to_delete))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -297,7 +408,14 @@ mod user_workflow_tests {
         let req = test_client
             .authenticated_request("GET", &format!("/api/files/{}", file_to_delete))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
@@ -346,7 +464,14 @@ mod user_workflow_tests {
         let req = manager_client
             .authenticated_request("PUT", &format!("/api/projects/{}", project_id))
             .set_json(&project_settings).to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -372,7 +497,14 @@ mod user_workflow_tests {
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
             );
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -384,7 +516,14 @@ mod user_workflow_tests {
             let req = admin_client
                 .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id))
                 .to_request();
-            let app = TestClient::get_app().await;
+            let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
             let body: serde_json::Value = test::read_body_json(resp).await;
 
@@ -403,7 +542,14 @@ mod user_workflow_tests {
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/results", job_id),
             );
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -413,7 +559,14 @@ mod user_workflow_tests {
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/export", job_id),
             );
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -421,14 +574,28 @@ mod user_workflow_tests {
         let req = admin_client
             .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let req = admin_client
             .authenticated_request("DELETE", &format!("/api/projects/{}", project_id))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
@@ -482,7 +649,14 @@ mod user_workflow_tests {
             let req = test_client
                 .authenticated_request("POST", "/api/data-sources")
                 .set_json(&data_source_data).to_request();
-            let app = TestClient::get_app().await;
+            let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
         }
@@ -491,7 +665,14 @@ mod user_workflow_tests {
         let req = test_client
             .authenticated_request("GET", "/api/data-sources")
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -513,7 +694,14 @@ mod user_workflow_tests {
         let req = test_client
             .authenticated_request("PUT", &format!("/api/data-sources/{}", data_source_id))
             .set_json(&updated_schema).to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -526,7 +714,14 @@ mod user_workflow_tests {
                     &format!("/api/data-sources/{}/validate", data_source_id),
                 )
                 .to_request();
-            let app = TestClient::get_app().await;
+            let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
         }
@@ -536,14 +731,28 @@ mod user_workflow_tests {
             let req = test_client
                 .authenticated_request("DELETE", &format!("/api/files/{}", file_id))
                 .to_request();
-            let app = TestClient::get_app().await;
+            let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
             let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
         }
 
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
@@ -561,7 +770,14 @@ mod system_integration_tests {
 
         // Test health check endpoint
         let req = test::TestRequest::get().uri("/health").to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -572,7 +788,14 @@ mod system_integration_tests {
         let req = test::TestRequest::get()
             .uri("/api/system/status")
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -587,7 +810,14 @@ mod system_integration_tests {
         let req = test_client
             .authenticated_request("GET", "/api/system/metrics")
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -608,7 +838,14 @@ mod system_integration_tests {
                 "password": "wrong_password"
             }))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
@@ -620,20 +857,41 @@ mod system_integration_tests {
         let req = test_client
             .authenticated_request("GET", "/api/projects/invalid-id")
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
         // Test rate limiting
         for _ in 0..20 {
             let req = test::TestRequest::get().uri("/health").to_request();
-            let app = TestClient::get_app().await;
+            let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
             let _resp = test::call_service(&app, req).await;
         }
 
         // Should eventually hit rate limit
         let req = test::TestRequest::get().uri("/health").to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         // Rate limit might not be hit in this test, but the system should handle it gracefully
     }
@@ -651,7 +909,14 @@ mod system_integration_tests {
                 "description": "Test"
             }))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         // Should fail without CSRF token
 
@@ -665,7 +930,14 @@ mod system_integration_tests {
                 "last_name": "User"
             }))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
@@ -673,7 +945,14 @@ mod system_integration_tests {
         let req = test::TestRequest::get()
             .uri("/api/projects/'; DROP TABLE projects; --")
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         // Should not cause database issues
 
@@ -685,7 +964,14 @@ mod system_integration_tests {
                 "description": "Test"
             }))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         // Should sanitize input
     }
@@ -788,7 +1074,14 @@ mod data_integrity_tests {
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
             );
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -798,7 +1091,14 @@ mod data_integrity_tests {
         while !job_completed && attempts < 30 {
             let req = test_client
                 .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id));
-            let app = TestClient::get_app().await;
+            let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
             let body: serde_json::Value = test::read_body_json(resp).await;
 
@@ -817,7 +1117,14 @@ mod data_integrity_tests {
                 "GET",
                 &format!("/api/reconciliation/jobs/{}/results", job_id),
             );
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -836,13 +1143,27 @@ mod data_integrity_tests {
         // Clean up
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id));
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
@@ -890,7 +1211,14 @@ mod data_integrity_tests {
             .set_json(&update2)
             .to_request();
 
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp1 = test::call_service(&app, req1).await;
         let resp2 = test::call_service(&app, req2).await;
 
@@ -901,7 +1229,14 @@ mod data_integrity_tests {
         let req = client1
             .authenticated_request("GET", &format!("/api/projects/{}", project_id))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -911,7 +1246,14 @@ mod data_integrity_tests {
         // Clean up
         let req = client1
             .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
@@ -951,7 +1293,14 @@ mod system_recovery_tests {
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
             );
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -959,7 +1308,14 @@ mod system_recovery_tests {
         let req = test_client
             .authenticated_request("POST", &format!("/api/reconciliation/jobs/{}/stop", job_id))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -967,7 +1323,14 @@ mod system_recovery_tests {
         let req = test_client
             .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -980,7 +1343,14 @@ mod system_recovery_tests {
                 "POST",
                 &format!("/api/reconciliation/jobs/{}/start", job_id),
             );
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
@@ -988,7 +1358,14 @@ mod system_recovery_tests {
         let req = test_client
             .authenticated_request("GET", &format!("/api/reconciliation/jobs/{}", job_id))
             .to_request();
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         let body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(body["status"].as_str().unwrap(), "running");
@@ -996,13 +1373,27 @@ mod system_recovery_tests {
         // Clean up
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/reconciliation/jobs/{}", job_id));
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let req = test_client
             .authenticated_request("DELETE", &format!("/api/projects/{}", project_id));
-        let app = TestClient::get_app().await;
+        let (db, config) = get_test_config_and_db().await;
+        let app = test::init_service(
+            App::new()
+                .app_data(web::Data::new(db))
+                .app_data(web::Data::new(config))
+                .configure(configure_routes),
+        )
+        .await;
         let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
