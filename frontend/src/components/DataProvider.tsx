@@ -41,6 +41,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [crossPageData, setCrossPageData] = useState(createInitialCrossPageData());
+  const [isOnline, setIsOnline] = useState(true);
 
   // Memory optimization
   const cleanup = useComprehensiveCleanup();
@@ -67,14 +68,20 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   );
 
   // Sync hook
-  const syncData = useDataProviderSync(securityData.checkPermission);
+  const syncData = useDataProviderSync(setIsOnline);
 
   // Updates hook
   const updatesData = useDataProviderUpdates(
     crossPageData,
     setCrossPageData,
     securityData.checkPermission,
-    securityData.logAuditEvent,
+    (event) => securityData.logAuditEvent(
+      event.userId,
+      event.action,
+      event.resource,
+      event.result,
+      event.details
+    ),
     securityData.encryptData,
     securityData.isSecurityEnabled,
     syncConnected,
