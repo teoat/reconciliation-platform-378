@@ -151,6 +151,12 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
         issues: req.status === 'non_compliant' ? [req.requirement] : []
       }));
     },
+    createSecurityPolicy: (policy: Record<string, unknown>) => 
+      securityData.createSecurityPolicy(policy) as Record<string, unknown>,
+    updateSecurityPolicy: (id: string, updates: Record<string, unknown>) => 
+      securityData.updateSecurityPolicy(id, updates) as Record<string, unknown>,
+    deleteSecurityPolicy: (id: string) => 
+      securityData.deleteSecurityPolicy(id) as Record<string, unknown>,
     // Enhanced methods
     advanceWorkflow: enhancedAdvanceWorkflow,
     resetWorkflow: enhancedResetWorkflow,
