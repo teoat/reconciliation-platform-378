@@ -1007,7 +1007,7 @@ export class WorkflowSyncTester {
     logger.debug('Data changed', { dataChange });
   }
 
-  private async simulateProgressIndicatorUpdate(indicator: { progress: number; label: string; color: string }): Promise<void> {
+  private async simulateProgressIndicatorUpdate(indicator: ProgressIndicator): Promise<void> {
     // Mock implementation
     logger.info('Progress indicator updated', { indicator });
   }
