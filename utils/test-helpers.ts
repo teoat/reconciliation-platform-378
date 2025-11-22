@@ -148,12 +148,18 @@ export class MemoryLeakDetector {
     this.activeIntervals.clear();
     this.activeTimeouts.forEach((id) => clearTimeout(id));
     this.activeTimeouts.clear();
-
-    // Unsubscribe subscriptions
-    this.activeSubscriptions.forEach((sub) => {
-      try { sub.unsubscribe(); } catch { /* ignore */ }
+    this.activeIntervals.forEach((id) => {
+      clearInterval(id);
+      this.untrackInterval(id);
     });
-    this.activeSubscriptions.clear();
+    this.activeTimeouts.forEach((id) => {
+      clearTimeout(id);
+      this.untrackTimeout(id);
+    });
+    this.activeSubscriptions.forEach((sub) => {
+      sub.unsubscribe();
+      this.untrackSubscription(sub);
+    });
   }
 
   /**
