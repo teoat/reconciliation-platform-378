@@ -1,7 +1,7 @@
 // Data Provider Updates Hook
 import React from 'react';
-import { useCrossPageDataUpdates } from './updates';
-import { createInitialCrossPageData } from './initialData';
+import { useCrossPageDataUpdates } from '../updates';
+import { createInitialCrossPageData } from '../initialData';
 import type { CrossPageData } from '../types';
 
 export const useDataProviderUpdates = (
@@ -22,16 +22,38 @@ export const useDataProviderUpdates = (
   syncConnected: boolean,
   wsSyncData: (data: CrossPageData) => void
 ) => {
+  // Adapter to convert event-object-style logAuditEvent to individual-parameters style
+  const logAuditEventAdapter = (
+    userId: string,
+    action: string,
+    resource: string,
+    result: 'success' | 'failure',
+    details?: Record<string, unknown>
+  ) => {
+    logAuditEvent({
+      userId,
+      action,
+      resource,
+      result,
+      details
+    });
+  };
+
+  // Adapter for wsSyncData: () => void to (data: CrossPageData) => void
+  const wsSyncDataAdapter = () => {
+    wsSyncData(crossPageData);
+  };
+
   const { updateCrossPageData: updateCrossPageDataInternal, subscribeToUpdates } =
     useCrossPageDataUpdates(
       crossPageData,
       setCrossPageData,
       checkPermission,
-      logAuditEvent,
+      logAuditEventAdapter,
       encryptData,
       isSecurityEnabled,
       syncConnected,
-      wsSyncData
+      wsSyncDataAdapter
     );
 
   return {

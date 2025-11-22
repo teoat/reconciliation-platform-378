@@ -142,7 +142,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     updatePresence,
     // Security integration
     ...securityData,
-    securityPolicies: securityData.securityPolicies as Array<Record<string, unknown>>,
+    securityPolicies: securityData.securityPolicies as unknown as Array<Record<string, unknown>>,
     checkCompliance: (framework: string) => {
       const requirements = securityData.checkCompliance(framework);
       return requirements.map(req => ({
@@ -152,11 +152,11 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       }));
     },
     createSecurityPolicy: (policy: Record<string, unknown>) => 
-      securityData.createSecurityPolicy(policy) as Record<string, unknown>,
+      securityData.createSecurityPolicy(policy as any) as unknown as Record<string, unknown>,
     updateSecurityPolicy: (id: string, updates: Record<string, unknown>) => 
-      securityData.updateSecurityPolicy(id, updates) as Record<string, unknown>,
+      securityData.updateSecurityPolicy(id, updates as any) as unknown as Record<string, unknown>,
     deleteSecurityPolicy: (id: string) => 
-      securityData.deleteSecurityPolicy(id) as Record<string, unknown>,
+      securityData.deleteSecurityPolicy(id) as unknown as Record<string, unknown>,
     // Enhanced methods
     advanceWorkflow: enhancedAdvanceWorkflow,
     resetWorkflow: enhancedResetWorkflow,
