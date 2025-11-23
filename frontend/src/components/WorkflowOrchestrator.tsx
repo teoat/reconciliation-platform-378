@@ -355,7 +355,7 @@ const WorkflowOrchestrator = ({
               aria-hidden="true"
             />
           </div>
-        </div>481751c1
+        </div>
       </div>
 
       <WorkflowBreadcrumbs stages={workflowStages} />

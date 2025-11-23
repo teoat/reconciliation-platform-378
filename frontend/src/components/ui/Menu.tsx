@@ -125,7 +125,7 @@ const alignClasses = {
                     setIsOpen(false)
                   }
                 },
-              } as any)481751c1
+              } as any)
             }
           },
         })}

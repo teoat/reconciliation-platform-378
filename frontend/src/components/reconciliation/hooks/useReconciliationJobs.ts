@@ -379,7 +379,7 @@ setJobs((prev) =>
                   onJobUpdate(updatedJob);
                 }
 
-                return updatedJob;481751c1
+                return updatedJob;
               }
               return job;
             })

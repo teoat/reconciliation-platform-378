@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Eye } from 'lucide-react';
 import { EyeOff } from 'lucide-react';
 import { Lock } from 'lucide-react';
@@ -317,7 +317,7 @@ const AuthPage: React.FC = () => {
   const onLoginSubmit = async (data: LoginForm) => {
     try {
       setError(null);
-      const result = await login(data.email, data.password, data.rememberMe);
+      const result = await login(data.email, data.password);
       if (result.success) {
         toast.success('Welcome back!');
         navigate('/', { replace: true });
@@ -433,6 +433,7 @@ const AuthPage: React.FC = () => {
                       {...loginForm.register('email')}
                       type="email"
                       id="login-email"
+                      autoComplete="username"
                       className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter your email"
                     />
@@ -481,6 +482,15 @@ const AuthPage: React.FC = () => {
                       {loginForm.formState.errors.password.message}
                     </p>
                   )}
+                </div>
+
+                <div className="flex items-center justify-end">
+                  <Link
+                    to="/forgot-password"
+                    className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                  >
+                    Forgot password?
+                  </Link>
                 </div>
 
                 <button
@@ -605,6 +615,7 @@ const AuthPage: React.FC = () => {
                     <input
                       {...registerForm.register('email')}
                       type="email"
+                      autoComplete="email"
                       className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       placeholder="Enter your email"
                     />

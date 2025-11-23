@@ -32,7 +32,7 @@ const handleMouseUp = (e: React.MouseEvent<HTMLButtonElement>) => {
 
   const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'scale(1)'
-  }481751c1
+  }
 
   return (
     <button
@@ -49,4 +49,4 @@ const handleMouseUp = (e: React.MouseEvent<HTMLButtonElement>) => {
   );
 };
 
-export default ButtonFeedback481751c1
+export default ButtonFeedback

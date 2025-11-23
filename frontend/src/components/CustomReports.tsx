@@ -48,7 +48,7 @@ function adaptReconciliationRecord(record: DataManagementRecord): Reconciliation
     discrepancies: [], // Would need to map from record.resolution or other fields
     metadata: record.metadata || {}
   } as ReconciliationRecord;
-}481751c1
+}
 
 // Custom Report Interfaces
 interface ReportFilter {
@@ -324,7 +324,7 @@ let data: unknown[] = [];
           break;
         case 'cashflow':
           // Use adapter function to properly convert types
-          data = (cashflowData?.records || []).map(adaptReconciliationRecord);481751c1
+          data = (cashflowData?.records || []).map(adaptReconciliationRecord);
           break;
         case 'projects':
           data = []; // Would fetch project data
@@ -386,7 +386,7 @@ metricsData[metric.id] = (data as Record<string, unknown>[]).reduce(
                   return sum + (Number(fieldValue) || 0);
                 },
                 0
-              );481751c1
+              );
             }
             break;
           case 'average': {
@@ -394,7 +394,7 @@ metricsData[metric.id] = (data as Record<string, unknown>[]).reduce(
               const values = (data as Record<string, unknown>[])
                 .map((record) => {
 const fieldValue = record[metric.field!];
-                  return Number(fieldValue) || 0;481751c1
+                  return Number(fieldValue) || 0;
                 })
                 .filter((v) => v > 0);
               metricsData[metric.id] =

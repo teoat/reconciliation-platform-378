@@ -296,7 +296,7 @@ mod rate_limiting_security_tests {
 
     #[tokio::test]
     async fn test_login_rate_limiting() {
-        let _test_client = TestClient::new();
+        let test_client = TestClient::new();
 
         // Make multiple rapid login attempts
         for i in 0..15 {
@@ -350,14 +350,14 @@ mod rate_limiting_security_tests {
                     .configure(configure_routes),
             )
             .await;
-            let _resp = test::call_service(&app, req).await;
+            let resp = test::call_service(&app, req).await;
         // Should eventually hit rate limit (429 Too Many Requests)
         // Note: This test may not always hit the limit depending on implementation
     }
 
     #[tokio::test]
     async fn test_register_rate_limiting() {
-        let _test_client = TestClient::new();
+        let test_client = TestClient::new();
 
         // Make multiple rapid registration attempts
         for i in 0..10 {
@@ -392,7 +392,7 @@ mod rate_limiting_security_tests {
 
     #[tokio::test]
     async fn test_password_reset_rate_limiting() {
-        let _test_client = TestClient::new();
+        let test_client = TestClient::new();
 
         // Make multiple rapid password reset requests
         for _ in 0..10 {
@@ -548,7 +548,7 @@ mod security_headers_tests {
 
     #[tokio::test]
     async fn test_security_headers_present() {
-        let _test_client = TestClient::new();
+        let test_client = TestClient::new();
 
         let req = test::TestRequest::get().uri("/health").to_request();
         let (db, config) = get_test_config_and_db().await;
@@ -582,7 +582,7 @@ mod security_headers_tests {
     async fn test_strict_transport_security_https() {
         // This test would require HTTPS setup
         // For now, just verify the header logic exists
-        let _test_client = TestClient::new();
+        let test_client = TestClient::new();
 
         let req = test::TestRequest::get()
             .uri("/health")

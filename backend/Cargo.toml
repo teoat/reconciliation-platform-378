@@ -9,14 +9,19 @@ edition = "2021"
 # name = "apply-query-indexes"
 # path = "scripts/apply-query-indexes.rs"
 
+# Minimal test binary (commented out - was for testing only)
+# [[bin]]
+# name = "test-minimal"
+# path = "test_minimal.rs"
+
 [profile.release]
 opt-level = 3              # Maximum optimization
 lto = true                 # Link-time optimization
 codegen-units = 1          # Better optimization
-strip = true               # Strip debug symbols
-panic = "abort"            # Smaller binary size
+strip = false              # Keep debug symbols for troubleshooting (was: true)
+panic = "unwind"           # Use unwind for better error messages (was: "abort")
 overflow-checks = false    # Performance optimization
-debug = false              # No debug info in release
+debug = 1                  # Include line numbers for debugging (was: false)
 
 [dependencies]
 # Web framework

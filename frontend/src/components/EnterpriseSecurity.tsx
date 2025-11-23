@@ -8,14 +8,14 @@ import {
   User, 
   Users, 
   Settings, 
-  CheckCircle,481751c1
+  CheckCircle,
   Activity,
   Download,
   Edit,
 Plus as PlusIcon
 } from 'lucide-react'
 import { useData } from '../components/DataProvider'
-import type { BackendProject } from '../services/apiClient/types'481751c1
+import type { BackendProject } from '../services/apiClient/types'
 
 // Enterprise Security Interfaces
 interface SecurityPolicy {

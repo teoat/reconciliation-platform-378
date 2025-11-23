@@ -5,8 +5,7 @@
 // Consolidates error parsing, logging, translation, and context tracking.
 
 import { logger } from './logger';
-import { errorContextService, type ErrorContext } from './errorContextService';
-import { errorTranslationService } from './errorTranslationService';
+import { unifiedErrorService } from './unifiedErrorService';
 import { getErrorMessageFromApiError } from '../utils/errorExtraction';
 
 /**
@@ -73,17 +72,8 @@ export function handleServiceError<T>(
     errorPrefix,
   } = options;
 
-  // Set error context if tracking is enabled
-  if (trackContext) {
-    const context: ErrorContext = {
-      component,
-      action,
-      projectId,
-      userId,
-      workflowStage,
-    };
-    errorContextService.setContext(context);
-  }
+  // Set error context if tracking is enabled (handled by unifiedErrorService)
+  // Context is automatically tracked when handleError is called
 
   // Parse error
   let errorMessage = 'An unknown error occurred';
@@ -107,17 +97,20 @@ export function handleServiceError<T>(
     errorMessage = errorOrResponse;
   }
 
-  // Translate error if enabled
-  if (translateError && errorCode) {
-    const translation = errorTranslationService.translateError(errorCode, {
+  // Translate error if enabled (using unified error service)
+  if (translateError) {
+    const errorObj = errorOrResponse instanceof Error 
+      ? errorOrResponse 
+      : new Error(errorMessage);
+    const translatedMessage = unifiedErrorService.getUserFriendlyMessage(errorObj, {
       component,
       action,
       projectId,
       userId,
       workflowStage,
     });
-    if (translation) {
-      errorMessage = translation.userMessage;
+    if (translatedMessage) {
+      errorMessage = translatedMessage;
     }
   }
 
@@ -140,15 +133,8 @@ export function handleServiceError<T>(
     });
   }
 
-  // Track error in context service
-  if (trackContext) {
-    const errorObj = errorOrResponse instanceof Error ? errorOrResponse : new Error(errorMessage);
-    errorContextService.trackError(errorObj, {
-      component,
-      action,
-      data: { projectId, userId, workflowStage },
-    });
-  }
+  // Track error using unified error service (already handled above if trackContext is true)
+  // unifiedErrorService.handleError automatically tracks context
 
   return {
     success: false,

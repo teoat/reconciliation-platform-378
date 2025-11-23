@@ -91,7 +91,7 @@ children: React.ReactNode
   className?: string
   as?: keyof React.JSX.IntrinsicElements
   id?: string
-  'data-testid'?: string481751c1
+  'data-testid'?: string
 }
 
 const defaultConfig: TypographyConfig = {

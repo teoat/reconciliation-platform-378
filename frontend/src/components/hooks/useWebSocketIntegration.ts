@@ -26,13 +26,13 @@ interface UseWebSocketIntegrationReturn {
 export const useWebSocketIntegration = (): UseWebSocketIntegrationReturn => {
 const { isConnected, sendMessage: wsSendMessage, on, off } = useWebSocket()
   const [progress, setProgress] = useState<ReconciliationProgress | null>(null)
-  const [subscribedJobs, setSubscribedJobs] = useState<Set<string>>(new Set())481751c1
+  const [subscribedJobs, setSubscribedJobs] = useState<Set<string>>(new Set())
 
   // Handle incoming messages
   useEffect(() => {
     const handleMessage = (data: any) => {
       try {
-481751c1
+
         switch (data.type) {
           case 'job_progress_update':
             if (subscribedJobs.has(data.job_id)) {
@@ -88,7 +88,7 @@ const { isConnected, sendMessage: wsSendMessage, on, off } = useWebSocket()
     return () => {
       off('message', handleMessage)
     }
-  }, [on, off, subscribedJobs])481751c1
+  }, [on, off, subscribedJobs])
 
   const subscribeToJob = useCallback(
     (jobId: string) => {

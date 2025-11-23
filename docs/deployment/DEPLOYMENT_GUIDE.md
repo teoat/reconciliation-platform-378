@@ -1,4 +1,5 @@
-# Deployment Guide - 378 Reconciliation Platform
+# Deployment Guide
+## 378 Reconciliation Platform
 
 **Version**: 1.0.0  
 **Status**: Production Ready  
@@ -6,107 +7,42 @@
 
 ---
 
-## Table of Contents
+## 🚀 Quick Deployment Options
 
-1. [Quick Start](#quick-start)
-2. [Prerequisites](#prerequisites)
-3. [Docker Deployment](#docker-deployment)
-4. [Docker Build Optimization](#docker-build-optimization)
-5. [Kubernetes Deployment](#kubernetes-deployment)
-6. [Environment Configuration](#environment-configuration)
-7. [Health Checks](#health-checks)
-8. [Service Optimization](#service-optimization)
-9. [Go-Live Checklist](#go-live-checklist)
-10. [Troubleshooting](#troubleshooting)
-11. [Monitoring & Observability](#monitoring--observability)
+### **Option 1: Docker Compose (Recommended)**
 
----
+**Status**: ✅ Production Ready  
+**Requirements**:
+- Docker Engine 20.10+
+- Docker Compose v2.0+
+- 4GB+ RAM available
+- 10GB+ disk space
 
-## Quick Start
-
-### Option 1: Docker Compose (Recommended for Development)
+#### Quick Start
 
 ```bash
 # Clone repository
 git clone <repository-url>
-cd reconciliation-platform-378
+cd 378
 
 # Set environment variables
 cp .env.example .env
 # Edit .env with your values
 
-# Start all services
-docker-compose up --build -d
+# Deploy all services
+./deploy.sh
+
+# Or manually:
+docker-compose build
+docker-compose up -d
 
 # Verify services
 docker-compose ps
 ```
 
-**Access Points**:
-- Frontend: http://localhost:1000
-- Backend: http://localhost:2000
-- Prometheus: http://localhost:9090
-- Grafana: http://localhost:3001
+#### Environment Configuration
 
-### Option 2: Minimal Development Stack
-
-For faster startup and lower resource usage:
-
-```bash
-# Start essential services only (4 services, ~700MB RAM)
-docker-compose -f docker-compose.dev.yml up -d
-
-# Check status
-docker-compose -f docker-compose.dev.yml ps
-```
-
-**Services Running**: 4 (postgres, redis, backend, frontend)  
-**RAM Usage**: ~700MB  
-**Startup Time**: ~30-60 seconds
-
-### Option 3: Development with Monitoring (On-Demand)
-
-```bash
-# Start essential + monitoring services
-docker-compose -f docker-compose.dev.yml -f docker-compose.monitoring.yml up -d
-
-# Access Grafana
-open http://localhost:3001
-# Login: admin / admin
-
-# Access Prometheus
-open http://localhost:9090
-```
-
-**Services Running**: 6  
-**RAM Usage**: ~1.4GB  
-**When to Use**: Performance testing, debugging metrics
-
----
-
-## Prerequisites
-
-### Required
-- Docker Engine 20.10+
-- Docker Compose v2.0+
-- 4GB+ RAM available (8GB+ recommended for full stack)
-- 10GB+ disk space
-
-### Optional (for Production)
-- Kubernetes 1.24+
-- kubectl configured
-- Helm 3.0+ (optional)
-- Terraform (for infrastructure as code)
-
----
-
-## Docker Deployment
-
-### Step-by-Step Deployment
-
-#### 1. Environment Configuration
-
-Create `.env` file in project root:
+Create `.env` file in project root with the following required variables:
 
 ```bash
 # Required - Change these values!
@@ -134,16 +70,12 @@ openssl rand -base64 24
 openssl rand -base64 24
 ```
 
-#### 2. Build Images
+#### Build and Start Services
 
 ```bash
 # Build with BuildKit cache (faster rebuilds)
 DOCKER_BUILDKIT=1 docker-compose build --parallel
-```
 
-#### 3. Start Services
-
-```bash
 # Start all services
 docker-compose up -d
 
@@ -154,7 +86,7 @@ docker-compose ps
 docker-compose logs -f
 ```
 
-#### 4. Apply Database Migrations & Indexes
+#### Apply Database Migrations & Indexes
 
 ```bash
 # Wait for postgres to be ready (30 seconds)
@@ -170,20 +102,7 @@ export POSTGRES_PASSWORD=your_password
 bash backend/apply-indexes.sh
 ```
 
-#### 5. Verify Deployment
-
-```bash
-# Check backend health
-curl http://localhost:2000/health
-
-# Check frontend
-curl http://localhost:1000
-
-# Check services status
-docker-compose ps
-```
-
-### Service Endpoints
+**Service Endpoints**:
 
 | Service | URL | Default Port |
 |---------|-----|--------------|
@@ -195,10 +114,9 @@ docker-compose ps
 **Default Credentials:**
 - Grafana: `admin` / `admin` (change via `GRAFANA_PASSWORD` in .env)
 
-### Common Operations
+#### Docker Common Operations
 
-#### View Logs
-
+**View Logs:**
 ```bash
 # All services
 docker-compose logs -f
@@ -209,8 +127,7 @@ docker-compose logs -f frontend
 docker-compose logs -f postgres
 ```
 
-#### Restart Services
-
+**Restart Services:**
 ```bash
 # Restart all
 docker-compose restart
@@ -219,8 +136,7 @@ docker-compose restart
 docker-compose restart backend
 ```
 
-#### Stop Services
-
+**Stop Services:**
 ```bash
 # Stop (keeps data volumes)
 docker-compose stop
@@ -232,8 +148,7 @@ docker-compose down
 docker-compose down -v
 ```
 
-#### Update Services
-
+**Update Services:**
 ```bash
 # Pull latest images (if using pre-built)
 docker-compose pull
@@ -243,8 +158,7 @@ docker-compose build --no-cache
 docker-compose up -d
 ```
 
-#### Access Database
-
+**Access Database:**
 ```bash
 # Connect to PostgreSQL
 docker-compose exec postgres psql -U postgres -d reconciliation_app
@@ -253,14 +167,13 @@ docker-compose exec postgres psql -U postgres -d reconciliation_app
 psql -h localhost -p 5432 -U postgres -d reconciliation_app
 ```
 
-#### Access Redis
-
+**Access Redis:**
 ```bash
 # Connect to Redis CLI
 docker-compose exec redis redis-cli -a $REDIS_PASSWORD
 ```
 
-### Resource Limits
+#### Resource Limits
 
 Services are configured with resource limits:
 
@@ -273,7 +186,7 @@ Services are configured with resource limits:
 
 Adjust in `docker-compose.yml` if needed.
 
-### Data Persistence
+#### Data Persistence
 
 Data is stored in Docker volumes:
 
@@ -291,174 +204,89 @@ docker run --rm -v reconciliation-platform_postgres_data:/data -v $(pwd):/backup
 
 ---
 
-## Docker Build Optimization
-
-### Optimization Strategies
-
-#### 1. Multi-Stage Builds
-
-**Benefits:**
-- Smaller final images (only runtime dependencies)
-- Better layer caching
-- Faster builds with cached dependencies
-
-**Implementation:**
-- Stage 1: Install/cache dependencies only
-- Stage 2: Build application
-- Stage 3: Runtime image (minimal)
-
-#### 2. Dependency Caching
-
-**Backend (Rust):**
-```dockerfile
-# Cache dependencies separately
-COPY Cargo.toml Cargo.lock ./
-RUN mkdir src && echo "fn main() {}" > src/main.rs
-RUN cargo build --release
-RUN rm -rf src
-# Now copy actual source
-COPY src ./src
-RUN cargo build --release
-```
-
-**Frontend (Node.js):**
-```dockerfile
-# Cache npm dependencies
-COPY package*.json ./
-RUN npm ci --only=production
-# Now copy source
-COPY . .
-RUN npm run build
-```
-
-#### 3. Binary Optimization
-
-**Backend:**
-- Strip debug symbols: `strip target/release/reconciliation-backend`
-- Reduces binary size by ~30%
-
-**Frontend:**
-- Remove source maps: `find dist -name '*.map' -delete`
-- Production-only dependencies
-- Tree shaking via Vite
-
-#### 4. Minimal Base Images
-
-**Before:**
-- Backend: `rust:1.90-bookworm` (1.5GB)
-- Frontend: `node:18` (900MB)
-
-**After:**
-- Backend: `debian:bookworm-slim` (~120MB)
-- Frontend: `nginx:1.27-alpine` (~40MB)
-
-### Build Comparison
-
-| Component | Before | After | Improvement |
-|-----------|--------|-------|-------------|
-| Backend Image | ~1.8GB | ~180MB | -90% |
-| Frontend Image | ~1.2GB | ~60MB | -95% |
-| Total Size | 3.0GB | 240MB | -92% |
-| Build Time | ~13min | ~8min | -38% |
-| Layers | 27 | 18 | -33% |
-
-### Build Commands
+### **Option 2: Kubernetes (Production)**
 
 ```bash
-# Production Build (Optimized)
-docker-compose -f docker-compose.optimized.yml build --parallel
-
-# Start services
-docker-compose -f docker-compose.optimized.yml up -d
-
-# Use BuildKit
-export DOCKER_BUILDKIT=1
-docker-compose build
-```
-
----
-
-## Kubernetes Deployment
-
-### Prerequisites
-
-- Kubernetes 1.24+
-- kubectl configured
-- Helm 3.0+ (optional)
-
-### Deploy to Kubernetes
-
-```bash
-# Apply configurations
+# Apply all Kubernetes manifests
 kubectl apply -f k8s/
 
-# Check deployment status
-kubectl get pods -n reconciliation-platform
+# Verify deployment
+kubectl get deployments
+kubectl get services
+kubectl get pods
 
-# View logs
-kubectl logs -f deployment/backend -n reconciliation-platform
+# Check ingress
+kubectl get ingress
 ```
 
-### Health Checks
-
-```bash
-# Check backend health
-kubectl exec -it deployment/backend -n reconciliation-platform -- curl http://localhost:8080/health
-
-# Check frontend
-kubectl exec -it deployment/frontend -n reconciliation-platform -- curl http://localhost:3000/health
-```
-
-### Rolling Updates
-
-```bash
-# Update deployment
-kubectl set image deployment/reconciliation-platform \
-  frontend=reconciliation-platform-frontend:v1.0.1 \
-  backend=reconciliation-platform-backend:v1.0.1
-
-# Monitor rollout
-kubectl rollout status deployment/reconciliation-platform
-
-# Rollback if needed
-kubectl rollout undo deployment/reconciliation-platform
-```
-
-### Scaling
-
-```bash
-# Scale deployment
-kubectl scale deployment reconciliation-platform --replicas=5
-
-# Auto-scaling (requires HPA)
-kubectl apply -f k8s/hpa.yaml
-```
+**Required Files**:
+- `k8s/deployment.yaml` - Application deployment
+- `k8s/service.yaml` - Service definition
+- `k8s/configmap.yaml` - Configuration
+- `k8s/ingress.yaml` - Ingress configuration
 
 ---
 
-## Environment Configuration
-
-### Required Environment Variables
-
-#### Backend
+### **Option 3: Terraform (Infrastructure as Code)**
 
 ```bash
-DATABASE_URL=postgresql://user:password@localhost:5432/reconciliation
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=your-secret-key
-BACKUP_S3_BUCKET=your-bucket-name
-NODE_ENV=production
+cd terraform
+
+# Initialize Terraform
+terraform init
+
+# Review plan
+terraform plan
+
+# Apply infrastructure
+terraform apply
+
+# Get outputs
+terraform output
 ```
 
-#### Frontend
+**Required Files**:
+- `terraform/main.tf` - Main infrastructure
+- `terraform/variables.tf` - Variable definitions
+- `terraform/outputs.tf` - Output values
+
+---
+
+## 📋 Pre-Deployment Checklist
+
+### **Environment Variables**
+
+Create `.env` file with:
 
 ```bash
-VITE_API_URL=http://localhost:8080/api
-VITE_WS_URL=ws://localhost:8080/ws
+# Database
+DATABASE_URL=postgresql://user:password@host:5432/reconciliation_app
+
+# Security
+JWT_SECRET=your-secret-key-minimum-32-characters
+CSRF_SECRET=your-csrf-secret-minimum-32-characters
+
+# Redis
+REDIS_URL=redis://host:6379
+
+# Application
 NODE_ENV=production
+VITE_API_URL=https://api.example.com/api/v1
+VITE_WS_URL=wss://api.example.com
 ```
 
-### Security Hardening
+### **Database Setup**
+
+```bash
+# Run migrations
+cd backend
+diesel migration run
+
+# Verify database
+psql -h localhost -U postgres -d reconciliation_app -c "\dt"
+```
+
+### **Security Hardening**
 
 1. ✅ Generate strong secrets (32+ characters)
 2. ✅ Enable SSL/TLS
@@ -466,7 +294,11 @@ NODE_ENV=production
 4. ✅ Set up rate limiting
 5. ✅ Enable audit logging
 
-### Production Security
+---
+
+## 🔒 Production Security
+
+### **Required Configurations**
 
 1. **Environment Variables**:
    - All secrets must be environment variables
@@ -488,242 +320,184 @@ NODE_ENV=production
    - Configure CORS properly
    - Firewall rules
 
----
+### **Docker-Specific Security**
 
-## Health Checks
+⚠️ **Important for Production:**
 
-### Backend Health Endpoints
-
-- `GET /health` - Basic health check
-- `GET /api/system/status` - System status
-- `GET /api/monitoring/health` - Detailed health metrics
-- `GET /health/live` - Liveness endpoint
-- `GET /health/ready` - Readiness endpoint
-
-### Frontend Health
-
-- `GET /health` - Frontend health check
-- `GET /api/health` - API connectivity check
-
-### Docker Health Status
-
-```bash
-# Docker health status
-docker-compose ps
-
-# Manual health checks
-curl http://localhost:2000/health
-curl http://localhost:2000/api/health
-```
+1. **Change all default passwords** in `.env`
+2. **Use strong JWT_SECRET** (64+ characters, random)
+3. **Restrict CORS_ORIGINS** to your actual domains
+4. **Use secrets manager** in production (AWS Secrets Manager, HashiCorp Vault, etc.)
+5. **Enable HTTPS** via reverse proxy (nginx/traefik)
+6. **Firewall rules**: Only expose necessary ports
+7. **Network isolation**: Use Docker networks for service isolation
+8. **Non-root containers**: Ensure containers don't run as root
+9. **Image scanning**: Regularly scan images for vulnerabilities
 
 ---
 
-## Service Optimization
+## 📊 Monitoring & Observability
 
-### Service Recommendations
-
-#### Essential Services (Always Active)
-
-| Service | Container | Port | RAM | Status |
-|---------|-----------|------|-----|--------|
-| postgres | reconciliation-postgres-dev | 5432 | ~200MB | ✅ Active |
-| redis | reconciliation-redis-dev | 6379 | ~50MB | ✅ Active |
-| backend | reconciliation-backend-dev | 2000 | ~300MB | ✅ Active |
-| frontend | reconciliation-frontend-dev | 1000 | ~150MB | ✅ Active |
-
-**Total**: 4 services, ~700MB RAM
-
-#### Optional Services (On-Demand)
-
-| Service | Container | Port | RAM | Recommendation |
-|---------|-----------|------|-----|----------------|
-| pgbouncer | reconciliation-pgbouncer | 6432 | ~20MB | ❌ Inactive (dev) |
-| prometheus | reconciliation-prometheus | 9090 | ~500MB | ⚠️ On-demand |
-| grafana | reconciliation-grafana | 3001 | ~200MB | ⚠️ On-demand |
-| logstash-exporter | reconciliation-logstash-exporter | 9198 | ~50MB | ❌ Inactive |
-| elasticsearch | reconciliation-elasticsearch | 9200 | ~1GB+ | ❌ Inactive |
-| logstash | reconciliation-logstash | 5044, 9600 | ~400MB | ❌ Inactive |
-| kibana | reconciliation-kibana | 5601 | ~300MB | ❌ Inactive |
-| apm-server | reconciliation-apm-server | 8200 | ~200MB | ❌ Inactive |
-
-**Total**: 8 services, ~2.8GB RAM savings
-
-### Resource Savings
-
-| Metric | Before | After | Savings |
-|--------|--------|-------|---------|
-| **Services** | 12 | 4 | 67% reduction |
-| **RAM Usage** | ~3.5GB | ~700MB | 80% reduction |
-| **Startup Time** | ~2-3 min | ~30-60 sec | 50-75% faster |
-| **CPU Usage** | High | Low | Significant reduction |
-
-### When to Use Full Stack
-
-Use the full `docker-compose.yml` when:
-- **Production deployment**: All services needed
-- **Performance testing**: Full monitoring stack required
-- **Log analysis**: ELK stack needed for centralized logging
-- **APM requirements**: Application performance monitoring needed
-
-### When to Use Minimal Stack
-
-Use `docker-compose.dev.yml` when:
-- **Daily development**: Faster startup, lower resource usage
-- **Local testing**: Essential services only
-- **CI/CD pipelines**: Faster builds and tests
-- **Resource-constrained environments**: Limited RAM/CPU
-
----
-
-## Go-Live Checklist
-
-### Pre-Deployment
-
-- [ ] Environment variables configured
-- [ ] Database migrations tested
-- [ ] Security secrets generated and stored securely
-- [ ] SSL/TLS certificates configured
-- [ ] CORS origins configured
-- [ ] Rate limiting configured
-- [ ] Backup strategy in place
-- [ ] Monitoring and alerting configured
-- [ ] Health checks verified
-- [ ] Load testing completed
-
-### Deployment
-
-- [ ] All services started successfully
-- [ ] Database connections verified
-- [ ] Redis connections verified
-- [ ] Health endpoints responding
-- [ ] API endpoints functional
-- [ ] Frontend accessible
-- [ ] WebSocket connections working
-- [ ] File uploads working
-- [ ] Authentication flow tested
-
-### Post-Deployment
-
-- [ ] Health checks passing
-- [ ] API endpoints responding
-- [ ] Database connections active
-- [ ] Redis cache working
-- [ ] WebSocket connections established
-- [ ] Monitoring dashboards visible
-- [ ] Logs being collected
-- [ ] Alerts configured
-- [ ] Performance metrics baseline established
-
-### Performance Testing
-
-```bash
-# Load testing
-ab -n 1000 -c 10 http://localhost:2000/health
-
-# API testing
-curl http://localhost:2000/api/v1/health
-```
-
----
-
-## Troubleshooting
-
-### Services won't start
-
-```bash
-# Check logs
-docker-compose logs
-
-# Check if ports are in use
-netstat -tulpn | grep -E ':(2000|1000|5432|6379)'
-
-# Restart Docker daemon (if needed)
-sudo systemctl restart docker
-```
-
-### Database connection issues
-
-```bash
-# Verify postgres is healthy
-docker-compose ps postgres
-docker-compose logs postgres
-
-# Check DATABASE_URL format
-echo $DATABASE_URL
-# Should be: postgresql://user:password@postgres:5432/dbname
-```
-
-### Redis connection issues
-
-```bash
-# Verify redis is healthy
-docker-compose exec redis redis-cli -a $REDIS_PASSWORD ping
-
-# Check REDIS_URL format
-echo $REDIS_URL
-# Should be: redis://:password@redis:6379
-```
-
-### Build failures
-
-```bash
-# Clear Docker build cache
-docker builder prune -a
-
-# Rebuild without cache
-docker-compose build --no-cache --pull
-```
-
-### Permission issues
-
-```bash
-# Fix volume permissions
-sudo chown -R $USER:$USER $(docker volume inspect reconciliation-platform_uploads_data | jq -r '.[0].Mountpoint')
-```
-
-### Port conflicts
-
-```bash
-# Check port usage
-lsof -i :1000  # Frontend
-lsof -i :2000  # Backend
-
-# Kill process if needed
-kill -9 <PID>
-```
-
-### Build Failures
-
-```bash
-# Clean build
-cd frontend && npm run build:clean
-cd backend && cargo clean && cargo build
-```
-
----
-
-## Monitoring & Observability
-
-### Prometheus Metrics
+### **Prometheus Metrics**
 
 - Available at: `/metrics`
 - Endpoints: Request count, latency, errors
 
-### Grafana Dashboards
+### **Grafana Dashboards**
 
 - Pre-configured dashboards available
 - Access: http://localhost:3001 (default: admin/admin)
 
-### Health Checks
+### **Health Checks**
 
 - Frontend: `GET /`
 - Backend: `GET /health`
 - Database: Connection check
 - Redis: PING check
 
-### Backup & Recovery
+---
 
-#### Database Backups
+## 🔄 Rolling Updates
+
+### **Kubernetes Rolling Update**
+
+```bash
+# Update deployment
+kubectl set image deployment/reconciliation-platform \
+  frontend=reconciliation-platform-frontend:v1.0.1 \
+  backend=reconciliation-platform-backend:v1.0.1
+
+# Monitor rollout
+kubectl rollout status deployment/reconciliation-platform
+
+# Rollback if needed
+kubectl rollout undo deployment/reconciliation-platform
+```
+
+### **Docker Compose Update**
+
+```bash
+# Pull latest images
+docker-compose pull
+
+# Restart services
+docker-compose up -d
+
+# Verify
+docker-compose ps
+```
+
+---
+
+## 🚨 Troubleshooting
+
+### **Common Issues**
+
+1. **Services Won't Start (Docker)**
+   ```bash
+   # Check logs
+   docker-compose logs
+   
+   # Check if ports are in use
+   netstat -tulpn | grep -E ':(2000|1000|5432|6379)'
+   
+   # Restart Docker daemon (if needed)
+   sudo systemctl restart docker
+   ```
+
+2. **Database Connection Failed**
+   ```bash
+   # Check database status (Docker)
+   docker-compose ps postgres
+   docker-compose logs postgres
+   
+   # Verify postgres is healthy
+   docker-compose exec postgres psql -U postgres -d reconciliation_app
+   
+   # Check DATABASE_URL format
+   echo $DATABASE_URL
+   # Should be: postgresql://user:password@postgres:5432/dbname (Docker)
+   # Should be: postgresql://user:password@localhost:5432/dbname (host)
+   
+   # Test connection from host
+   psql -h localhost -U postgres -d reconciliation_app
+   ```
+
+3. **Redis Connection Failed**
+   ```bash
+   # Check Redis status (Docker)
+   docker-compose ps redis
+   docker-compose logs redis
+   
+   # Verify redis is healthy
+   docker-compose exec redis redis-cli -a $REDIS_PASSWORD ping
+   
+   # Check REDIS_URL format
+   echo $REDIS_URL
+   # Should be: redis://:password@redis:6379 (Docker)
+   # Should be: redis://:password@localhost:6379 (host)
+   
+   # Test connection from host
+   redis-cli -h localhost -p 6379 -a $REDIS_PASSWORD PING
+   ```
+
+4. **Port Conflicts**
+   ```bash
+   # Check port usage
+   lsof -i :1000  # Frontend
+   lsof -i :2000  # Backend
+   lsof -i :5432  # PostgreSQL
+   lsof -i :6379  # Redis
+   
+   # Kill process if needed
+   kill -9 <PID>
+   ```
+
+5. **Build Failures**
+   ```bash
+   # Docker build failures
+   # Clear Docker build cache
+   docker builder prune -a
+   
+   # Rebuild without cache
+   docker-compose build --no-cache --pull
+   
+   # Manual build
+   cd frontend && npm run build:clean
+   cd backend && cargo clean && cargo build
+   ```
+
+6. **Permission Issues (Docker)**
+   ```bash
+   # Fix volume permissions
+   sudo chown -R $USER:$USER $(docker volume inspect reconciliation-platform_uploads_data | jq -r '.[0].Mountpoint')
+   ```
+
+---
+
+## 📈 Scaling
+
+### **Horizontal Scaling**
+
+```bash
+# Scale deployment
+kubectl scale deployment reconciliation-platform --replicas=5
+
+# Auto-scaling (requires HPA)
+kubectl apply -f k8s/hpa.yaml
+```
+
+### **Database Scaling**
+
+- Connection pooling configured
+- Read replicas for read-heavy workloads
+- Partitioning for large datasets
+
+---
+
+## 🔙 Backup & Recovery
+
+### **Database Backups**
 
 ```bash
 # Create backup
@@ -733,7 +507,7 @@ pg_dump -h localhost -U postgres reconciliation_app > backup.sql
 psql -h localhost -U postgres reconciliation_app < backup.sql
 ```
 
-#### Application State
+### **Application State**
 
 - Redis snapshots configured
 - File uploads stored in persistent volume
@@ -741,20 +515,34 @@ psql -h localhost -U postgres reconciliation_app < backup.sql
 
 ---
 
-## Security Notes
+## 📝 Post-Deployment
 
-⚠️ **Important for Production:**
+### **Verification Steps**
 
-1. **Change all default passwords** in `.env`
-2. **Use strong JWT_SECRET** (64+ characters, random)
-3. **Restrict CORS_ORIGINS** to your actual domains
-4. **Use secrets manager** in production (AWS Secrets Manager, etc.)
-5. **Enable HTTPS** via reverse proxy (nginx/traefik)
-6. **Firewall rules**: Only expose necessary ports
+1. ✅ Health checks passing
+2. ✅ API endpoints responding
+3. ✅ Database connections active
+4. ✅ Redis cache working
+5. ✅ WebSocket connections established
+6. ✅ Monitoring dashboards visible
 
----
+### **Performance Testing**
 
-## Performance Optimization
+```bash
+# Load testing
+ab -n 1000 -c 10 http://localhost:2000/health
+
+# API testing
+curl http://localhost:2000/api/v1/health
+
+# Docker health checks
+docker-compose ps
+
+# Container resource usage
+docker stats
+```
+
+### **Docker Performance Optimization**
 
 The deployment uses:
 - ✅ Multi-stage Docker builds (smaller images)
@@ -764,28 +552,25 @@ The deployment uses:
 - ✅ Redis caching layer
 - ✅ Resource limits to prevent OOM
 
----
-
-## Next Steps After Deployment
+### **Next Steps After Docker Deployment**
 
 1. **Apply performance indexes** (if not automated)
 2. **Set up monitoring alerts** in Grafana
-3. **Configure backup schedule** (if enabled)
-4. **Set up reverse proxy** for HTTPS
-5. **Configure logging aggregation** (if needed)
+3. **Configure backup schedule** for Docker volumes
+4. **Set up reverse proxy** for HTTPS (nginx/traefik)
+5. **Configure logging aggregation** (ELK, Loki, etc.)
+6. **Review container resource usage** and adjust limits
+7. **Set up health check monitoring**
 
 ---
 
-## Support
+## 🔗 Additional Resources
 
-For issues or questions:
-- Check logs: `docker-compose logs -f`
-- Review health endpoints
-- Verify environment variables
-- Check Docker resources (RAM/CPU)
+## 12. Operations & Maintenance
+- Daily/weekly/monthly routines: health review, log rotation, security patching, capacity planning, and disaster-recovery drills.
+- Monitoring stack: Prometheus scrapes backend metrics at `/metrics`; Grafana dashboards cover application, infrastructure, and business KPIs; Alertmanager drives escalation.
+- Backups: PostgreSQL and Redis snapshots automated via CronJobs; verify restores quarterly.
+- Maintenance tooling: `kubectl rollout restart`, `docker compose up -d --build`, and `helm upgrade` support zero-downtime updates.
+- Security posture: rotate secrets, enforce RBAC, keep fail2ban/network policies aligned with compliance requirements.
 
----
-
-**Deployment Complete! 🎉**
-
-
+For detailed operational procedures, see `docs/TROUBLESHOOTING.md`, `docs/SUPPORT_MAINTENANCE_GUIDE.md`, and `docs/INCIDENT_RESPONSE_RUNBOOKS.md`.

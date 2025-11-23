@@ -5,7 +5,7 @@ import { Bell } from 'lucide-react'
 import { Users } from 'lucide-react'
 import { MessageCircle } from 'lucide-react'
 import { Wifi } from 'lucide-react'
-import { WifiOff } from 'lucide-react'481751c1
+import { WifiOff } from 'lucide-react'
 import { AlertCircle } from 'lucide-react';
 
 // Connection Status Indicator

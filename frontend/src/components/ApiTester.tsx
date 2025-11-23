@@ -200,7 +200,7 @@ setTestResults(prev =>
       setResponseBody(JSON.stringify({ error: errorMessage }, null, 2))
       showError(`API Test Failed - ${errorMessage}`)
     }
-  }, [showSuccess, showError])481751c1
+  }, [showSuccess, showError])
 
   const handleRunTest = useCallback(() => {
     if (!selectedEndpoint) return;
@@ -231,7 +231,7 @@ setTestResults(prev =>
 const copyToClipboard = useCallback((text: string) => {
     navigator.clipboard.writeText(text)
     showSuccess('Response copied to clipboard')
-  }, [showSuccess])481751c1
+  }, [showSuccess])
 
   const downloadResults = useCallback(() => {
     const data = {
@@ -250,7 +250,7 @@ results: testResults
     URL.revokeObjectURL(url)
     
     showSuccess('Test results downloaded successfully')
-  }, [testResults, showSuccess])481751c1
+  }, [testResults, showSuccess])
 
   const clearResults = useCallback(() => {
     setTestResults([]);

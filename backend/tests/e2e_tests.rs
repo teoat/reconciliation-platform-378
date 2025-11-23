@@ -18,7 +18,7 @@ mod user_workflow_tests {
 
     #[tokio::test]
     async fn test_complete_reconciliation_workflow() {
-        let _test_config = TestConfig::default();
+        let test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Step 1: User registration and authentication
@@ -261,7 +261,7 @@ mod user_workflow_tests {
 
     #[tokio::test]
     async fn test_file_upload_workflow() {
-        let _test_config = TestConfig::default();
+        let test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Step 1: User authentication
@@ -411,7 +411,7 @@ mod user_workflow_tests {
 
     #[tokio::test]
     async fn test_multi_user_collaboration_workflow() {
-        let _test_config = TestConfig::default();
+        let test_config = TestConfig::default();
 
         // Create multiple test clients for different users
         let mut admin_client = TestClient::new();
@@ -463,11 +463,11 @@ mod user_workflow_tests {
         assert!(resp.status().is_success());
 
         // Step 3: Analyst uploads files
-        let _file1_id = analyst_client
+        let file1_id = analyst_client
             .upload_file(&project_id, "./test_data/analyst_file1.csv")
             .await
             .unwrap();
-        let _file2_id = analyst_client
+        let file2_id = analyst_client
             .upload_file(&project_id, "./test_data/analyst_file2.csv")
             .await
             .unwrap();
@@ -592,7 +592,7 @@ mod user_workflow_tests {
 
     #[tokio::test]
     async fn test_data_management_workflow() {
-        let _test_config = TestConfig::default();
+        let test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Authenticate as admin
@@ -648,7 +648,7 @@ mod user_workflow_tests {
         )
         .await;
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+            assert!(resp.status().is_success());
         }
 
         // Step 4: Get all data sources
@@ -713,7 +713,7 @@ mod user_workflow_tests {
         )
         .await;
         let resp = test::call_service(&app, req).await;
-        assert!(resp.status().is_success());
+            assert!(resp.status().is_success());
         }
 
         // Step 7: Clean up
@@ -756,7 +756,7 @@ mod system_integration_tests {
 
     #[tokio::test]
     async fn test_system_health_monitoring() {
-        let _test_config = TestConfig::default();
+        let test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Test health check endpoint
@@ -818,7 +818,7 @@ mod system_integration_tests {
 
     #[tokio::test]
     async fn test_error_handling_and_recovery() {
-        let _test_config = TestConfig::default();
+        let test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Test invalid authentication
@@ -870,7 +870,7 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-            let resp = test::call_service(&app, req).await;
+            let _resp = test::call_service(&app, req).await;
         }
 
         // Should eventually hit rate limit
@@ -883,13 +883,13 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let _resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req).await;
         // Rate limit might not be hit in this test, but the system should handle it gracefully
     }
 
     #[tokio::test]
     async fn test_security_features() {
-        let _test_config = TestConfig::default();
+        let test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Test CSRF protection
@@ -908,7 +908,7 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let _resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req).await;
         // Should fail without CSRF token
 
         // Test input validation
@@ -963,13 +963,13 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let _resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req).await;
         // Should sanitize input
     }
 
     #[tokio::test]
     async fn test_performance_under_load() {
-        let _test_config = TestConfig::default();
+        let test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Authenticate first
@@ -1032,7 +1032,7 @@ mod data_integrity_tests {
 
     #[tokio::test]
     async fn test_data_consistency() {
-        let _test_config = TestConfig::default();
+        let test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Authenticate as admin
@@ -1048,7 +1048,7 @@ mod data_integrity_tests {
             .unwrap();
 
         // Upload file
-        let _file_id = test_client
+        let file_id = test_client
             .upload_file(&project_id, "./test_data/consistency_test.csv")
             .await
             .unwrap();
@@ -1166,7 +1166,7 @@ mod data_integrity_tests {
 
     #[tokio::test]
     async fn test_concurrent_access() {
-        let _test_config = TestConfig::default();
+        let test_config = TestConfig::default();
 
         // Create multiple clients
         let mut client1 = TestClient::new();
@@ -1263,7 +1263,7 @@ mod system_recovery_tests {
 
     #[tokio::test]
     async fn test_system_recovery_after_failure() {
-        let _test_config = TestConfig::default();
+        let test_config = TestConfig::default();
         let mut test_client = TestClient::new();
 
         // Authenticate

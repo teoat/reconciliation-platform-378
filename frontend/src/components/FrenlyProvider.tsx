@@ -18,7 +18,7 @@ interface PageGuidance {
   tips?: string[];
   warnings?: string[];
   celebrations?: string[];
-}481751c1
+}
 
 interface FrenlyContextType {
   state: FrenlyState;

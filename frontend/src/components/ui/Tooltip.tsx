@@ -81,7 +81,7 @@ return (
             setIsFocused(false)
           }
         },
-      })}481751c1
+      })}
 
         {isVisible && (
           <div

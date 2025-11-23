@@ -6,7 +6,7 @@ import { AlertTriangle } from 'lucide-react'
 import { Lock } from 'lucide-react'
 import { Eye } from 'lucide-react'
 import { EyeOff } from 'lucide-react'
-import { CheckCircle } from 'lucide-react'481751c1
+import { CheckCircle } from 'lucide-react'
 import { XCircle } from 'lucide-react';
 
 // Security Dashboard Component

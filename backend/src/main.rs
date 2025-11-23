@@ -21,10 +21,19 @@ use reconciliation_backend::{
 };
 
 // Add a synchronous main wrapper to ensure we can print before async runtime
+#[inline(never)]
 fn main() {
+    // CRITICAL: Multiple output methods to ensure we see something
+    eprintln!("=== MAIN FUNCTION START ===");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
+    
     // Print IMMEDIATELY - before anything else
     let _ = std::io::Write::write_all(&mut std::io::stderr(), b"MAIN FUNCTION CALLED\n");
     let _ = std::io::Write::flush(&mut std::io::stderr());
+    
+    // Also try stdout
+    println!("MAIN FUNCTION CALLED (stdout)");
+    std::io::Write::flush(&mut std::io::stdout()).unwrap_or(());
     
     // Set up panic handler to capture panics
     std::panic::set_hook(Box::new(|panic_info| {
@@ -295,6 +304,15 @@ async fn async_main() -> std::io::Result<()> {
     // Application secrets are no longer stored in password manager
     // See: docs/architecture/PASSWORD_SYSTEM_ORCHESTRATION.md
 
+    // Initialize WebSocket server
+    use actix::Actor;
+    use reconciliation_backend::websocket::server::WsServer;
+    let ws_server = WsServer::new(Arc::new(database.clone())).start();
+    log::info!("WebSocket server initialized");
+
+    // Clone config for use in HttpServer closure
+    let config_clone = config.clone();
+
     use actix_web::{web, HttpServer};
 
     // Log server binding attempt
@@ -357,6 +375,9 @@ async fn async_main() -> std::io::Result<()> {
             // Add authentication and user services (required by auth handlers)
             .app_data(web::Data::new(auth_service.clone()))
             .app_data(web::Data::new(user_service.clone()))
+            // Add WebSocket server (required by WebSocket handlers)
+            .app_data(web::Data::new(ws_server.clone()))
+            .app_data(web::Data::new(config_clone.clone()))
             // Add Swagger UI for API documentation
             // Note: Swagger UI integration requires all handlers to have utoipa annotations
             // Currently using manual openapi.yaml file - Swagger UI can be enabled when more handlers are annotated

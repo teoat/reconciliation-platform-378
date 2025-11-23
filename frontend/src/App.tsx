@@ -87,7 +87,13 @@ function App() {
         <ReduxProvider>
           <WebSocketProvider config={wsConfig}>
             <AuthProvider>
-              <Router basename={import.meta.env.VITE_BASE_PATH || '/'}>
+              <Router 
+                basename={import.meta.env.VITE_BASE_PATH || '/'}
+                future={{
+                  v7_startTransition: true,
+                  v7_relativeSplatPath: true,
+                }}
+              >
                 <div className="min-h-screen bg-gray-100">
                   <KeyboardShortcuts />
                   <ToastContainer />

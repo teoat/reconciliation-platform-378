@@ -74,7 +74,7 @@ type EnhancedContextualHelpProps
 } from './EnhancedContextualHelp';
 
 export { 
-  OnboardingAnalyticsDashboard481751c1
+  OnboardingAnalyticsDashboard
 } from '../onboarding/OnboardingAnalyticsDashboard';
 
 export {
@@ -83,7 +83,7 @@ type EmptyStateType
 } from '../onboarding/EmptyStateGuidance';
 
 export { 
-  EnhancedFrenlyOnboarding481751c1
+  EnhancedFrenlyOnboarding
 } from '../onboarding/EnhancedFrenlyOnboarding';
 
 // Component Props Types

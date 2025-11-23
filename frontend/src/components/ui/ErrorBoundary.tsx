@@ -5,8 +5,7 @@ import { RefreshCw } from 'lucide-react';
 import { Home } from 'lucide-react';
 import { X } from 'lucide-react';
 import Button from './Button';
-import { errorContextService } from '../../services/errorContextService';
-import { errorTranslationService } from '../../services/errorTranslationService';
+import { unifiedErrorService } from '../../services/unifiedErrorService';
 
 interface Props {
   children: ReactNode;
@@ -50,10 +49,12 @@ export class ErrorBoundary extends Component<Props, State> {
       errorInfo,
     });
 
-    // Track error with context service
+    // Track error with unified error service
     try {
-      errorContextService.trackError(error, {
+      // Use handleErrorWithTranslation to get user-friendly message
+      const errorResult = unifiedErrorService.handleErrorWithTranslation(error, {
         component: 'ErrorBoundary',
+        action: 'error_boundary_catch',
         metadata: {
           componentStack: errorInfo.componentStack,
           errorName: error.name,
@@ -62,29 +63,18 @@ export class ErrorBoundary extends Component<Props, State> {
         },
       });
 
-      // Try to translate error for better user experience
-const translation = errorTranslationService.translateError(
-        error.name || 'UNKNOWN_ERROR',
-        {
-          component: 'ErrorBoundary',
-          action: 'error_boundary_catch',
-        }
-      );481751c1
-
       // Store translation for display
-      if (translation) {
-        this.setState((prevState) => ({
-          ...prevState,
-          translatedError: {
-title: 'An error occurred',
-            message: translation.userMessage,
-            code: error.name,481751c1
-            suggestion: translation.suggestion,
-          },
-        }));
-      }
+      this.setState((prevState) => ({
+        ...prevState,
+        translatedError: {
+          title: 'An error occurred',
+          message: errorResult.userMessage,
+          code: errorResult.parsed.code,
+          suggestion: errorResult.translation?.suggestion,
+        },
+      }));
     } catch (contextError) {
-      // Fail silently if context service fails
+      // Fail silently if error service fails
       const errorObj =
         contextError instanceof Error ? contextError : new Error(String(contextError));
       logger.warn('Failed to track error context:', { error: errorObj.message });
@@ -92,7 +82,7 @@ title: 'An error occurred',
 
     // Log error to console in development
 if (process.env.NODE_ENV === 'development') {
-      logger.error('ErrorBoundary caught an error:', { error: error.message, stack: error.stack, errorInfo });481751c1
+      logger.error('ErrorBoundary caught an error:', { error: error.message, stack: error.stack, errorInfo });
     }
 
     // Call custom error handler if provided
@@ -119,16 +109,16 @@ if (process.env.NODE_ENV === 'development') {
             });
           } else {
             // Sentry not available - use logger
-logger.error('Production error:', { error: error.message, stack: error.stack, errorInfo });
+            logger.error('Production error:', { error: error.message, stack: error.stack, errorInfo });
           }
-        });
-      } catch (importError) {
-        // Sentry not available or not configured - use logger
-        logger.error('Production error:', { error: error.message, stack: error.stack, errorInfo });
-      }
+        } catch (importError) {
+          // Sentry not available or not configured - use logger
+          logger.error('Production error:', { error: error.message, stack: error.stack, errorInfo });
+        }
+      })();
     } else {
       // Always log in development
-      logger.error('Development error:', { error: error.message, stack: error.stack, errorInfo });481751c1
+      logger.error('Development error:', { error: error.message, stack: error.stack, errorInfo });
     }
   }
 
@@ -207,12 +197,12 @@ logger.error('Production error:', { error: error.message, stack: error.stack, er
 // Hook for functional components to handle errors
 export const useErrorHandler = () => {
   const handleError = (error: Error, errorInfo?: string) => {
-logger.error('Error caught by useErrorHandler:', { error: error.message, stack: error.stack, errorInfo });481751c1
+logger.error('Error caught by useErrorHandler:', { error: error.message, stack: error.stack, errorInfo });
 
     // Log to external service in production
     if (import.meta.env.PROD) {
       // Send to error tracking service
-logger.error('Production error:', { error: error.message, stack: error.stack, errorInfo });481751c1
+logger.error('Production error:', { error: error.message, stack: error.stack, errorInfo });
     }
   };
 

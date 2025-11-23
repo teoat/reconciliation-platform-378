@@ -67,7 +67,7 @@ export const useCrossPageDataUpdates = (
       // Log successful update
       logAuditEvent('current-user', 'update_cross_page_data', page, 'success', {
         page,
-data: typeof data === 'object' ? Object.keys(data as unknown as Record<string, unknown>) : 'unknown',481751c1
+data: typeof data === 'object' ? Object.keys(data as unknown as Record<string, unknown>) : 'unknown',
       });
     },
     [
@@ -125,7 +125,7 @@ setCrossPageData((prev) => ({
     }, 5000); // Update every 5 seconds
     
     return () => clearInterval(interval);
-  }, [crossPageData]);481751c1
+  }, [crossPageData]);
 
   return {
     updateCrossPageData,

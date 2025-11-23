@@ -247,7 +247,7 @@ export const JobList: React.FC<JobListProps> = ({
               onViewResults={onViewResults}
               onDeleteJob={onDeleteJob}
             />
-          </div>481751c1
+          </div>
         </div>
       );
     }

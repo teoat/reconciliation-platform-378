@@ -170,7 +170,7 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
   const dropZoneRef = useRef<HTMLDivElement>(null);
 
   // WebSocket integration for real-time updates
-const { isConnected, subscribe, unsubscribe } = useWebSocketIntegration()481751c1
+const { isConnected, subscribe, unsubscribe } = useWebSocketIntegration()
 
   // Load files - using unified utilities
   const loadFiles = useCallback(async () => {
@@ -341,7 +341,7 @@ const uploadFile = useCallback(async (file: File, request: FileUploadRequest): P
         setError(err instanceof Error ? err.message : 'Failed to delete file')
       }
     })
-  }, [projectId, withLoading])481751c1
+  }, [projectId, withLoading])
 
   // Handle file drop
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -427,14 +427,14 @@ const unsubscribeFileUpdate = subscribe('file_update', (data: {
           file.id === data.file_id 
             ? { ...file, ...data.updates, status: data.updates.status as FileInfo['status'] }
             : file
-        ))481751c1
+        ))
       }
     );
 
     return () => {
 unsubscribe('file_update', unsubscribeFileUpdate)
     }
-  }, [isConnected, projectId, subscribe, unsubscribe])481751c1
+  }, [isConnected, projectId, subscribe, unsubscribe])
 
   // Load files on mount
   useEffect(() => {

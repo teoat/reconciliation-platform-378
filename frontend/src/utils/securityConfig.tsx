@@ -36,7 +36,13 @@ export const cspConfig = {
   // Development CSP policy (more permissive)
   development: {
     'default-src': ["'self'"],
-    'script-src': ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'localhost:*'],
+    'script-src': [
+      "'self'",
+      "'unsafe-inline'",
+      "'unsafe-eval'",
+      'localhost:*',
+      'https://accounts.google.com', // Google Identity Services
+    ],
     'style-src': ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
     'font-src': ["'self'", 'https://fonts.gstatic.com'],
     'img-src': ["'self'", 'data:', 'https:', 'localhost:*'],
@@ -47,6 +53,8 @@ export const cspConfig = {
       'http://localhost:*',
       'https://localhost:*',
       'http://localhost:8200', // APM monitoring (Elastic APM)
+      'https://accounts.google.com', // Google OAuth
+      'https://oauth2.googleapis.com', // Google OAuth token exchange
     ],
     'media-src': ["'self'", 'data:', 'localhost:*'],
     'object-src': ["'none'"],
@@ -61,6 +69,7 @@ export const cspConfig = {
     'script-src': [
       "'self'",
       "'nonce-{nonce}'", // Use nonces for inline scripts (replaces unsafe-inline)
+      'https://accounts.google.com', // Google Identity Services
     ],
     'style-src': [
       "'self'",
@@ -77,6 +86,8 @@ export const cspConfig = {
       "'self'",
       'wss://api.example.com', // Replace with your WebSocket endpoint
       'https://api.example.com', // Replace with your API endpoint
+      'https://accounts.google.com', // Google OAuth
+      'https://oauth2.googleapis.com', // Google OAuth token exchange
     ],
     'media-src': ["'self'", 'data:'],
     'object-src': ["'none'"],

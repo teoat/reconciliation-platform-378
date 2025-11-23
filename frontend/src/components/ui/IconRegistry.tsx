@@ -149,7 +149,7 @@ export const IconRegistry: Record<string, IconConfig> = {
   FileJson: { name: 'FileJson', component: LucideIcons.FileJson, category: 'file' },
   Play: { name: 'Play', component: LucideIcons.Play, category: 'action' },
   Pause: { name: 'Pause', component: LucideIcons.Pause, category: 'action' },
-}481751c1
+}
 
 // Export Square as StopIcon from LucideIcons
 export const StopIcon = LucideIcons.Square;
@@ -199,4 +199,4 @@ export const useIcon = (name: string) => {
   return IconComponent || (() => null);
 };
 
-export default Icon481751c1
+export default Icon

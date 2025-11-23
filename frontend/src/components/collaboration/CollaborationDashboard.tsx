@@ -143,7 +143,7 @@ const subId = subscribe(`collaboration:session:${sessionId}`, (data: {
                 targetId: (comment as any).targetId || '',
                 targetType: ((comment as any).targetType as 'project' | 'file' | 'reconciliation') || 'project',
                 timestamp: new Date(comment.timestamp)
-              }, ...prev]);481751c1
+              }, ...prev]);
             }
           }
         );
@@ -268,7 +268,7 @@ const usersSubId = subscribe('collaboration:users', (data: {
             ...user,
             status: 'online' as const,
             lastActivity: new Date(user.lastSeen)
-          })));481751c1
+          })));
         }
       );
       setUsersSubscriptionId(usersSubId);
@@ -288,7 +288,7 @@ const activitiesSubId = subscribe('collaboration:activities', (data: {
             targetType: (activity.targetType as 'project' | 'file' | 'reconciliation' | 'comment') || 'project',
             timestamp: new Date(activity.timestamp),
             metadata: activity.details
-          }, ...prev].slice(0, 100));481751c1
+          }, ...prev].slice(0, 100));
         }
       );
       setActivitiesSubscriptionId(activitiesSubId);

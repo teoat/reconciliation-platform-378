@@ -62,7 +62,7 @@ const [userProgress, setUserProgress] = useState<string[]>(initialProgress)
     mood: 'happy',
     energy: 'medium',
     helpfulness: 8
-  })481751c1
+  })
 
   // Load progress from localStorage
   useEffect(() => {

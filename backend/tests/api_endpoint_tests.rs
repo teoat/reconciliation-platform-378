@@ -11,26 +11,27 @@ use reconciliation_backend::{config::Config, database::Database, handlers::confi
 
 #[path = "test_utils.rs"]
 mod test_utils;
+use test_utils::*;
 
 /// Test API endpoint setup macro - avoids type annotation issues
 /// Usage: let app = setup_api_test_app!().await;
 macro_rules! setup_api_test_app {
     () => {{
         async {
-            let config = Config::from_env().expect("Failed to load test config");
-            let db = Database::new(&config.database_url)
-                .await
-                .expect("Failed to create test database");
+    let config = Config::from_env().expect("Failed to load test config");
+    let db = Database::new(&config.database_url)
+        .await
+        .expect("Failed to create test database");
 
-            db.run_migrations().await.expect("Failed to run migrations");
+    db.run_migrations().await.expect("Failed to run migrations");
 
-            test::init_service(
-                App::new()
-                    .app_data(web::Data::new(db))
-                    .app_data(web::Data::new(config))
-                    .configure(configure_routes),
-            )
-            .await
+    test::init_service(
+        App::new()
+            .app_data(web::Data::new(db))
+            .app_data(web::Data::new(config))
+            .configure(configure_routes),
+    )
+    .await
         }
     }};
 }

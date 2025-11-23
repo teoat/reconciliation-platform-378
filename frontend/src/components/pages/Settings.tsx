@@ -327,96 +327,27 @@ const Settings: React.FC = () => {
               showUnavailable={false}
             >
               <button
-                onClick={() => handleTabChange('preferences')}
+                onClick={() => handleTabChange('analytics')}
                 className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'preferences' ? tabClasses.active : tabClasses.inactive
+                  activeTab === 'analytics' ? tabClasses.active : tabClasses.inactive
                 }`}
-                aria-label="Preferences"
+                aria-label="Onboarding Analytics"
                 role="tab"
-                aria-selected={activeTab === 'preferences' ? 'true' : 'false'}
+                aria-selected={activeTab === 'analytics' ? 'true' : 'false'}
                 type="button"
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    handleTabChange('preferences');
+                    handleTabChange('analytics');
                   }
                 }}
               >
                 <div className="flex items-center justify-center space-x-2">
-                  <Palette className="w-4 h-4" aria-hidden="true" />
-                  <span>Preferences</span>
+                  <CheckCircle className="w-4 h-4" aria-hidden="true" />
+                  <span>Analytics</span>
                 </div>
               </button>
-              <button
-                onClick={() => handleTabChange('notifications')}
-                className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'notifications' ? tabClasses.active : tabClasses.inactive
-                }`}
-                aria-label="Notifications"
-                role="tab"
-                aria-selected={activeTab === 'notifications' ? 'true' : 'false'}
-                type="button"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleTabChange('notifications');
-                  }
-                }}
-              >
-                <div className="flex items-center justify-center space-x-2">
-                  <Bell className="w-4 h-4" aria-hidden="true" />
-                  <span>Notifications</span>
-                </div>
-              </button>
-              <button
-                onClick={() => handleTabChange('security')}
-                className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === 'security' ? tabClasses.active : tabClasses.inactive
-                }`}
-                aria-label="Security"
-                role="tab"
-                aria-selected={activeTab === 'security' ? 'true' : 'false'}
-                type="button"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    handleTabChange('security');
-                  }
-                }}
-              >
-                <div className="flex items-center justify-center space-x-2">
-                  <Shield className="w-4 h-4" aria-hidden="true" />
-                  <span>Security</span>
-                </div>
-              </button>
-              <FeatureGate
-                featureId="onboarding-analytics"
-                requiredRole={['admin']}
-                userRole={(user as { role?: string })?.role || 'user'}
-                showUnavailable={false}
-              >
-                <button
-                  onClick={() => handleTabChange('analytics')}
-                  className={`flex-1 py-4 px-6 text-center border-b-2 font-medium text-sm transition-colors ${
-                    activeTab === 'analytics' ? tabClasses.active : tabClasses.inactive
-                  }`}
-                  aria-label="Onboarding Analytics"
-                  role="tab"
-                  aria-selected={activeTab === 'analytics' ? 'true' : 'false'}
-                  type="button"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      handleTabChange('analytics');
-                    }
-                  }}
-                >
-                  <div className="flex items-center justify-center space-x-2">
-                    <CheckCircle className="w-4 h-4" aria-hidden="true" />
-                    <span>Analytics</span>
-                  </div>
-                </button>
-              </FeatureGate>
+            </FeatureGate>
             </nav>
           </div>
 
@@ -488,10 +419,7 @@ const Settings: React.FC = () => {
                   </select>
                 </div>
               </div>
-<<<<<<< HEAD
-=======
-            </div>
-          )}
+            )}
 
           {activeTab === 'security' && (
             <div className="space-y-6">
@@ -566,8 +494,9 @@ const Settings: React.FC = () => {
                 Save Settings
               </>
             )}
+          </Button>
 
-            {activeTab === 'notifications' && (
+          {activeTab === 'notifications' && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>

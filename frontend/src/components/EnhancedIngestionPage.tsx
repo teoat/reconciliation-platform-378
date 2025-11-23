@@ -112,7 +112,7 @@ id: string
   quality: DataQualityMetrics
   isIndonesian: boolean
   processedAt: string
-  metadata: Record<string, string | number | boolean>481751c1
+  metadata: Record<string, string | number | boolean>
 }
 
 interface ReconciliationRecord {
@@ -154,7 +154,7 @@ id: string
   timestamp: number
   status: 'pending' | 'processing' | 'completed' | 'error'
   source: string
-  target: string481751c1
+  target: string
 }
 
 interface DataQualityMetrics {
@@ -269,7 +269,7 @@ const calculateIndonesianQualityMetrics = (data: CSVRecord | ProcessedExpenseRec
     if ((dataRecord.jumlah || dataRecord.amount) && !isNaN(parseFloat(String(dataRecord.jumlah || dataRecord.amount)))) accuracyScore += 25
     if ((dataRecord.deskripsi || dataRecord.description) && String(dataRecord.deskripsi || dataRecord.description).length > 5) accuracyScore += 25
     if ((dataRecord.kategori || dataRecord.category1) && String(dataRecord.kategori || dataRecord.category1).length > 2) accuracyScore += 25
-    metrics.accuracy = accuracyScore481751c1
+    metrics.accuracy = accuracyScore
 
   // Calculate consistency (simplified)
   metrics.consistency = metrics.completeness * 0.8 + metrics.accuracy * 0.2;
@@ -325,7 +325,7 @@ const EnhancedIngestionPage = () => {
     let processedData: ProcessedData[];
 
     if (file.name.includes('expenses')) {
-const expenses = IndonesianDataProcessor.processExpenseData(rawData)481751c1
+const expenses = IndonesianDataProcessor.processExpenseData(rawData)
       processedData = expenses.map((expense: ProcessedExpenseRecord) => ({
         id: expense.id,
         source: 'ingestion' as const,

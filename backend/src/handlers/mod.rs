@@ -37,6 +37,12 @@ pub mod ai;
 // Onboarding handlers
 pub mod onboarding;
 
+// Logging handlers
+pub mod logs;
+
+// WebSocket handlers
+use crate::websocket;
+
 // Re-export types for backward compatibility
 pub use helpers::{extract_user_id, get_client_ip, get_user_agent, mask_email};
 pub use types::{ApiResponse, PaginatedResponse, SearchQueryParams, UserQueryParams};
@@ -76,6 +82,10 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .service(web::scope("/api/onboarding").configure(onboarding::configure_routes))
         // AI service routes
         .service(web::scope("/api/ai").configure(ai::configure_routes))
+        // Logging routes
+        .service(web::scope("/api").route("/logs", web::post().to(logs::post_logs)))
+        // WebSocket routes (register at root level, not under /api)
+        .configure(websocket::configure_websocket_routes)
         // Health check routes (from existing health.rs)
         // Register at both /health and /api/health for compatibility
         .configure(health::configure_health_routes)
