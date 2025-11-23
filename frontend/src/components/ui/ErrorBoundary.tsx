@@ -54,12 +54,11 @@ export class ErrorBoundary extends Component<Props, State> {
     try {
       errorContextService.trackError(error, {
         component: 'ErrorBoundary',
-        severity: 'high',
-        stack: error.stack,
         metadata: {
           componentStack: errorInfo.componentStack,
           errorName: error.name,
           errorMessage: error.message,
+          stack: error.stack,
         },
       });
 
@@ -69,15 +68,19 @@ export class ErrorBoundary extends Component<Props, State> {
         {
           component: 'ErrorBoundary',
           action: 'error_boundary_catch',
-        },
-        error.message
+        }
       );
 
       // Store translation for display
       if (translation) {
         this.setState((prevState) => ({
           ...prevState,
-          translatedError: translation,
+          translatedError: {
+            title: 'An error occurred',
+            message: translation.userMessage,
+            code: error.name,
+            suggestion: translation.suggestion,
+          },
         }));
       }
     } catch (contextError) {
@@ -87,7 +90,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     // Log error to console in development
     if (process.env.NODE_ENV === 'development') {
-      logger.error('ErrorBoundary caught an error:', error, errorInfo);
+      logger.error('ErrorBoundary caught an error:', { error: error.message, stack: error.stack, errorInfo });
     }
 
     // Call custom error handler if provided
@@ -110,16 +113,16 @@ export class ErrorBoundary extends Component<Props, State> {
             });
           } else {
             // Sentry not available - use logger
-            logger.error('Production error:', error, errorInfo);
+            logger.error('Production error:', { error: error.message, stack: error.stack, errorInfo });
           }
         });
       } catch (importError) {
         // Sentry not available or not configured - use logger
-        logger.error('Production error:', error, errorInfo);
+        logger.error('Production error:', { error: error.message, stack: error.stack, errorInfo });
       }
     } else {
       // Always log in development
-      logger.error('Development error:', error, errorInfo);
+      logger.error('Development error:', { error: error.message, stack: error.stack, errorInfo });
     }
   }
 
@@ -198,12 +201,12 @@ export class ErrorBoundary extends Component<Props, State> {
 // Hook for functional components to handle errors
 export const useErrorHandler = () => {
   const handleError = (error: Error, errorInfo?: string) => {
-    logger.error('Error caught by useErrorHandler:', error, errorInfo);
+    logger.error('Error caught by useErrorHandler:', { error: error.message, stack: error.stack, errorInfo });
 
     // Log to external service in production
     if (process.env.NODE_ENV === 'production') {
       // Send to error tracking service
-      logger.error('Production error:', error, errorInfo);
+      logger.error('Production error:', { error: error.message, stack: error.stack, errorInfo });
     }
   };
 

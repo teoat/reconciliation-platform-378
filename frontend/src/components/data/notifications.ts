@@ -1,6 +1,7 @@
 // Notifications & Alerts Module
 import { useState, useCallback, useRef } from 'react';
-import { Notification, Alert, CircularBuffer } from '../../utils/memoryOptimization';
+import { CircularBuffer } from '../../utils/memoryOptimization';
+import type { Notification, Alert } from './types';
 
 export const useNotifications = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);

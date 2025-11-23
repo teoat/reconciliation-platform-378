@@ -92,7 +92,7 @@ export async function extractErrorFromFetchCall<T>(
     }
     
     // Fall back to regular error extraction
-    const { extractErrorFromApiResponse } = require('./errorExtraction');
+    const { extractErrorFromApiResponse } = await import('./errorExtraction');
     const result = extractErrorFromApiResponse(error, defaultError);
     
     // Handle both sync and async results

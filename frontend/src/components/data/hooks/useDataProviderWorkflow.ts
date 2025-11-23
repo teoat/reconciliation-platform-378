@@ -1,7 +1,7 @@
 // Data Provider Workflow Hook
 import React, { useState, useEffect } from 'react';
-import { useWorkflowProgress, useWorkflowValidation, createInitialWorkflowState } from './workflow';
-import { WorkflowState, WorkflowStage } from './types';
+import { useWorkflowProgress, useWorkflowValidation, createInitialWorkflowState } from '../workflow';
+import { WorkflowState, WorkflowStage } from '../types';
 import type { CrossPageData, ValidationResult, Notification, Alert } from '../types';
 
 export const useDataProviderWorkflow = (

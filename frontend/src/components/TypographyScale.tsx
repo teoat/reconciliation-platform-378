@@ -89,7 +89,7 @@ export interface TypographyProps {
   decoration?: 'underline' | 'line-through' | 'no-underline'
   truncate?: boolean
   className?: string
-  as?: keyof JSX.IntrinsicElements
+  as?: keyof React.JSX.IntrinsicElements
   id?: string
   'data-testid'?: string
 }

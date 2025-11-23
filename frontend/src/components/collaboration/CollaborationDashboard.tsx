@@ -112,13 +112,39 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
           comment?: { id: string; userId: string; message: string; timestamp: string };
         }) => {
           if (data.type === 'user_joined') {
-            setActiveUsers((prev) => [...prev, data.user]);
+            setActiveUsers((prev) => [...prev, {
+              ...data.user,
+              status: 'online' as const,
+              lastActivity: new Date()
+            }]);
           } else if (data.type === 'user_left') {
             setActiveUsers((prev) => prev.filter((u) => u.id !== data.userId));
           } else if (data.type === 'activity') {
-            setActivities((prev) => [data.activity, ...prev].slice(0, 100));
+            if (data.activity) {
+              const activity = data.activity as unknown as CollaborationActivity;
+              setActivities((prev) => [{
+                id: activity.id,
+                userId: activity.userId,
+                userName: (activity as any).userName || 'Unknown',
+                action: ((activity as any).action as 'viewed' | 'edited' | 'commented' | 'shared' | 'joined' | 'left') || 'viewed',
+                target: (activity as any).target || '',
+                targetType: ((activity as any).targetType as 'project' | 'file' | 'reconciliation' | 'comment') || 'project',
+                timestamp: new Date(activity.timestamp)
+              }, ...prev].slice(0, 100));
+            }
           } else if (data.type === 'comment') {
-            setComments((prev) => [data.comment, ...prev]);
+            if (data.comment) {
+              const comment = data.comment as unknown as CollaborationComment;
+              setComments((prev) => [{
+                id: comment.id,
+                userId: comment.userId,
+                userName: (comment as any).userName || 'Unknown',
+                content: (comment as any).message || '',
+                targetId: (comment as any).targetId || '',
+                targetType: ((comment as any).targetType as 'project' | 'file' | 'reconciliation') || 'project',
+                timestamp: new Date(comment.timestamp)
+              }, ...prev]);
+            }
           }
         });
         setSessionSubscriptionId(subId);
@@ -238,7 +264,11 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
         users: Array<{ id: string; name: string; email: string; lastSeen: string }>;
       }) => {
         if (data.type === 'users_update') {
-          setActiveUsers(data.users);
+          setActiveUsers(data.users.map(user => ({
+            ...user,
+            status: 'online' as const,
+            lastActivity: new Date(user.lastSeen)
+          })));
         }
       });
       setUsersSubscriptionId(usersSubId);
@@ -248,7 +278,17 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
         activity: { id: string; userId: string; action: string; timestamp: string; details?: Record<string, unknown> };
       }) => {
         if (data.type === 'activity') {
-          setActivities((prev) => [data.activity, ...prev].slice(0, 100));
+          const activity = data.activity as any;
+          setActivities((prev) => [{
+            id: activity.id,
+            userId: activity.userId,
+            userName: activity.userName || 'Unknown',
+            action: (activity.action as 'viewed' | 'edited' | 'commented' | 'shared' | 'joined' | 'left') || 'viewed',
+            target: activity.target || '',
+            targetType: (activity.targetType as 'project' | 'file' | 'reconciliation' | 'comment') || 'project',
+            timestamp: new Date(activity.timestamp),
+            metadata: activity.details
+          }, ...prev].slice(0, 100));
         }
       });
       setActivitiesSubscriptionId(activitiesSubId);

@@ -30,7 +30,9 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
   // Load popular content on mount
   useEffect(() => {
     if (isOpen) {
-      setPopular(helpContentService.getPopular(5));
+      // setPopular(helpContentService.getPopular(5));
+      // TODO: Implement getPopular method in HelpContentService
+      setPopular([]);
       searchInputRef.current?.focus();
     }
   }, [isOpen]);
@@ -44,8 +46,8 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
 
     setIsSearching(true);
     const timeoutId = setTimeout(() => {
-      const searchResults = helpContentService.search(query, 10);
-      setResults(searchResults);
+      const searchResults = helpContentService.search(query);
+      setResults(searchResults.slice(0, 10).map(r => r.content)); // Limit to 10 results and extract content
       setIsSearching(false);
     }, 300);
 

@@ -20,17 +20,17 @@ export const ButtonFeedback: React.FC<ButtonFeedbackProps> = ({
   disabled = false,
   ...props
 }) => {
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (!disabled) {
       e.currentTarget.style.transform = 'scale(0.95)'
     }
   }
 
-  const handleMouseUp = (e: React.MouseEvent) => {
+  const handleMouseUp = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'scale(1)'
   }
 
-  const handleMouseLeave = (e: React.MouseEvent) => {
+  const handleMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.currentTarget.style.transform = 'scale(1)'
   }
 
@@ -49,6 +49,5 @@ export const ButtonFeedback: React.FC<ButtonFeedbackProps> = ({
   )
 }
 
-export { ButtonFeedback };
 export default ButtonFeedback
 

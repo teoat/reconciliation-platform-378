@@ -9,14 +9,9 @@ import {
   Users, 
   Settings, 
   CheckCircle, 
-  XCircle, 
   Activity,
-  X,
-  RefreshCw,
   Download,
-  Upload,
   Edit,
-  Trash2,
   Plus as PlusIcon
 } from 'lucide-react'
 import { useData } from '../components/DataProvider'
@@ -469,7 +464,7 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
               disabled={isCreating}
               className="btn-secondary flex items-center space-x-2 disabled:opacity-50"
             >
-              <Plus className="w-4 h-4" />
+              <PlusIcon className="w-4 h-4" />
               <span>New Policy</span>
             </button>
             <button className="btn-primary flex items-center space-x-2">

@@ -59,7 +59,7 @@ export const FeatureGate: React.FC<FeatureGateProps> = ({
 }) => {
   // Check feature flag
   if (requiredFlag) {
-    const flagValue = (FEATURE_FLAGS as Record<string, boolean | undefined>)[requiredFlag];
+    const flagValue = (FEATURE_FLAGS as Record<string, string | boolean | undefined>)[requiredFlag];
     if (!flagValue) {
       return (
         <>
@@ -131,7 +131,7 @@ export const useFeatureGate = (
 
   // Check feature flag
   if (requiredFlag) {
-    const flagValue = (FEATURE_FLAGS as Record<string, boolean | undefined>)[requiredFlag];
+    const flagValue = (FEATURE_FLAGS as Record<string, string | boolean | undefined>)[requiredFlag];
     if (!flagValue) {
       return {
         isAvailable: false,

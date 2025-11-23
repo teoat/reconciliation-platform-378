@@ -106,8 +106,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 }) => {
   // State management
   const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
-  const [projectStats, setProjectStats] = useState<ProjectStats[]>([]);
-  const [userActivityStats, setUserActivityStats] = useState<UserActivityStats[]>([]);
+  const [, setProjectStats] = useState<ProjectStats[]>([]);
+  const [, setUserActivityStats] = useState<UserActivityStats[]>([]);
   const [reconciliationStats, setReconciliationStats] = useState<ReconciliationStats | null>(null);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -127,13 +127,22 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       setError(null);
 
       // Load dashboard metrics
-      const dashboardResponse = await apiClient.get<any>('/analytics/dashboard');
+      interface DashboardApiResponse {
+        total_projects?: number;
+        total_users?: number;
+        total_reconciliation_jobs?: number;
+        active_jobs?: number;
+        completed_jobs?: number;
+        failed_jobs?: number;
+        total_matches?: number;
+      }
+      const dashboardResponse = await apiClient.get<DashboardApiResponse>('/analytics/dashboard');
       if (dashboardResponse.error) {
         throw new Error(String(dashboardResponse.error));
       }
       if (dashboardResponse.data) {
         // Adapt API response to component types
-        const data = dashboardResponse.data as any;
+        const data = dashboardResponse.data;
         const adaptedData: DashboardMetrics = {
           total_projects: data.total_projects,
           total_users: data.total_users,
@@ -153,12 +162,23 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
       }
 
       // Load reconciliation stats
-      const reconciliationResponse = await apiClient.get<any>('/analytics/reconciliation-stats');
+      interface ReconciliationStatsApiResponse {
+        total_jobs?: number;
+        active_jobs?: number;
+        completed_jobs?: number;
+        failed_jobs?: number;
+        total_records?: number;
+        matched_records?: number;
+        unmatched_records?: number;
+        average_confidence?: number;
+        average_processing_time?: number;
+      }
+      const reconciliationResponse = await apiClient.get<ReconciliationStatsApiResponse>('/analytics/reconciliation-stats');
       if (reconciliationResponse.error) {
         throw new Error(String(reconciliationResponse.error));
       }
       if (reconciliationResponse.data) {
-        const data = reconciliationResponse.data as any;
+        const data = reconciliationResponse.data;
         // Adapt API response to component types
         const adaptedStats: ReconciliationStats = {
           total_jobs: data.total_jobs,
@@ -179,7 +199,21 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
 
       // Load project stats if projectId is provided
       if (projectId) {
-        const projectResponse = await apiClient.get<any>(`/projects/${projectId}/stats`);
+        interface ProjectStatsApiResponse {
+          project_id?: string;
+          project_name?: string;
+          total_files?: number;
+          total_jobs?: number;
+          completed_jobs?: number;
+          failed_jobs?: number;
+          total_records?: number;
+          matched_records?: number;
+          unmatched_records?: number;
+          average_confidence?: number;
+          last_activity?: string;
+          created_at?: string;
+        }
+        const projectResponse = await apiClient.get<ProjectStatsApiResponse>(`/projects/${projectId}/stats`);
         if (projectResponse.error) {
           throw new Error(String(projectResponse.error));
         }
@@ -323,11 +357,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   };
 
   // Get trend icon
-  const getTrendIcon = (current: number, previous: number) => {
-    if (current > previous) return <TrendingUp className="w-4 h-4 text-green-500" />;
-    if (current < previous) return <TrendingDown className="w-4 h-4 text-red-500" />;
-    return <Activity className="w-4 h-4 text-gray-500" />;
-  };
 
   if (loading && !dashboardMetrics) {
     return (

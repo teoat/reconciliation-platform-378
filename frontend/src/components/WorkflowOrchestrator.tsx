@@ -289,6 +289,28 @@ const WorkflowOrchestrator = ({
     }
   }, [workflowStages, validateStageTransition, onDataSync, onStageChange]);
 
+  const goToPreviousStage = useCallback(() => {
+    const currentStageIndex = workflowStages.findIndex((stage) => stage.isActive);
+    if (currentStageIndex <= 0) {
+      return;
+    }
+
+    const previousStageData = workflowStages[currentStageIndex - 1];
+
+    setWorkflowStages((prev) =>
+      prev.map((stage) => ({
+        ...stage,
+        isActive: stage.id === previousStageData.id,
+      }))
+    );
+
+    onStageChange(previousStageData.page);
+  }, [workflowStages, onStageChange]);
+
+  const goToNextStage = useCallback(() => {
+    advanceToNextStage();
+  }, [advanceToNextStage]);
+
   return (
     <div
       className="bg-white rounded-lg shadow-sm border border-gray-200 p-6"
@@ -310,9 +332,9 @@ const WorkflowOrchestrator = ({
           <div
             className="w-24 bg-gray-200 rounded-full h-2"
             role="progressbar"
-            aria-valuenow={String(workflowProgress.percentage)}
-            aria-valuemin="0"
-            aria-valuemax="100"
+            aria-valuenow={workflowProgress.percentage}
+            aria-valuemin={0}
+            aria-valuemax={100}
             aria-label={`Workflow progress: ${workflowProgress.percentage}%`}
           >
             <div
