@@ -111,11 +111,12 @@ export class MemoryLeakDetector {
     activeTimeouts: number;
     activeSubscriptions: number;
   } {
+    let activeListeners = 0;
+    for (const set of this.activeListeners.values()) {
+      activeListeners += set.size;
+    }
     return {
-      activeListeners: Array.from(this.activeListeners.values()).reduce(
-        (sum, set) => sum + set.size,
-        0
-      ),
+      activeListeners,
       activeIntervals: this.activeIntervals.size,
       activeTimeouts: this.activeTimeouts.size,
       activeSubscriptions: this.activeSubscriptions.size,
