@@ -395,15 +395,23 @@ export function detectMemoryLeaks<T>(
 ): () => Promise<void> {
   return async () => {
     MemoryLeakDetector.cleanup();
-
+    let testError: unknown;
     try {
       await testFn();
+    } catch (err) {
+      testError = err;
     } finally {
       const { hasLeaks, details } = MemoryLeakDetector.verify();
       if (hasLeaks) {
-        throw new Error(
+        const leakError = new Error(
           `Memory leaks detected:\n${details.map((d) => `  - ${d}`).join('\n')}`
         );
+        // Prefer leak error to avoid masking leaks; attach original for debugging
+        (leakError as any).cause = testError ?? undefined;
+        throw leakError;
+      }
+      if (testError) {
+        throw testError;
       }
     }
   };
