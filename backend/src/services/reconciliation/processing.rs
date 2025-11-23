@@ -19,8 +19,37 @@ use super::types::FuzzyAlgorithmType;
 use super::types::MatchingRule;
 use crate::models::ReconciliationResult as ReconciliationResultType;
 
-/// Process reconciliation job in chunks
+/// Process reconciliation job in chunks with timeout protection
 pub async fn process_data_sources_chunked(
+    db: &Database,
+    job_id: Uuid,
+    source_a: &DataSource,
+    source_b: &DataSource,
+    matching_rules: &[MatchingRule],
+    confidence_threshold: f64,
+    chunk_size: usize,
+    _progress_sender: &tokio::sync::mpsc::Sender<JobProgress>,
+    status: &Arc<RwLock<JobStatus>>,
+) -> AppResult<Vec<ReconciliationResultType>> {
+    // Wrap processing in timeout to prevent stuck jobs
+    let timeout_duration = std::time::Duration::from_secs(7200); // 2 hours default
+    
+    tokio::time::timeout(
+        timeout_duration,
+        process_data_sources_chunked_internal(
+            db, job_id, source_a, source_b, matching_rules,
+            confidence_threshold, chunk_size, _progress_sender, status
+        )
+    ).await
+    .map_err(|_| AppError::Internal(format!(
+        "Job {} exceeded timeout of {} seconds",
+        job_id,
+        timeout_duration.as_secs()
+    )))?
+}
+
+/// Internal processing function (without timeout wrapper)
+async fn process_data_sources_chunked_internal(
     db: &Database,
     job_id: Uuid,
     source_a: &DataSource,
@@ -106,6 +135,12 @@ pub async fn process_data_sources_chunked(
             unmatched_records,
         )
         .await;
+
+        // Update heartbeat to indicate job is still alive
+        {
+            let mut status_guard = status.write().await;
+            status_guard.heartbeat();
+        }
 
         // Small delay to prevent overwhelming the system
         tokio::time::sleep(tokio::time::Duration::from_millis(10)).await;

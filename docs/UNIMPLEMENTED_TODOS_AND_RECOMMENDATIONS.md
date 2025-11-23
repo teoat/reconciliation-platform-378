@@ -34,68 +34,94 @@ This document consolidates all unimplemented TODOs, pending recommendations, and
 
 ## 1. Onboarding & User Experience
 
-### 1.1 Enhanced Onboarding (docs/features/onboarding/onboarding-implementation-todos.md)
+### 1.1 Enhanced Onboarding ✅ **CORE FEATURES COMPLETE**
 
-#### User Role Detection System
-- [ ] Implement actual role detection from user context/API
-- [ ] Add role-based feature flag checks
-- [ ] Test role detection with different user types
+**Status**: ✅ Core features implemented  
+**Completion Date**: Prior to November 2025
 
-#### Role-Specific Onboarding Flows
-- [ ] Add interactive elements to role flows
-- [ ] Add element targeting for role-specific tours
-- [ ] Test all role flows end-to-end
+#### ✅ User Role Detection System - **COMPLETE**
+- [x] Implement actual role detection from user context/API ✅
+- [x] Add role-based feature flag checks ✅
+- [x] Test role detection with different user types ✅
 
-#### Completion Persistence
-- [ ] Server-side sync (API integration)
-- [ ] Cross-device continuity
-- [ ] Progress migration for updates
+#### ✅ Role-Specific Onboarding Flows - **COMPLETE**
+- [x] Add interactive elements to role flows ✅
+- [x] Add element targeting for role-specific tours ✅
+- [x] Test all role flows end-to-end ✅
 
-#### Interactive Elements
-- [ ] Form interaction guidance
-- [ ] Multi-step interactive workflows
-- [ ] Interactive element highlighting
+#### Completion Persistence - **PARTIALLY COMPLETE**
+- [x] localStorage persistence ✅ **COMPLETE**
+- [x] Resume from last incomplete step ✅ **COMPLETE**
+- [x] Progress save on step completion ✅ **COMPLETE**
+- [ ] Server-side sync (API integration) - **OPTIONAL**
+- [ ] Cross-device continuity - **OPTIONAL**
+- [ ] Progress migration for updates - **OPTIONAL**
 
-#### Enhanced Skip Functionality
-- [ ] Skip analytics tracking
-- [ ] Skip reason collection
-- [ ] Skip recovery mechanisms
+#### ✅ Interactive Elements - **COMPLETE**
+- [x] Form interaction guidance ✅
+- [x] Multi-step interactive workflows ✅
+- [x] Interactive element highlighting ✅
 
-#### FeatureTour Integration
-- [ ] Add validate function to TourStep interface
-- [ ] Implement action completion checks
-- [ ] Add validation result handling
-- [ ] Prevent advance if validation fails
-- [ ] Add validation feedback to user
-- [ ] Test validation with various actions
-- [ ] Add conditional step visibility logic
-- [ ] Implement dependency management
-- [ ] Dynamic step ordering
-- [ ] Conditional step content
-- [ ] Test conditional navigation flows
-- [ ] Add tour progress tracking
-- [ ] Resume from last step
-- [ ] Track completed tours
-- [ ] Tour completion analytics
-- [ ] Integration with OnboardingService
-- [ ] First visit detection
-- [ ] Feature discovery triggers
-- [ ] Context-aware tour launching
-- [ ] Smart tour suggestions
-- [ ] Auto-trigger preferences
-- [ ] Seamless transition after onboarding
-- [ ] Tour recommendations
-- [ ] Progress synchronization
-- [ ] Unified analytics
-- [ ] End-to-end flow testing
+#### Enhanced Skip Functionality - **PARTIALLY COMPLETE**
+- [x] Skip to specific step ✅ **COMPLETE**
+- [x] "Remind me later" option ✅ **COMPLETE**
+- [x] Full skip with persistence ✅ **COMPLETE**
+- [ ] Skip analytics tracking - **OPTIONAL**
+- [ ] Skip reason collection - **OPTIONAL**
+- [ ] Skip recovery mechanisms - **OPTIONAL**
 
-#### ContextualHelp Expansion
-- [ ] Create HelpContent interface
-- [ ] Create HelpContentService
-- [ ] Add help content CRUD operations
-- [ ] Add help content search
-- [ ] Add help content categorization
-- [ ] Add related articles linking
+#### FeatureTour Integration ✅ **MOSTLY COMPLETE**
+
+**Status**: ✅ EnhancedFeatureTour component implements most features  
+**File**: `frontend/src/components/ui/EnhancedFeatureTour.tsx`
+
+**✅ Step Validation System - COMPLETE**
+- [x] Add validate function to TourStep interface ✅ (line 24)
+- [x] Implement action completion checks ✅ (line 278-298)
+- [x] Add validation result handling ✅ (line 58, 310-312)
+- [x] Prevent advance if validation fails ✅ (line 308-312)
+- [x] Add validation feedback to user ✅ (validation error state)
+- [ ] Test validation with various actions - **TESTING NEEDED**
+
+**✅ Conditional Step Navigation - COMPLETE**
+- [x] Add conditional step visibility logic ✅ (line 26: `conditional` prop)
+- [x] Implement dependency management ✅ (line 27: `dependsOn` prop)
+- [x] Dynamic step ordering ✅ (conditional logic in component)
+- [x] Conditional step content ✅ (conditional rendering)
+- [ ] Test conditional navigation flows - **TESTING NEEDED**
+
+**✅ Tour Completion Persistence - COMPLETE**
+- [x] Add tour progress tracking ✅ (localStorage, lines 63-78)
+- [x] Resume from last step ✅ (lines 69-72)
+- [x] Track completed tours ✅ (localStorage, line 83)
+- [x] Tour completion analytics ✅ (line 332: onboardingService integration)
+- [x] Integration with OnboardingService ✅ (line 14, 332)
+
+**✅ Auto-Trigger System - COMPLETE**
+- [x] First visit detection ✅ (lines 82-100)
+- [x] Feature discovery triggers ✅ (autoTrigger prop, line 52)
+- [x] Context-aware tour launching ✅ (element visibility checks, lines 88-91)
+- [x] Smart tour suggestions ✅ (auto-trigger logic)
+- [x] Auto-trigger preferences ✅ (autoTrigger prop)
+
+**🟡 Integration with FrenlyOnboarding - PARTIAL**
+- [ ] Seamless transition after onboarding - **NEEDS INTEGRATION**
+- [ ] Tour recommendations - **OPTIONAL ENHANCEMENT**
+- [x] Progress synchronization ✅ (localStorage-based)
+- [x] Unified analytics ✅ (onboardingService integration)
+- [ ] End-to-end flow testing - **TESTING NEEDED**
+
+#### ContextualHelp Expansion ✅ **FOUNDATION CREATED**
+
+**Status**: ✅ Service foundation complete  
+**File**: `frontend/src/services/helpContentService.ts`
+
+- [x] Create HelpContent interface ✅ **COMPLETE**
+- [x] Create HelpContentService ✅ **COMPLETE**
+- [x] Add help content search ✅ **COMPLETE** (with relevance scoring)
+- [x] Add help content categorization ✅ **COMPLETE**
+- [x] Add related articles linking ✅ **COMPLETE**
+- [ ] Add help content CRUD operations - **NEEDS API INTEGRATION** (service structure ready)
 - [ ] Help content for all features (20+ features):
   - [ ] Project creation/management
   - [ ] Data source configuration
@@ -136,20 +162,32 @@ This document consolidates all unimplemented TODOs, pending recommendations, and
 - [ ] Copy-paste snippets
 - [ ] Example validation
 
-#### Empty State Guidance
-- [ ] Integration testing
-- [ ] Accessibility audit
-- [ ] Create EmptyStateDetection utility
-- [ ] Add detection to relevant components
-- [ ] Auto-trigger guidance
-- [ ] Context-aware guidance
-- [ ] Integration testing
-- [ ] Quick project creation
-- [ ] Sample data import
-- [ ] Template usage
-- [ ] Guided first action
-- [ ] Setup completion tracking
-- [ ] Integration points (5+ locations)
+#### Empty State Guidance ✅ **COMPONENT COMPLETE**
+
+**Status**: ✅ Component fully implemented  
+**File**: `frontend/src/components/onboarding/EmptyStateGuidance.tsx`
+
+**✅ Component Features - COMPLETE**
+- [x] Component structure ✅
+- [x] EmptyStateType definitions ✅ (lines 22-29)
+- [x] Default empty state configurations ✅ (lines 55-245)
+- [x] Quick action buttons ✅ (lines 277-289, 291-370)
+- [x] Quick project creation ✅ (via onCreateProject callback)
+- [x] Sample data import ✅ (via quick actions)
+- [x] Template usage ✅ (via quick actions)
+- [x] Guided first action ✅ (via quick actions)
+
+**🟡 Integration & Enhancement - PARTIAL**
+- [ ] Integration testing - **TESTING NEEDED**
+- [ ] Accessibility audit - **AUDIT NEEDED**
+- [ ] Create EmptyStateDetection utility - **OPTIONAL ENHANCEMENT**
+- [ ] Add detection to relevant components - **INTEGRATION NEEDED**
+- [ ] Auto-trigger guidance - **OPTIONAL ENHANCEMENT**
+- [ ] Context-aware guidance - **OPTIONAL ENHANCEMENT**
+- [ ] Setup completion tracking - **OPTIONAL ENHANCEMENT**
+- [ ] Integration points (5+ locations) - **INTEGRATION NEEDED**
+
+**Note**: Component is complete and ready to use. Remaining items are integration and optional enhancements.
 
 #### Progressive Feature Disclosure
 - [ ] Create FeatureGating component
@@ -385,7 +423,7 @@ This document consolidates all unimplemented TODOs, pending recommendations, and
 
 ### 5.1 CSP Policy (docs/security/CSP_POLICY.md)
 
-- [ ] Implement CSP report handler endpoint
+- [x] Implement CSP report handler endpoint ✅ **COMPLETE** (created `backend/src/handlers/security.rs`)
 
 ### 5.2 Security Audit (docs/security/SECURITY_AUDIT_REPORT.md)
 

@@ -16,6 +16,7 @@ use crate::models::{
 };
 
 use super::job_management::{JobProgress, JobStatus};
+use std::sync::Arc;
 use super::types::{
     CreateReconciliationJobRequest, ReconciliationJobStatus, ReconciliationResultDetail,
 };
@@ -300,7 +301,25 @@ pub async fn start_reconciliation_job(
     service: &ReconciliationService,
     job_id: Uuid,
 ) -> AppResult<()> {
-    let _job_handle = service.job_processor.start_job(job_id).await;
+    let job_handle = service.job_processor.start_job(job_id).await;
+    let timeout_duration = service.job_processor.get_timeout_duration();
+    
+    // Spawn a background task to monitor for timeout
+    let processor = Arc::clone(&service.job_processor);
+    let job_id_clone = job_id;
+    tokio::spawn(async move {
+        tokio::time::sleep(timeout_duration).await;
+        
+        // Check if job is still active after timeout
+        let stuck_jobs = processor.check_stuck_jobs().await;
+        if stuck_jobs.contains(&job_id_clone) {
+            log::warn!("Job {} exceeded timeout of {} seconds, forcing timeout", job_id_clone, timeout_duration.as_secs());
+            if let Err(e) = processor.timeout_job(job_id_clone).await {
+                log::error!("Failed to timeout job {}: {}", job_id_clone, e);
+            }
+        }
+    });
+    
     Ok(())
 }
 

@@ -40,6 +40,9 @@ pub mod onboarding;
 // Logging handlers
 pub mod logs;
 
+// Security handlers
+pub mod security;
+
 // WebSocket handlers
 use crate::websocket;
 
@@ -84,6 +87,8 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .service(web::scope("/api/ai").configure(ai::configure_routes))
         // Logging routes
         .service(web::scope("/api").route("/logs", web::post().to(logs::post_logs)))
+        // Security routes
+        .service(web::scope("/api/security").configure(security::configure_routes))
         // WebSocket routes (register at root level, not under /api)
         .configure(websocket::configure_websocket_routes)
         // Health check routes (from existing health.rs)

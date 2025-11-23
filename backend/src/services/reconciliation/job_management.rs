@@ -5,22 +5,32 @@
 use chrono::{DateTime, Utc};
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::RwLock;
 use uuid::Uuid;
+
+/// Default timeout for reconciliation jobs (2 hours)
+pub const DEFAULT_JOB_TIMEOUT_SECONDS: u64 = 7200;
 
 /// Job processor for managing concurrent reconciliation jobs
 pub struct JobProcessor {
     pub max_concurrent_jobs: usize,
     pub chunk_size: usize,
+    pub job_timeout_seconds: u64,
     pub active_jobs: Arc<RwLock<HashMap<Uuid, JobStatus>>>,
     pub job_queue: Arc<RwLock<Vec<Uuid>>>,
 }
 
 impl JobProcessor {
     pub fn new(max_concurrent_jobs: usize, chunk_size: usize) -> Self {
+        Self::new_with_timeout(max_concurrent_jobs, chunk_size, DEFAULT_JOB_TIMEOUT_SECONDS)
+    }
+
+    pub fn new_with_timeout(max_concurrent_jobs: usize, chunk_size: usize, timeout_seconds: u64) -> Self {
         Self {
             max_concurrent_jobs,
             chunk_size,
+            job_timeout_seconds: timeout_seconds,
             active_jobs: Arc::new(RwLock::new(HashMap::new())),
             job_queue: Arc::new(RwLock::new(Vec::new())),
         }
@@ -69,6 +79,52 @@ impl JobProcessor {
             )))
         }
     }
+
+    /// Check for stuck jobs (jobs that have exceeded timeout)
+    pub async fn check_stuck_jobs(&self) -> Vec<Uuid> {
+        let mut stuck_jobs = Vec::new();
+        let timeout_duration = Duration::from_secs(self.job_timeout_seconds);
+        let now = Utc::now();
+
+        let active_jobs = self.active_jobs.read().await;
+        for (job_id, status) in active_jobs.iter() {
+            if let Some(started_at) = status.started_at {
+                let elapsed = now.signed_duration_since(started_at);
+                if elapsed.num_seconds() > timeout_duration.as_secs() as i64 {
+                    stuck_jobs.push(*job_id);
+                }
+            } else if let Some(updated_at) = status.updated_at.checked_sub_signed(
+                chrono::Duration::seconds(timeout_duration.as_secs() as i64)
+            ) {
+                // If no started_at, check if updated_at is too old
+                if now.signed_duration_since(updated_at).num_seconds() > timeout_duration.as_secs() as i64 {
+                    stuck_jobs.push(*job_id);
+                }
+            }
+        }
+        stuck_jobs
+    }
+
+    /// Force timeout a stuck job
+    pub async fn timeout_job(&self, job_id: Uuid) -> Result<(), crate::errors::AppError> {
+        let mut active_jobs = self.active_jobs.write().await;
+        if let Some(mut status) = active_jobs.get_mut(&job_id) {
+            status.message = format!("Job timed out after {} seconds", self.job_timeout_seconds);
+            status.current_phase = "Timed out".to_string();
+            active_jobs.remove(&job_id);
+            Ok(())
+        } else {
+            Err(crate::errors::AppError::NotFound(format!(
+                "Job {} not found",
+                job_id
+            )))
+        }
+    }
+
+    /// Get timeout duration for jobs
+    pub fn get_timeout_duration(&self) -> Duration {
+        Duration::from_secs(self.job_timeout_seconds)
+    }
 }
 
 /// Handle for tracking job progress
@@ -107,6 +163,7 @@ pub struct JobStatus {
     pub processed_records: i32,
     pub matched_records: i32,
     pub unmatched_records: i32,
+    pub last_heartbeat: Option<DateTime<Utc>>,
 }
 
 impl Default for JobStatus {
@@ -128,6 +185,7 @@ impl JobStatus {
             processed_records: 0,
             matched_records: 0,
             unmatched_records: 0,
+            last_heartbeat: Some(now),
         }
     }
 
@@ -136,6 +194,7 @@ impl JobStatus {
         self.current_phase = phase.to_string();
         self.message = status.to_string();
         self.updated_at = Utc::now();
+        self.last_heartbeat = Some(Utc::now());
     }
 
     pub fn update_progress(
@@ -149,6 +208,13 @@ impl JobStatus {
         self.processed_records = processed_records;
         self.matched_records = matched_records;
         self.unmatched_records = unmatched_records;
+        self.updated_at = Utc::now();
+        self.last_heartbeat = Some(Utc::now());
+    }
+
+    /// Update heartbeat to indicate job is still alive
+    pub fn heartbeat(&mut self) {
+        self.last_heartbeat = Some(Utc::now());
         self.updated_at = Utc::now();
     }
 }
