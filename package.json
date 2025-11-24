@@ -55,7 +55,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "@reduxjs/toolkit": "^2.10.1",
+    "@reduxjs/toolkit": "^2.11.0",
     "@sentry/react": "^10.26.0",
     "lucide-react": "^0.554.0",
     "next": "16.0.3",
@@ -68,13 +68,13 @@
     "react-query": "^3.39.3",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.9.6",
-    "recharts": "^3.3.0",
+    "recharts": "^3.5.0",
     "redux": "^5.0.1",
     "redux-persist": "^6.0.0",
     "socket.io-client": "^4.7.2",
     "tailwindcss": "^4.1.17",
     "web-vitals": "^5.1.0",
-    "zod": "^4.1.12"
+    "zod": "^4.1.13"
   },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
