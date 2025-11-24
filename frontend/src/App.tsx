@@ -28,6 +28,7 @@ const UserManagement = lazy(() => import('./components/UserManagement'));
 const ApiIntegrationStatus = lazy(() => import('./components/ApiIntegrationStatus'));
 const ApiTester = lazy(() => import('./components/ApiTester'));
 const ApiDocumentation = lazy(() => import('./components/ApiDocumentation'));
+const ProjectsPage = lazy(() => import('./components/pages/ProjectsPage'));
 const ProjectCreate = lazy(() => import('./components/pages/ProjectCreate'));
 const ProjectDetail = lazy(() => import('./components/pages/ProjectDetail'));
 const ProjectEdit = lazy(() => import('./components/pages/ProjectEdit'));
@@ -156,6 +157,18 @@ function App() {
                           <AppLayout>
                             <Suspense fallback={<LoadingSpinner />}>
                               <ProjectCreate />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/projects"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <ProjectsPage />
                             </Suspense>
                           </AppLayout>
                         </ProtectedRoute>

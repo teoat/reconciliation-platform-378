@@ -28,7 +28,11 @@ impl Config {
     pub fn from_env() -> Result<Self, crate::errors::AppError> {
         dotenvy::dotenv().ok();
 
-        // Validate required secrets using SecretsService
+        // Validate all required secrets on startup
+        crate::services::secrets::SecretsService::validate_required_secrets()
+            .map_err(|e| crate::errors::AppError::Config(format!("Secret validation failed: {}", e)))?;
+        
+        // Get required secrets (already validated)
         let jwt_secret = crate::services::secrets::SecretsService::get_jwt_secret()
             .map_err(|e| crate::errors::AppError::Config(format!("JWT_SECRET: {}", e)))?;
         

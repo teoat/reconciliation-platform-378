@@ -73,6 +73,7 @@ const AuthPage: React.FC = () => {
   const [isRegistering, setIsRegistering] = useState(false);
   const [isGoogleButtonLoading, setIsGoogleButtonLoading] = useState(false);
   const [googleButtonError, setGoogleButtonError] = useState(false);
+  const [googleButtonRetryKey, setGoogleButtonRetryKey] = useState(0);
   const [selectedDemoRole, setSelectedDemoRole] = useState<'admin' | 'manager' | 'user'>('admin');
   const demoModeEnabled = isDemoModeEnabled();
   const [passwordValue, setPasswordValue] = useState('');
@@ -154,24 +155,35 @@ const AuthPage: React.FC = () => {
     [] // Empty deps - using refs instead
   );
 
-  // Load Google Identity Services script
+  // Load Google Identity Services script - Comprehensive fix
   useEffect(() => {
     const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+    
+    // Validate client ID format
+    const isValidClientId = googleClientId && 
+      /^[0-9]+-[a-zA-Z0-9_-]+\.apps\.googleusercontent\.com$/.test(googleClientId);
+    
     // Debug log to verify environment variable is loaded (only once per session)
     if (import.meta.env.DEV && !sessionStorage.getItem('googleClientIdLogged')) {
-      console.log('[AuthPage] Google Client ID check:', {
+      logger.debug('Google Client ID configuration check', {
+        component: 'AuthPage',
+        category: 'oauth',
         hasValue: !!googleClientId,
+        isValid: isValidClientId,
         valueLength: googleClientId.length,
         valuePreview: googleClientId ? `${googleClientId.substring(0, 20)}...` : 'empty',
       });
       sessionStorage.setItem('googleClientIdLogged', 'true');
     }
-    if (!googleClientId) {
+    
+    if (!googleClientId || !isValidClientId) {
       // Log warning in production if Google OAuth is expected but not configured
       if (import.meta.env.PROD) {
-        logger.warn('VITE_GOOGLE_CLIENT_ID is not set. Google OAuth will be disabled.', {
+        logger.warn('VITE_GOOGLE_CLIENT_ID is not set or invalid. Google OAuth will be disabled.', {
           component: 'AuthPage',
           category: 'oauth',
+          hasValue: !!googleClientId,
+          isValid: isValidClientId,
         });
       }
       setIsGoogleButtonLoading(false);
@@ -179,140 +191,282 @@ const AuthPage: React.FC = () => {
       return; // Skip if no Google Client ID is configured
     }
 
-    // Reset states when starting to load - but only if not already loaded
-    if (!googleButtonRef.current?.querySelector('iframe')) {
-      setIsGoogleButtonLoading(true);
-      setGoogleButtonError(false);
-    }
+    // Track retry timeouts for cleanup
+    const timeoutIds: ReturnType<typeof setTimeout>[] = [];
+    let scriptElement: HTMLScriptElement | null = null;
+    let isMounted = true;
 
-    // Function to render Google button with retry logic
-    const renderGoogleButton = (retries = 5, delay = 200) => {
+    // Function to cleanup timeouts
+    const cleanupTimeouts = () => {
+      timeoutIds.forEach(id => clearTimeout(id));
+      timeoutIds.length = 0;
+    };
+
+    // Function to render Google button with improved retry logic
+    const renderGoogleButton = (retries = 10, delay = 300): void => {
+      if (!isMounted) return;
+
       if (retries === 0) {
         logger.error('Failed to render Google Sign-In button after multiple attempts', {
           component: 'AuthPage',
           category: 'oauth',
+          clientIdSet: !!googleClientId,
+          windowGoogleExists: typeof window.google !== 'undefined',
+          refExists: !!googleButtonRef.current,
         });
-        setIsGoogleButtonLoading(false);
-        setGoogleButtonError(true);
+        if (isMounted) {
+          setIsGoogleButtonLoading(false);
+          setGoogleButtonError(true);
+        }
         return;
       }
 
-      if (!window.google) {
-        // Script not loaded yet, retry
-        setTimeout(() => renderGoogleButton(retries - 1, delay), delay);
+      // Check if window.google is available
+      if (typeof window.google === 'undefined' || !window.google?.accounts?.id) {
+        const timeoutId = setTimeout(() => {
+          if (isMounted) {
+            renderGoogleButton(retries - 1, delay);
+          }
+        }, delay);
+        timeoutIds.push(timeoutId);
         return;
       }
 
+      // Check if ref is available
       if (!googleButtonRef.current) {
-        // Ref not ready yet, retry
-        setTimeout(() => renderGoogleButton(retries - 1, delay), delay);
+        const timeoutId = setTimeout(() => {
+          if (isMounted) {
+            renderGoogleButton(retries - 1, delay);
+          }
+        }, delay);
+        timeoutIds.push(timeoutId);
         return;
       }
 
       try {
         // Check if button already rendered
-        const existingButton = googleButtonRef.current.querySelector('iframe');
-        if (existingButton && existingButton.parentNode === googleButtonRef.current) {
-          setIsGoogleButtonLoading(false);
-          setGoogleButtonError(false);
-          return; // Button already rendered
-        }
-
-        // Clear container before rendering to avoid conflicts
-        // Use replaceChildren() for safer DOM manipulation when Google manages the DOM
-        if (googleButtonRef.current) {
-          // Check if there's an existing iframe from Google
-          const existingIframe = googleButtonRef.current.querySelector('iframe');
-          if (existingIframe) {
-            // Google button already exists, don't re-render
+        const existingIframe = googleButtonRef.current.querySelector('iframe[src*="accounts.google.com"]');
+        if (existingIframe && existingIframe.parentNode === googleButtonRef.current) {
+          // Button already rendered successfully
+          if (isMounted) {
             setIsGoogleButtonLoading(false);
             setGoogleButtonError(false);
-            return;
           }
-          // Clear any other content safely using modern DOM API
-          // Using replaceChildren() is safer than innerHTML for clearing
-          const element = googleButtonRef.current as HTMLElement & { replaceChildren?: () => void };
-          if (element.replaceChildren) {
-            element.replaceChildren();
-          } else {
-            // Fallback for older browsers
-            element.innerHTML = '';
-          }
+          return;
         }
 
-        // Initialize Google Sign-In
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: handleGoogleSignIn,
-        });
+        // Clear container before rendering
+        const element = googleButtonRef.current;
+        if (element.replaceChildren) {
+          element.replaceChildren();
+        } else {
+          element.innerHTML = '';
+        }
 
-        // Render button (Google doesn't accept percentage width, use pixel value or omit)
+        // Initialize Google Sign-In (can be called multiple times safely)
+        try {
+          window.google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: handleGoogleSignIn,
+          });
+        } catch (initError) {
+          logger.warn('Google initialize may have been called already', {
+            component: 'AuthPage',
+            category: 'oauth',
+            error: initError instanceof Error ? initError.message : String(initError),
+          });
+        }
+
+        // Render button
         window.google.accounts.id.renderButton(googleButtonRef.current, {
           type: 'standard',
           theme: 'outline',
           size: 'large',
           text: 'signin_with',
-          // width: '100%', // Google doesn't accept percentage, container div handles width
         });
 
-        logger.info('Google Sign-In button rendered successfully', {
-          component: 'AuthPage',
-          category: 'oauth',
-        });
-        setIsGoogleButtonLoading(false);
-        setGoogleButtonError(false);
+        // Verify button was rendered
+        setTimeout(() => {
+          if (!isMounted) return;
+          const renderedIframe = googleButtonRef.current?.querySelector('iframe[src*="accounts.google.com"]');
+          if (renderedIframe) {
+            logger.info('Google Sign-In button rendered successfully', {
+              component: 'AuthPage',
+              category: 'oauth',
+            });
+            setIsGoogleButtonLoading(false);
+            setGoogleButtonError(false);
+          } else {
+            // Button didn't render, retry
+            logger.warn('Google button render did not create iframe, retrying', {
+              component: 'AuthPage',
+              category: 'oauth',
+            });
+            renderGoogleButton(retries - 1, delay);
+          }
+        }, 100);
       } catch (error) {
         logger.error('Error rendering Google Sign-In button', {
           component: 'AuthPage',
           category: 'oauth',
           error: error instanceof Error ? error.message : String(error),
+          stack: error instanceof Error ? error.stack : undefined,
         });
         // Retry on error
-        setTimeout(() => renderGoogleButton(retries - 1, delay), delay);
+        const timeoutId = setTimeout(() => {
+          if (isMounted) {
+            renderGoogleButton(retries - 1, delay);
+          }
+        }, delay);
+        timeoutIds.push(timeoutId);
       }
     };
 
-    // Check if script already exists
+    // Check if script already exists and is loaded
     const existingScript = document.querySelector(
       'script[src="https://accounts.google.com/gsi/client"]'
-    );
+    ) as HTMLScriptElement | null;
+
     if (existingScript) {
-      // Script already loaded, try to render button
-      renderGoogleButton();
-      return;
+      // Script tag exists, check if it's loaded
+      if (window.google?.accounts?.id) {
+        // Script is loaded, render immediately
+        setIsGoogleButtonLoading(true);
+        renderGoogleButton();
+      } else {
+        // Script tag exists but not loaded yet, wait for it
+        setIsGoogleButtonLoading(true);
+        const checkInterval = setInterval(() => {
+          if (window.google?.accounts?.id) {
+            clearInterval(checkInterval);
+            renderGoogleButton();
+          }
+        }, 100);
+        
+        // Timeout after 10 seconds
+        const timeoutId = setTimeout(() => {
+          clearInterval(checkInterval);
+          if (isMounted && !window.google?.accounts?.id) {
+            logger.error('Google script exists but failed to load', {
+              component: 'AuthPage',
+              category: 'oauth',
+            });
+            setIsGoogleButtonLoading(false);
+            setGoogleButtonError(true);
+          }
+        }, 10000);
+        timeoutIds.push(timeoutId);
+      }
+    } else {
+      // Load Google Identity Services script
+      setIsGoogleButtonLoading(true);
+      scriptElement = document.createElement('script');
+      scriptElement.src = 'https://accounts.google.com/gsi/client';
+      scriptElement.async = true;
+      scriptElement.defer = true;
+      scriptElement.crossOrigin = 'anonymous';
+      
+      // Add error handler before appending
+      scriptElement.onerror = (error) => {
+        if (!isMounted) return;
+        const errorDetails = {
+          message: 'Failed to load Google Identity Services script',
+          url: scriptElement?.src,
+          readyState: scriptElement?.readyState,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        };
+        logger.error('Failed to load Google Identity Services script', {
+          component: 'AuthPage',
+          category: 'oauth',
+          ...errorDetails,
+        });
+        logger.error('Google OAuth script load failed', {
+          component: 'AuthPage',
+          category: 'oauth',
+          ...errorDetails,
+        });
+        if (isMounted) {
+          setIsGoogleButtonLoading(false);
+          setGoogleButtonError(true);
+        }
+      };
+      
+      scriptElement.onload = () => {
+        if (!isMounted) return;
+        logger.info('Google Identity Services script loaded', {
+          component: 'AuthPage',
+          category: 'oauth',
+        });
+        // Wait a bit for Google to initialize, then check if it's ready
+        let checkCount = 0;
+        const maxChecks = 20; // 2 seconds total
+        const checkReady = () => {
+          if (!isMounted) return;
+          checkCount++;
+          if (window.google?.accounts?.id) {
+            // Google is ready, render button
+            renderGoogleButton();
+          } else if (checkCount < maxChecks) {
+            // Not ready yet, check again
+            const timeoutId = setTimeout(checkReady, 100);
+            timeoutIds.push(timeoutId);
+          } else {
+            // Timeout - Google API didn't initialize
+            logger.error('Google Identity Services script loaded but API not initialized', {
+              component: 'AuthPage',
+              category: 'oauth',
+              checkCount,
+            });
+            if (isMounted) {
+              setIsGoogleButtonLoading(false);
+              setGoogleButtonError(true);
+            }
+          }
+        };
+        const timeoutId = setTimeout(checkReady, 100);
+        timeoutIds.push(timeoutId);
+      };
+      
+      // Append to head
+      try {
+        document.head.appendChild(scriptElement);
+      } catch (appendError) {
+        logger.error('Failed to append Google script to head', {
+          component: 'AuthPage',
+          category: 'oauth',
+          error: appendError instanceof Error ? appendError.message : String(appendError),
+        });
+        if (isMounted) {
+          setIsGoogleButtonLoading(false);
+          setGoogleButtonError(true);
+        }
+      }
     }
 
-    // Load Google Identity Services script
-    const script = document.createElement('script');
-    script.src = 'https://accounts.google.com/gsi/client';
-    script.async = true;
-    script.defer = true;
-    script.onload = () => {
-      logger.info('Google Identity Services script loaded', {
-        component: 'AuthPage',
-        category: 'oauth',
-      });
-      // Try to render button after script loads
-      renderGoogleButton();
-    };
-    script.onerror = () => {
-      logger.error('Failed to load Google Identity Services script', {
-        component: 'AuthPage',
-        category: 'oauth',
-      });
-      setIsGoogleButtonLoading(false);
-      setGoogleButtonError(true);
-    };
-    document.head.appendChild(script);
-
     return () => {
-      // Cleanup: Don't try to remove Google's DOM elements
-      // Google manages its own DOM, and React trying to remove them causes conflicts
-      // Just reset state, let Google handle its own cleanup
-      // Note: We don't clear the container here because Google's script manages the DOM
-      // and React trying to remove it causes "removeChild" errors
+      isMounted = false;
+      cleanupTimeouts();
+      // Don't remove script element - it might be used by other components
+      // Google manages its own DOM cleanup
     };
-  }, []); // Empty deps - handleGoogleSignIn is stable via refs
+  }, [isRegistering, handleGoogleSignIn, googleButtonRetryKey]); // Re-run when form changes, callback changes, or retry triggered
+
+  // Manual retry function
+  const retryGoogleButton = useCallback(() => {
+    setGoogleButtonError(false);
+    setIsGoogleButtonLoading(true);
+    // Force re-render by clearing the ref
+    if (googleButtonRef.current) {
+      const element = googleButtonRef.current;
+      if (element.replaceChildren) {
+        element.replaceChildren();
+      } else {
+        element.innerHTML = '';
+      }
+    }
+    // Force useEffect to re-run by changing retry key
+    setGoogleButtonRetryKey(prev => prev + 1);
+  }, []);
 
   const onLoginSubmit = async (data: LoginForm) => {
     try {
@@ -540,16 +694,38 @@ const AuthPage: React.FC = () => {
                   ) : googleButtonError ? (
                     <div className="flex flex-col items-center justify-center py-2 px-4">
                       <p className="text-xs text-red-600 text-center mb-2">
-                        Failed to load Google Sign-In button. Please refresh the page.
+                        Failed to load Google Sign-In button.
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => window.location.reload()}
-                        className="text-xs text-blue-600 hover:text-blue-700 underline"
-                        aria-label="Refresh page to retry Google Sign-In"
-                      >
-                        Refresh Page
-                      </button>
+                      <div className="flex gap-2 items-center">
+                        <button
+                          type="button"
+                          onClick={retryGoogleButton}
+                          className="text-xs text-blue-600 hover:text-blue-700 underline"
+                          aria-label="Retry loading Google Sign-In button"
+                        >
+                          Retry
+                        </button>
+                        <span className="text-xs text-gray-400">|</span>
+                        <button
+                          type="button"
+                          onClick={() => window.location.reload()}
+                          className="text-xs text-blue-600 hover:text-blue-700 underline"
+                          aria-label="Refresh page to retry Google Sign-In"
+                        >
+                          Refresh Page
+                        </button>
+                      </div>
+                      {import.meta.env.DEV && (
+                        <details className="mt-2 text-xs text-gray-500">
+                          <summary className="cursor-pointer">Debug Info</summary>
+                          <div className="mt-1 p-2 bg-gray-50 rounded text-left">
+                            <div>Client ID: {import.meta.env.VITE_GOOGLE_CLIENT_ID ? 'Set' : 'Not Set'}</div>
+                            <div>Window.google: {typeof window.google !== 'undefined' ? 'Exists' : 'Not Found'}</div>
+                            <div>Google.accounts: {window.google?.accounts ? 'Exists' : 'Not Found'}</div>
+                            <div>Script loaded: {document.querySelector('script[src*="accounts.google.com/gsi/client"]') ? 'Yes' : 'No'}</div>
+                          </div>
+                        </details>
+                      )}
                     </div>
                   ) : (
                     <div
@@ -817,16 +993,38 @@ const AuthPage: React.FC = () => {
                   ) : googleButtonError ? (
                     <div className="flex flex-col items-center justify-center py-2 px-4">
                       <p className="text-xs text-red-600 text-center mb-2">
-                        Failed to load Google Sign-In button. Please refresh the page.
+                        Failed to load Google Sign-In button.
                       </p>
-                      <button
-                        type="button"
-                        onClick={() => window.location.reload()}
-                        className="text-xs text-blue-600 hover:text-blue-700 underline"
-                        aria-label="Refresh page to retry Google Sign-In"
-                      >
-                        Refresh Page
-                      </button>
+                      <div className="flex gap-2 items-center">
+                        <button
+                          type="button"
+                          onClick={retryGoogleButton}
+                          className="text-xs text-blue-600 hover:text-blue-700 underline"
+                          aria-label="Retry loading Google Sign-In button"
+                        >
+                          Retry
+                        </button>
+                        <span className="text-xs text-gray-400">|</span>
+                        <button
+                          type="button"
+                          onClick={() => window.location.reload()}
+                          className="text-xs text-blue-600 hover:text-blue-700 underline"
+                          aria-label="Refresh page to retry Google Sign-In"
+                        >
+                          Refresh Page
+                        </button>
+                      </div>
+                      {import.meta.env.DEV && (
+                        <details className="mt-2 text-xs text-gray-500">
+                          <summary className="cursor-pointer">Debug Info</summary>
+                          <div className="mt-1 p-2 bg-gray-50 rounded text-left">
+                            <div>Client ID: {import.meta.env.VITE_GOOGLE_CLIENT_ID ? 'Set' : 'Not Set'}</div>
+                            <div>Window.google: {typeof window.google !== 'undefined' ? 'Exists' : 'Not Found'}</div>
+                            <div>Google.accounts: {window.google?.accounts ? 'Exists' : 'Not Found'}</div>
+                            <div>Script loaded: {document.querySelector('script[src*="accounts.google.com/gsi/client"]') ? 'Yes' : 'No'}</div>
+                          </div>
+                        </details>
+                      )}
                     </div>
                   ) : (
                     <div

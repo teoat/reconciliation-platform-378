@@ -30,9 +30,7 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
   // Load popular content on mount
   useEffect(() => {
     if (isOpen) {
-      // setPopular(helpContentService.getPopular(5));
-      // TODO: Implement getPopular method in HelpContentService
-      setPopular([]);
+      setPopular(helpContentService.getPopular(5));
       searchInputRef.current?.focus();
     }
   }, [isOpen]);

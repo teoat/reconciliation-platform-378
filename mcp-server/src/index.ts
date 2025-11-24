@@ -32,17 +32,28 @@ dotenv.config();
 const SERVER_NAME = 'reconciliation-platform-mcp';
 const SERVER_VERSION = '1.0.0';
 
-// Initialize connections
-const docker = new Docker();
+// Initialize connections with error handling
+let docker: Docker | null = null;
+try {
+  docker = new Docker();
+} catch (error) {
+  console.error('Warning: Docker initialization failed. Docker operations will not be available:', error);
+}
+
 let redisClient: ReturnType<typeof createClient> | null = null;
 
-// Initialize Redis client
+// Initialize Redis client with error handling
 async function initRedis() {
   if (!redisClient) {
-    redisClient = createClient({
-      url: process.env.REDIS_URL || 'redis://:redis_pass@localhost:6379',
-    });
-    await redisClient.connect();
+    try {
+      redisClient = createClient({
+        url: process.env.REDIS_URL || 'redis://:redis_pass@localhost:6379',
+      });
+      await redisClient.connect();
+    } catch (error) {
+      console.error('Warning: Redis connection failed. Redis operations will not be available:', error);
+      throw new Error(`Redis connection failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
   return redisClient;
 }
@@ -228,6 +239,9 @@ const tools: Tool[] = [
 async function handleTool(name: string, args: any): Promise<any> {
   switch (name) {
     case 'docker_container_status': {
+      if (!docker) {
+        throw new Error('Docker is not available. Please ensure Docker is running and accessible.');
+      }
       const containers = await docker.listContainers({ all: args.filter === 'all' });
       let filtered = containers;
       
@@ -257,6 +271,9 @@ async function handleTool(name: string, args: any): Promise<any> {
     }
 
     case 'docker_container_logs': {
+      if (!docker) {
+        throw new Error('Docker is not available. Please ensure Docker is running and accessible.');
+      }
       const container = docker.getContainer(args.container);
       const logs = await container.logs({
         tail: args.tail || 100,
@@ -270,6 +287,9 @@ async function handleTool(name: string, args: any): Promise<any> {
     }
 
     case 'docker_container_start': {
+      if (!docker) {
+        throw new Error('Docker is not available. Please ensure Docker is running and accessible.');
+      }
       const container = docker.getContainer(args.container);
       await container.start();
       const info = await container.inspect();
@@ -281,6 +301,9 @@ async function handleTool(name: string, args: any): Promise<any> {
     }
 
     case 'docker_container_stop': {
+      if (!docker) {
+        throw new Error('Docker is not available. Please ensure Docker is running and accessible.');
+      }
       const container = docker.getContainer(args.container);
       await container.stop();
       const info = await container.inspect();
@@ -292,6 +315,9 @@ async function handleTool(name: string, args: any): Promise<any> {
     }
 
     case 'docker_container_restart': {
+      if (!docker) {
+        throw new Error('Docker is not available. Please ensure Docker is running and accessible.');
+      }
       const container = docker.getContainer(args.container);
       await container.restart();
       const info = await container.inspect();
@@ -360,7 +386,7 @@ async function handleTool(name: string, args: any): Promise<any> {
     }
 
     case 'frontend_build_status': {
-      const projectRoot = process.env.PROJECT_ROOT || '/Users/Arief/Desktop/378';
+      const projectRoot = process.env.PROJECT_ROOT || '/Users/Arief/Documents/GitHub/reconciliation-platform-378';
       const distPath = join(projectRoot, 'frontend', 'dist');
       
       try {
@@ -451,5 +477,8 @@ async function main() {
   console.error('Reconciliation Platform MCP Server running on stdio');
 }
 
-main().catch(console.error);
+main().catch((error) => {
+  console.error('Fatal error starting MCP server:', error);
+  process.exit(1);
+});
 

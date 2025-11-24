@@ -450,40 +450,205 @@ const IngestionPage = ({ project }: IngestionPageProps) => {
     file: File,
     fileType: UploadedFile['fileType']
   ): Promise<Partial<UploadedFile>> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
+      
+      // Handle FileReader errors
+      reader.onerror = (errorEvent) => {
+        const error = errorEvent.target?.error || new Error('FileReader error');
+        console.error('FileReader error:', error);
+        resolve({
+          data: [],
+          columns: [],
+          qualityMetrics: {
+            completeness: 0,
+            accuracy: 0,
+            consistency: 0,
+            validity: 0,
+            duplicates: 0,
+            errors: 1,
+          },
+          validations: [
+            {
+              field: 'file',
+              rule: 'File Read Error',
+              passed: false,
+              message: `Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+              severity: 'error',
+            },
+          ],
+        });
+      };
+
       reader.onload = (e) => {
         try {
-          const text = e.target?.result as string;
-          let data: DataRow[] = [];
+          // Validate file read result
+          if (!e.target || !e.target.result) {
+            throw new Error('FileReader result is null or undefined');
+          }
 
-          if (file.name.toLowerCase().endsWith('.csv')) {
-            // Simple CSV parsing
-            const lines = text.split('\n').filter((line) => line.trim());
-            if (lines.length > 0) {
-              const headers = lines[0].split(',').map((h) => h.trim().replace(/"/g, ''));
+          const text = e.target.result as string;
+          
+          // Validate text is not empty
+          if (!text || text.trim().length === 0) {
+            throw new Error('File is empty or contains no readable content');
+          }
+
+          let data: DataRow[] = [];
+          const fileExtension = file.name.toLowerCase();
+
+          if (fileExtension.endsWith('.csv')) {
+            // CSV parsing with error handling
+            try {
+              const lines = text.split('\n').filter((line) => line.trim());
+              
+              if (lines.length === 0) {
+                throw new Error('CSV file contains no data rows');
+              }
+
+              // Parse headers with proper error handling
+              const headerLine = lines[0];
+              if (!headerLine || headerLine.trim().length === 0) {
+                throw new Error('CSV file missing header row');
+              }
+
+              const headers = headerLine.split(',').map((h) => h.trim().replace(/"/g, ''));
+              
+              if (headers.length === 0) {
+                throw new Error('CSV file has no column headers');
+              }
+
+              // Parse data rows
+              let rowErrors = 0;
               for (let i = 1; i < lines.length; i++) {
-                const values = lines[i].split(',').map((v) => v.trim().replace(/"/g, ''));
-                if (values.length === headers.length) {
+                try {
+                  const line = lines[i];
+                  if (!line || line.trim().length === 0) {
+                    continue; // Skip empty lines
+                  }
+
+                  const values = line.split(',').map((v) => v.trim().replace(/"/g, ''));
+                  
+                  // Handle rows with mismatched column count
+                  if (values.length !== headers.length) {
+                    rowErrors++;
+                    // Log warning but continue processing
+                    if (rowErrors <= 5) { // Only log first 5 errors to avoid spam
+                      console.warn(`CSV row ${i + 1} has ${values.length} columns, expected ${headers.length}. Skipping row.`);
+                    }
+                    continue;
+                  }
+
                   const row: DataRow = {} as DataRow;
                   headers.forEach((header, index) => {
                     row[header] = values[index] || null;
                   });
                   data.push(row);
+                } catch (rowError) {
+                  rowErrors++;
+                  console.warn(`Error parsing CSV row ${i + 1}:`, rowError);
+                  // Continue processing other rows
                 }
               }
+
+              if (data.length === 0 && rowErrors > 0) {
+                throw new Error(`Failed to parse any CSV rows. ${rowErrors} row(s) had errors.`);
+              }
+
+              if (rowErrors > 0 && data.length > 0) {
+                console.warn(`Successfully parsed ${data.length} rows, but ${rowErrors} row(s) had errors and were skipped.`);
+              }
+            } catch (csvError) {
+              throw new Error(`CSV parsing failed: ${csvError instanceof Error ? csvError.message : String(csvError)}`);
             }
-          } else if (file.name.toLowerCase().endsWith('.json')) {
-            data = JSON.parse(text);
-            if (!Array.isArray(data)) {
-              data = [data]; // Wrap single object in array
+          } else if (fileExtension.endsWith('.json')) {
+            // JSON parsing with proper error handling
+            try {
+              const parsed = JSON.parse(text);
+              
+              // Validate parsed data structure
+              if (parsed === null || parsed === undefined) {
+                throw new Error('JSON file contains null or undefined');
+              }
+
+              if (Array.isArray(parsed)) {
+                data = parsed;
+              } else if (typeof parsed === 'object') {
+                // Wrap single object in array
+                data = [parsed];
+              } else {
+                throw new Error('JSON file does not contain an object or array');
+              }
+
+              // Validate data array contains valid objects
+              if (data.length === 0) {
+                throw new Error('JSON array is empty');
+              }
+
+              // Validate each item is an object
+              const invalidItems = data.filter((item) => typeof item !== 'object' || item === null || Array.isArray(item));
+              if (invalidItems.length > 0) {
+                console.warn(`JSON file contains ${invalidItems.length} invalid items (not objects). They will be skipped.`);
+                data = data.filter((item) => typeof item === 'object' && item !== null && !Array.isArray(item));
+              }
+
+              if (data.length === 0) {
+                throw new Error('JSON file contains no valid data objects');
+              }
+            } catch (jsonError) {
+              if (jsonError instanceof SyntaxError) {
+                throw new Error(`Invalid JSON syntax: ${jsonError.message}`);
+              }
+              throw new Error(`JSON parsing failed: ${jsonError instanceof Error ? jsonError.message : String(jsonError)}`);
             }
+          } else {
+            throw new Error(`Unsupported file type: ${fileExtension}. Only .csv and .json files are supported.`);
           }
 
-          const cleanedData = cleanAndStandardizeData(data, fileType);
-          const columns = inferColumnTypes(cleanedData);
-          const qualityMetrics = analyzeDataQuality(cleanedData);
-          const validations = validateData(cleanedData, fileType);
+          // Process data with error handling
+          let cleanedData: DataRow[] = [];
+          let columns: unknown[] = [];
+          let qualityMetrics = {
+            completeness: 0,
+            accuracy: 0,
+            consistency: 0,
+            validity: 0,
+            duplicates: 0,
+            errors: 0,
+          };
+          let validations: unknown[] = [];
+
+          try {
+            cleanedData = cleanAndStandardizeData(data, fileType);
+            columns = inferColumnTypes(cleanedData);
+            qualityMetrics = analyzeDataQuality(cleanedData);
+            validations = validateData(cleanedData, fileType);
+          } catch (processError) {
+            console.error('Error processing file data:', processError);
+            // Return partial results with error information
+            resolve({
+              data: data, // Return raw data if processing fails
+              columns: [],
+              qualityMetrics: {
+                completeness: 0,
+                accuracy: 0,
+                consistency: 0,
+                validity: 0,
+                duplicates: 0,
+                errors: 1,
+              },
+              validations: [
+                {
+                  field: 'file',
+                  rule: 'Data Processing Error',
+                  passed: false,
+                  message: `Failed to process file data: ${processError instanceof Error ? processError.message : 'Unknown error'}`,
+                  severity: 'error',
+                },
+              ],
+            });
+            return;
+          }
 
           resolve({
             data: cleanedData,
@@ -492,6 +657,10 @@ const IngestionPage = ({ project }: IngestionPageProps) => {
             validations,
           });
         } catch (error) {
+          // Comprehensive error handling
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          console.error('File processing error:', error);
+          
           resolve({
             data: [],
             columns: [],
@@ -508,14 +677,41 @@ const IngestionPage = ({ project }: IngestionPageProps) => {
                 field: 'file',
                 rule: 'Parse Error',
                 passed: false,
-                message: `Failed to parse file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                message: `Failed to parse file: ${errorMessage}`,
                 severity: 'error',
               },
             ],
           });
         }
       };
-      reader.readAsText(file);
+      
+      // Start reading file
+      try {
+        reader.readAsText(file);
+      } catch (readError) {
+        console.error('Error starting file read:', readError);
+        resolve({
+          data: [],
+          columns: [],
+          qualityMetrics: {
+            completeness: 0,
+            accuracy: 0,
+            consistency: 0,
+            validity: 0,
+            duplicates: 0,
+            errors: 1,
+          },
+          validations: [
+            {
+              field: 'file',
+              rule: 'File Read Error',
+              passed: false,
+              message: `Failed to start reading file: ${readError instanceof Error ? readError.message : 'Unknown error'}`,
+              severity: 'error',
+            },
+          ],
+        });
+      }
     });
   };
 

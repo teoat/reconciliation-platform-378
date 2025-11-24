@@ -113,25 +113,54 @@ export class StaleDataTester {
 
   private async executeTestWithRetry(test: StaleDataTest): Promise<StaleDataTestResult> {
     let lastError: Error | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       // Default retry attempts
       try {
+        // Create timeout promise with cleanup
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('Test timeout'));
+          }, this.config.testTimeout);
+        });
+
         const result = await Promise.race([
-          test.testFunction(),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Test timeout')), this.config.testTimeout)
-          ),
+          test.testFunction().finally(() => {
+            // Cleanup timeout if test completes before timeout
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+            }
+          }),
+          timeoutPromise,
         ]);
+
+        // Cleanup timeout on success
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
 
         return result;
       } catch (error) {
+        // Cleanup timeout on error
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+
         lastError = error instanceof Error ? error : new Error('Unknown error');
 
         if (attempt < 3) {
           await new Promise((resolve) => setTimeout(resolve, 1000 * attempt)); // Retry delay
         }
       }
+    }
+
+    // Final cleanup
+    if (timeoutId) {
+      clearTimeout(timeoutId);
     }
 
     return {

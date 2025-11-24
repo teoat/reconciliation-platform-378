@@ -42,12 +42,10 @@ async fn test_password_manager_user_specific_encryption() -> AppResult<()> {
     let pm = PasswordManager::new(Arc::new(db), master_key);
     
     let user_id = Uuid::new_v4();
-    let user_password = "user-secret-password";
     
-    // Set user's master key
-    pm.set_user_master_key(user_id, user_password).await;
-    
-    // Create password with user-specific encryption
+    // Note: set_user_master_key and clear_user_master_key are deprecated
+    // Master keys are no longer stored in memory, so we test without them
+    // Create password with user-specific encryption (user_id is used for encryption context)
     let entry = pm.create_password("user-password", "secret-value", 90, Some(user_id)).await?;
     
     // Retrieve with correct user
@@ -56,7 +54,6 @@ async fn test_password_manager_user_specific_encryption() -> AppResult<()> {
     
     // Cleanup
     let _ = pm.deactivate_password("user-password").await;
-    pm.clear_user_master_key(user_id).await;
     
     Ok(())
 }
@@ -72,7 +69,6 @@ async fn test_password_manager_rotation() -> AppResult<()> {
     
     // Create password
     let entry1 = pm.create_password("rotatable", "old-password", 90, None).await?;
-    let original_rotation_due = entry1.next_rotation_due;
     
     // Rotate password
     let entry2 = pm.rotate_password("rotatable", Some("new-password"), None).await?;

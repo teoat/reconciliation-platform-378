@@ -14,6 +14,24 @@ use crate::models::schema::projects;
 use crate::models::schema::users;
 use crate::services::auth::ValidationUtils;
 
+/// Type alias for user query result tuple to reduce complexity
+type UserQueryResult = (
+    Uuid,
+    String,
+    Option<String>,
+    Option<String>,
+    String,
+    bool,
+    chrono::DateTime<chrono::Utc>,
+    chrono::DateTime<chrono::Utc>,
+    Option<chrono::DateTime<chrono::Utc>>,
+);
+
+/// Type alias for database connection to reduce complexity
+type DbConnection = diesel::r2d2::PooledConnection<
+    diesel::r2d2::ConnectionManager<diesel::PgConnection>,
+>;
+
 /// User query service for search and filtering
 pub struct UserQueryService {
     db: Arc<Database>,
@@ -284,20 +302,8 @@ impl UserQueryService {
     /// Helper: Build user infos with project counts
     fn build_user_infos_with_project_counts(
         &self,
-        users: Vec<(
-            Uuid,
-            String,
-            Option<String>,
-            Option<String>,
-            String,
-            bool,
-            chrono::DateTime<chrono::Utc>,
-            chrono::DateTime<chrono::Utc>,
-            Option<chrono::DateTime<chrono::Utc>>,
-        )>,
-        conn: &mut diesel::r2d2::PooledConnection<
-            diesel::r2d2::ConnectionManager<diesel::PgConnection>,
-        >,
+        users: Vec<UserQueryResult>,
+        conn: &mut DbConnection,
     ) -> AppResult<Vec<UserInfo>> {
         use diesel::dsl::count_star;
 

@@ -80,8 +80,15 @@ impl AuthRateLimitMiddleware {
         Self { config }
     }
 
-    pub fn default() -> Self {
+    /// Create middleware with default configuration
+    /// Note: Named `new_default` to avoid confusion with `Default` trait
+    pub fn new_default() -> Self {
         Self::new(AuthRateLimitConfig::default())
+    }
+    
+    /// Create middleware with default configuration (implements Default trait)
+    pub fn default() -> Self {
+        Self::new_default()
     }
 }
 

@@ -4,10 +4,8 @@
 
 use actix_web::{web, HttpResponse, Result};
 use serde::Deserialize;
-use std::collections::HashMap;
 
 use crate::errors::AppError;
-use crate::handlers::types::ApiResponse;
 
 /// CSP violation report from browser
 #[derive(Debug, Deserialize)]

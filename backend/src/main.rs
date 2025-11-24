@@ -4,9 +4,8 @@
 //! configures services, and starts the HTTP server.
 
 use actix_cors::Cors;
-use chrono;
+use chrono::Utc;
 use futures::future;
-use serde_json;
 use reconciliation_backend::{
     config::Config,
     handlers,
@@ -16,7 +15,10 @@ use reconciliation_backend::{
         AuthRateLimitMiddleware,
         security::{SecurityHeadersMiddleware, SecurityHeadersConfig},
     },
-    services::performance::QueryOptimizer,
+    services::{
+        performance::QueryOptimizer,
+        secrets::SecretsService,
+    },
     startup::{resilience_config_from_env, AppStartup},
 };
 
@@ -87,7 +89,7 @@ async fn async_main() -> std::io::Result<()> {
         // Use JSON format for structured logging (better for log aggregation)
         builder.format(|buf, record| {
             use std::io::Write;
-            let timestamp = chrono::Utc::now().to_rfc3339();
+            let timestamp = Utc::now().to_rfc3339();
             let json = serde_json::json!({
                 "timestamp": timestamp,
                 "level": record.level().to_string(),
@@ -257,14 +259,10 @@ async fn async_main() -> std::io::Result<()> {
         .unwrap_or_else(|_| "development".to_string())
         .to_lowercase() == "production";
     
-    let master_key = match std::env::var("PASSWORD_MASTER_KEY") {
+    // Get password master key using enhanced SecretsService
+    let master_key = match SecretsService::get_password_master_key() {
         Ok(key) => {
-            // Validate master key strength in production
-            if is_production && key.len() < 32 {
-                eprintln!("❌ PASSWORD_MASTER_KEY must be at least 32 characters in production");
-                log::error!("PASSWORD_MASTER_KEY validation failed: too short");
-                std::process::exit(1);
-            }
+            // Additional validation for production
             if is_production && key == "default-master-key-change-in-production" {
                 eprintln!("❌ PASSWORD_MASTER_KEY cannot use default value in production");
                 log::error!("PASSWORD_MASTER_KEY validation failed: using default value");

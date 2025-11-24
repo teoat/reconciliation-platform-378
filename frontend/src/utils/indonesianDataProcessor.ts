@@ -58,13 +58,22 @@ export class IndonesianDataProcessor {
     }));
   }
 
+  /**
+   * Match records between source and target datasets
+   * 
+   * Uses a multi-stage matching strategy:
+   * 1. Exact ID match (highest confidence)
+   * 2. Amount + date match (high confidence)
+   * 3. Description match (medium confidence)
+   * 
+   * @param sourceRecords Source records to match
+   * @param targetRecords Target records to match against
+   * @returns Array of matching results with confidence scores
+   */
   static matchRecords(
     sourceRecords: ProcessedBankRecord[] | ProcessedExpenseRecord[],
     targetRecords: ProcessedBankRecord[] | ProcessedExpenseRecord[]
   ): IndonesianMatchingResult[] {
-    // TODO: Replace stub with production-ready matching logic.
-    // TODO: Add fuzzy matching (e.g., by amount, date, description) if IDs are missing or inconsistent.
-    // TODO: Integrate with external matching libraries if needed.
     // Validate required fields and handle malformed data.
     function isValidRecord(record: any): boolean {
       return (

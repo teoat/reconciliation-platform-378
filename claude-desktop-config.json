@@ -1,12 +1,12 @@
 {
   "mcpServers": {
     "reconciliation-platform": {
-      "command": "/usr/local/Cellar/node/25.1.0/bin/node",
-      "args": ["/Users/Arief/Desktop/378/mcp-server/dist/index.js"],
+      "command": "node",
+      "args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/index.js"],
       "env": {
         "DATABASE_URL": "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app",
         "REDIS_URL": "redis://:redis_pass@localhost:6379",
-        "PROJECT_ROOT": "/Users/Arief/Desktop/378"
+        "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378"
       }
     }
   }

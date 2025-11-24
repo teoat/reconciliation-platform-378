@@ -224,12 +224,9 @@ where
 
                     // Extract response body if configured (note: this is a simplified approach)
                     // In production, you'd want to buffer and log response bodies more carefully
-                    let response_body: Option<String> =
-                        if state.config.include_body && state.config.enable_response_logging {
-                            None // Response body extraction would require consuming the response
-                        } else {
-                            None
-                        };
+                    // Note: Response body extraction would require consuming the response
+                    // For now, we don't extract the body to avoid consuming the response
+                    let response_body: Option<String> = None;
 
                     // Log response
                     if state.config.enable_response_logging {
@@ -597,17 +594,14 @@ impl StructuredLogger {
     }
 
     fn should_log(&self, level: &LogLevel) -> bool {
-        match (&self.config.log_level, level) {
-            (LogLevel::Trace, _) => true,
-            (
-                LogLevel::Debug,
-                LogLevel::Debug | LogLevel::Info | LogLevel::Warn | LogLevel::Error,
-            ) => true,
-            (LogLevel::Info, LogLevel::Info | LogLevel::Warn | LogLevel::Error) => true,
-            (LogLevel::Warn, LogLevel::Warn | LogLevel::Error) => true,
-            (LogLevel::Error, LogLevel::Error) => true,
-            _ => false,
-        }
+        matches!(
+            (&self.config.log_level, level),
+            (LogLevel::Trace, _)
+                | (LogLevel::Debug, LogLevel::Debug | LogLevel::Info | LogLevel::Warn | LogLevel::Error)
+                | (LogLevel::Info, LogLevel::Info | LogLevel::Warn | LogLevel::Error)
+                | (LogLevel::Warn, LogLevel::Warn | LogLevel::Error)
+                | (LogLevel::Error, LogLevel::Error)
+        )
     }
 
     pub async fn get_logs(&self, level: Option<LogLevel>, limit: Option<usize>) -> Vec<LogEntry> {
@@ -650,16 +644,16 @@ impl StructuredLogger {
     }
 }
 
-impl ToString for LogLevel {
-    fn to_string(&self) -> String {
-        match self {
+impl std::fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let level_str = match self {
             LogLevel::Trace => "trace",
             LogLevel::Debug => "debug",
             LogLevel::Info => "info",
             LogLevel::Warn => "warn",
             LogLevel::Error => "error",
-        }
-        .to_string()
+        };
+        write!(f, "{}", level_str)
     }
 }
 

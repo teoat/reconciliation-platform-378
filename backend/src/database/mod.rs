@@ -25,6 +25,7 @@ impl Database {
         let manager = ConnectionManager::<PgConnection>::new(database_url);
 
         // Optimized connection pool configuration for production
+        // Enhanced error handling for database pool creation (Tier 1: Critical)
         let pool = r2d2::Pool::builder()
             .max_size(20) // Increased from 10 to handle more concurrent requests
             .min_idle(Some(5)) // Keep 5 connections ready to reduce connection overhead
@@ -32,8 +33,12 @@ impl Database {
             .test_on_check_out(true) // Test connections before returning them
             .build(manager)
             .map_err(|e| {
+                log::error!(
+                    "Critical: Failed to create database connection pool: {}. This is a system-level error.",
+                    e
+                );
                 AppError::Connection(diesel::ConnectionError::InvalidConnectionUrl(format!(
-                    "Failed to create connection pool: {}",
+                    "Failed to create connection pool: {}. Please check database configuration and connectivity.",
                     e
                 )))
             })?;
@@ -168,7 +173,14 @@ impl Database {
                     continue;
                 }
                 Err(e) => {
-                    log::error!("Connection pool exhausted after {} retries", max_retries);
+                    // Enhanced error logging for database connection failures (Tier 1: Critical)
+                    log::error!(
+                        "Critical: Database connection pool exhausted after {} retries. Error: {}. Pool stats: {}/{} connections active.",
+                        max_retries,
+                        e,
+                        self.pool.state().connections - self.pool.state().idle_connections,
+                        self.pool.state().connections
+                    );
                     // Record pool exhaustion metric for alerting
                     crate::monitoring::metrics::record_pool_exhaustion();
                     return Err(AppError::Connection(

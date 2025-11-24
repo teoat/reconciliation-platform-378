@@ -3,6 +3,16 @@
  * 
  * Detects empty states in components and provides contextual information
  * for triggering EmptyStateGuidance component.
+ * 
+ * @example
+ * ```typescript
+ * import { detectEmptyData, shouldShowEmptyStateGuidance } from '@/utils/emptyStateDetection';
+ * 
+ * const result = detectEmptyData(projects, 'projects');
+ * if (result.isEmpty && shouldShowEmptyStateGuidance('projects')) {
+ *   return <EmptyStateGuidance type="projects" />;
+ * }
+ * ```
  */
 
 export type EmptyStateType =

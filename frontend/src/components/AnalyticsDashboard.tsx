@@ -1,3 +1,17 @@
+/**
+ * Analytics Dashboard Component
+ * 
+ * Comprehensive analytics dashboard displaying metrics, charts, and project statistics.
+ * Features real-time updates via WebSocket and lazy-loaded chart components.
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <AnalyticsDashboard />
+ * ```
+ * 
+ * @returns {JSX.Element} The analytics dashboard component
+ */
 'use client';
 import { logger } from '@/services/logger';
 

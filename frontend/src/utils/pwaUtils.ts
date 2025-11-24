@@ -186,7 +186,7 @@ class PWAUtils {
    * @example
    * ```typescript
    * const cacheInfo = await pwaUtils.getCacheInfo();
-   * console.log(`Found ${cacheInfo.cacheNames.length} caches`);
+   * logger.info(`Found ${cacheInfo.cacheNames.length} caches`, { cacheCount: cacheInfo.cacheNames.length });
    * ```
    */
   async getCacheInfo(): Promise<CacheInfo> {

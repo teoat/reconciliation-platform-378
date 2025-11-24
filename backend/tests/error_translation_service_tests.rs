@@ -14,7 +14,7 @@ mod error_translation_service_tests {
 
     #[test]
     fn test_error_translation_service_creation() {
-        let service = ErrorTranslationService::new();
+        let _service = ErrorTranslationService::new();
         
         // Verify service is created
         assert!(true); // Service has no public state to verify

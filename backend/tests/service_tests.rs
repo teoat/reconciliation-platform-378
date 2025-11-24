@@ -286,17 +286,16 @@ mod security_service_tests {
 
     #[tokio::test]
     async fn test_password_hashing() {
-        let config = reconciliation_backend::services::security::SecurityConfig::default();
-        let service = SecurityService::new(config);
+        use reconciliation_backend::services::auth::password::PasswordManager;
         let password = "test_password_123";
 
-        let hash = service.hash_password(password).await.unwrap();
+        let hash = PasswordManager::hash_password(password).unwrap();
         assert!(!hash.is_empty());
         assert_ne!(hash, password); // Hash should be different from plain password
 
         // Verify password
-        assert!(service.verify_password(password, &hash).await.unwrap());
-        assert!(!service.verify_password("wrong_password", &hash).await.unwrap());
+        assert!(PasswordManager::verify_password(password, &hash).unwrap());
+        assert!(!PasswordManager::verify_password("wrong_password", &hash).unwrap());
     }
 
     #[test]

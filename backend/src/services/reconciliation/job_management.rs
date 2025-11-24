@@ -107,10 +107,10 @@ impl JobProcessor {
 
     /// Force timeout a stuck job
     pub async fn timeout_job(&self, job_id: Uuid) -> Result<(), crate::errors::AppError> {
-        let mut active_jobs = self.active_jobs.write().await;
-        if let Some(mut status) = active_jobs.get_mut(&job_id) {
-            status.message = format!("Job timed out after {} seconds", self.job_timeout_seconds);
-            status.current_phase = "Timed out".to_string();
+        let active_jobs = self.active_jobs.write().await;
+        if active_jobs.contains_key(&job_id) {
+            drop(active_jobs);
+            let mut active_jobs = self.active_jobs.write().await;
             active_jobs.remove(&job_id);
             Ok(())
         } else {

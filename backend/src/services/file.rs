@@ -177,8 +177,20 @@ impl FileService {
             .await
             .map_err(|e| AppError::Internal(format!("Failed to flush final file: {}", e)))?;
 
-        // Best-effort cleanup
-        let _ = fs::remove_dir_all(&tmp_dir).await;
+        // Best-effort cleanup of temporary directory
+        // Log errors but don't fail - file upload already succeeded
+        if let Err(e) = fs::remove_dir_all(&tmp_dir).await {
+            log::warn!(
+                "Failed to cleanup temporary upload directory {} after successful file upload: {}. \
+                 Directory may need manual cleanup. Upload ID: {}",
+                tmp_dir.display(),
+                e,
+                upload_id
+            );
+            // TODO: Could schedule cleanup job here for retry
+        } else {
+            log::debug!("Successfully cleaned up temporary upload directory: {}", tmp_dir.display());
+        }
 
         Ok(FileUploadResult {
             id: Uuid::new_v4(),
@@ -209,12 +221,22 @@ impl FileService {
             "application/csv",
         ];
 
-        // Prepare upload directory
+        // Prepare upload directory with enhanced error handling (Tier 2: Important)
         let mut upload_dir = PathBuf::from(&self.upload_path);
         upload_dir.push(project_id.to_string());
         fs::create_dir_all(&upload_dir)
             .await
-            .map_err(|e| AppError::Internal(format!("Failed to create upload dir: {}", e)))?;
+            .map_err(|e| {
+                log::error!(
+                    "Failed to create upload directory for project {}: {}",
+                    project_id,
+                    e
+                );
+                AppError::Internal(format!(
+                    "Failed to create upload directory: {}. Please try again or contact support.",
+                    e
+                ))
+            })?;
 
         let mut saved_filename: Option<String> = None;
         let mut total_size: i64 = 0;
@@ -272,9 +294,33 @@ impl FileService {
             let mut filepath = upload_dir.clone();
             filepath.push(&filename);
 
-            let mut file = fs::File::create(&filepath)
-                .await
-                .map_err(|e| AppError::Internal(format!("Failed to create file: {}", e)))?;
+            // Create file with enhanced error handling and retry logic
+            let mut file = match fs::File::create(&filepath).await {
+                Ok(f) => f,
+                Err(e) => {
+                    log::error!(
+                        "Failed to create file {} for project {}: {}",
+                        filename,
+                        project_id,
+                        e
+                    );
+                    // Retry once for transient I/O errors
+                    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
+                    fs::File::create(&filepath)
+                        .await
+                        .map_err(|retry_err| {
+                            log::error!(
+                                "Retry failed to create file {}: {}",
+                                filename,
+                                retry_err
+                            );
+                            AppError::Internal(format!(
+                                "Failed to create file after retry: {}. Please try again.",
+                                retry_err
+                            ))
+                        })?
+                }
+            };
 
             // Stream chunks to disk
             let mut this_file_size: i64 = 0;
@@ -362,8 +408,12 @@ impl FileService {
     }
 
     /// Delete a file
+    /// 
+    /// **CRITICAL**: Deletes database record FIRST, then physical file.
+    /// This ensures data consistency - if file deletion fails, we can retry.
+    /// If DB deletion fails, file remains (no data loss).
     pub async fn delete_file(&self, file_id: Uuid) -> AppResult<()> {
-        // Use resilience manager for database operations if available
+        // Get file info first (needed for physical file path)
         let file_info: UploadedFile = {
             if let Some(ref resilience) = self.resilience {
                 // Use async database connection with circuit breaker
@@ -385,15 +435,8 @@ impl FileService {
             }
         };
 
-        // Delete the physical file
-        let file_path = PathBuf::from(&self.upload_path).join(&file_info.file_path);
-        if file_path.exists() {
-            fs::remove_file(&file_path)
-                .await
-                .map_err(|e| AppError::Internal(format!("Failed to delete file: {}", e)))?;
-        }
-
-        // Delete the database record with resilience if available
+        // CRITICAL: Delete database record FIRST (source of truth)
+        // This ensures atomicity - if this fails, file remains (no data loss)
         if let Some(ref resilience) = self.resilience {
             // Use async database connection with circuit breaker
             let mut conn = resilience
@@ -409,6 +452,33 @@ impl FileService {
             diesel::delete(schema::uploaded_files::table.find(file_id))
                 .execute(&mut conn)
                 .map_err(AppError::Database)?;
+        }
+
+        // Then delete physical file (best-effort cleanup)
+        // If this fails, we log but don't fail - DB record already deleted
+        // A cleanup job can handle orphaned files later
+        let file_path = PathBuf::from(&self.upload_path).join(&file_info.file_path);
+        if file_path.exists() {
+            if let Err(e) = fs::remove_file(&file_path).await {
+                // Log warning but don't fail - DB record already deleted
+                // This prevents data inconsistency (orphaned DB records)
+                log::warn!(
+                    "Failed to delete physical file {} after DB record deletion: {}. \
+                     File may need manual cleanup. File ID: {}",
+                    file_path.display(),
+                    e,
+                    file_id
+                );
+                // TODO: Could schedule cleanup job here for retry
+            } else {
+                log::debug!("Successfully deleted file: {}", file_path.display());
+            }
+        } else {
+            log::debug!(
+                "Physical file {} does not exist (may have been deleted already). File ID: {}",
+                file_path.display(),
+                file_id
+            );
         }
 
         Ok(())

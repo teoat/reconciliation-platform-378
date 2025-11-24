@@ -9,6 +9,7 @@
 pub mod job_management;
 pub mod matching;
 pub mod processing;
+pub mod processing_config;
 pub mod service;
 pub mod types;
 
@@ -46,13 +47,150 @@ pub use self::processing::*;
 // Re-export for backward compatibility
 impl ReconciliationService {
     pub fn new(db: Database) -> Self {
-        let job_processor = Arc::new(JobProcessor::new(5, 100)); // 5 concurrent jobs, 100 records per chunk
-        Self { db, job_processor }
+        // Get timeout from environment or use default (2 hours)
+        // Improved error handling with logging for invalid values
+        let timeout_seconds = match std::env::var("RECONCILIATION_JOB_TIMEOUT_SECONDS") {
+            Ok(val) => {
+                match val.parse::<u64>() {
+                    Ok(parsed) if parsed > 0 => {
+                        log::info!("Using RECONCILIATION_JOB_TIMEOUT_SECONDS={} from environment", parsed);
+                        parsed
+                    }
+                    Ok(0) => {
+                        log::warn!(
+                            "RECONCILIATION_JOB_TIMEOUT_SECONDS is 0, using default: {}",
+                            job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                        );
+                        job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                    }
+                    Ok(parsed) => {
+                        log::warn!(
+                            "RECONCILIATION_JOB_TIMEOUT_SECONDS={} is invalid (must be > 0), using default: {}",
+                            parsed,
+                            job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                        );
+                        job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                    }
+                    Err(e) => {
+                        log::warn!(
+                            "Failed to parse RECONCILIATION_JOB_TIMEOUT_SECONDS='{}': {}. Using default: {}",
+                            val,
+                            e,
+                            job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                        );
+                        job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                    }
+                }
+            }
+            Err(std::env::VarError::NotPresent) => {
+                log::debug!(
+                    "RECONCILIATION_JOB_TIMEOUT_SECONDS not set, using default: {}",
+                    job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                );
+                job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+            }
+            Err(e) => {
+                log::warn!(
+                    "Error reading RECONCILIATION_JOB_TIMEOUT_SECONDS: {}. Using default: {}",
+                    e,
+                    job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                );
+                job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+            }
+        };
+        
+        let job_processor = Arc::new(JobProcessor::new_with_timeout(5, 100, timeout_seconds));
+        let service = Self { db, job_processor };
+        
+        // Start background task to monitor for stuck jobs
+        service.start_timeout_monitor();
+        
+        service
     }
 
     pub fn new_with_ws(db: Database, _ws_server: actix::Addr<crate::websocket::WsServer>) -> Self {
-        let job_processor = Arc::new(JobProcessor::new(5, 100));
-        Self { db, job_processor }
+        // Get timeout from environment or use default (2 hours)
+        // Improved error handling with logging for invalid values
+        let timeout_seconds = match std::env::var("RECONCILIATION_JOB_TIMEOUT_SECONDS") {
+            Ok(val) => {
+                match val.parse::<u64>() {
+                    Ok(parsed) if parsed > 0 => {
+                        log::info!("Using RECONCILIATION_JOB_TIMEOUT_SECONDS={} from environment", parsed);
+                        parsed
+                    }
+                    Ok(0) => {
+                        log::warn!(
+                            "RECONCILIATION_JOB_TIMEOUT_SECONDS is 0, using default: {}",
+                            job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                        );
+                        job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                    }
+                    Ok(parsed) => {
+                        log::warn!(
+                            "RECONCILIATION_JOB_TIMEOUT_SECONDS={} is invalid (must be > 0), using default: {}",
+                            parsed,
+                            job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                        );
+                        job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                    }
+                    Err(e) => {
+                        log::warn!(
+                            "Failed to parse RECONCILIATION_JOB_TIMEOUT_SECONDS='{}': {}. Using default: {}",
+                            val,
+                            e,
+                            job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                        );
+                        job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                    }
+                }
+            }
+            Err(std::env::VarError::NotPresent) => {
+                log::debug!(
+                    "RECONCILIATION_JOB_TIMEOUT_SECONDS not set, using default: {}",
+                    job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                );
+                job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+            }
+            Err(e) => {
+                log::warn!(
+                    "Error reading RECONCILIATION_JOB_TIMEOUT_SECONDS: {}. Using default: {}",
+                    e,
+                    job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+                );
+                job_management::DEFAULT_JOB_TIMEOUT_SECONDS
+            }
+        };
+        
+        let job_processor = Arc::new(JobProcessor::new_with_timeout(5, 100, timeout_seconds));
+        let service = Self { db, job_processor };
+        
+        // Start background task to monitor for stuck jobs
+        service.start_timeout_monitor();
+        
+        service
+    }
+    
+    /// Start background task to periodically check for stuck jobs
+    fn start_timeout_monitor(&self) {
+        let processor = Arc::clone(&self.job_processor);
+        tokio::spawn(async move {
+            let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(60)); // Check every minute
+            loop {
+                interval.tick().await;
+                
+                let stuck_jobs = processor.check_stuck_jobs().await;
+                if !stuck_jobs.is_empty() {
+                    log::warn!("Found {} stuck job(s), forcing timeout", stuck_jobs.len());
+                    for job_id in stuck_jobs {
+                        if let Err(e) = processor.timeout_job(job_id).await {
+                            log::error!("Failed to timeout stuck job {}: {}", job_id, e);
+                        } else {
+                            log::info!("Successfully timed out stuck job {}", job_id);
+                        }
+                    }
+                }
+            }
+        });
     }
 
     /// Create a new reconciliation job

@@ -1,3 +1,16 @@
+/**
+ * Dashboard Component
+ * 
+ * Main dashboard page displaying project overview, health status, and quick actions.
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <Dashboard />
+ * ```
+ * 
+ * @returns {JSX.Element} The dashboard component
+ */
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHealthCheck } from '../hooks/useFileReconciliation';

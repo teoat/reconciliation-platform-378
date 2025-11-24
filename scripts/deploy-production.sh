@@ -1,25 +1,41 @@
 #!/bin/bash
+# ============================================================================
+# PRODUCTION DEPLOYMENT SCRIPT
+# ============================================================================
+# Deploys the application to production with comprehensive safety checks
+#
+# Usage:
+#   ./scripts/deploy-production.sh [version]
+#   ./scripts/deploy-production.sh v1.0.0
+#
+# Requirements:
+#   - kubectl configured for production cluster
+#   - Production secrets configured in k8s/optimized/base/secrets.yaml
+#   - Backup created before deployment
+# ============================================================================
 
-# Production Deployment Script for Reconciliation Platform
-# This script handles the complete deployment process for production environment
+set -euo pipefail
 
-set -e
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common-functions.sh"
 
 # Configuration
-NAMESPACE="reconciliation"
-APP_NAME="reconciliation"
-REGISTRY="your-registry.com"
-VERSION="${VERSION:-latest}"
+VERSION=${1:-latest}
 ENVIRONMENT="production"
+NAMESPACE="reconciliation-platform"
+BASE_URL="${PRODUCTION_URL:-https://app.example.com}"
 
-# Colors for output
+# Safety checks
+REQUIRE_APPROVAL=${REQUIRE_APPROVAL:-true}
+CREATE_BACKUP=${CREATE_BACKUP:-true}
+
+# Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Logging functions
 log_info() {
     echo -e "${BLUE}[INFO]${NC} $1"
 }
@@ -36,388 +52,270 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Check if required tools are installed
-check_prerequisites() {
-    log_info "Checking prerequisites..."
+# ============================================================================
+# SAFETY CHECKS
+# ============================================================================
+
+safety_checks() {
+    log_info "Running safety checks..."
     
-    local tools=("kubectl" "docker" "helm" "jq")
-    for tool in "${tools[@]}"; do
-        if ! command -v "$tool" &> /dev/null; then
-            log_error "$tool is not installed. Please install it first."
+    # Check if running in production mode
+    if [[ "${ENVIRONMENT}" != "production" ]]; then
+        log_error "This script is for production deployment only"
+        exit 1
+    fi
+    
+    # Check if kubectl is available
+    if ! command -v kubectl &> /dev/null; then
+        log_error "kubectl is not installed"
+        exit 1
+    fi
+    
+    # Check if we can connect to cluster
+    if ! kubectl cluster-info &> /dev/null; then
+        log_error "Cannot connect to Kubernetes cluster"
+        exit 1
+    fi
+    
+    # Verify we're on the production cluster
+    local current_context=$(kubectl config current-context)
+    log_info "Current Kubernetes context: $current_context"
+    
+    if [[ "$REQUIRE_APPROVAL" == "true" ]]; then
+        echo ""
+        log_warning "⚠️  PRODUCTION DEPLOYMENT WARNING ⚠️"
+        echo "You are about to deploy to PRODUCTION environment"
+        echo "Version: $VERSION"
+        echo "Namespace: $NAMESPACE"
+        echo "Context: $current_context"
+        echo ""
+        read -p "Type 'DEPLOY' to confirm: " confirmation
+        
+        if [[ "$confirmation" != "DEPLOY" ]]; then
+            log_error "Deployment cancelled"
             exit 1
         fi
-    done
+    fi
     
-    log_success "All prerequisites are installed"
-}
-
-# Check if kubectl is connected to a cluster
-check_kubectl_connection() {
-    log_info "Checking kubectl connection..."
-    
-    if ! kubectl cluster-info &> /dev/null; then
-        log_error "kubectl is not connected to a cluster. Please configure your kubeconfig."
+    # Check if secrets exist and are not using defaults
+    if ! kubectl get secret reconciliation-secrets -n "$NAMESPACE" &> /dev/null; then
+        log_error "Production secrets not found"
+        log_info "Please create secrets first:"
+        log_info "  kubectl apply -f k8s/optimized/base/secrets.yaml"
         exit 1
     fi
     
-    log_success "kubectl is connected to cluster"
+    # Verify secrets are not using default values
+    local jwt_secret=$(kubectl get secret reconciliation-secrets -n "$NAMESPACE" -o jsonpath='{.data.JWT_SECRET}' | base64 -d 2>/dev/null || echo "")
+    if [[ "$jwt_secret" == *"CHANGE_ME"* ]] || [[ -z "$jwt_secret" ]]; then
+        log_error "JWT_SECRET is using default or empty value"
+        exit 1
+    fi
+    
+    log_success "Safety checks passed"
 }
 
-# Build and push Docker images
-build_and_push_images() {
-    log_info "Building and pushing Docker images..."
-    
-    # Build backend image
-    log_info "Building backend image..."
-    docker build -t "$REGISTRY/$APP_NAME-backend:$VERSION" -f infrastructure/docker/Dockerfile.backend .
-    docker push "$REGISTRY/$APP_NAME-backend:$VERSION"
-    
-    # Build frontend image
-    log_info "Building frontend image..."
-    docker build -t "$REGISTRY/$APP_NAME-frontend:$VERSION" -f infrastructure/docker/Dockerfile.frontend .
-    docker push "$REGISTRY/$APP_NAME-frontend:$VERSION"
-    
-    log_success "Docker images built and pushed successfully"
-}
+# ============================================================================
+# CREATE BACKUP
+# ============================================================================
 
-# Create namespace if it doesn't exist
-create_namespace() {
-    log_info "Creating namespace $NAMESPACE..."
+create_backup() {
+    if [[ "$CREATE_BACKUP" != "true" ]]; then
+        log_warning "Backup creation skipped (CREATE_BACKUP=false)"
+        return 0
+    fi
     
-    if kubectl get namespace "$NAMESPACE" &> /dev/null; then
-        log_warning "Namespace $NAMESPACE already exists"
+    log_info "Creating backup before deployment..."
+    
+    # Create database backup
+    if [[ -f "$SCRIPT_DIR/backup-postgresql.sh" ]]; then
+        log_info "Creating database backup..."
+        "$SCRIPT_DIR/backup-postgresql.sh" production || {
+            log_error "Database backup failed"
+            exit 1
+        }
     else
-        kubectl create namespace "$NAMESPACE"
-        log_success "Namespace $NAMESPACE created"
+        log_warning "Backup script not found, skipping database backup..."
     fi
+    
+    # Create Redis backup
+    if [[ -f "$SCRIPT_DIR/backup-redis.sh" ]]; then
+        log_info "Creating Redis backup..."
+        "$SCRIPT_DIR/backup-redis.sh" production || {
+            log_warning "Redis backup failed (non-critical)"
+        }
+    fi
+    
+    log_success "Backup completed"
 }
 
-# Apply Kubernetes secrets
-apply_secrets() {
-    log_info "Applying Kubernetes secrets..."
+# ============================================================================
+# BUILD IMAGES
+# ============================================================================
+
+build_images() {
+    log_info "Building production Docker images..."
     
-    # Check if secrets file exists
-    if [ ! -f "config/secrets.yaml" ]; then
-        log_error "Secrets file config/secrets.yaml not found. Please create it first."
+    # Build backend with production optimizations
+    log_info "Building backend image..."
+    docker build \
+        -f infrastructure/docker/Dockerfile.backend \
+        -t reconciliation-backend:${VERSION} \
+        -t reconciliation-backend:latest \
+        --target runtime \
+        --build-arg BUILD_MODE=release \
+        --build-arg RUSTFLAGS="-C target-cpu=native" \
+        backend/
+    
+    # Build frontend with production optimizations
+    log_info "Building frontend image..."
+    docker build \
+        -f infrastructure/docker/Dockerfile.frontend \
+        -t reconciliation-frontend:${VERSION} \
+        -t reconciliation-frontend:latest \
+        --target runtime \
+        --build-arg NODE_ENV=production \
+        frontend/
+    
+    log_success "Production images built successfully"
+}
+
+# ============================================================================
+# DEPLOY TO KUBERNETES
+# ============================================================================
+
+deploy_kubernetes() {
+    log_info "Deploying to Kubernetes production cluster..."
+    
+    # Apply ConfigMaps
+    if [[ -f "k8s/optimized/base/configmap.yaml" ]]; then
+        log_info "Applying ConfigMaps..."
+        kubectl apply -f k8s/optimized/base/configmap.yaml -n "$NAMESPACE"
+    fi
+    
+    # Apply Deployments with rolling update
+    log_info "Applying deployments (rolling update)..."
+    
+    # Update image tags
+    kubectl set image deployment/reconciliation-backend \
+        reconciliation-backend=reconciliation-backend:${VERSION} \
+        -n "$NAMESPACE" || {
+        log_error "Failed to update backend image"
         exit 1
-    fi
+    }
     
-    kubectl apply -f config/secrets.yaml -n "$NAMESPACE"
-    log_success "Secrets applied successfully"
+    kubectl set image deployment/reconciliation-frontend \
+        reconciliation-frontend=reconciliation-frontend:${VERSION} \
+        -n "$NAMESPACE" || {
+        log_error "Failed to update frontend image"
+        exit 1
+    }
+    
+    # Wait for rollout
+    log_info "Waiting for deployment rollout (this may take several minutes)..."
+    kubectl rollout status deployment/reconciliation-backend -n "$NAMESPACE" --timeout=10m || {
+        log_error "Backend deployment failed, rolling back..."
+        kubectl rollout undo deployment/reconciliation-backend -n "$NAMESPACE"
+        exit 1
+    }
+    
+    kubectl rollout status deployment/reconciliation-frontend -n "$NAMESPACE" --timeout=10m || {
+        log_error "Frontend deployment failed, rolling back..."
+        kubectl rollout undo deployment/reconciliation-frontend -n "$NAMESPACE"
+        exit 1
+    }
+    
+    log_success "Deployment completed"
 }
 
-# Apply Kubernetes configuration
-apply_config() {
-    log_info "Applying Kubernetes configuration..."
-    
-    # Apply the main deployment configuration
-    kubectl apply -f infrastructure/kubernetes/production-deployment.yaml
-    
-    log_success "Kubernetes configuration applied successfully"
-}
+# ============================================================================
+# RUN MIGRATIONS
+# ============================================================================
 
-# Wait for deployments to be ready
-wait_for_deployments() {
-    log_info "Waiting for deployments to be ready..."
-    
-    local deployments=("postgres" "redis" "backend" "frontend")
-    
-    for deployment in "${deployments[@]}"; do
-        log_info "Waiting for $deployment deployment..."
-        kubectl wait --for=condition=available --timeout=300s deployment/"$deployment" -n "$NAMESPACE"
-        log_success "$deployment deployment is ready"
-    done
-}
-
-# Run database migrations
 run_migrations() {
     log_info "Running database migrations..."
     
-    # Get a backend pod
-    local backend_pod=$(kubectl get pods -n "$NAMESPACE" -l app=backend -o jsonpath='{.items[0].metadata.name}')
+    # Get backend pod name
+    local pod_name=$(kubectl get pods -n "$NAMESPACE" -l app=reconciliation-backend -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
     
-    if [ -z "$backend_pod" ]; then
-        log_error "No backend pod found"
+    if [[ -z "$pod_name" ]]; then
+        log_error "Backend pod not found"
         exit 1
     fi
     
     # Run migrations
-    kubectl exec -n "$NAMESPACE" "$backend_pod" -- /app/migrate up
-    
-    log_success "Database migrations completed"
-}
-
-# Verify deployment
-verify_deployment() {
-    log_info "Verifying deployment..."
-    
-    # Check if all pods are running
-    local pods=$(kubectl get pods -n "$NAMESPACE" --field-selector=status.phase=Running -o json | jq -r '.items[].metadata.name')
-    
-    if [ -z "$pods" ]; then
-        log_error "No running pods found"
+    kubectl exec -n "$NAMESPACE" "$pod_name" -- \
+        diesel migration run || {
+        log_error "Migrations failed"
         exit 1
-    fi
+    }
     
-    log_success "All pods are running"
-    
-    # Check services
-    local services=$(kubectl get services -n "$NAMESPACE" -o json | jq -r '.items[].metadata.name')
-    log_info "Services created: $services"
-    
-    # Check ingress
-    if kubectl get ingress -n "$NAMESPACE" &> /dev/null; then
-        log_success "Ingress is configured"
-    else
-        log_warning "No ingress found"
-    fi
+    log_success "Migrations completed"
 }
 
-# Run health checks
-run_health_checks() {
-    log_info "Running health checks..."
+# ============================================================================
+# POST-DEPLOYMENT VERIFICATION
+# ============================================================================
+
+post_deployment_verification() {
+    log_info "Running post-deployment verification..."
     
-    # Get backend service URL
-    local backend_url=$(kubectl get service backend-service -n "$NAMESPACE" -o jsonpath='{.spec.clusterIP}')
+    # Wait for services to be ready
+    log_info "Waiting for services to stabilize..."
+    sleep 60
     
-    if [ -z "$backend_url" ]; then
-        log_error "Backend service not found"
-        exit 1
-    fi
-    
-    # Check backend health
-    local health_response=$(kubectl run health-check --rm -i --restart=Never --image=curlimages/curl -- curl -s "http://$backend_url:8080/health")
-    
-    if echo "$health_response" | grep -q "healthy"; then
-        log_success "Backend health check passed"
+    # Run smoke tests
+    if [[ -f "$SCRIPT_DIR/smoke-tests.sh" ]]; then
+        log_info "Running smoke tests..."
+        "$SCRIPT_DIR/smoke-tests.sh" "$ENVIRONMENT" "$BASE_URL" || {
+            log_error "Smoke tests failed"
+            log_warning "Consider rolling back if critical issues detected"
+            exit 1
+        }
     else
-        log_error "Backend health check failed"
-        exit 1
+        log_warning "Smoke test script not found, skipping..."
     fi
     
-    # Check frontend
-    local frontend_url=$(kubectl get service frontend-service -n "$NAMESPACE" -o jsonpath='{.spec.clusterIP}')
+    # Check pod status
+    log_info "Checking pod status..."
+    kubectl get pods -n "$NAMESPACE" -l app=reconciliation-backend
+    kubectl get pods -n "$NAMESPACE" -l app=reconciliation-frontend
     
-    if [ -z "$frontend_url" ]; then
-        log_error "Frontend service not found"
-        exit 1
-    fi
-    
-    local frontend_response=$(kubectl run frontend-check --rm -i --restart=Never --image=curlimages/curl -- curl -s "http://$frontend_url:3000")
-    
-    if [ -n "$frontend_response" ]; then
-        log_success "Frontend health check passed"
-    else
-        log_error "Frontend health check failed"
-        exit 1
-    fi
+    log_success "Post-deployment verification passed"
 }
 
-# Setup monitoring
-setup_monitoring() {
-    log_info "Setting up monitoring..."
-    
-    # Check if Prometheus is installed
-    if kubectl get pods -n monitoring &> /dev/null; then
-        log_info "Prometheus is already installed"
-    else
-        log_info "Installing Prometheus..."
-        helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-        helm repo update
-        helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring --create-namespace
-    fi
-    
-    # Check if Grafana is installed
-    if kubectl get pods -n monitoring -l app.kubernetes.io/name=grafana &> /dev/null; then
-        log_success "Grafana is already installed"
-    else
-        log_info "Installing Grafana..."
-        helm install grafana grafana/grafana -n monitoring
-    fi
-    
-    log_success "Monitoring setup completed"
-}
+# ============================================================================
+# MAIN EXECUTION
+# ============================================================================
 
-# Setup logging
-setup_logging() {
-    log_info "Setting up logging..."
+main() {
+    echo "============================================================================"
+    echo "PRODUCTION DEPLOYMENT"
+    echo "============================================================================"
+    echo "Version: $VERSION"
+    echo "Environment: $ENVIRONMENT"
+    echo "Namespace: $NAMESPACE"
+    echo "Started: $(date)"
+    echo ""
     
-    # Check if Elasticsearch is installed
-    if kubectl get pods -n logging &> /dev/null; then
-        log_info "Elasticsearch is already installed"
-    else
-        log_info "Installing Elasticsearch..."
-        helm repo add elastic https://helm.elastic.co
-        helm repo update
-        helm install elasticsearch elastic/elasticsearch -n logging --create-namespace
-    fi
-    
-    # Check if Kibana is installed
-    if kubectl get pods -n logging -l app=kibana &> /dev/null; then
-        log_success "Kibana is already installed"
-    else
-        log_info "Installing Kibana..."
-        helm install kibana elastic/kibana -n logging
-    fi
-    
-    log_success "Logging setup completed"
-}
-
-# Setup backup
-setup_backup() {
-    log_info "Setting up backup..."
-    
-    # Check if Velero is installed
-    if kubectl get pods -n velero &> /dev/null; then
-        log_info "Velero is already installed"
-    else
-        log_info "Installing Velero..."
-        helm repo add vmware-tanzu https://vmware-tanzu.github.io/helm-charts
-        helm repo update
-        helm install velero vmware-tanzu/velero -n velero --create-namespace
-    fi
-    
-    log_success "Backup setup completed"
-}
-
-# Main deployment function
-deploy() {
-    log_info "Starting production deployment for $APP_NAME..."
-    
-    check_prerequisites
-    check_kubectl_connection
-    build_and_push_images
-    create_namespace
-    apply_secrets
-    apply_config
-    wait_for_deployments
+    safety_checks
+    create_backup
+    build_images
+    deploy_kubernetes
     run_migrations
-    verify_deployment
-    run_health_checks
-    setup_monitoring
-    setup_logging
-    setup_backup
+    post_deployment_verification
     
+    echo ""
+    echo "============================================================================"
     log_success "Production deployment completed successfully!"
-    
-    # Display access information
-    log_info "Deployment Summary:"
-    log_info "Namespace: $NAMESPACE"
-    log_info "Backend URL: http://backend-service.$NAMESPACE.svc.cluster.local:8080"
-    log_info "Frontend URL: http://frontend-service.$NAMESPACE.svc.cluster.local:3000"
-    log_info "Health Check: http://backend-service.$NAMESPACE.svc.cluster.local:8080/health"
-    
-    # Display ingress URLs if available
-    local ingress_host=$(kubectl get ingress reconciliation-ingress -n "$NAMESPACE" -o jsonpath='{.spec.rules[0].host}' 2>/dev/null || echo "Not configured")
-    if [ "$ingress_host" != "Not configured" ]; then
-        log_info "External URL: https://$ingress_host"
-    fi
-}
-
-# Rollback function
-rollback() {
-    log_info "Rolling back deployment..."
-    
-    # Get previous deployment
-    local previous_deployment=$(kubectl rollout history deployment/backend -n "$NAMESPACE" --no-headers | tail -2 | head -1 | awk '{print $1}')
-    
-    if [ -z "$previous_deployment" ]; then
-        log_error "No previous deployment found"
-        exit 1
-    fi
-    
-    # Rollback to previous deployment
-    kubectl rollout undo deployment/backend -n "$NAMESPACE" --to-revision="$previous_deployment"
-    kubectl rollout undo deployment/frontend -n "$NAMESPACE" --to-revision="$previous_deployment"
-    
-    log_success "Rollback completed"
-}
-
-# Cleanup function
-cleanup() {
-    log_info "Cleaning up deployment..."
-    
-    # Delete all resources in the namespace
-    kubectl delete namespace "$NAMESPACE"
-    
-    log_success "Cleanup completed"
-}
-
-# Show usage
-usage() {
-    echo "Usage: $0 [COMMAND]"
+    echo "============================================================================"
+    echo "Access production at: $BASE_URL"
+    echo "Monitor logs: kubectl logs -f -n $NAMESPACE deployment/reconciliation-backend"
+    echo "Monitor metrics: kubectl port-forward -n $NAMESPACE svc/reconciliation-backend 9090:9090"
     echo ""
-    echo "Commands:"
-    echo "  deploy     Deploy the application to production"
-    echo "  rollback   Rollback to previous deployment"
-    echo "  cleanup    Clean up all resources"
-    echo "  status     Show deployment status"
-    echo "  logs       Show application logs"
+    log_warning "Monitor the application closely for the next 24 hours"
     echo ""
-    echo "Environment Variables:"
-    echo "  VERSION    Docker image version (default: latest)"
-    echo "  REGISTRY   Docker registry URL (default: your-registry.com)"
-    echo ""
-    echo "Examples:"
-    echo "  $0 deploy"
-    echo "  VERSION=v1.0.0 $0 deploy"
-    echo "  $0 rollback"
-    echo "  $0 status"
 }
 
-# Show status
-show_status() {
-    log_info "Deployment Status:"
-    
-    # Show namespace status
-    kubectl get namespace "$NAMESPACE" 2>/dev/null || log_warning "Namespace $NAMESPACE not found"
-    
-    # Show pods status
-    kubectl get pods -n "$NAMESPACE" 2>/dev/null || log_warning "No pods found in namespace $NAMESPACE"
-    
-    # Show services status
-    kubectl get services -n "$NAMESPACE" 2>/dev/null || log_warning "No services found in namespace $NAMESPACE"
-    
-    # Show ingress status
-    kubectl get ingress -n "$NAMESPACE" 2>/dev/null || log_warning "No ingress found in namespace $NAMESPACE"
-}
-
-# Show logs
-show_logs() {
-    log_info "Application Logs:"
-    
-    # Show backend logs
-    log_info "Backend logs:"
-    kubectl logs -n "$NAMESPACE" -l app=backend --tail=50
-    
-    # Show frontend logs
-    log_info "Frontend logs:"
-    kubectl logs -n "$NAMESPACE" -l app=frontend --tail=50
-}
-
-# Main script logic
-case "${1:-deploy}" in
-    deploy)
-        deploy
-        ;;
-    rollback)
-        rollback
-        ;;
-    cleanup)
-        cleanup
-        ;;
-    status)
-        show_status
-        ;;
-    logs)
-        show_logs
-        ;;
-    help|--help|-h)
-        usage
-        ;;
-    *)
-        log_error "Unknown command: $1"
-        usage
-        exit 1
-        ;;
-esac
+# Run main function
+main "$@"

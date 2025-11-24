@@ -155,19 +155,31 @@ class ErrorTrackingService {
     switch (error.severity) {
       case 'critical':
         logger.error(logMessage, error.context);
-        console.error('🚨 Critical Error:', error);
+        // Keep console.error for critical errors in development for immediate visibility
+        if (import.meta.env.DEV) {
+          console.error('🚨 Critical Error:', error);
+        }
         break;
       case 'high':
         logger.error(logMessage, error.context);
-        console.error('❌ Error:', error);
+        // Keep console.error for high severity errors in development
+        if (import.meta.env.DEV) {
+          console.error('❌ Error:', error);
+        }
         break;
       case 'medium':
         logger.warn(logMessage, error.context);
-        console.warn('⚠️  Warning:', error);
+        // Only log to console in development
+        if (import.meta.env.DEV) {
+          console.warn('⚠️  Warning:', error);
+        }
         break;
       case 'low':
         logger.info(logMessage, error.context);
-        console.info('ℹ️  Info:', error);
+        // Only log to console in development
+        if (import.meta.env.DEV) {
+          console.info('ℹ️  Info:', error);
+        }
         break;
     }
   }

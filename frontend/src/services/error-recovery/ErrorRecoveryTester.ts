@@ -119,24 +119,53 @@ export class ErrorRecoveryTester {
 
   private async executeTestWithRetry(test: ErrorRecoveryTest): Promise<ErrorRecoveryTestResult> {
     let lastError: Error | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
 
     for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
       try {
+        // Create timeout promise with cleanup
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            reject(new Error('Test timeout'));
+          }, this.config.testTimeout);
+        });
+
         const result = await Promise.race([
-          test.testFunction(),
-          new Promise<never>((_, reject) =>
-            setTimeout(() => reject(new Error('Test timeout')), this.config.testTimeout)
-          ),
+          test.testFunction().finally(() => {
+            // Cleanup timeout if test completes before timeout
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+            }
+          }),
+          timeoutPromise,
         ]);
+
+        // Cleanup timeout on success
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
 
         return result;
       } catch (error) {
+        // Cleanup timeout on error
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+          timeoutId = null;
+        }
+
         lastError = error instanceof Error ? error : new Error('Unknown error');
 
         if (attempt < this.config.retryAttempts) {
           await new Promise((resolve) => setTimeout(resolve, this.config.retryDelay * attempt));
         }
       }
+    }
+
+    // Final cleanup
+    if (timeoutId) {
+      clearTimeout(timeoutId);
     }
 
     return {

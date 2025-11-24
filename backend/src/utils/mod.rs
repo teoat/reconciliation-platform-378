@@ -11,6 +11,7 @@ pub mod error_logging;
 pub mod file;
 pub mod schema_verification;
 pub mod string;
+pub mod tiered_error_handling;
 
 pub use authorization::{
     check_admin_permission, check_job_access, check_job_permission, check_project_permission,

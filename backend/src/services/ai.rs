@@ -37,6 +37,12 @@ pub struct AIService {
     pub gemini_key: Option<String>,
 }
 
+impl Default for AIService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AIService {
     pub fn new() -> Self {
         Self {

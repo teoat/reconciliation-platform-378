@@ -37,7 +37,7 @@ Create a `.env` file in the `mcp-server` directory:
 ```env
 DATABASE_URL=postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app
 REDIS_URL=redis://:redis_pass@localhost:6379
-PROJECT_ROOT=/Users/Arief/Desktop/378
+PROJECT_ROOT=/Users/Arief/Documents/GitHub/reconciliation-platform-378
 ```
 
 ## Usage
@@ -51,11 +51,11 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
   "mcpServers": {
     "reconciliation-platform": {
       "command": "node",
-      "args": ["/Users/Arief/Desktop/378/mcp-server/dist/index.js"],
+      "args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/index.js"],
       "env": {
         "DATABASE_URL": "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app",
         "REDIS_URL": "redis://:redis_pass@localhost:6379",
-        "PROJECT_ROOT": "/Users/Arief/Desktop/378"
+        "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378"
       }
     }
   }

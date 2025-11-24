@@ -11,17 +11,18 @@ use crate::handlers::types::ApiResponse;
 
 /// Log entry from frontend
 #[derive(Debug, Deserialize)]
-struct FrontendLogEntry {
-    level: String,
-    message: String,
-    timestamp: Option<String>,
-    metadata: Option<HashMap<String, serde_json::Value>>,
+pub struct FrontendLogEntry {
+    pub level: String,
+    pub message: String,
+    #[allow(dead_code)]
+    pub timestamp: Option<String>,
+    pub metadata: Option<HashMap<String, serde_json::Value>>,
 }
 
 /// Request body for logs endpoint
 #[derive(Debug, Deserialize)]
 pub struct LogsRequest {
-    pub logs: Vec<FrontendLogEntry>,
+    pub logs: Vec<crate::handlers::logs::FrontendLogEntry>,
     pub timestamp: Option<String>,
 }
 

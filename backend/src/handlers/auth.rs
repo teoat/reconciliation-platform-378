@@ -57,10 +57,18 @@ pub async fn login(
 ) -> Result<HttpResponse, AppError> {
     let ip = get_client_ip(&http_req);
 
-    // Get user by email
+    // Get user by email with enhanced error handling (Tier 1: Critical)
     let user = match user_service.as_ref().get_user_by_email(&req.email).await {
         Ok(user) => user,
-        Err(_) => {
+        Err(e) => {
+            // Enhanced error logging for authentication failures
+            log::warn!(
+                "Authentication attempt failed - user not found: {} from IP: {} - Error: {}",
+                mask_email(&req.email),
+                ip,
+                e
+            );
+            
             // Log failed login attempt (user not found)
             if let Some(monitor) = security_monitor.as_ref() {
                 let event = SecurityEvent {
@@ -78,10 +86,13 @@ pub async fn login(
                         let mut meta = std::collections::HashMap::new();
                         meta.insert("email".to_string(), mask_email(&req.email));
                         meta.insert("user_agent".to_string(), get_user_agent(&http_req));
+                        meta.insert("error".to_string(), e.to_string());
                         meta
                     },
                 };
-                let _ = monitor.record_event(event).await;
+                if let Err(monitor_err) = monitor.record_event(event).await {
+                    log::error!("Failed to record security event: {}", monitor_err);
+                }
             }
             return Err(AppError::Authentication("Invalid credentials".to_string()));
         }
@@ -118,10 +129,18 @@ pub async fn login(
         }
     }
 
-    // Verify password
+    // Verify password with enhanced error handling (Tier 1: Critical)
     let password_valid = auth_service
         .as_ref()
-        .verify_password(&req.password, &user.password_hash)?;
+        .verify_password(&req.password, &user.password_hash)
+        .map_err(|e| {
+            log::error!(
+                "Password verification error for user {}: {}",
+                mask_email(&req.email),
+                e
+            );
+            AppError::Internal("Authentication service error".to_string())
+        })?;
     
     if !password_valid {
         // Record failed login attempt and check if account should be locked
@@ -206,9 +225,9 @@ pub async fn login(
 
         // Return appropriate error message based on lockout status
         if is_locked {
-            return Err(AppError::Authentication(format!(
-                "Account is temporarily locked due to too many failed login attempts. Please try again in 15 minutes."
-            )));
+            return Err(AppError::Authentication(
+                "Account is temporarily locked due to too many failed login attempts. Please try again in 15 minutes.".to_string()
+            ));
         } else {
             return Err(AppError::Authentication(format!(
                 "Invalid credentials. {} attempts remaining before account lockout.",

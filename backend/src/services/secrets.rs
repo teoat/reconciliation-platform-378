@@ -1,14 +1,22 @@
-//! Secrets Service - Environment Variable Reader
+//! Comprehensive Secrets Service
 //!
-//! Provides simple access to secrets stored in environment variables.
-//! Follows 12-Factor App principles for configuration management.
+//! Provides secure access to application secrets with validation, rotation support,
+//! and Kubernetes integration. Follows 12-Factor App principles.
 
 use crate::errors::{AppError, AppResult};
+use std::collections::HashMap;
 
-/// Secrets service for reading environment variables
-/// 
-/// This service provides a simple, standard way to access application secrets
-/// from environment variables. All secrets should be set in .env files (git-ignored).
+/// Secret metadata for validation and rotation
+#[derive(Debug, Clone)]
+pub struct SecretMetadata {
+    pub name: String,
+    pub min_length: usize,
+    pub required: bool,
+    pub rotation_interval_days: Option<u32>,
+    pub description: String,
+}
+
+/// Comprehensive secrets service with validation and management
 pub struct SecretsService;
 
 impl SecretsService {
@@ -23,27 +31,249 @@ impl SecretsService {
     pub fn get_secret(name: &str) -> AppResult<String> {
         std::env::var(name).map_err(|_| {
             AppError::NotFound(format!(
-                "Secret '{}' not found in environment variables. Please set it in your .env file.",
+                "Secret '{}' not found in environment variables. Please set it in your .env file or Kubernetes secrets.",
                 name
             ))
         })
     }
 
-    /// Get JWT secret from environment
+    /// Get secret with validation
     /// 
-    /// In production, JWT_SECRET must be set or the application will fail to start.
+    /// Validates the secret meets minimum requirements before returning.
+    pub fn get_secret_validated(name: &str, min_length: usize) -> AppResult<String> {
+        let secret = Self::get_secret(name)?;
+        
+        if secret.len() < min_length {
+            return Err(AppError::Config(format!(
+                "Secret '{}' must be at least {} characters long (found {} characters)",
+                name, min_length, secret.len()
+            )));
+        }
+
+        // Log warning in production if secret is too short
+        #[cfg(not(debug_assertions))]
+        if secret.len() < 32 {
+            log::warn!("Secret '{}' is shorter than recommended 32 characters", name);
+        }
+
+        Ok(secret)
+    }
+
+    /// Get secret with fallback
+    pub fn get_secret_or_default(name: &str, default: &str) -> String {
+        Self::get_secret(name).unwrap_or_else(|_| {
+            log::warn!("Secret '{}' not found, using default value", name);
+            default.to_string()
+        })
+    }
+
+    /// Validate all required secrets are present
+    pub fn validate_required_secrets() -> AppResult<()> {
+        let required = Self::get_secret_metadata()
+            .into_iter()
+            .filter(|meta| meta.required)
+            .collect::<Vec<_>>();
+
+        let mut missing = Vec::new();
+        let mut invalid = Vec::new();
+
+        for meta in required {
+            match Self::get_secret(&meta.name) {
+                Ok(value) => {
+                    if value.len() < meta.min_length {
+                        invalid.push(format!(
+                            "{}: must be at least {} characters (found {})",
+                            meta.name, meta.min_length, value.len()
+                        ));
+                    }
+                }
+                Err(_) => {
+                    missing.push(meta.name.clone());
+                }
+            }
+        }
+
+        if !missing.is_empty() || !invalid.is_empty() {
+            let mut error_msg = String::from("Secret validation failed:\n");
+            if !missing.is_empty() {
+                error_msg.push_str(&format!("Missing secrets: {}\n", missing.join(", ")));
+            }
+            if !invalid.is_empty() {
+                error_msg.push_str(&format!("Invalid secrets: {}", invalid.join(", ")));
+            }
+            return Err(AppError::Config(error_msg));
+        }
+
+        Ok(())
+    }
+
+    /// Get all secret metadata
+    pub fn get_secret_metadata() -> Vec<SecretMetadata> {
+        vec![
+            SecretMetadata {
+                name: "JWT_SECRET".to_string(),
+                min_length: 32,
+                required: true,
+                rotation_interval_days: Some(90),
+                description: "JWT token signing secret".to_string(),
+            },
+            SecretMetadata {
+                name: "JWT_REFRESH_SECRET".to_string(),
+                min_length: 32,
+                required: false,
+                rotation_interval_days: Some(90),
+                description: "JWT refresh token signing secret".to_string(),
+            },
+            SecretMetadata {
+                name: "DATABASE_URL".to_string(),
+                min_length: 10,
+                required: true,
+                rotation_interval_days: Some(180),
+                description: "PostgreSQL database connection URL".to_string(),
+            },
+            SecretMetadata {
+                name: "DB_PASSWORD".to_string(),
+                min_length: 16,
+                required: false,
+                rotation_interval_days: Some(180),
+                description: "PostgreSQL database password (if not in DATABASE_URL)".to_string(),
+            },
+            SecretMetadata {
+                name: "REDIS_URL".to_string(),
+                min_length: 10,
+                required: false,
+                rotation_interval_days: Some(180),
+                description: "Redis connection URL".to_string(),
+            },
+            SecretMetadata {
+                name: "REDIS_PASSWORD".to_string(),
+                min_length: 16,
+                required: false,
+                rotation_interval_days: Some(180),
+                description: "Redis authentication password".to_string(),
+            },
+            SecretMetadata {
+                name: "CSRF_SECRET".to_string(),
+                min_length: 32,
+                required: true,
+                rotation_interval_days: Some(180),
+                description: "CSRF protection secret".to_string(),
+            },
+            SecretMetadata {
+                name: "SMTP_PASSWORD".to_string(),
+                min_length: 8,
+                required: false,
+                rotation_interval_days: Some(90),
+                description: "SMTP server password for email sending".to_string(),
+            },
+            SecretMetadata {
+                name: "STRIPE_SECRET_KEY".to_string(),
+                min_length: 32,
+                required: false,
+                rotation_interval_days: None,
+                description: "Stripe payment integration secret key".to_string(),
+            },
+            SecretMetadata {
+                name: "STRIPE_WEBHOOK_SECRET".to_string(),
+                min_length: 32,
+                required: false,
+                rotation_interval_days: None,
+                description: "Stripe webhook signature secret".to_string(),
+            },
+            SecretMetadata {
+                name: "API_KEY".to_string(),
+                min_length: 32,
+                required: false,
+                rotation_interval_days: Some(90),
+                description: "API authentication key".to_string(),
+            },
+            SecretMetadata {
+                name: "GRAFANA_PASSWORD".to_string(),
+                min_length: 16,
+                required: false,
+                rotation_interval_days: Some(180),
+                description: "Grafana admin password".to_string(),
+            },
+            SecretMetadata {
+                name: "GOOGLE_CLIENT_ID".to_string(),
+                min_length: 20,
+                required: false,
+                rotation_interval_days: None,
+                description: "Google OAuth client ID".to_string(),
+            },
+            SecretMetadata {
+                name: "GOOGLE_CLIENT_SECRET".to_string(),
+                min_length: 20,
+                required: false,
+                rotation_interval_days: None,
+                description: "Google OAuth client secret".to_string(),
+            },
+            SecretMetadata {
+                name: "VITE_GOOGLE_CLIENT_ID".to_string(),
+                min_length: 20,
+                required: false,
+                rotation_interval_days: None,
+                description: "Google OAuth client ID for frontend".to_string(),
+            },
+            SecretMetadata {
+                name: "BACKUP_ENCRYPTION_KEY".to_string(),
+                min_length: 32,
+                required: false,
+                rotation_interval_days: Some(365),
+                description: "Backup encryption key for S3 backups".to_string(),
+            },
+            SecretMetadata {
+                name: "AWS_ACCESS_KEY_ID".to_string(),
+                min_length: 16,
+                required: false,
+                rotation_interval_days: Some(90),
+                description: "AWS access key for S3 backups".to_string(),
+            },
+            SecretMetadata {
+                name: "AWS_SECRET_ACCESS_KEY".to_string(),
+                min_length: 32,
+                required: false,
+                rotation_interval_days: Some(90),
+                description: "AWS secret access key for S3 backups".to_string(),
+            },
+            SecretMetadata {
+                name: "SENTRY_DSN".to_string(),
+                min_length: 20,
+                required: false,
+                rotation_interval_days: None,
+                description: "Sentry error tracking DSN".to_string(),
+            },
+            SecretMetadata {
+                name: "PASSWORD_MASTER_KEY".to_string(),
+                min_length: 32,
+                required: true,
+                rotation_interval_days: Some(365),
+                description: "Master key for password manager encryption".to_string(),
+            },
+        ]
+    }
+
+    /// Get secret metadata by name
+    pub fn get_metadata(name: &str) -> Option<SecretMetadata> {
+        Self::get_secret_metadata()
+            .into_iter()
+            .find(|meta| meta.name == name)
+    }
+
+    // Convenience methods for common secrets
+
+    /// Get JWT secret from environment (validated)
     pub fn get_jwt_secret() -> AppResult<String> {
-        Self::get_secret("JWT_SECRET")
+        Self::get_secret_validated("JWT_SECRET", 32)
     }
 
     /// Get JWT refresh secret from environment
     pub fn get_jwt_refresh_secret() -> AppResult<String> {
         Self::get_secret("JWT_REFRESH_SECRET")
+            .or_else(|_| Self::get_jwt_secret()) // Fallback to JWT_SECRET
     }
 
     /// Get database URL from environment
-    /// 
-    /// In production, DATABASE_URL must be set or the application will fail to start.
     pub fn get_database_url() -> AppResult<String> {
         Self::get_secret("DATABASE_URL")
     }
@@ -53,14 +283,19 @@ impl SecretsService {
         Self::get_secret("DB_PASSWORD")
     }
 
+    /// Get Redis URL from environment
+    pub fn get_redis_url() -> AppResult<String> {
+        Self::get_secret("REDIS_URL")
+    }
+
     /// Get Redis password from environment
     pub fn get_redis_password() -> AppResult<String> {
         Self::get_secret("REDIS_PASSWORD")
     }
 
-    /// Get CSRF secret from environment
+    /// Get CSRF secret from environment (validated)
     pub fn get_csrf_secret() -> AppResult<String> {
-        Self::get_secret("CSRF_SECRET")
+        Self::get_secret_validated("CSRF_SECRET", 32)
     }
 
     /// Get SMTP password from environment
@@ -96,6 +331,61 @@ impl SecretsService {
     /// Get Google OAuth client secret from environment
     pub fn get_google_client_secret() -> AppResult<String> {
         Self::get_secret("GOOGLE_CLIENT_SECRET")
+    }
+
+    /// Get Google OAuth client ID for frontend
+    pub fn get_vite_google_client_id() -> AppResult<String> {
+        Self::get_secret("VITE_GOOGLE_CLIENT_ID")
+    }
+
+    /// Get backup encryption key
+    pub fn get_backup_encryption_key() -> AppResult<String> {
+        Self::get_secret_validated("BACKUP_ENCRYPTION_KEY", 32)
+    }
+
+    /// Get AWS access key ID
+    pub fn get_aws_access_key_id() -> AppResult<String> {
+        Self::get_secret("AWS_ACCESS_KEY_ID")
+    }
+
+    /// Get AWS secret access key
+    pub fn get_aws_secret_access_key() -> AppResult<String> {
+        Self::get_secret("AWS_SECRET_ACCESS_KEY")
+    }
+
+    /// Get Sentry DSN
+    pub fn get_sentry_dsn() -> AppResult<String> {
+        Self::get_secret("SENTRY_DSN")
+    }
+
+    /// Get password master key (validated)
+    pub fn get_password_master_key() -> AppResult<String> {
+        Self::get_secret_validated("PASSWORD_MASTER_KEY", 32)
+    }
+
+    /// List all available secrets (for debugging, masks values)
+    pub fn list_secrets() -> HashMap<String, String> {
+        let mut secrets = HashMap::new();
+        let metadata = Self::get_secret_metadata();
+
+        for meta in metadata {
+            match Self::get_secret(&meta.name) {
+                Ok(value) => {
+                    // Mask secret value (show first 4 and last 4 chars)
+                    let masked = if value.len() > 8 {
+                        format!("{}...{}", &value[..4], &value[value.len()-4..])
+                    } else {
+                        "***".to_string()
+                    };
+                    secrets.insert(meta.name, masked);
+                }
+                Err(_) => {
+                    secrets.insert(meta.name, "NOT SET".to_string());
+                }
+            }
+        }
+
+        secrets
     }
 }
 

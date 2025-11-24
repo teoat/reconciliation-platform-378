@@ -392,69 +392,143 @@ class WebSocketService {
 
   handleMessage(data: string | Blob) {
     try {
-      const dataString = typeof data === 'string' ? data : '';
-      if (!dataString) return;
-      const message: WebSocketMessage = JSON.parse(dataString);
-
-      switch (message.type) {
-        case MessageType.PONG:
-          if (this.pongTimer) {
-            clearTimeout(this.pongTimer);
-            this.pongTimer = undefined;
-          }
-          break;
-
-        case MessageType.USER_JOINED:
-          this.handleUserJoined(message);
-          break;
-
-        case MessageType.USER_LEFT:
-          this.handleUserLeft(message);
-          break;
-
-        case MessageType.USER_PRESENCE:
-          this.handleUserPresence(message);
-          break;
-
-        case MessageType.CURSOR_MOVE:
-          this.handleCursorMove(message);
-          break;
-
-        case MessageType.SELECTION_CHANGE:
-          this.handleSelectionChange(message);
-          break;
-
-        case MessageType.TEXT_EDIT:
-          this.handleTextEdit(message);
-          break;
-
-        case MessageType.FIELD_UPDATE:
-          this.handleFieldUpdate(message);
-          break;
-
-        case MessageType.DATA_SYNC:
-          this.handleDataSync(message);
-          break;
-
-        case MessageType.CONFLICT_RESOLUTION:
-          this.handleConflictResolution(message);
-          break;
-
-        case MessageType.NOTIFICATION:
-          this.handleNotification(message);
-          break;
-
-        case MessageType.ERROR:
-          this.handleError(message);
-          break;
-
-        default:
-          logger.warning('Unknown message type', { messageType: message.type });
+      // Handle Blob data by converting to string
+      let dataString: string;
+      if (typeof data === 'string') {
+        dataString = data;
+      } else if (data instanceof Blob) {
+        // For Blob, we need to read it asynchronously
+        // This is a limitation - we'll log and return early
+        logger.warning('Received Blob data in WebSocket message - async conversion not supported in sync handler', {
+          blobSize: data.size,
+          blobType: data.type,
+        });
+        return;
+      } else {
+        logger.warning('Received unknown data type in WebSocket message', { dataType: typeof data });
+        return;
       }
 
-      this.emit('message', message);
+      // Validate data is not empty
+      if (!dataString || dataString.trim().length === 0) {
+        logger.warning('Received empty WebSocket message');
+        return;
+      }
+
+      // Parse JSON with proper error handling
+      let message: WebSocketMessage;
+      try {
+        message = JSON.parse(dataString);
+      } catch (parseError) {
+        logger.error('Failed to parse WebSocket message JSON', {
+          error: parseError instanceof Error ? parseError.message : String(parseError),
+          dataPreview: dataString.substring(0, 100), // Log first 100 chars for debugging
+          dataLength: dataString.length,
+        });
+        // Emit error event for error handling system
+        this.emit('error', {
+          type: 'parse_error',
+          message: 'Failed to parse WebSocket message',
+          originalError: parseError,
+        });
+        return;
+      }
+
+      // Validate message structure
+      if (!message || typeof message !== 'object') {
+        logger.error('Invalid WebSocket message structure - not an object', { message });
+        return;
+      }
+
+      if (!message.type || typeof message.type !== 'string') {
+        logger.error('Invalid WebSocket message - missing or invalid type field', { message });
+        return;
+      }
+
+      // Handle message based on type
+      try {
+        switch (message.type) {
+          case MessageType.PONG:
+            if (this.pongTimer) {
+              clearTimeout(this.pongTimer);
+              this.pongTimer = undefined;
+            }
+            break;
+
+          case MessageType.USER_JOINED:
+            this.handleUserJoined(message);
+            break;
+
+          case MessageType.USER_LEFT:
+            this.handleUserLeft(message);
+            break;
+
+          case MessageType.USER_PRESENCE:
+            this.handleUserPresence(message);
+            break;
+
+          case MessageType.CURSOR_MOVE:
+            this.handleCursorMove(message);
+            break;
+
+          case MessageType.SELECTION_CHANGE:
+            this.handleSelectionChange(message);
+            break;
+
+          case MessageType.TEXT_EDIT:
+            this.handleTextEdit(message);
+            break;
+
+          case MessageType.FIELD_UPDATE:
+            this.handleFieldUpdate(message);
+            break;
+
+          case MessageType.DATA_SYNC:
+            this.handleDataSync(message);
+            break;
+
+          case MessageType.CONFLICT_RESOLUTION:
+            this.handleConflictResolution(message);
+            break;
+
+          case MessageType.NOTIFICATION:
+            this.handleNotification(message);
+            break;
+
+          case MessageType.ERROR:
+            this.handleError(message);
+            break;
+
+          default:
+            logger.warning('Unknown message type', { messageType: message.type });
+        }
+
+        this.emit('message', message);
+      } catch (handlerError) {
+        // Error in message handler - log and emit error event
+        logger.error('Error handling WebSocket message', {
+          error: handlerError instanceof Error ? handlerError.message : String(handlerError),
+          messageType: message.type,
+          messageId: message.id,
+        });
+        this.emit('error', {
+          type: 'handler_error',
+          message: `Error handling ${message.type} message`,
+          originalError: handlerError,
+          messageType: message.type,
+        });
+      }
     } catch (error: unknown) {
-      logger.error('Failed to parse WebSocket message', { error });
+      // Catch-all for any unexpected errors
+      logger.error('Unexpected error in WebSocket message handler', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+      this.emit('error', {
+        type: 'unexpected_error',
+        message: 'Unexpected error processing WebSocket message',
+        originalError: error,
+      });
     }
   }
 

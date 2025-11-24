@@ -2,7 +2,42 @@
  * Help Content Service
  * 
  * Manages help content, search, and categorization for contextual help system.
+ * Provides search functionality with relevance scoring, category filtering,
+ * and related article suggestions.
+ * 
+ * @example
+ * ```typescript
+ * import { helpContentService } from '@/services/helpContentService';
+ * 
+ * // Search help content
+ * const results = helpContentService.search('project creation');
+ * 
+ * // Get content by category
+ * const projectHelp = helpContentService.getContentByCategory('projects');
+ * 
+ * // Get related articles
+ * const related = helpContentService.getRelatedArticles('project-creation');
+ * ```
  */
+
+export interface HelpTip {
+  id: string;
+  content: string;
+}
+
+export interface HelpLink {
+  id: string;
+  label: string;
+  url: string;
+  type?: 'internal' | 'external' | 'documentation';
+}
+
+export interface InteractiveExample {
+  title: string;
+  description?: string;
+  code?: string;
+  demoUrl?: string;
+}
 
 export interface HelpContent {
   id: string;
@@ -13,6 +48,9 @@ export interface HelpContent {
   relatedArticles?: string[];
   videoUrl?: string;
   codeExamples?: string[];
+  tips?: HelpTip[];
+  links?: HelpLink[];
+  interactiveExample?: InteractiveExample;
   lastUpdated: string;
   views?: number;
   helpful?: number;
@@ -254,6 +292,43 @@ class HelpContentService {
       categories.add(content.category);
     });
     return Array.from(categories).sort();
+  }
+
+  /**
+   * Get popular help content based on views and helpful ratings
+   * @param limit Maximum number of popular items to return
+   * @returns Array of popular help content sorted by popularity
+   */
+  getPopular(limit: number = 5): HelpContent[] {
+    const allContent = Array.from(this.content.values());
+    
+    // Calculate popularity score: views + (helpful * 2) - (notHelpful * 0.5)
+    const scored = allContent.map((content) => {
+      const views = content.views || 0;
+      const helpful = content.helpful || 0;
+      const notHelpful = content.notHelpful || 0;
+      const popularityScore = views + (helpful * 2) - (notHelpful * 0.5);
+      
+      return { content, score: popularityScore };
+    });
+    
+    // Sort by popularity score (descending)
+    scored.sort((a, b) => b.score - a.score);
+    
+    // Return top N items
+    return scored.slice(0, limit).map((item) => item.content);
+  }
+
+  /**
+   * Track user feedback on help content
+   * @param contentId ID of the help content
+   * @param helpful Whether the content was helpful (true) or not helpful (false)
+   */
+  trackFeedback(contentId: string, helpful: boolean): void {
+    this.markHelpful(contentId, helpful);
+    
+    // In production, this would also send analytics event
+    // Example: analytics.track('help_feedback', { contentId, helpful });
   }
 }
 

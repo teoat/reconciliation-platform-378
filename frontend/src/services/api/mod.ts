@@ -39,7 +39,7 @@ export class ApiService {
    *     localStorage.setItem('token', response.data.token);
    *   }
    * } catch (error) {
-   *   console.error('Authentication failed:', error);
+   *   logger.error('Authentication failed', { error });
    * }
    * ```
    */
@@ -105,7 +105,7 @@ export class ApiService {
    * @example
    * ```typescript
    * const user = await ApiService.getCurrentUser();
-   * console.log(`Welcome, ${user.data.first_name}!`);
+   * logger.info(`Welcome, ${user.data.first_name}!`);
    * ```
    */
   static async getCurrentUser() {

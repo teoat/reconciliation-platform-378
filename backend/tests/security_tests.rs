@@ -6,7 +6,6 @@ use actix_web::{test, web, App, HttpRequest, HttpResponse};
 use serde_json::json;
 use uuid::Uuid;
 
-use reconciliation_backend::errors::AppError;
 use reconciliation_backend::handlers::*;
 use reconciliation_backend::middleware::security::{configure_security_middleware, SecurityConfig};
 use reconciliation_backend::services::{AuthService, UserService};

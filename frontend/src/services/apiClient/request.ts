@@ -97,7 +97,8 @@ export class RequestExecutor {
       const response = await this.makeRequest(url, requestInit, config);
       return await this.handleResponse(response);
     } catch (error) {
-      return this.handleError(error, endpoint, config);
+      // handleError throws, so we don't return its result
+      this.handleError(error, endpoint, config);
     }
   }
 
@@ -107,7 +108,11 @@ export class RequestExecutor {
     return `${baseUrl}${cleanEndpoint}`;
   }
 
-  private buildRequestInit(config: RequestConfig): RequestInit {
+  private buildRequestInit(config: RequestConfig): {
+    init: RequestInit;
+    abortController?: AbortController;
+    timeoutId?: ReturnType<typeof setTimeout>;
+  } {
     const init: RequestInit = {
       method: config.method,
       headers: config.headers,
@@ -117,61 +122,91 @@ export class RequestExecutor {
       init.body = typeof config.body === 'string' ? config.body : JSON.stringify(config.body);
     }
 
-    if (config.timeout) {
-      // Note: fetch doesn't support timeout directly, would need AbortController
-      const controller = new AbortController();
-      init.signal = controller.signal;
+    let abortController: AbortController | undefined;
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-      setTimeout(() => controller.abort(), config.timeout);
+    if (config.timeout) {
+      // Create AbortController for timeout
+      abortController = new AbortController();
+      init.signal = abortController.signal;
+
+      // Store timeout ID so it can be cleared
+      timeoutId = setTimeout(() => {
+        if (abortController && !abortController.signal.aborted) {
+          abortController.abort();
+        }
+      }, config.timeout);
     }
 
-    return init;
+    return { init, abortController, timeoutId };
   }
 
   private async makeRequest(
     url: string,
-    init: RequestInit,
+    requestInit: { init: RequestInit; abortController?: AbortController; timeoutId?: ReturnType<typeof setTimeout> },
     config: RequestConfig
   ): Promise<Response> {
+    const { init, timeoutId } = requestInit;
     let lastError: Error | null = null;
 
-    for (let attempt = 0; attempt <= (config.retries || 0); attempt++) {
-      try {
-        const response = await fetch(url, init);
+    try {
+      for (let attempt = 0; attempt <= (config.retries || 0); attempt++) {
+        try {
+          const response = await fetch(url, init);
 
-        // Don't retry successful responses or client errors (4xx)
-        if (response.ok || (response.status >= 400 && response.status < 500)) {
-          return response;
-        }
-
-        // Retry server errors (5xx) and network errors
-        if (attempt < (config.retries || 0)) {
-          const delay = this.calculateDelay(attempt);
-          await this.delay(delay);
-          continue;
-        }
-
-        return response;
-      } catch (error) {
-        if (error instanceof Error) {
-          lastError = error;
-          // Don't retry client errors
-          if (error.name === 'TypeError') {
-            throw error;
+          // Clear timeout on successful response
+          if (timeoutId) {
+            clearTimeout(timeoutId);
           }
-        } else {
-          lastError = error instanceof Error ? error : new Error(String(error));
-        }
 
-        if (attempt < (config.retries || 0)) {
-          const delay = this.calculateDelay(attempt);
-          await this.delay(delay);
-          continue;
+          // Don't retry successful responses or client errors (4xx)
+          if (response.ok || (response.status >= 400 && response.status < 500)) {
+            return response;
+          }
+
+          // Retry server errors (5xx) and network errors
+          if (attempt < (config.retries || 0)) {
+            const delay = this.calculateDelay(attempt);
+            await this.delay(delay);
+            continue;
+          }
+
+          return response;
+        } catch (error) {
+          // Clear timeout on error
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+
+          if (error instanceof Error) {
+            lastError = error;
+            // Don't retry abort errors (timeout or manual abort)
+            if (error.name === 'AbortError') {
+              throw new Error('Request timeout or aborted');
+            }
+            // Don't retry client errors
+            if (error.name === 'TypeError') {
+              throw error;
+            }
+          } else {
+            lastError = error instanceof Error ? error : new Error(String(error));
+          }
+
+          if (attempt < (config.retries || 0)) {
+            const delay = this.calculateDelay(attempt);
+            await this.delay(delay);
+            continue;
+          }
         }
       }
-    }
 
-    throw lastError || new Error('Request failed after retries');
+      throw lastError || new Error('Request failed after retries');
+    } finally {
+      // Ensure timeout is cleared even if request completes
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
   }
 
   private calculateDelay(attempt: number): number {
@@ -197,11 +232,44 @@ export class RequestExecutor {
       undefined;
 
     if (contentType && contentType.includes('application/json')) {
-      const data = await response.json();
+      // Parse JSON with proper error handling
+      let data: unknown;
+      try {
+        data = await response.json();
+      } catch (parseError) {
+        // JSON parsing failed - try to get text for better error message
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch {
+          errorText = 'Unable to read response body';
+        }
+
+        const error = new Error(
+          `Failed to parse JSON response: ${parseError instanceof Error ? parseError.message : String(parseError)}`
+        ) as Error & {
+          correlationId?: string;
+          statusCode?: number;
+          responseData?: unknown;
+          originalError?: unknown;
+        };
+        error.statusCode = response.status;
+        error.correlationId = correlationId;
+        error.responseData = { raw: errorText };
+        error.originalError = parseError;
+        throw error;
+      }
 
       if (!response.ok) {
         // Backend sends errors as: { error: "title", message: "user-friendly message", code: "ERROR_CODE" }
-        const errorMessage = data.message || data.error || `HTTP ${response.status}`;
+        const errorMessage =
+          (data && typeof data === 'object' && 'message' in data && typeof data.message === 'string'
+            ? data.message
+            : null) ||
+          (data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
+            ? data.error
+            : null) ||
+          `HTTP ${response.status}`;
         const error = new Error(errorMessage) as Error & {
           correlationId?: string;
           statusCode?: number;
@@ -213,24 +281,59 @@ export class RequestExecutor {
         throw error;
       }
 
-      return data;
+      return data as T;
     } else {
+      // Non-JSON response
       if (!response.ok) {
-        const error = new Error(`HTTP ${response.status}: ${response.statusText}`) as Error & {
+        let errorText = '';
+        try {
+          errorText = await response.text();
+        } catch {
+          errorText = response.statusText || 'Unknown error';
+        }
+
+        const error = new Error(`HTTP ${response.status}: ${errorText}`) as Error & {
           correlationId?: string;
           statusCode?: number;
+          responseData?: unknown;
         };
         error.statusCode = response.status;
         error.correlationId = correlationId;
+        error.responseData = { raw: errorText };
         throw error;
       }
 
-      return await response.text();
+      // Read text response with error handling
+      try {
+        return (await response.text()) as T;
+      } catch (readError) {
+        const error = new Error(
+          `Failed to read response body: ${readError instanceof Error ? readError.message : String(readError)}`
+        ) as Error & {
+          correlationId?: string;
+          statusCode?: number;
+          originalError?: unknown;
+        };
+        error.statusCode = response.status;
+        error.correlationId = correlationId;
+        error.originalError = readError;
+        throw error;
+      }
     }
   }
 
   private handleError(error: Error | unknown, endpoint: string, config: RequestConfig): never {
-    const errorMessage = getErrorMessage(error);
+    let errorMessage = getErrorMessage(error);
+    
+    // Provide better error messages for abort errors
+    if (error instanceof Error && error.name === 'AbortError') {
+      if (config.timeout) {
+        errorMessage = `Request timeout after ${config.timeout}ms`;
+      } else {
+        errorMessage = 'Request was aborted';
+      }
+    }
+    
     const apiError = {
       message: errorMessage,
       statusCode:

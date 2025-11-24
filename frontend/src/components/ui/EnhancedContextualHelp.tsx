@@ -102,8 +102,7 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
   const handleFeedback = useCallback(
     (helpful: boolean) => {
       if (helpContent) {
-        // helpContentService.trackFeedback(helpContent.id, helpful);
-        // TODO: Implement trackFeedback method in HelpContentService
+        helpContentService.trackFeedback(helpContent.id, helpful);
       }
     },
     [helpContent]
@@ -186,7 +185,6 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
             <div className="text-sm text-gray-700 mb-3">{helpContent.content}</div>
 
             {/* Tips */}
-            {/* TODO: Add tips property to HelpContent interface
             {helpContent.tips && helpContent.tips.length > 0 && (
               <div className="mb-3">
                 <h4 className="text-xs font-semibold text-gray-600 mb-2">Tips:</h4>
@@ -203,7 +201,6 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
                 </ul>
               </div>
             )}
-            */}
 
             {/* Video Link */}
             {helpContent.videoUrl && (
@@ -276,7 +273,6 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
             )}
 
             {/* Links */}
-            {/* TODO: Add links property to HelpContent interface
             {helpContent.links && helpContent.links.length > 0 && (
               <div className="border-t border-gray-200 pt-3 mb-3">
                 <h4 className="text-xs font-semibold text-gray-600 mb-2 flex items-center">
@@ -284,15 +280,15 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
                   Learn More:
                 </h4>
                 <ul className="space-y-1">
-                  {helpContent.links.map((link, index) => (
-                    <li key={index}>
+                  {helpContent.links.map((link) => (
+                    <li key={link.id}>
                       <a
                         href={link.url}
                         target={link.type === 'external' ? '_blank' : undefined}
                         rel="noopener noreferrer"
                         className="text-xs text-blue-600 hover:text-blue-800 hover:underline flex items-center"
                       >
-                        {link.title}
+                        {link.label}
                         {link.type === 'external' && <ExternalLink className="h-3 w-3 ml-1" />}
                       </a>
                     </li>
@@ -300,7 +296,6 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
                 </ul>
               </div>
             )}
-            */}
 
             {/* Feedback */}
             <div className="border-t border-gray-200 pt-3 flex items-center justify-between">

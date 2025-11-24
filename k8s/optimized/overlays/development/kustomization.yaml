@@ -1,0 +1,34 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: reconciliation-platform
+
+resources:
+  - ../../base
+
+replicas:
+  - name: backend
+    count: 1
+  - name: frontend
+    count: 1
+
+commonLabels:
+  environment: development
+  tier: development
+
+images:
+  - name: reconciliation-backend
+    newName: reconciliation-backend
+    newTag: latest
+  - name: reconciliation-frontend
+    newName: reconciliation-frontend
+    newTag: latest
+
+configMapGenerator:
+  - name: reconciliation-config
+    behavior: merge
+    literals:
+      - APP_ENV=development
+      - RUST_LOG=debug
+      - RUST_BACKTRACE=full
+
