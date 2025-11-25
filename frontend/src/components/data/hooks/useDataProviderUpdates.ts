@@ -4,7 +4,7 @@ import { useCrossPageDataUpdates } from '../updates';
 import { createInitialCrossPageData } from '../initialData';
 import type { CrossPageData } from '../types';
 
-export const useDataProviderUpdates = (
+export const useDataProviderUpdates = <T = unknown>(
   crossPageData: CrossPageData,
   setCrossPageData: React.Dispatch<React.SetStateAction<CrossPageData>>,
   checkPermission: (userId: string, resource: string, action: string) => boolean,
@@ -17,7 +17,7 @@ export const useDataProviderUpdates = (
     userAgent?: string;
     details?: Record<string, unknown>;
   }) => void,
-  encryptData: (data: unknown, dataType: string) => string,
+  encryptData: <TData>(data: TData, dataType: string) => TData & { _encrypted: boolean; _encryptionType: string; _encryptedAt: string },
   isSecurityEnabled: boolean,
   syncConnected: boolean,
   wsSyncData: (data: CrossPageData) => void

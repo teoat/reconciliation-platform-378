@@ -4,7 +4,11 @@
 // NOTE: Types are being split into domain-specific files for better organization.
 // Domain files are imported and re-exported here for backward compatibility.
 
-import { ReconciliationMetadata, Metadata } from '../frontend/src/types/metadata';
+import { ReconciliationMetadata, Metadata } from './metadata';
+
+// Re-export metadata types
+export { ReconciliationMetadata, Metadata };
+export type { MetadataValue } from './metadata';
 
 // Re-export from domain-specific files
 export * from './user';
