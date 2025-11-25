@@ -4,7 +4,6 @@ import { logger } from '@/services/logger';
 import { useState, useCallback, useMemo } from 'react';
 import { Workflow, Zap } from 'lucide-react';
 import { WorkflowStageComponent } from './workflow/WorkflowStage';
-import { WorkflowProgress } from './workflow/WorkflowProgress';
 import { WorkflowBreadcrumbs } from './workflow/WorkflowBreadcrumbs';
 import { WorkflowControls } from './workflow/WorkflowControls';
 
