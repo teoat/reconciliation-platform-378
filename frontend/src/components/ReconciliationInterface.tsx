@@ -121,52 +121,17 @@ const loadJobResults = useCallback(
                 error: errorMessage,
               });
             },
-          }
-
-          const data = response.data as
-            | {
-                data?: ReconciliationResult[];
-                page?: number;
-                per_page?: number;
-                total?: number;
-              }
-            | undefined;
-          setResults(data?.data || []);
-        },
-        {
-          retryCondition: (error: Error | unknown) => {
-            if (!(error instanceof Error)) return false;
-            return (
-              error.name === 'NetworkError' ||
-              error.message.includes('timeout') ||
-              error.message.includes('502') ||
-              error.message.includes('503') ||
-              error.message.includes('504')
-            );
-          },
-          onRetry: (attempt, error) => {
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            logger.warning('Retrying loadJobResults', {
-              jobId,
-              page,
-              perPage,
-              attempt,
-              error: errorMessage,
-            });
-          },
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          logger.error('Failed to load job results', { jobId, page, perPage, error: errorMessage });
+          setResults([]);
+        } finally {
+          setResultsLoading(false);
         }
-      );
-    } catch (err) {
-      logger.error('Failed to load job results', {
-        jobId,
-        page,
-        perPage,
-        error: err,
-      });
-    } finally {
-      setResultsLoading(false);
-    }
-  }, []);
+      },
+      [apiClient]
+    );
 
   // Handle results modal open/close
   const handleOpenResults = useCallback(

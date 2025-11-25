@@ -156,7 +156,7 @@ const subId = subscribe(`collaboration:session:${sessionId}`, (data: {
               setComments((prev) => [comment, ...prev]);
             }
           }
-        );
+        });
         setSessionSubscriptionId(subId);
 
         logger.info('Joined collaboration session', { sessionId });
@@ -280,7 +280,7 @@ const usersSubId = subscribe('collaboration:users', (data: {
             lastActivity: new Date(user.lastSeen)
           })));
         }
-      );
+      });
       setUsersSubscriptionId(usersSubId);
 
 const activitiesSubId = subscribe('collaboration:activities', (data: {
@@ -305,7 +305,7 @@ const activitiesSubId = subscribe('collaboration:activities', (data: {
           };
           setActivities((prev) => [activity, ...prev].slice(0, 100));
         }
-      );
+      });
       setActivitiesSubscriptionId(activitiesSubId);
 
       logger.info('Collaboration dashboard initialized', { projectId });

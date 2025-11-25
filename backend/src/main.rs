@@ -4,6 +4,7 @@
 //! configures services, and starts the HTTP server.
 
 use actix_cors::Cors;
+use actix_web::middleware::Compress;
 use chrono::Utc;
 use futures::future;
 use reconciliation_backend::{
@@ -370,14 +371,14 @@ async fn async_main() -> std::io::Result<()> {
             .wrap(CorrelationIdMiddleware)
             // Add error handler middleware (ensures correlation IDs in error responses)
             .wrap(ErrorHandlerMiddleware)
+            // Add compression middleware (gzip, deflate, br)
+            .wrap(Compress::default())
             // Add security headers middleware (CSP, HSTS, X-Frame-Options, etc.)
             .wrap(SecurityHeadersMiddleware::new(SecurityHeadersConfig::default()))
             // Add auth rate limiting middleware (applies to /api/auth/* endpoints)
             .wrap(AuthRateLimitMiddleware::default())
             // Add CORS middleware (after other middleware)
             .wrap(cors)
-            // Note: Compression middleware temporarily removed due to type compatibility issues
-            // Can be re-added later with proper type handling
             // Configure app data with resilience-protected services
             .app_data(web::Data::new(database.clone()))
             .app_data(web::Data::new(cache.clone()))

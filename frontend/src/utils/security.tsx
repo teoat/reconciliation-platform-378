@@ -6,42 +6,11 @@ import type { User } from '@/types/backend-aligned';
 // SECURITY UTILITIES
 // ============================================================================
 
-/**
- * Sanitizes HTML content to prevent XSS attacks
- */
-export function sanitizeHTML(html: string): string {
-  const div = document.createElement('div');
-  div.textContent = html;
-  return div.innerHTML;
-}
+// Re-export sanitization functions from common module
+export { sanitizeHtml as sanitizeHTML, escapeHtml as escapeHTML, sanitizeInput } from './common/sanitization';
 
-/**
- * Escapes HTML special characters
- */
-export function escapeHTML(str: string): string {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-/**
- * Validates and sanitizes user input
- */
-export function sanitizeInput(input: string): string {
-  return input
-    .trim()
-    .replace(/[<>]/g, '') // Remove potential HTML tags
-    .replace(/javascript:/gi, '') // Remove javascript: protocol
-    .replace(/on\w+=/gi, ''); // Remove event handlers
-}
-
-/**
- * Validates email format
- */
-export function isValidEmail(email: string): boolean {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-}
+// Re-export validation functions from common module
+export { validateEmail as isValidEmail } from './common/validation';
 
 /**
  * Validates password strength

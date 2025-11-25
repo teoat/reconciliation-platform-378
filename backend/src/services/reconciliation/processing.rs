@@ -16,30 +16,20 @@ use diesel::RunQueryDsl;
 use super::job_management::{JobProgress, JobStatus};
 use super::matching::{ExactMatchingAlgorithm, FuzzyMatchingAlgorithm, MatchingAlgorithm};
 use super::types::FuzzyAlgorithmType;
-use super::types::MatchingRule;
+use super::processing_config::{ChunkedProcessingConfig, ChunkProcessingConfig};
 use crate::models::ReconciliationResult as ReconciliationResultType;
 
 /// Process reconciliation job in chunks with timeout protection
 pub async fn process_data_sources_chunked(
-    db: &Database,
-    job_id: Uuid,
-    source_a: &DataSource,
-    source_b: &DataSource,
-    matching_rules: &[MatchingRule],
-    confidence_threshold: f64,
-    chunk_size: usize,
-    _progress_sender: &tokio::sync::mpsc::Sender<JobProgress>,
-    status: &Arc<RwLock<JobStatus>>,
+    config: ChunkedProcessingConfig,
 ) -> AppResult<Vec<ReconciliationResultType>> {
     // Wrap processing in timeout to prevent stuck jobs
     let timeout_duration = std::time::Duration::from_secs(7200); // 2 hours default
+    let job_id = config.job_id; // Extract before move
     
     tokio::time::timeout(
         timeout_duration,
-        process_data_sources_chunked_internal(
-            db, job_id, source_a, source_b, matching_rules,
-            confidence_threshold, chunk_size, _progress_sender, status
-        )
+        process_data_sources_chunked_internal(config)
     ).await
     .map_err(|_| AppError::Internal(format!(
         "Job {} exceeded timeout of {} seconds",
@@ -50,43 +40,35 @@ pub async fn process_data_sources_chunked(
 
 /// Internal processing function (without timeout wrapper)
 async fn process_data_sources_chunked_internal(
-    db: &Database,
-    job_id: Uuid,
-    source_a: &DataSource,
-    source_b: &DataSource,
-    matching_rules: &[MatchingRule],
-    confidence_threshold: f64,
-    chunk_size: usize,
-    _progress_sender: &tokio::sync::mpsc::Sender<JobProgress>,
-    status: &Arc<RwLock<JobStatus>>,
+    config: ChunkedProcessingConfig,
 ) -> AppResult<Vec<ReconciliationResultType>> {
     let mut results = Vec::new();
 
     // Load actual records from data sources
-    let records_a = load_records_from_data_source(db, source_a).await?;
-    let records_b = load_records_from_data_source(db, source_b).await?;
+    let records_a = load_records_from_data_source(&config.db, &config.source_a).await?;
+    let records_b = load_records_from_data_source(&config.db, &config.source_b).await?;
 
     let total_records = records_a.len().max(records_b.len());
-    let total_chunks = total_records.div_ceil(chunk_size);
+    let total_chunks = total_records.div_ceil(config.chunk_size);
 
     // Update total records in job status
     {
-        let mut status_guard = status.write().await;
+        let mut status_guard = config.status.write().await;
         status_guard.total_records = Some(total_records as i32);
     }
 
     let exact_algorithm = ExactMatchingAlgorithm;
     let fuzzy_algorithm =
-        FuzzyMatchingAlgorithm::new(confidence_threshold, FuzzyAlgorithmType::Levenshtein);
+        FuzzyMatchingAlgorithm::new(config.confidence_threshold, FuzzyAlgorithmType::Levenshtein);
 
     for chunk_index in 0..total_chunks {
-        let start_record = chunk_index * chunk_size;
-        let end_record = ((chunk_index + 1) * chunk_size).min(total_records);
+        let start_record = chunk_index * config.chunk_size;
+        let end_record = ((chunk_index + 1) * config.chunk_size).min(total_records);
 
         // Update current phase
         let phase = format!("Processing chunk {}/{}", chunk_index + 1, total_chunks);
         update_job_status(
-            status,
+            &config.status,
             "processing",
             ((chunk_index as f64 / total_chunks as f64) * 80.0) as i32,
             &phase,
@@ -94,14 +76,17 @@ async fn process_data_sources_chunked_internal(
         .await;
 
         // Process chunk
-        let chunk_results = process_chunk(
-            source_a,
-            source_b,
-            matching_rules,
-            job_id,
-            confidence_threshold,
+        let chunk_config = ChunkProcessingConfig {
+            source_a: config.source_a.clone(),
+            source_b: config.source_b.clone(),
+            matching_rules: config.matching_rules.clone(),
+            job_id: config.job_id,
+            confidence_threshold: config.confidence_threshold,
             start_record,
             end_record,
+        };
+        let chunk_results = process_chunk(
+            chunk_config,
             &exact_algorithm,
             &fuzzy_algorithm,
         )
@@ -114,7 +99,7 @@ async fn process_data_sources_chunked_internal(
         let processed_records = end_record as i32;
         use bigdecimal::BigDecimal;
         use std::str::FromStr;
-        let threshold_bd = BigDecimal::from_str(&confidence_threshold.to_string())
+        let threshold_bd = BigDecimal::from_str(&config.confidence_threshold.to_string())
             .unwrap_or_else(|_| BigDecimal::from(0));
         let matched_records = results
             .iter()
@@ -128,7 +113,7 @@ async fn process_data_sources_chunked_internal(
         let unmatched_records = processed_records - matched_records;
 
         update_job_progress(
-            status,
+            &config.status,
             progress,
             processed_records,
             matched_records,
@@ -138,7 +123,7 @@ async fn process_data_sources_chunked_internal(
 
         // Update heartbeat to indicate job is still alive
         {
-            let mut status_guard = status.write().await;
+            let mut status_guard = config.status.write().await;
             status_guard.heartbeat();
         }
 
@@ -151,20 +136,14 @@ async fn process_data_sources_chunked_internal(
 
 /// Process a single chunk of data
 async fn process_chunk(
-    _source_a: &DataSource,
-    _source_b: &DataSource,
-    _matching_rules: &[MatchingRule],
-    job_id: Uuid,
-    confidence_threshold: f64,
-    start_record: usize,
-    end_record: usize,
+    config: ChunkProcessingConfig,
     _exact_algorithm: &dyn MatchingAlgorithm,
     _fuzzy_algorithm: &FuzzyMatchingAlgorithm,
 ) -> AppResult<Vec<ReconciliationResultType>> {
     let mut results = Vec::new();
 
     // Simulate processing records in this chunk
-    for i in start_record..end_record {
+    for i in config.start_record..config.end_record {
         // In real implementation, load actual records from sources
         // For now, create mock results
         let confidence = if i % 2 == 0 {
@@ -174,14 +153,14 @@ async fn process_chunk(
         };
 
         if let Some(conf) = confidence {
-            if conf >= confidence_threshold {
+            if conf >= config.confidence_threshold {
                 use bigdecimal::BigDecimal;
                 use std::str::FromStr;
                 let conf_bd =
                     BigDecimal::from_str(&conf.to_string()).unwrap_or_else(|_| BigDecimal::from(0));
                 results.push(ReconciliationResultType {
                     id: Uuid::new_v4(),
-                    job_id,
+                    job_id: config.job_id,
                     record_a_id: Uuid::new_v4(),
                     record_b_id: Some(Uuid::new_v4()),
                     match_type: MatchType::Exact.to_string(),

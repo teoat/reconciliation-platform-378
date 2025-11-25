@@ -2,7 +2,7 @@
 //!
 //! This module provides configuration structs to reduce function argument complexity
 
-use actix_web::http::HeaderMap;
+use actix_web::http::header::HeaderMap;
 use std::collections::HashMap;
 
 /// Configuration for logging a request

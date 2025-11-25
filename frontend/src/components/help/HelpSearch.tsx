@@ -115,11 +115,12 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
             }
           }}
           placeholder={placeholder}
-          autoFocus={autoFocus}
+          autoFocus={false}
           className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           aria-label="Search help articles"
           aria-expanded={showResults}
           aria-haspopup="listbox"
+          aria-controls="help-search-results"
           role="combobox"
         />
         {query && (
@@ -140,7 +141,7 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
           {isSearching ? (
             <div className="p-4 text-center text-gray-500">Searching...</div>
           ) : results.length > 0 ? (
-            <ul role="listbox" className="py-1">
+            <ul id="help-search-results" role="listbox" className="py-1">
               {results.map((result, index) => (
                 <li
                   key={result.content.id}
@@ -150,6 +151,13 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
                     index === selectedIndex ? 'bg-blue-50' : ''
                   }`}
                   onClick={() => handleSelectContent(result.content.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleSelectContent(result.content.id);
+                    }
+                  }}
+                  tabIndex={0}
                 >
                   <div className="flex items-start">
                     <BookOpen className="h-5 w-5 text-gray-400 mr-3 mt-0.5 flex-shrink-0" />

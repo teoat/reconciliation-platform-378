@@ -1,36 +1,20 @@
 /**
- * HTML sanitization utilities using DOMPurify
- * Protects against XSS attacks
+ * HTML sanitization utilities
+ * 
+ * @deprecated This file is deprecated. Use `@/utils/common/sanitization` instead.
+ * This file is kept for backward compatibility and will be removed in a future version.
+ * 
+ * Migration guide:
+ * - `sanitizeHtml()` → `@/utils/common/sanitization::sanitizeHtml()`
+ * - `sanitizeForReact()` → `@/utils/common/sanitization::sanitizeForReact()`
+ * - `sanitizeTextOnly()` → `@/utils/common/sanitization::sanitizeTextOnly()`
  */
 
-import DOMPurify from 'dompurify';
-
-/**
- * Sanitize HTML string for safe rendering
- * @param dirty - Untrusted HTML string
- * @returns Sanitized HTML string
- */
-export const sanitizeHtml = (dirty: string): string => {
-  return DOMPurify.sanitize(dirty, {
-    ALLOWED_TAGS: ['b', 'i', 'em', 'strong', 'a', 'p', 'br', 'ul', 'ol', 'li'],
-    ALLOWED_ATTR: ['href', 'target', 'rel'],
-  });
-};
-
-/**
- * Sanitize for React dangerouslySetInnerHTML
- * @param dirty - Untrusted HTML string
- * @returns Object with __html property
- */
-export const sanitizeForReact = (dirty: string) => {
-  return { __html: sanitizeHtml(dirty) };
-};
-
-/**
- * Strict sanitization - text only, no HTML
- * @param dirty - Untrusted string
- * @returns Plain text only
- */
-export const sanitizeTextOnly = (dirty: string): string => {
-  return DOMPurify.sanitize(dirty, { ALLOWED_TAGS: [] });
-};
+// Re-export from common module for backward compatibility
+export {
+  sanitizeHtml,
+  sanitizeForReact,
+  sanitizeTextOnly,
+  sanitizeInput,
+  escapeHtml,
+} from './common/sanitization';

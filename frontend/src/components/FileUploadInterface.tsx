@@ -412,7 +412,7 @@ const uploadFile = useCallback(async (file: File, request: FileUploadRequest): P
     if (!isConnected) return;
 
     // Subscribe to file processing updates
-const unsubscribeFileUpdate = subscribe('file_update', (data: {
+    const unsubscribeFileUpdate = subscribe('file_update', (data: {
       project_id: string;
       file_id: string;
       updates: Partial<{
@@ -427,13 +427,13 @@ const unsubscribeFileUpdate = subscribe('file_update', (data: {
           file.id === data.file_id 
             ? { ...file, ...data.updates, status: data.updates.status as FileInfo['status'] }
             : file
-        ))
+        ));
       }
-    );
+    });
 
     return () => {
-unsubscribe('file_update', unsubscribeFileUpdate)
-    }
+      unsubscribe('file_update', unsubscribeFileUpdate);
+    };
   }, [isConnected, projectId, subscribe, unsubscribe])
 
   // Load files on mount

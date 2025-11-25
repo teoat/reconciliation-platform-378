@@ -521,7 +521,6 @@ describe('AuthPage - Signup Functionality', () => {
       await userEvent.click(signUpLink);
 
       // Check for loading state (may be brief)
-      const loadingText = screen.queryByText(/loading google sign-in/i);
       // Loading state might be too fast to catch, but container should exist
       expect(screen.getByLabelText(/google sign-in/i)).toBeInTheDocument();
     });
@@ -690,7 +689,6 @@ describe('AuthPage - Signup Functionality', () => {
 
       // Should show validation error
       await waitFor(() => {
-        const error = screen.queryByText(/password/i);
         // Password validation should be present
         expect(passwordInput).toBeInTheDocument();
       });

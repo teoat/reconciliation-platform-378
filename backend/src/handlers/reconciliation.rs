@@ -618,28 +618,31 @@ pub async fn start_sample_onboarding(
         Ok(false) | Err(_) => file_a.clone(),
     };
 
+    use crate::services::data_source_config::CreateDataSourceConfig;
+    let config_a = CreateDataSourceConfig {
+        project_id: req.project_id,
+        name: "Sample Source A".to_string(),
+        source_type: "file".to_string(),
+        file_path: Some(file_a.to_string_lossy().to_string()),
+        file_size: None,
+        file_hash: None,
+        schema: None,
+    };
     let ds_a = ds_service
-        .create_data_source(
-            req.project_id,
-            "Sample Source A".to_string(),
-            "file".to_string(),
-            Some(file_a.to_string_lossy().to_string()),
-            None,
-            None,
-            None,
-        )
+        .create_data_source(config_a)
         .await?;
 
+    let config_b = CreateDataSourceConfig {
+        project_id: req.project_id,
+        name: "Sample Source B".to_string(),
+        source_type: "file".to_string(),
+        file_path: Some(file_b_path.to_string_lossy().to_string()),
+        file_size: None,
+        file_hash: None,
+        schema: None,
+    };
     let ds_b = ds_service
-        .create_data_source(
-            req.project_id,
-            "Sample Source B".to_string(),
-            "file".to_string(),
-            Some(file_b_path.to_string_lossy().to_string()),
-            None,
-            None,
-            None,
-        )
+        .create_data_source(config_b)
         .await?;
 
     // Create reconciliation job

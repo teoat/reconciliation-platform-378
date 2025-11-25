@@ -58,6 +58,15 @@ export const ProjectsPage: React.FC = () => {
               key={project.id}
               className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
               onClick={() => navigate(`/projects/${project.id}`)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  navigate(`/projects/${project.id}`);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`View project ${project.name}`}
             >
               <h2 className="text-xl font-semibold mb-2">{project.name}</h2>
               {project.description && (

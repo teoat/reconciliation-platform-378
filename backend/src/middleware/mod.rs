@@ -6,6 +6,8 @@
 pub mod auth;
 pub mod cache;
 pub mod logging;
+pub mod logging_config;
+pub mod logging_error_config;
 pub mod performance;
 pub mod security;
 pub mod validation;

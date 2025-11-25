@@ -301,12 +301,6 @@ const WorkflowOrchestrator = ({
     }
   }, [workflowStages, validateStageTransition, onDataSync, onStageChange]);
 
-  const goToPreviousStage = useCallback(() => {
-    const currentStageIndex = workflowStages.findIndex((stage) => stage.isActive);
-    if (currentStageIndex <= 0) {
-      return;
-    }
-
     const previousStageData = workflowStages[currentStageIndex - 1];
 
     setWorkflowStages((prev) =>

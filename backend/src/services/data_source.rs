@@ -13,6 +13,7 @@ use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::models::schema::data_sources;
 use crate::models::{DataSource, NewDataSource, UpdateDataSource};
+use super::data_source_config::{CreateDataSourceConfig, UpdateDataSourceConfig};
 
 /// Data source service
 pub struct DataSourceService {
@@ -27,27 +28,21 @@ impl DataSourceService {
     /// Create a new data source
     pub async fn create_data_source(
         &self,
-        project_id: Uuid,
-        name: String,
-        source_type: String,
-        file_path: Option<String>,
-        file_size: Option<i64>,
-        file_hash: Option<String>,
-        schema: Option<serde_json::Value>,
+        config: CreateDataSourceConfig,
     ) -> AppResult<DataSource> {
         let mut conn = self.db.get_connection()?;
 
         let new_data_source = NewDataSource {
-            project_id,
-            name: name.clone(),
+            project_id: config.project_id,
+            name: config.name.clone(),
             description: None,
-            source_type,
+            source_type: config.source_type,
             connection_config: None,
-            file_path,
-            file_size,
-            file_hash,
+            file_path: config.file_path,
+            file_size: config.file_size,
+            file_hash: config.file_hash,
             record_count: None,
-            schema,
+            schema: config.schema,
             status: "uploaded".to_string(),
             uploaded_at: Some(Utc::now()),
             processed_at: None,
@@ -172,29 +167,21 @@ impl DataSourceService {
     /// Update a data source
     pub async fn update_data_source(
         &self,
-        id: Uuid,
-        name: Option<String>,
-        description: Option<String>,
-        source_type: Option<String>,
-        file_path: Option<String>,
-        file_size: Option<i64>,
-        file_hash: Option<String>,
-        schema: Option<serde_json::Value>,
-        status: Option<String>,
+        config: UpdateDataSourceConfig,
     ) -> AppResult<DataSource> {
         let mut conn = self.db.get_connection()?;
 
         let update_data = UpdateDataSource {
-            name,
-            description,
-            source_type,
+            name: config.name,
+            description: config.description,
+            source_type: config.source_type,
             connection_config: None,
-            file_path,
-            file_size,
-            file_hash,
+            file_path: config.file_path,
+            file_size: config.file_size,
+            file_hash: config.file_hash,
             record_count: None,
-            schema,
-            status,
+            schema: config.schema,
+            status: config.status,
             uploaded_at: None,
             processed_at: Some(Utc::now()),
             is_active: None,
@@ -202,7 +189,7 @@ impl DataSourceService {
 
         // Build update query manually to handle JsonValue properly
         let update_query =
-            diesel::update(data_sources::table.filter(data_sources::id.eq(id))).set((
+            diesel::update(data_sources::table.filter(data_sources::id.eq(config.id))).set((
                 update_data.name.map(|name| data_sources::name.eq(name)),
                 update_data
                     .description

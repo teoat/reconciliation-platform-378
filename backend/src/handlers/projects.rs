@@ -323,16 +323,18 @@ pub async fn create_data_source(
     let data_source_service =
         crate::services::data_source::DataSourceService::new(data.get_ref().clone());
 
+    use crate::services::data_source_config::CreateDataSourceConfig;
+    let config = CreateDataSourceConfig {
+        project_id: project_id_val,
+        name: req.name.clone(),
+        source_type: req.source_type.clone(),
+        file_path: req.file_path.clone(),
+        file_size: req.file_size,
+        file_hash: req.file_hash.clone(),
+        schema: req.schema.clone(),
+    };
     let new_data_source = data_source_service
-        .create_data_source(
-            project_id_val,
-            req.name.clone(),
-            req.source_type.clone(),
-            req.file_path.clone(),
-            req.file_size,
-            req.file_hash.clone(),
-            req.schema.clone(),
-        )
+        .create_data_source(config)
         .await?;
 
     // ✅ CACHE INVALIDATION: Clear project and data sources cache after creation

@@ -110,7 +110,7 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
           const response = await apiClient.getCurrentUser();
 
           if (response.data) {
-            const user = response.data as any;
+            const user = response.data as Record<string, unknown>;
             const roleMap: Record<string, UserRole> = {
               admin: 'admin',
               administrator: 'admin',
@@ -191,7 +191,7 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
               try {
                 const { apiClient } = await import('../../services/apiClient');
                 const response = await apiClient.getProjects(1, 1);
-                const data = response.data as any;
+                const data = response.data as { projects?: Array<{ id: string }> } | undefined;
                 if (data && data.projects && data.projects.length > 0) {
                   const latestProject = data.projects[0];
                   setCreatedProjectId(latestProject.id);

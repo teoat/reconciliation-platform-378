@@ -1,10 +1,8 @@
 /**
  * Reporting Components
  * 
- * Centralized exports for all reporting and analytics components
+ * Centralized exports for all reporting components
  */
 
 export { default as CustomReports } from '../CustomReports';
 export { default as ReconciliationAnalytics } from '../ReconciliationAnalytics';
-
-

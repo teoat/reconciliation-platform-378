@@ -24,7 +24,11 @@ export const useDataProviderStorage = (
     subscribeToProject,
     exportProject,
     importProject,
-  } = useDataStorage(setCurrentProject, setIsLoading as any, setError as any);
+  } = useDataStorage(
+    setCurrentProject,
+    setIsLoading as React.Dispatch<React.SetStateAction<boolean>>,
+    setError as React.Dispatch<React.SetStateAction<string | null>>
+  );
 
   return {
     currentProject,

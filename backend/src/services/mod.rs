@@ -21,6 +21,7 @@ pub mod reconciliation;
 pub mod analytics;
 pub mod file;
 pub mod data_source;
+pub mod data_source_config;
 pub mod cache;
 pub mod database_sharding;
 pub mod shard_aware_db;

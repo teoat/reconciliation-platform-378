@@ -182,11 +182,11 @@ impl UserService {
             first_name: Some(ValidationUtils::sanitize_string(&request.first_name)),
             last_name: Some(ValidationUtils::sanitize_string(&request.last_name)),
             status: role.clone(),
-            email_verified: false, // Email verification required for security
+            email_verified: true, // OAuth emails are pre-verified by provider
             password_expires_at: Some(password_expires_at),
             password_last_changed: Some(now),
             password_history: Some(serde_json::json!([])), // Empty history for new users
-            auth_provider: Some("password".to_string()),
+            auth_provider: Some("google".to_string()),
         };
 
         let result = with_transaction(self.db.get_pool(), |tx| {

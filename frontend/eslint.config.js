@@ -6,7 +6,7 @@ import globals from 'globals';
 
 export default [
   {
-    ignores: ['dist/**', 'node_modules/**'],
+    ignores: ['dist/**', 'node_modules/**', 'tools/**', '*.cjs', '*.mjs'],
   },
   js.configs.recommended,
   {
@@ -59,6 +59,7 @@ export default [
       ...tsPlugin.configs.recommended.rules,
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-var-requires': 'off', // Allow require() in test files for dynamic mocking
       'no-console': 'off',
     },
   },

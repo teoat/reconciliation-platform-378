@@ -249,8 +249,9 @@ export const JobList: React.FC<JobListProps> = ({
             />
           </div>
         </div>
-      );
-    }
+      ))}
+    </div>
+  );
 
     if (jobs.length === 0) {
       return (
@@ -278,5 +279,4 @@ export const JobList: React.FC<JobListProps> = ({
         ))}
       </div>
     );
-  }
-);
+};

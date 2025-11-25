@@ -40,6 +40,7 @@ mod data_source_service_tests {
             password_expires_at: None,
             password_last_changed: None,
             password_history: None,
+            auth_provider: Some("password".to_string()),
         };
         let user = diesel::insert_into(reconciliation_backend::models::schema::users::table)
             .values(&new_user)

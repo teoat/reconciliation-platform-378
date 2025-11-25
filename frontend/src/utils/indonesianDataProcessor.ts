@@ -159,18 +159,20 @@ export class IndonesianDataProcessor {
       };
     });
   }
+}
 
-  interface ReconciliationSummary {
-    totalExpenses: number;
-    totalBankRecords: number;
-    matched: number;
-    unmatched: number;
-    matchRate: number;
-    totalExpenseAmount: number;
-    totalBankAmount: number;
-    variance: number;
-  }
+export interface ReconciliationSummary {
+  totalExpenses: number;
+  totalBankRecords: number;
+  matched: number;
+  unmatched: number;
+  matchRate: number;
+  totalExpenseAmount: number;
+  totalBankAmount: number;
+  variance: number;
+}
 
+export class IndonesianDataProcessor {
   static generateReconciliationSummary(
     expenses: ProcessedExpenseRecord[],
     bankRecords: ProcessedBankRecord[],

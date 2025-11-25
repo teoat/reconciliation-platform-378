@@ -280,6 +280,10 @@ export const getEndOfYear = (date: Date): Date => {
 // VALIDATION UTILITIES
 // ============================================================================
 
+/**
+ * @deprecated Use `@/utils/common/validation::validateEmail()` instead
+ * This is a legacy root-level utility. New code should use the frontend common module.
+ */
 export const validateEmail = (email: string): boolean => {
   if (!email) return false
   return VALIDATION_RULES.EMAIL.test(email)
@@ -763,6 +767,10 @@ export const isError = (value: any): value is Error => {
   return value instanceof Error
 }
 
+/**
+ * @deprecated Use `@/utils/common/errorHandling::getErrorMessage()` instead
+ * This is a legacy root-level utility. New code should use the frontend common module.
+ */
 export const getErrorMessage = (error: any): string => {
   if (isError(error)) return error.message
   if (isString(error)) return error

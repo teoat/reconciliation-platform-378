@@ -68,6 +68,18 @@ export {
   textSchema,
   validateFormInput,
 } from './common/validation';
+// Common error handling utilities - single source of truth
+export {
+  getErrorMessage,
+  getErrorMessageFromApiError,
+  extractErrorMessage,
+  toError,
+  extractErrorCode,
+  extractCorrelationId,
+  extractErrorFromApiResponse,
+  isRetryableError,
+  type ExtractedErrorInfo,
+} from './common/errorHandling';
 export * from './security';
 export * from './securityConfig';
 export * from './securityAudit';

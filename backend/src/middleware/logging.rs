@@ -4,7 +4,6 @@
 //! request/response logging, and error tracking.
 
 use actix_web::dev::{Service, ServiceResponse, Transform};
-use actix_web::http::header::HeaderMap;
 use actix_web::{dev::ServiceRequest, Error, HttpMessage, Result};
 use futures::future::{ok, Ready};
 use futures::Future;
@@ -17,6 +16,9 @@ use std::sync::Arc;
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 use tokio::sync::RwLock;
 use uuid::Uuid;
+
+use crate::middleware::logging_config::LogRequestConfig;
+use crate::middleware::logging_error_config::TrackErrorConfig;
 
 /// Logging configuration
 #[derive(Debug, Clone)]
@@ -198,18 +200,17 @@ where
 
             // Log request
             if state.config.enable_request_logging {
-                log_request(
-                    &state,
-                    &request_id,
-                    &method,
-                    &path,
-                    &ip_address,
-                    &user_agent,
-                    &user_id,
-                    Some(req.headers()),
-                    request_body.as_deref(),
-                )
-                .await;
+                let log_config = LogRequestConfig {
+                    request_id: request_id.clone(),
+                    method: method.clone(),
+                    path: path.clone(),
+                    ip_address: ip_address.clone(),
+                    user_agent: user_agent.clone(),
+                    user_id: user_id.clone(),
+                    headers: Some(req.headers().clone()),
+                    body: request_body.clone(),
+                };
+                log_request(&state, log_config).await;
             }
 
             // Call the next service
@@ -293,20 +294,13 @@ fn mask_sensitive_data(data: &str, sensitive_patterns: &[String]) -> String {
 /// Log request
 async fn log_request(
     state: &LoggingMiddlewareState,
-    request_id: &str,
-    method: &str,
-    path: &str,
-    ip_address: &str,
-    user_agent: &Option<String>,
-    user_id: &Option<String>,
-    headers: Option<&HeaderMap>,
-    body: Option<&str>,
+    config: LogRequestConfig,
 ) {
     let mut metadata = HashMap::new();
 
     // Include headers if configured and mask sensitive ones
     if state.config.include_headers {
-        if let Some(headers) = headers {
+        if let Some(headers) = config.headers.as_ref() {
             let mut header_map = HashMap::new();
             for (name, value) in headers {
                 let header_name = name.as_str().to_lowercase();
@@ -329,7 +323,7 @@ async fn log_request(
     }
 
     // Include request body if configured (with PII masking)
-    if let Some(body_data) = body {
+    if let Some(body_data) = config.body.as_ref() {
         let masked_body =
             if state.config.include_body && body_data.len() <= state.config.max_body_size {
                 mask_sensitive_data(body_data, &state.config.sensitive_fields)
@@ -349,13 +343,13 @@ async fn log_request(
             .map(|d| d.as_secs())
             .unwrap_or(0),
         level: "info".to_string(),
-        message: format!("Request: {} {}", method, path),
-        request_id: Some(request_id.to_string()),
-        user_id: user_id.clone(),
-        ip_address: Some(ip_address.to_string()),
-        user_agent: user_agent.clone(),
-        method: Some(method.to_string()),
-        path: Some(path.to_string()),
+        message: format!("Request: {} {}", config.method, config.path),
+        request_id: Some(config.request_id.clone()),
+        user_id: config.user_id.clone(),
+        ip_address: Some(config.ip_address.clone()),
+        user_agent: config.user_agent.clone(),
+        method: Some(config.method.clone()),
+        path: Some(config.path.clone()),
         status_code: None,
         response_time_ms: None,
         error: None,
@@ -692,15 +686,7 @@ impl ErrorTrackingService {
 
     pub async fn track_error(
         &self,
-        error_type: &str,
-        error_message: &str,
-        stack_trace: Option<&str>,
-        user_id: Option<&str>,
-        request_id: Option<&str>,
-        endpoint: Option<&str>,
-        method: Option<&str>,
-        status_code: Option<u16>,
-        metadata: Option<HashMap<String, serde_json::Value>>,
+        config: TrackErrorConfig,
     ) {
         let error_entry = ErrorEntry {
             id: Uuid::new_v4().to_string(),
@@ -708,15 +694,15 @@ impl ErrorTrackingService {
                 .duration_since(UNIX_EPOCH)
                 .map(|d| d.as_secs())
                 .unwrap_or(0),
-            error_type: error_type.to_string(),
-            error_message: error_message.to_string(),
-            stack_trace: stack_trace.map(|s| s.to_string()),
-            user_id: user_id.map(|s| s.to_string()),
-            request_id: request_id.map(|s| s.to_string()),
-            endpoint: endpoint.map(|s| s.to_string()),
-            method: method.map(|s| s.to_string()),
-            status_code,
-            metadata: metadata.unwrap_or_default(),
+            error_type: config.error_type.clone(),
+            error_message: config.error_message.clone(),
+            stack_trace: config.stack_trace.clone(),
+            user_id: config.user_id.clone(),
+            request_id: config.request_id.clone(),
+            endpoint: config.endpoint.clone(),
+            method: config.method.clone(),
+            status_code: config.status_code,
+            metadata: config.metadata.unwrap_or_default(),
         };
 
         let mut errors = self.errors.write().await;
