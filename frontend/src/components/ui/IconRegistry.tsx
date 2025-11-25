@@ -183,7 +183,6 @@ export const Icon: React.FC<IconProps> = ({ name, className = '', size = 20, col
   return (
     <IconComponent
       className={className}
-      size={typeof size === 'number' ? size : undefined}
       style={color ? { color } : undefined}
       {...props}
     />

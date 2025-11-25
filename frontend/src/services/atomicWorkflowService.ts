@@ -123,11 +123,11 @@ class AtomicWorkflowService {
         const data = JSON.parse(workflowsData);
         data.workflows.forEach((workflowData: unknown) => {
           const workflow: WorkflowState = {
-            ...workflowData,
+            ...(workflowData as Record<string, unknown>),
             metadata: {
-              ...workflowData.metadata,
-              createdAt: new Date(workflowData.metadata.createdAt),
-              lastModifiedAt: new Date(workflowData.metadata.lastModifiedAt),
+              ...(workflowData.metadata as Record<string, unknown>),
+              createdAt: new Date((workflowData.metadata as any).createdAt),
+              lastModifiedAt: new Date((workflowData.metadata as any).lastModifiedAt),
             },
             transitions: workflowData.transitions.map((t: unknown) => ({
               ...t,

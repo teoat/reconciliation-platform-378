@@ -470,7 +470,7 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({ currentPage, userProgress, onAction
                               'dismissed'
                             );
                           } catch (error) {
-                            logger.error('Error recording feedback:', error);
+                            logger.error('Error recording feedback:', { error: error instanceof Error ? error.message : String(error) });
                           }
                         }
                       }

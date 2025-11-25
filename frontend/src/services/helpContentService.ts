@@ -1,6 +1,6 @@
 /**
  * Help Content Service
- * 
+ *
  * Manages help content referenced by features in the feature registry.
  * Supports markdown and rich content for contextual guidance.
  */
@@ -112,7 +112,7 @@ class HelpContentService {
       },
     ];
 
-    defaultContent.forEach(content => {
+    defaultContent.forEach((content) => {
       this.contentStore.set(content.id, content);
     });
   }
@@ -162,7 +162,7 @@ class HelpContentService {
    */
   async getHelpContentBatch(contentIds: string[]): Promise<Map<string, HelpContent>> {
     const results = new Map<string, HelpContent>();
-    
+
     await Promise.all(
       contentIds.map(async (id) => {
         const content = await this.getHelpContent(id);
@@ -176,6 +176,16 @@ class HelpContentService {
   }
 
   /**
+   * Get popular help content
+   */
+  getPopular(limit: number = 5): HelpContent[] {
+    // For now, return the first N items from the content store
+    // In a real implementation, this would track usage statistics
+    const allContent = Array.from(this.contentStore.values());
+    return allContent.slice(0, Math.min(limit, allContent.length));
+  }
+
+  /**
    * Register help content
    */
   registerHelpContent(content: HelpContent): void {
@@ -183,10 +193,10 @@ class HelpContentService {
       ...content,
       lastUpdated: new Date(),
     });
-    
+
     // Invalidate cache
     this.contentCache.delete(content.id);
-    
+
     logger.debug('Help content registered', { contentId: content.id });
   }
 
@@ -215,7 +225,7 @@ class HelpContentService {
         matchedFields.push('content');
         relevance += 1;
       }
-      if (content.tags?.some(tag => tag.toLowerCase().includes(lowerQuery))) {
+      if (content.tags?.some((tag) => tag.toLowerCase().includes(lowerQuery))) {
         matchedFields.push('tags');
         relevance += 2;
       }
@@ -237,7 +247,7 @@ class HelpContentService {
    * Search help content (legacy method for backward compatibility)
    */
   searchHelpContent(query: string, category?: string): HelpContent[] {
-    return this.search(query, category).map(result => result.content);
+    return this.search(query, category).map((result) => result.content);
   }
 
   /**

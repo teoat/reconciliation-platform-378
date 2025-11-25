@@ -212,7 +212,7 @@ export interface EnhancedReconciliationRecord {
     priority: 'low' | 'medium' | 'high' | 'critical';
     attachments: string[];
   };
-  resolution?: Resolution;
+  resolution?: Resolution | { status?: 'pending' | 'approved' | 'rejected' | 'escalated'; resolvedAt?: string; resolution?: string; comments?: string[]; assignedTo?: string; assignedAt?: string; };
   matchScore: number;
   difference?: number;
   riskLevel: 'low' | 'medium' | 'high' | 'critical';

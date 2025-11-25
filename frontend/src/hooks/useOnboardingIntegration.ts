@@ -75,13 +75,13 @@ export const useOnboardingIntegration = (): {
         user: 'analyst', // Default user to analyst
       };
 
-      return roleMap[user.role?.toLowerCase() || 'analyst'] || 'analyst';
+      return roleMap[(user as any).role?.toLowerCase() || 'analyst'] || 'analyst';
     } catch (error) {
       // Fallback to localStorage on error
       const userStr = localStorage.getItem('user');
       if (userStr) {
         try {
-          const user = JSON.parse(userStr);
+          const user = JSON.parse(userStr) as any;
           return (user.role || 'analyst') as UserRole;
         } catch {
           return 'analyst';
@@ -163,9 +163,9 @@ export const useOnboardingIntegration = (): {
       const profile: UserProfile = {
         id: user.id,
         email: user.email,
-        role: roleMap[user.role?.toLowerCase() || 'analyst'] || 'analyst',
-        experience: user.last_login ? 'experienced' : 'new',
-        permissions: user.permissions || [], // Permissions from backend user object (if available)
+        role: roleMap[(user as any).role?.toLowerCase() || 'analyst'] || 'analyst',
+        experience: (user as any).last_login ? 'experienced' : 'new',
+        permissions: (user as any).permissions || [], // Permissions from backend user object (if available)
         // Note: Full permissions API endpoint may be added in future if granular permission management is needed
       };
 

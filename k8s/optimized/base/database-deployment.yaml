@@ -20,9 +20,9 @@ spec:
         component: postgres
     spec:
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 999
-        fsGroup: 999
+        runAsNonRoot: false
+        runAsUser: 0
+        fsGroup: 0
       containers:
       - name: postgres
         image: postgres:15-alpine
@@ -73,7 +73,7 @@ spec:
       name: postgres-data
     spec:
       accessModes: ["ReadWriteOnce"]
-      storageClassName: "fast-ssd"  # Adjust based on your storage class
+      storageClassName: "standard"  # Use standard storage class for minikube
       resources:
         requests:
           storage: 20Gi

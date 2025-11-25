@@ -4,15 +4,15 @@ import { logger } from '@/services/logger';
 // ============================================================================
 
 import { useState, useCallback } from 'react';
-import { storage, sessionStorage } from '../utils';
+// Using direct localStorage and sessionStorage APIs
 
 export const useLocalStorage = <T>(key: string, initialValue: T) => {
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
-      const item = storage.get<T>(key);
-      return item !== null ? item : initialValue;
+      const item = window.localStorage.getItem(key);
+      return item !== null ? JSON.parse(item) : initialValue;
     } catch (error) {
-      logger.error(`Error reading localStorage key "${key}":`, error);
+      logger.error(`Error reading localStorage key "${key}":`, error as any);
       return initialValue;
     }
   });
@@ -22,9 +22,9 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
       try {
         const valueToStore = value instanceof Function ? value(storedValue) : value;
         setStoredValue(valueToStore);
-        storage.set(key, valueToStore);
+        window.localStorage.setItem(key, JSON.stringify(valueToStore));
       } catch (error) {
-        logger.error(`Error setting localStorage key "${key}":`, error);
+        logger.error(`Error setting localStorage key "${key}":`, error as any);
       }
     },
     [key, storedValue]
@@ -33,9 +33,9 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
   const removeValue = useCallback(() => {
     try {
       setStoredValue(initialValue);
-      storage.remove(key);
+      window.localStorage.removeItem(key);
     } catch (error) {
-      logger.error(`Error removing localStorage key "${key}":`, error);
+      logger.error(`Error removing localStorage key "${key}":`, error as any);
     }
   }, [key, initialValue]);
 
@@ -45,10 +45,10 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
 export const useSessionStorage = <T>(key: string, initialValue: T) => {
   const [storedValue, setStoredValue] = useState<T>(() => {
     try {
-      const item = sessionStorage.get<T>(key);
-      return item !== null ? item : initialValue;
+      const item = window.sessionStorage.getItem(key);
+      return item !== null ? JSON.parse(item) : initialValue;
     } catch (error) {
-      logger.error(`Error reading sessionStorage key "${key}":`, error);
+      logger.error(`Error reading sessionStorage key "${key}":`, error as any);
       return initialValue;
     }
   });
@@ -58,9 +58,9 @@ export const useSessionStorage = <T>(key: string, initialValue: T) => {
       try {
         const valueToStore = value instanceof Function ? value(storedValue) : value;
         setStoredValue(valueToStore);
-        sessionStorage.set(key, valueToStore);
+        window.sessionStorage.setItem(key, JSON.stringify(valueToStore));
       } catch (error) {
-        logger.error(`Error setting sessionStorage key "${key}":`, error);
+        logger.error(`Error setting sessionStorage key "${key}":`, error as any);
       }
     },
     [key, storedValue]
@@ -69,9 +69,9 @@ export const useSessionStorage = <T>(key: string, initialValue: T) => {
   const removeValue = useCallback(() => {
     try {
       setStoredValue(initialValue);
-      sessionStorage.remove(key);
+      window.sessionStorage.removeItem(key);
     } catch (error) {
-      logger.error(`Error removing sessionStorage key "${key}":`, error);
+      logger.error(`Error removing sessionStorage key "${key}":`, error as any);
     }
   }, [key, initialValue]);
 

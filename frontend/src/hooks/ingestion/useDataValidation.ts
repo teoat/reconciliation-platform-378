@@ -1,5 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
-import { DataValidation, DataRow, ColumnInfo } from '../../types/ingestion';
+import { DataValidation } from '../../types/ingestion';
+
+interface DataRow {
+  [key: string]: string | number | boolean | Date | null;
+}
+import { ColumnInfo } from '../../types/ingestion';
 import { validateDataset, getValidationSummary } from '../../utils/ingestion/validation';
 
 export interface DataValidationState {
@@ -50,21 +55,24 @@ export const useDataValidation = () => {
         isValidating: false,
       }));
     } catch (error) {
-      setState((prev) => ({
-        ...prev,
-        isValidating: false,
-        validations: [
-          {
-            field: 'system',
-            rule: 'validation_error',
-            status: 'failed',
-            message: error instanceof Error ? error.message : 'Validation failed',
-            severity: 'high',
-          },
-        ],
-        summary: { total: 1, errors: 1, warnings: 0, info: 0 },
-        hasErrors: true,
-      }));
+      setState(
+        (prev) =>
+          ({
+            ...prev,
+            isValidating: false,
+            validations: [
+              {
+                field: 'system',
+                rule: 'validation_error',
+                status: 'failed',
+                message: error instanceof Error ? error.message : 'Validation failed',
+                severity: 'high' as const,
+              },
+            ],
+            summary: { total: 1, errors: 1, warnings: 0, info: 0 },
+            hasErrors: true,
+          }) as any
+      );
     }
   }, []);
 

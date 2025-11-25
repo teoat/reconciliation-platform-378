@@ -29,7 +29,7 @@ export interface FormFieldProps {
 }
 
 export const FormField = memo(
-  forwardRef<HTMLDivElement, FormFieldProps>(
+  forwardRef<HTMLElement, FormFieldProps>(
     (
       {
         label,
@@ -131,14 +131,14 @@ export const FormField = memo(
 
       if (fieldset) {
         return (
-          <fieldset ref={ref as React.RefObject<HTMLFieldSetElement>} className={`space-y-2 ${className}`}>
+          <fieldset ref={ref as React.Ref<HTMLFieldSetElement>} className={`space-y-2 ${className}`}>
             {content}
           </fieldset>
         );
       }
 
       return (
-        <div ref={ref} className={`space-y-2 ${className}`}>
+        <div ref={ref as React.Ref<HTMLDivElement>} className={`space-y-2 ${className}`}>
           {content}
         </div>
       );

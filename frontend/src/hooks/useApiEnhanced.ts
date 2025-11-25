@@ -33,7 +33,7 @@ export const useAuthAPI = () => {
         dispatch(authActions.loginStart());
         const authData = await ApiService.authenticate(email, password);
 
-        dispatch(authActions.loginSuccess(authData.user));
+        dispatch(authActions.loginSuccess((authData as any).user));
         showSuccess('Login Successful', 'Welcome back!');
 
         return { success: true };
@@ -60,14 +60,14 @@ export const useAuthAPI = () => {
         dispatch(authActions.loginStart());
         const authData = await ApiService.register(userData);
 
-        dispatch(authActions.loginSuccess(authData.user));
-        showSuccess('Registration Successful', 'Account created successfully!');
+        dispatch(authActions.loginSuccess((authData.data as any)!.user));
+        showSuccess('Registration Successful - Account created successfully!');
 
         return { success: true };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Registration failed';
         dispatch(authActions.loginFailure(errorMessage));
-        showError('Registration Failed', errorMessage);
+        showError(`Registration Failed - ${errorMessage}`);
 
         return { success: false, error: errorMessage };
       }
@@ -116,10 +116,9 @@ export const useAuthAPI = () => {
 export const useProjectsAPI = () => {
   const dispatch = useAppDispatch();
   const {
-    items: projects,
+    projects,
     isLoading,
     error,
-    pagination,
   } = useAppSelector((state) => state.projects);
   const { showSuccess, showError } = useNotificationHelpers();
 
@@ -223,7 +222,6 @@ export const useProjectsAPI = () => {
     projects,
     isLoading,
     error,
-    pagination,
     fetchProjects,
     createProject,
     updateProject,
@@ -418,7 +416,7 @@ export const useReconciliationRecordsAPI = (projectId?: string) => {
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to update record';
         showError('Update Failed', errorMessage);
-
+        // eslint-disable-next-line no-unreachable
         return { success: false, error: errorMessage };
       }
     },

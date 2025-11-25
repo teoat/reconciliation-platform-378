@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
-import { DataQualityMetrics } from '../../types/ingestion';
+import { DataQualityMetrics } from '../../types/ingestion/index';
 
 interface DataQualityPanelProps {
   metrics?: DataQualityMetrics;

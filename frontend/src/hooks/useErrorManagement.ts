@@ -5,7 +5,8 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { ErrorHistoryItem, ErrorReport } from '../components/ui';
+import { ErrorHistoryItem } from '../components/ui/ErrorHistory';
+import { ErrorReport } from '../components/ui/ErrorReportingForm';
 import { useErrorRecovery } from './useErrorRecovery';
 import { getUserFriendlyError, formatErrorForReporting } from '../utils/errorMessages';
 import { logger } from '../services/logger';
@@ -152,7 +153,7 @@ export const useErrorManagement = (
         localStorage.setItem('errorHistory', JSON.stringify(updatedHistory));
       }
     } catch (e) {
-      logger.warn('Failed to update error history:', e);
+      logger.warn('Failed to update error history:', { error: e });
     }
   }, []);
 
@@ -162,7 +163,7 @@ export const useErrorManagement = (
     try {
       localStorage.removeItem('errorHistory');
     } catch (e) {
-      logger.warn('Failed to clear error history:', e);
+      logger.warn('Failed to clear error history:', { error: e });
     }
   }, []);
 
@@ -244,7 +245,7 @@ export const useErrorManagement = (
           setErrorHistory(parsedHistory.slice(0, maxHistoryItems));
         }
       } catch (e) {
-        logger.warn('Failed to load error history:', e);
+        logger.warn('Failed to load error history:', { error: e });
       }
     }
   }, [enableErrorHistory, maxHistoryItems]);

@@ -350,40 +350,44 @@ export const useNotificationHelpers = () => {
   }, [dispatch]);
 
   const showSuccess = useCallback(
-    (message: string) => {
+    (title: string, message?: string) => {
       addNotification({
         type: 'success',
-        message,
+        title,
+        message: message || title,
       });
     },
     [addNotification]
   );
 
   const showError = useCallback(
-    (message: string) => {
+    (title: string, message?: string) => {
       addNotification({
         type: 'error',
-        message,
+        title,
+        message: message || title,
       });
     },
     [addNotification]
   );
 
   const showInfo = useCallback(
-    (message: string) => {
+    (title: string, message?: string) => {
       addNotification({
         type: 'info',
-        message,
+        title,
+        message: message || title,
       });
     },
     [addNotification]
   );
 
   const showWarning = useCallback(
-    (message: string) => {
+    (title: string, message?: string) => {
       addNotification({
         type: 'warning',
-        message,
+        title,
+        message: message || title,
       });
     },
     [addNotification]

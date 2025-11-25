@@ -5,7 +5,7 @@ import { RefreshCw } from 'lucide-react';
 import { Home } from 'lucide-react';
 import { X } from 'lucide-react';
 import Button from './Button';
-import { unifiedErrorService } from '../../services/unifiedErrorService';
+import { UnifiedErrorService } from '../../services/unifiedErrorService';
 
 interface Props {
   children: ReactNode;
@@ -52,7 +52,7 @@ export class ErrorBoundary extends Component<Props, State> {
     // Track error with unified error service
     try {
       // Use handleErrorWithTranslation to get user-friendly message
-      const errorResult = unifiedErrorService.handleErrorWithTranslation(error, {
+      const errorResult = UnifiedErrorService.handleErrorWithTranslation(error, {
         component: 'ErrorBoundary',
         action: 'error_boundary_catch',
         metadata: {

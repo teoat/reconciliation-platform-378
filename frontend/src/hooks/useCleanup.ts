@@ -18,7 +18,7 @@ export function useCleanup(
 ) {
   useEffect(() => {
     // Execute cleanup function on unmount
-    return cleanupFn;
+    return cleanupFn as () => void;
   }, deps);
 }
 
@@ -30,7 +30,7 @@ export function useTimerCleanup() {
     return () => {
       // Clear all timers on unmount
       // Note: This is best effort - maintain timer references explicitly
-      const highestId = setTimeout(() => {}, 0);
+      const highestId = setTimeout(() => {}, 0) as any;
       for (let i = 0; i < highestId; i++) {
         clearTimeout(i);
       }

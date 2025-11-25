@@ -77,7 +77,7 @@ create_secrets() {
     read -p "PostgreSQL database name [reconciliation]: " postgres_db
     postgres_db=${postgres_db:-reconciliation}
     
-    # Build DATABASE_URL
+    # Build DATABASE_URL (will be synchronized automatically)
     local database_url="postgresql://${postgres_user}:${postgres_password}@postgres-service:5432/${postgres_db}?sslmode=disable"
     
     read -p "Redis URL [redis://redis-service:6379/0]: " redis_url
@@ -117,6 +117,14 @@ create_secrets() {
     fi
     
     log_success "Secrets created successfully"
+    
+    # Synchronize derived secrets
+    log_info "Synchronizing derived secrets..."
+    if [[ -f "$SCRIPT_DIR/sync-secrets.sh" ]]; then
+        "$SCRIPT_DIR/sync-secrets.sh" "$NAMESPACE" sync || {
+            log_warning "Secret synchronization had issues, but secrets were created"
+        }
+    fi
     
     # Save secrets to secure file (optional)
     echo ""
@@ -192,7 +200,13 @@ update_secrets() {
             kubectl patch secret "$SECRET_NAME" -n "$NAMESPACE" --type='json' \
                 -p="[{\"op\": \"replace\", \"path\": \"/data/POSTGRES_PASSWORD\", \"value\": \"$(echo -n "$new_value" | base64)\"}]"
             log_success "POSTGRES_PASSWORD updated"
-            log_warning "Remember to update DATABASE_URL if password changed"
+            log_info "Synchronizing DATABASE_URL..."
+            if [[ -f "$SCRIPT_DIR/sync-secrets.sh" ]]; then
+                "$SCRIPT_DIR/sync-secrets.sh" "$NAMESPACE" sync || {
+                    log_warning "Failed to synchronize DATABASE_URL automatically"
+                    log_warning "Run manually: ./scripts/deployment/sync-secrets.sh $NAMESPACE sync"
+                }
+            fi
             ;;
         4)
             local new_value=$(generate_secret 48)

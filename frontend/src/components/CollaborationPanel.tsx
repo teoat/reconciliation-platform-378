@@ -159,16 +159,16 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
             </div>
             <div className="space-y-2">
               {activeUsers.map((user) => (
-                <div key={user.userId} className="flex items-center space-x-2">
+                <div key={(user as any).userId || (user as any).id} className="flex items-center space-x-2">
                   <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
                     <User className="w-3 h-3 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {user.userId}
+                      {(user as any).userId || (user as any).id}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {user.action}
+                      {(user as any).action || 'active'}
                     </p>
                   </div>
                 </div>
@@ -190,7 +190,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                 ) : (
                   liveComments.map((commentMsg, index) => {
                     // Extract comment data safely
-                    const comment = commentMsg.comment as LiveComment | undefined;
+                    const comment = (commentMsg as any).comment as LiveComment | undefined;
                     if (!comment) return null;
                     
                     return (

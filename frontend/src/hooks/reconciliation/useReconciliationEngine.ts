@@ -44,12 +44,11 @@ export const useReconciliationEngine = () => {
       resolvedRecords: 0,
       escalatedRecords: 0,
       averageConfidence: 0,
-      averageProcessingTime: 0,
+      processingTime: 0,
       matchRate: 0,
-      accuracy: 0,
-      throughput: 0,
-      errorRate: 0,
-      slaCompliance: 0,
+      lastUpdated: new Date().toISOString(),
+
+
     },
     isProcessing: false,
     isMatching: false,
@@ -233,13 +232,10 @@ export const useReconciliationEngine = () => {
         pendingRecords: 0,
         resolvedRecords: 0,
         escalatedRecords: 0,
-        averageConfidence: 0,
-        averageProcessingTime: 0,
-        matchRate: 0,
-        accuracy: 0,
-        throughput: 0,
-        errorRate: 0,
-        slaCompliance: 0,
+      averageConfidence: 0,
+      processingTime: 0,
+      matchRate: 0,
+      lastUpdated: new Date().toISOString(),
       },
       isProcessing: false,
       isMatching: false,
@@ -273,11 +269,11 @@ function calculateMetrics(
   const matchedRecords = records.filter((r) => r.status === 'matched').length;
   const unmatchedRecords = records.filter((r) => r.status === 'unmatched').length;
   const discrepancyRecords = records.filter((r) => r.status === 'discrepancy').length;
-  const pendingRecords = records.filter((r) => r.resolution?.status === 'pending').length;
+  const pendingRecords = records.filter((r) => (r.resolution as any)?.status === 'pending').length;
   const resolvedRecords = records.filter(
-    (r) => r.resolution?.status === 'approved' || r.resolution?.status === 'rejected'
+    (r) => (r.resolution as any)?.status === 'approved' || (r.resolution as any)?.status === 'rejected'
   ).length;
-  const escalatedRecords = records.filter((r) => r.resolution?.status === 'escalated').length;
+  const escalatedRecords = records.filter((r) => (r.resolution as any)?.status === 'escalated').length;
 
   const confidences = records.map((r) => r.confidence).filter((c) => c > 0);
   const averageConfidence =
@@ -294,11 +290,9 @@ function calculateMetrics(
     resolvedRecords,
     escalatedRecords,
     averageConfidence,
-    averageProcessingTime: processingTime || 0,
+    processingTime: processingTime || 0,
     matchRate,
-    accuracy: averageConfidence, // Simplified
-    throughput: totalRecords / ((processingTime || 1) / 1000), // records per second
-    errorRate: 0, // Would need error tracking
-    slaCompliance: 95, // Mock value
+    lastUpdated: new Date().toISOString(),
+
   };
 }

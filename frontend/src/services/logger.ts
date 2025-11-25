@@ -1,7 +1,7 @@
 // Lightweight logger utility with environment-aware behavior
 import { LogLevel } from '../types';
 import { ErrorType, ErrorSeverity } from '../utils/errorHandler';
-import { Metadata } from '@/types/metadata';
+import { Metadata } from '../types/metadata';
 import { APP_CONFIG } from '../config/AppConfig';
 
 // Log entry interface

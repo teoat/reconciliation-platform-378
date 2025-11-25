@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
-import { DataValidation } from '../../types/ingestion';
+import { DataValidation } from '../../types/ingestion/index';
 
 interface ValidationResultsProps {
   validations: DataValidation[];

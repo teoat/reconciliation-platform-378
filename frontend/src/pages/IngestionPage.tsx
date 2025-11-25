@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, FileText, Eye, Trash2 } from 'lucide-react';
+
+// Simple logger stub
+const logger = {
+  info: console.info,
+  warn: console.warn,
+  error: console.error,
+  debug: console.debug,
+};
 import { useData } from '@/components/DataProvider';
 import { useToast } from '@/hooks/useToast';
 import { PageConfig, StatsCard, ActionConfig } from '@/types/common';

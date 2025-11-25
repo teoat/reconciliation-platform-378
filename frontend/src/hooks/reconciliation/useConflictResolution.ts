@@ -77,8 +77,8 @@ export const useConflictResolution = () => {
   });
 
   const setConflicts = useCallback((conflicts: EnhancedReconciliationRecord[]) => {
-    const pendingConflicts = conflicts.filter((c) => (c.resolution as ConflictResolution)?.status === 'pending');
-    const resolvedConflicts = conflicts.filter((c) => (c.resolution as ConflictResolution)?.status !== 'pending');
+    const pendingConflicts = conflicts.filter((c) => (c.resolution as any)?.status === 'pending');
+    const resolvedConflicts = conflicts.filter((c) => (c.resolution as any)?.status !== 'pending');
 
     setState((prev) => ({
       ...prev,
@@ -97,7 +97,7 @@ export const useConflictResolution = () => {
             return {
               ...conflict,
               resolution: {
-                ...conflict.resolution,
+                ...(conflict.resolution as any),
                 status:
                   resolution === 'approve'
                     ? 'approved'
@@ -105,20 +105,16 @@ export const useConflictResolution = () => {
                       ? 'rejected'
                       : 'escalated',
                 resolvedAt: new Date().toISOString(),
-                resolution: comment || `${resolution} action taken`,
-                comments: [
-                  ...(conflict.resolution?.comments || []),
-                  comment ? `Resolution: ${comment}` : `Marked as ${resolution}`,
-                ].filter(Boolean),
-              } as ConflictResolution,
+                comments: comment ? [comment] : [],
+              },
             };
           }
           return conflict;
         });
 
-        const pendingConflicts = updatedConflicts.filter((c) => c.resolution?.status === 'pending');
+        const pendingConflicts = updatedConflicts.filter((c) => (c.resolution as any)?.status === 'pending');
         const resolvedConflicts = updatedConflicts.filter(
-          (c) => c.resolution?.status !== 'pending'
+          (c) => (c.resolution as any)?.status !== 'pending'
         );
 
         return {
@@ -146,7 +142,7 @@ export const useConflictResolution = () => {
               return {
                 ...conflict,
                 resolution: {
-                  ...conflict.resolution,
+                  ...(conflict.resolution as any),
                   status:
                     resolution === 'approve'
                       ? 'approved'
@@ -156,7 +152,7 @@ export const useConflictResolution = () => {
                   resolvedAt: new Date().toISOString(),
                   resolution: comment || `${resolution} action taken`,
                   comments: [
-                    ...(conflict.resolution?.comments || []),
+                    ...((conflict.resolution as any)?.comments || []),
                     comment ? `Bulk resolution: ${comment}` : `Bulk marked as ${resolution}`,
                   ].filter(Boolean),
                 } as ConflictResolution,
@@ -166,10 +162,10 @@ export const useConflictResolution = () => {
           });
 
           const pendingConflicts = updatedConflicts.filter(
-            (c) => c.resolution?.status === 'pending'
+            (c) => (c.resolution as any)?.status === 'pending'
           );
           const resolvedConflicts = updatedConflicts.filter(
-            (c) => c.resolution?.status !== 'pending'
+            (c) => (c.resolution as any)?.status !== 'pending'
           );
 
           return {
@@ -225,7 +221,7 @@ export const useConflictResolution = () => {
               resolution: {
                 ...conflict.resolution,
                 comments: [
-                  ...(conflict.resolution?.comments || []),
+                  ...((conflict.resolution as any)?.comments || []),
                   `${new Date().toISOString()}: ${comment}`,
                 ],
               } as ConflictResolution,
@@ -331,10 +327,10 @@ export const useConflictResolution = () => {
 // Helper function to calculate resolution statistics
 function calculateResolutionStats(conflicts: EnhancedReconciliationRecord[]) {
   const total = conflicts.length;
-  const approved = conflicts.filter((c) => c.resolution?.status === 'approved').length;
-  const rejected = conflicts.filter((c) => c.resolution?.status === 'rejected').length;
-  const escalated = conflicts.filter((c) => c.resolution?.status === 'escalated').length;
-  const pending = conflicts.filter((c) => c.resolution?.status === 'pending').length;
+  const approved = conflicts.filter((c) => (c.resolution as any)?.status === 'approved').length;
+  const rejected = conflicts.filter((c) => (c.resolution as any)?.status === 'rejected').length;
+  const escalated = conflicts.filter((c) => (c.resolution as any)?.status === 'escalated').length;
+  const pending = conflicts.filter((c) => (c.resolution as any)?.status === 'pending').length;
 
   return {
     total,

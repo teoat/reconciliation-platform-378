@@ -8,7 +8,7 @@
 import { logger } from './logger';
 import { apiClient } from './apiClient';
 
-export type UserRole = 'admin' | 'analyst' | 'viewer';
+export type UserRole = 'admin' | 'analyst' | 'viewer' | 'user';
 export type OnboardingType = 'initial' | 'feature_tour' | 'contextual_help' | 'empty_state';
 
 interface OnboardingProgress {
@@ -44,6 +44,7 @@ export interface OnboardingAnalytics {
   timestamp: Date;
   action?: string;
   completed: boolean;
+  skipped?: boolean;
 }
 
 class OnboardingService {
@@ -341,6 +342,35 @@ class OnboardingService {
     });
 
     logger.info(`Onboarding step completed: ${stepId}`, { duration });
+  }
+
+  /**
+   * Skip onboarding step
+   */
+  skipStep(stepId: string, type: OnboardingType = 'initial'): void {
+    const key = `onboarding_${type}`;
+    const progress = this.progress.get(key) || {
+      completedOnboarding: false,
+      completedSteps: [],
+    };
+
+    // Mark step as skipped (we'll track this in analytics)
+    progress.currentStep = stepId;
+
+    this.progress.set(key, progress);
+    this.saveProgress();
+
+    // Track analytics for skipped step
+    this.trackEvent({
+      stepId,
+      stepName: 'skipped',
+      duration: 0,
+      timestamp: new Date(),
+      completed: false,
+      skipped: true,
+    });
+
+    logger.info(`Onboarding step skipped: ${stepId}`);
   }
 
   /**

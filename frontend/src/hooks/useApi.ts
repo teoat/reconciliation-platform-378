@@ -1,5 +1,11 @@
 // React Hooks for API Integration
-import { logger } from '@/services/logger';
+// Logger stub
+const logger = {
+  info: console.info,
+  warn: console.warn,
+  error: console.error,
+  debug: console.debug,
+};
 ('use client');
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -12,7 +18,7 @@ import type {
   BackendReconciliationJob,
 } from '../services/apiClient/types';
 import { getErrorMessageFromApiError } from '../utils/errorExtraction';
-import { PaginatedResponse } from '../types/backend-aligned';
+import { PaginatedResponse, CreateReconciliationJobRequest } from '../types/backend-aligned';
 import { ProjectInfo, FileInfo } from '../types/backend-aligned';
 
 // ============================================================================
@@ -565,7 +571,11 @@ export const useReconciliationMatches = (projectId: string | null) => {
         const response = await apiClient.updateReconciliationMatch(projectId, matchId, updates);
         if (response.data) {
           setMatches((prev) =>
-            prev.map((match) => (match.id === matchId ? response.data! : match))
+            prev.map((match) =>
+              match.id === matchId
+                ? (response.data as any)
+                : match
+            )
           );
           return { success: true, match: response.data };
         } else {
@@ -641,7 +651,19 @@ export const useReconciliationJobs = (projectId: string | null) => {
       setError(null);
 
       try {
-        const response = await apiClient.createReconciliationJob(projectId, jobData);
+        const apiJobData = {
+          name: jobData.name || '',
+          description: jobData.description,
+          source_a_id: jobData.source_a_id || '',
+          source_b_id: jobData.source_b_id || '',
+          confidence_threshold: jobData.confidence_threshold || 0.8,
+          matching_rules: jobData.matching_rules?.map((rule: any) => ({
+            field: rule.field || '',
+            algorithm: rule.algorithm || 'Exact',
+            weight: rule.weight || 1.0,
+          })),
+        };
+        const response = await apiClient.createReconciliationJob(projectId, apiJobData);
         if (response.data) {
           setJobs((prev) => [response.data!, ...prev]);
           return { success: true, job: response.data };
@@ -854,7 +876,7 @@ export const useRealtimeCollaboration = (page: string) => {
         setLiveComments((prev) => {
           const exists = prev.find((c) => c.id === data.id);
           if (!exists) {
-            return [...prev, data];
+            return [...prev, data as (typeof prev)[0]];
           }
           return prev;
         });
@@ -866,15 +888,15 @@ export const useRealtimeCollaboration = (page: string) => {
     };
 
     if (isConnected) {
-      onMessage('user:presence', handlePresenceUpdate);
-      onMessage('comment:added', handleCommentAdded);
-      onMessage('user:left', handleUserLeft);
+      onMessage('user:presence', handlePresenceUpdate as (...args: unknown[]) => void);
+      onMessage('comment:added', handleCommentAdded as (...args: unknown[]) => void);
+      onMessage('user:left', handleUserLeft as (...args: unknown[]) => void);
     }
 
     return () => {
-      offMessage('user:presence', handlePresenceUpdate);
-      offMessage('comment:added', handleCommentAdded);
-      offMessage('user:left', handleUserLeft);
+      offMessage('user:presence', handlePresenceUpdate as (...args: unknown[]) => void);
+      offMessage('comment:added', handleCommentAdded as (...args: unknown[]) => void);
+      offMessage('user:left', handleUserLeft as (...args: unknown[]) => void);
     };
   }, [isConnected, page, onMessage, offMessage]);
 

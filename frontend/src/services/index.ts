@@ -20,20 +20,39 @@
 export {
   apiClient,
   wsClient,
-  UnifiedApiClient as ApiClient,
+  ApiClient,
   WebSocketClient,
   type ApiResponse,
-  type PaginationInfo,
-  type AuthTokens,
-  type User,
-  type Project,
-  type IngestionJob,
-  type ReconciliationRecord,
-  type ApiError,
-  type RequestInterceptor,
-  type ResponseInterceptor,
   type RequestConfig,
 } from './apiClient';
+// Re-export interceptor types
+export type {
+  RequestInterceptor,
+  ResponseInterceptor,
+} from './apiClient/interceptors';
+// Re-export ApiError type
+export type { ApiErrorLike as ApiError } from './apiClient/types';
+// Re-export types from backend-aligned
+export type {
+  User,
+  Project,
+  ReconciliationResultDetail as ReconciliationRecord,
+} from '../types/backend-aligned';
+// Re-export PaginationInfo from types/api
+export type { PaginationInfo } from '../types/api';
+// IngestionJob - use from backend-aligned if exists, otherwise define
+export type IngestionJob = {
+  id: string;
+  project_id: string;
+  status: string;
+  [key: string]: unknown;
+};
+// AuthTokens type
+export type AuthTokens = {
+  accessToken: string;
+  refreshToken?: string;
+  expiresAt?: number;
+};
 
 // ============================================================================
 // BASE SERVICE ARCHITECTURE

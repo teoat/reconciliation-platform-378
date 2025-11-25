@@ -129,7 +129,7 @@ const Modal: React.FC<ModalProps> = ({
       )}
 
       {/* Modal */}
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">                                                                  
+      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
         <div
           ref={modalRef}
           className={modalClasses}
@@ -138,13 +138,6 @@ const Modal: React.FC<ModalProps> = ({
           aria-labelledby={title ? 'modal-title' : undefined}
           aria-describedby={children ? 'modal-description' : undefined}
           onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => {
-            if (e.key === 'Escape' && onClose) {
-              onClose();
-            }
-          }}
-          tabIndex={-1}
-          // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
           tabIndex={-1}
           onKeyDown={(e) => {
             // Enhanced keyboard navigation

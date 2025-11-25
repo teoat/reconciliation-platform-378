@@ -74,7 +74,7 @@ export async function extractErrorFromFetchResponseAsync(
  * Extract error from fetch API call result
  * Handles both Response objects and errors thrown
  */
-export async function extractErrorFromFetchCall<T>(
+export async function extractErrorFromFetchCall(
   fetchCall: Promise<Response>,
   defaultError?: Error | string
 ): Promise<ExtractedErrorInfo> {
@@ -99,16 +99,16 @@ export async function extractErrorFromFetchCall<T>(
       return await extractErrorFromFetchResponseAsync(error, defaultError);
     }
 
-      // Fall back to regular error extraction
-      const { extractErrorFromApiResponse } = await import('./errorExtraction');
-      const result = extractErrorFromApiResponse(error, defaultError);
+    // Fall back to regular error extraction
+    const { extractErrorFromApiResponse } = await import('./errorExtraction');
+    const result = extractErrorFromApiResponse(error, defaultError);
 
-      // Handle both sync and async results
-      if (result instanceof Promise) {
-        return await result;
-      }
+    // Handle both sync and async results
+    if (result instanceof Promise) {
+      return await result;
+    }
 
-      return result;
+    return result;
   }
 }
 

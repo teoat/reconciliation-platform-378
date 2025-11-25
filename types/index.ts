@@ -1,13 +1,3 @@
-// Single Source of Truth (SSOT) for all TypeScript types
-// This file contains all type definitions used across the application
-//
-// NOTE: Types are being split into domain-specific files for better organization.
-// Domain files are imported and re-exported here for backward compatibility.
-
-import { ReconciliationMetadata, Metadata } from '../frontend/src/types/metadata';
-
-// Re-export from domain-specific files
-export * from './user';
 export * from './common';
 export * from './websocket';
 export * from './project';
@@ -485,7 +475,7 @@ export interface Dashboard {
   id: string;
   name: string;
   description: string;
-  layout: DashboardLayout;
+  layout: DashboardData;
   widgets: DashboardWidget[];
   filters: DashboardFilter[];
   permissions: DashboardPermissions;

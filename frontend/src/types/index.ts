@@ -8,6 +8,11 @@ export type {
   Timestamp,
   Status,
   Priority,
+} from './backend-aligned';
+// Re-export Metadata from metadata.ts
+export type { Metadata } from './metadata';
+export type {
+  Priority as PriorityType,
   User,
   UserResponse,
   CreateUserRequest,
@@ -30,6 +35,15 @@ export type {
   ActivityItem,
   ActivityDetails,
   PerformanceMetrics,
+} from './backend-aligned';
+// Re-export ReconciliationMetrics from reconciliation.ts
+export type { ReconciliationMetrics } from './reconciliation';
+// Re-export QualityMetrics from ingestion
+export type { DataQualityMetrics as QualityMetrics } from './ingestion';
+// Re-export Metadata from metadata.ts
+export type { Metadata } from './metadata';
+export type {
+  PerformanceMetrics as PerformanceMetricsType,
   ProjectStats,
   ErrorDetails,
   ErrorResponse,
@@ -60,6 +74,8 @@ export * from './auth';
 
 // Reconciliation types
 export * from './reconciliation';
+// Re-export ReconciliationMetrics explicitly
+export type { ReconciliationMetrics } from './reconciliation';
 
 // Analytics & Reporting types (frontend-specific DashboardData)
 export * from './analytics';
@@ -78,6 +94,8 @@ export * from './files';
 
 // Ingestion types
 export * from './ingestion';
+// Re-export QualityMetrics explicitly
+export type { DataQualityMetrics as QualityMetrics } from './ingestion';
 
 // Data types (DataSource, DataMapping, DataTransfer)
 export * from './data';

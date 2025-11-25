@@ -19,7 +19,8 @@ import { FileDropzone } from '../components/EnhancedDropzone';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import StatusBadge from '../components/ui/StatusBadge';
-import { apiClient, Project } from '../services/apiClient';
+import { apiClient } from '../services/apiClient';
+import type { Project } from '../types/backend-aligned';
 import ProgressBar from '../components/ui/ProgressBar';
 import { PageMeta } from '../components/seo/PageMeta';
 

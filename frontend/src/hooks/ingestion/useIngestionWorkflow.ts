@@ -1,5 +1,10 @@
 import { useState, useCallback, useEffect } from 'react';
-import { UploadedFile, DataValidation, DataQualityMetrics, FieldMapping } from '@/types/ingestion';
+import {
+  UploadedFile,
+  DataValidation,
+  DataQualityMetrics,
+  FieldMapping,
+} from '../../types/ingestion';
 import { transformApiFileToUploadedFile } from '@/utils/ingestion/dataTransformation';
 import {
   validateUploadedFile,
@@ -19,6 +24,8 @@ export interface IngestionWorkflowState {
   isUploading: boolean;
   isValidating: boolean;
   isProcessing: boolean;
+  isTransforming: boolean;
+  error: string | null;
 }
 
 export interface IngestionWorkflowActions {
@@ -53,6 +60,8 @@ export const useIngestionWorkflow = () => {
     isUploading: false,
     isValidating: false,
     isProcessing: false,
+    isTransforming: false,
+    error: null,
   });
 
   /**
@@ -67,11 +76,13 @@ export const useIngestionWorkflow = () => {
       const uploadedFiles: UploadedFile[] = [];
 
       // Generate mock data
-      const mockData = [
-        { id: '1', name: 'John Doe', amount: 1000, date: '2024-01-01' },
-        { id: '2', name: 'Jane Smith', amount: 2000, date: '2024-01-02' },
-        { id: '3', name: 'Bob Johnson', amount: 1500, date: '2024-01-03' },
-      ];
+      const mockData = {
+        records: [
+          { id: '1', name: 'John Doe', amount: 1000, date: '2024-01-01' },
+          { id: '2', name: 'Jane Smith', amount: 2000, date: '2024-01-02' },
+          { id: '3', name: 'Bob Johnson', amount: 1500, date: '2024-01-03' },
+        ],
+      };
 
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
@@ -79,21 +90,21 @@ export const useIngestionWorkflow = () => {
         // Simulate API call - in real app this would upload to backend
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
-        const mockResult = {
+        const result = {
           id: `upload_${Date.now()}`,
           records: Math.floor(Math.random() * 1000),
         };
 
         const uploadedFile: UploadedFile = {
-          id: mockResult.id,
+          id: result.id,
           name: file.name,
           size: file.size,
           type: file.type,
           status: 'completed',
           progress: 100,
-          records: mockResult.records,
-          data: mockData, // Add mock data
-        } as UploadedFile;
+          records: result.records,
+          data: mockData,
+        };
 
         uploadedFiles.push(uploadedFile);
       }
@@ -107,7 +118,7 @@ export const useIngestionWorkflow = () => {
       setState((prev) => ({
         ...prev,
         isUploading: false,
-        error: getErrorMessage(error, 'Upload failed'),
+        error: getErrorMessage(error as Error, 'Upload failed'),
       }));
     }
   }, []);
@@ -118,10 +129,10 @@ export const useIngestionWorkflow = () => {
    * @param {UploadedFile} file - File to select
    */
   const selectFile = useCallback((file: UploadedFile) => {
-      setState((prev) => ({
-        ...prev,
-        selectedFile: file,
-      }));
+    setState((prev) => ({
+      ...prev,
+      selectedFile: file,
+    }));
   }, []);
 
   // Validate selected file
@@ -146,7 +157,7 @@ export const useIngestionWorkflow = () => {
         { id: '3', name: 'Bob Johnson', amount: 1500, date: '2024-01-03' },
       ];
 
-      const mockColumns = [
+      const mockColumns: any[] = [
         {
           name: 'id',
           type: 'string' as const,
@@ -178,26 +189,14 @@ export const useIngestionWorkflow = () => {
       ];
 
       const validations = validateDataset(mockData, mockColumns);
-      const severityMap = {
-        low: 'info' as const,
-        medium: 'warning' as const,
-        high: 'error' as const,
-      };
-      const validationSeverities = validations.map((v) => ({
-        severity: v.severity ? severityMap[v.severity] : 'info',
-      }));
-      const qualityMetrics = calculateDataQualityMetrics(
-        mockData,
-        mockColumns,
-        validationSeverities
-      );
+      const qualityMetrics = calculateDataQualityMetrics(mockData, mockColumns, validations);
 
       // Update file with processed data
-      const updatedFile = {
+      const updatedFile: UploadedFile = {
         ...file,
         status: 'completed' as const,
         records: mockData.length,
-        data: mockData,
+        data: { records: mockData },
         columns: mockColumns,
         qualityMetrics,
         validations,
@@ -210,13 +209,12 @@ export const useIngestionWorkflow = () => {
         validations,
         qualityMetrics,
         isValidating: false,
-        currentStep: 'map',
       }));
     } catch (error) {
       setState((prev) => ({
         ...prev,
         isValidating: false,
-        error: getErrorMessage(error, 'Validation failed'),
+        error: getErrorMessage(error as Error, 'Validation failed'),
       }));
     }
   }, []);
@@ -233,7 +231,7 @@ export const useIngestionWorkflow = () => {
   const applyDataTransformations = useCallback(
     (data: Record<string, unknown>[], mappings: FieldMapping[]): Record<string, unknown>[] => {
       return data.map((row, index) => {
-        const transformedRow = { ...row, id: `transformed_${index}` };
+        const transformedRow: Record<string, unknown> = { ...row, id: `transformed_${index}` };
 
         mappings.forEach((mapping) => {
           if (row[mapping.sourceField] !== undefined) {
@@ -257,7 +255,7 @@ export const useIngestionWorkflow = () => {
   // Transform data using mappings
   const transformData = useCallback(async () => {
     const { selectedFile, mappings } = state;
-    if (!selectedFile || !selectedFile.data || mappings.length === 0) return;
+    if (!selectedFile || !selectedFile.data || !selectedFile.data.records || mappings.length === 0) return;
 
     setState((prev) => ({ ...prev, isTransforming: true, error: null }));
 
@@ -265,12 +263,14 @@ export const useIngestionWorkflow = () => {
       // Simulate transformation
       await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      const transformedData = applyDataTransformations(selectedFile.data, mappings);
+      const dataArray = Array.isArray(selectedFile.data.records)
+        ? selectedFile.data.records
+        : [selectedFile.data.records || {}];
+      const transformedData = applyDataTransformations(dataArray as Record<string, unknown>[], mappings);
 
       // Update file with transformed data
-      const updatedFile = {
+      const updatedFile: UploadedFile = {
         ...selectedFile,
-        data: transformedData,
         cleanedData: transformedData,
       };
 
@@ -279,13 +279,12 @@ export const useIngestionWorkflow = () => {
         files: prev.files.map((f) => (f.id === selectedFile.id ? updatedFile : f)),
         selectedFile: updatedFile,
         isTransforming: false,
-        currentStep: 'complete',
       }));
     } catch (error) {
       setState((prev) => ({
         ...prev,
         isTransforming: false,
-        error: getErrorMessage(error, 'Transformation failed'),
+        error: getErrorMessage(error as Error, 'Transformation failed'),
       }));
     }
   }, [state, applyDataTransformations]);
@@ -303,12 +302,11 @@ export const useIngestionWorkflow = () => {
         validations: prev.selectedFile?.id === fileId ? [] : prev.validations,
         qualityMetrics: prev.selectedFile?.id === fileId ? null : prev.qualityMetrics,
         mappings: prev.selectedFile?.id === fileId ? [] : prev.mappings,
-        currentStep: prev.selectedFile?.id === fileId ? 'upload' : prev.currentStep,
       }));
     } catch (error) {
       setState((prev) => ({
         ...prev,
-        error: getErrorMessage(error, 'Delete failed'),
+        error: getErrorMessage(error as Error, 'Delete failed'),
       }));
     }
   }, []);
@@ -325,7 +323,6 @@ export const useIngestionWorkflow = () => {
       isValidating: false,
       isProcessing: false,
       isTransforming: false,
-      currentStep: 'upload',
       error: null,
     });
   }, []);
@@ -374,7 +371,7 @@ function applyTransformation(value: unknown, transformation: string): unknown {
     }
     case 'date_format':
       try {
-        const date = new Date(value);
+        const date = new Date(value as string | number);
         return date.toISOString().split('T')[0];
       } catch {
         return value;

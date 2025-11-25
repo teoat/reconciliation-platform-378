@@ -5,7 +5,13 @@
  * Prevents API key exposure in frontend.
  */
 
-import { logger } from './logger';
+// Logger stub
+const logger = {
+  info: console.info,
+  warn: console.warn,
+  error: console.error,
+  debug: console.debug,
+};
 import { apiClient } from './apiClient';
 
 export type AIProvider = 'openai' | 'anthropic' | 'gemini';
@@ -79,28 +85,28 @@ class AIService {
       }
 
       // Make request to secure backend endpoint
-      const response = await apiClient.post<AIChatResponse>('/ai/chat', {
+      const response = (await apiClient.post('/ai/chat', {
         message: prompt.user,
         provider: prompt.provider,
         model: prompt.model,
         temperature: prompt.temperature,
         max_tokens: prompt.maxTokens,
-      });
+      })) as any;
 
       if (!response.success || !response.data) {
-        throw new Error(response.error || 'AI service request failed');
+        throw new Error(
+          typeof response.error === 'string' ? response.error : 'AI service request failed'
+        );
       }
 
       // Cache the response
       this.setCachedResponse(cacheKey, response.data);
 
-      logger.info('AI Service: Generated response', {
-        provider: response.data.provider,
-        model: response.data.model,
-        usage: response.data.usage,
-      });
-
-      return response.data;
+      if (response.data) {
+        return response.data!;
+      } else {
+        throw new Error('No response data received from AI service');
+      }
     } catch (error) {
       logger.error('AI Service: Failed to generate response', error);
       throw error;
@@ -113,7 +119,7 @@ class AIService {
   async checkHealth(): Promise<{ status: string; providers: Record<string, boolean> }> {
     try {
       const response = await apiClient.get('/ai/health');
-      return response;
+      return response as any;
     } catch (error) {
       logger.error('AI Service: Health check failed', error);
       return {

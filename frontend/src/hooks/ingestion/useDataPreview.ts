@@ -1,5 +1,8 @@
 import { useState, useCallback } from 'react';
-import { DataRow, ColumnInfo } from '@/types/ingestion';
+interface DataRow {
+  [key: string]: string | number | boolean | Date | null;
+}
+import { ColumnInfo } from '@/types/ingestion';
 import { sortByProperty, filterByProperty, paginate } from '@/utils/common/filteringSorting';
 
 export type FilterOperator =

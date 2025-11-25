@@ -86,7 +86,7 @@ const { isConnected, sendMessage: wsSendMessage, on, off } = useWebSocket()
           }
         }
       } catch (error) {
-        logger.error('Error parsing WebSocket message:', error);
+        logger.error('Error parsing WebSocket message:', { error: error instanceof Error ? error.message : String(error) });
       }
     }
 // Register event listener

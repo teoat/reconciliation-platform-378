@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
-import { Play, Settings, CheckCircle, AlertCircle } from 'lucide-react';
-import { DataRow, ColumnInfo, FieldMapping } from '../../types/ingestion';
+import { Play, CheckCircle, AlertCircle } from 'lucide-react';
+import { ColumnInfo, FieldMapping } from '../../types/ingestion';
+
+interface DataRow {
+  [key: string]: string | number | boolean | Date | null;
+}
 
 interface DataTransformPanelProps {
   data: DataRow[];

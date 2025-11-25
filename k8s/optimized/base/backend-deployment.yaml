@@ -95,6 +95,11 @@ spec:
             secretKeyRef:
               name: reconciliation-secrets
               key: JWT_SECRET
+        - name: JWT_REFRESH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: reconciliation-secrets
+              key: JWT_REFRESH_SECRET
         - name: GOOGLE_CLIENT_ID
           valueFrom:
             secretKeyRef:

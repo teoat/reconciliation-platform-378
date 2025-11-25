@@ -55,7 +55,7 @@ export interface DataValidation {
   field: string;
   rule: string;
   status: 'passed' | 'failed' | 'warning';
-  severity?: 'low' | 'medium' | 'high';
+  severity?: 'error' | 'warning' | 'info';
   message?: string;
   value?: string | number | boolean | Date | null;
   expected?: string | number | boolean | Date | null;

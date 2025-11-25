@@ -43,6 +43,7 @@ export { default as UserFriendlyError } from './UserFriendlyError';
 export { default as ErrorCodeDisplay } from './ErrorCodeDisplay';
 export { default as ErrorHistory } from './ErrorHistory';
 export { default as ErrorReportingForm } from './ErrorReportingForm';
+export type { ErrorReport } from './ErrorReportingForm';
 export { default as ServiceDegradedBanner } from './ServiceDegradedBanner';
 export { default as FallbackContent } from './FallbackContent';
 export { default as CircuitBreakerStatus } from './CircuitBreakerStatus';

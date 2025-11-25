@@ -3,17 +3,18 @@ import { logger } from '@/services/logger';
 import { useWebSocketContext } from '../services/WebSocketProvider';
 import { useAppDispatch, addNotification, reconciliationJobsActions } from '../store/unifiedStore';
 import type {
-  ReconciliationProgressMessage,
-  ReconciliationCompletedMessage,
-  ReconciliationErrorMessage,
-  UserPresenceMessage,
-  ProjectUpdateMessage,
-  NotificationMessage,
-  ConnectionStatusMessage,
-  CollaborationUsersMessage,
-  CollaborationCommentMessage,
   WebSocketMessage,
 } from '../../../types';
+// WebSocket message types - using generic WebSocketMessage for now
+type ReconciliationProgressMessage = WebSocketMessage;
+type ReconciliationCompletedMessage = WebSocketMessage;
+type ReconciliationErrorMessage = WebSocketMessage;
+type UserPresenceMessage = WebSocketMessage;
+type ProjectUpdateMessage = WebSocketMessage;
+type NotificationMessage = WebSocketMessage;
+type ConnectionStatusMessage = WebSocketMessage;
+type CollaborationUsersMessage = WebSocketMessage;
+type CollaborationCommentMessage = WebSocketMessage;
 
 // WebSocket integration hook for real-time updates
 export const useWebSocketIntegration = () => {

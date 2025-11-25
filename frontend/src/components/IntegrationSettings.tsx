@@ -31,6 +31,7 @@ import {
   ProjectExportService,
   ExportOptions,
 } from '../services/integration';
+import type { Project } from '../types/backend-aligned';
 
 interface IntegrationSettingsProps {
   isVisible: boolean;
@@ -82,7 +83,7 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
     setIsExporting(true);
     try {
       const result = await ProjectExportService.exportProjects(
-        projects as unknown as any[],
+        projects as any,
         exportOptions
       );
       setExportResult(result);

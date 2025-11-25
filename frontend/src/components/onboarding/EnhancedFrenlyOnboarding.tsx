@@ -23,7 +23,7 @@ import {
   RotateCcw,
 } from 'lucide-react';
 
-export type UserRole = 'admin' | 'analyst' | 'viewer';
+export type UserRole = 'admin' | 'analyst' | 'viewer' | 'user';
 export type UserExperience = 'new' | 'experienced';
 
 interface OnboardingStep {
@@ -350,6 +350,22 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
             eyes: 'normal',
             mouth: 'smile',
             accessories: ['report'],
+          },
+        },
+      ],
+      user: [
+        {
+          id: 'user-get-started',
+          title: 'Welcome! 🎉',
+          description: 'Get started with reconciliation',
+          content:
+            'Welcome to the reconciliation platform! As a user, you can upload files, run reconciliations, and view results. Let me show you around.',
+          duration: 4000,
+          target: '[data-tour="dashboard"]',
+          expression: {
+            eyes: 'excited',
+            mouth: 'big-smile',
+            accessories: ['party-hat'],
           },
         },
       ],
