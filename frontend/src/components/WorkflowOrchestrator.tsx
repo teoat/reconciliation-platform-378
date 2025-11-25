@@ -301,18 +301,6 @@ const WorkflowOrchestrator = ({
     }
   }, [workflowStages, validateStageTransition, onDataSync, onStageChange]);
 
-    const previousStageData = workflowStages[currentStageIndex - 1];
-
-    setWorkflowStages((prev) =>
-      prev.map((stage) => ({
-        ...stage,
-        isActive: stage.id === previousStageData.id,
-      }))
-    );
-
-    onStageChange(previousStageData.page);
-  }, [workflowStages, onStageChange]);
-
   const goToNextStage = useCallback(() => {
     advanceToNextStage();
   }, [advanceToNextStage]);

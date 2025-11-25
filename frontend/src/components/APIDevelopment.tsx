@@ -12,6 +12,7 @@ import { Copy } from 'lucide-react';
 import { ExternalLink } from 'lucide-react';
 import { X } from 'lucide-react';
 import { useData } from '../components/DataProvider';
+import { formatTimeAgo } from '../utils/common/dateFormatting';
 
 // API Development Interfaces
 interface APIEndpoint {
@@ -376,16 +377,6 @@ const APIDevelopment = ({ project, onProgressUpdate }: APIDevelopmentProps) => {
     return 'bg-gray-100 text-gray-800';
   };
 
-  const formatTimeAgo = (timestamp: string) => {
-    const now = new Date();
-    const time = new Date(timestamp);
-    const diffInSeconds = Math.floor((now.getTime() - time.getTime()) / 1000);
-
-    if (diffInSeconds < 60) return 'Just now';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
-    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`;
-    return `${Math.floor(diffInSeconds / 86400)}d ago`;
-  };
 
   const handleCreateEndpoint = () => {
     setIsCreating(true);

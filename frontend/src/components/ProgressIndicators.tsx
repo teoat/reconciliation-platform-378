@@ -90,6 +90,15 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
           key={step.id}
           className={getStepClasses(step, index)}
           onClick={() => handleStepClick(step, index)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleStepClick(step, index);
+            }
+          }}
+          role="button"
+          tabIndex={0}
+          aria-label={`Go to step ${step.label || index + 1}`}
         >
           <div className="flex-shrink-0">{getStepIcon(step, index)}</div>
 

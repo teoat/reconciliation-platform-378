@@ -225,7 +225,7 @@ export const typeGuards = {
   isArray: <T>(value: T | unknown[]): value is unknown[] => Array.isArray(value),
 
   // Check if value is a function
-  isFunction: <T>(value: T | Function): value is Function => typeof value === 'function',
+  isFunction: <T>(value: T | ((...args: unknown[]) => unknown)): value is ((...args: unknown[]) => unknown) => typeof value === 'function',
 
   // Check if value is null or undefined
   isNullish: <T>(value: T | null | undefined): value is null | undefined => value == null,

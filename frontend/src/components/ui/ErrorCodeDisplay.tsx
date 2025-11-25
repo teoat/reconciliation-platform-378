@@ -51,6 +51,7 @@ export const ErrorCodeDisplay: React.FC<ErrorCodeDisplayProps> = ({
     }
   };
 
+  // Use formatTimeAgo for relative time, or formatDate for full timestamp
   const formatTimestamp = (date: Date): string => {
     return date.toLocaleString([], {
       year: 'numeric',

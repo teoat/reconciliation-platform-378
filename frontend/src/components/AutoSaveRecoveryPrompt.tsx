@@ -7,6 +7,7 @@ import { RotateCcw } from 'lucide-react';
 import { Trash2 } from 'lucide-react';
 import { Eye } from 'lucide-react';
 import { X } from 'lucide-react';
+import { formatTimeAgo } from '../utils/common/dateFormatting';
 interface RecoveryPrompt {
   timestamp: number;
   data: Record<string, unknown>;
@@ -30,21 +31,6 @@ export const AutoSaveRecoveryPrompt: React.FC<RecoveryPromptProps> = ({
   onDismiss,
   onCompare,
 }) => {
-  const formatTimestamp = (timestamp: number): string => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMinutes = Math.floor(diffMs / (1000 * 60));
-    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-    if (diffMinutes < 1) return 'Just now';
-    if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
-    if (diffHours < 24) return `${diffHours} hours ago`;
-    if (diffDays < 7) return `${diffDays} days ago`;
-
-    return date.toLocaleDateString();
-  };
 
   const getDataPreview = (data: Record<string, unknown>): string => {
     const keys = Object.keys(data);
@@ -80,7 +66,7 @@ export const AutoSaveRecoveryPrompt: React.FC<RecoveryPromptProps> = ({
           <div className="bg-gray-50 rounded-lg p-4 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Saved:</span>
-              <span className="text-gray-900">{formatTimestamp(prompt.timestamp)}</span>
+              <span className="text-gray-900">{formatTimeAgo(prompt.timestamp)}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-gray-500">Page:</span>

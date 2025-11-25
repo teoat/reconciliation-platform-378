@@ -8,6 +8,7 @@ import React, { useState, useMemo } from 'react';
 import { X, Search, Filter, Clock, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { ErrorCodeDisplay } from './ErrorCodeDisplay';
 import { Button } from './Button';
+import { formatTimeAgo } from '../../utils/common/dateFormatting';
 
 export interface ErrorHistoryItem {
   id: string;
@@ -97,19 +98,6 @@ export const ErrorHistory: React.FC<ErrorHistoryProps> = ({
     });
   };
 
-  const formatTimestamp = (date: Date): string => {
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
-  };
 
   const severityClasses = {
     error: 'bg-red-100 text-red-800 border-red-400',
@@ -206,7 +194,7 @@ export const ErrorHistory: React.FC<ErrorHistoryProps> = ({
                       <div className="flex items-center space-x-2 mb-1">
                         <h4 className="font-semibold text-sm">{errorItem.title || 'Error'}</h4>
                         <span className="text-xs opacity-75">
-                          {formatTimestamp(errorItem.timestamp)}
+                          {formatTimeAgo(errorItem.timestamp)}
                         </span>
                       </div>
 

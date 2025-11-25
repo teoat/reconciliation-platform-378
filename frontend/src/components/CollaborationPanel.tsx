@@ -17,6 +17,7 @@ import { Reply } from 'lucide-react'
 import { Edit } from 'lucide-react'
 import { Trash2 } from 'lucide-react';
 import { useRealtimeCollaboration } from '../hooks/useWebSocketIntegration';
+import { formatTimestamp } from '../utils/common/dateFormatting';
 
 interface LiveComment {
   id: string;
@@ -94,17 +95,6 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
       setReplyText('');
       setReplyingTo(null);
     }
-  };
-
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    
-    if (diff < 60000) return 'Just now';
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-    return date.toLocaleDateString();
   };
 
   const formatLastSeen = (lastSeen: string) => {

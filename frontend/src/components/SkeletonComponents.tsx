@@ -46,7 +46,7 @@ export interface ListSkeletonConfig extends SkeletonConfig {
 class SkeletonService {
   private static instance: SkeletonService;
   private config: SkeletonConfig;
-  private listeners: Map<string, Function[]> = new Map();
+  private listeners: Map<string, ((...args: unknown[]) => unknown)[]> = new Map();
 
   public static getInstance(): SkeletonService {
     if (!SkeletonService.instance) {

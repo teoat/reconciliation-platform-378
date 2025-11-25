@@ -9,6 +9,7 @@ import { AlertTriangle, CheckCircle, Clock, RefreshCw, Info } from 'lucide-react
 import { Tooltip } from './Tooltip';
 // Import ariaLiveRegionsService with type-safe access
 import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
+import { formatTime, formatTimeAgo } from '../../utils/common/dateFormatting';
 
 export interface CircuitBreakerStatusProps {
   service: string;
@@ -113,11 +114,7 @@ export const CircuitBreakerStatus: React.FC<CircuitBreakerStatusProps> = ({
     lg: 'px-3 py-1.5 text-base',
   };
 
-  // Format time for display
-  const formatTime = (date: Date): string => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
+  // Use consolidated date formatting utilities
   const getRelativeTime = (date: Date): string => {
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();

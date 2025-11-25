@@ -14,8 +14,8 @@
 // ============================================================================
 // PERFORMANCE UTILITIES
 // ============================================================================
-// Common performance utilities (debounce, throttle) - single source of truth
-export { debounce, throttle } from './common/performance';
+// Common performance utilities (debounce, throttle, memoize) - single source of truth
+export { debounce, throttle, memoize } from './common/performance';
 export * from './performance';
 export * from './performanceConfig';
 export * from './performanceMonitoring';
@@ -41,6 +41,17 @@ export * from './errorExtractionAsync';
 export * from './errorSanitization';
 export * from './errorStandardization';
 export * from './retryUtility';
+
+// ============================================================================
+// DATE FORMATTING UTILITIES
+// ============================================================================
+// Common date formatting utilities - single source of truth
+export {
+  formatTimeAgo,
+  formatTimestamp,
+  formatTime,
+  formatDate,
+} from './common/dateFormatting';
 
 // ============================================================================
 // SECURITY UTILITIES

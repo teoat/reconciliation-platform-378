@@ -71,3 +71,40 @@ export function throttle<T extends (...args: unknown[]) => unknown>(
     return lastResult;
   };
 }
+
+/**
+ * Memoizes a function result, caching results based on input arguments.
+ *
+ * @param func - The function to memoize
+ * @param keyGenerator - Optional function to generate cache keys (default: JSON.stringify)
+ * @returns Memoized function
+ *
+ * @example
+ * ```typescript
+ * const expensiveCalculation = memoize((n: number) => {
+ *   // Expensive computation
+ *   return n * n;
+ * });
+ *
+ * expensiveCalculation(5); // Computes and caches
+ * expensiveCalculation(5); // Returns cached result
+ * ```
+ */
+export function memoize<T extends (...args: unknown[]) => unknown>(
+  func: T,
+  keyGenerator?: (...args: Parameters<T>) => string
+): T {
+  const cache = new Map<string, ReturnType<T>>();
+
+  return ((...args: Parameters<T>) => {
+    const key = keyGenerator ? keyGenerator(...args) : JSON.stringify(args);
+
+    if (cache.has(key)) {
+      return cache.get(key);
+    }
+
+    const result = func(...args);
+    cache.set(key, result);
+    return result;
+  }) as T;
+}
