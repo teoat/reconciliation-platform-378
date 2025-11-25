@@ -129,7 +129,7 @@ interface CollaborativeFeaturesProps {
 }
 
 const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeaturesProps) => {
-  const { currentProject, getReconciliationData } = useData();
+  const { currentProject } = useData();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [comments, setComments] = useState<Comment[]>([]);
