@@ -1,6 +1,6 @@
-import { render, screen, waitFor } from '../test-utils'
+import { render, screen, waitFor } from '@testing-library/react'
 import { DataProvider, useData } from '../../frontend/src/components/DataProvider'
-import { createMockProject } from '../test-utils'
+import { createMockProject } from '../../test-utils'
 
 // Test component that uses the DataProvider
 const TestComponent = () => {

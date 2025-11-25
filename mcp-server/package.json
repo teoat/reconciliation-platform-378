@@ -8,11 +8,12 @@
     "build": "tsc --noEmit false",
     "start": "node dist/index.js",
     "start:bridge": "node dist/http-bridge.js",
+    "start:coordination": "node dist/agent-coordination.js",
     "dev": "tsx watch src/index.ts",
     "dev:bridge": "tsx watch src/http-bridge.ts",
+    "dev:coordination": "tsx watch src/agent-coordination.ts",
     "test": "vitest",
-    "test:e2e": "vitest run tests/e2e",
-    "postinstall": "npm install --save-dev @types/dockerode"
+    "test:e2e": "vitest run tests/e2e"
   },
   "keywords": [
     "mcp",
@@ -30,6 +31,7 @@
     "execa": "^8.0.1",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
+    "lru-cache": "^10.4.3",
     "pg": "^8.11.0",
     "redis": "^4.6.0",
     "simple-git": "^3.20.0",
@@ -38,11 +40,8 @@
   },
   "devDependencies": {
     "@types/dockerode": "^3.3.45",
-    "@types/express": "^4.17.21",
+    "@types/express": "^4.17.25",
     "@types/node": "^20.10.0",
-    "@types/pg": "^8.10.0",
-    "tsx": "^4.7.0",
-    "typescript": "^5.3.0",
-    "vitest": "^1.0.4"
+    "@types/pg": "^8.10.0"
   }
 }

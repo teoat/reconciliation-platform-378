@@ -362,8 +362,13 @@ impl SecretManager {
     pub async fn start_rotation_scheduler(&self) {
         let manager = Arc::new(self.clone());
 
-        tokio::spawn(async move {
+        // Use spawn_blocking to ensure we're in the right runtime context
+        tokio::task::spawn(async move {
+            // Wait a bit before starting to avoid startup issues
+            tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+            
             let mut interval = tokio::time::interval(tokio::time::Duration::from_secs(3600)); // Check every hour
+            interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
 
             loop {
                 interval.tick().await;

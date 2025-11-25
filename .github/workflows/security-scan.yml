@@ -155,3 +155,73 @@ jobs:
           console.log(`🚨 Security Alert: ${vulnCount} vulnerabilities detected`);
           console.log(`Please review the Security tab and update vulnerable dependencies.`);
 
+  # Secret Scanning Job
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Full history for secret scanning
+
+    - name: Run Gitleaks (Secret Detection)
+      uses: gitleaks/gitleaks-action@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        config-path: .gitleaks.toml
+        no-git: false
+        verbose: true
+        redact: true
+
+    - name: Run TruffleHog (Secret Detection)
+      uses: trufflesecurity/trufflehog@main
+      with:
+        path: ./
+        base: ${{ github.event.repository.default_branch }}
+        head: HEAD
+        extra_args: --only-verified
+
+    - name: Run detect-secrets
+      run: |
+        pip install detect-secrets
+        detect-secrets scan --baseline .secrets.baseline || true
+        detect-secrets audit .secrets.baseline || true
+
+    - name: Check for hardcoded secrets
+      run: |
+        echo "Checking for common hardcoded secret patterns..."
+        
+        # Check for hardcoded passwords (8+ characters in quotes)
+        if grep -r -E "password\s*=\s*[\"'][^\"']{8,}[\"']" --include="*.rs" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.py" . | grep -v node_modules | grep -v target | grep -v ".test." | grep -v "__tests__" | grep -v "e2e" | grep -v archive; then
+          echo "⚠️ Warning: Potential hardcoded passwords found"
+          exit 1
+        fi
+        
+        # Check for hardcoded API keys
+        if grep -r -E "(api[_-]?key|apikey)\s*=\s*[\"'][^\"']{10,}[\"']" --include="*.rs" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.py" . | grep -v node_modules | grep -v target | grep -v ".test." | grep -v "__tests__" | grep -v "e2e" | grep -v archive; then
+          echo "⚠️ Warning: Potential hardcoded API keys found"
+          exit 1
+        fi
+        
+        # Check for hardcoded secrets
+        if grep -r -E "secret\s*=\s*[\"'][^\"']{10,}[\"']" --include="*.rs" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.py" . | grep -v node_modules | grep -v target | grep -v ".test." | grep -v "__tests__" | grep -v "e2e" | grep -v archive | grep -v "CHANGE_ME"; then
+          echo "⚠️ Warning: Potential hardcoded secrets found"
+          exit 1
+        fi
+        
+        echo "✅ No hardcoded secrets detected in source code"
+
+    - name: Upload Secret Scan Results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: secret-scan-results
+        path: |
+          .secrets.baseline
+          gitleaks-report.json
+        retention-days: 30
+        if-no-files-found: ignore
+

@@ -1,5 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { logger } from '@/services/logger';
+import { toRecord } from '../utils/typeHelpers';
 
 export interface ValidationRule {
   required?: boolean;
@@ -192,7 +193,7 @@ export const useForm = ({
         try {
           await onSubmit(values);
         } catch (error) {
-          logger.error('Form submission error:', error);
+          logger.error('Form submission error:', toRecord(error));
         }
       }
 

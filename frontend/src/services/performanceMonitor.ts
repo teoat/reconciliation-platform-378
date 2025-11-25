@@ -1,9 +1,10 @@
 // Performance Monitoring Service
 import { logger } from '@/services/logger';
+import { toRecord } from '../utils/typeHelpers';
 // Implements Web Vitals tracking and performance optimization
 
 import React from 'react';
-// import { onCLS, onFCP, onLCP, onTTFB } from 'web-vitals'
+import { onCLS, onFCP, onLCP, onTTFB } from 'web-vitals';
 import { APP_CONFIG } from '../config/AppConfig';
 
 // Connection info interface
@@ -129,7 +130,7 @@ class PerformanceMonitor {
         logger.info('Performance monitoring initialized');
       }
     } catch (error) {
-      logger.error('Failed to initialize performance monitoring:', error);
+      logger.error('Failed to initialize performance monitoring:', toRecord(error));
     }
   }
 
@@ -274,7 +275,7 @@ class PerformanceMonitor {
       });
     } catch (error) {
       if (this.config.debug) {
-        logger.error('Failed to send performance metric:', error);
+        logger.error('Failed to send performance metric:', toRecord(error));
       }
     }
   }
@@ -307,7 +308,7 @@ class PerformanceMonitor {
       this.metrics = {};
     } catch (error) {
       if (this.config.debug) {
-        logger.error('Failed to report performance metrics:', error);
+        logger.error('Failed to report performance metrics:', toRecord(error));
       }
     }
   }

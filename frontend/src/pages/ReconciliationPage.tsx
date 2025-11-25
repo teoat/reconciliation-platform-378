@@ -1,4 +1,5 @@
 import React, { useState, memo, lazy, Suspense, useEffect } from 'react';
+import { toRecord } from '../utils/typeHelpers';
 import { logger } from '@/services/logger';
 import { useParams, useNavigate } from 'react-router-dom';
 import { SkipLink } from '@/components/ui/SkipLink';
@@ -326,7 +327,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
     },
     {
       key: 'actions',
-      label: 'Actions',
+      header: 'Actions',
       render: (_, row) => (
         <div className="flex space-x-2">
           {row.status === 'pending' && (
@@ -409,13 +410,13 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
     },
     {
       key: 'created_at',
-      label: 'Created',
+      header: 'Created',
       sortable: true,
       render: (value) => (value ? new Date(value).toLocaleDateString() : 'N/A'),
     },
     {
       key: 'actions',
-      label: 'Actions',
+      header: 'Actions',
       render: (_, row) => (
         <div className="flex space-x-2">
           <Button

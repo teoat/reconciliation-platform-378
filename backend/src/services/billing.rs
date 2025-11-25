@@ -41,6 +41,13 @@ pub struct BillingService {
 }
 
 impl BillingService {
+    /// Create a new billing service
+    ///
+    /// # Arguments
+    /// * `stripe_secret_key` - Stripe API secret key (empty string for development mode)
+    ///
+    /// # Returns
+    /// * `Self` - Billing service instance
     pub fn new(stripe_secret_key: String) -> Self {
         // let stripe_client = if !stripe_secret_key.is_empty() {
         //     Some(Client::new(stripe_secret_key.clone()))
@@ -55,6 +62,22 @@ impl BillingService {
     }
 
     /// Create a checkout session for subscription upgrade
+    ///
+    /// # Arguments
+    /// * `user_id` - User ID requesting the subscription
+    /// * `tier` - Subscription tier (Free, Pro, Enterprise)
+    /// * `billing_cycle` - Billing cycle ("monthly" or "yearly")
+    ///
+    /// # Returns
+    /// * `Result<CheckoutSessionResponse, BillingError>` - Checkout session details or error
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use reconciliation_backend::services::billing::{BillingService, SubscriptionTier};
+    /// # let service = BillingService::new("".to_string());
+    /// # let user_id = uuid::Uuid::new_v4();
+    /// let session = service.create_checkout_session(user_id, SubscriptionTier::Pro, "monthly").await?;
+    /// ```
     pub async fn create_checkout_session(
         &self,
         user_id: Uuid,
@@ -82,6 +105,15 @@ impl BillingService {
     }
 
     /// Create or update subscription
+    ///
+    /// # Arguments
+    /// * `user_id` - User ID for the subscription
+    /// * `tier` - Subscription tier
+    /// * `billing_cycle` - Billing cycle ("monthly" or "yearly")
+    /// * `payment_method_id` - Optional payment method ID from Stripe
+    ///
+    /// # Returns
+    /// * `Result<Subscription, BillingError>` - Created subscription or error
     pub async fn create_subscription(
         &self,
         user_id: Uuid,
@@ -118,6 +150,13 @@ impl BillingService {
     }
 
     /// Cancel subscription
+    ///
+    /// # Arguments
+    /// * `subscription_id` - Subscription ID to cancel
+    /// * `immediately` - If true, cancel immediately; if false, cancel at period end
+    ///
+    /// # Returns
+    /// * `Result<(), BillingError>` - Success or error
     pub async fn cancel_subscription(
         &self,
         subscription_id: Uuid,
@@ -132,6 +171,12 @@ impl BillingService {
     }
 
     /// Process subscription renewal
+    ///
+    /// # Arguments
+    /// * `subscription_id` - Subscription ID to renew
+    ///
+    /// # Returns
+    /// * `Result<Subscription, BillingError>` - Renewed subscription or error
     pub async fn renew_subscription(
         &self,
         _subscription_id: Uuid,
@@ -141,6 +186,12 @@ impl BillingService {
     }
 
     /// Get usage metrics for a user
+    ///
+    /// # Arguments
+    /// * `user_id` - User ID to get metrics for
+    ///
+    /// # Returns
+    /// * `Result<UsageMetrics, BillingError>` - Usage metrics or error
     pub async fn get_usage_metrics(&self, _user_id: Uuid) -> Result<UsageMetrics, BillingError> {
         // Mock usage metrics - in production, this would query actual usage
         Ok(UsageMetrics {

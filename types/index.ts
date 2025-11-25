@@ -5,6 +5,24 @@ export * from './ingestion';
 export * from './reconciliation';
 export * from './data';
 
+// Import and re-export missing types
+import type { Priority } from '../frontend/src/types/backend-aligned';
+import type { Metadata } from '../frontend/src/types/metadata';
+import type { ReconciliationMetrics } from '../frontend/src/types/reconciliation';
+import type { PerformanceMetrics } from '../frontend/src/types/backend-aligned';
+import type { DataQualityMetrics as QualityMetrics } from '../frontend/src/types/ingestion';
+
+// Re-export for use in this file
+export type { Priority, Metadata, ReconciliationMetrics, PerformanceMetrics, QualityMetrics };
+
+// Define missing types
+export type ComparisonOperator = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in' | 'contains' | 'starts_with' | 'ends_with';
+export type Permission = string;
+export type DataRetentionPolicy = Record<string, unknown>;
+export type AuditAction = string;
+export type ComplianceRequirement = Record<string, unknown>;
+export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
+
 // ============================================================================
 // CASHFLOW EVALUATION TYPES
 // ============================================================================

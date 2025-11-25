@@ -1,7 +1,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { init as initApm } from '@elastic/apm-rum';
-import App from './App.tsx';
+import App from './App';
 import './index.css';
 import { errorTracking } from './services/monitoring/errorTracking';
 import { performanceMonitoring } from './services/monitoring/performance';

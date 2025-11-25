@@ -373,8 +373,12 @@ export {
 // DEFAULT EXPORT
 // ============================================================================
 
+// Import apiClient for re-export
+import { apiClient } from './apiClient';
+
 /**
  * Default export: API Client
  * For convenience: import apiClient from '@/services'
  */
 export { apiClient as default };
+export { apiClient };

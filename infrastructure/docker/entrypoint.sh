@@ -58,17 +58,15 @@ if [ -z "$JWT_REFRESH_SECRET" ]; then
 fi
 echo "✅ JWT_REFRESH_SECRET is set" >&2
 
-# Try to run the binary and capture output
-# Use exec to replace shell process (proper signal handling)
-# Redirect both stdout and stderr for Docker log capture
-# Try without exec first to see exit code
+# Set default HOST and PORT if not set
+export HOST=${HOST:-0.0.0.0}
+export PORT=${PORT:-2000}
+
 echo "About to execute binary..." >&2
-/app/reconciliation-backend > /tmp/backend_stdout.log 2> /tmp/backend_stderr.log
-EXIT_CODE=$?
-echo "Binary exited with code: $EXIT_CODE" >&2
-echo "--- STDOUT ---" >&2
-cat /tmp/backend_stdout.log >&2
-echo "--- STDERR ---" >&2
-cat /tmp/backend_stderr.log >&2
-exit $EXIT_CODE
+echo "  HOST: $HOST" >&2
+echo "  PORT: $PORT" >&2
+
+# Use exec to replace shell process (proper signal handling)
+# This ensures the binary receives signals correctly
+exec /app/reconciliation-backend
 

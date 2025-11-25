@@ -1,4 +1,5 @@
 // Quick Reconciliation Wizard - Single-page streamlined workflow
+import { toRecord } from '../utils/typeHelpers';
 import { logger } from '@/services/logger';
 // Reduces workflow steps by 22% (9 steps → 7 steps)
 // Combines: Upload + Configure + Start in one flow
@@ -67,7 +68,7 @@ const QuickReconciliationWizard: React.FC = () => {
         }
       }
     } catch (error) {
-      logger.error('Failed to load projects:', error);
+      logger.error('Failed to load projects:', toRecord(error));
     } finally {
       setLoading(false);
     }
@@ -108,8 +109,8 @@ const QuickReconciliationWizard: React.FC = () => {
       const jobResult = await apiClient.createReconciliationJob(selectedProject.id, {
         name: `Quick Reconciliation ${new Date().toISOString()}`,
         description: 'Quick wizard reconciliation',
-        source_data_source_id: dataSources[0].id,
-        target_data_source_id: dataSources[1].id,
+        source_a_id: dataSources[0].id,
+        source_b_id: dataSources[1].id,
         confidence_threshold: config.matchingThreshold,
         settings: config,
       });
@@ -125,7 +126,7 @@ const QuickReconciliationWizard: React.FC = () => {
         }, 1500);
       }
     } catch (error) {
-      logger.error('Reconciliation failed:', error);
+      logger.error('Reconciliation failed:', toRecord(error));
       setJobStatus('idle');
     }
   };

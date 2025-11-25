@@ -1,5 +1,6 @@
 import { lazy, Suspense, ComponentType } from 'react';
 import { logger } from '@/services/logger';
+import { toRecord } from './typeHelpers';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 
 // ============================================================================

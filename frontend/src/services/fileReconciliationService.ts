@@ -77,10 +77,12 @@ class FileReconciliationService {
         return {
           error: {
             message: data.error?.message || 'Upload failed',
-            statusCode: response.status,
-            timestamp: new Date().toISOString(),
-            path: `/projects/${projectId}/files`,
-            method: 'POST',
+            code: `HTTP_${response.status}`,
+            details: {
+              path: `/projects/${projectId}/files`,
+              method: 'POST',
+              timestamp: new Date().toISOString(),
+            },
           },
         };
       }
@@ -88,13 +90,15 @@ class FileReconciliationService {
       return { data };
     } catch (error) {
       return {
-        error: {
-          message: error instanceof Error ? error.message : 'Upload failed',
-          statusCode: 0,
-          timestamp: new Date().toISOString(),
-          path: `/projects/${projectId}/files`,
-          method: 'POST',
-        },
+          error: {
+            message: error instanceof Error ? error.message : 'Upload failed',
+            code: 'UPLOAD_ERROR',
+            details: {
+              path: `/projects/${projectId}/files`,
+              method: 'POST',
+              timestamp: new Date().toISOString(),
+            },
+          },
       };
     }
   }

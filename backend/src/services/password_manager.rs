@@ -163,13 +163,31 @@ impl PasswordManager {
     }
 
     /// Initialize with default passwords
+    /// 
+    /// ⚠️ SECURITY NOTE: This method is for development/testing only.
+    /// In production, passwords should be managed through environment variables
+    /// or secure secret management systems, not hardcoded defaults.
+    /// 
+    /// Default passwords are only created if they don't already exist.
     pub async fn initialize_default_passwords(&self) -> AppResult<()> {
-        let default_passwords = vec![
-            ("AldiBabi", "AldiBabi"),
-            ("AldiAnjing", "AldiAnjing"),
-            ("YantoAnjing", "YantoAnjing"),
-            ("YantoBabi", "YantoBabi"),
-        ];
+        // ⚠️ SECURITY: Default passwords should only be used in development
+        // In production, use environment variables or secure secret management
+        let default_passwords: Vec<(&str, &str)> = if std::env::var("ENVIRONMENT")
+            .unwrap_or_else(|_| "development".to_string())
+            .to_lowercase() == "production"
+        {
+            // In production, don't initialize default passwords
+            log::warn!("Skipping default password initialization in production environment");
+            return Ok(());
+        } else {
+            // Development/testing defaults - these should be changed in production
+            vec![
+                ("AldiBabi", "AldiBabi"),
+                ("AldiAnjing", "AldiAnjing"),
+                ("YantoAnjing", "YantoAnjing"),
+                ("YantoBabi", "YantoBabi"),
+            ]
+        };
 
         let mut errors = Vec::new();
         for (name, password) in default_passwords {

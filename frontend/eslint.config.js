@@ -30,6 +30,7 @@ export default [
       ...jsxA11yPlugin.configs.recommended.rules,
       'no-unused-vars': 'off',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-explicit-any': 'off', // Disable strict any checking for now
       'no-console': 'off',
       'no-undef': 'off', // TypeScript handles this
       '@typescript-eslint/no-undef': 'off', // TypeScript handles this

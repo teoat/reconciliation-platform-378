@@ -153,8 +153,8 @@ export class OnboardingOrchestrator {
         pageId,
         completedSteps,
         currentStep,
-        progress: Math.round(progress),
-      });
+        // progress is not part of OnboardingProgress interface, omit it
+      } as Parameters<typeof frenlyAgentService.updateOnboardingProgress>[0]);
     } catch (error) {
       logger.debug('Failed to sync onboarding progress to Frenly AI', { pageId, error });
     }

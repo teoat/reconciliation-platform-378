@@ -8,6 +8,7 @@ import React, {
   useCallback,
 } from 'react';
 import { logger } from '@/services/logger';
+import { toRecord } from '../utils/typeHelpers';
 import { Navigate } from 'react-router-dom';
 import { apiClient } from '../services/apiClient';
 import { UserResponse, LoginRequest, RegisterRequest } from '../types/backend-aligned';
@@ -71,7 +72,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
       } catch (error) {
-        logger.error('Auth check failed:', error);
+        logger.error('Auth check failed:', toRecord(error));
         apiClient.clearAuthToken();
       } finally {
         setIsLoading(false);
@@ -85,7 +86,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await apiClient.logout();
     } catch (error) {
-      logger.error('Logout error:', error);
+      logger.error('Logout error:', toRecord(error));
     } finally {
       setUser(null);
       apiClient.clearAuthToken();

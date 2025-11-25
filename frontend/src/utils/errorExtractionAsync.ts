@@ -32,12 +32,21 @@ export async function extractErrorFromFetchResponseAsync(
   let bodyCorrelationId = correlationId;
 
   try {
+    // ✅ CORRELATION ID: Extract from response headers first (primary source)
+    const headerCorrelationId = response.headers.get('x-correlation-id') ||
+                                 response.headers.get('X-Correlation-ID') ||
+                                 correlationId;
+    
     const contentType = response.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
       const data = await response.json().catch(() => ({}));
       errorMessage = data.message || data.error || data.errorMessage || errorMessage;
       bodyErrorCode = data.code || data.errorCode || errorCode;
-      bodyCorrelationId = bodyCorrelationId || data.correlationId || data.correlation_id;
+      // ✅ CORRELATION ID: Prefer JSON body, fallback to header, then original
+      bodyCorrelationId = data.correlationId || 
+                          data.correlation_id || 
+                          headerCorrelationId ||
+                          bodyCorrelationId;
     } else {
       // Try to get text response
       const text = await response.text().catch(() => '');

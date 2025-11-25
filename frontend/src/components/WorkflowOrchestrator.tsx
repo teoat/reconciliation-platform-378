@@ -1,5 +1,6 @@
 'use client';
 import { logger } from '@/services/logger';
+import { toRecord } from '../utils/typeHelpers';
 
 import { useState, useCallback, useMemo } from 'react';
 import { Workflow, Zap } from 'lucide-react';
@@ -294,7 +295,7 @@ const WorkflowOrchestrator = ({
       // Change page
       onStageChange(nextStageData.page);
     } catch (error) {
-      logger.error('Failed to advance workflow:', error);
+      logger.error('Failed to advance workflow:', toRecord(error));
     } finally {
       setIsAutoAdvancing(false);
     }

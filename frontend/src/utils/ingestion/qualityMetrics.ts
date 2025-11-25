@@ -1,5 +1,5 @@
 // Quality metrics utilities for ingestion
-import { DataQualityMetrics, DataRow, ColumnInfo } from '../../types/ingestion';
+import { DataQualityMetrics, DataRow, ColumnInfo } from '../../types/ingestion/index';
 
 /**
  * Calculates completeness score for a dataset

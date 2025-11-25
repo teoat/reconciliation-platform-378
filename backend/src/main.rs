@@ -292,7 +292,8 @@ async fn async_main() -> std::io::Result<()> {
     if let Err(e) = password_manager.initialize_default_passwords().await {
         log::warn!("Failed to initialize default passwords: {:?}", e);
     } else {
-        log::info!("Default passwords initialized: AldiBabi, AldiAnjing, YantoAnjing, YantoBabi");
+        // Note: Default passwords are only initialized in non-production environments
+        // See password_manager.rs for security notes
     }
     
     // Application secrets are now managed via environment variables (.env)

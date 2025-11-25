@@ -1,5 +1,6 @@
 // Performance Monitoring Utilities
 import { logger } from '@/services/logger';
+import { toRecord } from './typeHelpers';
 // Provides comprehensive performance monitoring for the Reconciliation Platform
 
 // Import common performance utilities (SSOT)
@@ -135,6 +136,10 @@ class PerformanceMonitor {
       }
 
       case 'layout-shift': {
+        interface PerformanceLayoutShift extends PerformanceEntry {
+          value: number;
+          hadRecentInput: boolean;
+        }
         const lsEntry = entry as PerformanceLayoutShift;
         if (!lsEntry.hadRecentInput) {
           metrics.cumulativeLayoutShift = lsEntry.value;
@@ -153,6 +158,14 @@ class PerformanceMonitor {
   }
 
   private calculateTotalBlockingTime(): number {
+    interface PerformanceLongTaskTiming extends PerformanceEntry {
+      attribution: Array<{
+        name: string;
+        entryType: string;
+        startTime: number;
+        duration: number;
+      }>;
+    }
     const longTasks = performance.getEntriesByType('long-task') as PerformanceLongTaskTiming[];
     return longTasks.reduce((total, task) => total + task.duration, 0);
   }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { logger } from '@/services/logger';
+import { debounce, throttle, memoize } from './common/performance';
 
 // ============================================================================
 // PERFORMANCE MONITORING UTILITIES
@@ -234,7 +235,9 @@ export function useNetworkMonitoring() {
     if (!('connection' in navigator)) return;
 
     // TypeScript doesn't have connection in Navigator type, but it exists in Chrome
-    const connection = (navigator as unknown as { connection?: { effectiveType?: string; downlink?: number } }).connection;
+    const connection = (
+      navigator as unknown as { connection?: { effectiveType?: string; downlink?: number } }
+    ).connection;
     setNetworkInfo({
       effectiveType: connection?.effectiveType || 'unknown',
       downlink: connection?.downlink || 0,
@@ -336,10 +339,10 @@ export function usePerformanceMonitoring(config: Partial<PerformanceConfig> = {}
 
 /**
  * Performance utilities (debounce, throttle, memoize)
- * 
+ *
  * @deprecated This file is deprecated. Use `@/utils/common/performance` instead.
  * This file is kept for backward compatibility and will be removed in a future version.
- * 
+ *
  * Migration guide:
  * - `debounce()` → `@/utils/common/performance::debounce()`
  * - `throttle()` → `@/utils/common/performance::throttle()`
@@ -418,7 +421,9 @@ export async function measureComponentBundleSize(componentName: string) {
       bundleSize: 0, // Would be calculated by bundler
     };
   } catch (error) {
-    logger.error(`Failed to measure bundle size for ${componentName}:`, { error: error instanceof Error ? error.message : String(error) });
+    logger.error(`Failed to measure bundle size for ${componentName}:`, {
+      error: error instanceof Error ? error.message : String(error),
+    });
     return null;
   }
 }
@@ -427,15 +432,7 @@ export async function measureComponentBundleSize(componentName: string) {
 // EXPORTS
 // ============================================================================
 
-export {
-  PerformanceMonitor,
-  debounce,
-  throttle,
-  memoize,
-  withPerformanceMonitoring,
-  analyzeBundleComposition,
-  measureComponentBundleSize,
-};
+export { PerformanceMonitor, debounce, throttle, memoize };
 
 export default {
   PerformanceMonitor,

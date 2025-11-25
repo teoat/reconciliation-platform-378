@@ -2,54 +2,64 @@ import { lazy } from 'react';
 import { logger } from '@/services/logger';
 import { createLazyRoute } from './lazyLoading';
 
+// Type-safe wrapper for createLazyRoute that handles module imports
+const createLazyRouteSafe = (importFn: () => Promise<unknown>) => {
+  return createLazyRoute(async () => {
+    const module = await importFn();
+    return {
+      default: (module as { default?: React.ComponentType<Record<string, unknown>> }).default || (() => null),
+    };
+  });
+};
+
 // ============================================================================
 // LAZY-LOADED ROUTES
 // ============================================================================
 
 // Authentication routes
-export const AuthPage = createLazyRoute(() => import('../components/pages/AuthPage'));
+export const AuthPage = createLazyRouteSafe(() => import('../pages/AuthPage'));
 
 // Dashboard routes
-export const Dashboard = createLazyRoute(() => import('../components/pages/Dashboard'));
-export const ProjectsPage = createLazyRoute(() => import('../components/pages/ProjectsPage'));
-export const ProjectDetailPage = createLazyRoute(
+export const Dashboard = createLazyRouteSafe(() => import('../pages/DashboardPage'));
+export const ProjectsPage = createLazyRouteSafe(() => import('../components/pages/ProjectsPage'));
+export const ProjectDetailPage = createLazyRouteSafe(
   () => import('../components/pages/ProjectDetailPage')
 );
 
 // Reconciliation routes
-export const ReconciliationPage = createLazyRoute(
-  () => import('../components/pages/ReconciliationPage')
+export const ReconciliationPage = createLazyRouteSafe(
+  () => import('../pages/ReconciliationPage')
 );
-export const ReconciliationDetailPage = createLazyRoute(
+export const ReconciliationDetailPage = createLazyRouteSafe(
   () => import('../components/pages/ReconciliationDetailPage')
 );
 
 // Ingestion routes
-export const IngestionPage = createLazyRoute(() => import('../components/pages/IngestionPage'));
-export const IngestionDetailPage = createLazyRoute(
+export const IngestionPage = createLazyRouteSafe(() => import('../pages/IngestionPage'));
+export const IngestionDetailPage = createLazyRouteSafe(
   () => import('../components/pages/IngestionDetailPage')
 );
 
 // Analytics routes
-export const AnalyticsPage = createLazyRoute(() => import('../components/pages/AnalyticsPage'));
-export const ReportsPage = createLazyRoute(() => import('../components/pages/ReportsPage'));
+export const AnalyticsPage = createLazyRouteSafe(() => import('../components/pages/AnalyticsPage'));
+export const ReportsPage = createLazyRouteSafe(() => import('../components/pages/ReportsPage'));
 
-// Settings routes
-export const SettingsPage = createLazyRoute(() => import('../components/pages/SettingsPage'));
-export const ProfilePage = createLazyRoute(() => import('../components/pages/ProfilePage'));
-export const OrganizationPage = createLazyRoute(
+// Settings routes - using components/pages directory
+export const SettingsPage = createLazyRouteSafe(() => import('../components/pages/Settings'));
+export const ProfilePage = createLazyRouteSafe(() => import('../components/pages/Profile'));
+export const OrganizationPage = createLazyRouteSafe(
   () => import('../components/pages/OrganizationPage')
 );
 
 // Admin routes
-export const AdminPage = createLazyRoute(() => import('../components/pages/AdminPage'));
-export const UserManagementPage = createLazyRoute(
+export const AdminPage = createLazyRouteSafe(() => import('../components/pages/AdminPage'));
+export const UserManagementPage = createLazyRouteSafe(
   () => import('../components/pages/UserManagementPage')
 );
 
-// Error pages
-export const NotFoundPage = createLazyRoute(() => import('../components/pages/NotFoundPage'));
-export const ErrorPage = createLazyRoute(() => import('../components/pages/ErrorPage'));
+// Error pages - using pages directory
+export const NotFoundPage = createLazyRouteSafe(() => import('../components/pages/NotFound').catch(() => ({ default: () => null })));
+export const ErrorPage = createLazyRouteSafe(() => import('../components/pages/ErrorPage'));
 
 // ============================================================================
 // ROUTE GROUPS FOR OPTIMIZATION
@@ -108,7 +118,7 @@ export const errorRoutes = {
  */
 export function preloadCoreRoutes() {
   return Promise.all([
-    import('../components/pages/Dashboard'),
+    import('../pages/DashboardPage'),
     import('../components/pages/ProjectsPage'),
     import('../components/pages/ProjectDetailPage'),
   ]);
@@ -119,7 +129,7 @@ export function preloadCoreRoutes() {
  */
 export function preloadReconciliationRoutes() {
   return Promise.all([
-    import('../components/pages/ReconciliationPage'),
+    import('../pages/ReconciliationPage'),
     import('../components/pages/ReconciliationDetailPage'),
   ]);
 }
@@ -129,7 +139,7 @@ export function preloadReconciliationRoutes() {
  */
 export function preloadIngestionRoutes() {
   return Promise.all([
-    import('../components/pages/IngestionPage'),
+    import('../pages/IngestionPage'),
     import('../components/pages/IngestionDetailPage'),
   ]);
 }
@@ -149,8 +159,8 @@ export function preloadAnalyticsRoutes() {
  */
 export function preloadSettingsRoutes() {
   return Promise.all([
-    import('../components/pages/SettingsPage'),
-    import('../components/pages/ProfilePage'),
+    import('../components/pages/Settings').catch(() => ({ default: () => null })),
+    import('../components/pages/Profile').catch(() => ({ default: () => null })),
     import('../components/pages/OrganizationPage'),
   ]);
 }
@@ -174,22 +184,22 @@ export function preloadAdminRoutes() {
  */
 export async function analyzeRouteBundles() {
   const routes = {
-    AuthPage: () => import('../components/pages/AuthPage'),
-    Dashboard: () => import('../components/pages/Dashboard'),
+    AuthPage: () => import('../pages/AuthPage'),
+    Dashboard: () => import('../pages/DashboardPage'),
     ProjectsPage: () => import('../components/pages/ProjectsPage'),
     ProjectDetailPage: () => import('../components/pages/ProjectDetailPage'),
-    ReconciliationPage: () => import('../components/pages/ReconciliationPage'),
+    ReconciliationPage: () => import('../pages/ReconciliationPage'),
     ReconciliationDetailPage: () => import('../components/pages/ReconciliationDetailPage'),
-    IngestionPage: () => import('../components/pages/IngestionPage'),
+    IngestionPage: () => import('../pages/IngestionPage'),
     IngestionDetailPage: () => import('../components/pages/IngestionDetailPage'),
     AnalyticsPage: () => import('../components/pages/AnalyticsPage'),
     ReportsPage: () => import('../components/pages/ReportsPage'),
-    SettingsPage: () => import('../components/pages/SettingsPage'),
-    ProfilePage: () => import('../components/pages/ProfilePage'),
+    SettingsPage: () => import('../components/pages/Settings').catch(() => ({ default: () => null })),
+    ProfilePage: () => import('../components/pages/Profile').catch(() => ({ default: () => null })),
     OrganizationPage: () => import('../components/pages/OrganizationPage'),
     AdminPage: () => import('../components/pages/AdminPage'),
     UserManagementPage: () => import('../components/pages/UserManagementPage'),
-    NotFoundPage: () => import('../components/pages/NotFoundPage'),
+    NotFoundPage: () => import('../components/pages/NotFound').catch(() => ({ default: () => null })),
     ErrorPage: () => import('../components/pages/ErrorPage'),
   };
 

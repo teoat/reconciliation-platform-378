@@ -1,5 +1,6 @@
 import React, { useState, useEffect, memo } from 'react';
 import { logger } from '@/services/logger';
+import { toRecord } from '../utils/typeHelpers';
 import { useLoading } from '../hooks/useLoading';
 import { Users } from 'lucide-react';
 import { UserPlus } from 'lucide-react';
@@ -151,7 +152,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       setShowCreateModal(false);
       reset();
     } catch (error) {
-      logger.error('Failed to create user:', error);
+      logger.error('Failed to create user:', toRecord(error));
     }
   };
 
@@ -172,7 +173,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       setSelectedUser(null);
       reset();
     } catch (error) {
-      logger.error('Failed to update user:', error);
+      logger.error('Failed to update user:', toRecord(error));
     }
   };
 
@@ -186,7 +187,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
       setShowDeleteModal(false);
       setSelectedUser(null);
     } catch (error) {
-      logger.error('Failed to delete user:', error);
+      logger.error('Failed to delete user:', toRecord(error));
     }
   };
 

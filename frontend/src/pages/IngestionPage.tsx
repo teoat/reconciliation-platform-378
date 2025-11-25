@@ -10,7 +10,10 @@ const logger = {
 };
 import { useData } from '@/components/DataProvider';
 import { useToast } from '@/hooks/useToast';
-import { PageConfig, StatsCard, ActionConfig } from '@/types/common';
+// PageConfig, StatsCard, ActionConfig are defined in BasePage component
+type PageConfig = { title: string; description: string; icon: React.ElementType; path?: string; showStats?: boolean; showActions?: boolean };
+type StatsCard = { title: string; value: string | number; icon: React.ElementType; color: string; progress?: number };
+type ActionConfig = { label: string; onClick: () => void; icon: React.ElementType; variant: 'primary' | 'secondary' | 'danger'; loading?: boolean };
 import { UploadedFile } from '@/types/ingestion';
 
 import { Modal } from '@/components/ui/Modal';

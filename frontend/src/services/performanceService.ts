@@ -4,6 +4,39 @@ import { logger } from '@/services/logger';
 
 import { EventEmitter } from 'events';
 
+// Type definitions for Performance API extensions
+interface LayoutShift extends PerformanceEntry {
+  value: number;
+  hadRecentInput: boolean;
+  sources: LayoutShiftAttribution[];
+}
+
+interface LayoutShiftAttribution {
+  node?: Node;
+  previousRect: DOMRectReadOnly;
+  currentRect: DOMRectReadOnly;
+}
+
+interface PerformanceLayoutShift extends PerformanceEntry {
+  value: number;
+  hadRecentInput: boolean;
+}
+
+interface PerformanceLongTaskTiming extends PerformanceEntry {
+  attribution: TaskAttributionTiming[];
+}
+
+interface TaskAttributionTiming {
+  name: string;
+  entryType: string;
+  startTime: number;
+  duration: number;
+  containerType: string;
+  containerName: string;
+  containerId: string;
+  containerSrc: string;
+}
+
 const createPerformanceMemory = (
   usedJSHeapSize: number,
   totalJSHeapSize: number,

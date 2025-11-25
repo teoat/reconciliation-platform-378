@@ -146,8 +146,10 @@ impl From<actix_web::Error> for AppError {
 impl ResponseError for AppError {
     fn error_response(&self) -> HttpResponse {
         // ✅ ERROR TRANSLATION: Use translation service for user-friendly messages
-        // Note: Correlation ID will be added by ErrorHandlerMiddleware
-        // This ensures correlation IDs flow through all error paths
+        // ✅ CORRELATION ID: Correlation IDs are added by ErrorHandlerMiddleware
+        // Note: ErrorHandlerMiddleware extracts correlation IDs from request extensions
+        // and adds them to both response headers and ensures they flow through all error paths
+        // The correlation_id field in ErrorResponse will be populated by ErrorHandlerMiddleware
         match self {
             AppError::Database(err) => {
                 let translator = get_error_translator();

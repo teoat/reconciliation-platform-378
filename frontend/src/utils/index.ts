@@ -35,10 +35,11 @@ export {
   useDebounce as useAdvancedDebounce,
   useThrottle as useAdvancedThrottle,
 } from './performanceOptimizations';
-export * from './bundleOptimization';
-export * from './codeSplitting';
-export * from './advancedCodeSplitting';
-export * from './lazyLoading';
+// Explicit exports to avoid duplicates
+export { analyzeBundleSize } from './bundleOptimization';
+export { createLazyComponent, preloadComponent } from './codeSplitting';
+export { LazyAdvancedVisualization, preloadComponent as preloadAdvancedComponent } from './advancedCodeSplitting';
+export { ErrorBoundary } from './lazyLoading';
 export * from './routeSplitting';
 export * from './dynamicImports';
 // Virtual scrolling - using .tsx version (more features)
@@ -51,7 +52,7 @@ export * from './memoryOptimization';
 // ============================================================================
 // ERROR HANDLING UTILITIES
 // ============================================================================
-export * from './errorHandler';
+export { ErrorHandler, ErrorSeverity } from './errorHandler';
 export * from './errorHandling';
 export * from './errorMessages';
 export * from './errorExtraction';
@@ -111,7 +112,8 @@ export {
   type ExtractedErrorInfo,
 } from './common/errorHandling';
 export * from './security';
-export * from './securityConfig';
+// Explicit export to avoid duplicate with cspNonce.ts
+export { buildCSPHeader } from './securityConfig';
 export * from './securityAudit';
 export * from './sanitize';
 // Legacy exports - deprecated, use common/validation instead
@@ -150,7 +152,8 @@ export * from './common/filteringSorting';
 // ============================================================================
 export * from './confetti';
 export * from './conversationStorage';
-export * from './pwaUtils';
+// Explicit export to avoid duplicate
+export { registerServiceWorker } from './pwaUtils';
 
 // ============================================================================
 // ASSET OPTIMIZATION UTILITIES

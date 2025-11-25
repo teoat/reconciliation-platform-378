@@ -1,7 +1,8 @@
 // Data Management Module
 export * from './types';
 export * from './utils';
-export { default as DataManagementService } from './service';
+import DataManagementServiceDefault from './service';
+export { DataManagementServiceDefault as DataManagementService };
 
 // Legacy export for backward compatibility
-export { DataManagementService as default };
+export { DataManagementServiceDefault as default };

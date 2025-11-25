@@ -183,7 +183,7 @@ export const useSecurity = () => {
       if (!isSecurityEnabled || !encryptedData._encrypted) return encryptedData;
 
       // Simple decryption simulation
-      const decryptedData = { ...encryptedData };
+      const decryptedData = { ...encryptedData } as T & { _encrypted?: boolean; _encryptionType?: string; _encryptedAt?: string };
       delete decryptedData._encrypted;
       delete decryptedData._encryptionType;
       delete decryptedData._encryptedAt;

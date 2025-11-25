@@ -1,6 +1,20 @@
 // IndexedDB testing module for data persistence verification
 
-import type { StorageOperation, DataIntegrityCheck } from './localStorageTester';
+// Define types locally since localStorageTester doesn't exist
+type StorageOperation = {
+  operation: 'read' | 'write' | 'delete' | 'clear';
+  key?: string;
+  value?: unknown;
+  timestamp: number;
+};
+
+type DataIntegrityCheck = {
+  key: string;
+  expectedValue: unknown;
+  actualValue: unknown;
+  passed: boolean;
+  timestamp: number;
+};
 
 export class IndexedDBTester {
   private dbName = 'DataPersistenceTestDB';

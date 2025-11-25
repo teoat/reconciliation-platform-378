@@ -42,6 +42,19 @@ pub struct MultiLevelCache {
 }
 
 impl MultiLevelCache {
+    /// Create a new multi-level cache service
+    ///
+    /// # Arguments
+    /// * `redis_url` - Redis connection URL (e.g., "redis://localhost:6379")
+    ///
+    /// # Returns
+    /// * `AppResult<Self>` - The cache service instance
+    ///
+    /// # Example
+    /// ```no_run
+    /// use reconciliation_backend::services::cache::MultiLevelCache;
+    /// let cache = MultiLevelCache::new("redis://localhost:6379")?;
+    /// ```
     pub fn new(redis_url: &str) -> AppResult<Self> {
         // URL-encode the password in the Redis URL if it contains special characters
         let encoded_url = if redis_url.contains("://:") && redis_url.contains("@") {
@@ -79,6 +92,13 @@ impl MultiLevelCache {
     }
 
     /// Create cache with resilience manager (for startup)
+    ///
+    /// # Arguments
+    /// * `redis_url` - Redis connection URL
+    /// * `_resilience` - Resilience manager for circuit breaker support
+    ///
+    /// # Returns
+    /// * `AppResult<Self>` - The cache service instance with resilience support
     pub fn new_with_resilience(
         redis_url: &str,
         _resilience: std::sync::Arc<crate::services::resilience::ResilienceManager>,
@@ -87,6 +107,20 @@ impl MultiLevelCache {
         Self::new(redis_url)
     }
 
+    /// Get a value from cache (checks L1 then L2)
+    ///
+    /// # Arguments
+    /// * `key` - Cache key
+    ///
+    /// # Returns
+    /// * `AppResult<Option<T>>` - Cached value if found, None otherwise
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use reconciliation_backend::services::cache::MultiLevelCache;
+    /// # let cache = MultiLevelCache::new("redis://localhost:6379")?;
+    /// let value: Option<String> = cache.get("my_key").await?;
+    /// ```
     pub async fn get<T>(&self, key: &str) -> AppResult<Option<T>>
     where
         T: for<'de> Deserialize<'de> + Clone + Serialize,
@@ -128,6 +162,23 @@ impl MultiLevelCache {
         Ok(None)
     }
 
+    /// Set a value in cache (stores in both L1 and L2)
+    ///
+    /// # Arguments
+    /// * `key` - Cache key
+    /// * `value` - Value to cache
+    /// * `ttl` - Optional time-to-live duration
+    ///
+    /// # Returns
+    /// * `AppResult<()>` - Success or error
+    ///
+    /// # Example
+    /// ```no_run
+    /// # use reconciliation_backend::services::cache::MultiLevelCache;
+    /// # use std::time::Duration;
+    /// # let cache = MultiLevelCache::new("redis://localhost:6379")?;
+    /// cache.set("my_key", &"my_value", Some(Duration::from_secs(60))).await?;
+    /// ```
     pub async fn set<T>(&self, key: &str, value: &T, ttl: Option<Duration>) -> AppResult<()>
     where
         T: Serialize,
@@ -155,6 +206,13 @@ impl MultiLevelCache {
         Ok(())
     }
 
+    /// Delete a value from cache (removes from both L1 and L2)
+    ///
+    /// # Arguments
+    /// * `key` - Cache key to delete
+    ///
+    /// # Returns
+    /// * `AppResult<()>` - Success or error
     pub async fn delete(&self, key: &str) -> AppResult<()> {
         // Delete from both caches
         self.l2_cache.delete(key)?;
@@ -287,6 +345,15 @@ pub struct CacheStats {
 
 impl CacheService {
     /// Create a new cache service
+    ///
+    /// # Arguments
+    /// * `redis_url` - Redis connection URL
+    ///
+    /// # Returns
+    /// * `AppResult<Self>` - The cache service instance
+    ///
+    /// # Errors
+    /// Returns an error if Redis connection fails
     pub fn new(redis_url: &str) -> AppResult<Self> {
         let client = Client::open(redis_url).map_err(|e| {
             AppError::InternalServerError(format!("Failed to connect to Redis: {}", e))
@@ -303,6 +370,12 @@ impl CacheService {
     }
 
     /// Get a value from cache
+    ///
+    /// # Arguments
+    /// * `key` - Cache key
+    ///
+    /// # Returns
+    /// * `AppResult<Option<T>>` - Cached value if found, None otherwise
     pub fn get<T>(&self, key: &str) -> AppResult<Option<T>>
     where
         T: for<'de> Deserialize<'de>,
@@ -329,6 +402,14 @@ impl CacheService {
     }
 
     /// Set a value in cache
+    ///
+    /// # Arguments
+    /// * `key` - Cache key
+    /// * `value` - Value to cache
+    /// * `ttl` - Optional time-to-live duration
+    ///
+    /// # Returns
+    /// * `AppResult<()>` - Success or error
     pub fn set<T>(&self, key: &str, value: &T, ttl: Option<Duration>) -> AppResult<()>
     where
         T: Serialize,
@@ -356,6 +437,12 @@ impl CacheService {
     }
 
     /// Delete a value from cache
+    ///
+    /// # Arguments
+    /// * `key` - Cache key to delete
+    ///
+    /// # Returns
+    /// * `AppResult<()>` - Success or error
     pub fn delete(&self, key: &str) -> AppResult<()> {
         let mut conn = self.get_connection()?;
         conn.del::<_, ()>(key)

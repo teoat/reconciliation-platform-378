@@ -4,6 +4,7 @@ import { logger } from '@/services/logger';
 // ============================================================================
 
 import { monitoringConfig } from '../config/monitoring';
+import { toRecord } from '../utils/typeHelpers';
 
 interface Metric {
   name: string;
@@ -322,7 +323,7 @@ class MonitoringService {
         }),
       });
     } catch (error) {
-      logger.error('Failed to report metrics:', error);
+      logger.error('Failed to report metrics:', toRecord(error));
       // Re-add metrics to queue for retry
       this.metrics.unshift(...batch);
     }
@@ -347,7 +348,7 @@ class MonitoringService {
         }),
       });
     } catch (error) {
-      logger.error('Failed to report errors:', error);
+      logger.error('Failed to report errors:', toRecord(error));
       // Re-add errors to queue for retry
       this.errors.unshift(...batch);
     }
@@ -372,7 +373,7 @@ class MonitoringService {
         }),
       });
     } catch (error) {
-      logger.error('Failed to report events:', error);
+      logger.error('Failed to report events:', toRecord(error));
       // Re-add events to queue for retry
       this.events.unshift(...batch);
     }

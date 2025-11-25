@@ -129,10 +129,10 @@ build_backend() {
     log_section "🔨 Building Backend Service"
     
     log_step "Building backend Docker image..."
-    cd "$SCRIPT_DIR/../backend"
+    cd "$SCRIPT_DIR/.."
     
     docker build \
-        -f ../infrastructure/docker/Dockerfile.backend \
+        -f infrastructure/docker/Dockerfile.backend \
         -t reconciliation-backend:$VERSION \
         -t reconciliation-backend:latest \
         --target runtime \
@@ -146,15 +146,14 @@ build_frontend() {
     log_section "🔨 Building Frontend Service"
     
     log_step "Building frontend Docker image..."
-    cd "$SCRIPT_DIR/../frontend"
+    cd "$SCRIPT_DIR/.."
     
-    # Build frontend
-    npm ci
-    npm run build
+    # Build frontend (if needed, Dockerfile will handle it)
+    # The Dockerfile handles npm install and build internally
     
     # Build Docker image
     docker build \
-        -f ../infrastructure/docker/Dockerfile.frontend \
+        -f infrastructure/docker/Dockerfile.frontend \
         -t reconciliation-frontend:$VERSION \
         -t reconciliation-frontend:latest \
         --target runtime \

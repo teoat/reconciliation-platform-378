@@ -9,7 +9,7 @@ export type {
   Status,
   Priority,
 } from './backend-aligned';
-// Re-export Metadata from metadata.ts
+// Re-export Metadata from metadata.ts (only once)
 export type { Metadata } from './metadata';
 export type {
   Priority as PriorityType,
@@ -36,12 +36,10 @@ export type {
   ActivityDetails,
   PerformanceMetrics,
 } from './backend-aligned';
-// Re-export ReconciliationMetrics from reconciliation.ts
+// Re-export ReconciliationMetrics from reconciliation.ts (only once)
 export type { ReconciliationMetrics } from './reconciliation';
-// Re-export QualityMetrics from ingestion
+// Re-export QualityMetrics from ingestion (only once)
 export type { DataQualityMetrics as QualityMetrics } from './ingestion';
-// Re-export Metadata from metadata.ts
-export type { Metadata } from './metadata';
 export type {
   PerformanceMetrics as PerformanceMetricsType,
   ProjectStats,
@@ -74,8 +72,6 @@ export * from './auth';
 
 // Reconciliation types
 export * from './reconciliation';
-// Re-export ReconciliationMetrics explicitly
-export type { ReconciliationMetrics } from './reconciliation';
 
 // Analytics & Reporting types (frontend-specific DashboardData)
 export * from './analytics';
@@ -94,24 +90,12 @@ export * from './files';
 
 // Ingestion types
 export * from './ingestion';
-// Re-export QualityMetrics explicitly
-export type { DataQualityMetrics as QualityMetrics } from './ingestion';
 
 // Data types (DataSource, DataMapping, DataTransfer)
 export * from './data';
 
 // API types (frontend-specific ApiError, ApiResponse, PaginatedResponse)
 export * from './api';
-// Re-export Metadata from metadata.ts
-export type { Metadata } from './metadata';
-// Re-export Priority from backend-aligned
-export type { Priority } from './backend-aligned';
-// Re-export PerformanceMetrics from backend-aligned
-export type { PerformanceMetrics } from './backend-aligned';
-// Re-export ReconciliationMetrics from reconciliation
-export type { ReconciliationMetrics } from './reconciliation';
-// Re-export QualityMetrics from ingestion
-export type { DataQualityMetrics as QualityMetrics } from './ingestion';
 // Define missing types that don't exist yet
 export type ComparisonOperator = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in' | 'contains' | 'starts_with' | 'ends_with';
 export type Permission = string; // Placeholder - should be defined properly

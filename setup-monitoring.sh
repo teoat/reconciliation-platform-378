@@ -149,38 +149,7 @@ setup_production() {
     mkdir -p performance-alerts
     mkdir -p monitoring/logs
 
-    # Set performance baseline
-    if [ ! -f "performance-results/baseline.json" ]; then
-        print_step "Creating performance baseline..."
 
-        cat > performance-results/baseline.json << EOF
-{
-  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%S.%3NZ")",
-  "bundleSize": {
-    "totalSizeMB": 4.2,
-    "chunks": [
-      {"name": "app.js", "sizeKB": 1200},
-      {"name": "vendor.js", "sizeKB": 800},
-      {"name": "common.js", "sizeKB": 300}
-    ]
-  },
-  "lighthouse": {
-    "performance": 85,
-    "firstContentfulPaint": 1800,
-    "largestContentfulPaint": 2500,
-    "firstInputDelay": 50,
-    "cumulativeLayoutShift": 0.05
-  },
-  "synthetic": {
-    "initialLoadTime": 2200,
-    "domContentLoaded": 1500,
-    "firstPaint": 1200,
-    "reactHydrationTime": 400
-  }
-}
-EOF
-        print_success "Performance baseline created"
-    fi
 
     # Configure alert channels
     if [ -f ".env" ]; then

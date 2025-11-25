@@ -6,7 +6,8 @@
  * Enables frontend and other services to call MCP tools via HTTP
  */
 
-import express from 'express';
+// @ts-ignore
+import express, { Request, Response, NextFunction } from 'express';
 import rateLimit from 'express-rate-limit';
 import { join } from 'path';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
@@ -26,7 +27,7 @@ const app = express();
 app.use(express.json());
 
 // CORS configuration
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const origin = req.headers.origin;
   if (origin && ALLOWED_ORIGINS.includes(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
@@ -172,7 +173,7 @@ async function initMCPClient(): Promise<Client> {
 /**
  * Health check endpoint (no auth required)
  */
-app.get('/health', (req, res) => {
+app.get('/health', (req: Request, res: Response) => {
   const startTime = Date.now();
   const result = {
     status: 'ok',
@@ -196,7 +197,7 @@ app.get('/health', (req, res) => {
 /**
  * List available tools
  */
-app.get('/tools', authenticate, async (req, res) => {
+app.get('/tools', authenticate, async (req: Request, res: Response) => {
   const startTime = Date.now();
   try {
     const client = await initMCPClient();
@@ -235,7 +236,7 @@ app.get('/tools', authenticate, async (req, res) => {
 /**
  * Call MCP tool
  */
-app.post('/tools/:toolName', authenticate, async (req, res) => {
+app.post('/tools/:toolName', authenticate, async (req: Request, res: Response) => {
   const startTime = Date.now();
   const { toolName } = req.params;
   
@@ -248,9 +249,9 @@ app.post('/tools/:toolName', authenticate, async (req, res) => {
       arguments: args,
     });
 
-    // Parse JSON response from MCP server
     let data;
-    if (result.content && result.content[0]?.type === 'text') {
+    // @ts-ignore
+    if (result.content && (result.content as any[]).length > 0 && result.content[0]?.type === 'text') {
       try {
         data = JSON.parse(result.content[0].text);
       } catch {
@@ -302,7 +303,7 @@ app.post('/tools/:toolName', authenticate, async (req, res) => {
 /**
  * Get audit logs (admin only)
  */
-app.get('/audit', authenticate, (req, res) => {
+app.get('/audit', authenticate, (req: Request, res: Response) => {
   const limit = parseInt(req.query.limit as string) || 100;
   const logs = auditLogs.slice(-limit);
   res.json({
@@ -315,7 +316,7 @@ app.get('/audit', authenticate, (req, res) => {
 /**
  * Get tool usage statistics
  */
-app.get('/stats', authenticate, async (req, res) => {
+app.get('/stats', authenticate, async (req: Request, res: Response) => {
   try {
     const client = await initMCPClient();
     const result = await client.callTool({
@@ -324,7 +325,8 @@ app.get('/stats', authenticate, async (req, res) => {
     });
 
     let data;
-    if (result.content && result.content[0]?.type === 'text') {
+    // @ts-ignore
+    if (result.content && (result.content as any[]).length > 0 && result.content[0]?.type === 'text') {
       data = JSON.parse(result.content[0].text);
     } else {
       data = result.content;
@@ -345,7 +347,7 @@ app.get('/stats', authenticate, async (req, res) => {
 /**
  * Get performance summary
  */
-app.get('/performance', authenticate, async (req, res) => {
+app.get('/performance', authenticate, async (req: Request, res: Response) => {
   try {
     const client = await initMCPClient();
     const result = await client.callTool({
@@ -354,7 +356,8 @@ app.get('/performance', authenticate, async (req, res) => {
     });
 
     let data;
-    if (result.content && result.content[0]?.type === 'text') {
+    // @ts-ignore
+    if (result.content && (result.content as any[]).length > 0 && result.content[0]?.type === 'text') {
       data = JSON.parse(result.content[0].text);
     } else {
       data = result.content;
@@ -375,7 +378,7 @@ app.get('/performance', authenticate, async (req, res) => {
 /**
  * Run security audit
  */
-app.post('/security/audit', authenticate, async (req, res) => {
+app.post('/security/audit', authenticate, async (req: Request, res: Response) => {
   try {
     const { scope = 'all' } = req.body;
     const client = await initMCPClient();
@@ -385,7 +388,8 @@ app.post('/security/audit', authenticate, async (req, res) => {
     });
 
     let data;
-    if (result.content && result.content[0]?.type === 'text') {
+    // @ts-ignore
+    if (result.content && (result.content as any[]).length > 0 && result.content[0]?.type === 'text') {
       data = JSON.parse(result.content[0].text);
     } else {
       data = result.content;

@@ -2,6 +2,8 @@
 // PERFORMANCE OPTIMIZATION CONFIGURATION
 // ============================================================================
 
+import { useState, useEffect, useCallback } from 'react';
+
 export const performanceConfig = {
   // Lazy loading configuration
   lazyLoading: {

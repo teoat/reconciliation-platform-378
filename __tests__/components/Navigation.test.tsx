@@ -1,10 +1,10 @@
 
-import { render, screen } from '../test-utils'
-import Navigation from '../../components/Navigation'
+import { render, screen } from '@testing-library/react'
+import UnifiedNavigation from '../../frontend/src/components/layout/UnifiedNavigation'
 
-describe('Navigation', () => {
+describe('UnifiedNavigation', () => {
   it('should render the navigation links', () => {
-    render(<Navigation />)
+    render(<UnifiedNavigation />)
     
     expect(screen.getByText('Home')).toBeInTheDocument()
     expect(screen.getByText('Projects')).toBeInTheDocument()

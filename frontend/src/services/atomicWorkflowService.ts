@@ -1,4 +1,5 @@
 // Atomic Workflow State Updates Service
+import { toRecord } from '../utils/typeHelpers';
 import { logger } from '@/services/logger';
 // Handles multiple users advancing workflow simultaneously with atomic operations
 
@@ -156,7 +157,7 @@ class AtomicWorkflowService {
         });
       }
     } catch (error) {
-      logger.error('Failed to load persisted data:', error);
+      logger.error('Failed to load persisted data:', toRecord(error));
     }
   }
 
@@ -174,7 +175,7 @@ class AtomicWorkflowService {
       };
       localStorage.setItem('atomic_operations', JSON.stringify(operationsData));
     } catch (error) {
-      logger.error('Failed to save persisted data:', error);
+      logger.error('Failed to save persisted data:', toRecord(error));
     }
   }
 
@@ -398,7 +399,7 @@ class AtomicWorkflowService {
       operation.status = 'rolled_back';
       this.emit('operationRolledBack', operation);
     } catch (error) {
-      logger.error('Rollback failed:', error);
+      logger.error('Rollback failed:', toRecord(error));
     }
   }
 

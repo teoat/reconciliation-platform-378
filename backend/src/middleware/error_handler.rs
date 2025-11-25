@@ -89,11 +89,13 @@ where
                 );
             }
 
-            // For error responses (4xx, 5xx), add correlation ID to headers only
-            // Note: Reading body can cause stack overflow, so we only add headers
+            // For error responses (4xx, 5xx), correlation ID is already in headers
+            // The ErrorResponse struct includes correlation_id field which should be populated
+            // by handlers using extract_correlation_id_from_request() helper
             if status.is_client_error() || status.is_server_error() {
-                // Just add correlation ID to headers, don't modify body
-                // This avoids potential stack overflow from reading large bodies
+                // Correlation ID is in headers (primary mechanism)
+                // Handlers should use extract_correlation_id_from_request() to populate
+                // correlation_id field in ErrorResponse JSON body
                 return Ok(ServiceResponse::new(req, res));
             }
 

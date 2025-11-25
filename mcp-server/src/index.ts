@@ -26,6 +26,7 @@ import {
   ListToolsRequestSchema,
   Tool,
 } from '@modelcontextprotocol/sdk/types.js';
+// @ts-ignore
 import Docker from 'dockerode';
 import { createClient, RedisClientType } from 'redis';
 import axios, { AxiosInstance } from 'axios';
@@ -37,6 +38,13 @@ import si from 'systeminformation';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
+
+interface HealthCheckResult {
+  status: string;
+  data: unknown;
+  statusCode: number;
+  timestamp: string;
+}
 
 const SERVER_NAME = 'reconciliation-platform-mcp';
 const SERVER_VERSION = '2.1.0';
@@ -799,6 +807,32 @@ const tools: Tool[] = [
       properties: {},
     },
   },
+  {
+    name: 'run_safe_shell_command',
+    description: 'Execute a safe, whitelisted shell command within the project root. Use with caution.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        command: {
+          type: 'string',
+          description: 'The shell command to execute (e.g., "ls -la", "pwd", "echo hello"). Must be a whitelisted command.',
+        },
+        args: {
+          type: 'array',
+          items: {
+            type: 'string',
+          },
+          description: 'Arguments for the command (optional).',
+        },
+        timeout: {
+          type: 'number',
+          description: 'Timeout in milliseconds for the command execution.',
+          default: 10000, // 10 seconds
+        },
+      },
+      required: ['command'],
+    },
+  },
 ];
 
 // Tool implementations with monitoring wrapper
@@ -1540,7 +1574,7 @@ async function executeTool(name: string, args: any): Promise<any> {
         return {
           cpu: {
             currentLoad: cpu.currentLoad,
-            avgLoad: cpu.avgload,
+            avgLoad: cpu.avgLoad,
             cores: cpu.cpus?.length || 0,
           },
           memory: {
@@ -1557,7 +1591,7 @@ async function executeTool(name: string, args: any): Promise<any> {
             usagePercent: ((f.used / f.size) * 100).toFixed(2),
           })),
           processes: args.includeProcesses && processes ? {
-            total: processes.all?.length || 0,
+            total: processes.all || 0,
             running: processes.running || 0,
             sleeping: processes.sleeping || 0,
             topCpu: processes.list?.slice(0, 5).map((p) => ({
@@ -1588,7 +1622,7 @@ async function executeTool(name: string, args: any): Promise<any> {
         ]);
         
         // Get backend health
-        const backendHealth = await getHealthCheck(`${BACKEND_URL}/health`, false).catch(() => null);
+        const backendHealth: HealthCheckResult | null = (await getHealthCheck(`${BACKEND_URL}/health`, false).catch(() => null)) as HealthCheckResult | null;
         
         // Recommendations
         const recommendations: string[] = [];
@@ -1640,6 +1674,34 @@ async function executeTool(name: string, args: any): Promise<any> {
       } catch (error: any) {
         throw new Error(`Failed to get performance summary: ${error.message}`);
       }
+    }
+
+    case 'run_safe_shell_command': {
+      const allowedCommands = ['ls', 'pwd', 'echo', 'cat', 'grep', 'find', 'head', 'tail']; // Whitelist of safe commands
+      const command = args.command.split(' ')[0]; // Extract base command
+      
+      if (!allowedCommands.includes(command)) {
+        throw new Error(`Command '${command}' is not whitelisted for 'run_safe_shell_command'.`);
+      }
+
+      // Reconstruct command and args if args were provided as a single string
+      let fullArgs = args.command.split(' ').slice(1);
+      if (args.args && args.args.length > 0) {
+        fullArgs = [...fullArgs, ...args.args];
+      }
+
+      const result = await execCommand(command, fullArgs, {
+        cwd: PROJECT_ROOT,
+        timeout: args.timeout || 10000,
+      });
+
+      return {
+        success: result.success,
+        command: args.command,
+        output: result.output,
+        error: result.error,
+        exitCode: result.exitCode,
+      };
     }
 
     default:

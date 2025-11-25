@@ -6,6 +6,7 @@
 
 import { aiService, NLUIntent } from './aiService';
 import { logger } from './logger';
+import { toRecord } from '../utils/typeHelpers';
 
 export interface QueryContext {
   userId?: string;
@@ -110,7 +111,7 @@ class NLUService {
       // Fallback to pattern matching
       return this.patternBasedUnderstanding(query, context);
     } catch (error) {
-      logger.error('NLU understanding error:', error);
+      logger.error('NLU understanding error:', toRecord(error));
       return this.patternBasedUnderstanding(query, context);
     }
   }
@@ -235,7 +236,7 @@ Context: ${JSON.stringify(context || {})}`,
       const response = await aiService.generateResponse(prompt);
       return response.response;
     } catch (error) {
-      logger.error('Response generation error:', error);
+      logger.error('Response generation error:', toRecord(error));
     }
 
     // Fallback responses

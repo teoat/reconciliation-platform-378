@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '@/services/logger';
+import { toRecord } from './typeHelpers';
 import type { User } from '@/types/backend-aligned';
 
 // ============================================================================

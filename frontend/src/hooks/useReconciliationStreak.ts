@@ -1,4 +1,5 @@
 // Reconciliation Streak Protector (Loss Aversion Pattern)
+import { toRecord } from '../utils/typeHelpers';
 import { logger } from '@/services/logger';
 // Gamification with streak protection to reduce user drop-off
 
@@ -34,7 +35,7 @@ export function useReconciliationStreak(userId: string) {
     streakProtected: false,
   });
 
-  const { showToast } = useToast();
+  const { show: showToast } = useToast();
 
   // Load streak from localStorage
   useEffect(() => {
@@ -47,7 +48,7 @@ export function useReconciliationStreak(userId: string) {
         // Check if streak should be extended or protected
         checkStreakStatus(data);
       } catch (error) {
-        logger.error('Failed to load streak data:', error);
+        logger.error('Failed to load streak data:', toRecord(error));
       }
     }
   }, [userId]);

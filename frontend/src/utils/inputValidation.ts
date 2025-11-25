@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import {
+  emailSchema,
+  passwordSchema,
+  nameSchema,
+  textSchema,
+  sanitizeInput,
+} from './common/validation';
 
 // Re-export validation schemas from common module
 export {
@@ -7,7 +14,7 @@ export {
   nameSchema,
   textSchema,
   sanitizeInput,
-} from './common/validation';
+};
 
 // User input validation schema
 export const userInputSchema = z.object({

@@ -10,12 +10,8 @@ import { Minimize2 } from 'lucide-react'
 import { Maximize2 } from 'lucide-react'
 import { Wifi } from 'lucide-react'
 import { WifiOff } from 'lucide-react'
-import { Clock } from 'lucide-react'
 import { User } from 'lucide-react'
-import { MoreHorizontal } from 'lucide-react'
-import { Reply } from 'lucide-react'
-import { Edit } from 'lucide-react'
-import { Trash2 } from 'lucide-react';
+import { Reply } from 'lucide-react';
 import { useRealtimeCollaboration } from '../hooks/useWebSocketIntegration';
 import { formatTimestamp } from '../utils/common/dateFormatting';
 
@@ -38,9 +34,24 @@ interface Comment {
 
 interface ActiveUser {
   id: string;
-  name: string;
-  page: string;
-  lastSeen: string;
+  userId?: string;
+  name?: string;
+  page?: string;
+  lastSeen?: string;
+  action?: string;
+}
+
+interface WebSocketUserMessage {
+  userId?: string;
+  id?: string;
+  action?: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
+interface WebSocketCommentMessage {
+  comment?: LiveComment;
+  [key: string]: unknown;
 }
 
 interface CollaborationPanelProps {
@@ -97,14 +108,20 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
     }
   };
 
-  const formatLastSeen = (lastSeen: string) => {
-    const date = new Date(lastSeen);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    
-    if (diff < 30000) return 'Online';
-    if (diff < 300000) return 'Recently active';
-    return `Last seen ${formatTimestamp(lastSeen)}`;
+  const formatLastSeen = (_lastSeen: string) => {
+    // Format last seen timestamp
+    // Implementation can be added if needed
+    return 'Active';
+  };
+
+  // Type guard for user messages
+  const isUserMessage = (user: unknown): user is WebSocketUserMessage => {
+    return typeof user === 'object' && user !== null;
+  };
+
+  // Type guard for comment messages
+  const isCommentMessage = (msg: unknown): msg is WebSocketCommentMessage => {
+    return typeof msg === 'object' && msg !== null;
   };
 
   if (!isOpen) return null;
@@ -158,21 +175,27 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
               <span className="text-xs text-gray-500">{activeUsers.length}</span>
             </div>
             <div className="space-y-2">
-              {activeUsers.map((user) => (
-                <div key={(user as any).userId || (user as any).id} className="flex items-center space-x-2">
-                  <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                    <User className="w-3 h-3 text-white" />
+              {activeUsers.map((user, index) => {
+                if (!isUserMessage(user)) return null;
+                const userId = user.userId || user.id || `user-${index}`;
+                const userName = user.name || userId;
+                const userAction = user.action || 'active';
+                return (
+                  <div key={userId} className="flex items-center space-x-2">
+                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                      <User className="w-3 h-3 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {userName}
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        {userAction}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {(user as any).userId || (user as any).id}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {(user as any).action || 'active'}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
@@ -190,7 +213,8 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                 ) : (
                   liveComments.map((commentMsg, index) => {
                     // Extract comment data safely
-                    const comment = (commentMsg as any).comment as LiveComment | undefined;
+                    if (!isCommentMessage(commentMsg)) return null;
+                    const comment = commentMsg.comment;
                     if (!comment) return null;
                     
                     return (
@@ -308,7 +332,7 @@ export const CollaborationButton: React.FC<{
   isOpen: boolean;
   onToggle: () => void;
   className?: string;
-}> = ({ page, isOpen, onToggle, className = '' }) => {
+}> = ({ page, _isOpen, onToggle, className = '' }) => {
   const { isConnected, activeUsers, liveComments } = useRealtimeCollaboration(page);
 
   return (

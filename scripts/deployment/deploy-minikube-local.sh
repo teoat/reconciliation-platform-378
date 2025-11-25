@@ -116,7 +116,7 @@ create_namespace() {
 # CREATE SECRETS
 # ============================================================================
 
-create_secrets() {
+    create_secrets() {
     log_info "Setting up secrets..."
     
     if kubectl get secret reconciliation-secrets -n "$NAMESPACE" &> /dev/null; then
@@ -128,17 +128,23 @@ create_secrets() {
     
     # Generate simple secrets for local development
     local jwt_secret=$(openssl rand -base64 48)
+    local jwt_refresh_secret=$(openssl rand -base64 48)
     local postgres_password=$(openssl rand -base64 24)
+    local csrf_secret=$(openssl rand -base64 48)
+    local password_master_key=$(openssl rand -base64 48)
+    
+    # Build DATABASE_URL from components
+    local database_url="postgresql://postgres:${postgres_password}@postgres-service:5432/reconciliation?sslmode=disable"
     
     kubectl create secret generic reconciliation-secrets \
         --from-literal=JWT_SECRET="$jwt_secret" \
-        --from-literal=JWT_REFRESH_SECRET="$jwt_secret" \
+        --from-literal=JWT_REFRESH_SECRET="$jwt_refresh_secret" \
         --from-literal=POSTGRES_USER=postgres \
         --from-literal=POSTGRES_PASSWORD="$postgres_password" \
         --from-literal=POSTGRES_DB=reconciliation \
-        --from-literal=DATABASE_URL="postgresql://postgres:${postgres_password}@postgres-service:5432/reconciliation?sslmode=disable" \
-        --from-literal=CSRF_SECRET=$(openssl rand -base64 48) \
-        --from-literal=PASSWORD_MASTER_KEY=$(openssl rand -base64 48) \
+        --from-literal=DATABASE_URL="$database_url" \
+        --from-literal=CSRF_SECRET="$csrf_secret" \
+        --from-literal=PASSWORD_MASTER_KEY="$password_master_key" \
         --from-literal=REDIS_URL="redis://redis-service:6379/0" \
         -n "$NAMESPACE" || {
         log_error "Failed to create secrets"
@@ -146,6 +152,14 @@ create_secrets() {
     }
     
     log_success "Secrets created"
+    
+    # Synchronize secrets to ensure consistency
+    if [[ -f "$SCRIPT_DIR/sync-secrets.sh" ]]; then
+        log_info "Synchronizing secrets..."
+        "$SCRIPT_DIR/sync-secrets.sh" "$NAMESPACE" sync || {
+            log_warning "Secret synchronization had issues, but secrets were created"
+        }
+    fi
 }
 
 # ============================================================================

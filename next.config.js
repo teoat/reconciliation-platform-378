@@ -37,28 +37,28 @@ const nextConfig = {
           cacheGroups: {
             // Framework chunk (React, Next.js)
             framework: {
-              test: /[\\/]node_modules[\\/](react|react-dom|next|@next|styled-jsx)[\\/]/,
+              test: /[\\/]node_modules[\\/](react|react-dom|next|@next|styled-jsx)[\\/]*/,
               name: 'framework',
               priority: 40,
               reuseExistingChunk: true,
             },
             // Large libraries that benefit from separate chunks
             lib: {
-              test: /[\\/]node_modules[\\/](@tanstack|@hookform|recharts|zod|date-fns)[\\/]/,
+              test: /[\\/]node_modules[\\/](@tanstack|@hookform|recharts|zod|date-fns)[\\/]*/,
               name: 'lib',
               priority: 30,
               reuseExistingChunk: true,
             },
             // UI component libraries
             ui: {
-              test: /[\\/]node_modules[\\/](lucide-react|@heroicons|framer-motion)[\\/]/,
+              test: /[\\/]node_modules[\\/](lucide-react|@heroicons|framer-motion)[\\/]*/,
               name: 'ui',
               priority: 20,
               reuseExistingChunk: true,
             },
             // Vendor chunk for remaining node_modules
             vendor: {
-              test: /[\\/]node_modules[\\/]/,
+              test: /[\\/]node_modules[\\/]*/,
               name: 'vendor',
               priority: 10,
               reuseExistingChunk: true,
@@ -98,14 +98,7 @@ const nextConfig = {
       '@tanstack/react-virtual',
       'recharts',
     ],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js',
-        },
-      },
-    },
+
   },
 
   // Image optimization
@@ -122,7 +115,7 @@ const nextConfig = {
   productionBrowserSourceMaps: false,
 
   // Optimize fonts
-  optimizeFonts: true,
+
 
   // PoweredByHeader removal for security
   poweredByHeader: false,
@@ -131,14 +124,10 @@ const nextConfig = {
   reactStrictMode: true,
 
   // SWC minification (faster than Terser)
-  swcMinify: true,
+
 
   // ESLint configuration
-  eslint: {
-    // Temporarily disable ESLint during builds to avoid config conflicts
-    // Run ESLint separately with: npm run lint
-    ignoreDuringBuilds: true,
-  },
+
 
   // Security headers
   async headers() {

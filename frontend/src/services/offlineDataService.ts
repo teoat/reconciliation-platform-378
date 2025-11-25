@@ -1,5 +1,6 @@
 // Offline Data Persistence Service - Handles offline data storage and recovery
 import { logger } from '@/services/logger';
+import { toRecord } from '../utils/typeHelpers';
 // Implements comprehensive offline data management with auto-save and recovery
 
 export interface OfflineData {
@@ -103,7 +104,7 @@ class OfflineDataService {
         this.storage = new Map(data);
       }
     } catch (error) {
-      logger.error('Failed to load offline data:', error);
+      logger.error('Failed to load offline data:', toRecord(error));
     }
   }
 
@@ -112,7 +113,7 @@ class OfflineDataService {
       const data = Array.from(this.storage.entries());
       localStorage.setItem('offline_data', JSON.stringify(data));
     } catch (error) {
-      logger.error('Failed to save offline data:', error);
+      logger.error('Failed to save offline data:', toRecord(error));
     }
   }
 
@@ -375,7 +376,7 @@ class OfflineDataService {
       try {
         await this.syncDataItem(data);
       } catch (error) {
-        logger.error(`Failed to sync data ${data.id}:`, error);
+        logger.error(`Failed to sync data ${data.id}:`, toRecord(error));
         this.emit('syncError', { data, error });
       }
     }

@@ -1,0 +1,98 @@
+# Gitleaks configuration for secret scanning
+# See: https://github.com/gitleaks/gitleaks
+
+title = "Reconciliation Platform Secret Scanning"
+
+[extend]
+# Use default rules
+useDefault = true
+
+[allowlist]
+description = "Allowlist for false positives"
+paths = [
+    '''\.test\.''',
+    '''__tests__''',
+    '''e2e''',
+    '''archive''',
+    '''node_modules''',
+    '''target''',
+    '''\.git''',
+    '''\.github/workflows/.*\.yml''',  # CI/CD workflows may contain example secrets
+]
+
+commits = [
+    # Allow commits that only change documentation
+    '''^docs:''',
+    '''^chore:''',
+]
+
+regexes = [
+    # Allow test data patterns
+    '''password.*=.*["']test.*["']''',
+    '''password.*=.*["']Test.*["']''',
+    '''secret.*=.*["']test.*["']''',
+    '''secret.*=.*["']CHANGE_ME.*["']''',
+    '''CHANGE_ME_IN_PRODUCTION''',
+]
+
+[detect]
+# Detect secrets in staged files
+staged = true
+
+# Detect secrets in unstaged files
+unstaged = true
+
+# Detect secrets in tracked files
+tracked = true
+
+# Detect secrets in untracked files
+untracked = true
+
+# Detect secrets in commit history
+commits = true
+
+# Detect secrets in commit messages
+commitMessages = true
+
+# Detect secrets in branches
+branches = true
+
+# Detect secrets in tags
+tags = true
+
+# Redact secrets from output
+redact = true
+
+# Exit code when secrets are found
+exitCode = 1
+
+# Report format
+reportFormat = "json"
+
+# Report path
+reportPath = "gitleaks-report.json"
+
+# Verbose output
+verbose = false
+
+# No git scan (scan files only)
+noGit = false
+
+# Stop on first secret found
+stopOnFirst = false
+
+# Show only secrets (no context)
+secretsOnly = false
+
+# Show line numbers
+showLineNumbers = true
+
+# Show column numbers
+showColumnNumbers = true
+
+# Show context around secrets
+showContext = true
+
+# Context lines to show
+contextLines = 3
+

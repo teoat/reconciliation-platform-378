@@ -129,7 +129,23 @@ const Modal: React.FC<ModalProps> = ({
       )}
 
       {/* Modal */}
-      <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0">
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
+      <div
+        className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0"
+        onClick={(e) => {
+          if (e.target === e.currentTarget && onClose) {
+            onClose();
+          }
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Escape' && e.target === e.currentTarget && onClose) {
+            onClose();
+          }
+        }}
+        role="presentation"
+        tabIndex={-1}
+      >
+          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
         <div
           ref={modalRef}
           className={modalClasses}
@@ -137,15 +153,15 @@ const Modal: React.FC<ModalProps> = ({
           aria-modal="true"
           aria-labelledby={title ? 'modal-title' : undefined}
           aria-describedby={children ? 'modal-description' : undefined}
-          onClick={(e) => e.stopPropagation()} // eslint-disable-line jsx-a11y/no-noninteractive-element-interactions
-          tabIndex={-1}
-          onKeyDown={(e) => { // eslint-disable-line jsx-a11y/no-noninteractive-element-interactions
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => {
             // Enhanced keyboard navigation
             if (e.key === 'Escape' && closeOnEscape) {
               onClose();
             }
             // Tab trapping is handled in useEffect above
           }}
+          tabIndex={-1}
         >
           {/* Header */}
           {(title || showCloseButton) && (

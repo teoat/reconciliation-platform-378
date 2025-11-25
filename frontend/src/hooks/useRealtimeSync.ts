@@ -1,5 +1,6 @@
 // Real-time Data Synchronization Hook
 import { logger } from '@/services/logger';
+import { toRecord } from '../utils/typeHelpers';
 ('use client');
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -294,7 +295,7 @@ export const useRealtimeMetrics = (page: string) => {
       setIsLoading(false);
     },
     onSyncError: (error) => {
-      logger.error('Metrics sync error:', error);
+      logger.error('Metrics sync error:', toRecord(error));
       setIsLoading(false);
     },
   });

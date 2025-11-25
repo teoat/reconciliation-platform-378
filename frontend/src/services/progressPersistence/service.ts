@@ -1,5 +1,6 @@
 // Progress Persistence Service
 import { logger } from '@/services/logger';
+import { toRecord } from '../../utils/typeHelpers';
 import { CheckpointData, ResumeData } from '../../types/progress';
 import { ProgressSnapshot, ResumeConfig, OperationContext } from './types';
 
@@ -48,7 +49,7 @@ export class ProgressPersistenceService {
         });
       }
     } catch (error) {
-      logger.error('Failed to load persisted snapshots:', error);
+      logger.error('Failed to load persisted snapshots:', toRecord(error));
     }
   }
 
@@ -59,7 +60,7 @@ export class ProgressPersistenceService {
       };
       localStorage.setItem('progress_snapshots', JSON.stringify(data));
     } catch (error) {
-      logger.error('Failed to save snapshots:', error);
+      logger.error('Failed to save snapshots:', toRecord(error));
     }
   }
 
@@ -398,7 +399,7 @@ export class ProgressPersistenceService {
         return true;
       }
     } catch (error) {
-      logger.error('Failed to import operation data:', error);
+      logger.error('Failed to import operation data:', toRecord(error));
     }
     return false;
   }

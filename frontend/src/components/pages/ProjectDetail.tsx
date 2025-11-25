@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { logger } from '@/services/logger';
+import { toRecord } from '../../utils/typeHelpers';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageMeta } from '../seo/PageMeta';
 import { apiClient } from '../../services/apiClient';
@@ -61,7 +62,7 @@ const ProjectDetail: React.FC = () => {
           setDataSources(sourcesResponse.data);
         }
       } catch (err) {
-        logger.error('Failed to load data sources:', err);
+        logger.error('Failed to load data sources:', toRecord(err));
         // Non-critical, continue loading
       }
 
@@ -72,7 +73,7 @@ const ProjectDetail: React.FC = () => {
           setJobs(jobsResponse.data);
         }
       } catch (err) {
-        logger.error('Failed to load reconciliation jobs:', err);
+        logger.error('Failed to load reconciliation jobs:', toRecord(err));
         // Non-critical, continue loading
       }
     } catch (err) {

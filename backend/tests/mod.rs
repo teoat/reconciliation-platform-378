@@ -10,6 +10,7 @@ use tokio::sync::RwLock;
 use uuid::Uuid;
 use serde::{Deserialize, Serialize};
 
+mod correlation_id_tests;
 mod e2e_tests;
 mod integration_tests;
 mod service_tests;

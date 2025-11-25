@@ -59,7 +59,7 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     cp target/release/reconciliation-backend /tmp/reconciliation-backend
 
 # Stage 3: Runtime Image (Minimal)
-FROM debian:bookworm-slim
+FROM debian:bookworm-slim AS runtime
 LABEL maintainer="Reconciliation Platform Team"
 LABEL description="Optimized production backend for reconciliation platform"
 

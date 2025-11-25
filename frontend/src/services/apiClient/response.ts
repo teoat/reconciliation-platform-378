@@ -36,11 +36,20 @@ export class ResponseHandler {
     let translatedMessage = error.message || error.error || 'An error occurred';
     let errorCode = error.code;
 
-    // Extract correlation ID from error (Agent 1 Task 1.19)
+    // ✅ CORRELATION ID: Extract from error response (supports multiple formats)
+    // Supports: correlationId, correlation_id, and x-correlation-id header
     const correlationId =
       (error as Error & { correlationId?: string }).correlationId ||
       (typeof error === 'object' && 'correlationId' in error
         ? String(error.correlationId)
+        : undefined) ||
+      (typeof error === 'object' && 'correlation_id' in error
+        ? String(error.correlation_id)
+        : undefined) ||
+      (typeof error === 'object' && 'headers' in error &&
+        typeof (error as { headers?: Record<string, unknown> }).headers === 'object'
+        ? ((error as { headers: Record<string, unknown> }).headers?.['x-correlation-id'] ||
+           (error as { headers: Record<string, unknown> }).headers?.['X-Correlation-ID']) as string | undefined
         : undefined);
 
     // Handle backend error response format: { error, message, code }

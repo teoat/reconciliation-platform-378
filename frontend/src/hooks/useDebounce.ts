@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { toRecord } from '../utils/typeHelpers';
 import { logger } from '@/services/logger';
 
 // Debounce hook for delaying execution of functions
