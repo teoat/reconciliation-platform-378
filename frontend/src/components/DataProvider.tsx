@@ -5,7 +5,7 @@ import { useComprehensiveCleanup, LRUMap } from '../utils/memoryOptimization';
 import { DataContext, DataContextType } from './data/context';
 import { useDataValidation } from './data/sync';
 import { createInitialCrossPageData } from './data/initialData';
-import { WorkflowStage } from './data/types';
+import { WorkflowStage, Alert, Notification } from './data/types';
 import type { ReactNode } from 'react';
 import type { ProjectData } from '../services/dataManagement';
 import {
@@ -61,13 +61,21 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const notificationsData = useDataProviderNotifications();
 
   // Create wrapper for addAlert to match workflow signature
-  const addAlertWrapper = React.useCallback((alert: Omit<import('./data/types').Alert, 'id' | 'timestamp'>) => {
-    notificationsData.addAlert(alert as any);
+  const addAlertWrapper = React.useCallback((alert: Omit<Alert, 'id' | 'timestamp'>) => {
+    notificationsData.addAlert({
+      ...alert,
+      id: `alert-${Date.now()}-${Math.random()}`,
+      timestamp: new Date(),
+    });
   }, [notificationsData]);
 
   // Create wrapper for addNotification to match workflow signature
-  const addNotificationWrapper = React.useCallback((notification: Omit<import('./data/types').Notification, 'id' | 'timestamp'>) => {
-    notificationsData.addNotification(notification as any);
+  const addNotificationWrapper = React.useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
+    notificationsData.addNotification({
+      ...notification,
+      id: `notification-${Date.now()}-${Math.random()}`,
+      timestamp: new Date(),
+    });
   }, [notificationsData]);
 
   // Workflow hook
@@ -121,12 +129,14 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
         const errorMessage = err instanceof Error ? err.message : 'Workflow advance failed';
         setError(errorMessage);
         notificationsData.addAlert({
+          id: `alert-${Date.now()}-${Math.random()}`,
           severity: 'high',
           title: 'Workflow Error',
           message: err instanceof Error ? err.message : 'Failed to advance workflow',
           pages: [workflowData.workflowState?.currentStage.page || '', toStage.page],
+          timestamp: new Date(),
           isDismissed: false,
-        } as any);
+        });
       } finally {
         setIsLoading(false);
       }
@@ -152,11 +162,13 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
   // Create wrappers for security policy functions
   const createSecurityPolicyWrapper = React.useCallback((policy: Record<string, unknown>) => {
-    return securityData.createSecurityPolicy(policy as any) as unknown as Record<string, unknown>;
+    const result = securityData.createSecurityPolicy(policy as Record<string, unknown>);
+    return result as Record<string, unknown>;
   }, [securityData]);
 
   const updateSecurityPolicyWrapper = React.useCallback((policyId: string, policy: Record<string, unknown>) => {
-    return securityData.updateSecurityPolicy(policyId, policy as any) as unknown as Record<string, unknown>;
+    const result = securityData.updateSecurityPolicy(policyId, policy as Record<string, unknown>);
+    return result as Record<string, unknown>;
   }, [securityData]);
 
   const deleteSecurityPolicyWrapper = React.useCallback((policyId: string) => {
@@ -174,11 +186,11 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     updateCrossPageData: updatesData.updateCrossPageData,
     ...syncData,
     syncData: enhancedSyncData,
-    notifications: notificationsData.notifications as any,
-    alerts: notificationsData.alerts as any,
-    addNotification: notificationsData.addNotification as any,
-    addAlert: notificationsData.addAlert as any,
-    dismissAlert: notificationsData.dismissAlert as any,
+    notifications: notificationsData.notifications,
+    alerts: notificationsData.alerts,
+    addNotification: notificationsData.addNotification,
+    addAlert: notificationsData.addAlert,
+    dismissAlert: notificationsData.dismissAlert,
     validateCrossPageData,
     subscribeToUpdates: updatesData.subscribeToUpdates,
     isLoading,
@@ -200,8 +212,8 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     updateSecurityPolicy: updateSecurityPolicyWrapper,
     deleteSecurityPolicy: deleteSecurityPolicyWrapper,
     exportAuditLogs: exportAuditLogsWrapper,
-    securityPolicies: securityData.securityPolicies as unknown as Record<string, unknown>[],
-    auditLogs: securityData.auditLogs as any,
+    securityPolicies: securityData.securityPolicies as Record<string, unknown>[],
+    auditLogs: securityData.auditLogs as Array<Record<string, unknown>>,
     // Enhanced methods
     advanceWorkflow: enhancedAdvanceWorkflow,
     resetWorkflow: enhancedResetWorkflow,

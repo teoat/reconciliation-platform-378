@@ -55,6 +55,7 @@ pub mod ai;
 pub mod security;
 pub mod security_monitor;
 pub mod secrets;
+pub mod secret_manager;
 pub mod structured_logging;
 pub mod billing;
 pub mod query_optimizer;

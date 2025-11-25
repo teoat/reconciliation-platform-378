@@ -302,6 +302,19 @@ async fn async_main() -> std::io::Result<()> {
     // Application secrets are no longer stored in password manager
     // See: docs/architecture/PASSWORD_SYSTEM_ORCHESTRATION.md
 
+    // Initialize automatic secret manager
+    use reconciliation_backend::services::secret_manager::SecretManager;
+    let secret_manager = Arc::new(SecretManager::new(Arc::new(database.clone())));
+    
+    // Load secrets from database on startup
+    if let Err(e) = secret_manager.load_secrets_from_db().await {
+        log::warn!("Failed to load secrets from database: {}", e);
+    }
+    
+    // Start automatic rotation scheduler
+    secret_manager.start_rotation_scheduler().await;
+    log::info!("Automatic secret manager initialized");
+
     // Initialize WebSocket server
     use actix::Actor;
     use reconciliation_backend::websocket::server::WsServer;
@@ -370,6 +383,7 @@ async fn async_main() -> std::io::Result<()> {
             .app_data(web::Data::new(cache.clone()))
             .app_data(web::Data::new(resilience.clone()))
             .app_data(web::Data::new(password_manager.clone()))
+            .app_data(web::Data::new(secret_manager.clone()))
             // Add authentication and user services (required by auth handlers)
             .app_data(web::Data::new(auth_service.clone()))
             .app_data(web::Data::new(user_service.clone()))

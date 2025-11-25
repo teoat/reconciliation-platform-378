@@ -8,7 +8,7 @@ export interface ProcessedBankRecord {
   date: string;
   description: string;
   type: 'debit' | 'credit';
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface ProcessedExpenseRecord {
@@ -18,7 +18,13 @@ export interface ProcessedExpenseRecord {
   date: string;
   description: string;
   category: string;
-  [key: string]: any;
+  [key: string]: unknown;
+}
+
+export interface RecordDifference {
+  field: string;
+  sourceValue: unknown;
+  targetValue: unknown;
 }
 
 export interface IndonesianMatchingResult {
@@ -26,36 +32,46 @@ export interface IndonesianMatchingResult {
   confidence: number;
   sourceRecord: ProcessedBankRecord;
   targetRecord: ProcessedBankRecord;
-  differences: Array<{
-    field: string;
-    sourceValue: any;
-    targetValue: any;
-  }>;
+  differences: Array<RecordDifference>;
 }
 
 export class IndonesianDataProcessor {
-  static processExpenseData(data: any[]): ProcessedExpenseRecord[] {
-    return data.map((record, index) => ({
-      id: record.id || `expense-${index}`,
-      amount: record.amount || 0,
-      currency: record.currency || 'IDR',
-      date: record.date || new Date().toISOString(),
-      description: record.description || '',
-      category: record.category || 'uncategorized',
-      ...record
-    }));
+  static processExpenseData(data: unknown[]): ProcessedExpenseRecord[] {
+    return data.map((record, index) => {
+      const rec = record as Record<string, unknown>;
+      return {
+        id: (typeof rec.id === 'string' ? rec.id : `expense-${index}`),
+        amount: (typeof rec.amount === 'number' ? rec.amount : 0),
+        currency: (typeof rec.currency === 'string' ? rec.currency : 'IDR'),
+        date: (typeof rec.date === 'string' ? rec.date : new Date().toISOString()),
+        description: (typeof rec.description === 'string' ? rec.description : ''),
+        category: (typeof rec.category === 'string' ? rec.category : 'uncategorized'),
+        ...Object.fromEntries(
+          Object.entries(rec).filter(([key]) => 
+            !['id', 'amount', 'currency', 'date', 'description', 'category'].includes(key)
+          )
+        )
+      };
+    });
   }
 
-  static processBankData(data: any[]): ProcessedBankRecord[] {
-    return data.map((record, index) => ({
-      id: record.id || `bank-${index}`,
-      amount: record.amount || 0,
-      currency: record.currency || 'IDR',
-      date: record.date || new Date().toISOString(),
-      description: record.description || '',
-      type: record.type || 'debit',
-      ...record
-    }));
+  static processBankData(data: unknown[]): ProcessedBankRecord[] {
+    return data.map((record, index) => {
+      const rec = record as Record<string, unknown>;
+      return {
+        id: (typeof rec.id === 'string' ? rec.id : `bank-${index}`),
+        amount: (typeof rec.amount === 'number' ? rec.amount : 0),
+        currency: (typeof rec.currency === 'string' ? rec.currency : 'IDR'),
+        date: (typeof rec.date === 'string' ? rec.date : new Date().toISOString()),
+        description: (typeof rec.description === 'string' ? rec.description : ''),
+        type: (rec.type === 'credit' || rec.type === 'debit' ? rec.type : 'debit'),
+        ...Object.fromEntries(
+          Object.entries(rec).filter(([key]) => 
+            !['id', 'amount', 'currency', 'date', 'description', 'type'].includes(key)
+          )
+        )
+      };
+    });
   }
 
   /**
@@ -75,11 +91,13 @@ export class IndonesianDataProcessor {
     targetRecords: ProcessedBankRecord[] | ProcessedExpenseRecord[]
   ): IndonesianMatchingResult[] {
     // Validate required fields and handle malformed data.
-    function isValidRecord(record: any): boolean {
+    function isValidRecord(record: unknown): record is ProcessedBankRecord | ProcessedExpenseRecord {
+      if (typeof record !== 'object' || record === null) return false;
+      const rec = record as Record<string, unknown>;
       return (
-        typeof record.amount === 'number' &&
-        typeof record.date === 'string' &&
-        typeof record.description === 'string'
+        typeof rec.amount === 'number' &&
+        typeof rec.date === 'string' &&
+        typeof rec.description === 'string'
       );
     }
     return sourceRecords.map((source) => {
@@ -118,14 +136,16 @@ export class IndonesianDataProcessor {
         );
       }
       // Collect differences if matched
-      let differences: Array<{ field: string; sourceValue: any; targetValue: any }> = [];
+      const differences: Array<RecordDifference> = [];
       if (target) {
+        const sourceRec = source as Record<string, unknown>;
+        const targetRec = target as Record<string, unknown>;
         ['amount', 'date', 'description'].forEach((field) => {
-          if (source[field] !== target[field]) {
+          if (sourceRec[field] !== targetRec[field]) {
             differences.push({
               field,
-              sourceValue: source[field],
-              targetValue: target[field]
+              sourceValue: sourceRec[field],
+              targetValue: targetRec[field]
             });
           }
         });
@@ -140,11 +160,22 @@ export class IndonesianDataProcessor {
     });
   }
 
+  interface ReconciliationSummary {
+    totalExpenses: number;
+    totalBankRecords: number;
+    matched: number;
+    unmatched: number;
+    matchRate: number;
+    totalExpenseAmount: number;
+    totalBankAmount: number;
+    variance: number;
+  }
+
   static generateReconciliationSummary(
     expenses: ProcessedExpenseRecord[],
     bankRecords: ProcessedBankRecord[],
     matches: IndonesianMatchingResult[]
-  ): any {
+  ): ReconciliationSummary {
     const matched = matches.filter(m => m.matched).length;
     const unmatched = matches.length - matched;
     const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
@@ -163,7 +194,7 @@ export class IndonesianDataProcessor {
   }
 }
 
-export const processIndonesianBankData = (data: any[]): ProcessedBankRecord[] => {
+export const processIndonesianBankData = (data: unknown[]): ProcessedBankRecord[] => {
   return IndonesianDataProcessor.processBankData(data);
 };
 

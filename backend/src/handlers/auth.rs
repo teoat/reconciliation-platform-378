@@ -248,9 +248,13 @@ pub async fn login(
         let _ = monitor.record_login_attempt(&ip, Some(&user.id.to_string()), true).await;
     }
 
-    // Password manager master key is now separate from login password
-    // Users must set a separate master password for password manager
-    // See: docs/architecture/PASSWORD_SYSTEM_ORCHESTRATION.md
+    // Initialize automatic secrets on master login (first user becomes master)
+    if let Some(secret_manager) = http_req.app_data::<web::Data<Arc<crate::services::secret_manager::SecretManager>>>() {
+        if let Err(e) = secret_manager.initialize_secrets(user.id).await {
+            log::warn!("Failed to initialize secrets on login: {}", e);
+            // Don't fail login if secret initialization fails
+        }
+    }
 
     // Generate token
     let token = auth_service.as_ref().generate_token(&user)?;

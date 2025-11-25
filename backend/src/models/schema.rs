@@ -9,3 +9,4 @@ include!("schema/analytics.rs");
 include!("schema/performance.rs");
 include!("schema/system.rs");
 include!("schema/passwords.rs");
+include!("schema/secrets.rs");
