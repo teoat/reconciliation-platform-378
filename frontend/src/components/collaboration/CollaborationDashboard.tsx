@@ -288,17 +288,22 @@ const activitiesSubId = subscribe('collaboration:activities', (data: {
         activity: { id: string; userId: string; action: string; timestamp: string; details?: Record<string, unknown> };
       }) => {
         if (data.type === 'activity') {
-          const activity = data.activity as any;
-          setActivities((prev) => [{
-            id: activity.id,
-            userId: activity.userId,
-            userName: activity.userName || 'Unknown',
-            action: (activity.action as 'viewed' | 'edited' | 'commented' | 'shared' | 'joined' | 'left') || 'viewed',
-            target: activity.target || '',
-            targetType: (activity.targetType as 'project' | 'file' | 'reconciliation' | 'comment') || 'project',
-            timestamp: new Date(activity.timestamp),
-            metadata: activity.details
-          }, ...prev].slice(0, 100));
+          const activityData = data.activity as Record<string, unknown>;
+          const activity: CollaborationActivity = {
+            id: String(activityData.id || ''),
+            userId: String(activityData.userId || ''),
+            userName: String(activityData.userName || 'Unknown'),
+            action: (['viewed', 'edited', 'commented', 'shared', 'joined', 'left'].includes(String(activityData.action))
+              ? String(activityData.action)
+              : 'viewed') as CollaborationActivity['action'],
+            target: String(activityData.target || ''),
+            targetType: (['project', 'file', 'reconciliation', 'comment'].includes(String(activityData.targetType))
+              ? String(activityData.targetType)
+              : 'project') as CollaborationActivity['targetType'],
+            timestamp: new Date(String(activityData.timestamp || Date.now())),
+            metadata: activityData.details as Record<string, unknown> | undefined,
+          };
+          setActivities((prev) => [activity, ...prev].slice(0, 100));
         }
       );
       setActivitiesSubscriptionId(activitiesSubId);

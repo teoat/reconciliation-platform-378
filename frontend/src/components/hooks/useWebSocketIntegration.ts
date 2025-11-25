@@ -30,27 +30,32 @@ const { isConnected, sendMessage: wsSendMessage, on, off } = useWebSocket()
 
   // Handle incoming messages
   useEffect(() => {
-    const handleMessage = (data: any) => {
+    const handleMessage = (data: unknown) => {
       try {
+        const message = data as Record<string, unknown>;
+        const messageType = String(message.type || '');
 
-        switch (data.type) {
-          case 'job_progress_update':
-            if (subscribedJobs.has(data.job_id)) {
+        switch (messageType) {
+          case 'job_progress_update': {
+            const jobId = String(message.job_id || '');
+            if (subscribedJobs.has(jobId)) {
               setProgress({
-                job_id: data.job_id,
-                status: data.status,
-                progress: data.progress,
-                total_records: data.total_records,
-                processed_records: data.processed_records,
-                matched_records: data.matched_records,
-                unmatched_records: data.unmatched_records,
-                eta: data.eta,
-                message: data.message,
+                job_id: jobId,
+                status: String(message.status || ''),
+                progress: Number(message.progress || 0),
+                total_records: message.total_records ? Number(message.total_records) : undefined,
+                processed_records: Number(message.processed_records || 0),
+                matched_records: Number(message.matched_records || 0),
+                unmatched_records: Number(message.unmatched_records || 0),
+                eta: message.eta ? Number(message.eta) : undefined,
+                message: message.message ? String(message.message) : undefined,
               });
             }
             break;
-          case 'job_completed':
-            if (subscribedJobs.has(data.job_id)) {
+          }
+          case 'job_completed': {
+            const jobId = String(message.job_id || '');
+            if (subscribedJobs.has(jobId)) {
               setProgress((prev) =>
                 prev
                   ? {
@@ -63,19 +68,22 @@ const { isConnected, sendMessage: wsSendMessage, on, off } = useWebSocket()
               );
             }
             break;
-          case 'job_failed':
-            if (subscribedJobs.has(data.job_id)) {
+          }
+          case 'job_failed': {
+            const jobId = String(message.job_id || '');
+            if (subscribedJobs.has(jobId)) {
               setProgress((prev) =>
                 prev
                   ? {
                       ...prev,
                       status: 'failed',
-                      message: data.error || 'Job failed',
+                      message: message.error ? String(message.error) : 'Job failed',
                     }
                   : null
               );
             }
             break;
+          }
         }
       } catch (error) {
         logger.error('Error parsing WebSocket message:', error);

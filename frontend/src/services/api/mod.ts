@@ -212,7 +212,7 @@ export class ApiService {
     description?: string;
     settings?: unknown;
   }) {
-    return ProjectsApiService.createProject(projectData as any);
+    return ProjectsApiService.createProject(projectData as Record<string, unknown>);
   }
 
   static async updateProject(
@@ -223,7 +223,7 @@ export class ApiService {
       settings?: unknown;
     }
   ) {
-    return ProjectsApiService.updateProject(projectId, projectData as any);
+    return ProjectsApiService.updateProject(projectId, projectData as Record<string, unknown>);
   }
 
   static async deleteProject(projectId: string) {

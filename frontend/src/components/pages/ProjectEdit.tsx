@@ -68,7 +68,7 @@ const ProjectEdit: React.FC = () => {
         name: formData.name,
         description: formData.description,
         is_active: formData.status === 'active',
-      } as any)
+      } as Partial<BackendProject>)
 
       if (result.success) {
         toast.success('Project updated successfully');

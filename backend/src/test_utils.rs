@@ -77,6 +77,8 @@ impl TestUser {
             password_expires_at: Some(password_expires_at),
             password_last_changed: Some(now),
             password_history: Some(serde_json::json!([])),
+            auth_provider: Some("password".to_string()),
+            auth_provider: None,
         }
     }
 }
