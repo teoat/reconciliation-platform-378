@@ -46,7 +46,7 @@ export const TeamChallengeShare: React.FC<TeamChallengeShareProps> = ({ userId, 
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      logger.error('Failed to copy:', error);
+      logger.error('Failed to copy:', { error: error instanceof Error ? error.message : String(error) });
     }
   };
 
@@ -60,7 +60,9 @@ export const TeamChallengeShare: React.FC<TeamChallengeShareProps> = ({ userId, 
           text: shareText,
           url: shareUrl,
         });
-      } catch (error) {}
+      } catch (error) {
+        // Ignore sharing API errors, fallback to copy
+      }
     } else {
       // Fallback to copy
       handleCopy();

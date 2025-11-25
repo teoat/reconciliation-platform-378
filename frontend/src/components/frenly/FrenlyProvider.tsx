@@ -1,6 +1,6 @@
 /**
  * Consolidated Frenly Provider
- * 
+ *
  * Combines all Frenly provider implementations into a single, optimized provider
  * with state persistence, tutorial support, and comprehensive features.
  */
@@ -15,7 +15,16 @@ import React, {
   useRef,
 } from 'react';
 import { logger } from '@/services/logger';
-import { MessageCircle, X, Minimize2, Lightbulb, AlertTriangle, PartyPopper, Star, Smile } from 'lucide-react';
+import {
+  MessageCircle,
+  X,
+  Minimize2,
+  Lightbulb,
+  AlertTriangle,
+  PartyPopper,
+  Star,
+  Smile,
+} from 'lucide-react';
 import { frenlyAgentService } from '@/services/frenlyAgentService';
 import { FrenlyGuidance, FrenlyTips } from './FrenlyGuidance';
 import { setFrenlyMessageHandler } from '@/orchestration/PageFrenlyIntegration';
@@ -26,7 +35,14 @@ import { setFrenlyMessageHandler } from '@/orchestration/PageFrenlyIntegration';
 
 export interface FrenlyMessage {
   id: string;
-  type: 'greeting' | 'tip' | 'warning' | 'celebration' | 'question' | 'instruction' | 'encouragement';
+  type:
+    | 'greeting'
+    | 'tip'
+    | 'warning'
+    | 'celebration'
+    | 'question'
+    | 'instruction'
+    | 'encouragement';
   content: string;
   action?: {
     text: string;
@@ -119,7 +135,10 @@ const STORAGE_KEYS = {
 function saveStateToStorage(state: Partial<FrenlyState>): void {
   try {
     if (state.userProgress) {
-      localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify(state.userProgress.completedSteps));
+      localStorage.setItem(
+        STORAGE_KEYS.progress,
+        JSON.stringify(state.userProgress.completedSteps)
+      );
     }
     if (state.preferences) {
       localStorage.setItem(STORAGE_KEYS.preferences, JSON.stringify(state.preferences));
@@ -149,7 +168,7 @@ function loadStateFromStorage(): Partial<FrenlyState> | null {
     if (!savedState) return null;
 
     const parsed = JSON.parse(savedState);
-    
+
     // Check if state is stale (older than 7 days)
     if (parsed.timestamp && Date.now() - parsed.timestamp > 7 * 24 * 60 * 60 * 1000) {
       localStorage.removeItem(STORAGE_KEYS.state);
@@ -189,7 +208,7 @@ export const FrenlyProvider: React.FC<FrenlyProviderProps> = ({
 }) => {
   // Load initial state from storage or use defaults
   const savedState = enablePersistence ? loadStateFromStorage() : null;
-  
+
   const [state, setState] = useState<FrenlyState>(() => {
     const defaultState: FrenlyState = {
       isVisible: true,
@@ -448,9 +467,7 @@ export const FrenlyProvider: React.FC<FrenlyProviderProps> = ({
           onStartTutorial={startTutorial}
         />
       )}
-      {enableTips && state.showTips && (
-        <FrenlyTips tips={[]} currentPage={state.currentPage} />
-      )}
+      {enableTips && state.showTips && <FrenlyTips tips={[]} currentPage={state.currentPage} />}
     </FrenlyContext.Provider>
   );
 };
@@ -460,7 +477,8 @@ export const FrenlyProvider: React.FC<FrenlyProviderProps> = ({
 // ============================================================================
 
 const FrenlyAI: React.FC = () => {
-  const { state, hideMessage, toggleVisibility, toggleMinimize, showMessage, updatePreferences } = useFrenly();
+  const { state, hideMessage, toggleVisibility, toggleMinimize, showMessage, updatePreferences } =
+    useFrenly();
   const messageGenerationRef = useRef<Promise<FrenlyMessage | null> | null>(null);
 
   // Generate contextual messages using FrenlyAgentService
@@ -522,18 +540,18 @@ const FrenlyAI: React.FC = () => {
 
         return frenlyMessage;
       } catch (error) {
-        logger.error('Error generating contextual message:', error);
+        logger.error('Error generating contextual message:', { error: error instanceof Error ? error.message : String(error) });
         // Fallback to default message
         return {
           id: Math.random().toString(36).substr(2, 9),
-          type: 'greeting',
+          type: 'greeting' as const,
           content: "Hi there! I'm Frenly, your AI assistant! 🤖✨ Ready to help you!",
           timestamp: new Date(),
           page: state.currentPage,
           priority: 'medium',
           dismissible: true,
           autoHide: 5000,
-        };
+        } as FrenlyMessage;
       } finally {
         messageGenerationRef.current = null;
       }
@@ -633,7 +651,7 @@ const FrenlyAI: React.FC = () => {
                           'dismissed'
                         );
                       } catch (error) {
-                        logger.error('Error recording feedback:', error);
+                        logger.error('Error recording feedback:', { error: error instanceof Error ? error.message : String(error) });
                       }
                     }
                   }

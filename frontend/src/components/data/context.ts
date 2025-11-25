@@ -90,7 +90,10 @@ export interface DataContextType {
     result: 'success' | 'failure',
     details?: Record<string, unknown>
   ) => void;
-  encryptData: (data: unknown, dataType: string) => string;
+  encryptData: <T>(
+    data: T,
+    dataType: string
+  ) => T & { _encrypted: boolean; _encryptionType: string; _encryptedAt: string };
   decryptData: (encryptedData: string, dataType: string) => unknown;
   checkCompliance: (
     framework: string

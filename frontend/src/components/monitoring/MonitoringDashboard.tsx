@@ -486,7 +486,7 @@ export const AlertManagement: React.FC = () => {
           setAlerts(data);
         }
       } catch (error) {
-        logger.error('Failed to fetch alerts:', error);
+        logger.error('Failed to fetch alerts:', { error: error instanceof Error ? error.message : String(error) });
       } finally {
         setIsLoading(false);
       }
@@ -504,7 +504,7 @@ export const AlertManagement: React.FC = () => {
         setAlerts((prev) => prev.filter((alert) => alert.id !== alertId));
       }
     } catch (error) {
-      logger.error('Failed to resolve alert:', error);
+      logger.error('Failed to resolve alert:', { error: error instanceof Error ? error.message : String(error) });
     }
   };
 
@@ -521,7 +521,7 @@ export const AlertManagement: React.FC = () => {
         );
       }
     } catch (error) {
-      logger.error('Failed to suppress alert:', error);
+      logger.error('Failed to suppress alert:', { error: error instanceof Error ? error.message : String(error) });
     }
   };
 
@@ -613,7 +613,7 @@ export const LogViewer: React.FC = () => {
           setLogs(data);
         }
       } catch (error) {
-        logger.error('Failed to fetch logs:', error);
+        logger.error('Failed to fetch logs:', { error: error instanceof Error ? error.message : String(error) });
       } finally {
         setIsLoading(false);
       }

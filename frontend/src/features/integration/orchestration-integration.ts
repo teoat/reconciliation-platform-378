@@ -151,7 +151,7 @@ export function registerPageOrchestration(
     ],
     frenlyIntegration: {
       providesGuidance: true,
-      onboardingSteps: orchestration.getOnboardingSteps?.() || [],
+      onboardingSteps: orchestration.getOnboardingSteps?.()?.map(step => step.title) || [],
     },
     metaAgentIntegration: {
       monitorable: true,

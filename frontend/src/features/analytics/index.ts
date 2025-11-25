@@ -40,5 +40,5 @@ registerFeature({
 
 // Re-export components
 export { AnalyticsDashboard } from '../../components/AnalyticsDashboard';
-export { ReconciliationAnalytics } from '../../components/ReconciliationAnalytics';
+export { default as ReconciliationAnalytics } from '../../components/ReconciliationAnalytics';
 

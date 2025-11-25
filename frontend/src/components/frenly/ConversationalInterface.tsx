@@ -85,7 +85,7 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
         try {
           await conversationStorage.saveConversation(sessionId, userId, messages);
         } catch (error) {
-          logger.error('Error saving conversation:', error);
+          logger.error('Error saving conversation:', { error: error instanceof Error ? error.message : String(error) });
         }
       };
 
@@ -154,7 +154,7 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
           logger.warn('Failed to track interaction:', err);
         });
     } catch (error) {
-      logger.error('Error handling query:', error);
+      logger.error('Error handling query:', { error: error instanceof Error ? error.message : String(error) });
 
       const errorMessage: ConversationMessage = {
         id: `error_${Date.now()}`,
@@ -219,7 +219,7 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
           setShowExportMenu(false);
         }
       } catch (error) {
-        logger.error('Error exporting conversation:', error);
+        logger.error('Error exporting conversation:', { error: error instanceof Error ? error.message : String(error) });
       }
     },
     [sessionId]

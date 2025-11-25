@@ -463,7 +463,7 @@ const expenses = IndonesianDataProcessor.processExpenseData(rawData)
         // Auto-sync to reconciliation
         await syncToReconciliation(processedFiles);
       } catch (error) {
-        logger.error('Error processing files:', error);
+        logger.error('Error processing files:', { error: error instanceof Error ? error.message : String(error) });
         setDataState((prev) => ({ ...prev, dataFlow: 'error' }));
       } finally {
         setIsProcessing(false);

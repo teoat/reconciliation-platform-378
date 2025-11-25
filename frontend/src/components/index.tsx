@@ -10,16 +10,6 @@ import React, { FC } from 'react';
 // UI COMPONENTS
 // ============================================================================
 
-export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'error' | 'outline';
-  size?: 'sm' | 'md' | 'lg';
-  loading?: boolean;
-  disabled?: boolean;
-  fullWidth?: boolean;
-  icon?: React.ReactNode;
-  iconPosition?: 'left' | 'right';
-}
-
 // NOTE: Button component moved to components/ui/Button.tsx (SSOT - memoized, optimized)
 // This file now re-exports from ui/Button for backward compatibility
 // @deprecated Use Button from '@/components/ui' instead
@@ -69,7 +59,14 @@ export const Input: React.FC<InputProps> = ({
 
   return (
     <div className={fullWidth ? 'w-full' : ''}>
-      {label && <label htmlFor={props.id || `input-${React.useId()}`} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+      {label && (
+        <label
+          htmlFor={props.id || `input-${React.useId()}`}
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          {label}
+        </label>
+      )}
       <div className="relative">
         {leftIcon && (
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -128,7 +125,14 @@ export const Textarea: React.FC<TextareaProps> = ({
 
   return (
     <div className={fullWidth ? 'w-full' : ''}>
-      {label && <label htmlFor={props.id || `textarea-${React.useId()}`} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+      {label && (
+        <label
+          htmlFor={props.id || `textarea-${React.useId()}`}
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          {label}
+        </label>
+      )}
       <textarea className={classes} {...props} />
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
       {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
@@ -179,7 +183,14 @@ export const Select: React.FC<SelectProps> = ({
 
   return (
     <div className={fullWidth ? 'w-full' : ''}>
-      {label && <label htmlFor={props.id || `select-${React.useId()}`} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>}
+      {label && (
+        <label
+          htmlFor={props.id || `select-${React.useId()}`}
+          className="block text-sm font-medium text-gray-700 mb-1"
+        >
+          {label}
+        </label>
+      )}
       <select className={classes} {...props}>
         {placeholder && (
           <option value="" disabled>
@@ -238,7 +249,14 @@ export const Checkbox: React.FC<CheckboxProps> = ({
     <div className={fullWidth ? 'w-full' : ''}>
       <div className="flex items-center">
         <input type="checkbox" className={classes} {...props} />
-        {label && <label htmlFor={props.id || `checkbox-${React.useId()}`} className="ml-2 block text-sm font-medium text-gray-700">{label}</label>}
+        {label && (
+          <label
+            htmlFor={props.id || `checkbox-${React.useId()}`}
+            className="ml-2 block text-sm font-medium text-gray-700"
+          >
+            {label}
+          </label>
+        )}
       </div>
       {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
       {helperText && !error && <p className="mt-1 text-sm text-gray-500">{helperText}</p>}
@@ -791,7 +809,9 @@ export const Table: React.FC<TableProps> = ({
             <tr key={index} className="hover:bg-gray-50">
               {columns.map((column) => (
                 <td key={column.key} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {column.render ? column.render(row[column.key], row) : (row[column.key] as React.ReactNode)}
+                  {column.render
+                    ? column.render(row[column.key], row)
+                    : (row[column.key] as React.ReactNode)}
                 </td>
               ))}
             </tr>
@@ -919,7 +939,7 @@ export const Pagination: React.FC<PaginationProps> = ({
 export { default as UnifiedNavigation } from './layout/UnifiedNavigation';
 export { default as FrenlyAI } from './FrenlyAI';
 export { DataProvider } from './DataProvider';
-export { FrenlyProvider } from './FrenlyProvider';
+export { FrenlyProvider } from './frenly/FrenlyProvider';
 export * from './ProjectComponents';
 export { default as AdvancedFilters } from './AdvancedFilters';
 export { default as ReconciliationAnalytics } from './ReconciliationAnalytics';

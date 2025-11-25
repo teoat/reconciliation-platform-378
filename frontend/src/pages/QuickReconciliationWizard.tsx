@@ -220,10 +220,11 @@ const QuickReconciliationWizard: React.FC = () => {
       component: (
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="matching-threshold" className="block text-sm font-medium text-gray-700 mb-2">
               Matching Threshold
             </label>
             <input
+              id="matching-threshold"
               type="range"
               min="0"
               max="100"
@@ -246,8 +247,8 @@ const QuickReconciliationWizard: React.FC = () => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Confidence Level</label>
-            <div className="grid grid-cols-3 gap-3">
+            <label htmlFor="confidence-level" className="block text-sm font-medium text-gray-700 mb-2">Confidence Level</label>                                                                      
+            <div id="confidence-level" className="grid grid-cols-3 gap-3">
               {(['low', 'medium', 'high'] as const).map((level) => (
                 <button
                   key={level}

@@ -88,7 +88,7 @@ export const DataTransformPanel: React.FC<DataTransformPanelProps> = ({
             value = applyTransformation(value, mapping.transformation);
           }
 
-          transformedRow[mapping.targetField] = value;
+          transformedRow[mapping.targetField] = value as string | number | boolean | Date | null;
         }
       });
 
@@ -96,8 +96,11 @@ export const DataTransformPanel: React.FC<DataTransformPanelProps> = ({
     });
   };
 
-  const applyTransformation = (value: unknown, transformation: string): unknown => {
-    if (!value) return value;
+  const applyTransformation = (
+    value: unknown,
+    transformation: string
+  ): string | number | boolean | Date | null => {
+    if (!value) return value as string | number | boolean | Date | null;
 
     const transformType = transformation.toLowerCase().trim();
 
@@ -110,19 +113,20 @@ export const DataTransformPanel: React.FC<DataTransformPanelProps> = ({
         return String(value).toLowerCase();
       case 'capitalize':
         return String(value).charAt(0).toUpperCase() + String(value).slice(1).toLowerCase();
-      case 'number':
+      case 'number': {
         const num = Number(value);
-        return isNaN(num) ? value : num;
+        return isNaN(num) ? (value as string | number | boolean | Date | null) : num;
+      }
       case 'date_format':
         // Simple date formatting - in real app would use a proper date library
         try {
-          const date = new Date(value);
+          const date = new Date(value as string | number);
           return date.toISOString().split('T')[0];
         } catch {
-          return value;
+          return value as string | number | boolean | Date | null;
         }
       default:
-        return value;
+        return value as string | number | boolean | Date | null;
     }
   };
 

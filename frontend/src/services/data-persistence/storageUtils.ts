@@ -81,7 +81,7 @@ export class StorageUtils {
       // Try to estimate localStorage usage
       let totalSize = 0;
       for (let key in localStorage) {
-        if (localStorage.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(localStorage, key)) {
           totalSize += localStorage[key].length;
         }
       }
@@ -115,9 +115,16 @@ export class StorageUtils {
       // Try to fill localStorage to trigger quota exceeded
       const testKey = 'quota_test_' + Date.now();
       let data = 'x'.repeat(1024 * 1024); // 1MB of data
+      let attempts = 0;
+      const maxAttempts = 1000; // Prevent infinite loop
 
-      while (true) {
-        localStorage.setItem(testKey + Math.random(), data);
+      while (attempts < maxAttempts) {
+        try {
+          localStorage.setItem(testKey + Math.random(), data);
+          attempts++;
+        } catch {
+          break; // Quota exceeded, exit loop
+        }
       }
     } catch (error) {
       // Expected to catch QuotaExceededError

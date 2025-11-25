@@ -1,8 +1,11 @@
 /**
-import { logger } from '../../services/logger'; * Error Code Display Component
+/**
+ * Error Code Display Component
  * Displays error codes with screen reader support
  * Essential for Agent 5 Enhancement 2: Enhanced Error Display
  */
+
+import { logger } from '../../services/logger';
 
 import React, { useState } from 'react';
 import { Copy, Check, Code } from 'lucide-react';
@@ -37,7 +40,7 @@ export const ErrorCodeDisplay: React.FC<ErrorCodeDisplayProps> = ({
       setCopiedItem(item);
 
       // Announce to screen readers
-      ariaLiveRegionsService?.announceStatus?.(`${item} copied to clipboard`, {
+      (ariaLiveRegionsService as any)?.announceStatus?.(`${item} copied to clipboard`, {
         componentId: 'error-code-display',
         action: 'code-copied',
       });

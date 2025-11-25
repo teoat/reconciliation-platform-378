@@ -135,3 +135,108 @@ export interface NotificationTrigger {
   conditions: RuleCondition[];
   recipients: User[];
 }
+
+export interface ReconciliationSource {
+  id: string;
+  systemId: string;
+  systemName: string;
+  recordId: string;
+  data: Record<string, unknown>;
+  timestamp: string;
+  quality: DataQuality;
+  confidence: number;
+  metadata: Record<string, unknown>;
+}
+
+export interface DataQuality {
+  completeness: number;
+  accuracy: number;
+  consistency: number;
+  validity: number;
+  duplicates: number;
+  errors: number;
+}
+
+export interface MatchingRule {
+  id: string;
+  name: string;
+  type: 'exact' | 'fuzzy' | 'algorithmic' | 'manual';
+  criteria: MatchingCriteria[];
+  weight: number;
+  applied: boolean;
+  result: MatchingResult;
+  confidence: number;
+}
+
+export interface MatchingCriteria {
+  field: string;
+  operator: 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'regex' | 'fuzzy';
+  value: unknown;
+  tolerance?: number;
+  weight: number;
+}
+
+export interface MatchingResult {
+  matched: boolean;
+  confidence: number;
+  reason: string;
+  details: Record<string, unknown>;
+}
+
+export interface AuditEntry {
+  id: string;
+  timestamp: string;
+  userId: string;
+  action: string;
+  details: Record<string, unknown>;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+export interface EnhancedReconciliationRecord {
+  id: string;
+  reconciliationId: string;
+  batchId: string;
+  sources: ReconciliationSource[];
+  status: 'matched' | 'unmatched' | 'discrepancy' | 'pending' | 'resolved' | 'escalated';
+  confidence: number;
+  matchingRules: MatchingRule[];
+  auditTrail: AuditEntry[];
+  metadata: {
+    createdAt: string;
+    updatedAt: string;
+    createdBy: string;
+    updatedBy: string;
+    version: number;
+    tags: string[];
+    priority: 'low' | 'medium' | 'high' | 'critical';
+    attachments: string[];
+  };
+  resolution?: Resolution;
+  matchScore: number;
+  difference?: number;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+}
+
+export interface Resolution {
+  type: 'accept' | 'reject' | 'adjust' | 'investigate';
+  value?: unknown;
+  reason: string;
+  resolvedBy: string;
+  resolvedAt: string;
+  attachments?: string[];
+}
+
+export interface ReconciliationMetrics {
+  pendingRecords?: number;
+  resolvedRecords?: number;
+  escalatedRecords?: number;
+  totalRecords: number;
+  matchedRecords: number;
+  unmatchedRecords: number;
+  discrepancyRecords: number;
+  matchRate: number;
+  averageConfidence: number;
+  processingTime: number;
+  lastUpdated: string;
+}

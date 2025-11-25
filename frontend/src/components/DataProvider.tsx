@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, memo, useRef } from 'react';
-import { useComprehensiveCleanup, LRUMap } from '../utils/memoryOptimization';
+import React, { useState, useEffect, memo } from 'react';
 import { DataContext, DataContextType } from './data/context';
 import { useDataValidation } from './data/sync';
 import { createInitialCrossPageData } from './data/initialData';
 import { WorkflowStage, Alert, Notification } from './data/types';
 import type { ReactNode } from 'react';
-import type { ProjectData } from '../services/dataManagement';
+import type { ProjectData } from '../services/dataManagement/types';
 import {
   useDataProviderSecurity,
   useDataProviderWorkflow,
@@ -44,10 +43,6 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [crossPageData, setCrossPageData] = useState(createInitialCrossPageData());
   const [currentProject, setCurrentProject] = useState<ProjectData | null>(null);
 
-  // Memory optimization
-  const cleanup = useComprehensiveCleanup();
-  const cacheRef = useRef(new LRUMap<string, unknown>(100));
-
   // Security hook
   const securityData = useDataProviderSecurity();
 
@@ -61,22 +56,30 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const notificationsData = useDataProviderNotifications();
 
   // Create wrapper for addAlert to match workflow signature
-  const addAlertWrapper = React.useCallback((alert: Omit<Alert, 'id' | 'timestamp'>) => {
-    notificationsData.addAlert({
-      ...alert,
-      id: `alert-${Date.now()}-${Math.random()}`,
-      timestamp: new Date(),
-    });
-  }, [notificationsData]);
+  const addAlertWrapper = React.useCallback(
+    (alert: Omit<Alert, 'id' | 'timestamp' | 'isDismissed'>) => {
+      notificationsData.addAlert({
+        ...alert,
+        id: `alert-${Date.now()}-${Math.random()}`,
+        timestamp: new Date(),
+        isDismissed: false,
+      } as Alert);
+    },
+    [notificationsData]
+  );
 
   // Create wrapper for addNotification to match workflow signature
-  const addNotificationWrapper = React.useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
-    notificationsData.addNotification({
-      ...notification,
-      id: `notification-${Date.now()}-${Math.random()}`,
-      timestamp: new Date(),
-    });
-  }, [notificationsData]);
+  const addNotificationWrapper = React.useCallback(
+    (notification: Omit<Notification, 'id' | 'timestamp'>) => {
+      notificationsData.addNotification({
+        ...notification,
+        id: `notification-${Date.now()}-${Math.random()}`,
+        timestamp: new Date(),
+        read: false,
+      } as Notification);
+    },
+    [notificationsData]
+  );
 
   // Workflow hook
   const workflowData = useDataProviderWorkflow(
@@ -90,17 +93,26 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const syncData = useDataProviderSync(() => {});
 
   // Create wrapper for logAuditEvent to match expected signature
-  const logAuditEventWrapper = React.useCallback((event: {
-    userId: string;
-    action: string;
-    resource: string;
-    result: 'success' | 'failure' | 'denied';
-    ipAddress?: string;
-    userAgent?: string;
-    details?: Record<string, unknown>;
-  }) => {
-    securityData.logAuditEvent(event.userId, event.action, event.resource, event.result as 'success' | 'failure', event.details);
-  }, [securityData]);
+  const logAuditEventWrapper = React.useCallback(
+    (event: {
+      userId: string;
+      action: string;
+      resource: string;
+      result: 'success' | 'failure' | 'denied';
+      ipAddress?: string;
+      userAgent?: string;
+      details?: Record<string, unknown>;
+    }) => {
+      securityData.logAuditEvent(
+        event.userId,
+        event.action,
+        event.resource,
+        event.result as 'success' | 'failure',
+        event.details
+      );
+    },
+    [securityData]
+  );
 
   // Updates hook
   const updatesData = useDataProviderUpdates(
@@ -108,7 +120,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     setCrossPageData,
     securityData.checkPermission,
     logAuditEventWrapper,
-    securityData.encryptData,
+    securityData.encryptData as <T>(
+      data: T,
+      dataType: string
+    ) => T & { _encrypted: boolean; _encryptionType: string; _encryptedAt: string },
     securityData.isSecurityEnabled,
     syncConnected,
     wsSyncData
@@ -128,14 +143,12 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Workflow advance failed';
         setError(errorMessage);
-        notificationsData.addAlert({
-          id: `alert-${Date.now()}-${Math.random()}`,
+        addAlertWrapper({
           severity: 'high',
           title: 'Workflow Error',
           message: err instanceof Error ? err.message : 'Failed to advance workflow',
           pages: [workflowData.workflowState?.currentStage.page || '', toStage.page],
-          timestamp: new Date(),
-          isDismissed: false,
+          autoResolve: true,
         });
       } finally {
         setIsLoading(false);
@@ -151,33 +164,50 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   }, [workflowData]);
 
   // Create wrapper for checkCompliance to match expected signature
-  const checkComplianceWrapper = React.useCallback((framework: string) => {
-    const requirements = securityData.checkCompliance(framework);
-    return requirements.map(req => ({
-      framework,
-      status: req.requirement ? 'compliant' : 'non-compliant',
-      issues: req.requirement ? [] : ['Non-compliant']
-    }));
-  }, [securityData]);
+  const checkComplianceWrapper = React.useCallback(
+    (framework: string) => {
+      const requirements = securityData.checkCompliance(framework);
+      return requirements.map((req) => ({
+        framework,
+        status: req.requirement ? 'compliant' : 'non-compliant',
+        issues: req.requirement ? [] : ['Non-compliant'],
+      }));
+    },
+    [securityData]
+  );
 
   // Create wrappers for security policy functions
-  const createSecurityPolicyWrapper = React.useCallback((policy: Record<string, unknown>) => {
-    const result = securityData.createSecurityPolicy(policy as Record<string, unknown>);
-    return result as Record<string, unknown>;
-  }, [securityData]);
+  const createSecurityPolicyWrapper = React.useCallback(
+    (policy: Record<string, unknown>) => {
+      const result = securityData.createSecurityPolicy(policy as any);
+      return result as any;
+    },
+    [securityData]
+  );
 
-  const updateSecurityPolicyWrapper = React.useCallback((policyId: string, policy: Record<string, unknown>) => {
-    const result = securityData.updateSecurityPolicy(policyId, policy as Record<string, unknown>);
-    return result as Record<string, unknown>;
-  }, [securityData]);
+  const updateSecurityPolicyWrapper = React.useCallback(
+    (policyId: string, policy: Record<string, unknown>) => {
+      securityData.updateSecurityPolicy(
+        policyId,
+        policy as unknown as Partial<Record<string, unknown>>
+      );
+    },
+    [securityData]
+  );
 
-  const deleteSecurityPolicyWrapper = React.useCallback((policyId: string) => {
-    securityData.deleteSecurityPolicy(policyId);
-  }, [securityData]);
+  const deleteSecurityPolicyWrapper = React.useCallback(
+    (policyId: string) => {
+      securityData.deleteSecurityPolicy(policyId);
+    },
+    [securityData]
+  );
 
-  const exportAuditLogsWrapper = React.useCallback((startDate?: string, endDate?: string) => {
-    return securityData.exportAuditLogs();
-  }, [securityData]);
+  const exportAuditLogsWrapper = React.useCallback(
+    (startDate?: string, endDate?: string) => {
+      return securityData.exportAuditLogs();
+    },
+    [securityData]
+  );
 
   const contextValue: DataContextType = {
     ...storageData,
@@ -212,8 +242,16 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     updateSecurityPolicy: updateSecurityPolicyWrapper,
     deleteSecurityPolicy: deleteSecurityPolicyWrapper,
     exportAuditLogs: exportAuditLogsWrapper,
-    securityPolicies: securityData.securityPolicies as Record<string, unknown>[],
-    auditLogs: securityData.auditLogs as Array<Record<string, unknown>>,
+    securityPolicies: securityData.securityPolicies as unknown as Record<string, unknown>[],
+    auditLogs: securityData.auditLogs.map((log) => ({
+      id: log.id,
+      userId: log.userId,
+      action: log.action,
+      resource: log.resource,
+      result: log.result,
+      timestamp: log.timestamp,
+      details: log.details,
+    })),
     // Enhanced methods
     advanceWorkflow: enhancedAdvanceWorkflow,
     resetWorkflow: enhancedResetWorkflow,

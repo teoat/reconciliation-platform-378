@@ -10,7 +10,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { Card } from '../ui/Card';
 import { Button } from '../ui/Button';
 import { StatusBadge } from '../ui/StatusBadge';
-import { DataTable } from '../ui/DataTable';
+import { DataTable, Column } from '../ui/DataTable';
 import { logger } from '../../services/logger';
 import {
   Users,
@@ -104,59 +104,77 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
         logger.logUserAction('join_collaboration_session', 'CollaborationDashboard', { sessionId });
 
         // Subscribe to session updates
-const subId = subscribe(`collaboration:session:${sessionId}`, (data: {
-          type: 'user_joined' | 'user_left' | 'activity' | 'comment' | 'cursor_move' | 'selection_change';
-          user?: { id: string; name: string; email: string };
-          userId?: string;
-          activity?: { id: string; userId: string; action: string; timestamp: string };
-          comment?: { id: string; userId: string; message: string; timestamp: string };
-        }) => {
-          if (data.type === 'user_joined') {
-            setActiveUsers((prev) => [...prev, {
-              ...data.user,
-              status: 'online' as const,
-              lastActivity: new Date()
-            }]);
-          } else if (data.type === 'user_left') {
-            setActiveUsers((prev) => prev.filter((u) => u.id !== data.userId));
-          } else if (data.type === 'activity') {
-            if (data.activity) {
-              const activityData = data.activity as Record<string, unknown>;
-              const activity: CollaborationActivity = {
-                id: String(activityData.id || ''),
-                userId: String(activityData.userId || ''),
-                userName: String(activityData.userName || 'Unknown'),
-                action: (['viewed', 'edited', 'commented', 'shared', 'joined', 'left'].includes(String(activityData.action)) 
-                  ? String(activityData.action) 
-                  : 'viewed') as CollaborationActivity['action'],
-                target: String(activityData.target || ''),
-                targetType: (['project', 'file', 'reconciliation', 'comment'].includes(String(activityData.targetType))
-                  ? String(activityData.targetType)
-                  : 'project') as CollaborationActivity['targetType'],
-                timestamp: new Date(String(activityData.timestamp || Date.now())),
-                metadata: activityData.details as Record<string, unknown> | undefined,
-              };
-              setActivities((prev) => [activity, ...prev].slice(0, 100));
-            }
-          } else if (data.type === 'comment') {
-            if (data.comment) {
-              const commentData = data.comment as Record<string, unknown>;
-              const comment: CollaborationComment = {
-                id: String(commentData.id || ''),
-                userId: String(commentData.userId || ''),
-                userName: String(commentData.userName || 'Unknown'),
-                content: String(commentData.message || ''),
-                targetId: String(commentData.targetId || ''),
-                targetType: (['project', 'file', 'reconciliation'].includes(String(commentData.targetType))
-                  ? String(commentData.targetType)
-                  : 'project') as CollaborationComment['targetType'],
-                timestamp: new Date(String(commentData.timestamp || Date.now())),
-                resolved: commentData.resolved as boolean | undefined,
-              };
-              setComments((prev) => [comment, ...prev]);
+        const subId = subscribe(
+          `collaboration:session:${sessionId}`,
+          (data: {
+            type:
+              | 'user_joined'
+              | 'user_left'
+              | 'activity'
+              | 'comment'
+              | 'cursor_move'
+              | 'selection_change';
+            user?: { id: string; name: string; email: string };
+            userId?: string;
+            activity?: { id: string; userId: string; action: string; timestamp: string };
+            comment?: { id: string; userId: string; message: string; timestamp: string };
+          }) => {
+            if (data.type === 'user_joined') {
+              setActiveUsers((prev) => [
+                ...prev,
+                {
+                  ...data.user,
+                  status: 'online' as const,
+                  lastActivity: new Date(),
+                },
+              ]);
+            } else if (data.type === 'user_left') {
+              setActiveUsers((prev) => prev.filter((u) => u.id !== data.userId));
+            } else if (data.type === 'activity') {
+              if (data.activity) {
+                const activityData = data.activity as Record<string, unknown>;
+                const activity: CollaborationActivity = {
+                  id: String(activityData.id || ''),
+                  userId: String(activityData.userId || ''),
+                  userName: String(activityData.userName || 'Unknown'),
+                  action: (['viewed', 'edited', 'commented', 'shared', 'joined', 'left'].includes(
+                    String(activityData.action)
+                  )
+                    ? String(activityData.action)
+                    : 'viewed') as CollaborationActivity['action'],
+                  target: String(activityData.target || ''),
+                  targetType: (['project', 'file', 'reconciliation', 'comment'].includes(
+                    String(activityData.targetType)
+                  )
+                    ? String(activityData.targetType)
+                    : 'project') as CollaborationActivity['targetType'],
+                  timestamp: new Date(String(activityData.timestamp || Date.now())),
+                  metadata: activityData.details as Record<string, unknown> | undefined,
+                };
+                setActivities((prev) => [activity, ...prev].slice(0, 100));
+              }
+            } else if (data.type === 'comment') {
+              if (data.comment) {
+                const commentData = data.comment as Record<string, unknown>;
+                const comment: CollaborationComment = {
+                  id: String(commentData.id || ''),
+                  userId: String(commentData.userId || ''),
+                  userName: String(commentData.userName || 'Unknown'),
+                  content: String(commentData.message || ''),
+                  targetId: String(commentData.targetId || ''),
+                  targetType: (['project', 'file', 'reconciliation'].includes(
+                    String(commentData.targetType)
+                  )
+                    ? String(commentData.targetType)
+                    : 'project') as CollaborationComment['targetType'],
+                  timestamp: new Date(String(commentData.timestamp || Date.now())),
+                  resolved: commentData.resolved as boolean | undefined,
+                };
+                setComments((prev) => [comment, ...prev]);
+              }
             }
           }
-        });
+        );
         setSessionSubscriptionId(subId);
 
         logger.info('Joined collaboration session', { sessionId });
@@ -269,43 +287,61 @@ const subId = subscribe(`collaboration:session:${sessionId}`, (data: {
       setIsLoading(true);
 
       // Subscribe to collaboration updates
-const usersSubId = subscribe('collaboration:users', (data: {
-        type: 'users_update';
-        users: Array<{ id: string; name: string; email: string; lastSeen: string }>;
-      }) => {
-        if (data.type === 'users_update') {
-          setActiveUsers(data.users.map(user => ({
-            ...user,
-            status: 'online' as const,
-            lastActivity: new Date(user.lastSeen)
-          })));
+      const usersSubId = subscribe(
+        'collaboration:users',
+        (data: {
+          type: 'users_update';
+          users: Array<{ id: string; name: string; email: string; lastSeen: string }>;
+        }) => {
+          if (data.type === 'users_update') {
+            setActiveUsers(
+              data.users.map((user) => ({
+                ...user,
+                status: 'online' as const,
+                lastActivity: new Date(user.lastSeen),
+              }))
+            );
+          }
         }
-      });
+      );
       setUsersSubscriptionId(usersSubId);
 
-const activitiesSubId = subscribe('collaboration:activities', (data: {
-        type: 'activity';
-        activity: { id: string; userId: string; action: string; timestamp: string; details?: Record<string, unknown> };
-      }) => {
-        if (data.type === 'activity') {
-          const activityData = data.activity as Record<string, unknown>;
-          const activity: CollaborationActivity = {
-            id: String(activityData.id || ''),
-            userId: String(activityData.userId || ''),
-            userName: String(activityData.userName || 'Unknown'),
-            action: (['viewed', 'edited', 'commented', 'shared', 'joined', 'left'].includes(String(activityData.action))
-              ? String(activityData.action)
-              : 'viewed') as CollaborationActivity['action'],
-            target: String(activityData.target || ''),
-            targetType: (['project', 'file', 'reconciliation', 'comment'].includes(String(activityData.targetType))
-              ? String(activityData.targetType)
-              : 'project') as CollaborationActivity['targetType'],
-            timestamp: new Date(String(activityData.timestamp || Date.now())),
-            metadata: activityData.details as Record<string, unknown> | undefined,
+      const activitiesSubId = subscribe(
+        'collaboration:activities',
+        (data: {
+          type: 'activity';
+          activity: {
+            id: string;
+            userId: string;
+            action: string;
+            timestamp: string;
+            details?: Record<string, unknown>;
           };
-          setActivities((prev) => [activity, ...prev].slice(0, 100));
+        }) => {
+          if (data.type === 'activity') {
+            const activityData = data.activity as Record<string, unknown>;
+            const activity: CollaborationActivity = {
+              id: String(activityData.id || ''),
+              userId: String(activityData.userId || ''),
+              userName: String(activityData.userName || 'Unknown'),
+              action: (['viewed', 'edited', 'commented', 'shared', 'joined', 'left'].includes(
+                String(activityData.action)
+              )
+                ? String(activityData.action)
+                : 'viewed') as CollaborationActivity['action'],
+              target: String(activityData.target || ''),
+              targetType: (['project', 'file', 'reconciliation', 'comment'].includes(
+                String(activityData.targetType)
+              )
+                ? String(activityData.targetType)
+                : 'project') as CollaborationActivity['targetType'],
+              timestamp: new Date(String(activityData.timestamp || Date.now())),
+              metadata: activityData.details as Record<string, unknown> | undefined,
+            };
+            setActivities((prev) => [activity, ...prev].slice(0, 100));
+          }
         }
-      });
+      );
       setActivitiesSubscriptionId(activitiesSubId);
 
       logger.info('Collaboration dashboard initialized', { projectId });
@@ -405,9 +441,7 @@ const activitiesSubId = subscribe('collaboration:activities', (data: {
             {recentActivities.length > 0 ? (
               <DataTable
                 data={recentActivities as unknown as Record<string, unknown>[]}
-                columns={
-                  activityColumns as Array<{ key: string; label: string; [key: string]: unknown }>
-                }
+                columns={activityColumns as Column<Record<string, unknown>>[]}
                 searchable={false}
                 pagination={false}
                 emptyMessage="No recent activities"

@@ -57,9 +57,9 @@ export const useDataValidation = () => {
           {
             field: 'system',
             rule: 'validation_error',
-            passed: false,
+            status: 'failed',
             message: error instanceof Error ? error.message : 'Validation failed',
-            severity: 'error',
+            severity: 'high',
           },
         ],
         summary: { total: 1, errors: 1, warnings: 0, info: 0 },
@@ -91,7 +91,12 @@ export const useDataValidation = () => {
 
   const getValidationsBySeverity = useCallback(
     (severity: 'error' | 'warning' | 'info') => {
-      return state.validations.filter((v) => v.severity === severity);
+      const severityMap = {
+        error: 'high' as const,
+        warning: 'medium' as const,
+        info: 'low' as const,
+      };
+      return state.validations.filter((v) => v.severity === severityMap[severity]);
     },
     [state.validations]
   );

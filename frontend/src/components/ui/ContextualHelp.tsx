@@ -70,8 +70,8 @@ export const ContextualHelp: React.FC<ContextualHelpProps> = ({
   );
 
   useEffect(() => {
-    if (isOpen && helpContent && ariaLiveRegionsService?.announceStatus) {
-      ariaLiveRegionsService.announceStatus(`Help: ${helpContent.title}`, {
+    if (isOpen && helpContent && (ariaLiveRegionsService as any)?.announceStatus) {
+      (ariaLiveRegionsService as any).announceStatus(`Help: ${helpContent.title}`, {
         componentId: helpContent.id,
         action: 'help-opened',
       });

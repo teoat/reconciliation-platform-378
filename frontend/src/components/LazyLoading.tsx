@@ -24,7 +24,7 @@ class LazyErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-logger.error('Lazy component error:', { error: error.message, stack: error.stack, errorInfo })
+    logger.error('Lazy component error:', { error: error.message, stack: error.stack, errorInfo });
   }
 
   render() {
@@ -41,17 +41,14 @@ logger.error('Lazy component error:', { error: error.message, stack: error.stack
   }
 }
 
-export const withLazyLoading = <P extends object>(
+export const withLazyLoading = <P extends Record<string, any>>(
   Component: ComponentType<P>,
   fallback?: ReactNode
 ) => {
-  const LazyComponent = lazy(() => Promise.resolve({ default: Component }));
-
-  // eslint-disable-next-line react/display-name
   const WrappedComponent = (props: P) => (
     <LazyErrorBoundary fallback={fallback}>
       <Suspense fallback={fallback || <LoadingSpinner />}>
-        <LazyComponent {...props} />
+        <Component {...props} />
       </Suspense>
     </LazyErrorBoundary>
   );

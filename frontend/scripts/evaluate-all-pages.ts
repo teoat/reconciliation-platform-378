@@ -51,7 +51,10 @@ const PAGES = [
   { path: '/nonexistent-page-12345', name: '404 Not Found', public: true },
 ];
 
-async function evaluatePage(browser: Browser, pageInfo: typeof PAGES[0]): Promise<PageEvaluation> {
+async function evaluatePage(
+  browser: Browser,
+  pageInfo: (typeof PAGES)[0]
+): Promise<PageEvaluation> {
   const page = await browser.newPage();
   const evaluation: PageEvaluation = {
     path: pageInfo.path,
@@ -87,7 +90,7 @@ async function evaluatePage(browser: Browser, pageInfo: typeof PAGES[0]): Promis
       const level = msg.type();
       const text = msg.text();
       consoleMessages.push({ level, text });
-      
+
       if (level === 'error') evaluation.console.errors++;
       else if (level === 'warning') evaluation.console.warnings++;
       else evaluation.console.logs++;
@@ -98,12 +101,13 @@ async function evaluatePage(browser: Browser, pageInfo: typeof PAGES[0]): Promis
     page.on('response', (response) => {
       const url = response.url();
       const status = response.status();
-      const timing = response.timing();
+      const request = response.request();
+      const timing = request.timing();
       const duration = timing ? timing.responseEnd - timing.requestStart : 0;
-      
+
       networkRequests.push({ url, status, duration });
       evaluation.network.total++;
-      
+
       if (status >= 400) evaluation.network.failed++;
       if (duration > 1000) evaluation.network.slow++;
     });
@@ -120,13 +124,16 @@ async function evaluatePage(browser: Browser, pageInfo: typeof PAGES[0]): Promis
         if (typeof window !== 'undefined' && window.localStorage) {
           try {
             window.localStorage.setItem('authToken', 'test-token');
-            window.localStorage.setItem('user', JSON.stringify({
-              id: '1',
-              email: 'test@example.com',
-              first_name: 'Test',
-              last_name: 'User',
-              role: 'admin'
-            }));
+            window.localStorage.setItem(
+              'user',
+              JSON.stringify({
+                id: '1',
+                email: 'test@example.com',
+                first_name: 'Test',
+                last_name: 'User',
+                role: 'admin',
+              })
+            );
           } catch (e) {
             // localStorage might be blocked
           }
@@ -152,11 +159,14 @@ async function evaluatePage(browser: Browser, pageInfo: typeof PAGES[0]): Promis
 
     // Run accessibility check
     const violations = await getViolations(page, undefined, {
-      tags: ['wcag2a', 'wcag2aa', 'wcag21aa'],
+      runOnly: {
+        type: 'tag',
+        values: ['wcag2a', 'wcag2aa', 'wcag21aa'],
+      },
     });
 
     evaluation.accessibility.violations = violations.length;
-    violations.forEach(v => {
+    violations.forEach((v) => {
       if (v.impact === 'critical') evaluation.accessibility.critical++;
       else if (v.impact === 'serious') evaluation.accessibility.serious++;
       else if (v.impact === 'moderate') evaluation.accessibility.moderate++;
@@ -188,9 +198,10 @@ async function evaluatePage(browser: Browser, pageInfo: typeof PAGES[0]): Promis
     } else if (h1Count > 1) {
       evaluation.warnings.push(`Multiple h1 headings found (${h1Count})`);
     }
-
   } catch (error) {
-    evaluation.errors.push(`Failed to evaluate: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    evaluation.errors.push(
+      `Failed to evaluate: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
     evaluation.loaded = false;
   } finally {
     await page.close();
@@ -210,32 +221,43 @@ async function main() {
       console.log(`Evaluating: ${pageInfo.name} (${pageInfo.path})...`);
       const result = await evaluatePage(browser, pageInfo);
       results.push(result);
-      
+
       // Print quick summary
       const status = result.loaded ? '✅' : '❌';
       console.log(`  ${status} Loaded: ${result.loadTime}ms`);
-      console.log(`  Accessibility: ${result.accessibility.violations} violations (${result.accessibility.critical} critical, ${result.accessibility.serious} serious)`);
-      console.log(`  Console: ${result.console.errors} errors, ${result.console.warnings} warnings`);
+      console.log(
+        `  Accessibility: ${result.accessibility.violations} violations (${result.accessibility.critical} critical, ${result.accessibility.serious} serious)`
+      );
+      console.log(
+        `  Console: ${result.console.errors} errors, ${result.console.warnings} warnings`
+      );
       console.log(`  Network: ${result.network.failed}/${result.network.total} failed\n`);
     }
 
     // Generate summary
     const summary = {
       totalPages: results.length,
-      loadedPages: results.filter(r => r.loaded).length,
+      loadedPages: results.filter((r) => r.loaded).length,
       totalAccessibilityViolations: results.reduce((sum, r) => sum + r.accessibility.violations, 0),
-      criticalAccessibilityViolations: results.reduce((sum, r) => sum + r.accessibility.critical, 0),
+      criticalAccessibilityViolations: results.reduce(
+        (sum, r) => sum + r.accessibility.critical,
+        0
+      ),
       totalConsoleErrors: results.reduce((sum, r) => sum + r.console.errors, 0),
       totalNetworkFailures: results.reduce((sum, r) => sum + r.network.failed, 0),
-      averageLoadTime: results.filter(r => r.loaded).reduce((sum, r) => sum + r.loadTime, 0) / results.filter(r => r.loaded).length,
-      pagesWithErrors: results.filter(r => r.errors.length > 0).length,
+      averageLoadTime:
+        results.filter((r) => r.loaded).reduce((sum, r) => sum + r.loadTime, 0) /
+        results.filter((r) => r.loaded).length,
+      pagesWithErrors: results.filter((r) => r.errors.length > 0).length,
     };
 
     console.log('\n' + '='.repeat(60));
     console.log('📊 EVALUATION SUMMARY');
     console.log('='.repeat(60));
     console.log(`Total Pages: ${summary.totalPages}`);
-    console.log(`Loaded Pages: ${summary.loadedPages} (${((summary.loadedPages / summary.totalPages) * 100).toFixed(1)}%)`);
+    console.log(
+      `Loaded Pages: ${summary.loadedPages} (${((summary.loadedPages / summary.totalPages) * 100).toFixed(1)}%)`
+    );
     console.log(`Average Load Time: ${summary.averageLoadTime.toFixed(0)}ms`);
     console.log(`Total Accessibility Violations: ${summary.totalAccessibilityViolations}`);
     console.log(`Critical Accessibility Violations: ${summary.criticalAccessibilityViolations}`);
@@ -250,12 +272,9 @@ async function main() {
     const outputPath = path.join(process.cwd(), 'frontend', 'PAGE_EVALUATION_RESULTS.json');
     fs.writeFileSync(outputPath, JSON.stringify({ summary, results }, null, 2));
     console.log(`\n📄 Detailed results saved to: ${outputPath}`);
-
   } finally {
     await browser.close();
   }
 }
 
 main().catch(console.error);
-
-

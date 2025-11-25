@@ -44,23 +44,19 @@ export function useIngestionUpload({
 
       setIsUploading(true);
       try {
-        const result = await ApiService.uploadFile(projectId, file, {
-          name: file.name,
-          source_type: 'reconciliation_data',
-        });
+        const result = await ApiService.uploadFile(projectId, file, 'reconciliation_data');
 
         if (!result) {
           throw new Error('Upload failed - no response received');
         }
 
         const uploadedFile: UploadedFile = {
-          id: result.id,
-          name: result.name || file.name,
+          id: result.id || `upload_${Date.now()}`,
+          name: file.name,
           size: file.size,
-          type: file.type || 'Unknown',
+          type: file.type,
           status: (result.status as UploadedFile['status']) || 'processing',
           progress: 0,
-          fileType: 'other',
         };
 
         toast.success('File uploaded successfully');

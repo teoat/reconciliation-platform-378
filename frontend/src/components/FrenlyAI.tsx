@@ -150,7 +150,7 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({ currentPage, userProgress, onAction
         autoHide: agentMessage.type === 'greeting' ? 5000 : undefined,
       };
     } catch (error) {
-      logger.error('Error generating contextual message:', error);
+      logger.error('Error generating contextual message:', { error: error instanceof Error ? error.message : String(error) });
       setError('Unable to generate message. Using default message.');
       // Fallback to default message
       return createDefaultMessage();

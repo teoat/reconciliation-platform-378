@@ -1,10 +1,12 @@
 /**
-import { logger } from '../../services/logger'; * Error Reporting Form Component
+/**
+ * Error Reporting Form Component
  * Accessible form for reporting errors to support
  * Essential for Agent 5 Enhancement 2: Enhanced Error Display
  */
 
 import React, { useState } from 'react';
+import { logger } from '../../services/logger';
 import { Send, X, AlertCircle, User, Mail, MessageSquare } from 'lucide-react';
 import { Button } from './Button';
 import { ErrorCodeDisplay } from './ErrorCodeDisplay';

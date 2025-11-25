@@ -20,6 +20,21 @@ export interface HelpContent {
   tags?: string[];
   relatedFeatures?: string[];
   lastUpdated?: Date;
+  tips?: { id: string; content: string }[];
+  videoUrl?: string;
+  interactiveExample?: {
+    title: string;
+    description?: string;
+    code?: string;
+    demoUrl?: string;
+  };
+  links?: { id: string; url: string; label: string; type: 'internal' | 'external' }[];
+}
+
+export interface HelpSearchResult {
+  content: HelpContent;
+  relevance: number;
+  matchedFields: string[];
 }
 
 interface HelpContentCache {
@@ -178,9 +193,9 @@ class HelpContentService {
   /**
    * Search help content
    */
-  searchHelpContent(query: string, category?: string): HelpContent[] {
+  search(query: string, category?: string): HelpSearchResult[] {
     const lowerQuery = query.toLowerCase();
-    const results: HelpContent[] = [];
+    const results: HelpSearchResult[] = [];
 
     for (const content of this.contentStore.values()) {
       // Filter by category if specified
@@ -189,23 +204,83 @@ class HelpContentService {
       }
 
       // Search in title, content, and tags
-      const matches =
-        content.title.toLowerCase().includes(lowerQuery) ||
-        content.content.toLowerCase().includes(lowerQuery) ||
-        content.tags?.some(tag => tag.toLowerCase().includes(lowerQuery));
+      const matchedFields: string[] = [];
+      let relevance = 0;
 
-      if (matches) {
-        results.push(content);
+      if (content.title.toLowerCase().includes(lowerQuery)) {
+        matchedFields.push('title');
+        relevance += 3; // Title matches are more relevant
+      }
+      if (content.content.toLowerCase().includes(lowerQuery)) {
+        matchedFields.push('content');
+        relevance += 1;
+      }
+      if (content.tags?.some(tag => tag.toLowerCase().includes(lowerQuery))) {
+        matchedFields.push('tags');
+        relevance += 2;
+      }
+
+      if (matchedFields.length > 0) {
+        results.push({
+          content,
+          relevance,
+          matchedFields,
+        });
       }
     }
 
-    return results;
+    // Sort by relevance
+    return results.sort((a, b) => b.relevance - a.relevance);
+  }
+
+  /**
+   * Search help content (legacy method for backward compatibility)
+   */
+  searchHelpContent(query: string, category?: string): HelpContent[] {
+    return this.search(query, category).map(result => result.content);
+  }
+
+  /**
+   * Track view of help content
+   */
+  trackView(contentId: string): void {
+    logger.debug('Help content viewed', { contentId });
+    // TODO: Implement analytics tracking if needed
+  }
+
+  /**
+   * Get search history
+   */
+  getSearchHistory(): string[] {
+    // TODO: Implement search history tracking if needed
+    return [];
+  }
+
+  /**
+   * Get related help content
+   */
+  getRelated(contentId: string, limit: number): HelpContent[] {
+    const content = this.contentStore.get(contentId);
+    if (!content || !content.relatedFeatures) {
+      return [];
+    }
+
+    const relatedContent: HelpContent[] = [];
+    for (const featureId of content.relatedFeatures) {
+      for (const item of this.contentStore.values()) {
+        if (item.id !== contentId && item.relatedFeatures?.includes(featureId)) {
+          relatedContent.push(item);
+        }
+      }
+    }
+
+    return [...new Set(relatedContent)].slice(0, limit);
   }
 
   /**
    * Get help content by feature ID
    */
-  async getHelpContentForFeature(featureId: string): Promise<HelpContent[]> {
+  getContentByFeature(featureId: string): HelpContent[] {
     const results: HelpContent[] = [];
 
     for (const content of this.contentStore.values()) {
@@ -215,6 +290,27 @@ class HelpContentService {
     }
 
     return results;
+  }
+
+  /**
+   * Get help content by category
+   */
+  getContentByCategory(category: string): HelpContent[] {
+    const results: HelpContent[] = [];
+    for (const content of this.contentStore.values()) {
+      if (content.category === category) {
+        results.push(content);
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Track feedback for help content
+   */
+  trackFeedback(contentId: string, helpful: boolean): void {
+    logger.info('Help content feedback received', { contentId, helpful });
+    // TODO: Implement analytics tracking for feedback
   }
 
   /**

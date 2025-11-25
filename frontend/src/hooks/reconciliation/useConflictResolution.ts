@@ -77,8 +77,8 @@ export const useConflictResolution = () => {
   });
 
   const setConflicts = useCallback((conflicts: EnhancedReconciliationRecord[]) => {
-    const pendingConflicts = conflicts.filter((c) => c.resolution?.status === 'pending');
-    const resolvedConflicts = conflicts.filter((c) => c.resolution?.status !== 'pending');
+    const pendingConflicts = conflicts.filter((c) => (c.resolution as ConflictResolution)?.status === 'pending');
+    const resolvedConflicts = conflicts.filter((c) => (c.resolution as ConflictResolution)?.status !== 'pending');
 
     setState((prev) => ({
       ...prev,

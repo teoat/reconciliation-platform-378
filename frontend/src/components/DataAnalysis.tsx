@@ -148,7 +148,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
 
       setProcessingProgress(100);
     } catch (error) {
-      logger.error('Error processing data:', error);
+      logger.error('Error processing data:', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setIsProcessing(false);
     }

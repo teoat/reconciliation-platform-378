@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useFrenly } from './FrenlyProvider';
-import { FrenlyMessage } from '../types/frenly';
+import { useFrenly } from './frenly/FrenlyProvider';
+import type { FrenlyMessage } from './frenly/FrenlyProvider';
 import { CheckCircle } from 'lucide-react';
 import { XCircle } from 'lucide-react';
 import { AlertTriangle } from 'lucide-react';
@@ -189,7 +189,7 @@ const FrenlyAITester: React.FC = () => {
       autoHide: 3000,
     };
 
-    showMessage(testMessage);
+    showMessage(testMessage as any);
 
     setTimeout(() => {
       hideMessage();

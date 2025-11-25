@@ -55,6 +55,8 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
   });
   const [isExporting, setIsExporting] = useState(false);
   interface ExportResult {
+    fileSize?: number;
+    recordCount?: number;
     success: boolean;
     error?: string;
     fileUrl?: string;
@@ -79,7 +81,10 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      const result = await ProjectExportService.exportProjects(projects, exportOptions);
+      const result = await ProjectExportService.exportProjects(
+        projects as unknown as any[],
+        exportOptions
+      );
       setExportResult(result);
     } catch (error) {
       setExportResult({
@@ -200,7 +205,10 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
               <div className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="export-format-select" className="block text-sm font-medium text-secondary-700 mb-2">
+                    <label
+                      htmlFor="export-format-select"
+                      className="block text-sm font-medium text-secondary-700 mb-2"
+                    >
                       Export Format
                     </label>
                     <select
@@ -249,7 +257,10 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                         }
                         className="rounded border-secondary-300"
                       />
-                      <label htmlFor="export-include-metadata" className="text-sm text-secondary-700 cursor-pointer">
+                      <label
+                        htmlFor="export-include-metadata"
+                        className="text-sm text-secondary-700 cursor-pointer"
+                      >
                         Include metadata (progress, budget, etc.)
                       </label>
                     </div>
@@ -266,7 +277,10 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                         }
                         className="rounded border-secondary-300"
                       />
-                      <label htmlFor="export-include-comments" className="text-sm text-secondary-700 cursor-pointer">
+                      <label
+                        htmlFor="export-include-comments"
+                        className="text-sm text-secondary-700 cursor-pointer"
+                      >
                         Include comments and notes
                       </label>
                     </div>
@@ -283,7 +297,10 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
                         }
                         className="rounded border-secondary-300"
                       />
-                      <label htmlFor="export-include-history" className="text-sm text-secondary-700 cursor-pointer">
+                      <label
+                        htmlFor="export-include-history"
+                        className="text-sm text-secondary-700 cursor-pointer"
+                      >
                         Include project history
                       </label>
                     </div>

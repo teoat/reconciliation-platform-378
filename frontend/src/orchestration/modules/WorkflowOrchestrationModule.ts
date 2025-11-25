@@ -245,7 +245,7 @@ export class WorkflowGuidanceEngine {
     // Generate contextual message via Frenly AI
     try {
       const generatedMessage = await frenlyAgentService.generateMessage({
-        userId: state.metadata?.userId || 'unknown',
+        userId: String(state.metadata?.userId || 'unknown'),
         page: currentStep.pageId,
         progress: {
           completedSteps: state.completedSteps,
@@ -285,7 +285,7 @@ export class WorkflowGuidanceEngine {
     // 2. Step has been active for more than 30 seconds without progress
     // 3. User hasn't seen guidance for this step yet
 
-    const stepStartTime = state.metadata?.stepStartTime || 0;
+    const stepStartTime = Number(state.metadata?.stepStartTime) || 0;
     const timeOnStep = Date.now() - stepStartTime;
 
     return timeOnStep > 30000 && !state.completedSteps.includes(state.currentStep);

@@ -1,18 +1,20 @@
 /**
-import { logger } from '../../services/logger'; * Fallback Content Component
+/**
+ * Fallback Content Component
  * Displays cached/fallback content when services are degraded
  * Essential for Agent 5 Enhancement 1: Fallback UI Components
  */
 
 import React, { useEffect, useState } from 'react';
+import { logger } from '../../services/logger';
 import { Database, Clock, RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from './Button';
 // Import ariaLiveRegionsService with fallback
 import ariaLiveRegionsServiceModule from '../../services/ariaLiveRegionsService';
 const ariaLiveRegionsService =
-  (ariaLiveRegionsServiceModule as Record<string, unknown>).ariaLiveRegionsService ||
+  (ariaLiveRegionsServiceModule as any).ariaLiveRegionsService ||
   (
-    (ariaLiveRegionsServiceModule as Record<string, unknown>).default as {
+    (ariaLiveRegionsServiceModule as any).default as {
       getInstance?: () => unknown;
     }
   )?.getInstance?.() ||
@@ -64,7 +66,7 @@ export const FallbackContent: React.FC<FallbackContentProps> = ({
       ? `Showing cached data for ${service} from ${getRelativeTime(cacheTimestamp)}`
       : `Showing cached data for ${service}`;
 
-    ariaLiveRegionsService?.announceStatus?.(cacheMessage, {
+    (ariaLiveRegionsService as any)?.announceStatus?.(cacheMessage, {
       componentId: `fallback-${service}`,
       action: 'cached-content-displayed',
       currentState: { service, cacheTimestamp },

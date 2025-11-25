@@ -98,7 +98,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
           }}
           role="button"
           tabIndex={0}
-          aria-label={`Go to step ${step.label || index + 1}`}
+          aria-label={`Go to step ${step.title || index + 1}`}
         >
           <div className="flex-shrink-0">{getStepIcon(step, index)}</div>
 

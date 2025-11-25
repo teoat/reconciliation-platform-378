@@ -6,17 +6,6 @@ namespace: reconciliation-platform
 resources:
   - ../../base
 
-# Production-specific patches
-patches:
-  - path: production-patch.yaml
-    target:
-      kind: Deployment
-      labelSelector: component=backend
-  - path: production-patch.yaml
-    target:
-      kind: Deployment
-      labelSelector: component=frontend
-
 # Production replicas
 replicas:
   - name: backend
@@ -31,17 +20,13 @@ commonLabels:
 
 images:
   - name: reconciliation-backend
-    newName: registry.example.com/reconciliation-backend
-    newTag: v1.0.0
+    newName: reconciliation-backend
+    newTag: local
   - name: reconciliation-frontend
-    newName: registry.example.com/reconciliation-frontend
-    newTag: v1.0.0
+    newName: reconciliation-frontend
+    newTag: local
 
-configMapGenerator:
-  - name: reconciliation-config
-    behavior: merge
-    literals:
-      - APP_ENV=production
-      - RUST_LOG=warn
-      - DATABASE_POOL_SIZE=50
-
+patches:
+  - path: backend-patch.yaml
+  - path: frontend-patch.yaml
+  - path: configmap-patch.yaml

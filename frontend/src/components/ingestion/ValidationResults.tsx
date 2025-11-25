@@ -26,6 +26,12 @@ export const ValidationResults: React.FC<ValidationResultsProps> = ({
     );
   }
 
+  const getSeverityFromStatus = (status: 'passed' | 'failed' | 'warning'): 'error' | 'warning' | 'info' => {
+    if (status === 'failed') return 'error';
+    if (status === 'warning') return 'warning';
+    return 'info';
+  };
+
   const getSeverityIcon = (severity: 'error' | 'warning' | 'info') => {
     switch (severity) {
       case 'error':
@@ -66,23 +72,23 @@ export const ValidationResults: React.FC<ValidationResultsProps> = ({
             {validations.map((validation, index) => (
               <div
                 key={index}
-                className={`border rounded-lg p-4 ${getSeverityColor(validation.severity)}`}
+                className={`border rounded-lg p-4 ${getSeverityColor(getSeverityFromStatus(validation.status))}`}
               >
                 <div className="flex items-start space-x-3">
-                  {getSeverityIcon(validation.severity)}
+                  {getSeverityIcon(getSeverityFromStatus(validation.status))}
                   <div className="flex-1">
                     <div className="flex items-center justify-between">
                       <span className="font-medium text-gray-900">{validation.field}</span>
                       <span
                         className={`text-xs px-2 py-1 rounded ${
-                          validation.severity === 'error'
+                          validation.status === 'failed'
                             ? 'bg-red-100 text-red-800'
-                            : validation.severity === 'warning'
+                            : validation.status === 'warning'
                               ? 'bg-yellow-100 text-yellow-800'
                               : 'bg-blue-100 text-blue-800'
                         }`}
                       >
-                        {validation.severity}
+                        {validation.status}
                       </span>
                     </div>
                     <p className="text-sm text-gray-700 mt-1">{validation.message}</p>

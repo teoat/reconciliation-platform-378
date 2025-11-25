@@ -65,7 +65,7 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({
       }, 300);
 
       // Announce step to screen readers
-      ariaLiveRegionsService.announceStatus(
+      (ariaLiveRegionsService as any).announceStatus(
         `Tour step ${currentStep + 1} of ${steps.length}: ${currentStepData.title}`,
         {
           componentId: tourId,
@@ -127,7 +127,7 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({
       onComplete();
     }
     onClose();
-    ariaLiveRegionsService.announceSuccess('Feature tour completed', {
+    (ariaLiveRegionsService as any).announceSuccess('Feature tour completed', {
       componentId: tourId,
       action: 'tour-completed',
     });

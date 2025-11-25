@@ -252,7 +252,7 @@ class AtomicWorkflowService {
         data: {
           fromStage: workflow.stage,
           toStage,
-          data,
+          data: data as Record<string, unknown>,
         },
         dependencies: [],
         rollbackData: {
@@ -349,7 +349,7 @@ class AtomicWorkflowService {
       // Update workflow state
       workflow.stage = toStage;
       workflow.data = { ...workflow.data, ...data };
-      workflow.metadata.lastModifiedBy = operation.userId;
+      workflow.metadata.lastModifiedBy = String(operation.userId);
       workflow.metadata.lastModifiedAt = new Date();
       workflow.metadata.version++;
       workflow.metadata.checksum = this.calculateChecksum(workflow.data);
@@ -357,9 +357,9 @@ class AtomicWorkflowService {
       // Add transition record
       const transition: WorkflowTransition = {
         id: this.generateTransitionId(),
-        fromStage,
-        toStage,
-        triggeredBy: operation.userId,
+        fromStage: String(fromStage),
+        toStage: String(toStage),
+        triggeredBy: String(operation.userId),
         triggeredAt: new Date(),
         data,
         metadata: {},

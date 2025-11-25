@@ -179,7 +179,7 @@ export class StorageOperations {
       const store = storage === 'localStorage' ? localStorage : sessionStorage;
 
       for (let key in store) {
-        if (store.hasOwnProperty(key)) {
+        if (Object.prototype.hasOwnProperty.call(store, key)) {
           used += store[key].length + key.length;
         }
       }

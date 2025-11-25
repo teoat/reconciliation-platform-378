@@ -535,7 +535,7 @@ export const ProjectPage: React.FC = () => {
             <input
               id="project-name"
               type="text"
-              value={createProjectForm.values.name}
+              value={String(createProjectForm.values.name || '')}
               onChange={(e) => createProjectForm.handleChange('name', e.target.value)}
               onBlur={() => createProjectForm.handleBlur('name')}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
@@ -557,7 +557,7 @@ export const ProjectPage: React.FC = () => {
             </label>
             <textarea
               id="project-description"
-              value={createProjectForm.values.description}
+              value={String(createProjectForm.values.description || '')}
               onChange={(e) => createProjectForm.handleChange('description', e.target.value)}
               onBlur={() => createProjectForm.handleBlur('description')}
               className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${

@@ -4,6 +4,63 @@
 
 import type { ID, Status, Timestamp } from '../backend-aligned';
 
+export interface DataQualityMetrics {
+  completeness: number;
+  accuracy: number;
+  consistency: number;
+  validity: number;
+  duplicates: number;
+  errors: number;
+}
+
+export interface UploadedFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  status:
+    | 'uploading'
+    | 'completed'
+    | 'error'
+    | 'processing'
+    | 'validating'
+    | 'extracting'
+    | 'analyzing';
+  progress: number;
+  records?: number;
+  uploadedAt?: Date;
+  error?: string;
+  data?: Record<string, unknown>;
+}
+
+export interface DataRow {
+  [key: string]: string | number | boolean | Date | null;
+}
+
+export interface ColumnInfo {
+  name: string;
+  type: 'string' | 'number' | 'boolean' | 'date';
+  nullable: boolean;
+  sampleValues: (string | number | boolean | Date | null)[];
+}
+
+export interface FieldMapping {
+  sourceField: string;
+  targetField: string;
+  transformation?: 'none' | 'trim' | 'uppercase' | 'lowercase' | 'date_format';
+  defaultValue?: string | number | boolean | Date | null;
+}
+
+export interface DataValidation {
+  field: string;
+  rule: string;
+  status: 'passed' | 'failed' | 'warning';
+  severity?: 'low' | 'medium' | 'high';
+  message?: string;
+  value?: string | number | boolean | Date | null;
+  expected?: string | number | boolean | Date | null;
+}
+
 export interface IngestionJob {
   id: ID;
   projectId: ID;

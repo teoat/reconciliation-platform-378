@@ -240,15 +240,16 @@ export class PageFrenlyIntegration {
     const context = await this.collectPageContext();
 
     switch (event.type) {
-      case 'mount':
+      case 'mount': {
         // Track page view
-        await frenlyAgentService.trackInteraction(context.userId, 'page_view', event.pageId);
+        await frenlyAgentService.trackInteraction(context.userId, 'page_view', event.pageId);                                                                             
         // Generate welcome message
         const message = await this.generateContextualMessage();
         await this.showMessage(message);
         break;
+      }
 
-      case 'update':
+      case 'update': {
         // Update context and sync
         await this.syncPageState();
         // Generate contextual message if significant change
@@ -257,14 +258,16 @@ export class PageFrenlyIntegration {
           await this.showMessage(updateMessage);
         }
         break;
+      }
 
-      case 'feature-error':
+      case 'feature-error': {
         // Generate error recovery message
         const errorMessage = await this.generateErrorMessage(event);
         if (errorMessage) {
           await this.showMessage(errorMessage);
         }
         break;
+      }
 
       case 'user-action':
         // Track user action

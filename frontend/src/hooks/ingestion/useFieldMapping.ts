@@ -58,9 +58,7 @@ export const useFieldMapping = () => {
         const newMapping: FieldMapping = {
           sourceField,
           targetField,
-          transformation: '',
-          validation: [],
-          isRequired: false,
+          transformation: 'none' as const,
         };
         setState((prev) => ({ ...prev, mappings: [...prev.mappings, newMapping] }));
       }
@@ -101,8 +99,6 @@ export const useFieldMapping = () => {
           sourceField: sourceCol.name,
           targetField: targetCol.name,
           transformation: getSuggestedTransformation(sourceCol, targetCol),
-          validation: [],
-          isRequired: !sourceCol.nullable,
         });
       }
     });
@@ -181,17 +177,13 @@ export const useFieldMapping = () => {
 };
 
 // Helper function to suggest transformations based on column types
-function getSuggestedTransformation(sourceCol: ColumnInfo, targetCol: ColumnInfo): string {
+function getSuggestedTransformation(sourceCol: ColumnInfo, targetCol: ColumnInfo): 'none' | 'trim' | 'uppercase' | 'lowercase' | 'date_format' {
   // If types match, no transformation needed
   if (sourceCol.type === targetCol.type) {
-    return '';
+    return 'none';
   }
 
   // Suggest transformations based on type differences
-  if (sourceCol.type === 'string' && targetCol.type === 'number') {
-    return 'number';
-  }
-
   if (sourceCol.type === 'string' && targetCol.type === 'date') {
     return 'date_format';
   }
@@ -200,5 +192,5 @@ function getSuggestedTransformation(sourceCol: ColumnInfo, targetCol: ColumnInfo
     return 'trim';
   }
 
-  return '';
+  return 'none';
 }

@@ -20,24 +20,32 @@ export const ReconciliationResults: React.FC<ReconciliationResultsProps> = ({
   const matchColumns: Column<BackendReconciliationMatch>[] = [
     {
       key: 'id',
-      label: 'Match ID',
+      header: 'Match ID',
       sortable: true,
-      render: (value) => <span className="font-mono text-sm">{value.slice(0, 8)}...</span>,
+      render: (value) => <span className="font-mono text-sm">{String(value).slice(0, 8)}...</span>,
     },
     {
       key: 'confidence_score',
-      label: 'Confidence',
+      header: 'Confidence',
       sortable: true,
       render: (value) => {
-        const progressValue = Math.round(value * 100);
+        const numValue = Number(value) || 0;
+        const progressValue = Math.round(numValue * 100);
         return (
           <div className="flex items-center space-x-2">
             <div className="w-16 bg-gray-200 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all duration-300 ${
-                  value >= 0.8 ? 'bg-green-500' : value >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'
+                  numValue >= 0.8
+                    ? 'bg-green-500'
+                    : numValue >= 0.6
+                      ? 'bg-yellow-500'
+                      : 'bg-red-500'
                 }`}
-                style={{ width: `${value * 100}%` }}
+                style={{ width: `${numValue * 100}%` }}
+                aria-valuenow={progressValue}
+                aria-valuemin={0}
+                aria-valuemax={100}
               />
             </div>
             <span className="text-sm font-medium">{progressValue}%</span>
@@ -46,8 +54,8 @@ export const ReconciliationResults: React.FC<ReconciliationResultsProps> = ({
       },
     },
     {
-      key: 'status',
-      label: 'Status',
+      key: 'match_type',
+      header: 'Match Type',
       sortable: true,
       render: (value) => {
         const statusConfig = {
@@ -62,26 +70,26 @@ export const ReconciliationResults: React.FC<ReconciliationResultsProps> = ({
 
         return (
           <span className={`px-2 py-1 text-xs font-medium rounded-full ${config.color}`}>
-            {config.label}
+            {String(config.label)}
           </span>
         );
       },
     },
     {
       key: 'created_at',
-      label: 'Created',
+      header: 'Created',
       sortable: true,
-      render: (value) => new Date(value).toLocaleDateString(),
+      render: (value) => new Date(value as string | number | Date).toLocaleDateString(),
     },
     {
-      key: 'actions',
-      label: 'Actions',
+      key: 'id',
+      header: 'Actions',
       render: (_, row) => (
         <div className="flex space-x-2">
           <Button size="sm" variant="outline">
             View Details
           </Button>
-          {row.status === 'pending' && (
+          {(row as unknown as { status?: string }).status === 'pending' && (
             <>
               <Button size="sm" variant="primary">
                 Approve
@@ -124,8 +132,8 @@ export const ReconciliationResults: React.FC<ReconciliationResultsProps> = ({
           </Button>
         </div>
         <DataTable
-          data={matches}
-          columns={matchColumns}
+          data={matches as unknown as Record<string, unknown>[]}
+          columns={matchColumns as unknown as Column<Record<string, unknown>>[]}
           virtualized
           virtualRowHeight={48}
           virtualContainerHeight={560}

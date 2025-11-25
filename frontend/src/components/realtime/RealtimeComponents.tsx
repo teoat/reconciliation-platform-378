@@ -1,11 +1,16 @@
 // Real-time UI Components
 import React, { useState, useEffect } from 'react';
-import { useRealtimeConnection, useUserPresence, useComments, useNotifications } from '../../hooks/useRealtime';
-import { Bell } from 'lucide-react'
-import { Users } from 'lucide-react'
-import { MessageCircle } from 'lucide-react'
-import { Wifi } from 'lucide-react'
-import { WifiOff } from 'lucide-react'
+import {
+  useRealtimeConnection,
+  useUserPresence,
+  useComments,
+  useNotifications,
+} from '../../hooks/useRealtime';
+import { Bell } from 'lucide-react';
+import { Users } from 'lucide-react';
+import { MessageCircle } from 'lucide-react';
+import { Wifi } from 'lucide-react';
+import { WifiOff } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
 
 // Connection Status Indicator
@@ -374,12 +379,14 @@ export const ActivityFeed: React.FC = () => {
               <div key={index} className="p-4">
                 <div className="flex items-center space-x-3">
                   <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                    {activity.user?.charAt(0) || 'A'}
+                    {String(activity.user || 'A')
+                      .charAt(0)
+                      .toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900">{activity.message}</p>
+                    <p className="text-sm text-gray-900">{String(activity.message)}</p>
                     <p className="text-xs text-gray-500">
-                      {new Date(activity.timestamp).toLocaleString()}
+                      {new Date(activity.timestamp as string | number).toLocaleString()}
                     </p>
                   </div>
                 </div>

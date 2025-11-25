@@ -2,6 +2,8 @@
 // Replace blank screens during data loading with animated skeleton loaders
 
 export interface SkeletonConfig {
+  width?: string;
+  height?: string;
   animation: 'pulse' | 'wave' | 'shimmer' | 'none';
   speed: 'slow' | 'normal' | 'fast';
   color: string;

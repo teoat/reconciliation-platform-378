@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { logger } from '@/services/logger';
 import { useParams, useNavigate } from 'react-router-dom';
+import { PageMeta } from '../seo/PageMeta';
 import { apiClient } from '../../services/apiClient';
 import { useProjects } from '../../hooks/useApi';
 import { Button } from '../ui/Button';

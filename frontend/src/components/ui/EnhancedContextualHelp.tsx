@@ -5,10 +5,19 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { HelpCircle, X, ChevronRight, Lightbulb, BookOpen, Video, Search } from 'lucide-react';
+import {
+  HelpCircle,
+  X,
+  ChevronRight,
+  Lightbulb,
+  BookOpen,
+  Video,
+  Search,
+  ExternalLink,
+} from 'lucide-react';
 import { helpContentService, HelpContent } from '../../services/helpContentService';
 import { HelpSearch } from './HelpSearch';
-import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
+import { ariaLiveRegionsService } from '../../services/ariaLiveRegionsService';
 
 export interface EnhancedContextualHelpProps {
   contentId?: string; // Help content ID from HelpContentService
@@ -38,42 +47,29 @@ export const EnhancedContextualHelp: React.FC<EnhancedContextualHelpProps> = ({
 
   // Load help content
   useEffect(() => {
-    let content: HelpContent | null = null;
+    const loadContent = async () => {
+      let content: HelpContent | null = null;
 
-    if (contentId) {
-      content = helpContentService.getContent(contentId);
-    } else if (feature) {
-      const featureContent = helpContentService.getContentByFeature(feature);
-      content = featureContent[0] || null;
-    }
-
-    if (content) {
-      setHelpContent(content);
-
-      // Track view (if method exists)
-      if (
-        'trackView' in helpContentService &&
-        typeof (helpContentService as { trackView?: (id: string) => void }).trackView === 'function'
-      ) {
-        (helpContentService as { trackView: (id: string) => void }).trackView(content.id);
+      if (contentId) {
+        content = await helpContentService.getHelpContent(contentId);
+      } else if (feature) {
+        const featureContent = helpContentService.getContentByFeature(feature);
+        content = featureContent[0] || null;
       }
 
-      // Load related content (if method exists)
-      if (
-        'getRelated' in helpContentService &&
-        typeof (helpContentService as { getRelated?: (id: string, limit: number) => HelpContent[] })
-          .getRelated === 'function'
-      ) {
-        const related = (
-          helpContentService as { getRelated: (id: string, limit: number) => HelpContent[] }
-        ).getRelated(content.id, 3);
+      if (content) {
+        setHelpContent(content);
+
+        // Track view
+        helpContentService.trackView(content.id);
+
+        // Load related content
+        const related = helpContentService.getRelated(content.id, 3);
         setRelatedContent(related || []);
-      } else {
-        // Fallback: get content by category
-        const categoryContent = helpContentService.getContentByCategory(content.category);
-        setRelatedContent(categoryContent.filter((c) => c.id !== content.id).slice(0, 3));
       }
-    }
+    };
+
+    loadContent();
   }, [contentId, feature]);
 
   const ariaExpandedValue = isOpen ? 'true' : 'false';

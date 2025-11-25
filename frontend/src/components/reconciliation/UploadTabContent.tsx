@@ -91,8 +91,8 @@ export const UploadTabContent: React.FC<UploadTabContentProps> = ({
             </Button>
           </div>
           <DataTable
-            data={dataSources ?? []}
-            columns={dataSourceColumns}
+            data={(dataSources ?? []) as unknown as Record<string, unknown>[]}
+            columns={dataSourceColumns as unknown as Column<Record<string, unknown>>[]}
             emptyMessage="No data sources uploaded yet"
           />
         </div>

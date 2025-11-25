@@ -1,6 +1,6 @@
 /**
  * React Component Integration for Feature Registry
- * 
+ *
  * Provides React components and hooks for integrating feature registry
  * with existing Frenly AI and orchestration components
  */
@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { featureRegistry, type FeatureMetadata } from '../registry';
 import { getFeatureGuidance, getRelevantFeatures } from './frenly';
 import { initializeFeatureSync, getFeatureUsageStats } from './sync';
+import { validateOnInit } from './validation';
 import { logger } from '../../services/logger';
 
 /**
@@ -25,10 +26,10 @@ export function useFeatureRegistryInit() {
       try {
         // Validate registry first
         validateOnInit();
-        
+
         // Then sync with external systems
         await initializeFeatureSync();
-        
+
         if (mounted) {
           setInitialized(true);
           logger.info('Feature registry initialized');
@@ -55,10 +56,7 @@ export function useFeatureRegistryInit() {
 /**
  * Hook to get feature guidance for current context
  */
-export function useFeatureGuidanceForContext(
-  pageId?: string,
-  userProgress?: string[]
-) {
+export function useFeatureGuidanceForContext(pageId?: string, userProgress?: string[]) {
   const [guidance, setGuidance] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -70,7 +68,7 @@ export function useFeatureGuidanceForContext(
       try {
         // Get relevant features for current page
         const relevantFeatures = getRelevantFeatures(pageId, userProgress);
-        
+
         if (relevantFeatures.length > 0) {
           // Get guidance from first relevant feature
           const featureGuidance = await getFeatureGuidance(relevantFeatures[0].id, {
@@ -157,4 +155,3 @@ export function FeatureGuidanceDisplay({
     </div>
   );
 }
-

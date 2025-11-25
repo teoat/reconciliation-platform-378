@@ -118,7 +118,7 @@ class LastWriteWinsService {
         });
       }
     } catch (error) {
-      logger.error('Failed to load persisted records:', error);
+      logger.error('Failed to load persisted records:', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -129,7 +129,7 @@ class LastWriteWinsService {
       };
       localStorage.setItem('timestamped_records', JSON.stringify(data));
     } catch (error) {
-      logger.error('Failed to save records:', error);
+      logger.error('Failed to save records:', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -337,8 +337,8 @@ class LastWriteWinsService {
           case 'remote':
             mergedValue = remoteValue;
             break;
-          case 'merge':
-            const handler = mergeStrategy.conflictHandlers.find((h) => h.field === rule.field);
+          case 'merge': {
+            const handler = mergeStrategy.conflictHandlers.find((h) => h.field === rule.field);                                                                           
             if (handler) {
               mergedValue = handler.handler(
                 localValue,
@@ -350,7 +350,8 @@ class LastWriteWinsService {
               mergedValue = localValue;
             }
             break;
-          case 'custom':
+          }
+          case 'custom': {
             const customHandler = mergeStrategy.conflictHandlers.find(
               (h) => h.field === rule.field
             );
@@ -365,6 +366,7 @@ class LastWriteWinsService {
               mergedValue = localValue;
             }
             break;
+          }
           default:
             mergedValue = localValue;
         }

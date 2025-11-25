@@ -48,7 +48,7 @@ export const useWhyDidYouUpdate = (name: string, props: Record<string, unknown>)
       });
 
       if (Object.keys(changedProps).length) {
-        logger.info('[why-did-you-update]', name, changedProps);
+        logger.info('[why-did-you-update]', { name, changedProps });
       }
     }
 

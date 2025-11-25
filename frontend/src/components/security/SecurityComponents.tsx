@@ -140,13 +140,13 @@ export const SecurityDashboard: React.FC = () => {
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Duration</span>
                 <span className="text-sm font-medium text-gray-900">
-                  {Math.round(sessionInfo.duration / 1000 / 60)} min
+                  {Math.round(Number(sessionInfo.duration) / 1000 / 60)} min
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Last Activity</span>
                 <span className="text-sm font-medium text-gray-900">
-                  {Math.round((Date.now() - sessionInfo.lastActivity) / 1000 / 60)} min ago
+                  {Math.round((Date.now() - Number(sessionInfo.lastActivity)) / 1000 / 60)} min ago
                 </span>
               </div>
               <div className="flex items-center justify-between">

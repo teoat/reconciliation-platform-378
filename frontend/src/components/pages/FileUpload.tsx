@@ -7,6 +7,7 @@ import { useToast } from '../../hooks/useToast';
 import { ArrowLeft } from 'lucide-react';
 import { Upload } from 'lucide-react';
 import { File } from 'lucide-react';
+import { PageMeta } from '../seo/PageMeta';
 
 const FileUpload: React.FC = () => {
   const navigate = useNavigate();

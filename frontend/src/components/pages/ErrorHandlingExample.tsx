@@ -1,10 +1,11 @@
-/**
-import { logger } from '../services/logger'; * Error Handling Integration Example
+/*
+ * Error Handling Integration Example
  * Complete integration example showing how to use error components in real pages
  * Demonstrates useErrorManagement hook and error extraction utilities
  */
 
 import React, { useState } from 'react';
+import { logger } from '@/services/logger';
 import {
   UserFriendlyError,
   ErrorHistory,
@@ -102,7 +103,7 @@ export const ErrorHandlingExample: React.FC = () => {
               label: 'Use Cached Data',
               action: () => {
                 // Use cached data
-                logger.info('Using cached data:', cachedData);
+                logger.info('Using cached data:', cachedData as any);
               },
               variant: 'primary',
             },
@@ -163,7 +164,7 @@ export const ErrorHandlingExample: React.FC = () => {
             errors={state.errorHistory}
             onErrorSelect={(error) => {
               // Could show error details in a modal
-              logger.info('Selected error:', error);
+              logger.info('Selected error:', error as any);
             }}
             onErrorDismiss={actions.removeFromHistory}
             maxItems={10}

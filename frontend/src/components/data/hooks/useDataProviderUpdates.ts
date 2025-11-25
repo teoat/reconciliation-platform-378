@@ -17,21 +17,27 @@ export const useDataProviderUpdates = (
     userAgent?: string;
     details?: Record<string, unknown>;
   }) => void,
-  encryptData: (data: unknown, dataType: string) => string,
+  encryptData: <T>(
+    data: T,
+    dataType: string
+  ) => T & { _encrypted: boolean; _encryptionType: string; _encryptedAt: string },
   isSecurityEnabled: boolean,
   syncConnected: boolean,
   wsSyncData: (data: CrossPageData) => void
 ) => {
   // Convert new signature to old signature for useCrossPageDataUpdates
-  const logAuditEventOld = React.useCallback((
-    userId: string,
-    action: string,
-    resource: string,
-    result: 'success' | 'failure',
-    details?: Record<string, unknown>
-  ) => {
-    logAuditEvent({ userId, action, resource, result, details });
-  }, [logAuditEvent]);
+  const logAuditEventOld = React.useCallback(
+    (
+      userId: string,
+      action: string,
+      resource: string,
+      result: 'success' | 'failure',
+      details?: Record<string, unknown>
+    ) => {
+      logAuditEvent({ userId, action, resource, result, details });
+    },
+    [logAuditEvent]
+  );
 
   // Wrapper for wsSyncData to match expected signature
   const wsSyncDataWrapper = React.useCallback(() => {

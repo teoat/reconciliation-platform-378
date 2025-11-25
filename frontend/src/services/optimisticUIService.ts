@@ -333,17 +333,19 @@ class OptimisticUIService {
       case 'local_wins':
         // Keep the optimistic update
         break;
-      case 'remote_wins':
+      case 'remote_wins': {
         // Rollback the optimistic update
         const update = this.updates.get(conflict.updateId);
         if (update) {
           this.rollbackUpdate(update, 'Conflict resolved in favor of remote data');
         }
         break;
-      case 'merge':
+      }
+      case 'merge': {
         // Implement merge logic
         this.mergeData(conflict);
         break;
+      }
     }
   }
 

@@ -246,8 +246,8 @@ class MLMachingService {
 
     for (const [feature, weight] of Object.entries(config.weights)) {
       if (features[feature] !== undefined) {
-        totalScore += features[feature] * weight;
-        totalWeight += weight;
+        totalScore += Number(features[feature]) * Number(weight);
+        totalWeight += Number(weight);
       }
     }
 

@@ -28,8 +28,8 @@ export const ResultsTabContent: React.FC<ResultsTabContentProps> = ({ matches, m
             </Button>
           </div>
           <DataTable
-            data={matches ?? []}
-            columns={matchColumns}
+            data={(matches ?? []) as unknown as Record<string, unknown>[]}
+            columns={matchColumns as unknown as Column<Record<string, unknown>>[]}
             virtualized
             emptyMessage="No reconciliation matches found"
           />

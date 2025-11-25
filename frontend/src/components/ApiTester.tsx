@@ -133,31 +133,6 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
     [showSuccess, showError]
   );
 
-        setResponseBody(JSON.stringify(response, null, 2));
-        showSuccess(`API Test Successful - Endpoint ${endpoint} responded successfully`);
-      } catch (error) {
-        const duration = Date.now() - startTime;
-        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-
-        const errorResult: ApiTestResult = {
-          endpoint,
-          method,
-          status: 'error',
-          error: errorMessage,
-          duration,
-          timestamp,
-        };
-
-        setTestResults((prev) =>
-          prev.map((result) => (result.timestamp === timestamp ? errorResult : result))
-        );
-
-        setResponseBody(JSON.stringify({ error: errorMessage }, null, 2));
-        showError(`API Test Failed - ${errorMessage}`);
-      }
-    }, [showSuccess, showError]);
-  );
-
   const handleRunTest = useCallback(() => {
     if (!selectedEndpoint) return;
 

@@ -94,5 +94,5 @@ registerFeature({
 
 // Re-export components and utilities
 export { FileUploadInterface } from '../../components/FileUploadInterface';
-export { EnhancedIngestionPage } from '../../components/EnhancedIngestionPage';
+export { default as EnhancedIngestionPage } from '../../components/EnhancedIngestionPage';
 

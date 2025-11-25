@@ -49,14 +49,15 @@ export class XSSProtectionManager {
   }
 
   private interceptInnerHTML(): void {
-    const originalInnerHTML = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');
+    const originalInnerHTML = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');            
     if (originalInnerHTML) {
-      const self = this;
+      const sanitizeFn = this.sanitizeInputFn.bind(this);
+      const logEventFn = this.logSecurityEvent.bind(this);
       Object.defineProperty(Element.prototype, 'innerHTML', {
         set: function (value: string) {
-          const sanitized = self.sanitizeInputFn(value);
+          const sanitized = sanitizeFn(value);
           if (sanitized !== value) {
-            self.logSecurityEvent({
+            logEventFn({
               type: SecurityEventType.XSS_ATTEMPT,
               severity: SecuritySeverity.HIGH,
               description: 'Potential XSS attempt detected in innerHTML',

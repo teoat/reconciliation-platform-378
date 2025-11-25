@@ -1,6 +1,5 @@
 /**
-import { logger } from '../../services/logger'; * Enhanced Frenly Onboarding Component
- *
+ * Enhanced Frenly Onboarding Component
  * Enhanced version of FrenlyOnboarding with:
  * - User role detection
  * - Role-specific flows
@@ -11,6 +10,7 @@ import { logger } from '../../services/logger'; * Enhanced Frenly Onboarding Com
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { logger } from '@/services/logger';
 import { tipEngine } from '../../services/tipEngine';
 import {
   Sparkles,
@@ -95,7 +95,9 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
           setCurrentStep(lastStep);
         }
       } catch (error) {
-        logger.error('Failed to load onboarding progress:', error);
+        logger.error('Failed to load onboarding progress:', {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
   }, []);
@@ -110,7 +112,8 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
           const response = await apiClient.getCurrentUser();
 
           if (response.data) {
-            const user = response.data as Record<string, unknown>;
+            const user = response.data as unknown as Record<string, unknown>;
+            const role = (user.role as string)?.toLowerCase();
             const roleMap: Record<string, UserRole> = {
               admin: 'admin',
               administrator: 'admin',
@@ -118,7 +121,8 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
               viewer: 'viewer',
               user: 'analyst',
             };
-            const detectedRole = roleMap[user.role?.toLowerCase() || 'analyst'] || 'analyst';
+            const detectedRole =
+              roleMap[(user.role as string | undefined)?.toLowerCase() || 'analyst'] || 'analyst';
             setUserData((prev) => ({ ...prev, role: detectedRole }));
           } else {
             // Fallback to default

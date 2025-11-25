@@ -141,15 +141,11 @@ export const cacheStrategies = {
       return cachedResponse;
     }
 
-    try {
-      const networkResponse = await fetch(request);
-      if (networkResponse.ok) {
-        cache.put(request, networkResponse.clone());
-      }
-      return networkResponse;
-    } catch (error) {
-      throw error;
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      cache.put(request, networkResponse.clone());
     }
+    return networkResponse;
   },
 
   networkFirst: async (request: Request): Promise<Response> => {

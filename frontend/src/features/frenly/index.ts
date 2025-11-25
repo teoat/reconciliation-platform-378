@@ -64,6 +64,5 @@ registerFeature({
 
 // Re-export Frenly components and services
 export { FrenlyProvider } from '../../components/frenly/FrenlyProvider';
-export { FrenlyAIProvider } from '../../components/frenly/FrenlyAIProvider';
 export { frenlyAgentService } from '../../services/frenlyAgentService';
 

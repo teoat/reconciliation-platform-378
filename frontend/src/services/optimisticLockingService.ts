@@ -108,7 +108,7 @@ class OptimisticLockingService {
         });
       }
     } catch (error) {
-      logger.error('Failed to load persisted locks:', error);
+      logger.error('Failed to load persisted locks:', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -119,7 +119,7 @@ class OptimisticLockingService {
       };
       localStorage.setItem('optimistic_locks', JSON.stringify(data));
     } catch (error) {
-      logger.error('Failed to save locks:', error);
+      logger.error('Failed to save locks:', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -338,14 +338,15 @@ class OptimisticLockingService {
           case 'latest':
             mergedValue = localValue.timestamp > remoteValue.timestamp ? localValue : remoteValue;
             break;
-          case 'custom':
-            const handler = mergeStrategy.conflictHandlers.find((h) => h.field === rule.field);
+          case 'custom': {
+            const handler = mergeStrategy.conflictHandlers.find((h) => h.field === rule.field);                                                                           
             if (handler) {
               mergedValue = handler.handler(localValue, remoteValue);
             } else {
               mergedValue = localValue;
             }
             break;
+          }
           default:
             mergedValue = localValue;
         }

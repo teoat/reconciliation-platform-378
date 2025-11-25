@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { logger } from '@/services/logger';
 
 // ============================================================================
@@ -347,7 +347,6 @@ export function usePerformanceMonitoring(config: Partial<PerformanceConfig> = {}
  */
 
 // Re-export from common performance utilities (SSOT)
-export { debounce, throttle, memoize } from './common/performance';
 
 /**
  * Creates a performance-optimized component wrapper
@@ -419,7 +418,7 @@ export async function measureComponentBundleSize(componentName: string) {
       bundleSize: 0, // Would be calculated by bundler
     };
   } catch (error) {
-    logger.error(`Failed to measure bundle size for ${componentName}:`, error);
+    logger.error(`Failed to measure bundle size for ${componentName}:`, { error: error instanceof Error ? error.message : String(error) });
     return null;
   }
 }

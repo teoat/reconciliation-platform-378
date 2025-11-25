@@ -86,11 +86,13 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
 
       {/* Search Modal */}
       <div
-        className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-lg shadow-xl z-50 ${className}`}
+        className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-lg shadow-xl z-50 ${className}`}                 
         role="dialog"
         aria-modal="true"
         aria-labelledby="help-search-title"
         onKeyDown={handleKeyDown}
+        tabIndex={-1}
+        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions
       >
         {/* Header */}
         <div className="p-4 border-b border-gray-200">

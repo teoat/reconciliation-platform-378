@@ -386,7 +386,7 @@ const uploadFile = useCallback(async (file: File, request: FileUploadRequest): P
             description: `Uploaded ${file.name}`,
           });
         } catch (err) {
-          logger.error('Failed to upload file:', err);
+          logger.error('Failed to upload file:', { error: err instanceof Error ? err.message : String(err) });
         }
       }
     },
@@ -413,20 +413,21 @@ const uploadFile = useCallback(async (file: File, request: FileUploadRequest): P
     if (!isConnected) return;
 
     // Subscribe to file processing updates
-    const unsubscribeFileUpdate = subscribe('file_update', (data: {
-      project_id: string;
-      file_id: string;
-      updates: Partial<{
-        status: string;
-        progress: number;
-        error?: string;
-        processed_records?: number;
-      }>;
-    }) => {
-      if (data.project_id === projectId) {
+    const unsubscribeFileUpdate = subscribe('file_update', (data: unknown) => {
+      const fileUpdate = data as {
+        project_id: string;
+        file_id: string;
+        updates: Partial<{
+          status: string;
+          progress: number;
+          error?: string;
+          processed_records?: number;
+        }>;
+      };
+      if (fileUpdate.project_id === projectId) {
         setFiles(prev => prev.map(file => 
-          file.id === data.file_id 
-            ? { ...file, ...data.updates, status: data.updates.status as FileInfo['status'] }
+          file.id === fileUpdate.file_id 
+            ? { ...file, ...fileUpdate.updates, status: fileUpdate.updates.status as FileInfo['status'] }
             : file
         ));
       }

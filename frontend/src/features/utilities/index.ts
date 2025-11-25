@@ -56,6 +56,7 @@ registerFeature({
 });
 
 // Re-export utilities
-export { useVirtualScroll, VirtualScrollResult } from '../../utils/virtualScrolling';
+export { useVirtualScroll } from '../../utils/virtualScrolling';
+export type { VirtualScrollResult } from '../../utils/virtualScrolling';
 export * from '../../utils/errorHandler';
 

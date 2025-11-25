@@ -1,7 +1,69 @@
 // React Hooks for Real-time Features
-import { logger } from '../services/logger'
+import { logger } from '../services/logger';
+
+interface UserJoinEvent {
+  user_id: string;
+  username: string;
+  page: string;
+  timestamp: string;
+}
+
+interface UserLeaveEvent {
+  user_id: string;
+  page: string;
+  timestamp: string;
+}
+
+interface UserPresenceEvent {
+  page: string;
+  users: UserPresence[];
+}
+
+interface CommentEvent {
+  id: string;
+  user_id: string;
+  username: string;
+  page: string;
+  message: string;
+  timestamp: string;
+  position?: {
+    x: number;
+    y: number;
+    element?: string;
+  };
+  created_at: string;
+  updated_at: string;
+}
+
+interface ReconciliationJobEvent {
+  job_id: string;
+  project_id: string;
+  name: string;
+  status: string;
+  progress: number;
+  created_at: string;
+  updated_at: string;
+  error?: string;
+}
+
+interface FileUploadEvent {
+  file_id: string;
+  filename: string;
+  file_size: number;
+  uploaded_by: string;
+  status: string;
+  created_at: string;
+  progress?: number;
+  error?: string;
+}
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { realtimeService, UserPresence, Comment, Notification, RealtimeUpdate } from '../services/realtimeService';
+import {
+  realtimeService,
+  UserPresence,
+  Comment,
+  Notification,
+  RealtimeUpdate,
+} from '../services/realtimeService';
 
 // Real-time Connection Hook
 export const useRealtimeConnection = () => {

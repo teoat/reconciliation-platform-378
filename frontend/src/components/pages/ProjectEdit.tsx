@@ -6,6 +6,7 @@ import { Button } from '../ui/Button';
 import { useToast } from '../../hooks/useToast';
 import { ArrowLeft, Save } from 'lucide-react';
 import { PageMeta } from '../seo/PageMeta';
+import type { BackendProject } from '../../services/apiClient/types';
 
 const ProjectEdit: React.FC = () => {
   const { id } = useParams<{ id: string }>();

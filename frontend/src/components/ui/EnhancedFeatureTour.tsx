@@ -1,5 +1,6 @@
 /**
-import { logger } from '../../services/logger'; * Enhanced Feature Tour Component
+/**
+ * Enhanced Feature Tour Component
  *
  * Enhanced version of FeatureTour with:
  * - Step validation
@@ -12,7 +13,8 @@ import { logger } from '../../services/logger'; * Enhanced Feature Tour Componen
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronRight, ChevronLeft, CheckCircle, AlertCircle } from 'lucide-react';
 import { onboardingService } from '../../services/onboardingService';
-import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
+import { ariaLiveRegionsService } from '../../services/ariaLiveRegionsService';
+import { logger } from '../../services/logger';
 
 export interface TourStep {
   id: string;
@@ -229,7 +231,7 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
       }, 300);
 
       // Announce step to screen readers
-      ariaLiveRegionsService?.announceStatus?.(
+      (ariaLiveRegionsService as any)?.announceStatus?.(
         `Tour step ${currentStep + 1} of ${visibleSteps.length}: ${currentStepData.title}`,
         {
           componentId: tourId,
@@ -375,7 +377,7 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
     onClose();
 
     // Announce completion
-    ariaLiveRegionsService?.announceSuccess?.('Feature tour completed', {
+    (ariaLiveRegionsService as any)?.announceSuccess?.('Feature tour completed', {
       componentId: tourId,
       action: 'tour-completed',
     });

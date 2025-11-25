@@ -6,6 +6,12 @@ import type { User } from '@/types/backend-aligned';
 // SECURITY UTILITIES
 // ============================================================================
 
+// Import sanitization functions for local use
+import { sanitizeHtml as sanitizeHTML, escapeHtml as escapeHTML, sanitizeInput } from './common/sanitization';
+
+// Import validation functions for local use
+import { validateEmail as isValidEmail, validatePasswordStrength } from './common/validation';
+
 // Re-export sanitization functions from common module
 export { sanitizeHtml as sanitizeHTML, escapeHtml as escapeHTML, sanitizeInput } from './common/sanitization';
 
@@ -43,7 +49,7 @@ export async function encryptData(data: string, key: string): Promise<string> {
 
     return btoa(String.fromCharCode(...result));
   } catch (error) {
-    logger.error('Encryption failed:', error);
+    logger.error('Encryption failed:', { error: error instanceof Error ? error.message : String(error) });
     throw new Error('Failed to encrypt data');
   }
 }
@@ -68,7 +74,7 @@ export async function decryptData(encryptedData: string, key: string): Promise<s
 
     return decoder.decode(decrypted);
   } catch (error) {
-    logger.error('Decryption failed:', error);
+    logger.error('Decryption failed:', { error: error instanceof Error ? error.message : String(error) });
     throw new Error('Failed to decrypt data');
   }
 }

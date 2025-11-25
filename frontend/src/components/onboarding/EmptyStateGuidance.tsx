@@ -1,11 +1,12 @@
 /**
-import { logger } from '../services/logger'; * Empty State Guidance Component
+ * Empty State Guidance Component
  * 
  * Provides contextual guidance when users encounter empty states.
  * Includes one-click setup options and guided first actions.
  */
 
 import React, { useState } from 'react';
+import { logger } from '@/services/logger';
 import { useNavigate } from 'react-router-dom';
 import {
   Upload,
@@ -282,7 +283,7 @@ export const EmptyStateGuidance: React.FC<EmptyStateGuidanceProps> = ({
         onActionComplete(action.id);
       }
     } catch (error) {
-      logger.error('Action failed:', error);
+      logger.error('Action failed:', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setActionLoading(null);
     }

@@ -7,6 +7,7 @@
 import { featureRegistry, type FeatureMetadata } from '../registry';
 import { frenlyAgentService } from '../../services/frenlyAgentService';
 import { helpContentService } from '../../services/helpContentService';
+import { logger } from '../../services/logger';
 
 /**
  * Get contextual guidance for a feature

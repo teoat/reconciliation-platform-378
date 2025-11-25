@@ -34,8 +34,8 @@ export const RunTabContent: React.FC<RunTabContentProps> = ({
             </Button>
           </div>
           <DataTable
-            data={jobs ?? []}
-            columns={jobColumns}
+            data={(jobs ?? []) as unknown as Record<string, unknown>[]}
+            columns={jobColumns as unknown as Column<Record<string, unknown>>[]}
             emptyMessage="No reconciliation jobs yet"
           />
         </div>

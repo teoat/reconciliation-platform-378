@@ -36,7 +36,7 @@ export const ReconciliationSummary: React.FC<ReconciliationSummaryProps> = ({
   const discrepancyRate =
     metrics.totalRecords > 0 ? (metrics.discrepancyRecords / metrics.totalRecords) * 100 : 0;
   const unresolvedRate =
-    metrics.totalRecords > 0 ? (metrics.pendingRecords / metrics.totalRecords) * 100 : 0;
+    metrics.totalRecords > 0 ? ((metrics.pendingRecords || 0) / metrics.totalRecords) * 100 : 0;
 
   return (
     <div className="space-y-6">
@@ -67,9 +67,9 @@ export const ReconciliationSummary: React.FC<ReconciliationSummaryProps> = ({
           title="Total Records"
           value={metrics.totalRecords}
           icon={<Users className="w-6 h-6" />}
-          trend={{
-            direction: 'up',
-            value: '+12%',
+          change={{
+            value: 12,
+            type: 'increase',
           }}
         />
 
@@ -77,10 +77,9 @@ export const ReconciliationSummary: React.FC<ReconciliationSummaryProps> = ({
           title="Matched Records"
           value={metrics.matchedRecords}
           icon={<CheckCircle className="w-6 h-6" />}
-          color="bg-green-100 text-green-600"
-          trend={{
-            direction: 'up',
-            value: '+8%',
+          change={{
+            value: 8,
+            type: 'increase',
           }}
         />
 
@@ -88,18 +87,16 @@ export const ReconciliationSummary: React.FC<ReconciliationSummaryProps> = ({
           title="Discrepancies"
           value={metrics.discrepancyRecords}
           icon={<AlertCircle className="w-6 h-6" />}
-          color="bg-red-100 text-red-600"
-          trend={{
-            direction: 'down',
-            value: '-5%',
+          change={{
+            value: -5,
+            type: 'decrease',
           }}
         />
 
         <MetricCard
           title="Pending Review"
-          value={metrics.pendingRecords}
+          value={metrics.pendingRecords || 0}
           icon={<Clock className="w-6 h-6" />}
-          color="bg-yellow-100 text-yellow-600"
         />
       </div>
 
@@ -222,7 +219,7 @@ export const ReconciliationSummary: React.FC<ReconciliationSummaryProps> = ({
             </div>
             <div className="text-center">
               <div className="text-lg font-semibold text-gray-900">
-                {metrics.averageProcessingTime.toFixed(1)}s
+                {metrics.processingTime.toFixed(1)}s
               </div>
               <div className="text-sm text-gray-600">Avg Processing Time</div>
             </div>

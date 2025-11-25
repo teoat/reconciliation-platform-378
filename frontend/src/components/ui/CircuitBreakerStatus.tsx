@@ -1,5 +1,8 @@
 /**
-import { logger } from '../../services/logger'; * Circuit Breaker Status Component
+import { logger } from '@/services/logger';
+
+/**
+ * Circuit Breaker Status Component
  * Visual indicator for service health and circuit breaker state
  * Essential for Agent 5 Enhancement 1: Fallback UI Components
  */
@@ -10,6 +13,7 @@ import { Tooltip } from './Tooltip';
 // Import ariaLiveRegionsService with type-safe access
 import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
 import { formatTime, formatTimeAgo } from '../../utils/common/dateFormatting';
+import { logger } from '../../services/logger';
 
 export interface CircuitBreakerStatusProps {
   service: string;
@@ -49,7 +53,7 @@ export const CircuitBreakerStatus: React.FC<CircuitBreakerStatusProps> = ({
           ? `${service} circuit breaker is half-open`
           : `${service} circuit breaker is closed`;
 
-    ariaLiveRegionsService?.announceStatus?.(statusMessage, {
+    (ariaLiveRegionsService as any)?.announceStatus?.(statusMessage, {
       componentId: `circuit-breaker-${service}`,
       action: 'circuit-breaker-status-changed',
       currentState: { status, service },

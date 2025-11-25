@@ -1,10 +1,12 @@
 /**
-import { logger } from '../../services/logger'; * Service Degraded Banner Component
+/**
+ * Service Degraded Banner Component
  * Displays when circuit breakers are open or services are degraded
  * Essential for Agent 5 Enhancement 1: Fallback UI Components
  */
 
 import React, { useEffect, useState } from 'react';
+import { logger } from '../../services/logger';
 import { AlertTriangle, X, RefreshCw, Clock, CheckCircle } from 'lucide-react';
 import { Button } from './Button';
 // Import ariaLiveRegionsService with type-safe access
@@ -53,7 +55,7 @@ export const ServiceDegradedBanner: React.FC<ServiceDegradedBannerProps> = ({
           ? `${service} is partially available`
           : `${service} is available`;
 
-    ariaLiveRegionsService?.announceError?.(statusMessage, {
+    (ariaLiveRegionsService as any)?.announceError?.(statusMessage, {
       componentId: `service-${service}`,
       action: 'service-status-changed',
       currentState: { status, service },

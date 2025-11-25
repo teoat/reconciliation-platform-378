@@ -1,5 +1,5 @@
-/**
-import { logger } from '../../services/logger'; * Onboarding Analytics Dashboard
+/*
+ * Onboarding Analytics Dashboard
  * 
  * Provides comprehensive analytics visualization for onboarding:
  * - Step completion rates
@@ -10,6 +10,7 @@ import { logger } from '../../services/logger'; * Onboarding Analytics Dashboard
  */
 
 import React, { useState, useEffect } from 'react';
+import { logger } from '@/services/logger';
 import { TrendingUp, TrendingDown, Clock, Users, CheckCircle, XCircle } from 'lucide-react';
 import { BarChart, LineChart } from '../charts/Charts';
 import { onboardingService } from '../../services/onboardingService';
@@ -59,7 +60,7 @@ export const OnboardingAnalyticsDashboard: React.FC<OnboardingAnalyticsDashboard
       processAnalyticsData(allAnalytics);
       setIsLoading(false);
     } catch (error) {
-      logger.error('Failed to load analytics:', error);
+      logger.error('Failed to load analytics:', { error: error instanceof Error ? error.message : String(error) });
       setIsLoading(false);
     }
   };

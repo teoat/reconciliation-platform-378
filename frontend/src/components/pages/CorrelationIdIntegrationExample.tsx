@@ -1,10 +1,11 @@
-/**
-import { logger } from '../services/logger'; * Correlation ID Integration Example
+/*
+ * Correlation ID Integration Example
  * Complete example showing correlation ID extraction and display
  * Ready for Agent 1's correlation ID implementation
  */
 
 import React, { useState } from 'react';
+import { logger } from '@/services/logger';
 import { UserFriendlyError, ErrorCodeDisplay, ErrorHistory } from '../ui';
 import { useApiErrorHandler } from '../../hooks/useApiErrorHandler';
 import { extractErrorFromFetchResponseAsync } from '../../utils/errorExtractionAsync';
@@ -27,23 +28,16 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
   // Example 1: Using handleApiCall (automatic correlation ID extraction)
   const fetchDataWithAutoExtraction = async () => {
     setLoading(true);
-    try {
-      const result = await handleApiCall(fetch('/api/data'), {
-        onSuccess: (data) => {
-          setData(data);
-          logger.info('Success:', data);
-        },
-        onError: (extracted) => {
-          logger.info('Error with correlation ID:', extracted.correlationId);
-        },
-      });
+    const result = await handleApiCall(fetch('/api/data'), {
+      onError: (extracted) => {
+        logger.info('Error with correlation ID:', { correlationId: extracted.correlationId });
+      },
+    });
 
-      if (result) {
-        setData(result);
-      }
-    } finally {
-      setLoading(false);
+    if (result) {
+      setData(result as Record<string, unknown>);
     }
+    setLoading(false);
   };
 
   // Example 2: Manual extraction for custom handling
@@ -62,8 +56,8 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
         // Set error with correlation ID
         actions.setError(extracted.error, extracted.errorCode, extracted.correlationId);
 
-        logger.info('Correlation ID:', extracted.correlationId);
-        logger.info('Error Code:', extracted.errorCode);
+        logger.info('Correlation ID:', { correlationId: extracted.correlationId });
+        logger.info('Error Code:', { errorCode: extracted.errorCode });
 
         return;
       }
@@ -73,7 +67,7 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
       actions.clearError();
     } catch (error) {
       // Network errors
-      actions.setError(error);
+      actions.setError(error as Error);
     } finally {
       setLoading(false);
     }
@@ -91,7 +85,7 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
         response.headers.get('X-Correlation-ID') ||
         undefined;
 
-      logger.info('Correlation ID from headers:', correlationId);
+      logger.info('Correlation ID from headers:', { correlationId });
 
       if (!response.ok) {
         const extracted = await extractErrorFromFetchResponseAsync(response);
@@ -109,8 +103,9 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
       setData(result);
       actions.clearError();
     } catch (error) {
-      actions.setError(error);
-    } finally {
+      actions.setError(error as Error);
+    }
+    finally {
       setLoading(false);
     }
   };
@@ -160,7 +155,7 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
           <ErrorHistory
             errors={state.errorHistory}
             onErrorSelect={(error) => {
-              logger.info('Selected error with correlation ID:', error.correlationId);
+              logger.info('Selected error with correlation ID:', { correlationId: error.correlationId });
             }}
             onErrorDismiss={actions.removeFromHistory}
             maxItems={10}

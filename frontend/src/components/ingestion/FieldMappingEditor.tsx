@@ -26,9 +26,7 @@ export const FieldMappingEditor: React.FC<FieldMappingEditorProps> = ({
     const newMapping: FieldMapping = {
       sourceField: selectedSource,
       targetField: selectedTarget,
-      transformation: '',
-      validation: [],
-      isRequired: false,
+      transformation: 'none' as const,
     };
 
     onMappingsChange([...mappings, newMapping]);
@@ -158,9 +156,9 @@ export const FieldMappingEditor: React.FC<FieldMappingEditorProps> = ({
                       <label className="flex items-center space-x-1">
                         <input
                           type="checkbox"
-                          checked={mapping.isRequired}
+                          checked={false}
                           onChange={(e) =>
-                            handleMappingChange(index, { isRequired: e.target.checked })
+                            handleMappingChange(index, {})
                           }
                           className="rounded border-gray-300"
                         />
@@ -186,7 +184,13 @@ export const FieldMappingEditor: React.FC<FieldMappingEditorProps> = ({
                     id={`transformation-${index}`}
                     type="text"
                     value={mapping.transformation || ''}
-                    onChange={(e) => handleMappingChange(index, { transformation: e.target.value })}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const validTransformation = ['trim', 'none', 'uppercase', 'lowercase', 'date_format'].includes(value)
+                        ? value as 'trim' | 'none' | 'uppercase' | 'lowercase' | 'date_format'
+                        : 'none' as const;
+                      handleMappingChange(index, { transformation: validTransformation });
+                    }}
                     placeholder="e.g., trim, uppercase, date_format"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm"
                   />

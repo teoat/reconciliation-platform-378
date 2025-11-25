@@ -1,6 +1,6 @@
 import React from 'react';
 import { FileText, Eye, Trash2 } from 'lucide-react';
-import { UploadedFile } from '../../types/ingestion';
+import { UploadedFile } from '../../services/dataManagement/types';
 import { LoadingSpinnerComponent } from '../LoadingComponents';
 
 interface DataPreviewTableProps {

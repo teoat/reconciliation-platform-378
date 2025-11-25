@@ -330,18 +330,19 @@ const DataTableComponent = <T extends Record<string, unknown>>({
                             data-row-index={index}
                           >
                             <div
-                              className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500' : ''} transition-colors duration-150 ${
+                              className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500' : ''} transition-colors duration-150 ${                                                                         
                                 index === selectedRowIndex
                                   ? 'bg-blue-50 ring-2 ring-blue-500 ring-inset'
                                   : ''
                               }`}
+                              role={onRowClick ? 'button' : undefined}
                               onClick={() => {
                                 setSelectedRowIndex(index);
                                 onRowClick?.(row);
                               }}
                               tabIndex={onRowClick ? 0 : undefined}
                               onKeyDown={(e) => {
-                                if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                                if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {                                                                                 
                                   e.preventDefault();
                                   onRowClick(row);
                                 }

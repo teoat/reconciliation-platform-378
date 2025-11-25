@@ -21,7 +21,10 @@ export const useCrossPageDataUpdates = (
     result: 'success' | 'failure',
     details?: Record<string, unknown>
   ) => void,
-  encryptData: (data: unknown, dataType: string) => string,
+  encryptData: <T>(
+    data: T,
+    dataType: string
+  ) => T & { _encrypted: boolean; _encryptionType: string; _encryptedAt: string },
   isSecurityEnabled: boolean,
   syncConnected: boolean,
   wsSyncData: () => void
@@ -42,7 +45,10 @@ export const useCrossPageDataUpdates = (
       if (!hasPermission) {
         logAuditEvent('current-user', 'unauthorized_update_attempt', page, 'failure', {
           page,
-          data: typeof data === 'object' ? Object.keys(data as Record<string, unknown>) : 'unknown',
+          data:
+            typeof data === 'object'
+              ? Object.keys(data as unknown as Record<string, unknown>)
+              : 'unknown',
         });
         return;
       }
@@ -67,7 +73,10 @@ export const useCrossPageDataUpdates = (
       // Log successful update
       logAuditEvent('current-user', 'update_cross_page_data', page, 'success', {
         page,
-data: typeof data === 'object' ? Object.keys(data as unknown as Record<string, unknown>) : 'unknown',
+        data:
+          typeof data === 'object'
+            ? Object.keys(data as unknown as Record<string, unknown>)
+            : 'unknown',
       });
     },
     [
@@ -81,14 +90,17 @@ data: typeof data === 'object' ? Object.keys(data as unknown as Record<string, u
     ]
   );
 
-  const subscribeToUpdates = useCallback((callback: (data: CrossPageData) => void) => {
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      callback(crossPageData);
-    }, 5000); // Update every 5 seconds
-    
-    return () => clearInterval(interval);
-  }, [crossPageData]);
+  const subscribeToUpdates = useCallback(
+    (callback: (data: CrossPageData) => void) => {
+      // Simulate real-time updates
+      const interval = setInterval(() => {
+        callback(crossPageData);
+      }, 5000); // Update every 5 seconds
+
+      return () => clearInterval(interval);
+    },
+    [crossPageData]
+  );
 
   return {
     updateCrossPageData,

@@ -19,9 +19,16 @@ export interface IngestionWorkflowState {
   isUploading: boolean;
   isValidating: boolean;
   isProcessing: boolean;
-  isTransforming: boolean;
-  currentStep: 'upload' | 'validate' | 'map' | 'transform' | 'complete';
-  error: string | null;
+}
+
+export interface IngestionWorkflowActions {
+  uploadFiles: (files: FileList) => Promise<void>;
+  selectFile: (file: UploadedFile) => void;
+  validateFile: (file: UploadedFile) => Promise<void>;
+  updateMappings: (mappings: FieldMapping[]) => void;
+  transformData: () => Promise<void>;
+  resetWorkflow: () => void;
+  deleteFile: (fileId: string) => Promise<void>;
 }
 
 /**
@@ -46,9 +53,6 @@ export const useIngestionWorkflow = () => {
     isUploading: false,
     isValidating: false,
     isProcessing: false,
-    isTransforming: false,
-    currentStep: 'upload',
-    error: null,
   });
 
   /**
@@ -62,21 +66,34 @@ export const useIngestionWorkflow = () => {
     try {
       const uploadedFiles: UploadedFile[] = [];
 
+      // Generate mock data
+      const mockData = [
+        { id: '1', name: 'John Doe', amount: 1000, date: '2024-01-01' },
+        { id: '2', name: 'Jane Smith', amount: 2000, date: '2024-01-02' },
+        { id: '3', name: 'Bob Johnson', amount: 1500, date: '2024-01-03' },
+      ];
+
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
 
         // Simulate API call - in real app this would upload to backend
         await new Promise((resolve) => setTimeout(resolve, 1000));
 
+        const mockResult = {
+          id: `upload_${Date.now()}`,
+          records: Math.floor(Math.random() * 1000),
+        };
+
         const uploadedFile: UploadedFile = {
-          id: `file_${Date.now()}_${i}`,
+          id: mockResult.id,
           name: file.name,
           size: file.size,
-          type: file.type || 'Unknown',
-          status: 'processing',
-          progress: 0,
-          fileType: 'other',
-        };
+          type: file.type,
+          status: 'completed',
+          progress: 100,
+          records: mockResult.records,
+          data: mockData, // Add mock data
+        } as UploadedFile;
 
         uploadedFiles.push(uploadedFile);
       }
@@ -85,7 +102,6 @@ export const useIngestionWorkflow = () => {
         ...prev,
         files: [...prev.files, ...uploadedFiles],
         isUploading: false,
-        currentStep: uploadedFiles.length > 0 ? 'validate' : 'upload',
       }));
     } catch (error) {
       setState((prev) => ({
@@ -102,14 +118,10 @@ export const useIngestionWorkflow = () => {
    * @param {UploadedFile} file - File to select
    */
   const selectFile = useCallback((file: UploadedFile) => {
-    setState((prev) => ({
-      ...prev,
-      selectedFile: file,
-      validations: [],
-      qualityMetrics: null,
-      mappings: [],
-      currentStep: 'validate',
-    }));
+      setState((prev) => ({
+        ...prev,
+        selectedFile: file,
+      }));
   }, []);
 
   // Validate selected file
@@ -166,7 +178,19 @@ export const useIngestionWorkflow = () => {
       ];
 
       const validations = validateDataset(mockData, mockColumns);
-      const qualityMetrics = calculateDataQualityMetrics(mockData, mockColumns, validations);
+      const severityMap = {
+        low: 'info' as const,
+        medium: 'warning' as const,
+        high: 'error' as const,
+      };
+      const validationSeverities = validations.map((v) => ({
+        severity: v.severity ? severityMap[v.severity] : 'info',
+      }));
+      const qualityMetrics = calculateDataQualityMetrics(
+        mockData,
+        mockColumns,
+        validationSeverities
+      );
 
       // Update file with processed data
       const updatedFile = {
@@ -202,7 +226,6 @@ export const useIngestionWorkflow = () => {
     setState((prev) => ({
       ...prev,
       mappings,
-      currentStep: mappings.length > 0 ? 'transform' : 'map',
     }));
   }, []);
 
@@ -345,9 +368,10 @@ function applyTransformation(value: unknown, transformation: string): unknown {
       return String(value).toLowerCase();
     case 'capitalize':
       return String(value).charAt(0).toUpperCase() + String(value).slice(1).toLowerCase();
-    case 'number':
+    case 'number': {
       const num = Number(value);
       return isNaN(num) ? value : num;
+    }
     case 'date_format':
       try {
         const date = new Date(value);

@@ -216,56 +216,56 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   };
 
   // Data table columns for data sources
-  const dataSourceColumns: Column<BackendDataSource>[] = [
+  const dataSourceColumns: Column<Record<string, unknown>>[] = [
     {
-      key: 'name',
-      label: 'Name',
+      key: 'filename' as keyof Record<string, unknown>,
+      header: 'Name',
       sortable: true,
       render: (value) => (
         <div className="flex items-center space-x-2">
           <FileText className="h-4 w-4 text-gray-400" />
-          <span className="font-medium">{value}</span>
+          <span className="font-medium">{String(value)}</span>
         </div>
       ),
     },
     {
-      key: 'source_type',
-      label: 'Type',
+      key: 'content_type' as keyof Record<string, unknown>,
+      header: 'Type',
       sortable: true,
       render: (value) => (
-        <StatusBadge status={value === 'reconciliation_data' ? 'success' : 'info'}>
-          {value}
+        <StatusBadge status={String(value) === 'reconciliation_data' ? 'success' : 'info'}>                                                                             
+          {String(value)}
         </StatusBadge>
       ),
     },
     {
-      key: 'status',
-      label: 'Status',
+      key: 'status' as keyof Record<string, unknown>,
+      header: 'Status',
       sortable: true,
       render: (value) => (
         <StatusBadge
-          status={value === 'processed' ? 'success' : value === 'processing' ? 'warning' : 'info'}
+          status={String(value) === 'processed' ? 'success' : String(value) === 'processing' ? 'warning' : 'info'}                                                              
         >
-          {value}
+          {String(value)}
         </StatusBadge>
       ),
     },
     {
-      key: 'created_at',
-      label: 'Uploaded',
+      key: 'created_at' as keyof Record<string, unknown>,
+      header: 'Uploaded',
       sortable: true,
-      render: (value) => new Date(value).toLocaleDateString(),
+      render: (value) => new Date(String(value)).toLocaleDateString(),
     },
     {
-      key: 'actions',
-      label: 'Actions',
+      key: 'id' as keyof Record<string, unknown>,
+      header: 'Actions',
       render: (_, row) => (
         <div className="flex space-x-2">
           <Button
             size="sm"
             variant="outline"
-            onClick={() => processFile(row.id)}
-            disabled={row.status === 'processing'}
+            onClick={() => processFile(String((row as Record<string, unknown>).id))}
+            disabled={(row as Record<string, unknown>).status === 'processing'}
           >
             Process
           </Button>
@@ -275,36 +275,36 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   ];
 
   // Data table columns for reconciliation jobs
-  const jobColumns: Column<BackendReconciliationJob>[] = [
+  const jobColumns: Column<Record<string, unknown>>[] = [
     {
-      key: 'id',
-      label: 'Job ID',
+      key: 'id' as keyof Record<string, unknown>,
+      header: 'Job ID',
       sortable: true,
       render: (value) => (
-        <span className="font-mono text-sm">{value ? value.slice(0, 8) : 'N/A'}...</span>
+        <span className="font-mono text-sm">{value ? String(value).slice(0, 8) : 'N/A'}...</span>                                                                       
       ),
     },
     {
-      key: 'status',
-      label: 'Status',
+      key: 'status' as keyof Record<string, unknown>,
+      header: 'Status',
       sortable: true,
       render: (value) => (
         <StatusBadge
-          status={value === 'completed' ? 'success' : value === 'running' ? 'warning' : 'info'}
+          status={String(value) === 'completed' ? 'success' : String(value) === 'running' ? 'warning' : 'info'}                                                                 
         >
-          {value}
+          {String(value)}
         </StatusBadge>
       ),
     },
     {
-      key: 'created_at',
-      label: 'Started',
+      key: 'created_at' as keyof Record<string, unknown>,
+      header: 'Started',
       sortable: true,
-      render: (value) => (value ? new Date(value).toLocaleString() : 'N/A'),
+      render: (value) => (value ? new Date(String(value)).toLocaleString() : 'N/A'),
     },
     {
-      key: 'progress',
-      label: 'Progress',
+      key: 'progress' as keyof Record<string, unknown>,
+      header: 'Progress',
       render: (value, row) => (
         <div className="flex items-center space-x-2">
           <div className="w-16 bg-gray-200 rounded-full h-2">
@@ -363,28 +363,28 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   ];
 
   // Data table columns for matches
-  const matchColumns: Column<BackendReconciliationMatch>[] = [
+  const matchColumns: Column<Record<string, unknown>>[] = [
     {
-      key: 'id',
-      label: 'Match ID',
+      key: 'id' as keyof Record<string, unknown>,
+      header: 'Match ID',
       sortable: true,
       render: (value) => (
-        <span className="font-mono text-sm">{value ? value.slice(0, 8) : 'N/A'}...</span>
+        <span className="font-mono text-sm">{value ? String(value).slice(0, 8) : 'N/A'}...</span>                                                                       
       ),
     },
     {
-      key: 'confidence_score',
-      label: 'Confidence',
+      key: 'confidence_score' as keyof Record<string, unknown>,
+      header: 'Confidence',
       sortable: true,
       render: (value) => {
-        const score = value ?? 0;
+        const score = typeof value === 'number' ? value : 0;
         const progressValue = Math.round(score * 100);
         return (
           <div className="flex items-center space-x-2">
             <div className="w-16 bg-gray-200 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all duration-300 ${
-                  score >= 0.8 ? 'bg-green-500' : score >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'
+                  score >= 0.8 ? 'bg-green-500' : score >= 0.6 ? 'bg-yellow-500' : 'bg-red-500'                                                                 
                 }`}
                 // Dynamic width for progress bar - acceptable inline style
                 style={{ width: `${score * 100}%` } as React.CSSProperties}
@@ -396,14 +396,14 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       },
     },
     {
-      key: 'status',
-      label: 'Status',
+      key: 'match_type' as keyof Record<string, unknown>,
+      header: 'Status',
       sortable: true,
       render: (value) => (
         <StatusBadge
-          status={value === 'approved' ? 'success' : value === 'pending' ? 'warning' : 'info'}
+          status={String(value) === 'approved' ? 'success' : String(value) === 'pending' ? 'warning' : 'info'}                                                                  
         >
-          {value}
+          {String(value)}
         </StatusBadge>
       ),
     },

@@ -179,9 +179,9 @@ export const HelpSearchInline: React.FC<HelpSearchInlineProps> = ({
                       </div>
                       <div className="flex items-center mt-2 text-xs text-gray-400">
                         <span className="capitalize">{result.content.category}</span>
-                        {result.relevanceScore > 0 && (
+                        {result.relevance > 0 && (
                           <span className="ml-2">
-                            {Math.round(result.relevanceScore)}% match
+                            {Math.round(result.relevance * 100)}% match
                           </span>
                         )}
                       </div>
