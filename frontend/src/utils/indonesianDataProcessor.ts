@@ -35,6 +35,16 @@ export interface IndonesianMatchingResult {
   differences: Array<RecordDifference>;
 }
 
+export interface ReconciliationSummary {
+  totalExpenses: number;
+  totalBank: number;
+  matched: number;
+  unmatched: number;
+  totalExpenseAmount: number;
+  totalBankAmount: number;
+  difference: number;
+}
+
 export class IndonesianDataProcessor {
   static processExpenseData(data: unknown[]): ProcessedExpenseRecord[] {
     return data.map((record, index) => {
@@ -172,13 +182,12 @@ export class IndonesianDataProcessor {
     
     return {
       totalExpenses: expenses.length,
-      totalBankRecords: bankRecords.length,
+      totalBank: bankRecords.length,
       matched,
       unmatched,
-      matchRate: matches.length > 0 ? (matched / matches.length) * 100 : 0,
       totalExpenseAmount: totalExpenses,
       totalBankAmount: totalBank,
-      variance: totalExpenses - totalBank
+      difference: totalExpenses - totalBank
     };
   }
 }

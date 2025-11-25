@@ -231,9 +231,13 @@ export function useSecureAuth() {
     const token = secureStorage.getItem('authToken');
     if (token) {
       const validation = validateJWT(token);
-      if (validation.isValid) {
+      if (validation.isValid && validation.payload) {
         setIsAuthenticated(true);
-        setUser(validation.payload);
+        const userPayload = toRecord(validation.payload);
+        if (userPayload) {
+          // Type assertion needed as JWT payload structure may differ
+          setUser(userPayload as unknown as User);
+        }
       } else {
         localStorage.removeItem('authToken');
       }
@@ -335,7 +339,7 @@ class SecureStorage {
     } catch (error) {
       // Silently fail in production to avoid exposing errors
       if (import.meta.env.DEV) {
-        logger.warn('Storage error:', error);
+        logger.warn('Storage error:', toRecord(error));
       }
     }
   }
@@ -348,7 +352,7 @@ class SecureStorage {
       return localStorage.getItem(key);
     } catch (error) {
       if (import.meta.env.DEV) {
-        logger.warn('Storage read error:', error);
+        logger.warn('Storage read error:', toRecord(error));
       }
       return null;
     }
@@ -363,7 +367,7 @@ class SecureStorage {
       }
     } catch (error) {
       if (import.meta.env.DEV) {
-        logger.warn('Storage remove error:', error);
+        logger.warn('Storage remove error:', toRecord(error));
       }
     }
   }

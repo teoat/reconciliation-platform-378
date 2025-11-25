@@ -255,6 +255,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     // Enhanced methods
     advanceWorkflow: enhancedAdvanceWorkflow,
     resetWorkflow: enhancedResetWorkflow,
+    // Storage methods
+    exportProject: storageData.exportProject,
+    importProject: storageData.importProject,
   };
 
   // Accessibility: Announce loading and error states to screen readers

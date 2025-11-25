@@ -111,8 +111,8 @@ class PerformanceMonitor {
     switch (entry.entryType) {
       case 'navigation': {
         const navEntry = entry as PerformanceNavigationTiming;
-        metrics.pageLoadTime = navEntry.loadEventEnd - navEntry.navigationStart;
-        metrics.domContentLoaded = navEntry.domContentLoadedEventEnd - navEntry.navigationStart;
+        metrics.pageLoadTime = navEntry.loadEventEnd - navEntry.fetchStart;
+        metrics.domContentLoaded = navEntry.domContentLoadedEventEnd - navEntry.fetchStart;
         break;
       }
 

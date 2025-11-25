@@ -1,5 +1,6 @@
 // Reconnection State Validation Service
 import { logger } from '@/services/logger';
+import { toRecord } from '../utils/typeHelpers';
 // Handles inconsistent state after reconnection and data refresh
 
 import React from 'react';
@@ -183,7 +184,7 @@ class ReconnectionValidationService {
     key: string,
     getCurrentData: () => T,
     getServerData: () => Promise<T>,
-    metadata: {
+    _metadata: {
       userId?: string;
       projectId?: string;
       workflowStage?: string;
@@ -191,7 +192,7 @@ class ReconnectionValidationService {
     }
   ): Promise<DataValidationResult> {
     const currentData = getCurrentData();
-    const cached = this.cachedData.get(key);
+    // Cache check removed - validation always runs against server
 
     try {
       // Get server data with timeout
@@ -206,15 +207,19 @@ class ReconnectionValidationService {
       const recommendations: string[] = [];
 
       // Check timestamp consistency
-      if (serverData.timestamp && currentData.timestamp) {
-        const timeDiff = Math.abs(serverData.timestamp - currentData.timestamp);
+      const serverDataRecord = serverData as Record<string, unknown>;
+      const currentDataRecord = currentData as Record<string, unknown>;
+      if (serverDataRecord.timestamp && currentDataRecord.timestamp) {
+        const serverTimestamp = typeof serverDataRecord.timestamp === 'number' ? serverDataRecord.timestamp : new Date(serverDataRecord.timestamp as string).getTime();
+        const currentTimestamp = typeof currentDataRecord.timestamp === 'number' ? currentDataRecord.timestamp : new Date(currentDataRecord.timestamp as string).getTime();
+        const timeDiff = Math.abs(serverTimestamp - currentTimestamp);
         if (timeDiff > 300000) {
           // 5 minutes
           inconsistencies.push({
             type: 'timestamp',
             field: 'timestamp',
-            expected: serverData.timestamp,
-            actual: currentData.timestamp,
+            expected: serverTimestamp,
+            actual: currentTimestamp,
             severity: 'medium',
             description: `Data is ${Math.floor(timeDiff / 60000)} minutes out of sync`,
           });
@@ -223,13 +228,13 @@ class ReconnectionValidationService {
       }
 
       // Check version consistency
-      if (serverData.version && currentData.version) {
-        if (serverData.version !== currentData.version) {
+      if (serverDataRecord.version && currentDataRecord.version) {
+        if (serverDataRecord.version !== currentDataRecord.version) {
           inconsistencies.push({
             type: 'version',
             field: 'version',
-            expected: serverData.version,
-            actual: currentData.version,
+            expected: serverDataRecord.version,
+            actual: currentDataRecord.version,
             severity: 'high',
             description: 'Data version mismatch detected',
           });
@@ -238,13 +243,13 @@ class ReconnectionValidationService {
       }
 
       // Check state consistency
-      if (serverData.state && currentData.state) {
-        if (serverData.state !== currentData.state) {
+      if (serverDataRecord.state && currentDataRecord.state) {
+        if (serverDataRecord.state !== currentDataRecord.state) {
           inconsistencies.push({
             type: 'state',
             field: 'state',
-            expected: serverData.state,
-            actual: currentData.state,
+            expected: serverDataRecord.state,
+            actual: currentDataRecord.state,
             severity: 'high',
             description: 'Workflow state has changed',
           });
@@ -257,10 +262,10 @@ class ReconnectionValidationService {
       inconsistencies.push(...dataInconsistencies);
 
       // Check permission consistency
-      if (serverData.permissions && currentData.permissions) {
+      if (serverDataRecord.permissions && currentDataRecord.permissions) {
         const permissionInconsistencies = this.checkPermissionConsistency(
-          currentData.permissions,
-          serverData.permissions
+          currentDataRecord.permissions as Record<string, unknown>,
+          serverDataRecord.permissions as Record<string, unknown>
         );
         inconsistencies.push(...permissionInconsistencies);
       }
@@ -278,7 +283,7 @@ class ReconnectionValidationService {
       this.cachedData.set(key, {
         data: serverData,
         timestamp: Date.now(),
-        version: serverData.version || 1,
+        version: (serverDataRecord.version as number) || 1,
       });
 
       // Notify listeners
@@ -291,7 +296,7 @@ class ReconnectionValidationService {
 
       return result;
     } catch (error) {
-      logger.warn(`Validation failed for ${key}:`, error);
+      logger.warn(`Validation failed for ${key}:`, toRecord(error));
 
       const result: DataValidationResult = {
         isValid: false,
@@ -317,9 +322,16 @@ class ReconnectionValidationService {
   private checkDataConsistency(currentData: unknown, serverData: unknown): DataInconsistency[] {
     const inconsistencies: DataInconsistency[] = [];
 
+    const serverDataRecord = toRecord(serverData);
+    const currentDataRecord = toRecord(currentData);
+
+    if (!serverDataRecord || !currentDataRecord) {
+      return inconsistencies;
+    }
+
     // Check for missing fields
-    for (const [key, value] of Object.entries(serverData)) {
-      if (currentData[key] === undefined) {
+    for (const [key, value] of Object.entries(serverDataRecord)) {
+      if (currentDataRecord[key] === undefined) {
         inconsistencies.push({
           type: 'data',
           field: key,
@@ -332,8 +344,8 @@ class ReconnectionValidationService {
     }
 
     // Check for extra fields
-    for (const [key, value] of Object.entries(currentData)) {
-      if (serverData[key] === undefined) {
+    for (const [key, value] of Object.entries(currentDataRecord)) {
+      if (serverDataRecord[key] === undefined) {
         inconsistencies.push({
           type: 'data',
           field: key,
@@ -346,8 +358,8 @@ class ReconnectionValidationService {
     }
 
     // Check for value differences
-    for (const [key, serverValue] of Object.entries(serverData)) {
-      const currentValue = currentData[key];
+    for (const [key, serverValue] of Object.entries(serverDataRecord)) {
+      const currentValue = currentDataRecord[key];
       if (
         currentValue !== undefined &&
         JSON.stringify(currentValue) !== JSON.stringify(serverValue)
@@ -371,9 +383,16 @@ class ReconnectionValidationService {
     serverPermissions: unknown
   ): DataInconsistency[] {
     const inconsistencies: DataInconsistency[] = [];
+    
+    const currentPermissionsRecord = toRecord(currentPermissions);
+    const serverPermissionsRecord = toRecord(serverPermissions);
+    
+    if (!currentPermissionsRecord || !serverPermissionsRecord) {
+      return inconsistencies;
+    }
 
-    for (const [permission, currentValue] of Object.entries(currentPermissions)) {
-      const serverValue = serverPermissions[permission];
+    for (const [permission, currentValue] of Object.entries(currentPermissionsRecord)) {
+      const serverValue = serverPermissionsRecord[permission];
       if (currentValue !== serverValue) {
         inconsistencies.push({
           type: 'permission',
@@ -488,7 +507,7 @@ class ReconnectionValidationService {
 // REACT HOOK
 // ============================================================================
 
-export const useReconnectionValidation = <T = unknown>(
+export const useReconnectionValidation = <T extends Record<string, unknown> = Record<string, unknown>>(
   key: string,
   getCurrentData: () => T,
   getServerData: () => Promise<T>,

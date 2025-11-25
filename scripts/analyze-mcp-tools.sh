@@ -14,7 +14,7 @@ echo "Target: Maximum $MAX_TOOLS tools combined"
 echo ""
 
 # Tool count estimates for standard MCP servers
-# These are approximate based on typical MCP server implementations
+# These are based on actual implementations and package documentation
 # Format: server_name:tool_count
 TOOL_COUNTS="
 filesystem:8
@@ -24,11 +24,13 @@ docker:10
 github:15
 brave-search:3
 prometheus:8
-reconciliation-platform:16
+reconciliation-platform:27
+agent-coordination:18
+sequential-thinking:1
+memory:6
 sqlite:6
 puppeteer:5
 playwright:8
-memory:4
 fetch:3
 "
 

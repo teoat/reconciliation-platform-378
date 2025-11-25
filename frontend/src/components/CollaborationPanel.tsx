@@ -332,7 +332,7 @@ export const CollaborationButton: React.FC<{
   isOpen: boolean;
   onToggle: () => void;
   className?: string;
-}> = ({ page, _isOpen, onToggle, className = '' }) => {
+}> = ({ page, isOpen: _isOpen, onToggle, className = '' }) => {
   const { isConnected, activeUsers, liveComments } = useRealtimeCollaboration(page);
 
   return (

@@ -64,7 +64,7 @@ class SmartFilterService {
   }
 
   public getPresetsByCategory(category: FilterPreset['category']): FilterPreset[] {
-    return this.presetManager.getPresetsByCategory(category);
+    return this.presetManager.getAllPresets(category);
   }
 
   public getPresetsByTags(tags: string[]): FilterPreset[] {

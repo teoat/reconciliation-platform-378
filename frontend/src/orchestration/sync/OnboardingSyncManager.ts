@@ -70,7 +70,7 @@ export class OnboardingSyncManager {
           pageId,
           completedSteps: progress.completedSteps,
           currentStep: stepId,
-          totalSteps: progress.totalSteps || 0,
+          totalSteps: (progress as OnboardingProgress).totalSteps || 0,
         });
       }
     } catch (error) {
@@ -93,7 +93,7 @@ export class OnboardingSyncManager {
           pageId,
           completedSteps: progress.completedSteps,
           currentStep: null,
-          totalSteps: progress.totalSteps || 0,
+          totalSteps: (progress as OnboardingProgress).totalSteps || 0,
         });
       }
     } catch (error) {

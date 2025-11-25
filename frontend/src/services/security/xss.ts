@@ -33,7 +33,7 @@ export class XSSProtectionManager {
       inputs.forEach((input: Element) => {
         const htmlInput = input as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
         if (htmlInput.value) {
-          const sanitized = this.sanitizeInputFn(htmlInput.value);
+          const sanitized = this.sanitizeInput(htmlInput.value);
           if (sanitized !== htmlInput.value) {
             this.logSecurityEvent({
               type: SecurityEventType.XSS_ATTEMPT,
@@ -51,7 +51,7 @@ export class XSSProtectionManager {
   private interceptInnerHTML(): void {
     const originalInnerHTML = Object.getOwnPropertyDescriptor(Element.prototype, 'innerHTML');            
     if (originalInnerHTML) {
-      const sanitizeFn = this.sanitizeInputFn.bind(this);
+      const sanitizeFn = this.sanitizeInput.bind(this);
       const logEventFn = this.logSecurityEvent.bind(this);
       Object.defineProperty(Element.prototype, 'innerHTML', {
         set: function (value: string) {

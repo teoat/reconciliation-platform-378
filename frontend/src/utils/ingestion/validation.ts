@@ -1,5 +1,6 @@
 // Validation utilities for ingestion
-import { UploadedFile, DataValidation, DataRow, ColumnInfo } from '../../types/ingestion';
+import { UploadedFile, DataRow, ColumnInfo } from '../../types/ingestion';
+import type { DataValidation } from '../../types/ingestion/index';
 
 /**
  * Validates file type against allowed types
@@ -144,7 +145,7 @@ export const validateDataset = (data: DataRow[], columns: ColumnInfo[]): DataVal
  * Checks if all validations pass
  */
 export const hasValidationErrors = (validations: DataValidation[]): boolean => {
-  return validations.some((v) => v.severity === 'error');
+  return validations.some((v) => v.severity === 'error' || v.status === 'failed');
 };
 
 /**
@@ -153,7 +154,7 @@ export const hasValidationErrors = (validations: DataValidation[]): boolean => {
 export const getValidationSummary = (validations: DataValidation[]) => {
   return {
     total: validations.length,
-    errors: validations.filter((v) => v.severity === 'error').length,
+    errors: validations.filter((v) => v.severity === 'error' || v.status === 'failed').length,
     warnings: validations.filter((v) => v.severity === 'warning').length,
     info: validations.filter((v) => v.severity === 'info').length,
   };

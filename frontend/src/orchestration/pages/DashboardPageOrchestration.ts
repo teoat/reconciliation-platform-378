@@ -127,7 +127,7 @@ export function registerDashboardGuidanceHandlers(): GuidanceHandler[] {
       id: 'insights-guidance',
       featureId: 'smart-insights',
       handler: async (context: PageContext) => {
-        if (context.productivityScore && context.productivityScore < 0.5) {
+        if (context.productivityScore && (context.productivityScore as number) < 0.5) {
           return {
             id: `insights-tip-${Date.now()}`,
             type: 'tip',

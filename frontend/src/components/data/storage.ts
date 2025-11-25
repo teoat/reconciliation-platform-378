@@ -1,7 +1,8 @@
 // Data Storage & Legacy Methods Module
 import { useState, useCallback, useEffect } from 'react';
 import DataManagementService, { ProjectData } from '../../services/dataManagement';
-import { IngestionData, ReconciliationData, CashflowData, CrossPageData } from './types';
+import { CrossPageData } from './types';
+import type { IngestionData, ReconciliationData, CashflowData } from '../../services/dataManagement/types';
 
 export const useDataStorage = (
   setCurrentProject: React.Dispatch<React.SetStateAction<ProjectData | null>>,
@@ -143,7 +144,7 @@ export const useDataStorage = (
       setError(null);
 
       try {
-        const updatedProject = dataService.addCashflowData(projectId, cashflowData);
+        const updatedProject = dataService.addCashflowData(projectId, cashflowData as Partial<CashflowData>);
         if (updatedProject && currentProjectInternal?.id === projectId) {
           setCurrentProjectInternal(updatedProject);
         }

@@ -56,12 +56,19 @@ export const transformApiFileToUploadedFile = (apiFile: ApiFileResponse): Upload
     progress: apiFile.progress || 0,
     records: apiFile.records,
     data: apiFile.data,
-    columns: apiFile.columns,
+    columns: apiFile.columns || [],
     fileType: apiFile.fileType || 'other',
-    qualityMetrics: apiFile.qualityMetrics,
-    validations: apiFile.validations,
-    mappings: apiFile.mappings,
-    cleanedData: apiFile.cleanedData,
+    qualityMetrics: apiFile.qualityMetrics || {
+      completeness: 0,
+      accuracy: 0,
+      consistency: 0,
+      validity: 0,
+      duplicates: 0,
+      errors: 0,
+    },
+    validations: apiFile.validations || [],
+    mappings: apiFile.mappings || {},
+    cleanedData: apiFile.cleanedData || [],
     originalData: apiFile.originalData,
     extractedContent: apiFile.extractedContent,
     chatMessages: apiFile.chatMessages,
@@ -118,8 +125,8 @@ export const sortFiles = (
         break;
       case 'date':
         // Assuming uploaded_at is a string, convert to timestamp
-        aValue = a.uploaded_at ? new Date(a.uploaded_at).getTime() : 0;
-        bValue = b.uploaded_at ? new Date(b.uploaded_at).getTime() : 0;
+        aValue = a.uploadedAt ? new Date(a.uploadedAt).getTime() : 0;
+        bValue = b.uploadedAt ? new Date(b.uploadedAt).getTime() : 0;
         break;
       case 'status':
         aValue = a.status;

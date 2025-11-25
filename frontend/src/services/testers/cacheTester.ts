@@ -1,6 +1,23 @@
 // Cache testing module for data persistence verification
 
-import type { StorageOperation, DataIntegrityCheck } from './localStorageTester';
+// Define types locally since localStorageTester doesn't exist
+type StorageOperation = {
+  operation: 'read' | 'write' | 'delete' | 'clear';
+  key?: string;
+  value?: unknown;
+  timestamp: number;
+  duration: number;
+  success: boolean;
+  error?: string;
+};
+
+type DataIntegrityCheck = {
+  type: string;
+  dataKey: string;
+  passed: boolean;
+  timestamp: number;
+  details?: Record<string, unknown>;
+};
 
 interface CacheEntry {
   data: unknown;
@@ -25,7 +42,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: true,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         size: JSON.stringify(data).length,
         duration: Date.now() - startTime,
       };
@@ -35,7 +52,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: false,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         duration: Date.now() - startTime,
       };
     }
@@ -52,7 +69,7 @@ export class CacheTester {
           storage: 'cache',
           key,
           success: false,
-          timestamp: new Date(),
+          timestamp: Date.now(),
           duration: Date.now() - startTime,
           data: null,
         };
@@ -66,7 +83,7 @@ export class CacheTester {
           storage: 'cache',
           key,
           success: false,
-          timestamp: new Date(),
+          timestamp: Date.now(),
           duration: Date.now() - startTime,
           data: null,
         };
@@ -77,7 +94,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: true,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         size: JSON.stringify(entry.data).length,
         duration: Date.now() - startTime,
         data: entry.data,
@@ -88,7 +105,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: false,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         duration: Date.now() - startTime,
         data: null,
       };
@@ -105,7 +122,7 @@ export class CacheTester {
           storage: 'cache',
           key,
           success: false,
-          timestamp: new Date(),
+          timestamp: Date.now(),
           duration: Date.now() - startTime,
         };
       }
@@ -121,7 +138,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: true,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         size: JSON.stringify(data).length,
         duration: Date.now() - startTime,
       };
@@ -131,7 +148,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: false,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         duration: Date.now() - startTime,
       };
     }
@@ -147,7 +164,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: deleted,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         duration: Date.now() - startTime,
       };
     } catch (error) {
@@ -156,7 +173,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: false,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         duration: Date.now() - startTime,
       };
     }
@@ -194,7 +211,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: true,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         size: JSON.stringify(data).length,
         duration: Date.now() - startTime,
       };
@@ -204,7 +221,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: false,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         duration: Date.now() - startTime,
       };
     }
@@ -224,7 +241,7 @@ export class CacheTester {
           storage: 'cache',
           key,
           success: false,
-          timestamp: new Date(),
+          timestamp: Date.now(),
           duration: Date.now() - startTime,
           data: null,
         };
@@ -243,7 +260,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: true,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         size: JSON.stringify(entry.data).length,
         duration: Date.now() - startTime,
         data: entry.data,
@@ -254,7 +271,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: false,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         duration: Date.now() - startTime,
         data: null,
       };
@@ -279,7 +296,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: true,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         size: JSON.stringify(data).length,
         duration: Date.now() - startTime,
       };
@@ -289,7 +306,7 @@ export class CacheTester {
         storage: 'cache',
         key,
         success: false,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         duration: Date.now() - startTime,
       };
     }
@@ -310,14 +327,14 @@ export class CacheTester {
         details: passed
           ? 'Data integrity verified'
           : `Data mismatch: original ${originalStr.length} chars, retrieved ${retrievedStr.length} chars`,
-        timestamp: new Date(),
+        timestamp: Date.now(),
       };
     } catch (error) {
       return {
         type: 'checksum',
         passed: false,
         details: `Integrity check failed: ${error}`,
-        timestamp: new Date(),
+        timestamp: Date.now(),
       };
     }
   }
@@ -334,14 +351,14 @@ export class CacheTester {
         type: 'validation',
         passed: expired,
         details: expired ? 'Cache expiration working correctly' : 'Cache expiration failed',
-        timestamp: new Date(),
+        timestamp: Date.now(),
       };
     } catch (error) {
       return {
         type: 'validation',
         passed: false,
         details: `Expiration check failed: ${error}`,
-        timestamp: new Date(),
+        timestamp: Date.now(),
       };
     }
   }

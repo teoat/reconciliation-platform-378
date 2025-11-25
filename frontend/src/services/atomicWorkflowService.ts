@@ -123,22 +123,31 @@ class AtomicWorkflowService {
       if (workflowsData) {
         const data = JSON.parse(workflowsData);
         data.workflows.forEach((workflowData: unknown) => {
+          const wd = workflowData as Record<string, unknown>;
           const workflow: WorkflowState = {
-            ...(workflowData as Record<string, unknown>),
+            id: (wd.id as string) || '',
+            workflowId: (wd.workflowId as string) || '',
+            stage: (wd.stage as string) || '',
+            status: (wd.status as WorkflowState['status']) || 'pending',
+            progress: (wd.progress as number) || 0,
+            data: (wd.data as Record<string, unknown>) || {},
             metadata: {
-              ...(workflowData.metadata as Record<string, unknown>),
-              createdAt: new Date((workflowData.metadata as any).createdAt),
-              lastModifiedAt: new Date((workflowData.metadata as any).lastModifiedAt),
+              createdBy: ((wd.metadata as any)?.createdBy as string) || 'system',
+              createdAt: new Date(((wd.metadata as any)?.createdAt as number | string) || Date.now()),
+              lastModifiedBy: ((wd.metadata as any)?.lastModifiedBy as string) || 'system',
+              lastModifiedAt: new Date(((wd.metadata as any)?.lastModifiedAt as number | string) || Date.now()),
+              version: ((wd.metadata as any)?.version as number) || 1,
+              checksum: ((wd.metadata as any)?.checksum as string) || '',
             },
-            transitions: workflowData.transitions.map((t: unknown) => ({
-              ...t,
-              triggeredAt: new Date(t.triggeredAt),
-            })),
-            locks: workflowData.locks.map((l: unknown) => ({
-              ...l,
-              lockedAt: new Date(l.lockedAt),
-              expiresAt: new Date(l.expiresAt),
-            })),
+            transitions: ((wd.transitions as unknown[]) || []).map((t: unknown) => ({
+              ...(t as Record<string, unknown>),
+              triggeredAt: new Date((t as any).triggeredAt),
+            })) as WorkflowTransition[],
+            locks: ((wd.locks as unknown[]) || []).map((l: unknown) => ({
+              ...(l as Record<string, unknown>),
+              lockedAt: new Date((l as any).lockedAt),
+              expiresAt: new Date((l as any).expiresAt),
+            })) as WorkflowLock[],
           };
           this.workflows.set(workflow.id, workflow);
         });
@@ -149,10 +158,11 @@ class AtomicWorkflowService {
       if (operationsData) {
         const data = JSON.parse(operationsData);
         data.operations.forEach((operationData: unknown) => {
+          const opData = operationData as Record<string, unknown>;
           const operation: AtomicOperation = {
-            ...operationData,
-            timestamp: new Date(operationData.timestamp),
-          };
+            ...opData,
+            timestamp: new Date((opData.timestamp as number | string) || Date.now()),
+          } as AtomicOperation;
           this.operations.set(operation.id, operation);
         });
       }
@@ -208,7 +218,7 @@ class AtomicWorkflowService {
     this.workflows.set(workflow.id, workflow);
     this.savePersistedData();
 
-    this.emit('workflowCreated', workflow);
+    this.emit('workflowCreated', toRecord(workflow));
     return workflow;
   }
 
@@ -274,7 +284,7 @@ class AtomicWorkflowService {
         .then((result) => {
           resolve({ success: result.success, operation });
         })
-        .catch((error) => {
+        .catch((_error) => {
           resolve({ success: false, operation });
         });
     });
@@ -308,7 +318,7 @@ class AtomicWorkflowService {
 
       if (result.success) {
         operation.status = 'completed';
-        this.emit('operationCompleted', operation);
+        this.emit('operationCompleted', toRecord(operation));
       } else {
         throw new Error(result.error || 'Operation failed');
       }
@@ -340,7 +350,10 @@ class AtomicWorkflowService {
     operation: AtomicOperation
   ): Promise<{ success: boolean; error?: string }> {
     try {
-      const { fromStage, toStage, data } = operation.data;
+      const opData = operation.data as Record<string, unknown>;
+      const fromStage = String(opData.fromStage || workflow.stage);
+      const toStage = String(opData.toStage || workflow.stage);
+      const data = (opData.data as Record<string, unknown>) || {};
 
       // Validate transition
       if (!this.isValidTransition(workflow, fromStage, toStage)) {
@@ -387,8 +400,8 @@ class AtomicWorkflowService {
       if (!workflow || !operation.rollbackData) return;
 
       // Restore previous state
-      workflow.stage = operation.rollbackData.toStage;
-      workflow.data = operation.rollbackData.data;
+      workflow.stage = String(operation.rollbackData.toStage || workflow.stage);
+      workflow.data = (operation.rollbackData.data as Record<string, unknown>) || workflow.data;
       workflow.metadata.lastModifiedBy = operation.userId;
       workflow.metadata.lastModifiedAt = new Date();
       workflow.metadata.version++;
@@ -397,7 +410,7 @@ class AtomicWorkflowService {
       this.savePersistedData();
 
       operation.status = 'rolled_back';
-      this.emit('operationRolledBack', operation);
+      this.emit('operationRolledBack', toRecord(operation));
     } catch (error) {
       logger.error('Rollback failed:', toRecord(error));
     }
@@ -449,7 +462,7 @@ class AtomicWorkflowService {
     }
 
     this.savePersistedData();
-    this.emit('lockAcquired', lock);
+    this.emit('lockAcquired', toRecord(lock));
     return lock;
   }
 
@@ -467,7 +480,7 @@ class AtomicWorkflowService {
     }
 
     this.savePersistedData();
-    this.emit('lockReleased', lock);
+    this.emit('lockReleased', toRecord(lock));
     return true;
   }
 
@@ -547,7 +560,7 @@ class AtomicWorkflowService {
 
     expiredLocks.forEach((lock) => {
       this.releaseLock(lock.id);
-      this.emit('lockExpired', lock);
+      this.emit('lockExpired', toRecord(lock));
     });
   }
 
@@ -590,7 +603,7 @@ class AtomicWorkflowService {
 
   public updateConfig(newConfig: Partial<WorkflowConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    this.emit('configUpdated', this.config);
+    this.emit('configUpdated', toRecord(this.config));
   }
 
   public getConfig(): WorkflowConfig {

@@ -286,6 +286,30 @@ App → ErrorBoundary → ReduxProvider → WebSocketProvider → AuthProvider �
 - Docker & Docker Compose
 - Git
 
+### Agent Coordination (Required for Multi-Agent Work)
+
+**⚠️ IMPORTANT**: All IDE agents working on this codebase **MUST** use the agent-coordination MCP server to prevent conflicts and enable safe parallel work.
+
+**Requirements:**
+- Agents must register before starting work
+- Agents must claim tasks and lock files before editing
+- Agents must check for conflicts before starting work
+- See [Agent Coordination Rules](.cursor/rules/agent_coordination.mdc) for complete requirements
+
+**Quick Start:**
+```bash
+# Verify agent-coordination MCP server is configured
+bash scripts/verify-mcp-config.sh
+
+# The agent-coordination server is automatically configured via
+bash scripts/setup-mcp.sh
+```
+
+**Documentation:**
+- [Agent Coordination Rules](.cursor/rules/agent_coordination.mdc) - Complete requirements
+- [Agent Coordination MCP Server](mcp-server/AGENT_COORDINATION_README.md) - Server documentation
+- [MCP Setup Guide](docs/development/MCP_SETUP_COMPLETE.md) - Setup instructions
+
 ### Development Workflow
 
 ```bash

@@ -153,7 +153,7 @@ class OnboardingService {
   /**
    * Sync progress to server
    */
-  private async syncToServer(type: OnboardingType): Promise<void> {
+  public async syncToServer(type: OnboardingType): Promise<void> {
     if (!this.syncEnabled || this.syncInProgress.has(type)) return;
 
     const key = `onboarding_${type}`;

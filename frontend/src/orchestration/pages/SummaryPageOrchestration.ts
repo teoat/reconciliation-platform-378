@@ -121,7 +121,7 @@ export function registerSummaryGuidanceHandlers(
       id: 'export-guidance',
       featureId: 'export',
       handler: async (context: PageContext) => {
-        if (context.reportsCount > 0 && context.exportedReportsCount === 0) {
+        if ((context.reportsCount as number) > 0 && context.exportedReportsCount === 0) {
           return {
             id: `export-tip-${Date.now()}`,
             type: 'tip',

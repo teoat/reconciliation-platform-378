@@ -189,7 +189,7 @@ export const useIngestionWorkflow = () => {
       ];
 
       const validations = validateDataset(mockData, mockColumns);
-      const qualityMetrics = calculateDataQualityMetrics(mockData, mockColumns, validations);
+      const qualityMetrics = calculateDataQualityMetrics(mockData, mockColumns, validations.map(v => ({ severity: v.severity })));
 
       // Update file with processed data
       const updatedFile: UploadedFile = {
@@ -198,8 +198,12 @@ export const useIngestionWorkflow = () => {
         records: mockData.length,
         data: { records: mockData },
         columns: mockColumns,
-        qualityMetrics,
-        validations,
+        qualityMetrics: {
+          ...qualityMetrics,
+          uniqueness: qualityMetrics.duplicates > 0 ? 100 - (qualityMetrics.duplicates / mockData.length) * 100 : 100,
+          overallScore: (qualityMetrics.completeness + qualityMetrics.accuracy + qualityMetrics.consistency + qualityMetrics.validity) / 4,
+        } as DataQualityMetrics & { uniqueness: number; overallScore: number },
+        validations: validations as DataValidation[],
       };
 
       setState((prev) => ({

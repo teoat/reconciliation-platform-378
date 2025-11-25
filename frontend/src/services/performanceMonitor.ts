@@ -235,18 +235,20 @@ class PerformanceMonitor {
   private startReporting(): void {
     this.reportTimer = setInterval(() => {
       this.reportMetrics();
-    }, this.config.reportInterval);
+    }, this.config.reportInterval) as unknown as number;
   }
 
   private reportMetric(name: string, value: number): void {
     if (this.config.debug) {
-      logger.info(`Performance metric ${name}:`, value);
+      logger.info(`Performance metric ${name}:`, toRecord({ value }));
     }
 
-    // Store metric
-    this.metrics[name as keyof PerformanceMetrics] =
-      value as unknown as PerformanceMetrics[keyof PerformanceMetrics];
-    this.metrics.timestamp = new Date();
+    // Store metric (exclude timestamp which is a Date)
+    if (name !== 'timestamp' && typeof value === 'number') {
+      const metricKey = name as Exclude<keyof PerformanceMetrics, 'timestamp'>;
+      this.metrics[metricKey] = value;
+    }
+    // Note: timestamp is handled separately, not stored in metrics object
 
     // Send to analytics endpoint
     this.sendMetric(name, value);
@@ -316,6 +318,9 @@ class PerformanceMonitor {
   private getConnectionInfo(): ConnectionInfo | null {
     if ('connection' in navigator) {
       const conn = (navigator as { connection?: NavigatorConnection }).connection;
+      if (!conn) {
+        return null;
+      }
       return {
         effectiveType: conn.effectiveType,
         downlink: conn.downlink,

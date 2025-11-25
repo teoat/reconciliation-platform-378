@@ -19,6 +19,10 @@ export interface ReconciliationRecord {
   status: ReconciliationStatus;
   matchType?: MatchType;
   confidence?: number;
+  confidence_score?: number; // Backend-aligned property
+  discrepancyAmount?: number; // Calculated discrepancy amount
+  discrepancy_amount?: number; // Backend-aligned property
+  priority?: string; // Record priority
   discrepancies: Discrepancy[];
   metadata: RecordMetadata;
   createdAt: Timestamp;

@@ -31,21 +31,16 @@ cat > "${MCP_CONFIG_FILE}" << EOF
     },
     "postgres": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-postgres"],
-      "env": {
-        "POSTGRES_CONNECTION_STRING": "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app"
-      }
-    },
-    "git": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-git", "--repository", "${PROJECT_ROOT}"],
+      "args": ["-y", "@ahmetkca/mcp-server-postgres", "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app"],
       "env": {}
     },
     "prometheus": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-prometheus"],
+      "args": ["-y", "@wkronmiller/prometheus-mcp-server"],
       "env": {
-        "PROMETHEUS_URL": "http://localhost:9090"
+        "PROMETHEUS_URL": "http://localhost:9090",
+        "PROMETHEUS_TIMEOUT": "10000",
+        "PROMETHEUS_RETRIES": "3"
       }
     },
     "reconciliation-platform": {

@@ -1,4 +1,5 @@
-import { RequestInterceptor, ResponseInterceptor, ApiError } from './enhancedApiClient';
+import { RequestInterceptor, ApiError } from './enhancedApiClient';
+import type { ResponseInterceptor } from './enhancedApiClient';
 import { logger } from '@/services/logger';
 import { ApiRequestConfig, ApiResponse } from '../types/api';
 
@@ -33,22 +34,15 @@ export const createRequestInterceptor = (): RequestInterceptor => {
 // Response interceptor for handling common responses
 export const createResponseInterceptor = (): ResponseInterceptor => {
   return async <T = unknown>(
-    response: ApiResponse<T> | (Response & { url?: string; status?: number; headers?: Headers })
-  ): Promise<ApiResponse<T> | Response> => {
+    response: ApiResponse<T>
+  ): Promise<ApiResponse<T>> => {
     // Log response in development
     if (import.meta.env.DEV) {
-      if ('status' in response && response.headers) {
-        const requestId = response.headers.get('X-Request-ID');
-        const requestTimestamp = response.headers.get('X-Request-Timestamp');
-        const duration = requestTimestamp ? Date.now() - parseInt(requestTimestamp) : 0;
-
-        logger.info(`[API Response] ${response.status} ${response.url}`, {
-          requestId,
-          duration: `${duration}ms`,
-          status: response.status,
-          headers: Object.fromEntries(response.headers.entries()),
-        });
-      }
+      logger.info(`[API Response]`, {
+        success: response.success,
+        message: response.message,
+        timestamp: response.timestamp,
+      });
     }
 
     return response;
@@ -87,9 +81,9 @@ export const createRetryInterceptor = (): ResponseInterceptor => {
 
 // Rate limiting interceptor
 export const createRateLimitInterceptor = (): ResponseInterceptor => {
-  return async <T = unknown>(response: ApiResponse<T> | Response): Promise<ApiResponse<T> | Response> => {
-    // Check for rate limit status
-    if ('status' in response && response.status === 429) {
+  return async <T = unknown>(response: ApiResponse<T>): Promise<ApiResponse<T>> => {
+    // Check for rate limit (if response indicates rate limiting)
+    if (!response.success && response.message?.toLowerCase().includes('rate limit')) {
       const retryAfter = 60; // Default retry after 60 seconds
       const event = new CustomEvent('rate-limit', {
         detail: { retryAfter, message: 'Rate limit exceeded' },
@@ -132,26 +126,14 @@ export const createTimingInterceptor = (): RequestInterceptor => {
 
 export const createTimingResponseInterceptor = (): ResponseInterceptor => {
   return async <T = unknown>(
-    response: ApiResponse<T> | (Response & {
-      url?: string;
-      status?: number;
-      headers?: Headers;
-      config?: ApiRequestConfig;
-    })
-  ): Promise<ApiResponse<T> | Response> => {
-    // Calculate request duration
-    if ('config' in response && response.config?.startTime) {
-      const endTime = performance.now();
-      const duration = endTime - response.config.startTime;
-
-      // Log slow requests
-      if (duration > 5000) {
-        // 5 seconds
-        logger.warning(`[Slow Request] ${response.url} took ${duration.toFixed(2)}ms`, {
-          duration,
-          url: response.url,
-        });
-      }
+    response: ApiResponse<T>
+  ): Promise<ApiResponse<T>> => {
+    // Log response timing
+    if (import.meta.env.DEV) {
+      logger.info(`[API Response Timing]`, {
+        success: response.success,
+        timestamp: response.timestamp,
+      });
     }
 
     return response;

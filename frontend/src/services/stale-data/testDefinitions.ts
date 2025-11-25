@@ -217,20 +217,20 @@ export class StaleDataTestDefinitions {
             }
 
             // Simulate refresh (would normally update timestamp)
-            const refreshAction = {
+            const refreshAction: RefreshAction = {
               type: 'auto-refresh',
               dataKey: testData.key,
-              success: true,
+              triggered: true,
               timestamp: new Date(),
               details: { refreshed: true },
-            };
+            } as RefreshAction & { details: { refreshed: boolean } };
             refreshActions.push(refreshAction);
 
             // Check if data is fresh after refresh (simulate updated timestamp)
             const freshCheck = DataFreshness.checkFreshness(testData.key, new Date(), 5);
             const isFreshAfterRefresh = freshCheck.isFresh;
 
-            const refreshWorking = refreshAction.success && isFreshAfterRefresh;
+            const refreshWorking = refreshAction.triggered && isFreshAfterRefresh;
             const duration = Date.now() - startTime;
 
             return {
@@ -299,13 +299,13 @@ export class StaleDataTestDefinitions {
                   ? 'high'
                   : 'medium'
                 : 'low';
-              const staleDetection = {
+              const staleDetection: StaleDataInfo = {
                 type: 'version',
                 dataKey: data.key,
                 staleThreshold: 0,
                 actualAge: data.serverVersion - data.localVersion,
                 detected,
-                severity,
+                severity: severity as 'low' | 'medium' | 'high',
                 timestamp: new Date(),
               };
               if (staleDetection.detected) {
@@ -358,7 +358,7 @@ export class StaleDataTestDefinitions {
 
             // Detect version conflict
             const detected = testData.localVersion !== testData.serverVersion;
-            const staleDetection = {
+            const staleDetection: StaleDataInfo = {
               type: 'version',
               dataKey: testData.key,
               staleThreshold: 0,
@@ -372,16 +372,16 @@ export class StaleDataTestDefinitions {
             }
 
             // Resolve conflict
-            const conflictResolution = {
+            const conflictResolution: RefreshAction = {
               type: 'auto-refresh',
               dataKey: testData.key,
-              success: true,
+              triggered: true,
               timestamp: new Date(),
               details: { resolved: true, newVersion: testData.serverVersion },
-            };
+            } as RefreshAction & { details: { resolved: boolean; newVersion: number } };
             refreshActions.push(conflictResolution);
 
-            const conflictResolved = conflictResolution.success;
+            const conflictResolved = conflictResolution.triggered;
             const duration = Date.now() - startTime;
 
             return {
@@ -426,7 +426,7 @@ export class StaleDataTestDefinitions {
 
             // Detect version sync needed
             const detected = testData.localVersion < testData.serverVersion;
-            const staleDetection = {
+            const staleDetection: StaleDataInfo = {
               type: 'version',
               dataKey: testData.key,
               staleThreshold: 0,
@@ -440,19 +440,19 @@ export class StaleDataTestDefinitions {
             }
 
             // Perform version sync
-            const syncAction = {
+            const syncAction: RefreshAction = {
               type: 'background-sync',
               dataKey: testData.key,
-              success: true,
+              triggered: true,
               timestamp: new Date(),
               details: { synced: true, newVersion: testData.serverVersion },
-            };
+            } as RefreshAction & { details: { synced: boolean; newVersion: number } };
             refreshActions.push(syncAction);
 
             // Verify sync success (mock)
             const syncSuccessful = true;
 
-            const syncWorking = syncAction.success && syncSuccessful;
+            const syncWorking = syncAction.triggered && syncSuccessful;
             const duration = Date.now() - startTime;
 
             return {
@@ -517,13 +517,13 @@ export class StaleDataTestDefinitions {
               // Detect stale data by checksum
               const detected = data.localChecksum !== data.serverChecksum;
               const severity = detected ? 'high' : 'low';
-              const staleDetection = {
+              const staleDetection: StaleDataInfo = {
                 type: 'checksum',
                 dataKey: data.key,
                 staleThreshold: 0,
                 actualAge: 0,
                 detected,
-                severity,
+                severity: severity as 'low' | 'medium' | 'high',
                 timestamp: new Date(),
               };
               if (staleDetection.detected) {
@@ -580,7 +580,7 @@ export class StaleDataTestDefinitions {
 
             // Detect integrity issues
             const detected = testData.localChecksum !== testData.serverChecksum;
-            const staleDetection = {
+            const staleDetection: StaleDataInfo = {
               type: 'checksum',
               dataKey: testData.key,
               staleThreshold: 0,
@@ -594,19 +594,19 @@ export class StaleDataTestDefinitions {
             }
 
             // Repair integrity
-            const repairAction = {
+            const repairAction: RefreshAction = {
               type: 'force-refresh',
               dataKey: testData.key,
-              success: true,
+              triggered: true,
               timestamp: new Date(),
               details: { repaired: true, newChecksum: testData.serverChecksum },
-            };
+            } as RefreshAction & { details: { repaired: boolean; newChecksum: string } };
             refreshActions.push(repairAction);
 
             // Verify integrity repair
             const integrityRepaired = true;
 
-            const integrityWorking = repairAction.success && integrityRepaired;
+            const integrityWorking = repairAction.triggered && integrityRepaired;
             const duration = Date.now() - startTime;
 
             return {
@@ -657,10 +657,10 @@ export class StaleDataTestDefinitions {
             const performanceTest = {
               type: 'auto-refresh',
               dataKey: testData.key,
-              success,
+              triggered: success,
               timestamp: new Date(),
               details: { duration, checksum, size: testData.size },
-            };
+            } as RefreshAction & { details: { duration: number; checksum: string; size: number } };
             refreshActions.push(performanceTest);
 
             // Test checksum comparison performance
@@ -674,13 +674,13 @@ export class StaleDataTestDefinitions {
             const comparisonTest = {
               type: 'auto-refresh',
               dataKey: testData.key,
-              success: compSuccess,
+              triggered: compSuccess,
               timestamp: new Date(),
               details: { duration: compDuration, comparison },
-            };
+            } as RefreshAction & { details: { duration: number; comparison: boolean } };
             refreshActions.push(comparisonTest);
 
-            const performanceAcceptable = performanceTest.success && comparisonTest.success;
+            const performanceAcceptable = performanceTest.triggered && comparisonTest.triggered;
             const totalDuration = Date.now() - startTime;
 
             return {
@@ -753,13 +753,13 @@ export class StaleDataTestDefinitions {
             const detected = timestampStale || versionStale || checksumStale;
             const severity = detected ? 'high' : 'low';
 
-            const hybridStaleDetection = {
+            const hybridStaleDetection: StaleDataInfo = {
               type: 'content',
               dataKey: testData.key,
               staleThreshold: 300000,
               actualAge: Date.now() - testData.timestamp.getTime(),
               detected,
-              severity,
+              severity: severity as 'low' | 'medium' | 'high',
               timestamp: new Date(),
             };
             if (hybridStaleDetection.detected) {
@@ -767,16 +767,16 @@ export class StaleDataTestDefinitions {
             }
 
             // Test hybrid refresh
-            const hybridRefreshAction = {
+            const hybridRefreshAction: RefreshAction = {
               type: 'auto-refresh',
               dataKey: testData.key,
-              success: true,
+              triggered: true,
               timestamp: new Date(),
               details: { hybrid: true },
-            };
+            } as RefreshAction & { details: { hybrid: boolean } };
             refreshActions.push(hybridRefreshAction);
 
-            const hybridWorking = hybridStaleDetection.detected && hybridRefreshAction.success;
+            const hybridWorking = hybridStaleDetection.detected && hybridRefreshAction.triggered;
             const duration = Date.now() - startTime;
 
             return {
@@ -833,13 +833,13 @@ export class StaleDataTestDefinitions {
             const detected = checksumStale || versionStale || timestampStale;
             const severity = checksumStale ? 'high' : versionStale ? 'medium' : 'low';
 
-            const priorityDetection = {
+            const priorityDetection: StaleDataInfo = {
               type: 'content',
               dataKey: testData.key,
               staleThreshold: 300000,
               actualAge: Date.now() - testData.timestamp.getTime(),
               detected,
-              severity,
+              severity: severity as 'low' | 'medium' | 'high',
               timestamp: new Date(),
             };
             if (priorityDetection.detected) {
@@ -852,16 +852,16 @@ export class StaleDataTestDefinitions {
             else if (versionStale) refreshType = 'background-sync';
             else if (timestampStale) refreshType = 'user-prompt';
 
-            const priorityRefreshAction = {
-              type: refreshType,
+            const priorityRefreshAction: RefreshAction = {
+              type: refreshType as RefreshAction['type'],
               dataKey: testData.key,
-              success: true,
+              triggered: true,
               timestamp: new Date(),
               details: { refreshType, checksumStale, versionStale, timestampStale },
-            };
+            } as RefreshAction & { details: { refreshType: string; checksumStale: boolean; versionStale: boolean; timestampStale: boolean } };
             refreshActions.push(priorityRefreshAction);
 
-            const priorityWorking = priorityDetection.detected && priorityRefreshAction.success;
+            const priorityWorking = priorityDetection.detected && priorityRefreshAction.triggered;
             const duration = Date.now() - startTime;
 
             return {
@@ -928,16 +928,16 @@ export class StaleDataTestDefinitions {
             }
 
             // Test fallback refresh
-            const fallbackRefreshAction = {
+            const fallbackRefreshAction: RefreshAction = {
               type: 'user-prompt',
               dataKey: testData.key,
-              success: true,
+              triggered: true,
               timestamp: new Date(),
               details: { fallback: true },
-            };
+            } as RefreshAction & { details: { fallback: boolean } };
             refreshActions.push(fallbackRefreshAction);
 
-            const fallbackWorking = fallbackDetection.detected && fallbackRefreshAction.success;
+            const fallbackWorking = fallbackDetection.detected && fallbackRefreshAction.triggered;
             const duration = Date.now() - startTime;
 
             return {

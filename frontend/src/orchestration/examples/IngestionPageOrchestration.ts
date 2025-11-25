@@ -109,7 +109,7 @@ export function registerIngestionGuidanceHandlers(
       id: 'validation-guidance',
       featureId: 'data-validation',
       handler: async (context: PageContext) => {
-        if (context.uploadedFilesCount > 0 && context.processedFilesCount === 0) {
+        if ((context.uploadedFilesCount as number) > 0 && context.processedFilesCount === 0) {
           return {
             id: `validation-tip-${Date.now()}`,
             type: 'tip',

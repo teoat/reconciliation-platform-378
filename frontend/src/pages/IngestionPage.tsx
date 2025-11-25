@@ -297,11 +297,11 @@ const IngestionPageContent: React.FC = () => {
                 <p className="text-sm font-medium text-gray-600">Status</p>
                 <p className="text-sm text-gray-900">{previewFile.status}</p>
               </div>
-              {previewFile.uploaded_at && (
+              {previewFile.uploadedAt && (
                 <div>
                   <p className="text-sm font-medium text-gray-600">Uploaded At</p>
                   <p className="text-sm text-gray-900">
-                    {new Date(previewFile.uploaded_at).toLocaleString()}
+                    {new Date(previewFile.uploadedAt).toLocaleString()}
                   </p>
                 </div>
               )}

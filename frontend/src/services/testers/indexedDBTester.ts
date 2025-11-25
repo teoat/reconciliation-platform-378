@@ -59,7 +59,7 @@ export class IndexedDBTester {
         storage: 'indexedDB',
         key: storeName,
         success: true,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         size: JSON.stringify(data).length,
         duration: Date.now() - startTime,
       };
@@ -69,7 +69,7 @@ export class IndexedDBTester {
         storage: 'indexedDB',
         key: storeName,
         success: false,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         duration: Date.now() - startTime,
       };
     }
@@ -98,7 +98,7 @@ export class IndexedDBTester {
         storage: 'indexedDB',
         key: `${storeName}:${id}`,
         success: data !== undefined,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         size: data ? JSON.stringify(data).length : 0,
         duration: Date.now() - startTime,
         data: data || null,
@@ -109,7 +109,7 @@ export class IndexedDBTester {
         storage: 'indexedDB',
         key: `${storeName}:${id}`,
         success: false,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         duration: Date.now() - startTime,
         data: null,
       };
@@ -136,7 +136,7 @@ export class IndexedDBTester {
         storage: 'indexedDB',
         key: storeName,
         success: true,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         size: JSON.stringify(data).length,
         duration: Date.now() - startTime,
       };
@@ -146,7 +146,7 @@ export class IndexedDBTester {
         storage: 'indexedDB',
         key: storeName,
         success: false,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         duration: Date.now() - startTime,
       };
     }
@@ -172,7 +172,7 @@ export class IndexedDBTester {
         storage: 'indexedDB',
         key: `${storeName}:${id}`,
         success: true,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         duration: Date.now() - startTime,
       };
     } catch (error) {
@@ -181,7 +181,7 @@ export class IndexedDBTester {
         storage: 'indexedDB',
         key: `${storeName}:${id}`,
         success: false,
-        timestamp: new Date(),
+        timestamp: Date.now(),
         duration: Date.now() - startTime,
       };
     }
@@ -194,7 +194,7 @@ export class IndexedDBTester {
         id: i,
         name: `record_${i}`,
         data: `x`.repeat(1000), // 1KB per record
-        timestamp: new Date(),
+        timestamp: Date.now(),
         metadata: {
           created: new Date(),
           version: 1,
@@ -220,14 +220,14 @@ export class IndexedDBTester {
         details: passed
           ? 'Data integrity verified'
           : `Data mismatch: original ${originalStr.length} chars, retrieved ${retrievedStr.length} chars`,
-        timestamp: new Date(),
+        timestamp: Date.now(),
       };
     } catch (error) {
       return {
         type: 'checksum',
         passed: false,
         details: `Integrity check failed: ${error}`,
-        timestamp: new Date(),
+        timestamp: Date.now(),
       };
     }
   }
@@ -242,7 +242,7 @@ export class IndexedDBTester {
           type: 'consistency',
           passed: false,
           details: `Length mismatch: original ${originalData.length}, retrieved ${retrievedData.length}`,
-          timestamp: new Date(),
+          timestamp: Date.now(),
         };
       }
 
@@ -260,14 +260,14 @@ export class IndexedDBTester {
         type: 'consistency',
         passed,
         details: passed ? 'Transaction integrity verified' : 'Transaction data mismatch detected',
-        timestamp: new Date(),
+        timestamp: Date.now(),
       };
     } catch (error) {
       return {
         type: 'consistency',
         passed: false,
         details: `Transaction integrity check failed: ${error}`,
-        timestamp: new Date(),
+        timestamp: Date.now(),
       };
     }
   }
@@ -281,7 +281,7 @@ export class IndexedDBTester {
     const integrityChecks: DataIntegrityCheck[] = [];
 
     // Test basic save/load
-    const testData = { id: 1, name: 'idb_test', data: 'test content', timestamp: new Date() };
+    const testData = { id: 1, name: 'idb_test', data: 'test content', timestamp: Date.now() };
     const saveOp = await this.saveToIndexedDB('testStore', testData);
     operations.push(saveOp);
 

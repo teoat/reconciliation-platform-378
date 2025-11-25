@@ -1,5 +1,6 @@
 // Error Context Preservation Service - Enhanced error context preservation
 import { logger } from '@/services/logger';
+import { toRecord } from '../utils/typeHelpers';
 // Implements comprehensive error context tracking with project ID, user ID, workflow stage
 
 export interface ErrorContext {
@@ -99,7 +100,7 @@ class ErrorContextService {
         this.events = data.events || [];
       }
     } catch (error) {
-      logger.error('Failed to load persisted error contexts:', error);
+      logger.error('Failed to load persisted error contexts:', toRecord(error));
     }
   }
 
@@ -113,7 +114,7 @@ class ErrorContextService {
       };
       localStorage.setItem('error_contexts', JSON.stringify(data));
     } catch (error) {
-      logger.error('Failed to save error contexts:', error);
+      logger.error('Failed to save error contexts:', toRecord(error));
     }
   }
 
@@ -183,7 +184,7 @@ class ErrorContextService {
     this.contexts.set(this.currentContext.id, this.currentContext);
     this.savePersistedContexts();
 
-    this.emit('contextUpdated', this.currentContext);
+    this.emit('contextUpdated', toRecord(this.currentContext));
     return this.currentContext;
   }
 
@@ -201,19 +202,27 @@ class ErrorContextService {
       metadata?: Record<string, unknown>;
     } = {}
   ): ErrorContextEvent {
-    const context = this.currentContext || this.initializeContext()!;
+    const context = this.currentContext || this.initializeContext();
+    if (!context) {
+      // Fallback context if initialization fails
+      const fallbackContext: ErrorContext = {
+        id: `ctx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        timestamp: new Date(),
+      };
+      this.currentContext = fallbackContext;
+    }
 
     const event: ErrorContextEvent = {
       type,
       message,
-      context: { ...context },
+      context: (this.currentContext || this.initializeContext()!) as ErrorContext,
       stack: options.stack,
       severity,
       ...options,
     };
 
     this.events.push(event);
-    this.emit('errorEvent', event);
+    this.emit('errorEvent', toRecord(event));
 
     // Send to analytics if enabled
     if (this.config.enableAnalytics) {
@@ -380,7 +389,7 @@ class ErrorContextService {
 
   public updateConfig(newConfig: Partial<ErrorContextConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    this.emit('configUpdated', this.config);
+    this.emit('configUpdated', toRecord(this.config));
   }
 
   public getConfig(): ErrorContextConfig {
@@ -413,7 +422,7 @@ class ErrorContextService {
       this.emit('contextsImported', { count: this.contexts.size });
       return true;
     } catch (error) {
-      logger.error('Failed to import contexts:', error);
+      logger.error('Failed to import contexts:', toRecord(error));
       return false;
     }
   }

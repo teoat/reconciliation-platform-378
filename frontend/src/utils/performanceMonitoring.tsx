@@ -87,7 +87,7 @@ class PerformanceMonitor {
             memoryUsage: 0,
             networkLatency: navEntry.responseEnd - navEntry.requestStart,
             bundleSize: 0,
-            loadTime: navEntry.loadEventEnd - navEntry.navigationStart,
+            loadTime: navEntry.loadEventEnd - navEntry.fetchStart,
           });
         }
       }

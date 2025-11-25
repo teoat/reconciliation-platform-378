@@ -99,7 +99,7 @@ export class ProjectExportService {
         category: project.category,
         priority: project.priority,
         department: project.department,
-        createdDate: project.createdDate,
+        createdDate: project.created_at,
         createdBy: project.createdBy,
         lastModified: project.lastModified,
       };

@@ -1,0 +1,206 @@
+---
+description: Requirements for IDE agents to use agent-coordination MCP server for multi-agent coordination
+globs: **/*
+alwaysApply: true
+---
+
+- **Agent Coordination Requirement:**
+  - **ALL IDE agents MUST use the agent-coordination MCP server** when working on this codebase
+  - Agents must register and coordinate to prevent conflicts and enable safe parallel work
+  - See [Agent Coordination MCP Server](mdc:mcp-server/AGENT_COORDINATION_README.md) for details
+
+- **Mandatory Agent Registration:**
+  - **Before starting work**, agents MUST register using `agent_register` tool
+  - Provide unique `agentId` (e.g., "cursor-session-{timestamp}" or "agent-{uuid}")
+  - Specify `capabilities` array (e.g., ["typescript", "rust", "testing"])
+  - Update status regularly using `agent_update_status`
+  ```typescript
+  // ✅ DO: Register before starting work
+  await mcp.agent_register({
+    agentId: "cursor-session-1234567890",
+    capabilities: ["typescript", "rust", "testing"],
+    currentTask: "fix-linting-errors"
+  });
+  ```
+
+- **Task Management:**
+  - **Before claiming work**, agents MUST check for existing tasks using `agent_list_tasks`
+  - **Claim tasks** using `agent_claim_task` before starting work
+  - **Release tasks** using `agent_release_task` when done or switching tasks
+  - **Update progress** using `agent_update_task_progress` during long-running work
+  ```typescript
+  // ✅ DO: Claim task before working
+  await mcp.agent_claim_task({
+    taskId: "fix-api-errors",
+    agentId: "cursor-session-1234567890",
+    description: "Fix API endpoint errors",
+    files: ["backend/src/api/users.rs", "backend/src/api/posts.rs"]
+  });
+  
+  // Update progress
+  await mcp.agent_update_task_progress({
+    taskId: "fix-api-errors",
+    agentId: "cursor-session-1234567890",
+    progress: 50,
+    message: "Fixed user endpoint, working on posts"
+  });
+  
+  // Release when done
+  await mcp.agent_release_task({
+    taskId: "fix-api-errors",
+    agentId: "cursor-session-1234567890"
+  });
+  ```
+
+- **File Locking:**
+  - **Before editing files**, agents MUST check for locks using `agent_check_file_lock`
+  - **Lock files** using `agent_lock_file` before making changes
+  - **Unlock files** using `agent_unlock_file` when done editing
+  - Lock TTL is 3600 seconds (1 hour) by default
+  ```typescript
+  // ✅ DO: Lock files before editing
+  const lockCheck = await mcp.agent_check_file_lock({
+    file: "backend/src/api/users.rs"
+  });
+  
+  if (lockCheck.locked && lockCheck.agentId !== myAgentId) {
+    // File is locked by another agent, wait or choose different file
+    return;
+  }
+  
+  await mcp.agent_lock_file({
+    file: "backend/src/api/users.rs",
+    agentId: "cursor-session-1234567890",
+    reason: "Fixing API endpoint errors"
+  });
+  
+  // ... make changes ...
+  
+  // Unlock when done
+  await mcp.agent_unlock_file({
+    file: "backend/src/api/users.rs",
+    agentId: "cursor-session-1234567890"
+  });
+  ```
+
+- **Conflict Detection:**
+  - **Before starting work**, agents MUST check for conflicts using `agent_detect_conflicts`
+  - **Check file overlap** using `agent_check_file_overlap` when working on multiple files
+  - Use `agent_suggest_coordination` to get safe parallel work recommendations
+  ```typescript
+  // ✅ DO: Check for conflicts before starting
+  const conflicts = await mcp.agent_detect_conflicts({
+    agentId: "cursor-session-1234567890",
+    files: ["backend/src/api/users.rs", "backend/src/api/posts.rs"]
+  });
+  
+  if (conflicts.hasConflicts) {
+    // Handle conflicts before proceeding
+    console.warn("Conflicts detected:", conflicts.conflicts);
+  }
+  
+  // Get coordination suggestions
+  const suggestions = await mcp.agent_suggest_coordination({
+    agentId: "cursor-session-1234567890",
+    capabilities: ["typescript", "rust"],
+    preferredFiles: ["backend/src/api/users.rs"]
+  });
+  ```
+
+- **Agent Status Updates:**
+  - Agents MUST update status when:
+    - Starting work: `status: "working"`
+    - Blocked/waiting: `status: "blocked"`
+    - Idle: `status: "idle"`
+    - Task complete: `status: "completed"`
+  ```typescript
+  // ✅ DO: Update status regularly
+  await mcp.agent_update_status({
+    agentId: "cursor-session-1234567890",
+    status: "working",
+    currentTask: "fix-api-errors",
+    progress: 50
+  });
+  ```
+
+- **Workflow Pattern:**
+  ```typescript
+  // ✅ DO: Complete workflow
+  // 1. Register
+  await mcp.agent_register({ agentId, capabilities });
+  
+  // 2. Check for conflicts
+  const conflicts = await mcp.agent_detect_conflicts({ agentId, files });
+  
+  // 3. Claim task
+  await mcp.agent_claim_task({ taskId, agentId, files });
+  
+  // 4. Lock files
+  for (const file of files) {
+    await mcp.agent_lock_file({ file, agentId, reason });
+  }
+  
+  // 5. Do work
+  // ... make changes ...
+  
+  // 6. Update progress
+  await mcp.agent_update_task_progress({ taskId, agentId, progress });
+  
+  // 7. Unlock files
+  for (const file of files) {
+    await mcp.agent_unlock_file({ file, agentId });
+  }
+  
+  // 8. Release task
+  await mcp.agent_release_task({ taskId, agentId });
+  
+  // 9. Update status
+  await mcp.agent_update_status({ agentId, status: "completed" });
+  ```
+
+- **Prohibited Actions:**
+  - ❌ **DON'T** edit files without checking for locks
+  - ❌ **DON'T** start work without claiming tasks
+  - ❌ **DON'T** ignore conflict warnings
+  - ❌ **DON'T** forget to unlock files or release tasks
+  - ❌ **DON'T** work on files locked by other agents
+
+- **Error Handling:**
+  - If coordination server is unavailable, agents should:
+    - Log warning about coordination unavailable
+    - Proceed with caution (check git status, manual conflict detection)
+    - Retry coordination operations with exponential backoff
+  ```typescript
+  // ✅ DO: Handle coordination errors gracefully
+  try {
+    await mcp.agent_lock_file({ file, agentId, reason });
+  } catch (error) {
+    if (error.code === 'COORDINATION_UNAVAILABLE') {
+      console.warn('Coordination server unavailable, proceeding with caution');
+      // Check git status manually, proceed carefully
+    } else {
+      throw error;
+    }
+  }
+  ```
+
+- **Best Practices:**
+  - Use descriptive task IDs and file lock reasons
+  - Update progress frequently for long-running tasks
+  - Release tasks and unlock files immediately when done
+  - Check `agent_list_agents` to see other active agents
+  - Use `agent_get_workload_distribution` to balance work
+  - Use `agent_find_available_work` to find unclaimed tasks
+
+- **Configuration:**
+  - Agent-coordination MCP server is configured in `.cursor/mcp.json`
+  - Requires Redis connection (configured via `REDIS_URL`)
+  - Default TTL: 3600 seconds (1 hour)
+  - See [MCP Setup Guide](mdc:docs/development/MCP_SETUP_COMPLETE.md) for configuration details
+
+- **Related Documentation:**
+  - [Agent Coordination MCP Server](mdc:mcp-server/AGENT_COORDINATION_README.md) - Server documentation
+  - [Agent Coordination Implementation](mdc:docs/development/AGENT_COORDINATION_IMPLEMENTATION_COMPLETE.md) - Implementation details
+  - [MCP Setup Complete](mdc:docs/development/MCP_SETUP_COMPLETE.md) - Setup instructions
+
+Follow [cursor_rules.mdc](mdc:.cursor/rules/cursor_rules.mdc) for general rule formatting guidelines.

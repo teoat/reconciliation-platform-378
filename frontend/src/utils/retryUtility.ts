@@ -120,7 +120,7 @@ export class RetryUtility {
       return {
         success: true,
         data,
-        attempts: finalConfig.maxRetries + 1,
+        attempts: config.maxRetries + 1,
         totalTime: Date.now() - startTime,
       };
     } catch (error) {

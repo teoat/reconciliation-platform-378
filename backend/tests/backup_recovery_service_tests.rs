@@ -4,7 +4,7 @@
 //! restoration, scheduling, and retention policies.
 
 use reconciliation_backend::services::backup_recovery::{
-    BackupService, BackupConfig, BackupSchedule, RetentionPolicy,
+    BackupService, DisasterRecoveryService, BackupConfig, BackupSchedule, RetentionPolicy,
     StorageConfig,
 };
 use std::time::Duration;

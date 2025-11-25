@@ -5,6 +5,7 @@
 use actix_web::{test, web, App};
 use serde_json::json;
 use uuid::Uuid;
+use reconciliation_backend::handlers::configure_routes;
 
 #[path = "test_utils.rs"]
 mod test_utils;
@@ -17,7 +18,7 @@ mod authorization_security_tests {
 
     #[tokio::test]
     async fn test_unauthorized_project_access() {
-        let mut _test_client = TestClient::new();
+        let mut test_client = TestClient::new();
 
         // Authenticate as user1
         test_client
@@ -26,7 +27,7 @@ mod authorization_security_tests {
             .unwrap();
 
         // Create a project as user1
-        let project_id = _test_client
+        let project_id = test_client
             .create_project("User1 Project", "Project owned by user1")
             .await
             .unwrap();
@@ -61,18 +62,18 @@ mod authorization_security_tests {
 
     #[tokio::test]
     async fn test_unauthorized_file_access() {
-        let mut _test_client = TestClient::new();
-        _test_client
+        let mut test_client = TestClient::new();
+        test_client
             .authenticate_as("user1@test.com", "password123")
             .await
             .unwrap();
 
         // Create project and upload file
-        let project_id = _test_client
+        let project_id = test_client
             .create_project("Test Project", "Test")
             .await
             .unwrap();
-        let _file_id = _test_client
+        let file_id = test_client
             .upload_file(&project_id, "./test_data/sample.csv")
             .await
             .unwrap();
@@ -290,7 +291,7 @@ mod rate_limiting_security_tests {
 
     #[tokio::test]
     async fn test_login_rate_limiting() {
-        let test_client = TestClient::new();
+        let _test_client = TestClient::new();
 
         // Make multiple rapid login attempts
         for i in 0..15 {
@@ -344,14 +345,14 @@ mod rate_limiting_security_tests {
                     .configure(configure_routes),
             )
             .await;
-            let resp = test::call_service(&app, req).await;
+            let _resp = test::call_service(&app, req).await;
         // Should eventually hit rate limit (429 Too Many Requests)
         // Note: This test may not always hit the limit depending on implementation
     }
 
     #[tokio::test]
     async fn test_register_rate_limiting() {
-        let test_client = TestClient::new();
+        let _test_client = TestClient::new();
 
         // Make multiple rapid registration attempts
         for i in 0..10 {
@@ -386,7 +387,7 @@ mod rate_limiting_security_tests {
 
     #[tokio::test]
     async fn test_password_reset_rate_limiting() {
-        let test_client = TestClient::new();
+        let _test_client = TestClient::new();
 
         // Make multiple rapid password reset requests
         for _ in 0..10 {
@@ -542,7 +543,7 @@ mod security_headers_tests {
 
     #[tokio::test]
     async fn test_security_headers_present() {
-        let test_client = TestClient::new();
+        let _test_client = TestClient::new();
 
         let req = test::TestRequest::get().uri("/health").to_request();
         let (db, config) = get_test_config_and_db().await;
@@ -576,7 +577,7 @@ mod security_headers_tests {
     async fn test_strict_transport_security_https() {
         // This test would require HTTPS setup
         // For now, just verify the header logic exists
-        let test_client = TestClient::new();
+        let _test_client = TestClient::new();
 
         let req = test::TestRequest::get()
             .uri("/health")

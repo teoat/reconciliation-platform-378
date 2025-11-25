@@ -165,11 +165,11 @@ export const filterUploadedFiles = (
  */
 export const sortUploadedFiles = (
   files: UploadedFile[],
-  sortBy: 'name' | 'size' | 'status' | 'uploaded_at',
+  sortBy: 'name' | 'size' | 'status' | 'uploadedAt',
   direction: 'asc' | 'desc' = 'asc'
 ): UploadedFile[] => {
   const transforms: Record<string, (value: unknown) => unknown> = {
-    uploaded_at: (value) => (value ? new Date(value).getTime() : 0),
+    uploadedAt: (value) => (value ? new Date(value as string | Date).getTime() : 0),
     size: (value) => Number(value),
   };
 

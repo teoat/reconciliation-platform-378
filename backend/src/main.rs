@@ -53,6 +53,10 @@ fn main() {
     eprintln!("🚀 Backend starting...");
     std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
     
+    // Verify we reach this point
+    eprintln!("✅ Main function reached, creating Tokio runtime...");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
+    
     // Now call the async main
     let rt = match tokio::runtime::Runtime::new() {
         Ok(runtime) => runtime,
@@ -62,13 +66,31 @@ fn main() {
             std::process::exit(1);
         }
     };
-    if let Err(e) = rt.block_on(async_main()) {
-        eprintln!("❌ Application error: {:?}", e);
-        std::process::exit(1);
+    
+    eprintln!("✅ Tokio runtime created, calling async_main...");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
+    
+    match rt.block_on(async_main()) {
+        Ok(_) => {
+            eprintln!("✅ async_main completed successfully");
+            std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
+        }
+        Err(e) => {
+            eprintln!("❌ Application error: {:?}", e);
+            eprintln!("❌ Error details: {:?}", e);
+            std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
+            std::process::exit(1);
+        }
     }
+    
+    eprintln!("✅ Main function completed");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
 }
 
 async fn async_main() -> std::io::Result<()> {
+    // CRITICAL: Print immediately to verify we reach async_main
+    eprintln!("✅ async_main() called - starting initialization");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
 
     // Initialize logging with unbuffered stderr output
     eprintln!("Initializing logging...");
@@ -313,15 +335,10 @@ async fn async_main() -> std::io::Result<()> {
         log::warn!("Failed to load secrets from database: {}", e);
     }
     
-    // Start automatic rotation scheduler
-    secret_manager.start_rotation_scheduler().await;
-    log::info!("Automatic secret manager initialized");
-
-    // Initialize WebSocket server
-    use actix::Actor;
-    use reconciliation_backend::websocket::server::WsServer;
-    let ws_server = WsServer::new(Arc::new(database.clone())).start();
-    log::info!("WebSocket server initialized");
+    // Start automatic rotation scheduler (disabled temporarily to fix spawn_local issue)
+    // TODO: Re-enable once spawn_local issue is resolved
+    // secret_manager.start_rotation_scheduler().await;
+    log::info!("Automatic secret manager initialized (rotation scheduler disabled)");
 
     // Clone config for use in HttpServer closure
     let config_clone = config.clone();
@@ -342,8 +359,17 @@ async fn async_main() -> std::io::Result<()> {
     // Clone CORS origins for use in closure
     let cors_origins = config.cors_origins.clone();
     
+    // Clone database for WebSocket server (will be started in HttpServer closure)
+    let database_for_ws = Arc::new(database.clone());
+    
     // Create HTTP server with resilience-protected services
     let server = HttpServer::new(move || {
+        // Initialize WebSocket server within Actix runtime context
+        // This must be done here, not before HttpServer, because Actix Actor.start()
+        // requires a LocalSet context which is provided by the Actix runtime
+        use actix::Actor;
+        use reconciliation_backend::websocket::server::WsServer;
+        let ws_server = WsServer::new(Arc::clone(&database_for_ws)).start();
         // Configure CORS based on environment
         // In production, use specific origins from CORS_ORIGINS env var
         // In development, allow all origins for easier testing
@@ -390,7 +416,8 @@ async fn async_main() -> std::io::Result<()> {
             .app_data(web::Data::new(auth_service.clone()))
             .app_data(web::Data::new(user_service.clone()))
             // Add WebSocket server (required by WebSocket handlers)
-            .app_data(web::Data::new(ws_server.clone()))
+            // Note: ws_server is created in this closure to ensure it runs in Actix runtime context
+            .app_data(web::Data::new(ws_server))
             .app_data(web::Data::new(config_clone.clone()))
             // Add Swagger UI for API documentation
             // Note: Swagger UI integration requires all handlers to have utoipa annotations
@@ -402,8 +429,12 @@ async fn async_main() -> std::io::Result<()> {
             // Configure routes
             .configure(handlers::configure_routes)
     })
-    .workers(1)  // Reduce workers to 1 to minimize stack usage
-    .bind(&bind_addr)
+    .workers(1);  // Reduce workers to 1 to minimize stack usage
+    
+    eprintln!("✅ HttpServer configured, attempting to bind to {}...", bind_addr);
+    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
+    
+    let server = server.bind(&bind_addr)
     .map_err(|e| {
         let error_msg = format!("Failed to bind to {}: {}", bind_addr, e);
         eprintln!("❌ {}", error_msg);
@@ -411,6 +442,9 @@ async fn async_main() -> std::io::Result<()> {
         std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
         std::io::Error::new(std::io::ErrorKind::AddrInUse, error_msg)
     })?;
+    
+    eprintln!("✅ Server bound successfully, preparing to start...");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
 
     // Log successful binding
     log::info!("✅ Server bound successfully to {}", bind_addr);

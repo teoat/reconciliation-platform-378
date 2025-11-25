@@ -53,7 +53,7 @@ export const useDataValidation = () => {
         summary,
         hasErrors: summary.errors > 0,
         isValidating: false,
-      }));
+      }) as DataValidationState);
     } catch (error) {
       setState(
         (prev) =>

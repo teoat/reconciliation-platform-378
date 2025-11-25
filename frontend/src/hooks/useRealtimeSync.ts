@@ -1,8 +1,6 @@
 // Real-time Data Synchronization Hook
 import { logger } from '@/services/logger';
 import { toRecord } from '../utils/typeHelpers';
-('use client');
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWebSocket } from './useApi';
 import type { Notification } from '@/types/ui';
@@ -121,9 +119,13 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
 
   // Handle incoming data updates
   const handleDataUpdate = useCallback(
-    (data: Record<string, unknown>) => {
-      if (data.page === page) {
-        onDataUpdate?.(data.data);
+    (...args: unknown[]) => {
+      const data = toRecord(args[0]);
+      if (data && data.page === page) {
+        const updateData = toRecord(data.data);
+        if (updateData) {
+          onDataUpdate?.(updateData);
+        }
         setSyncStatus((prev) => ({
           ...prev,
           lastSync: new Date(),
@@ -135,31 +137,38 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
   );
 
   // Handle sync responses
-  const handleSyncResponse = useCallback((data: Record<string, unknown>) => {
-    setSyncStatus((prev) => ({
-      ...prev,
-      isSyncing: false,
-      lastSync: new Date(),
-      syncCount: prev.syncCount + 1,
-    }));
+  const handleSyncResponse = useCallback((...args: unknown[]) => {
+    const data = toRecord(args[0]);
+    if (data) {
+      setSyncStatus((prev) => ({
+        ...prev,
+        isSyncing: false,
+        lastSync: new Date(),
+        syncCount: prev.syncCount + 1,
+      }));
+    }
   }, []);
 
   // Handle sync errors
   const handleSyncError = useCallback(
-    (data: Record<string, unknown>) => {
-      const error = data.message || 'Sync error';
-      setSyncStatus((prev) => ({
-        ...prev,
-        isSyncing: false,
-        errors: [...prev.errors.slice(-4), error],
-      }));
-      onSyncError?.(error);
+    (...args: unknown[]) => {
+      const data = toRecord(args[0]);
+      if (data) {
+        const error = String(data.message || 'Sync error');
+        setSyncStatus((prev) => ({
+          ...prev,
+          isSyncing: false,
+          errors: [...prev.errors.slice(-4), error],
+        }));
+        onSyncError?.(error);
+      }
     },
     [onSyncError]
   );
 
   // Handle connection status changes
-  const handleConnectionChange = useCallback((connected: boolean) => {
+  const handleConnectionChange = useCallback((...args: unknown[]) => {
+    const connected = typeof args[0] === 'boolean' ? args[0] : false;
     setSyncStatus((prev) => ({
       ...prev,
       isConnected: connected,
@@ -333,7 +342,7 @@ export const useRealtimeNotifications = (page: string) => {
     syncInterval: 5000, // 5 seconds for notifications
     onDataUpdate: (data) => {
       if (data.type === 'notification') {
-        setNotifications((prev) => [data, ...prev.slice(0, 99)]); // Keep last 100
+        setNotifications((prev) => [data as unknown as Notification, ...prev.slice(0, 99)]); // Keep last 100
         if (!data.isRead) {
           setUnreadCount((prev) => prev + 1);
         }

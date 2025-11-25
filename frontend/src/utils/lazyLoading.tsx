@@ -1,4 +1,4 @@
-import { lazy, Suspense, ComponentType } from 'react';
+import React, { lazy, Suspense, ComponentType } from 'react';
 import { logger } from '@/services/logger';
 import { toRecord } from './typeHelpers';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
@@ -10,16 +10,17 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 /**
  * Creates a lazy-loaded component with error boundary and loading fallback
  */
-export function createLazyComponent<T extends ComponentType<Record<string, unknown>>>(
+export function createLazyComponent<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
-  fallback?: React.ComponentType
+  fallback?: ComponentType
 ) {
   const LazyComponent = lazy(importFn);
 
   return function LazyWrapper(props: React.ComponentProps<T>) {
+    const FallbackComponent = fallback;
     return (
-      <Suspense fallback={fallback ? <fallback /> : <LoadingSpinner />}>
-        <LazyComponent {...props} />
+      <Suspense fallback={FallbackComponent ? <FallbackComponent /> : <LoadingSpinner />}>
+        <LazyComponent {...(props as any)} />
       </Suspense>
     );
   };
@@ -28,16 +29,16 @@ export function createLazyComponent<T extends ComponentType<Record<string, unkno
 /**
  * Creates a lazy-loaded component with custom loading component
  */
-export function createLazyComponentWithLoader<T extends ComponentType<Record<string, unknown>>>(
+export function createLazyComponentWithLoader<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
-  LoadingComponent: React.ComponentType
+  LoadingComponent: ComponentType
 ) {
   const LazyComponent = lazy(importFn);
 
   return function LazyWrapper(props: React.ComponentProps<T>) {
     return (
       <Suspense fallback={<LoadingComponent />}>
-        <LazyComponent {...props} />
+        <LazyComponent {...(props as any)} />
       </Suspense>
     );
   };
@@ -46,9 +47,9 @@ export function createLazyComponentWithLoader<T extends ComponentType<Record<str
 /**
  * Creates a lazy-loaded component with error boundary
  */
-export function createLazyComponentWithErrorBoundary<T extends ComponentType<Record<string, unknown>>>(
+export function createLazyComponentWithErrorBoundary<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
-  ErrorComponent: React.ComponentType<{ error: Error; retry: () => void }>
+  ErrorComponent: ComponentType<{ error: Error; retry: () => void }>
 ) {
   const LazyComponent = lazy(importFn);
 
@@ -56,7 +57,7 @@ export function createLazyComponentWithErrorBoundary<T extends ComponentType<Rec
     return (
       <ErrorBoundary fallback={ErrorComponent}>
         <Suspense fallback={<LoadingSpinner />}>
-          <LazyComponent {...props} />
+          <LazyComponent {...(props as any)} />
         </Suspense>
       </ErrorBoundary>
     );
@@ -74,7 +75,7 @@ interface ErrorBoundaryState {
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
-  fallback: React.ComponentType<{ error: Error; retry: () => void }>;
+  fallback: ComponentType<{ error: Error; retry: () => void }>;
 }
 
 class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
@@ -88,7 +89,11 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    logger.error('Error caught by boundary:', error, errorInfo);
+    logger.error('Error caught by boundary:', {
+      error: error.message,
+      stack: error.stack,
+      componentStack: errorInfo.componentStack,
+    });
   }
 
   retry = () => {
@@ -112,7 +117,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 /**
  * Preloads a component for faster future loading
  */
-export function preloadComponent<T extends ComponentType<Record<string, unknown>>>(
+export function preloadComponent<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>
 ) {
   return importFn();
@@ -121,14 +126,14 @@ export function preloadComponent<T extends ComponentType<Record<string, unknown>
 /**
  * Preloads multiple components
  */
-export function preloadComponents(importFns: Array<() => Promise<{ default?: React.ComponentType<unknown> }>>) {
+export function preloadComponents(importFns: Array<() => Promise<{ default?: ComponentType<unknown> }>>) {
   return Promise.all(importFns.map((fn) => fn()));
 }
 
 /**
  * Creates a preloadable component that can be preloaded on hover/focus
  */
-export function createPreloadableComponent<T extends ComponentType<Record<string, unknown>>>(
+export function createPreloadableComponent<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   preloadTrigger: 'hover' | 'focus' | 'both' = 'hover'
 ) {
@@ -151,7 +156,7 @@ export function createPreloadableComponent<T extends ComponentType<Record<string
     return (
       <div onMouseEnter={handleMouseEnter} onFocus={handleFocus}>
         <Suspense fallback={<LoadingSpinner />}>
-          <LazyComponent {...props} />
+          <LazyComponent {...(props as any)} />
         </Suspense>
       </div>
     );
@@ -165,16 +170,17 @@ export function createPreloadableComponent<T extends ComponentType<Record<string
 /**
  * Creates lazy-loaded routes for React Router
  */
-export function createLazyRoute<T extends ComponentType<Record<string, unknown>>>(
+export function createLazyRoute<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
-  fallback?: React.ComponentType
+  fallback?: ComponentType
 ) {
   const LazyComponent = lazy(importFn);
 
   return function LazyRoute(props: React.ComponentProps<T>) {
+    const FallbackComponent = fallback;
     return (
-      <Suspense fallback={fallback ? <fallback /> : <LoadingSpinner />}>
-        <LazyComponent {...props} />
+      <Suspense fallback={FallbackComponent ? <FallbackComponent /> : <LoadingSpinner />}>
+        <LazyComponent {...(props as any)} />
       </Suspense>
     );
   };
@@ -200,7 +206,7 @@ export function createRetryableImport<T>(
         return await importFn();
       } catch (error) {
         lastError = error as Error;
-        logger.warn(`Import attempt ${attempt} failed:`, error);
+        logger.warn(`Import attempt ${attempt} failed:`, toRecord(error));
 
         if (attempt < maxRetries) {
           await new Promise((resolve) => setTimeout(resolve, delay * attempt));
@@ -219,7 +225,7 @@ export function createRetryableImport<T>(
 /**
  * Measures component load time
  */
-export function measureComponentLoadTime<T extends ComponentType<Record<string, unknown>>>(
+export function measureComponentLoadTime<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   componentName: string
 ) {
@@ -231,7 +237,7 @@ export function measureComponentLoadTime<T extends ComponentType<Record<string, 
       return result;
     } catch (error) {
       const endTime = performance.now();
-      logger.error(`${componentName} failed to load after ${endTime - startTime}ms:`, error);
+      logger.error(`${componentName} failed to load after ${endTime - startTime}ms:`, toRecord(error));
       throw error;
     }
   };
@@ -240,7 +246,7 @@ export function measureComponentLoadTime<T extends ComponentType<Record<string, 
 /**
  * Creates a component with load time measurement
  */
-export function createMeasuredLazyComponent<T extends ComponentType<Record<string, unknown>>>(
+export function createMeasuredLazyComponent<T extends ComponentType<any>>(
   importFn: () => Promise<{ default: T }>,
   componentName: string
 ) {

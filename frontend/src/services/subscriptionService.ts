@@ -112,7 +112,7 @@ export class SubscriptionService {
     try {
       const response = await apiClient.get('/subscriptions/current');
       if (response.success && response.data) {
-        this.subscription = response.data;
+        this.subscription = response.data as Subscription;
         this.notifyListeners();
         return this.subscription;
       }
@@ -183,7 +183,7 @@ export class SubscriptionService {
     const response = await apiClient.get('/subscriptions/usage');
 
     if (response.success && response.data) {
-      this.usageMetrics = response.data;
+      this.usageMetrics = response.data as UsageMetrics;
       return this.usageMetrics;
     }
 

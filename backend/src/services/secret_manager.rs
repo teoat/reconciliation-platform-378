@@ -362,8 +362,9 @@ impl SecretManager {
     pub async fn start_rotation_scheduler(&self) {
         let manager = Arc::new(self.clone());
 
-        // Use spawn_blocking to ensure we're in the right runtime context
-        tokio::task::spawn(async move {
+        // Use Handle::current() to ensure we spawn on the correct runtime
+        let handle = tokio::runtime::Handle::current();
+        handle.spawn(async move {
             // Wait a bit before starting to avoid startup issues
             tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
             

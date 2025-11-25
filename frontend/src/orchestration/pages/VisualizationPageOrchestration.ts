@@ -122,7 +122,7 @@ export function registerVisualizationGuidanceHandlers(
       id: 'dashboard-guidance',
       featureId: 'dashboard',
       handler: async (context: PageContext) => {
-        if (context.chartsCount > 0 && context.dashboardsCount === 0) {
+        if ((context.chartsCount as number) > 0 && context.dashboardsCount === 0) {
           return {
             id: `dashboard-tip-${Date.now()}`,
             type: 'tip',

@@ -11,6 +11,7 @@ import type {
   FrenlyMessage,
   PageContext,
   PageEvent,
+  UserActionEvent,
   WorkflowState,
 } from './types';
 
@@ -269,10 +270,12 @@ export class PageFrenlyIntegration {
         break;
       }
 
-      case 'user-action':
+      case 'user-action': {
         // Track user action
-        await frenlyAgentService.trackInteraction(context.userId, 'user_action', event.action);
+        const userActionEvent = event as UserActionEvent;
+        await frenlyAgentService.trackInteraction(context.userId, 'user_action', userActionEvent.action);
         break;
+      }
     }
   }
 

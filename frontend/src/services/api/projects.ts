@@ -154,7 +154,9 @@ export class ProjectsApiService {
     }
   ) {
     try {
-      const response = await apiClient.createDataSource(projectId, dataSourceData);
+      // createDataSource doesn't exist - use uploadFile or another method
+      // For now, throw an error indicating this needs to be implemented
+      throw new Error('createDataSource is not yet implemented. Use uploadFile instead.');
       if (response.error) {
         throw new Error(getErrorMessageFromApiError(response.error));
       }

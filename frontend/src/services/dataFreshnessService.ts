@@ -109,9 +109,19 @@ class DataFreshnessService {
         const data = JSON.parse(stored);
         data.freshnessData.forEach((item: Record<string, unknown>) => {
           const freshness: DataFreshness = {
-            ...item,
-            lastUpdated: new Date(item.lastUpdated),
-            lastChecked: new Date(item.lastChecked),
+            id: (item.id as string) || '',
+            dataType: (item.dataType as DataFreshness['dataType']) || 'project',
+            dataId: (item.dataId as string) || '',
+            lastUpdated: new Date((item.lastUpdated as number | string) || Date.now()),
+            lastChecked: new Date((item.lastChecked as number | string) || Date.now()),
+            freshnessStatus: (item.freshnessStatus as DataFreshness['freshnessStatus']) || 'unknown',
+            ttl: (item.ttl as number) || 300000,
+            source: (item.source as DataFreshness['source']) || 'local',
+            metadata: (item.metadata as DataFreshness['metadata']) || {
+              version: 1,
+              checksum: '',
+              userId: '',
+            },
           };
           this.freshnessData.set(freshness.id, freshness);
         });

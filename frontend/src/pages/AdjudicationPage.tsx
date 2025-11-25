@@ -8,7 +8,7 @@ import { useData } from '../components/DataProvider';
 import { ApiService } from '../services/ApiService';
 import { useToast } from '../hooks/useToast';
 import { logger } from '../services/logger';
-import type { ReconciliationRecord } from '../types';
+import type { ReconciliationRecord, ReconciliationStatus } from '../types';
 
 // Helper component for progress bar with proper ARIA attributes
 const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, title }) => {
@@ -286,20 +286,20 @@ const AdjudicationPageContent: React.FC = () => {
       getAdjudicationPageContext(
         currentProject?.id,
         records.length,
-        records.filter((r) => r.status === 'approved' || r.status === 'resolved').length,
+        records.filter((r) => (r.status as string) === 'approved' || (r.status as string) === 'resolved' || r.status === 'reviewed').length,
         records.filter((r) => r.status === 'pending').length,
         currentProject?.name
       ),
     getOnboardingSteps: () =>
       getAdjudicationOnboardingSteps(
         records.length > 0,
-        records.filter((r) => r.status === 'approved' || r.status === 'resolved').length > 0
+        records.filter((r) => (r.status as string) === 'approved' || (r.status as string) === 'resolved' || r.status === 'reviewed').length > 0
       ),
     getWorkflowState: () =>
       getAdjudicationWorkflowState(
         records.length,
-        records.filter((r) => r.status === 'approved' || r.status === 'resolved').length,
-        records.filter((r) => r.status === 'approved').length
+        records.filter((r) => (r.status as string) === 'approved' || (r.status as string) === 'resolved' || r.status === 'reviewed').length,
+        records.filter((r) => (r.status as string) === 'approved' || r.status === 'reviewed').length
       ),
     registerGuidanceHandlers: () => registerAdjudicationGuidanceHandlers(),
     getGuidanceContent: (topic) => getAdjudicationGuidanceContent(topic),
@@ -318,7 +318,7 @@ const AdjudicationPageContent: React.FC = () => {
   useEffect(() => {
     updatePageContext({
       matchesCount: records.length,
-      resolvedCount: records.filter((r) => r.status === 'approved' || r.status === 'resolved')
+      resolvedCount: records.filter((r) => (r.status as string) === 'approved' || (r.status as string) === 'resolved' || r.status === 'reviewed')
         .length,
       pendingCount: records.filter((r) => r.status === 'pending').length,
     });
@@ -335,7 +335,33 @@ const AdjudicationPageContent: React.FC = () => {
         page: 1,
         per_page: 100,
       });
-      setRecords(response.records || []);
+      // Convert ReconciliationResultDetail[] to ReconciliationRecord[]
+      const records = (response.records || []).map((detail) => ({
+        id: detail.id,
+        projectId: detail.job_id,
+        sourceId: detail.source_a_id,
+        targetId: detail.source_b_id,
+        sourceSystem: '',
+        targetSystem: '',
+        amount: 0,
+        currency: '',
+        transactionDate: detail.created_at,
+        description: '',
+        status: 'pending' as ReconciliationStatus,
+        confidence: detail.confidence_score,
+        confidence_score: detail.confidence_score,
+        discrepancies: [],
+        metadata: {
+          source: {},
+          target: {},
+          computed: {},
+          tags: [],
+          notes: [],
+        },
+        createdAt: detail.created_at,
+        updatedAt: detail.created_at,
+      }));
+      setRecords(records);
       toast.success('Records refreshed successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to refresh records';
@@ -406,7 +432,7 @@ const AdjudicationPageContent: React.FC = () => {
     }
     try {
       await ApiService.approveMatch(currentProject.id, recordId);
-      setRecords((prev) => prev.map((r) => (r.id === recordId ? { ...r, status: 'approved' } : r)));
+      setRecords((prev) => prev.map((r) => (r.id === recordId ? { ...r, status: 'reviewed' as ReconciliationStatus } : r)));
       toast.success('Record approved successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to approve record';
@@ -426,7 +452,7 @@ const AdjudicationPageContent: React.FC = () => {
     }
     try {
       await ApiService.rejectMatch(currentProject.id, recordId);
-      setRecords((prev) => prev.map((r) => (r.id === recordId ? { ...r, status: 'rejected' } : r)));
+      setRecords((prev) => prev.map((r) => (r.id === recordId ? { ...r, status: 'unmatched' as ReconciliationStatus } : r)));
       toast.success('Record rejected successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to reject record';
@@ -464,13 +490,13 @@ const AdjudicationPageContent: React.FC = () => {
     },
     {
       title: 'Approved',
-      value: records.filter((r) => r.status === 'approved').length,
+      value: records.filter((r) => (r.status as string) === 'approved' || r.status === 'reviewed').length,
       icon: CheckCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       color: 'bg-green-100 text-green-600',
     },
     {
       title: 'Rejected',
-      value: records.filter((r) => r.status === 'rejected').length,
+      value: records.filter((r) => (r.status as string) === 'rejected' || r.status === 'unmatched').length,
       icon: AlertCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       color: 'bg-red-100 text-red-600',
     },
@@ -560,13 +586,15 @@ const AdjudicationPageContent: React.FC = () => {
                     ${record.amount?.toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${record.discrepancyAmount?.toLocaleString()}
+                    ${(record.discrepancyAmount ?? 0).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <StatusBadge status={record.status}>{record.status}</StatusBadge>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <StatusBadge status={record.priority}>{record.priority}</StatusBadge>
+                    <StatusBadge status={record.priority || 'medium'}>
+                      {record.priority || 'medium'}
+                    </StatusBadge>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex items-center space-x-2">
@@ -618,13 +646,13 @@ const AdjudicationPageContent: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Source System</p>
                 <p className="text-sm text-gray-900">
-                  {selectedRecord.source_system || selectedRecord.sourceSystem || 'N/A'}
+                  {selectedRecord.sourceSystem || 'N/A'}
                 </p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Target System</p>
                 <p className="text-sm text-gray-900">
-                  {selectedRecord.target_system || selectedRecord.targetSystem || 'N/A'}
+                  {selectedRecord.targetSystem || 'N/A'}
                 </p>
               </div>
               <div>
@@ -647,13 +675,15 @@ const AdjudicationPageContent: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Status</p>
                 <p className="text-sm text-gray-900">
-                  <StatusBadge status={selectedRecord.status}>{selectedRecord.status}</StatusBadge>
+                  <StatusBadge status={selectedRecord.status || 'pending'}>
+                    {selectedRecord.status || 'pending'}
+                  </StatusBadge>
                 </p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Priority</p>
                 <p className="text-sm text-gray-900">
-                  <StatusBadge status={selectedRecord.priority}>
+                  <StatusBadge status={selectedRecord.priority || 'medium'}>
                     {selectedRecord.priority || 'medium'}
                   </StatusBadge>
                 </p>
@@ -662,7 +692,7 @@ const AdjudicationPageContent: React.FC = () => {
                 <div>
                   <p className="text-sm font-medium text-gray-600">Confidence Score</p>
                   <p className="text-sm text-gray-900">
-                    {((selectedRecord.confidence_score || selectedRecord.confidence) * 100).toFixed(
+                    {((selectedRecord.confidence_score ?? selectedRecord.confidence ?? 0) * 100).toFixed(
                       1
                     )}
                     %

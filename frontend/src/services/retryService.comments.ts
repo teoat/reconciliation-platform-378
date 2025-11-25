@@ -17,6 +17,8 @@
  * 3. Add jitter (random 0.5-1.0 multiplier) to spread out retries
  * 4. Floor to integer milliseconds for setTimeout
  */
+import type { RetryConfig, CircuitBreakerState, CircuitBreakerConfig } from './retryService';
+
 function calculateDelayWithComments(attempt: number, config: RetryConfig): number {
   // Step 1: Calculate exponential backoff
   // Formula: delay = baseDelay * (multiplier ^ (attempt - 1))

@@ -65,6 +65,18 @@ This index provides a quick reference to all rule files in `.cursor/rules/`. Eac
 
 ### Workflow Rules
 
+#### [agent_coordination.mdc](mdc:.cursor/rules/agent_coordination.mdc)
+- **Purpose**: Requirements for IDE agents to use agent-coordination MCP server
+- **Applies To**: All IDE agents working on the codebase
+- **Key Topics**:
+  - Mandatory agent registration
+  - Task management (claim, release, progress)
+  - File locking (lock, unlock, check)
+  - Conflict detection
+  - Agent status updates
+  - Coordination workflow patterns
+- **Required**: All agents MUST conform to agent-coordination MCP server
+
 #### [git_workflow.mdc](mdc:.cursor/rules/git_workflow.mdc)
 - **Purpose**: Git workflow and branching conventions
 - **Applies To**: All git operations
@@ -164,6 +176,7 @@ This index provides a quick reference to all rule files in `.cursor/rules/`. Eac
 | Writing tests | [testing.mdc](mdc:.cursor/rules/testing.mdc) |
 | Performance optimization | [performance.mdc](mdc:.cursor/rules/performance.mdc) |
 | Writing documentation | [documentation.mdc](mdc:.cursor/rules/documentation.mdc) |
+| Multi-agent coordination | [agent_coordination.mdc](mdc:.cursor/rules/agent_coordination.mdc) |
 
 ### Cross-References
 
@@ -211,5 +224,5 @@ This index provides a quick reference to all rule files in `.cursor/rules/`. Eac
 ---
 
 **Last Updated**: January 2025  
-**Total Rule Files**: 13 (.mdc files) + 2 documentation files (RULES_INDEX.md, QUARTERLY_REVIEW.md)  
-**Total Lines**: ~2,104 lines
+**Total Rule Files**: 14 (.mdc files) + 2 documentation files (RULES_INDEX.md, QUARTERLY_REVIEW.md)  
+**Total Lines**: ~2,300+ lines

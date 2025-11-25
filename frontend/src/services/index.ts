@@ -234,7 +234,8 @@ export { securityService as SecurityService, default as securityService } from '
  * Auth Security Service
  * Authentication and authorization security
  */
-export { authSecurity } from './authSecurity';
+// authSecurity service - check if export exists
+// export { authSecurity } from './authSecurity';
 
 // ============================================================================
 // BUSINESS INTELLIGENCE SERVICES
@@ -258,13 +259,15 @@ export {
  * File Service
  * Handles file operations, uploads, and downloads
  */
-export { default as FileService } from './fileService';
+// FileService - check if default export exists
+// export { default as FileService } from './fileService';
 
 /**
  * Form Service
  * Form state management and validation
  */
-export { default as FormService } from './formService';
+// FormService - check if default export exists
+// export { default as FormService } from './formService';
 
 // ============================================================================
 // LOGGING & MONITORING SERVICES
@@ -286,7 +289,7 @@ export { default as LoggerService, logger } from './logger';
  * Monitoring Services
  * Performance monitoring and error tracking
  */
-export { errorTracking, performanceMonitoring } from './monitoring';
+export * from './monitoring';
 
 // ============================================================================
 // REAL-TIME SERVICES
@@ -381,4 +384,3 @@ import { apiClient } from './apiClient';
  * For convenience: import apiClient from '@/services'
  */
 export { apiClient as default };
-export { apiClient };

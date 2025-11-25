@@ -129,7 +129,7 @@ export function registerAdjudicationGuidanceHandlers(): GuidanceHandler[] {
       id: 'review-guidance',
       featureId: 'match-review',
       handler: async (context: PageContext) => {
-        if (context.pendingCount && context.pendingCount > 0) {
+        if (context.pendingCount && (context.pendingCount as number) > 0) {
           return {
             id: `review-tip-${Date.now()}`,
             type: 'tip',
@@ -148,7 +148,7 @@ export function registerAdjudicationGuidanceHandlers(): GuidanceHandler[] {
       id: 'resolution-guidance',
       featureId: 'discrepancy-resolution',
       handler: async (context: PageContext) => {
-        if (context.matchesCount && context.matchesCount > 0 && context.resolvedCount === 0) {
+        if (context.matchesCount && (context.matchesCount as number) > 0 && context.resolvedCount === 0) {
           return {
             id: `resolution-tip-${Date.now()}`,
             type: 'tip',
@@ -168,7 +168,7 @@ export function registerAdjudicationGuidanceHandlers(): GuidanceHandler[] {
       id: 'approval-guidance',
       featureId: 'approval',
       handler: async (context: PageContext) => {
-        if (context.resolvedCount && context.resolvedCount > 0) {
+        if (context.resolvedCount && (context.resolvedCount as number) > 0) {
           return {
             id: `approval-tip-${Date.now()}`,
             type: 'tip',
