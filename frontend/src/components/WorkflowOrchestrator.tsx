@@ -326,7 +326,7 @@ const WorkflowOrchestrator = ({
           <div
             className="w-24 bg-gray-200 rounded-full h-2"
             role="progressbar"
-            aria-valuenow={workflowProgress.percentage}
+            aria-valuenow={Math.round(workflowProgress.percentage)}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label={`Workflow progress: ${workflowProgress.percentage}%`}
@@ -345,12 +345,13 @@ const WorkflowOrchestrator = ({
       {/* Workflow Stages */}
       <div className="space-y-4" role="list">
         {workflowStages.map((stage, index) => (
-          <WorkflowStageComponent
-            key={stage.id}
-            stage={stage}
-            validationResult={validationResults[stage.id]}
-            isLast={index === workflowStages.length - 1}
-          />
+          <div key={stage.id} role="listitem">
+            <WorkflowStageComponent
+              stage={stage}
+              validationResult={validationResults[stage.id]}
+              isLast={index === workflowStages.length - 1}
+            />
+          </div>
         ))}
       </div>
 
