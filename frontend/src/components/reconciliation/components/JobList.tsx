@@ -80,9 +80,9 @@ const JobItem: React.FC<JobItemProps> = ({
               <div
                 className="w-full bg-gray-200 rounded-full h-2"
                 role="progressbar"
-                aria-valuenow={progressValue}
-                aria-valuemin={0}
-                aria-valuemax={100}
+                aria-valuenow={Number(progressValue)}
+                aria-valuemin={Number(0)}
+                aria-valuemax={Number(100)}
                 aria-label={`Job ${job.name} is ${progressValue} percent complete`}
               >
                 <div
@@ -207,9 +207,9 @@ export const JobList: React.FC<JobListProps> = ({
                     <div
                       className="w-full bg-gray-200 rounded-full h-2"
                       role="progressbar"
-                      aria-valuenow={progressValue}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
+                      aria-valuenow={Number(progressValue)}
+                      aria-valuemin={Number(0)}
+                      aria-valuemax={Number(100)}
                       aria-label={`Job ${job.name} is ${progressValue} percent complete`}
                     >
                       <div
@@ -226,7 +226,6 @@ export const JobList: React.FC<JobListProps> = ({
                 )}
               </div>
 
-<<<<<<< Updated upstream
               <JobActions
                 job={job}
                 loading={loading}
@@ -235,45 +234,6 @@ export const JobList: React.FC<JobListProps> = ({
                 onViewResults={onViewResults}
                 onDeleteJob={onDeleteJob}
               />
-=======
-              {/* Progress Bar */}
-              {job.status === 'running' && job.total_records && (
-                <div className="mt-3">
-                  <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
-                    <span>Progress</span>
-                    <span>
-                      {job.processed_records} / {job.total_records}
-                    </span>
-                  </div>
-                  <div
-                    className="w-full bg-gray-200 rounded-full h-2"
-                    role="progressbar"
-                    aria-valuenow={
-                      job.total_records && job.total_records > 0
-                        ? Math.round((job.processed_records / job.total_records) * 100)
-                        : 0
-                    }
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={`Job ${job.name} is ${
-                      job.total_records
-                        ? Math.round((job.processed_records / job.total_records) * 100)
-                        : 0
-                    } percent complete`}
-                  >
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{
-                        width: job.total_records
-                          ? `${(job.processed_records / job.total_records) * 100}%`
-                          : '0%',
-                      }}
-                      aria-hidden="true"
-                    />
-                  </div>
-                </div>
-              )}
->>>>>>> Stashed changes
             </div>
           </div>
         );
