@@ -254,7 +254,9 @@ export function usePerformanceMeasure(name: string, enabled = true) {
 /**
  * Component render performance tracker
  */
-export function useRenderPerformance(componentName: string) {
+// NOTE: useRenderPerformance is also exported from performanceMonitoring.tsx
+// This version is kept for backward compatibility but performanceMonitoring version is preferred
+export function useRenderPerformanceOptimized(componentName: string) {
   const renderCountRef = useRef(0);
   const lastRenderTimeRef = useRef<number>();
 

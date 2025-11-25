@@ -10,55 +10,7 @@ import type { User } from '@/types/backend-aligned';
 export { sanitizeHtml as sanitizeHTML, escapeHtml as escapeHTML, sanitizeInput } from './common/sanitization';
 
 // Re-export validation functions from common module
-export { validateEmail as isValidEmail } from './common/validation';
-
-/**
- * Validates password strength
- */
-export function validatePasswordStrength(password: string): {
-  isValid: boolean;
-  score: number;
-  feedback: string[];
-} {
-  const feedback: string[] = [];
-  let score = 0;
-
-  if (password.length < 8) {
-    feedback.push('Password must be at least 8 characters long');
-  } else {
-    score += 1;
-  }
-
-  if (!/[a-z]/.test(password)) {
-    feedback.push('Password must contain at least one lowercase letter');
-  } else {
-    score += 1;
-  }
-
-  if (!/[A-Z]/.test(password)) {
-    feedback.push('Password must contain at least one uppercase letter');
-  } else {
-    score += 1;
-  }
-
-  if (!/\d/.test(password)) {
-    feedback.push('Password must contain at least one number');
-  } else {
-    score += 1;
-  }
-
-  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
-    feedback.push('Password must contain at least one special character');
-  } else {
-    score += 1;
-  }
-
-  return {
-    isValid: score >= 4,
-    score,
-    feedback,
-  };
-}
+export { validateEmail as isValidEmail, validatePasswordStrength } from './common/validation';
 
 /**
  * Generates a secure random token

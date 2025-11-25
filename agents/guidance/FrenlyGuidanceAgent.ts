@@ -28,6 +28,8 @@ let helpContentService: any = null;
 let onboardingService: any = null;
 let aiService: any = null;
 let nluService: any = null;
+let mcpIntegrationService: any = null;
+let mcpIntegrationService: any = null;
 
 // Lazy load services to avoid circular dependencies
 const getHelpContentService = async () => {
@@ -60,6 +62,22 @@ const getNLUService = async () => {
     nluService = module.nluService;
   }
   return nluService;
+};
+
+const getMCPIntegrationService = async () => {
+  if (!mcpIntegrationService) {
+    const module = await import('../../frontend/src/services/mcpIntegrationService');
+    mcpIntegrationService = module.mcpIntegrationService;
+  }
+  return mcpIntegrationService;
+};
+
+const getMCPIntegrationService = async () => {
+  if (!mcpIntegrationService) {
+    const module = await import('../../frontend/src/services/mcpIntegrationService');
+    mcpIntegrationService = module.mcpIntegrationService;
+  }
+  return mcpIntegrationService;
 };
 
 export interface MessageContext {
@@ -129,6 +147,12 @@ export class FrenlyGuidanceAgent implements MetaAgent {
   private readonly interactionMaxHistory = 100; // Max interactions per user
   private cleanupTimer: NodeJS.Timeout | null = null;
   private pendingRequests: Map<string, Promise<GeneratedMessage>> = new Map(); // Request deduplication
+  private mcpMonitoringTimer: NodeJS.Timeout | null = null;
+  private lastMCPCheck: Date | null = null;
+  private readonly mcpCheckInterval: number = parseInt(
+    process.env.FRENLY_MCP_CHECK_INTERVAL || '300000',
+    10
+  ); // Default: 5 minutes, configurable via env
 
   /**
    * Initialize the agent
@@ -146,6 +170,9 @@ export class FrenlyGuidanceAgent implements MetaAgent {
 
     // Start periodic cleanup
     this.startCleanupTimer();
+
+    // Start periodic MCP monitoring
+    this.startMCPMonitoring();
 
     logger.info('FrenlyGuidanceAgent initialized');
   }
@@ -177,6 +204,17 @@ export class FrenlyGuidanceAgent implements MetaAgent {
    */
   async stop(): Promise<void> {
     this.status = 'stopped';
+    
+    // Stop timers
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = null;
+    }
+    if (this.mcpMonitoringTimer) {
+      clearInterval(this.mcpMonitoringTimer);
+      this.mcpMonitoringTimer = null;
+    }
+    
     logger.info('FrenlyGuidanceAgent stopped');
 
     await agentBus.emit({
@@ -497,7 +535,7 @@ export class FrenlyGuidanceAgent implements MetaAgent {
   }
 
   /**
-   * Generate message content with integrated help, onboarding, and AI
+   * Generate message content with integrated help, onboarding, AI, and MCP insights
    */
   private async generateContent(
     type: GeneratedMessage['type'],
@@ -506,14 +544,36 @@ export class FrenlyGuidanceAgent implements MetaAgent {
   ): Promise<string> {
     const style = context.preferences?.communicationStyle || 'conversational';
 
+    // Try to get MCP insights for system-aware messages
+    let mcpInsight: string | null = null;
+    try {
+      const mcpService = await getMCPIntegrationService();
+      if (mcpService?.isMCPAvailable()) {
+        // Get performance summary for proactive insights
+        const summary = await mcpService.getPerformanceSummary();
+        
+        // Generate insight message if there are recommendations
+        if (summary.recommendations.length > 0 && (type === 'warning' || type === 'tip')) {
+          mcpInsight = await mcpService.generateInsightMessage();
+        }
+      }
+    } catch (error) {
+      logger.debug('MCP integration failed, continuing without insights:', { error: error instanceof Error ? error.message : String(error) });
+    }
+
     // Try AI generation first (if available)
     try {
-      const aiContent = await this.generateWithAI(context, type, style);
+      const aiContent = await this.generateWithAI(context, type, style, mcpInsight);
       if (aiContent) {
         return aiContent;
       }
     } catch (error) {
       logger.debug('AI generation failed, using fallback:', { error: error instanceof Error ? error.message : String(error) });
+    }
+
+    // Include MCP insight in warning/tip messages if available
+    if (mcpInsight && (type === 'warning' || type === 'tip')) {
+      return mcpInsight;
     }
 
     // Fallback to rule-based generation
@@ -539,12 +599,13 @@ export class FrenlyGuidanceAgent implements MetaAgent {
   }
 
   /**
-   * Generate message using AI model
+   * Generate message using AI model with optional MCP insights
    */
   private async generateWithAI(
     context: MessageContext,
     messageType: GeneratedMessage['type'],
-    style: string
+    style: string,
+    mcpInsight?: string | null
   ): Promise<string> {
     try {
       const ai = await getAIService();
@@ -557,13 +618,13 @@ export class FrenlyGuidanceAgent implements MetaAgent {
 Generate a ${messageType} message for a user on the ${context.page || 'dashboard'} page.
 User has completed ${context.progress?.completedSteps.length || 0} out of ${context.progress?.totalSteps || 0} steps.
 Communication style: ${style}.
-Be helpful, friendly, and concise.`;
+Be helpful, friendly, and concise.${mcpInsight ? `\nSystem insight available: ${mcpInsight}` : ''}`;
 
       const userPrompt = `Generate a ${messageType} message that:
 - Matches the ${style} communication style
 - Relates to the current page: ${context.page}
 - Acknowledges progress if applicable
-- Provides actionable guidance`;
+- Provides actionable guidance${mcpInsight ? `\n- Incorporates system insight: ${mcpInsight}` : ''}`;
 
       const response = await ai.generateText({
         system: systemPrompt,

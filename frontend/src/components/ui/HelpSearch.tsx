@@ -118,7 +118,6 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search for help articles..."
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoFocus={false}
             />
             {query && (
               <button

@@ -38,6 +38,19 @@ export interface VirtualScrollResult {
   endIndex: number
 }
 
+// Backward compatibility: Simple interface for basic use cases
+export interface VirtualScrollOptions {
+  itemHeight: number;
+  containerHeight: number;
+  overscan?: number;
+}
+
+export interface VirtualItem {
+  index: number;
+  top: number;
+  height: number;
+}
+
 /**
  * Hook for virtual scrolling
  */

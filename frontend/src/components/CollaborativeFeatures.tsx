@@ -982,6 +982,15 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                       : 'border-primary-200 bg-primary-50'
                   }`}
                   onClick={() => handleMarkNotificationRead(notification.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      handleMarkNotificationRead(notification.id);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Mark notification ${notification.id} as read`}
                 >
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${

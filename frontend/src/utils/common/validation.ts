@@ -176,6 +176,67 @@ export function getPasswordFeedback(password: string): {
 }
 
 /**
+ * Validates password strength with detailed feedback (score and messages).
+ * This is a more detailed version that returns numeric score and feedback messages.
+ * For simple strength indicator, use `getPasswordStrength()` instead.
+ *
+ * @param password - Password to validate
+ * @returns Object with isValid flag, numeric score (0-5), and feedback messages
+ *
+ * @example
+ * ```typescript
+ * const result = validatePasswordStrength('MyP@ssw0rd');
+ * // Returns: { isValid: true, score: 5, feedback: [] }
+ * const result2 = validatePasswordStrength('weak');
+ * // Returns: { isValid: false, score: 1, feedback: ['Password must be at least 8 characters long', ...] }
+ * ```
+ */
+export function validatePasswordStrength(password: string): {
+  isValid: boolean;
+  score: number;
+  feedback: string[];
+} {
+  const feedback: string[] = [];
+  let score = 0;
+
+  if (password.length < 8) {
+    feedback.push('Password must be at least 8 characters long');
+  } else {
+    score += 1;
+  }
+
+  if (!/[a-z]/.test(password)) {
+    feedback.push('Password must contain at least one lowercase letter');
+  } else {
+    score += 1;
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    feedback.push('Password must contain at least one uppercase letter');
+  } else {
+    score += 1;
+  }
+
+  if (!/\d/.test(password)) {
+    feedback.push('Password must contain at least one number');
+  } else {
+    score += 1;
+  }
+
+  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+    feedback.push('Password must contain at least one special character');
+  } else {
+    score += 1;
+  }
+
+  return {
+    isValid: score >= 4,
+    score,
+    feedback,
+  };
+}
+
+/**
  * File validation options
  */
 export interface FileValidationOptions {

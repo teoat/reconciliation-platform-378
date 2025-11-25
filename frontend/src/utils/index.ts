@@ -3,12 +3,9 @@
 // Organized by domain for better maintainability
 // ============================================================================
 //
-// ⚠️ NOTE: Some modules have overlapping exports (e.g., performanceConfig, debounce, throttle).
-// If you encounter import conflicts, import directly from the specific module:
-//   import { debounce } from '@/utils/performance';
-//   import { debounce } from '@/utils/performanceOptimizations';
-//
-// TODO: Resolve duplicate exports in future refactoring (TODO-153: Consolidate duplicate code)
+// ✅ Consolidated: debounce, throttle, memoize are now in ./common/performance (SSOT)
+// ⚠️ NOTE: Some modules may still have overlapping exports (e.g., performanceConfig).
+// If you encounter import conflicts, import directly from the specific module.
 //
 
 // ============================================================================
@@ -16,16 +13,37 @@
 // ============================================================================
 // Common performance utilities (debounce, throttle, memoize) - single source of truth
 export { debounce, throttle, memoize } from './common/performance';
-export * from './performance';
+// Performance exports - using named exports to avoid conflicts
+export {
+  usePerformanceMonitoring as usePerformanceMonitoringBasic,
+  basicPerformanceConfig,
+} from './performance';
 export * from './performanceConfig';
-export * from './performanceMonitoring';
-export * from './performanceOptimizations';
+export {
+  usePerformanceMonitoring,
+  useRenderPerformance,
+  useMemoryMonitoring,
+  useNetworkMonitoring,
+  useBundleMonitoring,
+  withPerformanceMonitoring,
+} from './performanceMonitoring';
+export {
+  useRenderPerformanceOptimized,
+  useDeepMemo,
+  useDeepCallback,
+  useConditionalMemo,
+  useDebounce as useAdvancedDebounce,
+  useThrottle as useAdvancedThrottle,
+} from './performanceOptimizations';
 export * from './bundleOptimization';
 export * from './codeSplitting';
 export * from './advancedCodeSplitting';
 export * from './lazyLoading';
 export * from './routeSplitting';
 export * from './dynamicImports';
+// Virtual scrolling - using .tsx version (more features)
+// NOTE: Both .ts and .tsx exist - .tsx has more features (containerRef, scrollToIndex, etc.)
+// Components import directly, so this export is for convenience
 export * from './virtualScrolling';
 export * from './caching';
 export * from './memoryOptimization';
@@ -64,21 +82,22 @@ export {
   sanitizeInput,
   escapeHtml,
 } from './common/sanitization';
-// Common validation utilities - single source of truth
-export {
-  validateEmail,
-  emailSchema,
-  passwordSchema,
-  validatePassword,
-  getPasswordStrength,
-  getPasswordFeedback,
-  validateFile,
-  validateFileType,
-  validateFileSize,
-  nameSchema,
-  textSchema,
-  validateFormInput,
-} from './common/validation';
+  // Common validation utilities - single source of truth
+  export {
+    validateEmail,
+    emailSchema,
+    passwordSchema,
+    validatePassword,
+    getPasswordStrength,
+    getPasswordFeedback,
+    validatePasswordStrength,
+    validateFile,
+    validateFileType,
+    validateFileSize,
+    nameSchema,
+    textSchema,
+    validateFormInput,
+  } from './common/validation';
 // Common error handling utilities - single source of truth
 export {
   getErrorMessage,

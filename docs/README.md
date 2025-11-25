@@ -86,11 +86,13 @@
 
 ## 📂 Archive
 
-Historical documentation and completion summaries:
-- **[Status Reports](./archive/status_reports/)** - Historical status reports
-- **[Deployment Scripts](./archive/deployment/scripts/)** - Archived deployment docs
-- **[Diagnostics](./archive/diagnostics/)** - Diagnostic reports
-- **[Consolidated](./archive/consolidated/)** - Consolidated historical docs
+Historical documentation organized by date and category:
+- **[Completion Reports](./archive/completion-reports/)** - Archived completion summaries (organized by date)
+- **[Diagnostic Reports](./archive/diagnostics/)** - Archived diagnostic reports (organized by date)
+- **[Status Reports](./archive/status-reports/)** - Archived status reports (organized by date)
+- **[Legacy Archives](./archive/)** - Other historical documentation
+
+**Note**: All completion, status, and diagnostic reports older than 30 days are archived. See [Documentation Consolidation](./DOCUMENTATION_CONSOLIDATION_COMPLETE.md) for details.
 
 ---
 
@@ -174,12 +176,13 @@ Brief description
 
 ## 📊 Documentation Statistics
 
-- **Total Active Docs**: ~35 organized files
-- **Archived Docs**: ~30+ historical files
+- **Total Active Docs**: ~35-40 essential files
+- **Archived Docs**: ~160+ files (organized by date/category)
 - **Categories**: 10 main categories
-- **Last Consolidation**: January 2025
-- **Consolidation Status**: See [Documentation Metadata](./archive/DOCUMENTATION_METADATA.md)
+- **Last Consolidation**: January 2025 (Aggressive)
+- **Consolidation Status**: ✅ Complete - See [Aggressive Consolidation](./AGGRESSIVE_CONSOLIDATION_COMPLETE.md)
 - **Master Documents**: 3 consolidated status documents
+- **Reduction**: ~75% reduction in active documentation
 
 ---
 

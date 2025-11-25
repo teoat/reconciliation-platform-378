@@ -1,21 +1,24 @@
 /**
- * Help Search Component
+ * Help Search Inline Component
  * 
- * Provides search functionality for help content using HelpContentService
+ * Provides inline search functionality for help content using HelpContentService
+ * 
+ * @deprecated This component conflicts with ui/HelpSearch. Consider using ui/HelpSearch instead.
+ * This component will be removed in a future version.
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { Search, X, BookOpen, Clock } from 'lucide-react';
 import { helpContentService, HelpSearchResult } from '../../services/helpContentService';
 
-export interface HelpSearchProps {
+export interface HelpSearchInlineProps {
   onSelectContent?: (contentId: string) => void;
   placeholder?: string;
   className?: string;
   autoFocus?: boolean;
 }
 
-export const HelpSearch: React.FC<HelpSearchProps> = ({
+export const HelpSearchInline: React.FC<HelpSearchInlineProps> = ({
   onSelectContent,
   placeholder = 'Search help articles...',
   className = '',
@@ -115,7 +118,6 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
             }
           }}
           placeholder={placeholder}
-          autoFocus={false}
           className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           aria-label="Search help articles"
           aria-expanded={showResults}

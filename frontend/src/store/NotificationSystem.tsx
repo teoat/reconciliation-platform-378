@@ -201,7 +201,18 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({ className = '' 
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setIsOpen(false)}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') {
+                setIsOpen(false);
+              }
+            }}
+            role="button"
+            tabIndex={0}
+            aria-label="Close notification dropdown"
+          />
 
           {/* Dropdown */}
           <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden">

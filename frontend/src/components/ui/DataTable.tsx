@@ -119,6 +119,7 @@ const DataTableComponent = <T extends Record<string, unknown>>({
         itemHeight: virtualRowHeight,
         containerHeight: virtualContainerHeight,
         overscan: 8,
+        threshold: 0.1,
       })
     : null;
 

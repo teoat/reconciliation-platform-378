@@ -161,6 +161,15 @@ export const NotificationsPanel: React.FC = () => {
                     !notification.read ? 'bg-blue-50' : ''
                   }`}
                   onClick={() => markAsRead(notification.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      markAsRead(notification.id);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Mark notification ${notification.id} as read`}
                 >
                   <div className="flex items-start space-x-3">
                     {getNotificationIcon(notification.level)}
