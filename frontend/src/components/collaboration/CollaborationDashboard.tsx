@@ -121,29 +121,39 @@ const subId = subscribe(`collaboration:session:${sessionId}`, (data: {
             setActiveUsers((prev) => prev.filter((u) => u.id !== data.userId));
           } else if (data.type === 'activity') {
             if (data.activity) {
-              const activity = data.activity as unknown as CollaborationActivity;
-              setActivities((prev) => [{
-                id: activity.id,
-                userId: activity.userId,
-                userName: (activity as any).userName || 'Unknown',
-                action: ((activity as any).action as 'viewed' | 'edited' | 'commented' | 'shared' | 'joined' | 'left') || 'viewed',
-                target: (activity as any).target || '',
-                targetType: ((activity as any).targetType as 'project' | 'file' | 'reconciliation' | 'comment') || 'project',
-                timestamp: new Date(activity.timestamp)
-              }, ...prev].slice(0, 100));
+              const activityData = data.activity as Record<string, unknown>;
+              const activity: CollaborationActivity = {
+                id: String(activityData.id || ''),
+                userId: String(activityData.userId || ''),
+                userName: String(activityData.userName || 'Unknown'),
+                action: (['viewed', 'edited', 'commented', 'shared', 'joined', 'left'].includes(String(activityData.action)) 
+                  ? String(activityData.action) 
+                  : 'viewed') as CollaborationActivity['action'],
+                target: String(activityData.target || ''),
+                targetType: (['project', 'file', 'reconciliation', 'comment'].includes(String(activityData.targetType))
+                  ? String(activityData.targetType)
+                  : 'project') as CollaborationActivity['targetType'],
+                timestamp: new Date(String(activityData.timestamp || Date.now())),
+                metadata: activityData.details as Record<string, unknown> | undefined,
+              };
+              setActivities((prev) => [activity, ...prev].slice(0, 100));
             }
           } else if (data.type === 'comment') {
             if (data.comment) {
-              const comment = data.comment as unknown as CollaborationComment;
-              setComments((prev) => [{
-                id: comment.id,
-                userId: comment.userId,
-                userName: (comment as any).userName || 'Unknown',
-                content: (comment as any).message || '',
-                targetId: (comment as any).targetId || '',
-                targetType: ((comment as any).targetType as 'project' | 'file' | 'reconciliation') || 'project',
-                timestamp: new Date(comment.timestamp)
-              }, ...prev]);
+              const commentData = data.comment as Record<string, unknown>;
+              const comment: CollaborationComment = {
+                id: String(commentData.id || ''),
+                userId: String(commentData.userId || ''),
+                userName: String(commentData.userName || 'Unknown'),
+                content: String(commentData.message || ''),
+                targetId: String(commentData.targetId || ''),
+                targetType: (['project', 'file', 'reconciliation'].includes(String(commentData.targetType))
+                  ? String(commentData.targetType)
+                  : 'project') as CollaborationComment['targetType'],
+                timestamp: new Date(String(commentData.timestamp || Date.now())),
+                resolved: commentData.resolved as boolean | undefined,
+              };
+              setComments((prev) => [comment, ...prev]);
             }
           }
         );

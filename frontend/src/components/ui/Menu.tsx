@@ -80,15 +80,9 @@ export const Menu: React.FC<MenuProps> = memo(
       end: 'right-0',
     };
 
-const alignClasses = {
-    start: 'left-0',
-    center: 'left-1/2 transform -translate-x-1/2',
-    end: 'right-0',
-  }
-
   return (
     <div className="relative inline-block">
-      {React.cloneElement(trigger as React.ReactElement<any>, {
+      {React.cloneElement(trigger as React.ReactElement<React.HTMLAttributes<HTMLElement>>, {
         ref: triggerRef,
         id: triggerId,
         'aria-haspopup': 'menu',
@@ -101,7 +95,7 @@ const alignClasses = {
             setIsOpen(!isOpen)
           }
         },
-      })}
+      } as React.HTMLAttributes<HTMLElement>)}
 
       {isOpen && (
         <div
@@ -113,55 +107,28 @@ const alignClasses = {
         >
           {React.Children.map(children, (child, index) => {
             if (React.isValidElement(child)) {
+              const childProps = child.props as React.HTMLAttributes<HTMLElement> & { onClick?: (e: React.MouseEvent | React.KeyboardEvent) => void };
               return React.cloneElement(child, {
                 role: 'menuitem',
                 tabIndex: index === 0 ? 0 : -1,
                 onKeyDown: (e: React.KeyboardEvent) => {
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault()
-                    if ((child.props as any).onClick) {
-                      (child.props as any).onClick(e)
+                    if (childProps.onClick) {
+                      childProps.onClick(e)
                     }
                     setIsOpen(false)
                   }
                 },
-              } as any)
+              } as React.HTMLAttributes<HTMLElement>)
             }
-          },
-        })}
-
-        {isOpen && (
-          <div
-            ref={menuRef}
-            id={menuId}
-            role="menu"
-            className={`absolute z-50 min-w-[200px] bg-white border border-gray-200 rounded-lg shadow-lg py-1 ${positionClasses[position]} ${alignClasses[align]}`}
-            aria-labelledby={triggerId}
-          >
-            {React.Children.map(children, (child, index) => {
-              if (React.isValidElement(child)) {
-                return React.cloneElement(child, {
-                  role: 'menuitem',
-                  tabIndex: index === 0 ? 0 : -1,
-                  onKeyDown: (e: React.KeyboardEvent) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      e.preventDefault();
-                      if (child.props.onClick) {
-                        child.props.onClick(e);
-                      }
-                      setIsOpen(false);
-                    }
-                  },
-                } as React.HTMLAttributes<HTMLElement>);
-              }
-              return child;
-            })}
-          </div>
-        )}
-      </div>
-    );
-  }
-);
+            return child;
+          })}
+        </div>
+      )}
+    </div>
+  );
+});
 
 Menu.displayName = 'Menu';
 

@@ -66,7 +66,7 @@ export const Tooltip: React.FC<TooltipProps> = memo(
 
 return (
     <div className="relative inline-block">
-      {React.cloneElement(children as React.ReactElement<any>, {
+      {React.cloneElement(children as React.ReactElement<React.HTMLAttributes<HTMLElement>>, {
         id: triggerId,
         'aria-describedby': tooltipId,
         'aria-label': typeof content === 'string' ? content : undefined,
@@ -81,7 +81,7 @@ return (
             setIsFocused(false)
           }
         },
-      })}
+      } as React.HTMLAttributes<HTMLElement>)}
 
         {isVisible && (
           <div

@@ -115,6 +115,7 @@ pub struct User {
     pub password_expires_at: Option<DateTime<Utc>>,
     pub password_last_changed: Option<DateTime<Utc>>,
     pub password_history: Option<serde_json::Value>,
+    pub auth_provider: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -133,6 +134,7 @@ pub struct NewUser {
     pub password_expires_at: Option<DateTime<Utc>>,
     pub password_last_changed: Option<DateTime<Utc>>,
     pub password_history: Option<serde_json::Value>,
+    pub auth_provider: Option<String>,
 }
 
 /// Update user model

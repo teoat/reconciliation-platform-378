@@ -287,6 +287,7 @@ pub async fn login(
 /// Register endpoint
 pub async fn register(
     req: web::Json<RegisterRequest>,
+    http_req: HttpRequest,
     auth_service: web::Data<Arc<AuthService>>,
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
@@ -300,6 +301,14 @@ pub async fn register(
     };
 
     let user_info = user_service.as_ref().create_user(create_request).await?;
+
+    // Initialize automatic secrets on master signup (first user becomes master)
+    if let Some(secret_manager) = http_req.app_data::<web::Data<Arc<crate::services::secret_manager::SecretManager>>>() {
+        if let Err(e) = secret_manager.initialize_secrets(user_info.id).await {
+            log::warn!("Failed to initialize secrets on signup: {}", e);
+            // Don't fail signup if secret initialization fails
+        }
+    }
 
     // Generate token - get User struct by ID (more efficient than by email)
     let user = user_service
@@ -374,6 +383,7 @@ pub async fn refresh_token(
         password_expires_at: None,
         password_last_changed: None,
         password_history: None,
+        auth_provider: None,
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
     };
@@ -573,12 +583,12 @@ pub async fn resend_verification(
 /// Google OAuth endpoint
 pub async fn google_oauth(
     req: web::Json<GoogleOAuthRequest>,
-    _http_req: HttpRequest,
+    http_req: HttpRequest,
     auth_service: web::Data<Arc<AuthService>>,
     user_service: web::Data<Arc<UserService>>,
 ) -> Result<HttpResponse, AppError> {
-    // Get Google OAuth client ID from environment (for validation)
-    let google_client_id = std::env::var("GOOGLE_CLIENT_ID")
+    // Get Google OAuth client ID using SecretsService
+    let google_client_id = crate::services::secrets::SecretsService::get_google_client_id()
         .ok()
         .filter(|id| !id.is_empty());
 
@@ -672,9 +682,13 @@ pub async fn google_oauth(
         ));
     }
 
-    // OAuth users don't need password manager integration
-    // They can set a master password separately if they want to use password manager
-    // See: docs/architecture/PASSWORD_SYSTEM_ORCHESTRATION.md
+    // Initialize automatic secrets on master OAuth login (first user becomes master)
+    if let Some(secret_manager) = http_req.app_data::<web::Data<Arc<crate::services::secret_manager::SecretManager>>>() {
+        if let Err(e) = secret_manager.initialize_secrets(user.id).await {
+            log::warn!("Failed to initialize secrets on OAuth login: {}", e);
+            // Don't fail login if secret initialization fails
+        }
+    }
 
     // Generate token
     let token = auth_service.as_ref().generate_token(&user)?;
