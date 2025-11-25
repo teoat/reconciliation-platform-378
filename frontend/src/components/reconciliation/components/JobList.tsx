@@ -1,21 +1,13 @@
 import React from 'react';
 import {
   GitCompare,
-  CheckCircle,
-  XCircle,
   RefreshCw,
-  Clock,
-  Activity,
-  AlertCircle,
-  Square,
   Calendar,
   Target,
   Database,
 } from 'lucide-react';
 import type { ReconciliationJob } from '../types';
 import { JobActions } from './JobActions';
-
-const StopIcon = Square;
 
 // Memoized job item component to prevent unnecessary re-renders
 interface JobItemProps {
@@ -135,7 +127,7 @@ interface JobListProps {
 export const JobList: React.FC<JobListProps> = ({
   jobs,
   loading,
-  onRefresh,
+  onRefresh: _onRefresh,
   onViewResults,
   onStartJob,
   onStopJob,
