@@ -5,8 +5,14 @@ const nextConfig = {
     // Exclude certain directories from being processed
     config.watchOptions = {
       ...config.watchOptions,
-      ignored: ['**/agents/**', '**/api/**', '**/backend/**', '**/reconciliation-rust/**', '**/__tests__/**'],
+      ignored: ['**/agents/**', '**/api/**', '**/backend/**', '**/reconciliation-rust/**', '**/__tests__/**', '**/frontend/**'],
     };
+    
+    // Exclude frontend from module resolution
+    config.module = config.module || {};
+    config.module.noParse = [
+      /frontend\/src\//,
+    ];
     
     // Add bundle analyzer in production builds
     if (!dev && process.env.ANALYZE === 'true') {

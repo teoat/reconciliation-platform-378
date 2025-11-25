@@ -115,3 +115,5 @@ export const ProjectsPage: React.FC = () => {
     </div>
   );
 };
+
+export default ProjectsPage;

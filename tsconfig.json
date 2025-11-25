@@ -25,17 +25,33 @@
     ],
     "paths": {
       "@/*": [
-        "./frontend/src/*"
+        "./*"
       ]
     }
   },
   "include": [
-    "frontend/**/*.ts",
-    "frontend/**/*.tsx"
+    "*.ts",
+    "*.tsx",
+    "pages/**/*.ts",
+    "pages/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "hooks/**/*.ts",
+    "hooks/**/*.tsx",
+    "contexts/**/*.ts",
+    "contexts/**/*.tsx",
+    "store/**/*.ts",
+    "store/**/*.tsx",
+    "services/**/*.ts",
+    "services/**/*.tsx",
+    "utils/**/*.ts",
+    "utils/**/*.tsx",
+    "types/**/*.ts",
+    "styles/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "frontend/dist",
+    "frontend",
     "frontend-simple",
     "reconciliation-rust",
     "backend",
@@ -44,6 +60,11 @@
     "backup_*",
     "**/__tests__/**",
     "**/*.test.*",
-    "**/*.spec.*"
+    "**/*.spec.*",
+    "**/playwright*.ts",
+    "**/playwright*.config.ts",
+    "diagnose-google-oauth.ts",
+    "sentry.client.config.ts",
+    "sentry.server.config.ts"
   ]
 }

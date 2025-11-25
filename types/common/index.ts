@@ -1,6 +1,6 @@
 // Common utility types and shared types
 
-import { Metadata } from '../../frontend/src/types/metadata';
+import { Metadata } from '../metadata';
 
 export interface BaseMetadata {
   createdAt?: string | Date;
@@ -128,4 +128,4 @@ export interface ActionConfig {
 }
 
 // Re-export Metadata for convenience
-export type { Metadata } from '../../frontend/src/types/metadata';
+export type { Metadata } from '../metadata';

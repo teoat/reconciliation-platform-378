@@ -62,20 +62,12 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
 
   // Create wrapper for addAlert to match workflow signature
   const addAlertWrapper = React.useCallback((alert: Omit<Alert, 'id' | 'timestamp'>) => {
-    notificationsData.addAlert({
-      ...alert,
-      id: `alert-${Date.now()}-${Math.random()}`,
-      timestamp: new Date(),
-    });
+    notificationsData.addAlert(alert);
   }, [notificationsData]);
 
   // Create wrapper for addNotification to match workflow signature
   const addNotificationWrapper = React.useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
-    notificationsData.addNotification({
-      ...notification,
-      id: `notification-${Date.now()}-${Math.random()}`,
-      timestamp: new Date(),
-    });
+    notificationsData.addNotification(notification);
   }, [notificationsData]);
 
   // Workflow hook
@@ -129,12 +121,10 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
         const errorMessage = err instanceof Error ? err.message : 'Workflow advance failed';
         setError(errorMessage);
         notificationsData.addAlert({
-          id: `alert-${Date.now()}-${Math.random()}`,
           severity: 'high',
           title: 'Workflow Error',
           message: err instanceof Error ? err.message : 'Failed to advance workflow',
           pages: [workflowData.workflowState?.currentStage.page || '', toStage.page],
-          timestamp: new Date(),
           isDismissed: false,
         });
       } finally {
@@ -161,14 +151,16 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   }, [securityData]);
 
   // Create wrappers for security policy functions
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const createSecurityPolicyWrapper = React.useCallback((policy: Record<string, unknown>) => {
-    const result = securityData.createSecurityPolicy(policy as Record<string, unknown>);
-    return result as Record<string, unknown>;
+    const result = securityData.createSecurityPolicy(policy as any);
+    return result as unknown as Record<string, unknown>;
   }, [securityData]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const updateSecurityPolicyWrapper = React.useCallback((policyId: string, policy: Record<string, unknown>) => {
-    const result = securityData.updateSecurityPolicy(policyId, policy as Record<string, unknown>);
-    return result as Record<string, unknown>;
+    const result = securityData.updateSecurityPolicy(policyId, policy as any);
+    return result as unknown as Record<string, unknown>;
   }, [securityData]);
 
   const deleteSecurityPolicyWrapper = React.useCallback((policyId: string) => {
@@ -212,8 +204,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     updateSecurityPolicy: updateSecurityPolicyWrapper,
     deleteSecurityPolicy: deleteSecurityPolicyWrapper,
     exportAuditLogs: exportAuditLogsWrapper,
-    securityPolicies: securityData.securityPolicies as Record<string, unknown>[],
-    auditLogs: securityData.auditLogs as Array<Record<string, unknown>>,
+    securityPolicies: securityData.securityPolicies as unknown as Record<string, unknown>[],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    auditLogs: securityData.auditLogs as any,
     // Enhanced methods
     advanceWorkflow: enhancedAdvanceWorkflow,
     resetWorkflow: enhancedResetWorkflow,

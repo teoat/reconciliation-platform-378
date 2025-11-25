@@ -272,6 +272,29 @@ export class FrenlyGuidanceAgent implements MetaAgent {
   }
 
   /**
+   * Start periodic MCP monitoring for system insights
+   */
+  private startMCPMonitoring(): void {
+    if (this.mcpMonitoringTimer) {
+      clearInterval(this.mcpMonitoringTimer);
+    }
+
+    // Run MCP monitoring at configured interval
+    this.mcpMonitoringTimer = setInterval(async () => {
+      try {
+        const mcpService = await getMCPIntegrationService();
+        if (mcpService?.isMCPAvailable()) {
+          await mcpService.getPerformanceSummary();
+          this.lastMCPCheck = new Date();
+          logger.debug('MCP monitoring check completed');
+        }
+      } catch (error) {
+        logger.debug('MCP monitoring check failed:', { error: error instanceof Error ? error.message : String(error) });
+      }
+    }, this.mcpCheckInterval);
+  }
+
+  /**
    * Cleanup old user behaviors
    */
   private cleanupOldBehaviors(): void {

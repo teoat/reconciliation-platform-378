@@ -10,7 +10,7 @@ import {
   ApiData,
 } from './types';
 
-export const useCrossPageDataUpdates = (
+export const useCrossPageDataUpdates = <T = unknown>(
   crossPageData: CrossPageData,
   setCrossPageData: React.Dispatch<React.SetStateAction<CrossPageData>>,
   checkPermission: (userId: string, resource: string, action: string) => boolean,
@@ -21,7 +21,7 @@ export const useCrossPageDataUpdates = (
     result: 'success' | 'failure',
     details?: Record<string, unknown>
   ) => void,
-  encryptData: (data: unknown, dataType: string) => string,
+  encryptData: <TData>(data: TData, dataType: string) => TData & { _encrypted: boolean; _encryptionType: string; _encryptedAt: string },
   isSecurityEnabled: boolean,
   syncConnected: boolean,
   wsSyncData: () => void
