@@ -348,7 +348,7 @@ const DataTableComponent = <T extends Record<string, unknown>>({
                                   onRowClick(row);
                                 }
                               }}
-                              aria-selected={index === selectedRowIndex}
+                              aria-selected={index === selectedRowIndex ? 'true' : 'false'}
                             >
                               <div className="table-row">
                                 {columns.map((column) => (
@@ -394,7 +394,7 @@ const DataTableComponent = <T extends Record<string, unknown>>({
                         onRowClick(row);
                       }
                     }}
-                    aria-selected={isSelected}
+                    aria-selected={isSelected ? 'true' : 'false'}
                   >
                     {columns.map((column) => (
                       <td

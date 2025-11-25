@@ -242,6 +242,8 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                             <button
                               onClick={() => handleSendReply(comment.id || `${index}`)}
                               className="px-2 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                              title="Send reply"
+                              aria-label="Send reply"
                             >
                               <Send className="w-3 h-3" />
                             </button>
@@ -251,6 +253,8 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                                 setReplyText('');
                               }}
                               className="px-2 py-1 bg-gray-200 text-gray-600 text-xs rounded hover:bg-gray-300"
+                              title="Cancel reply"
+                              aria-label="Cancel reply"
                             >
                               <X className="w-3 h-3" />
                             </button>
@@ -284,6 +288,8 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
                   onClick={handleSendComment}
                   disabled={!newComment.trim()}
                   className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Send comment"
+                  aria-label="Send comment"
                 >
                   <Send className="w-4 h-4" />
                 </button>

@@ -668,6 +668,8 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value)}
                 className="input-field"
+                title="Filter by role"
+                aria-label="Filter team members by role"
               >
                 <option value="all">All Roles</option>
                 <option value="admin">Admin</option>
@@ -679,6 +681,8 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="input-field"
+                title="Filter by status"
+                aria-label="Filter team members by status"
               >
                 <option value="all">All Status</option>
                 <option value="online">Online</option>
@@ -1045,6 +1049,8 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
               <button
                 onClick={() => setShowMemberModal(false)}
                 className="text-secondary-400 hover:text-secondary-600"
+                title="Close member details"
+                aria-label="Close member details"
               >
                 <X className="w-6 h-6" />
               </button>
