@@ -326,7 +326,7 @@ const WorkflowOrchestrator = ({
           <div
             className="w-24 bg-gray-200 rounded-full h-2"
             role="progressbar"
-            aria-valuenow={Math.round(workflowProgress.percentage)}
+            aria-valuenow={Math.round(workflowProgress.percentage) as number}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label={`Workflow progress: ${workflowProgress.percentage}%`}

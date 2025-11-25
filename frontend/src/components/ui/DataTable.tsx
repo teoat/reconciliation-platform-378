@@ -330,8 +330,6 @@ const DataTableComponent = <T extends Record<string, unknown>>({
                             data-row-index={index}
                           >
                             <div
-                              role="row"
-                              aria-rowindex={index + 2}
                               className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500' : ''} transition-colors duration-150 ${
                                 index === selectedRowIndex
                                   ? 'bg-blue-50 ring-2 ring-blue-500 ring-inset'
@@ -348,7 +346,7 @@ const DataTableComponent = <T extends Record<string, unknown>>({
                                   onRowClick(row);
                                 }
                               }}
-                              aria-selected={index === selectedRowIndex ? 'true' : 'false'}
+                              data-row-index={index}
                             >
                               <div className="table-row">
                                 {columns.map((column) => (
@@ -378,8 +376,6 @@ const DataTableComponent = <T extends Record<string, unknown>>({
                   <tr
                     key={index}
                     data-row-index={globalIndex}
-                    role="row"
-                    aria-rowindex={globalIndex + 2}
                     className={`hover:bg-gray-50 ${onRowClick ? 'cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500' : ''} transition-colors duration-150 ${
                       isSelected ? 'bg-blue-50 ring-2 ring-blue-500 ring-inset' : ''
                     }`}
