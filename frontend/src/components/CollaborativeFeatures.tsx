@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import Image from 'next/image';
 import { Users } from 'lucide-react';
 import { User } from 'lucide-react';
 import { UserCheck } from 'lucide-react';
@@ -701,7 +700,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
                 >
                   <div className="flex items-center space-x-3 mb-3">
                     <div className="relative">
-                      <Image
+                      <img
                         src={member.avatar || '/default-avatar.png'}
                         alt={member.name}
                         width={40}
@@ -1059,7 +1058,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div>
                 <div className="flex items-center space-x-4 mb-6">
-                  <Image
+                  <img
                     src={selectedMember.avatar || '/default-avatar.png'}
                     alt={selectedMember.name}
                     width={64}
