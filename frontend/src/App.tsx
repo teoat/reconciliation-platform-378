@@ -18,6 +18,7 @@ import ToastContainer from './components/ui/ToastContainer';
 import { APP_CONFIG } from './config/AppConfig';
 import KeyboardShortcuts from './components/pages/KeyboardShortcuts';
 import { SessionTimeoutHandler } from './components/SessionTimeoutHandler';
+import { useFeatureRegistryInit } from './features/integration';
 
 // Lazy load route components for better performance
 const Dashboard = lazy(() => import('./components/Dashboard'));

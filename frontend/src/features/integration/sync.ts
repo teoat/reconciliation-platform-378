@@ -6,6 +6,7 @@
 
 import { featureRegistry } from '../registry';
 import { logger } from '../../services/logger';
+import { frenlyAgentService } from '../../services/frenlyAgentService';
 
 /**
  * Sync features with Frenly AI service
@@ -18,17 +19,57 @@ export async function syncFeaturesWithFrenly(): Promise<void> {
       featureCount: frenlyFeatures.length,
     });
 
-    // Track feature discovery
+    // Prepare feature metadata for sync
+    const featuresToSync = frenlyFeatures.map(feature => ({
+      id: feature.id,
+      name: feature.name,
+      description: feature.description,
+      category: feature.category,
+      frenlyIntegration: feature.frenlyIntegration,
+      actions: feature.actions?.map(a => ({
+        id: a.id,
+        name: a.name,
+        description: a.description,
+      })) || [],
+    }));
+
+    // Try to sync with backend via frenlyAgentService
+    try {
+      // Use the agent service to register features
+      // This will be handled by the backend agent when it receives feature metadata
+      const userId = localStorage.getItem('userId') || 'system';
+      
+      // Track feature registration as interaction
+      for (const feature of featuresToSync) {
+        await frenlyAgentService.trackInteraction(
+          userId,
+          `feature:registered:${feature.id}`,
+          JSON.stringify(feature)
+        );
+      }
+
+      logger.info('Features synced with Frenly AI backend', {
+        featureCount: featuresToSync.length,
+      });
+    } catch (syncError) {
+      logger.warn('Failed to sync features with backend, using local registry only', {
+        error: syncError,
+        featureCount: featuresToSync.length,
+      });
+      // Don't throw - local registry still works
+    }
+
+    // Track feature discovery locally
     for (const feature of frenlyFeatures) {
       try {
-        // This would integrate with Frenly service to register features
-        // For now, we just log the sync
-        logger.debug('Feature synced with Frenly', {
+        logger.debug('Feature available for Frenly guidance', {
           featureId: feature.id,
           name: feature.name,
+          providesGuidance: feature.frenlyIntegration?.providesGuidance,
+          tipsCount: feature.frenlyIntegration?.tips?.length || 0,
         });
       } catch (error) {
-        logger.error('Failed to sync feature with Frenly', {
+        logger.error('Failed to log feature sync', {
           featureId: feature.id,
           error,
         });

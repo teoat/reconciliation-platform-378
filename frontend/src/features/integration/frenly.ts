@@ -6,6 +6,7 @@
 
 import { featureRegistry, type FeatureMetadata } from '../registry';
 import { frenlyAgentService } from '../../services/frenlyAgentService';
+import { helpContentService } from '../../services/helpContentService';
 
 /**
  * Get contextual guidance for a feature
@@ -19,10 +20,24 @@ export async function getFeatureGuidance(
     return null;
   }
 
-  // Get help content from feature tips or generate contextual message
+  // Get help content from feature tips or help content service
   if (feature.frenlyIntegration.helpContentIds && feature.frenlyIntegration.helpContentIds.length > 0) {
-    // For now, use tips as help content since getHelpContent doesn't exist
-    // This can be extended when help content service is available
+    try {
+      // Try to get help content from service
+      const helpContentMap = await helpContentService.getHelpContentBatch(
+        feature.frenlyIntegration.helpContentIds
+      );
+      
+      if (helpContentMap.size > 0) {
+        // Use help content if available
+        const helpContent = Array.from(helpContentMap.values())[0];
+        return helpContent.content;
+      }
+    } catch (error) {
+      logger.error('Failed to load help content', { featureId, error });
+    }
+    
+    // Fallback to tips
     const tips = feature.frenlyIntegration.tips || [];
     if (tips.length > 0) {
       return `💡 Tips for ${feature.name}:\n${tips.map(t => `- ${t}`).join('\n')}`;

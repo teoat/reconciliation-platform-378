@@ -12,12 +12,24 @@ import {
 } from '../../../agents/guidance/FrenlyGuidanceAgent';
 import { logger } from './logger';
 
+// NLU Service Types (matching nluService.ts)
+interface NLUUnderstanding {
+  intent: string;
+  confidence: number;
+  entities: Record<string, string>;
+  parameters: Record<string, unknown>;
+  suggestedAction?: string;
+  response?: string;
+}
+
+interface NLUService {
+  processQuery: (query: string) => Promise<NLUUnderstanding>;
+  understand: (query: string, context?: MessageContext) => Promise<NLUUnderstanding>;
+  generateResponse: (intent: string, query: string, context?: MessageContext) => Promise<string>;
+}
+
 // Import NLU service directly
-let nluService: {
-  processQuery?: (query: string) => Promise<unknown>;
-  understand?: (query: string) => Promise<unknown>;
-  generateResponse?: (intent: string) => Promise<unknown>;
-} | null = null;
+let nluService: NLUService | null = null;
 const getNLUService = async () => {
   if (!nluService) {
     const module = await import('./nluService');
@@ -40,11 +52,18 @@ interface RetryOptions {
   exponentialBackoff?: boolean;
 }
 
+interface CacheEntry<T> {
+  data: T;
+  timestamp: number;
+  expiresAt: number;
+}
+
 class FrenlyAgentService {
   private static instance: FrenlyAgentService;
   private agent: FrenlyGuidanceAgent;
   private config: FrenlyAgentServiceConfig;
   private requestDebounce: Map<string, ReturnType<typeof setTimeout>> = new Map();
+  private cache: Map<string, CacheEntry<GeneratedMessage>> = new Map();
   private readonly debounceDelay = 300; // 300ms debounce
   private readonly defaultMaxRetries = 3;
   private readonly defaultRetryDelay = 1000; // 1 second
@@ -153,9 +172,75 @@ class FrenlyAgentService {
   }
 
   /**
-   * Generate an intelligent message based on context with debouncing and retry
+   * Get cache key for context
+   */
+  private getCacheKey(context: MessageContext): string {
+    return `${context.userId}_${context.page}_${context.progress?.completedSteps.length || 0}_${context.progress?.currentStep || ''}`;
+  }
+
+  /**
+   * Get cached message if available and not expired
+   */
+  private getCachedMessage(key: string): GeneratedMessage | null {
+    if (!this.config.enableCache) return null;
+
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+
+    // Check if expired
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return null;
+    }
+
+    logger.debug('Using cached message', { key });
+    return entry.data;
+  }
+
+  /**
+   * Cache a message
+   */
+  private setCachedMessage(key: string, message: GeneratedMessage): void {
+    if (!this.config.enableCache) return;
+
+    const cacheTimeout = this.config.cacheTimeout || 5 * 60 * 1000; // Default 5 minutes
+    const entry: CacheEntry<GeneratedMessage> = {
+      data: message,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + cacheTimeout,
+    };
+
+    this.cache.set(key, entry);
+
+    // Clean up expired entries periodically
+    if (this.cache.size > 100) {
+      this.cleanupExpiredCache();
+    }
+  }
+
+  /**
+   * Clean up expired cache entries
+   */
+  private cleanupExpiredCache(): void {
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (now > entry.expiresAt) {
+        this.cache.delete(key);
+      }
+    }
+  }
+
+  /**
+   * Generate an intelligent message based on context with debouncing, caching, and retry
    */
   async generateMessage(context: MessageContext): Promise<GeneratedMessage> {
+    // Check cache first
+    const cacheKey = this.getCacheKey(context);
+    const cached = this.getCachedMessage(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     // Create debounce key
     const debounceKey = `${context.userId}_${context.page}_${context.progress?.completedSteps.length || 0}`;
 
@@ -179,7 +264,10 @@ class FrenlyAgentService {
           });
 
           if (result.data) {
-            resolve((result.data as { message: GeneratedMessage }).message);
+            const message = (result.data as { message: GeneratedMessage }).message;
+            // Cache the message
+            this.setCachedMessage(cacheKey, message);
+            resolve(message);
           } else {
             throw new Error('No message data returned');
           }
@@ -190,6 +278,7 @@ class FrenlyAgentService {
           try {
             const fallbackMessage = this.getFallbackMessage(context);
             logger.info('Using fallback message', { context: context.page });
+            // Don't cache fallback messages
             resolve(fallbackMessage);
           } catch (fallbackError) {
             logger.error('Fallback message generation failed:', { error: fallbackError });
@@ -242,12 +331,12 @@ class FrenlyAgentService {
       try {
         const nlu = await getNLUService();
         const understanding = await nlu.understand(query, context);
-        const response = await nlu.generateResponse(understanding.intent, query, context);
+        const responseText = understanding.response || await nlu.generateResponse(understanding.intent, query, context);
 
         return {
           id: `query_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           type: understanding.intent === 'error' ? 'warning' : 'help',
-          content: response,
+          content: responseText,
           priority: understanding.confidence > 0.8 ? 'high' : 'medium',
           timestamp: new Date(),
           context: fullContext,

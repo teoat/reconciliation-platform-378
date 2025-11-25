@@ -1,339 +1,240 @@
 /**
  * Help Content Service
  * 
- * Manages help content, search, and categorization for contextual help system.
- * Provides search functionality with relevance scoring, category filtering,
- * and related article suggestions.
- * 
- * @example
- * ```typescript
- * import { helpContentService } from '@/services/helpContentService';
- * 
- * // Search help content
- * const results = helpContentService.search('project creation');
- * 
- * // Get content by category
- * const projectHelp = helpContentService.getContentByCategory('projects');
- * 
- * // Get related articles
- * const related = helpContentService.getRelatedArticles('project-creation');
- * ```
+ * Manages help content referenced by features in the feature registry.
+ * Supports markdown and rich content for contextual guidance.
  */
 
-export interface HelpTip {
-  id: string;
-  content: string;
-}
+import { logger } from './logger';
 
-export interface HelpLink {
-  id: string;
-  label: string;
-  url: string;
-  type?: 'internal' | 'external' | 'documentation';
-}
-
-export interface InteractiveExample {
-  title: string;
-  description?: string;
-  code?: string;
-  demoUrl?: string;
-}
+// ============================================================================
+// TYPES
+// ============================================================================
 
 export interface HelpContent {
   id: string;
   title: string;
   content: string;
-  category: string;
-  tags: string[];
-  relatedArticles?: string[];
-  videoUrl?: string;
-  codeExamples?: string[];
-  tips?: HelpTip[];
-  links?: HelpLink[];
-  interactiveExample?: InteractiveExample;
-  lastUpdated: string;
-  views?: number;
-  helpful?: number;
-  notHelpful?: number;
+  format: 'markdown' | 'html' | 'plain';
+  category?: string;
+  tags?: string[];
+  relatedFeatures?: string[];
+  lastUpdated?: Date;
 }
 
-export interface HelpSearchResult {
+interface HelpContentCache {
   content: HelpContent;
-  relevanceScore: number;
-  matchedTerms: string[];
+  timestamp: number;
+  expiresAt: number;
 }
+
+// ============================================================================
+// HELP CONTENT SERVICE
+// ============================================================================
 
 class HelpContentService {
-  private content: Map<string, HelpContent> = new Map();
-  private searchHistory: string[] = [];
+  private static instance: HelpContentService;
+  private contentCache: Map<string, HelpContentCache> = new Map();
+  private readonly cacheTimeout = 60 * 60 * 1000; // 1 hour
+  private contentStore: Map<string, HelpContent> = new Map();
 
-  /**
-   * Initialize with default help content
-   */
-  initialize(): void {
-    // This would typically load from API or local storage
-    // For now, we'll create a basic structure
-    this.loadDefaultContent();
+  private constructor() {
+    this.initializeDefaultContent();
+  }
+
+  static getInstance(): HelpContentService {
+    if (!HelpContentService.instance) {
+      HelpContentService.instance = new HelpContentService();
+    }
+    return HelpContentService.instance;
   }
 
   /**
-   * Load default help content
+   * Initialize default help content
    */
-  private loadDefaultContent(): void {
-    // Placeholder content - in production, this would come from API
+  private initializeDefaultContent(): void {
+    // Default help content for common features
     const defaultContent: HelpContent[] = [
       {
-        id: 'project-creation',
-        title: 'Creating Your First Project',
-        content: 'Learn how to create and configure a new reconciliation project.',
-        category: 'projects',
-        tags: ['project', 'create', 'setup', 'getting-started'],
-        lastUpdated: new Date().toISOString(),
+        id: 'data-ingestion:file-upload',
+        title: 'File Upload Guide',
+        content: `# File Upload Guide
+
+## Supported Formats
+- CSV files with headers
+- Excel files (.xlsx, .xls)
+- JSON files
+
+## Best Practices
+1. Ensure files have headers in the first row
+2. Use consistent column names
+3. Check data quality before uploading
+4. Large files may take time to process`,
+        format: 'markdown',
+        category: 'data-ingestion',
+        tags: ['upload', 'files', 'data'],
+        relatedFeatures: ['data-ingestion:file-upload'],
       },
       {
-        id: 'file-upload',
-        title: 'Uploading Data Files',
-        content: 'Upload CSV, Excel, or other data files for reconciliation.',
-        category: 'data-sources',
-        tags: ['upload', 'file', 'data', 'import'],
-        lastUpdated: new Date().toISOString(),
+        id: 'reconciliation:matching',
+        title: 'Reconciliation Matching Guide',
+        content: `# Reconciliation Matching Guide
+
+## Matching Strategies
+1. Start with higher tolerance levels
+2. Gradually reduce tolerance for better matches
+3. Review unmatched records carefully
+4. Use multiple matching criteria
+
+## Tips
+- Configure matching rules before running
+- Review match scores
+- Adjust rules based on results`,
+        format: 'markdown',
+        category: 'reconciliation',
+        tags: ['matching', 'reconciliation', 'rules'],
+        relatedFeatures: ['reconciliation:matching'],
       },
     ];
 
-    defaultContent.forEach((content) => {
-      this.content.set(content.id, content);
+    defaultContent.forEach(content => {
+      this.contentStore.set(content.id, content);
     });
   }
 
   /**
    * Get help content by ID
    */
-  getContent(id: string): HelpContent | undefined {
-    return this.content.get(id);
+  async getHelpContent(contentId: string): Promise<HelpContent | null> {
+    // Check cache first
+    const cached = this.contentCache.get(contentId);
+    if (cached && Date.now() < cached.expiresAt) {
+      logger.debug('Using cached help content', { contentId });
+      return cached.content;
+    }
+
+    // Check local store
+    const content = this.contentStore.get(contentId);
+    if (content) {
+      // Cache it
+      this.contentCache.set(contentId, {
+        content,
+        timestamp: Date.now(),
+        expiresAt: Date.now() + this.cacheTimeout,
+      });
+      return content;
+    }
+
+    // Try to fetch from backend (if API exists)
+    try {
+      // TODO: Implement API call when backend endpoint is available
+      // const response = await fetch(`/api/help-content/${contentId}`);
+      // if (response.ok) {
+      //   const content = await response.json();
+      //   this.contentStore.set(contentId, content);
+      //   return content;
+      // }
+    } catch (error) {
+      logger.error('Failed to fetch help content from backend', { contentId, error });
+    }
+
+    logger.warn('Help content not found', { contentId });
+    return null;
   }
 
   /**
-   * Get help content by category
+   * Get multiple help content items
    */
-  getContentByCategory(category: string): HelpContent[] {
-    return Array.from(this.content.values()).filter(
-      (content) => content.category === category
+  async getHelpContentBatch(contentIds: string[]): Promise<Map<string, HelpContent>> {
+    const results = new Map<string, HelpContent>();
+    
+    await Promise.all(
+      contentIds.map(async (id) => {
+        const content = await this.getHelpContent(id);
+        if (content) {
+          results.set(id, content);
+        }
+      })
     );
-  }
-
-  /**
-   * Search help content
-   */
-  search(query: string): HelpSearchResult[] {
-    if (!query.trim()) {
-      return [];
-    }
-
-    const lowerQuery = query.toLowerCase();
-    const terms = lowerQuery.split(/\s+/);
-    const results: HelpSearchResult[] = [];
-
-    // Add to search history
-    this.searchHistory.push(query);
-    if (this.searchHistory.length > 10) {
-      this.searchHistory.shift();
-    }
-
-    // Search through all content
-    this.content.forEach((content) => {
-      const matchedTerms: string[] = [];
-      let relevanceScore = 0;
-
-      // Check title (highest weight)
-      const titleLower = content.title.toLowerCase();
-      if (titleLower.includes(lowerQuery)) {
-        relevanceScore += 10;
-        matchedTerms.push('title');
-      } else {
-        terms.forEach((term) => {
-          if (titleLower.includes(term)) {
-            relevanceScore += 5;
-            matchedTerms.push('title');
-          }
-        });
-      }
-
-      // Check content
-      const contentLower = content.content.toLowerCase();
-      terms.forEach((term) => {
-        const matches = (contentLower.match(new RegExp(term, 'g')) || []).length;
-        relevanceScore += matches;
-        if (matches > 0) {
-          matchedTerms.push('content');
-        }
-      });
-
-      // Check tags (medium weight)
-      content.tags.forEach((tag) => {
-        if (tag.toLowerCase().includes(lowerQuery)) {
-          relevanceScore += 3;
-          matchedTerms.push('tag');
-        } else {
-          terms.forEach((term) => {
-            if (tag.toLowerCase().includes(term)) {
-              relevanceScore += 2;
-              matchedTerms.push('tag');
-            }
-          });
-        }
-      });
-
-      if (relevanceScore > 0) {
-        results.push({
-          content,
-          relevanceScore,
-          matchedTerms: Array.from(new Set(matchedTerms)),
-        });
-      }
-    });
-
-    // Sort by relevance score
-    results.sort((a, b) => b.relevanceScore - a.relevanceScore);
 
     return results;
   }
 
   /**
-   * Get related articles
+   * Register help content
    */
-  getRelatedArticles(contentId: string, limit: number = 3): HelpContent[] {
-    const content = this.content.get(contentId);
-    if (!content) {
-      return [];
-    }
+  registerHelpContent(content: HelpContent): void {
+    this.contentStore.set(content.id, {
+      ...content,
+      lastUpdated: new Date(),
+    });
+    
+    // Invalidate cache
+    this.contentCache.delete(content.id);
+    
+    logger.debug('Help content registered', { contentId: content.id });
+  }
 
-    // If explicit related articles are defined, use those
-    if (content.relatedArticles && content.relatedArticles.length > 0) {
-      return content.relatedArticles
-        .map((id) => this.content.get(id))
-        .filter((c): c is HelpContent => c !== undefined)
-        .slice(0, limit);
-    }
+  /**
+   * Search help content
+   */
+  searchHelpContent(query: string, category?: string): HelpContent[] {
+    const lowerQuery = query.toLowerCase();
+    const results: HelpContent[] = [];
 
-    // Otherwise, find related by category and tags
-    const related: HelpContent[] = [];
-    const seenIds = new Set([contentId]);
-
-    // Same category
-    this.getContentByCategory(content.category).forEach((item) => {
-      if (!seenIds.has(item.id)) {
-        related.push(item);
-        seenIds.add(item.id);
+    for (const content of this.contentStore.values()) {
+      // Filter by category if specified
+      if (category && content.category !== category) {
+        continue;
       }
-    });
 
-    // Shared tags
-    this.content.forEach((item) => {
-      if (seenIds.has(item.id)) return;
+      // Search in title, content, and tags
+      const matches =
+        content.title.toLowerCase().includes(lowerQuery) ||
+        content.content.toLowerCase().includes(lowerQuery) ||
+        content.tags?.some(tag => tag.toLowerCase().includes(lowerQuery));
 
-      const sharedTags = item.tags.filter((tag) =>
-        content.tags.includes(tag)
-      );
-      if (sharedTags.length > 0) {
-        related.push(item);
-        seenIds.add(item.id);
+      if (matches) {
+        results.push(content);
       }
-    });
-
-    return related.slice(0, limit);
-  }
-
-  /**
-   * Get search history
-   */
-  getSearchHistory(): string[] {
-    return [...this.searchHistory].reverse();
-  }
-
-  /**
-   * Clear search history
-   */
-  clearSearchHistory(): void {
-    this.searchHistory = [];
-  }
-
-  /**
-   * Track content view
-   */
-  trackView(contentId: string): void {
-    const content = this.content.get(contentId);
-    if (content) {
-      content.views = (content.views || 0) + 1;
-      this.content.set(contentId, content);
     }
+
+    return results;
   }
 
   /**
-   * Mark content as helpful/not helpful
+   * Get help content by feature ID
    */
-  markHelpful(contentId: string, helpful: boolean): void {
-    const content = this.content.get(contentId);
-    if (content) {
-      if (helpful) {
-        content.helpful = (content.helpful || 0) + 1;
-      } else {
-        content.notHelpful = (content.notHelpful || 0) + 1;
+  async getHelpContentForFeature(featureId: string): Promise<HelpContent[]> {
+    const results: HelpContent[] = [];
+
+    for (const content of this.contentStore.values()) {
+      if (content.relatedFeatures?.includes(featureId)) {
+        results.push(content);
       }
-      this.content.set(contentId, content);
     }
+
+    return results;
   }
 
   /**
-   * Get all categories
+   * Clear cache
    */
-  getCategories(): string[] {
-    const categories = new Set<string>();
-    this.content.forEach((content) => {
-      categories.add(content.category);
-    });
-    return Array.from(categories).sort();
+  clearCache(): void {
+    this.contentCache.clear();
+    logger.debug('Help content cache cleared');
   }
 
   /**
-   * Get popular help content based on views and helpful ratings
-   * @param limit Maximum number of popular items to return
-   * @returns Array of popular help content sorted by popularity
+   * Get all help content
    */
-  getPopular(limit: number = 5): HelpContent[] {
-    const allContent = Array.from(this.content.values());
-    
-    // Calculate popularity score: views + (helpful * 2) - (notHelpful * 0.5)
-    const scored = allContent.map((content) => {
-      const views = content.views || 0;
-      const helpful = content.helpful || 0;
-      const notHelpful = content.notHelpful || 0;
-      const popularityScore = views + (helpful * 2) - (notHelpful * 0.5);
-      
-      return { content, score: popularityScore };
-    });
-    
-    // Sort by popularity score (descending)
-    scored.sort((a, b) => b.score - a.score);
-    
-    // Return top N items
-    return scored.slice(0, limit).map((item) => item.content);
-  }
-
-  /**
-   * Track user feedback on help content
-   * @param contentId ID of the help content
-   * @param helpful Whether the content was helpful (true) or not helpful (false)
-   */
-  trackFeedback(contentId: string, helpful: boolean): void {
-    this.markHelpful(contentId, helpful);
-    
-    // In production, this would also send analytics event
-    // Example: analytics.track('help_feedback', { contentId, helpful });
+  getAllHelpContent(): HelpContent[] {
+    return Array.from(this.contentStore.values());
   }
 }
 
 // Export singleton instance
-export const helpContentService = new HelpContentService();
+export const helpContentService = HelpContentService.getInstance();
 
-// Initialize on import
-helpContentService.initialize();
+// Export class for testing
+export { HelpContentService };

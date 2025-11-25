@@ -219,6 +219,61 @@ class FeatureRegistry {
       .map(id => this.get(id))
       .filter((f): f is FeatureMetadata => f !== undefined);
   }
+
+  /**
+   * Get features that depend on a given feature
+   */
+  getDependents(featureId: string): FeatureMetadata[] {
+    return this.getAll().filter(f => 
+      f.dependencies?.includes(featureId)
+    );
+  }
+
+  /**
+   * Check if feature has all dependencies satisfied
+   */
+  hasDependenciesSatisfied(featureId: string, availableFeatures: string[] = []): boolean {
+    const feature = this.get(featureId);
+    if (!feature?.dependencies || feature.dependencies.length === 0) {
+      return true;
+    }
+
+    // If availableFeatures is provided, check against that list
+    if (availableFeatures.length > 0) {
+      return feature.dependencies.every(dep => availableFeatures.includes(dep));
+    }
+
+    // Otherwise check if dependencies are registered
+    return feature.dependencies.every(dep => this.get(dep) !== undefined);
+  }
+
+  /**
+   * Get dependency chain for a feature (all dependencies recursively)
+   */
+  getDependencyChain(featureId: string, visited: Set<string> = new Set()): FeatureMetadata[] {
+    if (visited.has(featureId)) {
+      return []; // Circular dependency detected
+    }
+
+    visited.add(featureId);
+    const feature = this.get(featureId);
+    if (!feature?.dependencies) {
+      return [];
+    }
+
+    const chain: FeatureMetadata[] = [];
+    for (const depId of feature.dependencies) {
+      const dep = this.get(depId);
+      if (dep) {
+        chain.push(dep);
+        // Recursively get dependencies of dependencies
+        const subChain = this.getDependencyChain(depId, visited);
+        chain.push(...subChain);
+      }
+    }
+
+    return chain;
+  }
 }
 
 // Singleton instance

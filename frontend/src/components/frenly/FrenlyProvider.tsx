@@ -1,3 +1,10 @@
+/**
+ * Consolidated Frenly Provider
+ * 
+ * Combines all Frenly provider implementations into a single, optimized provider
+ * with state persistence, tutorial support, and comprehensive features.
+ */
+
 import React, {
   createContext,
   useContext,
@@ -5,29 +12,21 @@ import React, {
   useEffect,
   ReactNode,
   useCallback,
+  useRef,
 } from 'react';
-import { logger } from '../services/logger';
-import { MessageCircle } from 'lucide-react';
-import { X } from 'lucide-react';
-import { Minimize2 } from 'lucide-react';
-import { Lightbulb } from 'lucide-react';
-import { AlertTriangle } from 'lucide-react';
-import { PartyPopper } from 'lucide-react';
-import { Star } from 'lucide-react';
-import { Smile } from 'lucide-react';
+import { logger } from '@/services/logger';
+import { MessageCircle, X, Minimize2, Lightbulb, AlertTriangle, PartyPopper, Star, Smile } from 'lucide-react';
 import { frenlyAgentService } from '@/services/frenlyAgentService';
+import { FrenlyGuidance, FrenlyTips } from './FrenlyGuidance';
+import { setFrenlyMessageHandler } from '@/orchestration/PageFrenlyIntegration';
 
-// Frenly AI Types
+// ============================================================================
+// TYPES
+// ============================================================================
+
 export interface FrenlyMessage {
   id: string;
-  type:
-    | 'greeting'
-    | 'tip'
-    | 'warning'
-    | 'celebration'
-    | 'question'
-    | 'instruction'
-    | 'encouragement';
+  type: 'greeting' | 'tip' | 'warning' | 'celebration' | 'question' | 'instruction' | 'encouragement';
   content: string;
   action?: {
     text: string;
@@ -63,6 +62,9 @@ export interface FrenlyState {
   };
   conversationHistory: FrenlyMessage[];
   activeMessage?: FrenlyMessage;
+  // Additional features
+  isTutorialActive: boolean;
+  showTips: boolean;
 }
 
 interface FrenlyContextType {
@@ -74,6 +76,15 @@ interface FrenlyContextType {
   toggleVisibility: () => void;
   toggleMinimize: () => void;
   updatePreferences: (preferences: Partial<FrenlyState['preferences']>) => void;
+  // Tutorial features
+  startTutorial: () => void;
+  stopTutorial: () => void;
+  toggleTips: () => void;
+  resetProgress: () => void;
+  // Utility functions
+  getProgressPercentage: () => number;
+  getNextStep: () => string | undefined;
+  isStepCompleted: (stepId: string) => boolean;
 }
 
 const FrenlyContext = createContext<FrenlyContextType | undefined>(undefined);
@@ -88,35 +99,191 @@ export const useFrenly = () => {
 
 interface FrenlyProviderProps {
   children: ReactNode;
+  initialProgress?: string[];
+  enableTips?: boolean;
+  enableTutorial?: boolean;
+  enablePersistence?: boolean;
 }
 
-export const FrenlyProvider: React.FC<FrenlyProviderProps> = ({ children }) => {
-  const [state, setState] = useState<FrenlyState>({
-    isVisible: true,
-    isMinimized: false,
-    currentPage: '/dashboard',
-    userProgress: {
-      completedSteps: [],
-      currentStep: 'dashboard',
-      totalSteps: 7,
-    },
-    personality: {
-      mood: 'happy',
-      energy: 'high',
-      helpfulness: 95,
-    },
-    preferences: {
-      showTips: true,
-      showCelebrations: true,
-      showWarnings: true,
-      voiceEnabled: false,
-      animationSpeed: 'normal',
-    },
-    conversationHistory: [],
-    activeMessage: undefined,
+// ============================================================================
+// STATE PERSISTENCE UTILITIES
+// ============================================================================
+
+const STORAGE_KEYS = {
+  state: 'frenly:state',
+  progress: 'frenly:progress',
+  preferences: 'frenly:preferences',
+  session: 'frenly:session',
+} as const;
+
+function saveStateToStorage(state: Partial<FrenlyState>): void {
+  try {
+    if (state.userProgress) {
+      localStorage.setItem(STORAGE_KEYS.progress, JSON.stringify(state.userProgress.completedSteps));
+    }
+    if (state.preferences) {
+      localStorage.setItem(STORAGE_KEYS.preferences, JSON.stringify(state.preferences));
+    }
+    if (state.currentPage) {
+      localStorage.setItem('frenly:currentPage', state.currentPage);
+    }
+    // Save full state snapshot
+    const stateSnapshot = {
+      userProgress: state.userProgress,
+      preferences: state.preferences,
+      currentPage: state.currentPage,
+      personality: state.personality,
+      isTutorialActive: state.isTutorialActive,
+      showTips: state.showTips,
+      timestamp: Date.now(),
+    };
+    localStorage.setItem(STORAGE_KEYS.state, JSON.stringify(stateSnapshot));
+  } catch (error) {
+    logger.error('Failed to save Frenly state to storage:', { error });
+  }
+}
+
+function loadStateFromStorage(): Partial<FrenlyState> | null {
+  try {
+    const savedState = localStorage.getItem(STORAGE_KEYS.state);
+    if (!savedState) return null;
+
+    const parsed = JSON.parse(savedState);
+    
+    // Check if state is stale (older than 7 days)
+    if (parsed.timestamp && Date.now() - parsed.timestamp > 7 * 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(STORAGE_KEYS.state);
+      return null;
+    }
+
+    return {
+      userProgress: parsed.userProgress
+        ? {
+            completedSteps: parsed.userProgress.completedSteps || [],
+            currentStep: parsed.userProgress.currentStep || 'dashboard',
+            totalSteps: parsed.userProgress.totalSteps || 7,
+          }
+        : undefined,
+      preferences: parsed.preferences,
+      currentPage: parsed.currentPage,
+      personality: parsed.personality,
+      isTutorialActive: parsed.isTutorialActive || false,
+      showTips: parsed.showTips !== undefined ? parsed.showTips : true,
+    };
+  } catch (error) {
+    logger.error('Failed to load Frenly state from storage:', { error });
+    return null;
+  }
+}
+
+// ============================================================================
+// PROVIDER COMPONENT
+// ============================================================================
+
+export const FrenlyProvider: React.FC<FrenlyProviderProps> = ({
+  children,
+  initialProgress = [],
+  enableTips = true,
+  enableTutorial = true,
+  enablePersistence = true,
+}) => {
+  // Load initial state from storage or use defaults
+  const savedState = enablePersistence ? loadStateFromStorage() : null;
+  
+  const [state, setState] = useState<FrenlyState>(() => {
+    const defaultState: FrenlyState = {
+      isVisible: true,
+      isMinimized: false,
+      currentPage: '/dashboard',
+      userProgress: {
+        completedSteps: [],
+        currentStep: 'dashboard',
+        totalSteps: 7,
+      },
+      personality: {
+        mood: 'happy',
+        energy: 'high',
+        helpfulness: 95,
+      },
+      preferences: {
+        showTips: true,
+        showCelebrations: true,
+        showWarnings: true,
+        voiceEnabled: false,
+        animationSpeed: 'normal',
+      },
+      conversationHistory: [],
+      activeMessage: undefined,
+      isTutorialActive: false,
+      showTips: enableTips,
+    };
+
+    // Merge with saved state
+    if (savedState) {
+      return {
+        ...defaultState,
+        ...savedState,
+        userProgress: savedState.userProgress || defaultState.userProgress,
+        preferences: savedState.preferences || defaultState.preferences,
+      };
+    }
+
+    // Use initial progress if provided
+    if (initialProgress.length > 0) {
+      defaultState.userProgress.completedSteps = initialProgress;
+    }
+
+    return defaultState;
   });
 
-  const updateProgress = (step: string) => {
+  // Save state to storage whenever it changes
+  useEffect(() => {
+    if (enablePersistence) {
+      saveStateToStorage({
+        userProgress: state.userProgress,
+        preferences: state.preferences,
+        currentPage: state.currentPage,
+        personality: state.personality,
+        isTutorialActive: state.isTutorialActive,
+        showTips: state.showTips,
+      });
+    }
+  }, [
+    state.userProgress,
+    state.preferences,
+    state.currentPage,
+    state.personality,
+    state.isTutorialActive,
+    state.showTips,
+    enablePersistence,
+  ]);
+
+  // Sync state with backend on significant changes
+  const syncWithBackend = useCallback(async () => {
+    if (!enablePersistence) return;
+
+    try {
+      const userId = localStorage.getItem('userId') || 'unknown';
+      await frenlyAgentService.updateOnboardingProgress({
+        pageId: state.currentPage,
+        completedSteps: state.userProgress.completedSteps,
+        currentStep: state.userProgress.currentStep || null,
+      });
+    } catch (error) {
+      logger.error('Failed to sync Frenly state with backend:', { error });
+    }
+  }, [state.currentPage, state.userProgress, enablePersistence]);
+
+  // Sync with backend when progress changes
+  useEffect(() => {
+    syncWithBackend();
+  }, [state.userProgress.completedSteps.length, syncWithBackend]);
+
+  // ============================================================================
+  // STATE UPDATERS
+  // ============================================================================
+
+  const updateProgress = useCallback((step: string) => {
     setState((prev) => {
       const newCompletedSteps = prev.userProgress.completedSteps.includes(step)
         ? prev.userProgress.completedSteps
@@ -131,45 +298,113 @@ export const FrenlyProvider: React.FC<FrenlyProviderProps> = ({ children }) => {
         },
       };
     });
-  };
+  }, []);
 
-  const showMessage = (message: FrenlyMessage) => {
+  const showMessage = useCallback((message: FrenlyMessage) => {
     setState((prev) => ({
       ...prev,
       activeMessage: message,
-      conversationHistory: [...prev.conversationHistory, message],
+      conversationHistory: [...prev.conversationHistory, message].slice(-50), // Keep last 50
     }));
 
     // Auto-hide message if specified
     if (message.autoHide) {
       setTimeout(() => {
-        hideMessage();
+        setState((prev) => ({ ...prev, activeMessage: undefined }));
       }, message.autoHide);
     }
-  };
+  }, []);
 
-  const hideMessage = () => {
+  const hideMessage = useCallback(() => {
     setState((prev) => ({ ...prev, activeMessage: undefined }));
-  };
+  }, []);
 
-  const updatePage = (page: string) => {
+  const updatePage = useCallback((page: string) => {
     setState((prev) => ({ ...prev, currentPage: page }));
-  };
+  }, []);
 
-  const toggleVisibility = () => {
+  const toggleVisibility = useCallback(() => {
     setState((prev) => ({ ...prev, isVisible: !prev.isVisible }));
-  };
+  }, []);
 
-  const toggleMinimize = () => {
+  const toggleMinimize = useCallback(() => {
     setState((prev) => ({ ...prev, isMinimized: !prev.isMinimized }));
-  };
+  }, []);
 
-  const updatePreferences = (preferences: Partial<FrenlyState['preferences']>) => {
+  const updatePreferences = useCallback((preferences: Partial<FrenlyState['preferences']>) => {
     setState((prev) => ({
       ...prev,
       preferences: { ...prev.preferences, ...preferences },
     }));
-  };
+  }, []);
+
+  const startTutorial = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      isTutorialActive: true,
+      personality: { ...prev.personality, mood: 'excited', energy: 'high' },
+    }));
+  }, []);
+
+  const stopTutorial = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      isTutorialActive: false,
+      personality: { ...prev.personality, mood: 'proud', energy: 'medium' },
+    }));
+  }, []);
+
+  const toggleTips = useCallback(() => {
+    setState((prev) => ({ ...prev, showTips: !prev.showTips }));
+  }, []);
+
+  const resetProgress = useCallback(() => {
+    setState((prev) => ({
+      ...prev,
+      userProgress: {
+        completedSteps: [],
+        currentStep: 'dashboard',
+        totalSteps: 7,
+      },
+    }));
+    if (enablePersistence) {
+      localStorage.removeItem(STORAGE_KEYS.progress);
+    }
+  }, [enablePersistence]);
+
+  // ============================================================================
+  // UTILITY FUNCTIONS
+  // ============================================================================
+
+  const getProgressPercentage = useCallback(() => {
+    return Math.round(
+      (state.userProgress.completedSteps.length / state.userProgress.totalSteps) * 100
+    );
+  }, [state.userProgress]);
+
+  const getNextStep = useCallback(() => {
+    const allSteps = [
+      'welcome',
+      'upload-files',
+      'configure-reconciliation',
+      'review-matches',
+      'adjudicate-discrepancies',
+      'visualize-results',
+      'export-summary',
+    ];
+    return allSteps.find((step) => !state.userProgress.completedSteps.includes(step));
+  }, [state.userProgress]);
+
+  const isStepCompleted = useCallback(
+    (stepId: string) => {
+      return state.userProgress.completedSteps.includes(stepId);
+    },
+    [state.userProgress]
+  );
+
+  // ============================================================================
+  // CONTEXT VALUE
+  // ============================================================================
 
   const value: FrenlyContextType = {
     state,
@@ -180,86 +415,132 @@ export const FrenlyProvider: React.FC<FrenlyProviderProps> = ({ children }) => {
     toggleVisibility,
     toggleMinimize,
     updatePreferences,
+    startTutorial,
+    stopTutorial,
+    toggleTips,
+    resetProgress,
+    getProgressPercentage,
+    getNextStep,
+    isStepCompleted,
   };
+
+  // Register message handler for PageFrenlyIntegration
+  useEffect(() => {
+    setFrenlyMessageHandler({
+      showMessage,
+      hideMessage,
+    });
+
+    return () => {
+      setFrenlyMessageHandler(null);
+    };
+  }, [showMessage, hideMessage]);
 
   return (
     <FrenlyContext.Provider value={value}>
       {children}
       <FrenlyAI />
+      {enableTutorial && state.isTutorialActive && (
+        <FrenlyGuidance
+          currentPage={state.currentPage}
+          userProgress={state.userProgress.completedSteps}
+          onStepComplete={updateProgress}
+          onStartTutorial={startTutorial}
+        />
+      )}
+      {enableTips && state.showTips && (
+        <FrenlyTips tips={[]} currentPage={state.currentPage} />
+      )}
     </FrenlyContext.Provider>
   );
 };
 
-// Frenly AI Component
+// ============================================================================
+// FRENLY AI COMPONENT
+// ============================================================================
+
 const FrenlyAI: React.FC = () => {
-  const { state, hideMessage, toggleVisibility, toggleMinimize, showMessage } = useFrenly();
+  const { state, hideMessage, toggleVisibility, toggleMinimize, showMessage, updatePreferences } = useFrenly();
+  const messageGenerationRef = useRef<Promise<FrenlyMessage | null> | null>(null);
 
   // Generate contextual messages using FrenlyAgentService
   const generateContextualMessage = useCallback(async (): Promise<FrenlyMessage | null> => {
-    try {
-      // Get user ID from localStorage or generate one
-      const userId =
-        localStorage.getItem('userId') ||
-        `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      if (!localStorage.getItem('userId')) {
-        localStorage.setItem('userId', userId);
-      }
-
-      // Track interaction
-      await frenlyAgentService.trackInteraction(userId, 'page_view');
-
-      // Generate intelligent message using agent
-      const agentMessage = await frenlyAgentService.generateMessage({
-        userId,
-        page: state.currentPage,
-        progress: {
-          completedSteps: state.userProgress.completedSteps,
-          totalSteps: state.userProgress.totalSteps,
-          currentStep: state.userProgress.currentStep,
-        },
-        preferences: {
-          communicationStyle: 'conversational',
-          messageFrequency: 'medium',
-        },
-        behavior: {
-          sessionDuration:
-            Date.now() -
-            (localStorage.getItem('sessionStart')
-              ? parseInt(localStorage.getItem('sessionStart')!)
-              : Date.now()),
-        },
-      });
-
-      // Track message shown
-      await frenlyAgentService.trackInteraction(userId, 'message_shown', agentMessage.id);
-
-      // Convert agent message to FrenlyMessage format
-      const frenlyMessage: FrenlyMessage = {
-        id: agentMessage.id,
-        type: agentMessage.type === 'help' ? 'tip' : agentMessage.type,
-        content: agentMessage.content,
-        timestamp: agentMessage.timestamp,
-        page: state.currentPage,
-        priority: agentMessage.priority,
-        dismissible: true,
-        autoHide: agentMessage.type === 'greeting' ? 5000 : undefined,
-      };
-
-      return frenlyMessage;
-    } catch (error) {
-      logger.error('Error generating contextual message:', error);
-      // Fallback to default message
-      return {
-        id: Math.random().toString(36).substr(2, 9),
-        type: 'greeting',
-        content: "Hi there! I'm Frenly, your AI assistant! 🤖✨ Ready to help you!",
-        timestamp: new Date(),
-        page: state.currentPage,
-        priority: 'medium',
-        dismissible: true,
-        autoHide: 5000,
-      };
+    // Prevent duplicate requests
+    if (messageGenerationRef.current) {
+      return messageGenerationRef.current;
     }
+
+    const promise = (async () => {
+      try {
+        // Get user ID from localStorage or generate one
+        const userId =
+          localStorage.getItem('userId') ||
+          `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        if (!localStorage.getItem('userId')) {
+          localStorage.setItem('userId', userId);
+        }
+
+        // Track interaction
+        await frenlyAgentService.trackInteraction(userId, 'page_view');
+
+        // Generate intelligent message using agent
+        const agentMessage = await frenlyAgentService.generateMessage({
+          userId,
+          page: state.currentPage,
+          progress: {
+            completedSteps: state.userProgress.completedSteps,
+            totalSteps: state.userProgress.totalSteps,
+            currentStep: state.userProgress.currentStep,
+          },
+          preferences: {
+            communicationStyle: 'conversational',
+            messageFrequency: 'medium',
+          },
+          behavior: {
+            sessionDuration:
+              Date.now() -
+              (localStorage.getItem('sessionStart')
+                ? parseInt(localStorage.getItem('sessionStart')!, 10)
+                : Date.now()),
+          },
+        });
+
+        // Track message shown
+        await frenlyAgentService.trackInteraction(userId, 'message_shown', agentMessage.id);
+
+        // Convert agent message to FrenlyMessage format
+        const frenlyMessage: FrenlyMessage = {
+          id: agentMessage.id,
+          type: agentMessage.type === 'help' ? 'tip' : (agentMessage.type as FrenlyMessage['type']),
+          content: agentMessage.content,
+          timestamp: agentMessage.timestamp,
+          page: state.currentPage,
+          priority: agentMessage.priority,
+          dismissible: true,
+          autoHide: agentMessage.type === 'greeting' ? 5000 : undefined,
+        };
+
+        return frenlyMessage;
+      } catch (error) {
+        logger.error('Error generating contextual message:', error);
+        // Fallback to default message
+        return {
+          id: Math.random().toString(36).substr(2, 9),
+          type: 'greeting',
+          content: "Hi there! I'm Frenly, your AI assistant! 🤖✨ Ready to help you!",
+          timestamp: new Date(),
+          page: state.currentPage,
+          priority: 'medium',
+          dismissible: true,
+          autoHide: 5000,
+        };
+      } finally {
+        messageGenerationRef.current = null;
+      }
+    })();
+
+    messageGenerationRef.current = promise;
+    return promise;
   }, [state.currentPage, state.userProgress]);
 
   // Track session start
@@ -276,7 +557,7 @@ const FrenlyAI: React.FC = () => {
         showMessage(message);
       }
     });
-  }, [state.currentPage, generateContextualMessage]);
+  }, [state.currentPage, generateContextualMessage, showMessage]);
 
   if (!state.isVisible) {
     return (
@@ -440,14 +721,7 @@ const FrenlyAI: React.FC = () => {
             </button>
             <button
               onClick={() => {
-                const newState = {
-                  ...state,
-                  preferences: {
-                    ...state.preferences,
-                    showTips: !state.preferences.showTips,
-                  },
-                };
-                // This would need to be handled by the parent component
+                updatePreferences({ showTips: !state.preferences.showTips });
               }}
               className={`p-2 rounded-lg transition-all duration-200 ${
                 state.preferences.showTips

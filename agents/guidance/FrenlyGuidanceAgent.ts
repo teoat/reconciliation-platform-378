@@ -29,7 +29,6 @@ let onboardingService: any = null;
 let aiService: any = null;
 let nluService: any = null;
 let mcpIntegrationService: any = null;
-let mcpIntegrationService: any = null;
 
 // Lazy load services to avoid circular dependencies
 const getHelpContentService = async () => {
@@ -62,14 +61,6 @@ const getNLUService = async () => {
     nluService = module.nluService;
   }
   return nluService;
-};
-
-const getMCPIntegrationService = async () => {
-  if (!mcpIntegrationService) {
-    const module = await import('../../frontend/src/services/mcpIntegrationService');
-    mcpIntegrationService = module.mcpIntegrationService;
-  }
-  return mcpIntegrationService;
 };
 
 const getMCPIntegrationService = async () => {

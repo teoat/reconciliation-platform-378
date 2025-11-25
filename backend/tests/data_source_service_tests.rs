@@ -3,10 +3,10 @@
 //! Tests DataSourceService methods including CRUD operations,
 //! validation, and statistics.
 
-use std::sync::Arc;
 use uuid::Uuid;
 
 use reconciliation_backend::services::data_source::DataSourceService;
+use reconciliation_backend::services::data_source_config::{CreateDataSourceConfig, UpdateDataSourceConfig};
 use reconciliation_backend::test_utils_export::database::setup_test_database;
 
 /// Test DataSourceService methods
@@ -22,7 +22,6 @@ mod data_source_service_tests {
         use reconciliation_backend::services::project::ProjectService;
         use reconciliation_backend::services::project::CreateProjectRequest;
         use reconciliation_backend::models::NewUser;
-        use std::sync::Arc;
         use diesel::prelude::*;
         
         let project_service = ProjectService::new(db.clone());
@@ -68,13 +67,15 @@ mod data_source_service_tests {
 
         let result = service
             .create_data_source(
-                project_id,
-                "Test Data Source".to_string(),
-                "csv".to_string(),
-                Some("/path/to/file.csv".to_string()),
-                Some(1024),
-                Some("hash123".to_string()),
-                None,
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Test Data Source".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: Some("/path/to/file.csv".to_string()),
+                    file_size: Some(1024),
+                    file_hash: Some("hash123".to_string()),
+                    schema: None,
+                }
             )
             .await;
 
@@ -93,25 +94,29 @@ mod data_source_service_tests {
         // Create multiple data sources
         service
             .create_data_source(
-                project_id,
-                "Source 1".to_string(),
-                "csv".to_string(),
-                None,
-                None,
-                None,
-                None,
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Source 1".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
             )
             .await
             .unwrap();
         service
             .create_data_source(
-                project_id,
-                "Source 2".to_string(),
-                "json".to_string(),
-                None,
-                None,
-                None,
-                None,
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Source 2".to_string(),
+                    source_type: "json".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
             )
             .await
             .unwrap();
@@ -129,13 +134,15 @@ mod data_source_service_tests {
 
         let created = service
             .create_data_source(
-                project_id,
-                "Get Test Source".to_string(),
-                "csv".to_string(),
-                None,
-                None,
-                None,
-                None,
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Get Test Source".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
             )
             .await
             .unwrap();
@@ -165,28 +172,32 @@ mod data_source_service_tests {
 
         let created = service
             .create_data_source(
-                project_id,
-                "Update Test".to_string(),
-                "csv".to_string(),
-                None,
-                None,
-                None,
-                None,
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Update Test".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
             )
             .await
             .unwrap();
 
         let result = service
             .update_data_source(
-                created.id,
-                Some("Updated Name".to_string()),
-                Some("processed".to_string()),
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
+                UpdateDataSourceConfig {
+                    id: created.id,
+                    name: Some("Updated Name".to_string()),
+                    description: None,
+                    source_type: None,
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                    status: Some("processed".to_string()),
+                }
             )
             .await;
 
@@ -203,13 +214,15 @@ mod data_source_service_tests {
 
         let created = service
             .create_data_source(
-                project_id,
-                "Delete Test".to_string(),
-                "csv".to_string(),
-                None,
-                None,
-                None,
-                None,
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Delete Test".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
             )
             .await
             .unwrap();
@@ -229,13 +242,15 @@ mod data_source_service_tests {
         // Create some data sources
         service
             .create_data_source(
-                project_id,
-                "Stats Source 1".to_string(),
-                "csv".to_string(),
-                None,
-                Some(1024),
-                None,
-                None,
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Stats Source 1".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: Some(1024),
+                    file_hash: None,
+                    schema: None,
+                }
             )
             .await
             .unwrap();
@@ -253,13 +268,15 @@ mod data_source_service_tests {
 
         let created = service
             .create_data_source(
-                project_id,
-                "Validate Test".to_string(),
-                "csv".to_string(),
-                Some("/path/to/file.csv".to_string()),
-                Some(1024),
-                Some("hash123".to_string()),
-                None,
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Validate Test".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: Some("/path/to/file.csv".to_string()),
+                    file_size: Some(1024),
+                    file_hash: Some("hash123".to_string()),
+                    schema: None,
+                }
             )
             .await
             .unwrap();
@@ -277,13 +294,15 @@ mod data_source_service_tests {
 
         let result = service
             .create_data_source(
-                project_id,
-                "".to_string(),
-                "csv".to_string(),
-                None,
-                None,
-                None,
-                None,
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
             )
             .await;
 
@@ -299,13 +318,15 @@ mod data_source_service_tests {
 
         let result = service
             .create_data_source(
-                invalid_project_id,
-                "Test Source".to_string(),
-                "csv".to_string(),
-                None,
-                None,
-                None,
-                None,
+                CreateDataSourceConfig {
+                    project_id: invalid_project_id,
+                    name: "Test Source".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
             )
             .await;
 
@@ -321,15 +342,17 @@ mod data_source_service_tests {
 
         let result = service
             .update_data_source(
-                nonexistent_id,
-                Some("Updated".to_string()),
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
+                UpdateDataSourceConfig {
+                    id: nonexistent_id,
+                    name: Some("Updated".to_string()),
+                    description: None,
+                    source_type: None,
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                    status: None,
+                }
             )
             .await;
 
@@ -342,13 +365,15 @@ mod data_source_service_tests {
 
         let created = service
             .create_data_source(
-                project_id,
-                "Partial Update".to_string(),
-                "csv".to_string(),
-                None,
-                None,
-                None,
-                None,
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Partial Update".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
             )
             .await
             .unwrap();
@@ -356,15 +381,17 @@ mod data_source_service_tests {
         // Update only name
         let result = service
             .update_data_source(
-                created.id,
-                Some("Updated Name".to_string()),
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
-                None,
+                UpdateDataSourceConfig {
+                    id: created.id,
+                    name: Some("Updated Name".to_string()),
+                    description: None,
+                    source_type: None,
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                    status: None,
+                }
             )
             .await;
 
@@ -405,9 +432,9 @@ mod data_source_service_tests {
         let result = service.get_project_data_sources(project_id).await;
         assert!(result.is_ok());
 
-        let sources = result.unwrap();
-        // Can be empty
-        assert!(sources.len() >= 0);
+        let _sources = result.unwrap();
+        // Can be empty - just verify we got a valid result
+        // Note: len() is always >= 0, so we just verify the result is Ok
     }
 
     #[tokio::test]
@@ -432,13 +459,15 @@ mod data_source_service_tests {
         for source_type in types {
             let result = service
                 .create_data_source(
-                    project_id,
-                    format!("{} Source", source_type),
-                    source_type.to_string(),
-                    None,
-                    None,
-                    None,
-                    None,
+                    CreateDataSourceConfig {
+                        project_id,
+                        name: format!("{} Source", source_type),
+                        source_type: source_type.to_string(),
+                        file_path: None,
+                        file_size: None,
+                        file_hash: None,
+                        schema: None,
+                    }
                 )
                 .await;
 
@@ -456,26 +485,30 @@ mod data_source_service_tests {
 
         service
             .create_data_source(
-                project_id1,
-                "Project 1 Source".to_string(),
-                "csv".to_string(),
-                None,
-                None,
-                None,
-                None,
+                CreateDataSourceConfig {
+                    project_id: project_id1,
+                    name: "Project 1 Source".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
             )
             .await
             .unwrap();
 
         service2
             .create_data_source(
-                project_id2,
-                "Project 2 Source".to_string(),
-                "json".to_string(),
-                None,
-                None,
-                None,
-                None,
+                CreateDataSourceConfig {
+                    project_id: project_id2,
+                    name: "Project 2 Source".to_string(),
+                    source_type: "json".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
             )
             .await
             .unwrap();

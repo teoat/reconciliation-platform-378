@@ -4,6 +4,7 @@
 
 import { logger } from '@/services/logger';
 import { frenlyAgentService } from '@/services/frenlyAgentService';
+import { registerPageOrchestration, type FeatureAwarePageIntegration } from '@/features/integration/orchestration-integration';
 import type {
   PageOrchestrationInterface,
   MessageContext,
@@ -13,14 +14,46 @@ import type {
   WorkflowState,
 } from './types';
 
+// Message handler interface for React Context integration
+export interface FrenlyMessageHandler {
+  showMessage: (message: FrenlyMessage) => void;
+  hideMessage: (messageId: string) => void;
+}
+
+// Global message handler (set by FrenlyProvider)
+let globalMessageHandler: FrenlyMessageHandler | null = null;
+
+export function setFrenlyMessageHandler(handler: FrenlyMessageHandler | null): void {
+  globalMessageHandler = handler;
+}
+
+export function getFrenlyMessageHandler(): FrenlyMessageHandler | null {
+  return globalMessageHandler;
+}
+
 export class PageFrenlyIntegration {
   private pageOrchestration: PageOrchestrationInterface;
   private currentContext: MessageContext | null = null;
   private messageHistory: FrenlyMessage[] = [];
   private isInitialized = false;
+  private featureIntegration: FeatureAwarePageIntegration | null = null;
 
   constructor(pageOrchestration: PageOrchestrationInterface) {
     this.pageOrchestration = pageOrchestration;
+    
+    // Register with feature registry
+    try {
+      this.featureIntegration = registerPageOrchestration(
+        pageOrchestration.getPageId(),
+        pageOrchestration
+      );
+      logger.debug('Page registered with feature registry', {
+        pageId: pageOrchestration.getPageId(),
+      });
+    } catch (error) {
+      logger.warn('Failed to register page with feature registry', { error });
+      // Continue without feature integration
+    }
   }
 
   /**
@@ -92,13 +125,48 @@ export class PageFrenlyIntegration {
   }
 
   /**
-   * Generate contextual message from Frenly AI
+   * Generate contextual message from Frenly AI with feature registry integration
    */
   async generateContextualMessage(): Promise<FrenlyMessage> {
     try {
       const context = await this.collectPageContext();
 
-      // Generate message using Frenly agent service
+      // Try to get feature-aware guidance first
+      if (this.featureIntegration) {
+        try {
+          const workflowState = this.pageOrchestration.getWorkflowState();
+          const userProgress = workflowState?.completedSteps || [];
+          
+          const featureGuidance = await this.featureIntegration.getContextualGuidance(userProgress);
+          
+          if (featureGuidance) {
+            // Create message from feature guidance
+            const frenlyMessage: FrenlyMessage = {
+              id: `feature-guidance-${Date.now()}`,
+              type: 'tip',
+              content: featureGuidance,
+              timestamp: new Date(),
+              page: context.page,
+              priority: 'medium',
+              dismissible: true,
+              autoHide: undefined,
+            };
+
+            // Add to history
+            this.messageHistory.push(frenlyMessage);
+            if (this.messageHistory.length > 50) {
+              this.messageHistory.shift();
+            }
+
+            return frenlyMessage;
+          }
+        } catch (featureError) {
+          logger.debug('Feature guidance generation failed, using fallback', { error: featureError });
+          // Fallback to original service
+        }
+      }
+
+      // Generate message using Frenly agent service (fallback)
       const agentMessage = await frenlyAgentService.generateMessage(context);
 
       // Convert to FrenlyMessage format
@@ -206,27 +274,39 @@ export class PageFrenlyIntegration {
   }
 
   /**
-   * Show message (delegates to Frenly provider)
+   * Show message (uses React Context via Frenly provider)
    */
   async showMessage(message: FrenlyMessage): Promise<void> {
-    // This will be handled by the FrenlyProvider context
-    // For now, we'll emit an event that the provider can listen to
-    window.dispatchEvent(
-      new CustomEvent('frenly:show-message', {
-        detail: message,
-      })
-    );
+    // Use React Context handler if available
+    if (globalMessageHandler) {
+      try {
+        globalMessageHandler.showMessage(message);
+        return;
+      } catch (error) {
+        logger.error('Error showing Frenly message via handler', { error, messageId: message.id });
+      }
+    }
+    
+    // Fallback: log for debugging
+    logger.debug('Frenly message should be shown via React Context', { messageId: message.id });
   }
 
   /**
-   * Hide message
+   * Hide message (uses React Context via Frenly provider)
    */
   async hideMessage(messageId: string): Promise<void> {
-    window.dispatchEvent(
-      new CustomEvent('frenly:hide-message', {
-        detail: { messageId },
-      })
-    );
+    // Use React Context handler if available
+    if (globalMessageHandler) {
+      try {
+        globalMessageHandler.hideMessage(messageId);
+        return;
+      } catch (error) {
+        logger.error('Error hiding Frenly message via handler', { error, messageId });
+      }
+    }
+    
+    // Fallback: log for debugging
+    logger.debug('Frenly message should be hidden via React Context', { messageId });
   }
 
   /**

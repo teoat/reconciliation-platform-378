@@ -10,6 +10,16 @@ import { getFeatureGuidance, getRelevantFeatures } from './frenly';
 import { logger } from '../../services/logger';
 
 /**
+ * Get features for a page
+ */
+export function getPageFeatures(pageId: string): FeatureMetadata[] {
+  return featureRegistry.getAll().filter(f => 
+    f.id.includes(pageId) || 
+    f.frenlyIntegration?.onboardingSteps?.some(step => step.includes(pageId))
+  );
+}
+
+/**
  * Enhanced PageFrenlyIntegration with feature registry
  */
 export class FeatureAwarePageIntegration {
