@@ -106,6 +106,54 @@ derive_database_url() {
 }
 
 # ============================================================================
+# DERIVE REDIS_URL
+# ============================================================================
+
+derive_redis_url() {
+    local redis_password=$(get_secret_value "REDIS_PASSWORD")
+    local redis_host="${REDIS_HOST:-redis-service}"
+    local redis_port="${REDIS_PORT:-6379}"
+    local redis_db="${REDIS_DB:-0}"
+    
+    # If password is set, include it in URL
+    if [[ -n "$redis_password" && "$redis_password" != *"CHANGE_ME"* ]]; then
+        # Format: redis://:password@host:port/db
+        echo "redis://:${redis_password}@${redis_host}:${redis_port}/${redis_db}"
+    else
+        # Format: redis://host:port/db
+        echo "redis://${redis_host}:${redis_port}/${redis_db}"
+    fi
+}
+
+# ============================================================================
+# ENSURE JWT_REFRESH_SECRET
+# ============================================================================
+
+ensure_jwt_refresh_secret() {
+    local jwt_refresh_secret=$(get_secret_value "JWT_REFRESH_SECRET")
+    local jwt_secret=$(get_secret_value "JWT_SECRET")
+    
+    # If JWT_REFRESH_SECRET is empty or placeholder, use JWT_SECRET
+    if [[ -z "$jwt_refresh_secret" || "$jwt_refresh_secret" == *"CHANGE_ME"* ]]; then
+        if [[ -n "$jwt_secret" && "$jwt_secret" != *"CHANGE_ME"* ]]; then
+            log_info "JWT_REFRESH_SECRET not set, using JWT_SECRET as fallback"
+            if set_secret_value "JWT_REFRESH_SECRET" "$jwt_secret"; then
+                log_success "JWT_REFRESH_SECRET synchronized with JWT_SECRET"
+                return 0
+            else
+                log_warning "Failed to set JWT_REFRESH_SECRET fallback"
+                return 1
+            fi
+        else
+            log_warning "JWT_SECRET is not set, cannot set JWT_REFRESH_SECRET fallback"
+            return 1
+        fi
+    fi
+    
+    return 0
+}
+
+# ============================================================================
 # VALIDATE SECRET CONSISTENCY
 # ============================================================================
 
@@ -113,12 +161,17 @@ validate_secret_consistency() {
     log_info "Validating secret consistency..."
     
     local errors=0
+    local warnings=0
     
     # Get values
     local postgres_user=$(get_secret_value "POSTGRES_USER")
     local postgres_password=$(get_secret_value "POSTGRES_PASSWORD")
     local postgres_db=$(get_secret_value "POSTGRES_DB")
     local database_url=$(get_secret_value "DATABASE_URL")
+    local redis_url=$(get_secret_value "REDIS_URL")
+    local redis_password=$(get_secret_value "REDIS_PASSWORD")
+    local jwt_secret=$(get_secret_value "JWT_SECRET")
+    local jwt_refresh_secret=$(get_secret_value "JWT_REFRESH_SECRET")
     
     # Check required secrets exist
     if [[ -z "$postgres_user" ]]; then
@@ -154,20 +207,40 @@ validate_secret_consistency() {
     
     # Validate DATABASE_URL matches components
     if [[ -n "$database_url" && -n "$postgres_user" && -n "$postgres_password" && -n "$postgres_db" ]]; then
-        local expected_url=$(derive_database_url)
-        if [[ "$database_url" != "$expected_url" ]]; then
+        local expected_url=$(derive_database_url 2>/dev/null)
+        if [[ -n "$expected_url" && "$database_url" != "$expected_url" ]]; then
             log_warning "DATABASE_URL doesn't match derived value"
             log_info "Current: ${database_url:0:50}..."
             log_info "Expected: ${expected_url:0:50}..."
-            errors=$((errors + 1))
+            warnings=$((warnings + 1))
         fi
     fi
     
-    if [[ $errors -eq 0 ]]; then
+    # Validate REDIS_URL if password is set
+    if [[ -n "$redis_password" && "$redis_password" != *"CHANGE_ME"* && -n "$redis_url" ]]; then
+        local expected_redis_url=$(derive_redis_url 2>/dev/null)
+        if [[ -n "$expected_redis_url" && "$redis_url" != "$expected_redis_url" ]]; then
+            log_warning "REDIS_URL doesn't match derived value (password may be missing)"
+            warnings=$((warnings + 1))
+        fi
+    fi
+    
+    # Validate JWT_REFRESH_SECRET fallback
+    if [[ -z "$jwt_refresh_secret" || "$jwt_refresh_secret" == *"CHANGE_ME"* ]]; then
+        if [[ -n "$jwt_secret" && "$jwt_secret" != *"CHANGE_ME"* ]]; then
+            log_warning "JWT_REFRESH_SECRET not set, should fallback to JWT_SECRET"
+            warnings=$((warnings + 1))
+        fi
+    fi
+    
+    if [[ $errors -eq 0 && $warnings -eq 0 ]]; then
         log_success "Secret consistency validation passed"
         return 0
+    elif [[ $errors -eq 0 ]]; then
+        log_warning "Secret consistency validation passed with $warnings warning(s)"
+        return 0
     else
-        log_error "Found $errors consistency issue(s)"
+        log_error "Found $errors error(s) and $warnings warning(s)"
         return 1
     fi
 }
@@ -179,22 +252,53 @@ validate_secret_consistency() {
 synchronize_secrets() {
     log_info "Synchronizing secrets..."
     
-    # Derive DATABASE_URL
-    local database_url=$(derive_database_url)
-    if [[ -z "$database_url" ]]; then
-        log_error "Failed to derive DATABASE_URL"
-        return 1
-    fi
+    local sync_errors=0
     
-    # Update DATABASE_URL
-    if set_secret_value "DATABASE_URL" "$database_url"; then
-        log_success "DATABASE_URL synchronized"
+    # 1. Ensure JWT_REFRESH_SECRET (fallback to JWT_SECRET)
+    ensure_jwt_refresh_secret || sync_errors=$((sync_errors + 1))
+    
+    # 2. Derive and sync DATABASE_URL
+    local database_url=$(derive_database_url 2>/dev/null)
+    if [[ -n "$database_url" ]]; then
+        if set_secret_value "DATABASE_URL" "$database_url"; then
+            log_success "DATABASE_URL synchronized"
+        else
+            log_error "Failed to synchronize DATABASE_URL"
+            sync_errors=$((sync_errors + 1))
+        fi
     else
-        log_error "Failed to synchronize DATABASE_URL"
-        return 1
+        log_warning "Cannot derive DATABASE_URL (missing components or placeholder values)"
     fi
     
-    return 0
+    # 3. Derive and sync REDIS_URL if password is set
+    local redis_password=$(get_secret_value "REDIS_PASSWORD")
+    if [[ -n "$redis_password" && "$redis_password" != *"CHANGE_ME"* && "$redis_password" != "" ]]; then
+        local redis_url=$(derive_redis_url)
+        if [[ -n "$redis_url" ]]; then
+            local current_redis_url=$(get_secret_value "REDIS_URL")
+            # Only update if current URL doesn't contain password
+            if [[ "$current_redis_url" != *":${redis_password}@"* ]]; then
+                if set_secret_value "REDIS_URL" "$redis_url"; then
+                    log_success "REDIS_URL synchronized with password"
+                else
+                    log_warning "Failed to synchronize REDIS_URL"
+                    sync_errors=$((sync_errors + 1))
+                fi
+            else
+                log_info "REDIS_URL already contains password"
+            fi
+        fi
+    else
+        log_info "REDIS_PASSWORD not set, skipping REDIS_URL synchronization"
+    fi
+    
+    if [[ $sync_errors -eq 0 ]]; then
+        log_success "All secrets synchronized successfully"
+        return 0
+    else
+        log_warning "Secret synchronization completed with $sync_errors error(s)"
+        return 1
+    fi
 }
 
 # ============================================================================

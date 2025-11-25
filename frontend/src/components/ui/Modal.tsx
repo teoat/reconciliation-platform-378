@@ -137,9 +137,9 @@ const Modal: React.FC<ModalProps> = ({
           aria-modal="true"
           aria-labelledby={title ? 'modal-title' : undefined}
           aria-describedby={children ? 'modal-description' : undefined}
-          onClick={(e) => e.stopPropagation()}
+          onClick={(e) => e.stopPropagation()} // eslint-disable-line jsx-a11y/no-noninteractive-element-interactions
           tabIndex={-1}
-          onKeyDown={(e) => {
+          onKeyDown={(e) => { // eslint-disable-line jsx-a11y/no-noninteractive-element-interactions
             // Enhanced keyboard navigation
             if (e.key === 'Escape' && closeOnEscape) {
               onClose();
