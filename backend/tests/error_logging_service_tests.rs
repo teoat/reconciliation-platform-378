@@ -358,8 +358,8 @@ mod error_logging_service_tests {
         };
 
         let service1 = ErrorLoggingService::new(config1);
-        let entries1 = service1.get_recent_errors(10).await;
-        assert!(entries1.len() >= 0);
+        let _entries1 = service1.get_recent_errors(10).await;
+        // No assertion needed as len() is always >= 0
 
         let config2 = ErrorLoggingConfig {
             service_name: "service2".to_string(),
@@ -372,8 +372,8 @@ mod error_logging_service_tests {
         };
 
         let service2 = ErrorLoggingService::new(config2);
-        let entries2 = service2.get_recent_errors(10).await;
-        assert!(entries2.len() >= 0);
+        let _entries2 = service2.get_recent_errors(10).await;
+        // No assertion needed as len() is always >= 0
     }
 }
 

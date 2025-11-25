@@ -84,6 +84,13 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
     matchedAmount: number;
     unmatchedExpenses: number;
     unmatchedBankTransactions: number;
+    quality: {
+      matchRate: number;
+      averageConfidence: number;
+      highConfidenceMatches: number;
+      mediumConfidenceMatches: number;
+      lowConfidenceMatches: number;
+    };
   }
 
   const [summary, setSummary] = useState<ReconciliationSummary | null>(null);
@@ -117,12 +124,15 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
       let matchingResults: IndonesianMatchingResult[] = [];
       if (processedExpenses.length > 0 && processedBankRecords.length > 0) {
         setProcessingProgress(75);
-        matchingResults = IndonesianDataProcessor.matchRecords(processedExpenses, processedBankRecords);
+        matchingResults = IndonesianDataProcessor.matchRecords(
+          processedExpenses,
+          processedBankRecords
+        );
         // Transform to expected shape
         const transformedMatches = matchingResults.map((match) => ({
           expense: match.sourceRecord as unknown as ProcessedExpenseRecord,
           bank: match.targetRecord,
-          match
+          match,
         }));
         setMatches(transformedMatches);
       }
@@ -255,10 +265,10 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                     <div>
                       <p className="text-sm font-medium text-secondary-600">Total Expenses</p>
                       <p className="text-2xl font-bold text-secondary-900">
-                        {formatNumber(summary.summary.totalExpenses)}
+                        {formatNumber(summary.totalExpenses)}
                       </p>
                       <p className="text-xs text-secondary-500">
-                        {formatCurrency(summary.summary.totalExpenseAmount)}
+                        {formatCurrency(summary.totalExpenses)}
                       </p>
                     </div>
                     <FileText className="w-8 h-8 text-blue-500" />
@@ -270,10 +280,10 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                     <div>
                       <p className="text-sm font-medium text-secondary-600">Bank Transactions</p>
                       <p className="text-2xl font-bold text-secondary-900">
-                        {formatNumber(summary.summary.totalBankRecords)}
+                        {formatNumber(summary.totalBankTransactions)}
                       </p>
                       <p className="text-xs text-secondary-500">
-                        {formatCurrency(summary.summary.totalBankAmount)}
+                        {formatCurrency(summary.matchedAmount)}
                       </p>
                     </div>
                     <Database className="w-8 h-8 text-green-500" />
@@ -285,10 +295,10 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                     <div>
                       <p className="text-sm font-medium text-secondary-600">Match Rate</p>
                       <p className="text-2xl font-bold text-green-600">
-                        {summary.summary.matchRate.toFixed(1)}%
+                        {summary.quality?.matchRate.toFixed(1) || '0'}%
                       </p>
                       <p className="text-xs text-secondary-500">
-                        {formatNumber(summary.summary.matchedRecords)} matched
+                        {formatNumber(summary.matchedAmount)} matched
                       </p>
                     </div>
                     <Target className="w-8 h-8 text-green-500" />
@@ -300,7 +310,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                     <div>
                       <p className="text-sm font-medium text-secondary-600">Avg Confidence</p>
                       <p className="text-2xl font-bold text-blue-600">
-                        {summary.quality.averageConfidence.toFixed(1)}%
+                        {summary.quality?.averageConfidence.toFixed(1) || '0'}%
                       </p>
                       <p className="text-xs text-secondary-500">High quality matches</p>
                     </div>
@@ -360,19 +370,21 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-secondary-600">Unmatched Expenses</span>
                       <span className="text-sm font-bold text-red-600">
-                        {formatNumber(summary.summary.unmatchedExpenses)}
+                        {formatNumber(summary.unmatchedExpenses)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-secondary-600">Unmatched Bank Records</span>
                       <span className="text-sm font-bold text-red-600">
-                        {formatNumber(summary.summary.unmatchedBankRecords)}
+                        {formatNumber(summary.unmatchedBankTransactions)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-secondary-600">Discrepancy Amount</span>
                       <span className="text-sm font-bold text-orange-600">
-                        {formatCurrency(summary.summary.discrepancyAmount)}
+                        {formatCurrency(
+                          summary.unmatchedExpenses + summary.unmatchedBankTransactions
+                        )}
                       </span>
                     </div>
                   </div>

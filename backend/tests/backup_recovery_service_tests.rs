@@ -4,8 +4,8 @@
 //! restoration, scheduling, and retention policies.
 
 use reconciliation_backend::services::backup_recovery::{
-    BackupService, DisasterRecoveryService, BackupConfig, BackupSchedule, RetentionPolicy,
-    StorageConfig, BackupType,
+    BackupService, BackupConfig, BackupSchedule, RetentionPolicy,
+    StorageConfig,
 };
 use std::time::Duration;
 use std::path::PathBuf;
@@ -64,7 +64,7 @@ mod backup_recovery_service_tests {
         assert!(result.is_ok());
 
         let backups = result.unwrap();
-        assert!(backups.len() >= 0); // Can be empty
+        // Can be empty - no assertion needed as len() is always >= 0
     }
 
     #[tokio::test]

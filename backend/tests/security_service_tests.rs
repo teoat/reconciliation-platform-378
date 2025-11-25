@@ -4,7 +4,7 @@
 //! security event tracking, and security configuration.
 
 use reconciliation_backend::services::security::{
-    SecurityService, SecurityConfig, SecurityEventType, SecuritySeverity,
+    SecurityService, SecurityConfig,
 };
 use std::time::Duration;
 
@@ -95,7 +95,7 @@ mod security_service_tests {
             .await;
 
         let events = service.get_security_events(Some(10)).await;
-        assert!(events.len() >= 0); // Can be empty or have events
+        // Can be empty or have events - no assertion needed as len() is always >= 0
     }
 
     #[tokio::test]

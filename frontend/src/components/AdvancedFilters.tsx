@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { X, Filter, Save, RefreshCw, Trash2 } from 'lucide-react'
+import { X, Filter, Save, RefreshCw, Trash2, Plus } from 'lucide-react'
 
 interface FilterConfig {
   id: string
@@ -201,7 +201,7 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
             ))}
           </select>
         )
-      case 'multiselect':
+      case 'multiselect': {
         return (
           <div className="space-y-2">
             {filter.options?.map(option => (
@@ -211,11 +211,11 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
                   type="checkbox"
                   checked={Array.isArray(filter.value) && filter.value.includes(String(option.value))}
                   onChange={(e) => {
-                    const currentValues = Array.isArray(filter.value) ? filter.value : []
+                    const currentValues = Array.isArray(filter.value) ? filter.value : [];
                     const newValues = e.target.checked
                       ? [...currentValues, String(option.value)]
-                      : currentValues.filter(v => v !== String(option.value))
-                    handleFilterChange(filter.id, { value: newValues })
+                      : currentValues.filter(v => v !== String(option.value));
+                    handleFilterChange(filter.id, { value: newValues });
                   }}
                   className="rounded border-secondary-300"
                 />
@@ -223,7 +223,8 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
               </label>
             ))}
           </div>
-        )
+        );
+      }
       case 'boolean':
         return (
           <select

@@ -128,7 +128,8 @@ export interface QuickFilterProps {
  *
  * The API remains the same for backward compatibility.
  */
-export { useForm } from '../hooks/useForm';
+// useForm is exported directly from hooks/useForm to avoid circular dependency
+// Import directly: import { useForm } from '@/hooks/useForm'
 
 // ============================================================================
 // FORM COMPONENTS
@@ -416,5 +417,5 @@ export default {
   FileUpload,
   SearchFilter,
   QuickFilter,
-  useForm,
+  // useForm is available from '@/hooks/useForm'
 };

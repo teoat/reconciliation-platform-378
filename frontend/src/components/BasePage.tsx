@@ -1,6 +1,28 @@
 import React from 'react';
-import { PageConfig, StatsCard, ActionConfig } from '../../types/common';
 import { ProgressBar } from './ui/ProgressBar';
+import { LucideIcon } from 'lucide-react';
+
+// Types for BasePage
+interface PageConfig {
+  title: string;
+  description?: string;
+  icon: LucideIcon;
+}
+
+interface StatsCard {
+  title: string;
+  value: string | number;
+  icon: LucideIcon;
+  color: string;
+  progress?: number;
+}
+
+interface ActionConfig {
+  label: string;
+  icon: LucideIcon;
+  onClick: () => void;
+  variant?: 'primary' | 'secondary' | 'danger';
+}
 
 interface BasePageProps {
   config: PageConfig;

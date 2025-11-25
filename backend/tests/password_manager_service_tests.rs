@@ -275,8 +275,7 @@ mod password_manager_service_tests {
         assert!(result.is_ok());
 
         let passwords = result.unwrap();
-        // Can be empty
-        assert!(passwords.len() >= 0);
+        // Can be empty - no assertion needed as len() is always >= 0
     }
 
     #[tokio::test]

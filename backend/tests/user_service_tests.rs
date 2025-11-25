@@ -368,7 +368,7 @@ mod user_service_tests {
         let result = user_service.list_users(None, None).await;
         assert!(result.is_ok());
         let users = result.unwrap();
-        assert!(users.users.len() >= 0); // Can be empty
+        // Can be empty - no assertion needed as len() is always >= 0
     }
 
     #[tokio::test]

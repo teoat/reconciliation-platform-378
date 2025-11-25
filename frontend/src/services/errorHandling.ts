@@ -67,7 +67,6 @@ export function handleServiceError<T>(
     userId,
     workflowStage,
     logError = true,
-    trackContext = true,
     translateError = true,
     errorPrefix,
   } = options;

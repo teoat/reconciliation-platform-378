@@ -132,13 +132,16 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
   const { currentProject } = useData();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [comments, setComments] = useState<Comment[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [showMemberModal, setShowMemberModal] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
   const [activeTab, setActiveTab] = useState<
     'members' | 'workspaces' | 'activities' | 'assignments' | 'notifications'

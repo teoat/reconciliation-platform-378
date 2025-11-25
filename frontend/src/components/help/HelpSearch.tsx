@@ -106,25 +106,30 @@ export const HelpSearchInline: React.FC<HelpSearchInlineProps> = ({
         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
           <Search className="h-5 w-5 text-gray-400" />
         </div>
-        <input
-          ref={searchInputRef}
-          type="text"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={() => {
-            if (query.trim() || searchHistory.length > 0) {
-              setShowResults(true);
-            }
-          }}
-          placeholder={placeholder}
-          className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          aria-label="Search help articles"
-          aria-expanded={showResults ? 'true' : 'false'}
-          aria-haspopup="listbox"
-          aria-controls="help-search-results"
-          role="combobox"
-        />
+        {(() => {
+          const ariaExpanded = showResults ? 'true' : 'false';
+          return (
+            <input
+              ref={searchInputRef}
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onFocus={() => {
+                if (query.trim() || searchHistory.length > 0) {
+                  setShowResults(true);
+                }
+              }}
+              placeholder={placeholder}
+              className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              aria-label="Search help articles"
+              aria-expanded={ariaExpanded}
+              aria-haspopup="listbox"
+              aria-controls="help-search-results"
+              role="combobox"
+            />
+          );
+        })()}
         {query && (
           <button
             type="button"
@@ -144,14 +149,16 @@ export const HelpSearchInline: React.FC<HelpSearchInlineProps> = ({
             <div className="p-4 text-center text-gray-500">Searching...</div>
           ) : results.length > 0 ? (
             <ul id="help-search-results" role="listbox" className="py-1">
-              {results.map((result, index) => (
-                <li
-                  key={result.content.id}
-                  role="option"
-                  aria-selected={index === selectedIndex ? 'true' : 'false'}
-                  className={`px-4 py-3 cursor-pointer hover:bg-gray-50 ${
-                    index === selectedIndex ? 'bg-blue-50' : ''
-                  }`}
+              {results.map((result, index) => {
+                const ariaSelected = index === selectedIndex ? 'true' : 'false';
+                return (
+                  <li
+                    key={result.content.id}
+                    role="option"
+                    aria-selected={ariaSelected}
+                    className={`px-4 py-3 cursor-pointer hover:bg-gray-50 ${
+                      index === selectedIndex ? 'bg-blue-50' : ''
+                    }`}
                   onClick={() => handleSelectContent(result.content.id)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' || e.key === ' ') {
@@ -180,8 +187,9 @@ export const HelpSearchInline: React.FC<HelpSearchInlineProps> = ({
                       </div>
                     </div>
                   </div>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           ) : query.trim() ? (
             <div className="p-4 text-center text-gray-500">

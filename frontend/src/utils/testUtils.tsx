@@ -95,17 +95,21 @@ export function createMockLocalStorage() {
  * Mock window.location
  */
 export function mockLocation(pathname: string) {
-  delete (window as any).location;
-  (window as any).location = { pathname };
+  delete (window as Window & { location?: { pathname: string } }).location;
+  (window as Window & { location: { pathname: string } }).location = { pathname };
 }
 
 /**
  * Create mock error
  */
-export function createMockError(message: string, code?: string): Error {
-  const error = new Error(message);
+export interface MockError extends Error {
+  code?: string;
+}
+
+export function createMockError(message: string, code?: string): MockError {
+  const error = new Error(message) as MockError;
   if (code) {
-    (error as any).code = code;
+    error.code = code;
   }
   return error;
 }

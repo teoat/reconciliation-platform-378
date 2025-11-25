@@ -352,22 +352,26 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       const cashflowData = getCashflowData();
 
       // Apply filters
-let data: unknown[] = [];
+      let data: unknown[] = [];
       switch (report.dataSource) {
-        case 'reconciliation':
+        case 'reconciliation': {
           // Use adapter function to properly convert types
           data = (reconciliationData?.records || []).map(adaptReconciliationRecord);
           break;
-        case 'cashflow':
+        }
+        case 'cashflow': {
           // Use adapter function to properly convert types
           data = (cashflowData?.records || []).map(adaptReconciliationRecord);
           break;
-        case 'projects':
+        }
+        case 'projects': {
           data = []; // Would fetch project data
           break;
-        case 'users':
+        }
+        case 'users': {
           data = []; // Would fetch user data
           break;
+        }
       }
 
       // Apply filters
@@ -377,15 +381,19 @@ let data: unknown[] = [];
           const filterValue = filter.value;
 
           switch (filter.operator) {
-            case 'equals':
+            case 'equals': {
               return recordValue === filterValue;
-            case 'contains':
+            }
+            case 'contains': {
               return String(recordValue).toLowerCase().includes(String(filterValue).toLowerCase());
-            case 'greater_than':
+            }
+            case 'greater_than': {
               return Number(recordValue) > Number(filterValue);
-            case 'less_than':
+            }
+            case 'less_than': {
               return Number(recordValue) < Number(filterValue);
-            case 'between':
+            }
+            case 'between': {
               if (Array.isArray(filterValue) && filterValue.length >= 2) {
                 return (
                   Number(recordValue) >= Number(filterValue[0]) &&
@@ -393,7 +401,8 @@ let data: unknown[] = [];
                 );
               }
               return false;
-            case 'in':
+            }
+            case 'in': {
               return Array.isArray(filterValue) && typeof recordValue !== 'undefined'
                 ? filterValue.some((val) => {
                     const valStr = String(val);
@@ -401,8 +410,10 @@ let data: unknown[] = [];
                     return val === recordValue || valStr === recordStr;
                   })
                 : false;
-            default:
+            }
+            default: {
               return true;
+            }
           }
         });
       });
@@ -411,12 +422,13 @@ let data: unknown[] = [];
       const metricsData: Record<string, number> = {};
       report.metrics.forEach((metric) => {
         switch (metric.type) {
-          case 'count':
+          case 'count': {
             metricsData[metric.id] = data.length;
             break;
-          case 'sum':
+          }
+          case 'sum': {
             if (metric.field) {
-metricsData[metric.id] = (data as Record<string, unknown>[]).reduce(
+              metricsData[metric.id] = (data as Record<string, unknown>[]).reduce(
                 (sum: number, record) => {
                   const fieldValue = record[metric.field!];
                   return sum + (Number(fieldValue) || 0);
@@ -425,11 +437,12 @@ metricsData[metric.id] = (data as Record<string, unknown>[]).reduce(
               );
             }
             break;
+          }
           case 'average': {
             if (metric.field) {
               const values = (data as Record<string, unknown>[])
                 .map((record) => {
-const fieldValue = record[metric.field!];
+                  const fieldValue = record[metric.field!];
                   return Number(fieldValue) || 0;
                 })
                 .filter((v) => v > 0);
@@ -438,7 +451,7 @@ const fieldValue = record[metric.field!];
             }
             break;
           }
-          case 'percentage':
+          case 'percentage': {
             if (metric.calculation) {
               // Simple calculation parser (would need more robust implementation)
               const [numerator, denominator] = metric.calculation.split('/');
@@ -447,6 +460,7 @@ const fieldValue = record[metric.field!];
               metricsData[metric.id] = (num / den) * 100;
             }
             break;
+          }
         }
       });
 

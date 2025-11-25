@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useProjects } from '../../hooks/useApi';
 import Button from '../ui/Button';
 
-export const ProjectsPage: React.FC = () => {
+const ProjectsPage: React.FC = () => {
   const { projects, isLoading, error, fetchProjects } = useProjects();
   const navigate = useNavigate();
 
@@ -115,3 +115,5 @@ export const ProjectsPage: React.FC = () => {
     </div>
   );
 };
+
+export default ProjectsPage;

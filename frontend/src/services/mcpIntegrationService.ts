@@ -213,7 +213,20 @@ class MCPIntegrationService {
       }
 
       // Handle response format from MCP server
-      const data = result.data as any;
+      interface ToolStatsData {
+        name?: string;
+        count?: number;
+        avgTime?: number;
+        successRate?: number;
+        tools?: Array<{
+          name?: string;
+          tool?: string;
+          count?: number;
+          avgTime?: number;
+          successRate?: number;
+        }>;
+      }
+      const data = result.data as ToolStatsData;
       
       if (tool) {
         // Single tool stats
@@ -226,7 +239,7 @@ class MCPIntegrationService {
       } else {
         // All tools stats
         if (data.tools && Array.isArray(data.tools)) {
-          return data.tools.map((t: any) => ({
+          return data.tools.map((t) => ({
             tool: t.name,
             count: t.count || 0,
             avgTime: t.avgTime || 0,
@@ -260,26 +273,42 @@ class MCPIntegrationService {
         throw new Error(result.error || 'Failed to get performance summary');
       }
 
-      const data = result.data as any;
+      interface PerformanceData {
+        toolUsage?: {
+          totalTools?: number;
+          totalCalls?: number;
+          mostUsed?: Array<{ name?: string; tool?: string; count?: number; avgTime?: number; successRate?: number }>;
+          slowest?: Array<{ name?: string; tool?: string; count?: number; avgTime?: number; successRate?: number }>;
+          errorProne?: Array<{ name?: string; tool?: string; count?: number; avgTime?: number; successRate?: number }>;
+        };
+        systemHealth?: {
+          cpu?: { load?: number; cores?: number };
+          memory?: { usagePercent?: string; total?: number; used?: number };
+        };
+        backendHealth?: { status: string; timestamp: string } | null;
+        recommendations?: string[];
+        timestamp?: string;
+      }
+      const data = result.data as PerformanceData;
       
       // Transform MCP response to expected format
       return {
         toolUsage: {
           totalTools: data.toolUsage?.totalTools || 0,
           totalCalls: data.toolUsage?.totalCalls || 0,
-          mostUsed: (data.toolUsage?.mostUsed || []).map((t: any) => ({
-            tool: t.name || t.tool,
+          mostUsed: (data.toolUsage?.mostUsed || []).map((t) => ({
+            tool: t.name || t.tool || '',
             count: t.count || 0,
             avgTime: t.avgTime || 0,
             successRate: t.successRate || 100,
           })),
-          slowest: (data.toolUsage?.slowest || []).map((t: any) => ({
-            tool: t.name || t.tool,
+          slowest: (data.toolUsage?.slowest || []).map((t) => ({
+            tool: t.name || t.tool || '',
             count: t.count || 0,
             avgTime: t.avgTime || 0,
             successRate: t.successRate || 100,
           })),
-          errorProne: (data.toolUsage?.errorProne || []).map((t: any) => ({
+          errorProne: (data.toolUsage?.errorProne || []).map((t) => ({
             tool: t.name || t.tool,
             count: t.count || 0,
             avgTime: t.avgTime || 0,
@@ -340,7 +369,12 @@ class MCPIntegrationService {
         throw new Error(result.error || 'Failed to run security audit');
       }
 
-      const data = result.data as any;
+      interface SecurityAuditData {
+        scope?: string;
+        results?: Record<string, unknown>;
+        timestamp?: string;
+      }
+      const data = result.data as SecurityAuditData;
       return {
         scope: data.scope || scope,
         results: data.results || {},
@@ -387,7 +421,25 @@ class MCPIntegrationService {
         throw new Error(result.error || 'Failed to get system metrics');
       }
 
-      const data = result.data as any;
+      interface SystemMetricsData {
+        cpu?: { currentLoad?: number; avgLoad?: number; cores?: number };
+        memory?: { total?: number; used?: number; free?: number; usagePercent?: string };
+        disk?: Array<{
+          fs: string;
+          size: number;
+          used: number;
+          available: number;
+          usagePercent: string;
+        }>;
+        processes?: {
+          total: number;
+          running: number;
+          sleeping: number;
+          topCpu: Array<{ pid: number; name: string; cpu: number }>;
+        };
+        timestamp?: string;
+      }
+      const data = result.data as SystemMetricsData;
       return {
         cpu: {
           currentLoad: data.cpu?.currentLoad || 0,
@@ -434,7 +486,13 @@ class MCPIntegrationService {
         throw new Error(result.error || 'Failed to check backend health');
       }
 
-      const data = result.data as any;
+      interface BackendHealthData {
+        status?: string;
+        data?: unknown;
+        statusCode?: number;
+        timestamp?: string;
+      }
+      const data = result.data as BackendHealthData;
       return {
         status: data.status || 'unknown',
         data: data.data,

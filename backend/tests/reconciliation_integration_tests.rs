@@ -262,7 +262,7 @@ mod reconciliation_job_tests {
 
     #[tokio::test]
     async fn test_confidence_scoring_thresholds() {
-        use reconciliation_backend::services::reconciliation::matching::{match_records, MatchingAlgorithm};
+        use reconciliation_backend::services::reconciliation::matching::match_records;
         use reconciliation_backend::services::reconciliation::types::ReconciliationRecord;
         use std::collections::HashMap;
 
@@ -339,7 +339,7 @@ mod reconciliation_job_tests {
 
     #[tokio::test]
     async fn test_confidence_scoring_with_partial_matches() {
-        use reconciliation_backend::services::reconciliation::matching::{match_records, MatchingAlgorithm};
+        use reconciliation_backend::services::reconciliation::matching::match_records;
         use reconciliation_backend::services::reconciliation::types::ReconciliationRecord;
         use std::collections::HashMap;
 
@@ -510,8 +510,7 @@ mod job_management_tests {
 
     #[tokio::test]
     async fn test_job_processor_lifecycle() {
-        let (db, _temp_dir) = setup_test_database().await;
-        let _db_arc = Arc::new(db);
+        let (_db, _temp_dir) = setup_test_database().await;
         let job_processor = reconciliation_backend::services::reconciliation::JobProcessor::new(2, 100);
 
         let job_id = Uuid::new_v4();
@@ -539,8 +538,7 @@ mod job_management_tests {
 
     #[tokio::test]
     async fn test_concurrent_job_processing() {
-        let (db, _temp_dir) = setup_test_database().await;
-        let _db_arc = Arc::new(db);
+        let (_db, _temp_dir) = setup_test_database().await;
         let job_processor = reconciliation_backend::services::reconciliation::JobProcessor::new(3, 50);
 
         let job_ids = vec![Uuid::new_v4(), Uuid::new_v4(), Uuid::new_v4()];
@@ -610,7 +608,7 @@ mod job_management_tests {
         assert!(result.is_ok());
         
         let active_jobs = result.unwrap();
-        assert!(active_jobs.len() >= 0); // Can be empty
+        // Can be empty - no assertion needed as len() is always >= 0
     }
 
     #[tokio::test]
@@ -625,7 +623,7 @@ mod job_management_tests {
         assert!(result.is_ok());
         
         let queued_jobs = result.unwrap();
-        assert!(queued_jobs.len() >= 0); // Can be empty
+        // Can be empty - no assertion needed as len() is always >= 0
     }
 
     #[tokio::test]
@@ -664,7 +662,7 @@ mod job_management_tests {
     // Performance and edge case tests
     #[tokio::test]
     async fn test_matching_performance_large_dataset() {
-        use reconciliation_backend::services::reconciliation::matching::{match_records, MatchingAlgorithm};
+        use reconciliation_backend::services::reconciliation::matching::match_records;
         use reconciliation_backend::services::reconciliation::types::ReconciliationRecord;
         use std::collections::HashMap;
 
@@ -718,8 +716,8 @@ mod job_management_tests {
         let exact_algorithm = reconciliation_backend::services::reconciliation::matching::ExactMatchingAlgorithm;
 
         // Test with empty fields
-        let mut empty_source = HashMap::new();
-        let mut empty_target = HashMap::new();
+        let empty_source = HashMap::new();
+        let empty_target = HashMap::new();
 
         let empty_source_record = ReconciliationRecord {
             id: Uuid::new_v4(),
@@ -804,7 +802,6 @@ mod edge_case_tests {
 
     #[tokio::test]
     async fn test_matching_with_empty_strings() {
-        use reconciliation_backend::services::reconciliation::matching::MatchingAlgorithm;
         let algorithm = ExactMatchingAlgorithm;
 
         // Empty strings should match
@@ -815,7 +812,6 @@ mod edge_case_tests {
 
     #[tokio::test]
     async fn test_matching_with_null_values() {
-        use reconciliation_backend::services::reconciliation::matching::MatchingAlgorithm;
         let algorithm = ExactMatchingAlgorithm;
 
         // Null/None values should be handled
@@ -826,7 +822,6 @@ mod edge_case_tests {
 
     #[tokio::test]
     async fn test_matching_with_special_characters() {
-        use reconciliation_backend::services::reconciliation::matching::MatchingAlgorithm;
         let algorithm = ExactMatchingAlgorithm;
 
         // Special characters should match exactly
@@ -838,7 +833,6 @@ mod edge_case_tests {
 
     #[tokio::test]
     async fn test_fuzzy_matching_with_unicode() {
-        use reconciliation_backend::services::reconciliation::matching::MatchingAlgorithm;
         let algorithm = FuzzyMatchingAlgorithm::new(0.7, FuzzyAlgorithmType::Levenshtein);
 
         // Unicode characters should be handled
@@ -848,7 +842,6 @@ mod edge_case_tests {
 
     #[tokio::test]
     async fn test_matching_with_malformed_data() {
-        use reconciliation_backend::services::reconciliation::matching::MatchingAlgorithm;
         let algorithm = ExactMatchingAlgorithm;
 
         // Malformed data should not crash
@@ -929,7 +922,6 @@ mod edge_case_tests {
 
     #[tokio::test]
     async fn test_performance_with_large_dataset() {
-        use reconciliation_backend::services::reconciliation::matching::MatchingAlgorithm;
         let algorithm = ExactMatchingAlgorithm;
 
         // Test with many records (simulated)

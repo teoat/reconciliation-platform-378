@@ -187,7 +187,6 @@ mod monitoring_service_tests {
 #[cfg(test)]
 mod secrets_service_tests {
     use super::*;
-    use reconciliation_backend::services::secrets::SecretsService;
 
     #[tokio::test]
     async fn test_secrets_service_creation() {

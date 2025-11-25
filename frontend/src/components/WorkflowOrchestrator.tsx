@@ -322,20 +322,27 @@ const WorkflowOrchestrator = ({
             <span className="sr-only">Progress:</span>
             {workflowProgress.completed}/{workflowProgress.total} stages completed
           </div>
-          <div
-            className="w-24 bg-gray-200 rounded-full h-2"
-            role="progressbar"
-            aria-valuenow={Number(Math.round(workflowProgress.percentage))}
-            aria-valuemin={Number(0)}
-            aria-valuemax={Number(100)}
-            aria-label={`Workflow progress: ${workflowProgress.percentage}%`}
-          >
-            <div
-              className="progress-bar progress-bar-blue h-2 rounded-full transition-all duration-300"
-              style={{ width: `${workflowProgress.percentage}%` }}
-              aria-hidden="true"
-            />
-          </div>
+          {(() => {
+            const ariaValueNow = Math.round(workflowProgress.percentage);
+            const ariaValueMin = 0;
+            const ariaValueMax = 100;
+            return (
+              <div
+                className="w-24 bg-gray-200 rounded-full h-2"
+                role="progressbar"
+                aria-valuenow={ariaValueNow}
+                aria-valuemin={ariaValueMin}
+                aria-valuemax={ariaValueMax}
+                aria-label={`Workflow progress: ${workflowProgress.percentage}%`}
+              >
+                <div
+                  className="progress-bar progress-bar-blue h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${workflowProgress.percentage}%` }}
+                  aria-hidden="true"
+                />
+              </div>
+            );
+          })()}
         </div>
       </div>
 

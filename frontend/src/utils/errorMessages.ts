@@ -20,7 +20,6 @@ export interface UserFriendlyErrorInfo {
  */
 export const getUserFriendlyError = (error: Error | string): UserFriendlyErrorInfo => {
   const errorMessage = error instanceof Error ? error.message : error;
-  const errorName = error instanceof Error ? error.name : 'Error';
 
   // Network errors
   if (

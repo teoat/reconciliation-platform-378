@@ -16,9 +16,6 @@
 import { logger } from '@/services/logger';
 
 import React, { useState, useEffect, useCallback, useMemo, memo, lazy, Suspense } from 'react';
-import { TrendingUp } from 'lucide-react';
-import { TrendingDown } from 'lucide-react';
-import { Activity } from 'lucide-react';
 import { Target } from 'lucide-react';
 import { Shield } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
@@ -121,7 +118,7 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   // State management
   const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
   const [, setProjectStats] = useState<ProjectStats[]>([]);
-  const [, setUserActivityStats] = useState<UserActivityStats[]>([]);
+  const [userActivityStats, setUserActivityStats] = useState<UserActivityStats[]>([]);
   const [reconciliationStats, setReconciliationStats] = useState<ReconciliationStats | null>(null);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -158,15 +155,15 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         // Adapt API response to component types
         const data = dashboardResponse.data;
         const adaptedData: DashboardMetrics = {
-          total_projects: data.total_projects,
-          total_users: data.total_users,
+          total_projects: data.total_projects ?? 0,
+          total_users: data.total_users ?? 0,
           total_files: 0, // Not in API response
-          total_reconciliation_jobs: data.total_reconciliation_jobs,
-          active_jobs: data.active_jobs,
-          completed_jobs: data.completed_jobs,
-          failed_jobs: dashboardResponse.data.failed_jobs,
+          total_reconciliation_jobs: data.total_reconciliation_jobs ?? 0,
+          active_jobs: data.active_jobs ?? 0,
+          completed_jobs: data.completed_jobs ?? 0,
+          failed_jobs: dashboardResponse.data.failed_jobs ?? 0,
           total_records_processed: 0, // Not in API response
-          total_matches_found: dashboardResponse.data.total_matches,
+          total_matches_found: dashboardResponse.data.total_matches ?? 0,
           average_confidence_score: 0, // Not in API response
           average_processing_time: 0, // Not in API response
           system_uptime: 99.9, // Not in API response
@@ -195,16 +192,16 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
         const data = reconciliationResponse.data;
         // Adapt API response to component types
         const adaptedStats: ReconciliationStats = {
-          total_jobs: data.total_jobs,
+          total_jobs: data.total_jobs ?? 0,
           active_jobs: 0, // Not in API response
-          completed_jobs: data.completed_jobs,
-          failed_jobs: data.failed_jobs,
+          completed_jobs: data.completed_jobs ?? 0,
+          failed_jobs: data.failed_jobs ?? 0,
           queued_jobs: 0, // Not in API response
           total_records_processed: 0, // Not in API response
-          total_matches_found: reconciliationResponse.data.total_matches,
-          total_unmatched_records: reconciliationResponse.data.total_unmatched,
-          average_confidence_score: reconciliationResponse.data.average_confidence_score,
-          average_processing_time: reconciliationResponse.data.average_processing_time_ms,
+          total_matches_found: reconciliationResponse.data.matched_records ?? 0,
+          total_unmatched_records: reconciliationResponse.data.unmatched_records ?? 0,
+          average_confidence_score: reconciliationResponse.data.average_confidence ?? 0,
+          average_processing_time: reconciliationResponse.data.average_processing_time ?? 0,
           success_rate: 0, // Calculated
           throughput_per_hour: 0, // Calculated
         };

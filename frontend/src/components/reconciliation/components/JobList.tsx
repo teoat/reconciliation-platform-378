@@ -34,6 +34,9 @@ const JobItem: React.FC<JobItemProps> = ({
   const progressValue: number = job.status === 'running' && job.total_records && job.total_records > 0
     ? Math.round((job.processed_records / job.total_records) * 100)
     : 0;
+  const ariaValueNow = progressValue;
+  const ariaValueMin = 0;
+  const ariaValueMax = 100;
 
   return (
     <div className="p-6 hover:bg-gray-50">
@@ -80,9 +83,9 @@ const JobItem: React.FC<JobItemProps> = ({
               <div
                 className="w-full bg-gray-200 rounded-full h-2"
                 role="progressbar"
-                aria-valuenow={Number(progressValue)}
-                aria-valuemin={Number(0)}
-                aria-valuemax={Number(100)}
+                aria-valuenow={ariaValueNow}
+                aria-valuemin={ariaValueMin}
+                aria-valuemax={ariaValueMax}
                 aria-label={`Job ${job.name} is ${progressValue} percent complete`}
               >
                 <div
@@ -159,6 +162,9 @@ export const JobList: React.FC<JobListProps> = ({
         const progressValue: number = job.status === 'running' && job.total_records && job.total_records > 0
           ? Math.round((job.processed_records / job.total_records) * 100)
           : 0;
+        const ariaValueNow = progressValue;
+        const ariaValueMin = 0;
+        const ariaValueMax = 100;
 
         return (
           <div key={job.id} className="p-6 hover:bg-gray-50">
@@ -207,9 +213,9 @@ export const JobList: React.FC<JobListProps> = ({
                     <div
                       className="w-full bg-gray-200 rounded-full h-2"
                       role="progressbar"
-                      aria-valuenow={Number(progressValue)}
-                      aria-valuemin={Number(0)}
-                      aria-valuemax={Number(100)}
+                      aria-valuenow={ariaValueNow}
+                      aria-valuemin={ariaValueMin}
+                      aria-valuemax={ariaValueMax}
                       aria-label={`Job ${job.name} is ${progressValue} percent complete`}
                     >
                       <div

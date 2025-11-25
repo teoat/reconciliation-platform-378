@@ -7,9 +7,9 @@ import { ErrorBoundary } from './components/ui/ErrorBoundary';
 import { WebSocketProvider } from './services/WebSocketProvider';
 import UnifiedFetchInterceptor from './services/unifiedFetchInterceptor';
 // Lazy load memory monitoring to reduce initial bundle
-const initializeMemoryMonitoring = async () => {
+const initializeMemoryMonitoring = async (intervalMs: number = 30000) => {
   const { initializeMemoryMonitoring: init } = await import('./utils/memoryOptimization');
-  return init();
+  return init(intervalMs);
 };
 import AppShell from './components/layout/AppShell';
 import AuthPage from './pages/AuthPage';
@@ -18,7 +18,8 @@ import ToastContainer from './components/ui/ToastContainer';
 import { APP_CONFIG } from './config/AppConfig';
 import KeyboardShortcuts from './components/pages/KeyboardShortcuts';
 import { SessionTimeoutHandler } from './components/SessionTimeoutHandler';
-import { useFeatureRegistryInit } from './features/integration';
+// Note: useFeatureRegistryInit is available but not currently used in App component
+// import { useFeatureRegistryInit } from './features/integration';
 
 // Lazy load route components for better performance
 const Dashboard = lazy(() => import('./components/Dashboard'));
@@ -77,10 +78,13 @@ function App() {
 
   // Initialize memory monitoring (lazy loaded)
   useEffect(() => {
-    initializeMemoryMonitoring().then((init) => {
-      const cleanup = init(30000); // Monitor every 30 seconds
-      return cleanup;
+    let cleanup: (() => void) | undefined;
+    initializeMemoryMonitoring(30000).then((cleanupFn) => {
+      cleanup = cleanupFn;
     });
+    return () => {
+      if (cleanup) cleanup();
+    };
   }, []);
 
   return (

@@ -122,12 +122,8 @@ mod error_translation_service_tests {
 
 #[cfg(test)]
 mod file_service_tests {
-    use actix_multipart::Multipart;
-    use futures_util::stream::StreamExt;
     use reconciliation_backend::database::Database;
     use reconciliation_backend::services::file::{FileService, FileUploadResult};
-    use std::io::Cursor;
-    use std::path::PathBuf;
     use uuid::Uuid;
 
     // Mock database for testing
@@ -170,10 +166,7 @@ mod file_service_tests {
 
 #[cfg(test)]
 mod validation_service_tests {
-    use reconciliation_backend::services::validation::{
-        ValidationResult, ValidationRule, ValidationService,
-    };
-    use serde_json::Value;
+    use reconciliation_backend::services::validation::ValidationService;
 
     #[test]
     fn test_validation_service_creation() {
@@ -331,8 +324,6 @@ mod security_service_tests {
 #[cfg(test)]
 mod monitoring_service_tests {
     use reconciliation_backend::services::monitoring::MonitoringService;
-    use reconciliation_backend::services::advanced_metrics::MetricType;
-    use std::collections::HashMap;
 
     #[test]
     fn test_monitoring_service_creation() {
@@ -530,8 +521,6 @@ mod backup_recovery_service_tests {
 
 #[cfg(test)]
 mod analytics_service_tests {
-    use reconciliation_backend::services::analytics::AnalyticsService;
-    use uuid::Uuid;
 
     #[test]
     fn test_analytics_service_creation() {
@@ -868,7 +857,6 @@ mod realtime_service_tests {
 mod secrets_service_tests {
     use super::*;
     use reconciliation_backend::services::secrets::SecretsService;
-    use std::sync::Arc;
 
     /// Test secrets service
     #[test]

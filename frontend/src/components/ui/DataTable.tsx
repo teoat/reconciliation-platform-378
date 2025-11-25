@@ -267,7 +267,7 @@ const DataTableComponent = <T extends Record<string, unknown>>({
 
       {/* Table */}
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200" role="table" aria-label="Data table">
+        <table className="min-w-full divide-y divide-gray-200" aria-label="Data table">
           <thead className="bg-gray-50">
             <tr>
               {columns.map((column) => (
@@ -372,6 +372,7 @@ const DataTableComponent = <T extends Record<string, unknown>>({
               paginatedData.map((row, index) => {
                 const globalIndex = (currentPage - 1) * pageSize + index;
                 const isSelected = globalIndex === selectedRowIndex;
+                const ariaSelected = isSelected ? 'true' : 'false';
                 return (
                   <tr
                     key={index}
@@ -390,7 +391,7 @@ const DataTableComponent = <T extends Record<string, unknown>>({
                         onRowClick(row);
                       }
                     }}
-                    aria-selected={isSelected ? 'true' : 'false'}
+                    aria-selected={ariaSelected}
                   >
                     {columns.map((column) => (
                       <td

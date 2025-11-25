@@ -83,7 +83,7 @@ mod reconciliation_api_tests {
 
         // Create data sources (simplified - would normally create actual data sources)
         let source_a_id = Uuid::new_v4();
-        let source_b_id = Uuid::new_v4();
+        let _source_b_id = Uuid::new_v4();
 
         // Generate token for authentication
         let user_model = user_service
@@ -1082,7 +1082,7 @@ mod reconciliation_api_tests {
         let (db, _temp_dir): (Database, _) = setup_test_database().await;
         let db_arc = Arc::new(db);
         let auth_service = AuthService::new("test_secret".to_string(), 3600);
-        let (_, _, _, token1) = setup_test_fixtures(db_arc.clone(), auth_service).await;
+        let (_, _, _, _token1) = setup_test_fixtures(db_arc.clone(), auth_service).await;
 
         // Create job with user 1
         // Note: setup_reconciliation_job function not found - creating job directly

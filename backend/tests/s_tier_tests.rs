@@ -66,7 +66,7 @@ async fn test_query_optimizer_suggestions() {
 
 #[test]
 fn test_advanced_metrics_creation() {
-    let metrics = AdvancedMetrics::new();
+    let _metrics = AdvancedMetrics::new();
     assert!(true, "AdvancedMetrics should be created successfully");
 }
 

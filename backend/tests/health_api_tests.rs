@@ -8,7 +8,7 @@ use std::sync::Arc;
 
 use reconciliation_backend::database::Database;
 use reconciliation_backend::handlers::health::{
-    get_dependencies_status, get_metrics_endpoint, get_resilience_status, health_check,
+    get_dependencies_status, get_metrics_endpoint, get_resilience_status,
     configure_health_routes,
 };
 use reconciliation_backend::services::cache::MultiLevelCache;
@@ -66,8 +66,8 @@ mod health_api_tests {
     /// Test resilience status endpoint
     #[actix_web::test]
     async fn test_get_resilience_status() {
-        let (db, _temp_dir): (Database, _) = setup_test_database().await;
-        let cache = Arc::new(
+        let (_db, _temp_dir): (Database, _) = setup_test_database().await;
+        let _cache = Arc::new(
             MultiLevelCache::new("redis://localhost:6379").unwrap()
         );
         let resilience = Arc::new(ResilienceManager::new());

@@ -450,8 +450,7 @@ mod reconciliation_service_tests {
 
         assert!(result.is_ok());
         let jobs = result.unwrap();
-        // Can be empty if no jobs created
-        assert!(jobs.len() >= 0);
+        // Can be empty if no jobs created - no assertion needed as len() is always >= 0
     }
 
     #[tokio::test]

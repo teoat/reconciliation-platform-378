@@ -3,4 +3,4 @@
 // ============================================================================
 
 // Re-export the unified form hook from the forms system
-export { useForm } from '../components/forms';
+export { useForm } from './useForm';

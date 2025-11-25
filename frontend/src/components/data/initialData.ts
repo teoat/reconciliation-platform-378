@@ -13,6 +13,7 @@ export const createInitialCrossPageData = (): CrossPageData => ({
     records: [],
     matchingResults: [],
     discrepancies: [],
+    metrics: { matchRate: 0, processingTime: 0, discrepancyRate: 0, autoMatchRate: 0 },
     qualityMetrics: { matchRate: 0, processingTime: 0, discrepancyRate: 0, autoMatchRate: 0 },
     lastUpdated: new Date(),
   },

@@ -2,18 +2,13 @@
 //!
 //! Tests critical security vulnerabilities identified in Cycle 1 audits
 
-use actix_web::{test, web, App, HttpRequest, HttpResponse};
+use actix_web::{test, web, App};
 use serde_json::json;
 use uuid::Uuid;
-
-use reconciliation_backend::handlers::*;
-use reconciliation_backend::middleware::security::{configure_security_middleware, SecurityConfig};
-use reconciliation_backend::services::{AuthService, UserService};
 
 #[path = "test_utils.rs"]
 mod test_utils;
 use test_utils::{TestClient, get_test_config_and_db};
-use reconciliation_backend::{config::Config, database::Database, handlers::configure_routes};
 
 /// Test suite for authorization security
 #[cfg(test)]
@@ -22,7 +17,7 @@ mod authorization_security_tests {
 
     #[tokio::test]
     async fn test_unauthorized_project_access() {
-        let mut test_client = TestClient::new();
+        let mut _test_client = TestClient::new();
 
         // Authenticate as user1
         test_client
@@ -31,7 +26,7 @@ mod authorization_security_tests {
             .unwrap();
 
         // Create a project as user1
-        let project_id = test_client
+        let project_id = _test_client
             .create_project("User1 Project", "Project owned by user1")
             .await
             .unwrap();
@@ -55,29 +50,29 @@ mod authorization_security_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
 
         // Should return 403 Forbidden
-        assert_eq!(resp.status(), 403);
+        assert_eq!(_resp.status(), 403);
 
-        let body: serde_json::Value = test::read_body_json(resp).await;
+        let body: serde_json::Value = test::read_body_json(_resp).await;
         assert!(body["error"].as_str().unwrap().contains("Access denied"));
     }
 
     #[tokio::test]
     async fn test_unauthorized_file_access() {
-        let mut test_client = TestClient::new();
-        test_client
+        let mut _test_client = TestClient::new();
+        _test_client
             .authenticate_as("user1@test.com", "password123")
             .await
             .unwrap();
 
         // Create project and upload file
-        let project_id = test_client
+        let project_id = _test_client
             .create_project("Test Project", "Test")
             .await
             .unwrap();
-        let file_id = test_client
+        let _file_id = _test_client
             .upload_file(&project_id, "./test_data/sample.csv")
             .await
             .unwrap();

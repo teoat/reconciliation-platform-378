@@ -15,7 +15,7 @@ mod structured_logging_service_tests {
 
     #[test]
     fn test_structured_logging_creation() {
-        let logger = StructuredLogging::new("test-service".to_string());
+        let _logger = StructuredLogging::new("test-service".to_string());
         
         // Verify logger is created
         assert!(true);

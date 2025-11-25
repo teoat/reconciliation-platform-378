@@ -9,10 +9,6 @@ use uuid::Uuid;
 
 use reconciliation_backend::{config::Config, database::Database, handlers::configure_routes};
 
-#[path = "test_utils.rs"]
-mod test_utils;
-use test_utils::*;
-
 /// Test API endpoint setup macro - avoids type annotation issues
 /// Usage: let app = setup_api_test_app!().await;
 macro_rules! setup_api_test_app {

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, memo } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import { BarChart3 } from 'lucide-react';
 import { LineChart } from 'lucide-react';
 import { PieChart } from 'lucide-react';
@@ -21,10 +21,24 @@ import type { BackendProject } from '../services/apiClient/types';
 
 // Advanced Visualization Interfaces
 interface ChartDataPoint {
-  label: string;
-  value: number;
+  label?: string;
+  value?: number;
   category?: string;
+  date?: string | number;
+  amount?: number;
+  type?: string;
+  source?: string;
+  day?: string;
+  name?: string;
+  metric?: string;
+  stage?: string;
+  matchRate?: number;
+  accuracy?: number;
+  throughput?: number;
+  count?: number;
+  target?: string | number;
   metadata?: Record<string, unknown>;
+  [key: string]: unknown; // Allow additional properties
 }
 
 interface FilterConfig {
@@ -140,9 +154,9 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
           name: 'Expense Category Distribution',
           type: 'pie',
           data: [
-            { category: 'Operational', value: 45.2, amount: 12500000 },
-            { category: 'Company', value: 32.8, amount: 9100000 },
-            { category: 'Personal', value: 15.6, amount: 4300000 },
+            { category: 'Operational', value: 45.2, amount: 12500000, label: 'Operational' },
+            { category: 'Company', value: 32.8, amount: 9100000, label: 'Company' },
+            { category: 'Personal', value: 15.6, amount: 4300000, label: 'Personal' },
             { category: 'Utilities', value: 6.4, amount: 1800000 },
           ],
           config: {
@@ -201,12 +215,12 @@ const AdvancedVisualization = ({ project, onProgressUpdate }: VisualizationDashb
           name: 'Data Flow Sankey',
           type: 'sankey',
           data: [
-            { source: 'Ingestion', target: 'Validation', value: 1000 },
-            { source: 'Validation', target: 'Reconciliation', value: 950 },
-            { source: 'Reconciliation', target: 'Matched', value: 890 },
-            { source: 'Reconciliation', target: 'Discrepancy', value: 60 },
-            { source: 'Discrepancy', target: 'Resolved', value: 45 },
-            { source: 'Discrepancy', target: 'Escalated', value: 15 },
+            { source: 'Ingestion', target: 'Validation', value: 1000, label: 'Ingestion to Validation' },
+            { source: 'Validation', target: 'Reconciliation', value: 950, label: 'Validation to Reconciliation' },
+            { source: 'Reconciliation', target: 'Matched', value: 890, label: 'Reconciliation to Matched' },
+            { source: 'Reconciliation', target: 'Discrepancy', value: 60, label: 'Reconciliation to Discrepancy' },
+            { source: 'Discrepancy', target: 'Resolved', value: 45, label: 'Discrepancy to Resolved' },
+            { source: 'Discrepancy', target: 'Escalated', value: 15, label: 'Discrepancy to Escalated' },
           ],
           config: {
             title: 'Data Processing Flow',

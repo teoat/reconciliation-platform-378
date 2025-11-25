@@ -272,6 +272,15 @@ export class FrenlyGuidanceAgent implements MetaAgent {
   }
 
   /**
+   * Start MCP monitoring
+   */
+  private startMCPMonitoring(): void {
+    // MCP monitoring will be implemented when MCP integration is available
+    // This is a placeholder to prevent compilation errors
+    logger.debug('MCP monitoring not yet implemented');
+  }
+
+  /**
    * Cleanup old user behaviors
    */
   private cleanupOldBehaviors(): void {

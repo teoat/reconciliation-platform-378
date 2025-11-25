@@ -594,7 +594,7 @@ mod auth_handler_tests {
         // Note: This test requires the password reset token to be stored in the database
         // For a complete test, we'd need to set up the token in the password_reset_tokens table
         // This is a simplified test structure
-        let req = test::TestRequest::post()
+        let _req = test::TestRequest::post()
             .uri("/api/auth/password-reset/confirm")
             .set_payload(format!(
                 r#"{{"token":"{}","new_password":"NewPassword123!"}}"#,
@@ -634,7 +634,7 @@ mod auth_handler_tests {
             "token": "test_verification_token"
         });
 
-        let req = test::TestRequest::post()
+        let _req = test::TestRequest::post()
             .uri("/api/auth/verify-email")
             .set_json(&verify_request)
             .to_request();
@@ -706,7 +706,7 @@ mod auth_handler_tests {
             role: Some("user".to_string()),
         };
 
-        let user = user_service.create_user(create_request).await.unwrap();
+        let _user = user_service.create_user(create_request).await.unwrap();
         let user_model = user_service
             .as_ref()
             .get_user_by_email("current@example.com")
@@ -772,7 +772,7 @@ mod auth_handler_tests {
             role: Some("user".to_string()),
         };
 
-        let user = user_service.create_user(create_request).await.unwrap();
+        let _user = user_service.create_user(create_request).await.unwrap();
         let user_model = user_service
             .as_ref()
             .get_user_by_email("settings@example.com")
@@ -817,7 +817,7 @@ mod auth_handler_tests {
             role: Some("user".to_string()),
         };
 
-        let user = user_service.create_user(create_request).await.unwrap();
+        let _user = user_service.create_user(create_request).await.unwrap();
         let user_model = user_service
             .as_ref()
             .get_user_by_email("updatesettings@example.com")
@@ -1098,7 +1098,7 @@ mod auth_handler_tests {
             role: Some("user".to_string()),
         };
 
-        let user = user_service.create_user(create_request).await.unwrap();
+        let _user = user_service.create_user(create_request).await.unwrap();
 
         // Try to change password without current password
         let change_request = serde_json::json!({

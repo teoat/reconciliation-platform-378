@@ -55,51 +55,12 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
     { value: 'custom', label: 'Custom Endpoint', method: 'GET', endpoint: '' },
   ];
 
-const runApiTest = useCallback(async (
-    endpoint: string,
-    method: string,
-    body?: Record<string, unknown> | unknown[]
-  ) => {
-    const startTime = Date.now()
-    const timestamp = new Date()
-    
-    // Add pending result
-    const pendingResult: ApiTestResult = {
-      endpoint,
-      method,
-      status: 'pending',
-      timestamp
-    }
-    
-    setTestResults(prev => [pendingResult, ...prev])
-    
-    try {
-      let response: unknown
-      
-      // Execute the appropriate API call based on endpoint
-      switch (endpoint) {
-        case '/health':
-          response = await ApiService.healthCheck()
-          break
-        case '/auth/me':
-          response = await ApiService.getCurrentUser()
-          break
-        case '/projects':
-          response = await ApiService.getProjects()
-          break
-        case '/users':
-          response = await ApiService.getUsers()
-          break
-        case '/analytics/dashboard':
-          response = await ApiService.getDashboardData()
-          break
-        default:
-          throw new Error(`Unknown endpoint: ${endpoint}`)
-      }
-      
-      const duration = Date.now() - startTime;
-      
-      const successResult: ApiTestResult = {
+  const runApiTest = useCallback(
+    async (endpoint: string, method: string, _body?: Record<string, unknown> | unknown[]) => {
+      const startTime = Date.now();
+      const timestamp = new Date();
+
+      const pendingResult: ApiTestResult = {
         endpoint,
         method,
         status: 'pending',
@@ -108,10 +69,9 @@ const runApiTest = useCallback(async (
 
       setTestResults((prev) => [pendingResult, ...prev]);
 
-      try {
-        let response: Record<string, unknown> | unknown[] | undefined;
+      let response: unknown;
 
-        // Execute the appropriate API call based on endpoint
+      try {
         switch (endpoint) {
           case '/health':
             response = await ApiService.healthCheck();
@@ -138,7 +98,7 @@ const runApiTest = useCallback(async (
           endpoint,
           method,
           status: 'success',
-          response,
+          response: response as Record<string, unknown> | unknown[],
           duration,
           timestamp,
         };
@@ -148,7 +108,7 @@ const runApiTest = useCallback(async (
         );
 
         setResponseBody(JSON.stringify(response, null, 2));
-        showSuccess('API Test Successful', `Endpoint ${endpoint} responded successfully`);
+        showSuccess(`API Test Successful - Endpoint ${endpoint} responded successfully`);
       } catch (error) {
         const duration = Date.now() - startTime;
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -167,40 +127,36 @@ const runApiTest = useCallback(async (
         );
 
         setResponseBody(JSON.stringify({ error: errorMessage }, null, 2));
-        showError('API Test Failed', errorMessage);
+        showError(`API Test Failed - ${errorMessage}`);
       }
-setTestResults(prev => 
-        prev.map(result => 
-          result.timestamp === timestamp ? successResult : result
-        )
-      )
-      
-      setResponseBody(JSON.stringify(response, null, 2))
-      showSuccess(`API Test Successful - Endpoint ${endpoint} responded successfully`)
-      
-    } catch (error) {
-      const duration = Date.now() - startTime
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
-      
-      const errorResult: ApiTestResult = {
-        endpoint,
-        method,
-        status: 'error',
-        error: errorMessage,
-        duration,
-        timestamp
+    },
+    [showSuccess, showError]
+  );
+
+        setResponseBody(JSON.stringify(response, null, 2));
+        showSuccess(`API Test Successful - Endpoint ${endpoint} responded successfully`);
+      } catch (error) {
+        const duration = Date.now() - startTime;
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        const errorResult: ApiTestResult = {
+          endpoint,
+          method,
+          status: 'error',
+          error: errorMessage,
+          duration,
+          timestamp,
+        };
+
+        setTestResults((prev) =>
+          prev.map((result) => (result.timestamp === timestamp ? errorResult : result))
+        );
+
+        setResponseBody(JSON.stringify({ error: errorMessage }, null, 2));
+        showError(`API Test Failed - ${errorMessage}`);
       }
-      
-      setTestResults(prev => 
-        prev.map(result => 
-          result.timestamp === timestamp ? errorResult : result
-        )
-      )
-      
-      setResponseBody(JSON.stringify({ error: errorMessage }, null, 2))
-      showError(`API Test Failed - ${errorMessage}`)
-    }
-  }, [showSuccess, showError])
+    }, [showSuccess, showError]);
+  );
 
   const handleRunTest = useCallback(() => {
     if (!selectedEndpoint) return;
@@ -228,29 +184,32 @@ setTestResults(prev =>
     }
   }, [runApiTest]);
 
-const copyToClipboard = useCallback((text: string) => {
-    navigator.clipboard.writeText(text)
-    showSuccess('Response copied to clipboard')
-  }, [showSuccess])
+  const copyToClipboard = useCallback(
+    (text: string) => {
+      navigator.clipboard.writeText(text);
+      showSuccess('Response copied to clipboard');
+    },
+    [showSuccess]
+  );
 
   const downloadResults = useCallback(() => {
     const data = {
       timestamp: new Date().toISOString(),
-results: testResults
-    }
-    
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `api-test-results-${Date.now()}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-    
-    showSuccess('Test results downloaded successfully')
-  }, [testResults, showSuccess])
+      results: testResults,
+    };
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `api-test-results-${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showSuccess('Test results downloaded successfully');
+  }, [testResults, showSuccess]);
 
   const clearResults = useCallback(() => {
     setTestResults([]);

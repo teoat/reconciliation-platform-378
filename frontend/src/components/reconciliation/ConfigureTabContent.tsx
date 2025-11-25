@@ -5,7 +5,7 @@ interface ReconciliationSettings {
   matchingThreshold: number;
   autoApprove: boolean;
   notificationEmail: string;
-  dataSourceMapping: {};
+  dataSourceMapping: Record<string, unknown>;
 }
 
 interface ConfigureTabContentProps {

@@ -28,7 +28,7 @@ const SENSITIVE_PATTERNS = [
   /DELETE\s+FROM/gi,
 
   // File paths (may contain sensitive info)
-  /\/[\w\/.-]+\.(key|pem|p12|pfx|crt|cer)/gi,
+  /\/[\w/.-]+\.(key|pem|p12|pfx|crt|cer)/gi,
   /C:\\[\w\\.-]+\.(key|pem|p12|pfx|crt|cer)/gi,
 
   // Stack traces
@@ -36,8 +36,8 @@ const SENSITIVE_PATTERNS = [
   /Stack\s+Trace:/gi,
 
   // Internal paths
-  /\/home\/[^\/]+\/[^:]+/gi,
-  /\/Users\/[^\/]+\/[^:]+/gi,
+  /\/home\/[^/]+\/[^:]+/gi,
+  /\/Users\/[^/]+\/[^:]+/gi,
 ];
 
 /**

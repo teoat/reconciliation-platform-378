@@ -28,6 +28,7 @@ import { Edit } from 'lucide-react';
 import { Trash2 } from 'lucide-react';
 import { Plus } from 'lucide-react';
 import { Minus } from 'lucide-react';
+import { FileUploadDropzone, FileFilters, FileIcon, FileStatusBadge } from './fileUpload';
 import { ArrowUpDown } from 'lucide-react';
 import { ChevronDown } from 'lucide-react';
 import { ChevronUp } from 'lucide-react';
