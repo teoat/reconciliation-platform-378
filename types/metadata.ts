@@ -6,7 +6,7 @@
 /**
  * Base metadata value type - union of all allowed metadata value types
  */
-export type MetadataValue = string | number | boolean | null | Metadata | MetadataValue[];
+export type MetadataValue = string | number | boolean | null | undefined | Metadata | MetadataValue[];
 
 /**
  * Metadata object - key-value pairs where values are MetadataValue
@@ -25,5 +25,5 @@ export interface ReconciliationMetadata {
   timestamp?: string;
   sourceId?: string;
   targetId?: string;
-  [key: string]: MetadataValue | undefined;
+  [key: string]: MetadataValue;
 }

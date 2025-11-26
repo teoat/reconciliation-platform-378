@@ -380,7 +380,7 @@ class PWAService {
     data: unknown
   ): void {
     const offlineAction: OfflineData = {
-      id: `offline_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      id: `offline_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`,
       type,
       endpoint,
       data,
