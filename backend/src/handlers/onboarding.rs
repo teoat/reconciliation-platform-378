@@ -86,7 +86,10 @@ pub async fn get_onboarding_progress(
         .filter(user_preferences::preference_key.eq(&preference_key))
         .first::<crate::models::UserPreference>(&mut conn)
         .optional()
-        .map_err(|e| AppError::Internal(format!("Database error: {}", e)))?;
+        .map_err(|e| {
+            log::error!("Database error in onboarding: {}", e);
+            AppError::Internal("Failed to process onboarding data. Please try again.".to_string())
+        })?;
 
     if let Some(pref) = preference {
         // Parse the JSON value - use the preference value directly as the response

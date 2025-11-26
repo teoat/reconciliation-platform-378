@@ -98,7 +98,7 @@ export const createRateLimitInterceptor = (): ResponseInterceptor => {
 export const createOfflineInterceptor = (): RequestInterceptor => {
   return async (config: RequestConfig): Promise<RequestConfig> => {
     if (!navigator.onLine) {
-      const offlineError = new Error('You are currently offline') as ApiError;
+      const offlineError = new Error('You are currently offline. Please check your internet connection and try again.') as ApiError;
       offlineError.status = 0;
 
       // Show offline notification

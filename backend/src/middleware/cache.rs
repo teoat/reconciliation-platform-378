@@ -44,18 +44,14 @@ where
         let cache_service = match MultiLevelCache::new(&redis_url) {
             Ok(cache) => cache,
             Err(e) => {
-                log::error!(
-                    "Failed to create cache service with REDIS_URL {}: {}",
-                    redis_url,
-                    e
-                );
-                log::error!("Cache middleware will not function correctly - ensure REDIS_URL is set correctly");
-                // Return a fallback or panic depending on requirements
-                // For now, we'll panic as cache service is critical
-                panic!(
-                    "Failed to create cache service - ensure REDIS_URL is set correctly: {}",
-                    e
-                );
+            log::error!(
+                "Failed to create cache service with REDIS_URL {}: {}",
+                redis_url,
+                e
+            );
+            log::error!("Cache middleware will not function correctly - ensure REDIS_URL is set correctly");
+            // Return error instead of panicking - let the application handle it gracefully
+            return ok(Err(()));
             }
         };
         ok(CacheMiddleware::new(

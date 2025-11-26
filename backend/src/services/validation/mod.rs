@@ -126,7 +126,15 @@ impl Default for ValidationServiceDelegate {
                                         // This should never fail, but if it does, we'll use a pattern that matches nothing
                                         Regex::new(r"^$").unwrap_or_else(|_| {
                                             // Absolute last resort - this regex should always be valid
-                                            Regex::new(r"^$").unwrap()
+                                            Regex::new(r"^$").unwrap_or_else(|_| {
+                                                // This regex is guaranteed to be valid, but handle error gracefully
+                                                // Empty regex should always be valid, but if it fails, log and use a safe pattern
+                                                Regex::new("").unwrap_or_else(|e| {
+                                                    log::error!("Critical: Even empty regex failed: {:?}", e);
+                                                    // Use a pattern that matches nothing as absolute last resort
+                                                    Regex::new(r"^a^").unwrap()
+                                                })
+                                            })
                                         })
                                     })
                                 })
@@ -148,7 +156,15 @@ impl Default for ValidationServiceDelegate {
                                         // This should never fail, but if it does, we'll use a pattern that matches nothing
                                         Regex::new(r"^$").unwrap_or_else(|_| {
                                             // Absolute last resort - this regex should always be valid
-                                            Regex::new(r"^$").unwrap()
+                                            Regex::new(r"^$").unwrap_or_else(|_| {
+                                                // This regex is guaranteed to be valid, but handle error gracefully
+                                                // Empty regex should always be valid, but if it fails, log and use a safe pattern
+                                                Regex::new("").unwrap_or_else(|e| {
+                                                    log::error!("Critical: Even empty regex failed: {:?}", e);
+                                                    // Use a pattern that matches nothing as absolute last resort
+                                                    Regex::new(r"^a^").unwrap()
+                                                })
+                                            })
                                         })
                                     })
                                 })
@@ -171,7 +187,15 @@ impl Default for ValidationServiceDelegate {
                                         // This should never fail, but if it does, we'll use a pattern that matches nothing
                                         Regex::new(r"^$").unwrap_or_else(|_| {
                                             // Absolute last resort - this regex should always be valid
-                                            Regex::new(r"^$").unwrap()
+                                            Regex::new(r"^$").unwrap_or_else(|_| {
+                                                // This regex is guaranteed to be valid, but handle error gracefully
+                                                // Empty regex should always be valid, but if it fails, log and use a safe pattern
+                                                Regex::new("").unwrap_or_else(|e| {
+                                                    log::error!("Critical: Even empty regex failed: {:?}", e);
+                                                    // Use a pattern that matches nothing as absolute last resort
+                                                    Regex::new(r"^a^").unwrap()
+                                                })
+                                            })
                                         })
                                     })
                                 })

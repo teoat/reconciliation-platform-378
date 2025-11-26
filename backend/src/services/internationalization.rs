@@ -316,7 +316,9 @@ impl InternationalizationService {
         if let Some(locale) = locales.get(locale_code) {
             let formatted = format!("{:.2}", number);
             let parts: Vec<&str> = formatted.split('.').collect();
-            let integer_part = parts[0];
+            let integer_part = parts.get(0).ok_or_else(|| {
+                AppError::Internal("Failed to format number: missing integer part".to_string())
+            })?;
             let decimal_part = parts.get(1).unwrap_or(&"00");
 
             // Add thousands separators

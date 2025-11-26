@@ -110,10 +110,10 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
   const [accessControls, setAccessControls] = useState<AccessControl[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [complianceReports, setComplianceReports] = useState<ComplianceReport[]>([]);
-  const [selectedPolicy, setSelectedPolicy] = useState<SecurityPolicy | null>(null);
-  const [selectedReport, setSelectedReport] = useState<ComplianceReport | null>(null);
-  const [showPolicyModal, setShowPolicyModal] = useState(false);
-  const [showReportModal, setShowReportModal] = useState(false);
+  const [_selectedPolicy, setSelectedPolicy] = useState<SecurityPolicy | null>(null);
+  const [_selectedReport, setSelectedReport] = useState<ComplianceReport | null>(null);
+  const [_showPolicyModal, setShowPolicyModal] = useState(false);
+  const [_showReportModal, setShowReportModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'policies' | 'access' | 'audit' | 'compliance'>(
     'policies'
   );

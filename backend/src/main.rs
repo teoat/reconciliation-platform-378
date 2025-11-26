@@ -311,14 +311,51 @@ async fn async_main() -> std::io::Result<()> {
         .unwrap_or_else(|_| "development".to_string())
         .to_lowercase() == "production";
     
+    // Validate CSRF_SECRET (required for CSRF protection)
+    let csrf_secret = match SecretsService::get_csrf_secret() {
+        Ok(secret) => {
+            // Additional validation for production - reject default values
+            if is_production {
+                let default_patterns = [
+                    "change-this-csrf-secret-in-production",
+                    "CHANGE_ME_IN_PRODUCTION",
+                    "default-csrf-secret",
+                ];
+                if default_patterns.iter().any(|&pattern| secret.contains(pattern)) {
+                    eprintln!("❌ CSRF_SECRET cannot use default value in production");
+                    log::error!("CSRF_SECRET validation failed: using default value");
+                    std::process::exit(1);
+                }
+            }
+            secret
+        }
+        Err(_) => {
+            if is_production {
+                eprintln!("❌ CSRF_SECRET is required in production");
+                log::error!("CSRF_SECRET not set in production");
+                std::process::exit(1);
+            } else {
+                log::warn!("CSRF_SECRET not set, using default (CHANGE IN PRODUCTION!)");
+                "default-csrf-secret-change-in-production".to_string()
+            }
+        }
+    };
+    
     // Get password master key using enhanced SecretsService
     let master_key = match SecretsService::get_password_master_key() {
         Ok(key) => {
-            // Additional validation for production
-            if is_production && key == "default-master-key-change-in-production" {
-                eprintln!("❌ PASSWORD_MASTER_KEY cannot use default value in production");
-                log::error!("PASSWORD_MASTER_KEY validation failed: using default value");
-                std::process::exit(1);
+            // Additional validation for production - reject default values
+            if is_production {
+                let default_patterns = [
+                    "change-this-password-master-key-in-production",
+                    "CHANGE_ME_IN_PRODUCTION",
+                    "default-master-key-change-in-production",
+                ];
+                if default_patterns.iter().any(|&pattern| key.contains(pattern)) {
+                    eprintln!("❌ PASSWORD_MASTER_KEY cannot use default value in production");
+                    log::error!("PASSWORD_MASTER_KEY validation failed: using default value");
+                    std::process::exit(1);
+                }
             }
             key
         }
@@ -333,6 +370,22 @@ async fn async_main() -> std::io::Result<()> {
             }
         }
     };
+    
+    // Validate JWT_SECRET in production (additional check for default values)
+    if is_production {
+        if let Ok(jwt_secret) = SecretsService::get_jwt_secret() {
+            let default_patterns = [
+                "change-this-in-production",
+                "CHANGE_ME_IN_PRODUCTION",
+                "your-super-secret-key-change-in-production",
+            ];
+            if default_patterns.iter().any(|&pattern| jwt_secret.contains(pattern)) {
+                eprintln!("❌ JWT_SECRET cannot use default value in production");
+                log::error!("JWT_SECRET validation failed: using default value");
+                std::process::exit(1);
+            }
+        }
+    }
     
     let password_manager = Arc::new(PasswordManager::new(
         Arc::new(database.clone()),

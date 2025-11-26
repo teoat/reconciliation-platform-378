@@ -202,12 +202,9 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     [securityData]
   );
 
-  const exportAuditLogsWrapper = React.useCallback(
-    (_startDate?: string, _endDate?: string) => {
-      return securityData.exportAuditLogs();
-    },
-    [securityData]
-  );
+  const exportAuditLogsWrapper = React.useCallback(() => {
+    return securityData.exportAuditLogs();
+  }, [securityData]);
 
   const contextValue: DataContextType = {
     ...storageData,

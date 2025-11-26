@@ -153,13 +153,38 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-this-refresh-secret-in-production}
       JWT_EXPIRATION: ${JWT_EXPIRATION:-86400}
+      CSRF_SECRET: ${CSRF_SECRET:-change-this-csrf-secret-in-production}
+      PASSWORD_MASTER_KEY: ${PASSWORD_MASTER_KEY:-change-this-password-master-key-in-production}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:1000,http://localhost:3000,http://localhost:5173}
       MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
       UPLOAD_PATH: /app/uploads
       ENV: ${ENVIRONMENT:-production}
       DISABLE_AUTH: ${DISABLE_AUTH:-false}
       RUST_LOG: ${RUST_LOG:-warn,reconciliation_backend=info}
+      RUST_BACKTRACE: ${RUST_BACKTRACE:-1}
       CUSTOM_CSP: "default-src 'self'; script-src 'self' 'nonce-{nonce}'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' http://localhost:2000 ws://localhost:2000 http://localhost:1000 ws://localhost:1000 http://localhost:3000 ws://localhost:3000 http://localhost:5173 ws://localhost:5173; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests;"
+      # Google OAuth (Optional)
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Email/SMTP (Optional)
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      # Payment Processing (Optional)
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+      # API Authentication (Optional)
+      API_KEY: ${API_KEY:-}
+      SOFTCODE_API_KEY: ${SOFTCODE_API_KEY:-}
+      # Monitoring (Optional)
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      # Backup & Storage (Optional)
+      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      # Database/Redis Pool Configuration
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-20}
+      DATABASE_TIMEOUT: ${DATABASE_TIMEOUT:-30}
+      REDIS_POOL_SIZE: ${REDIS_POOL_SIZE:-10}
+      REDIS_TIMEOUT: ${REDIS_TIMEOUT:-5}
       WORKER_THREADS: 4
       CACHE_ENABLED: "true"
       CACHE_L1_SIZE: 2000

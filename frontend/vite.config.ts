@@ -179,8 +179,19 @@ export default defineConfig(({ mode }) => {
               return 'shared-components';
             }
 
-            // Utils and services
+            // Utils and services - split further for better code splitting
             if (id.includes('/src/utils') || id.includes('/src/services')) {
+              // Split large services into separate chunks
+              if (id.includes('/src/services/cache') || id.includes('/src/services/performance')) {
+                return 'services-cache-performance';
+              }
+              if (id.includes('/src/services/security') || id.includes('/src/services/auth')) {
+                return 'services-security';
+              }
+              if (id.includes('/src/utils/indonesian') || id.includes('/src/utils/validation')) {
+                return 'utils-validation';
+              }
+              // Keep other utils/services together but smaller
               return 'utils-services';
             }
           },

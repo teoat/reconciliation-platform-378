@@ -56,7 +56,20 @@ const Card: React.FC<CardProps> = memo(
     const showHeader = useMemo(() => !!(title || subtitle || actions), [title, subtitle, actions]);
 
     return (
-      <div className={classes} onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
+      <div
+        className={classes}
+        onClick={onClick}
+        onKeyDown={onClick ? (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick();
+          }
+        } : undefined}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        style={onClick ? { cursor: 'pointer' } : undefined}
+        aria-label={onClick ? title || 'Clickable card' : undefined}
+      >
         {showHeader && (
           <div className="mb-4">
             <div className="flex items-center justify-between">

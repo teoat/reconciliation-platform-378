@@ -46,6 +46,14 @@ pub struct AuthResponse {
     pub token: String,
     pub user: UserInfo,
     pub expires_at: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub requires_password_change: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password_expires_soon: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub password_expires_in_days: Option<u32>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub message: Option<String>,
 }
 
 /// User information for responses
@@ -64,6 +72,13 @@ pub struct UserInfo {
 #[derive(Debug, Deserialize)]
 pub struct ChangePasswordRequest {
     pub current_password: String,
+    pub new_password: String,
+}
+
+/// Change initial password request (no current password required)
+#[derive(Debug, Deserialize)]
+pub struct ChangeInitialPasswordRequest {
+    pub current_password: String, // Still required for verification
     pub new_password: String,
 }
 

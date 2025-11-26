@@ -103,9 +103,9 @@ const APIDevelopment = ({ project, onProgressUpdate }: APIDevelopmentProps) => {
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [logs, setLogs] = useState<APILog[]>([]);
   const [selectedEndpoint, setSelectedEndpoint] = useState<APIEndpoint | null>(null);
-  const [selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
+  const [_selectedWebhook, setSelectedWebhook] = useState<Webhook | null>(null);
   const [showEndpointModal, setShowEndpointModal] = useState(false);
-  const [showWebhookModal, setShowWebhookModal] = useState(false);
+  const [_showWebhookModal, setShowWebhookModal] = useState(false);
   const [activeTab, setActiveTab] = useState<'endpoints' | 'webhooks' | 'logs' | 'documentation'>(
     'endpoints'
   );
@@ -253,7 +253,7 @@ const APIDevelopment = ({ project, onProgressUpdate }: APIDevelopmentProps) => {
         name: 'Reconciliation Status Update',
         url: 'https://external-system.com/webhooks/reconciliation',
         events: ['reconciliation.completed', 'reconciliation.failed'],
-        secret: 'whsec_1234567890abcdef',
+        secret: 'whsec_placeholder_1',
         status: 'active',
         lastTriggered: new Date(Date.now() - 300000).toISOString(),
         successRate: 98.5,
@@ -273,7 +273,7 @@ const APIDevelopment = ({ project, onProgressUpdate }: APIDevelopmentProps) => {
         name: 'Discrepancy Alert',
         url: 'https://monitoring.company.com/alerts',
         events: ['discrepancy.detected', 'discrepancy.resolved'],
-        secret: 'whsec_abcdef1234567890',
+        secret: 'whsec_placeholder_2',
         status: 'active',
         lastTriggered: new Date(Date.now() - 600000).toISOString(),
         successRate: 99.1,

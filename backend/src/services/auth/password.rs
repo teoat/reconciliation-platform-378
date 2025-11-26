@@ -1,25 +1,26 @@
 //! Password hashing and validation
 
+use crate::config::password_config::{PasswordConfig, PasswordStrength};
 use crate::errors::{AppError, AppResult};
 use bcrypt::{hash, verify};
 use rand::distributions::Alphanumeric;
-use rand::Rng;
+use rand::{Rng, seq::SliceRandom};
 
 /// Password manager
 pub struct PasswordManager;
 
-/// Bcrypt cost factor for password hashing
-/// Industry standard is 12+ for production systems
-/// DEFAULT_COST in bcrypt crate is typically 10, so we use 12 explicitly
-const BCRYPT_COST: u32 = 12;
+impl PasswordManager {
+    /// Get password configuration
+    fn get_config() -> PasswordConfig {
+        PasswordConfig::from_env()
+    }
 
 impl PasswordManager {
-    /// Hash a password using bcrypt with cost factor 12
+    /// Hash a password using bcrypt with configurable cost factor
     /// This provides strong security while maintaining reasonable performance
     pub fn hash_password(password: &str) -> AppResult<String> {
-        // Use explicit cost factor 12 instead of DEFAULT_COST to ensure security
-        // DEFAULT_COST may be 10 in some bcrypt implementations
-        hash(password, BCRYPT_COST)
+        let config = Self::get_config();
+        hash(password, config.bcrypt_cost)
             .map_err(|e| AppError::Internal(format!("Password hashing failed: {}", e)))
     }
 
@@ -32,6 +33,8 @@ impl PasswordManager {
     /// Unified password strength validator
     /// Validates password strength with configurable requirements
     pub fn validate_password_strength(password: &str) -> AppResult<()> {
+        let config = Self::get_config();
+        
         // Common banned passwords list
         let banned_passwords = ["password", "12345678", "password123", "admin123", "qwerty123",
             "welcome123", "letmein", "monkey", "dragon", "master"];
@@ -43,37 +46,37 @@ impl PasswordManager {
             ));
         }
 
-        if password.len() < 8 {
+        if password.len() < config.min_length {
             return Err(AppError::Validation(
-                "Password must be at least 8 characters long".to_string(),
+                format!("Password must be at least {} characters long", config.min_length),
             ));
         }
 
-        if password.len() > 128 {
+        if password.len() > config.max_length {
             return Err(AppError::Validation(
-                "Password must be no more than 128 characters long".to_string(),
+                format!("Password must be no more than {} characters long", config.max_length),
             ));
         }
 
-        if !password.chars().any(|c| c.is_uppercase()) {
+        if config.require_uppercase && !password.chars().any(|c| c.is_uppercase()) {
             return Err(AppError::Validation(
                 "Password must contain at least one uppercase letter".to_string(),
             ));
         }
 
-        if !password.chars().any(|c| c.is_lowercase()) {
+        if config.require_lowercase && !password.chars().any(|c| c.is_lowercase()) {
             return Err(AppError::Validation(
                 "Password must contain at least one lowercase letter".to_string(),
             ));
         }
 
-        if !password.chars().any(|c| c.is_numeric()) {
+        if config.require_number && !password.chars().any(|c| c.is_numeric()) {
             return Err(AppError::Validation(
                 "Password must contain at least one number".to_string(),
             ));
         }
 
-        if !password
+        if config.require_special && !password
             .chars()
             .any(|c| "!@#$%^&*()_+-=[]{}|;:,.<>?".contains(c))
         {
@@ -90,9 +93,9 @@ impl PasswordManager {
             for i in 1..chars.len() {
                 if chars[i] as u32 == chars[i-1] as u32 + 1 {
                     sequential_count += 1;
-                    if sequential_count >= 4 {
+                    if sequential_count > config.max_sequential_chars {
                         return Err(AppError::Validation(
-                            "Password contains sequential characters. Please choose a stronger password.".to_string(),
+                            format!("Password contains more than {} sequential characters. Please choose a stronger password.", config.max_sequential_chars),
                         ));
                     }
                 } else {
@@ -102,6 +105,54 @@ impl PasswordManager {
         }
 
         Ok(())
+    }
+    
+    /// Calculate password strength score
+    /// Returns a strength level (weak, fair, good, strong)
+    pub fn calculate_password_strength(password: &str) -> PasswordStrength {
+        let mut score = 0;
+        
+        // Length scoring
+        if password.len() >= 16 {
+            score += 3;
+        } else if password.len() >= 12 {
+            score += 2;
+        } else if password.len() >= 8 {
+            score += 1;
+        }
+        
+        // Character variety
+        if password.chars().any(|c| c.is_uppercase()) {
+            score += 1;
+        }
+        if password.chars().any(|c| c.is_lowercase()) {
+            score += 1;
+        }
+        if password.chars().any(|c| c.is_numeric()) {
+            score += 1;
+        }
+        if password.chars().any(|c| "!@#$%^&*()_+-=[]{}|;:,.<>?".contains(c)) {
+            score += 1;
+        }
+        
+        // Complexity bonus
+        if password.len() >= 20 {
+            score += 1;
+        }
+        
+        // Check for common patterns (penalty)
+        let password_lower = password.to_lowercase();
+        let banned = ["password", "12345678", "password123", "admin123", "qwerty123"];
+        if banned.contains(&password_lower.as_str()) {
+            score = 0;
+        }
+        
+        match score {
+            0..=2 => PasswordStrength::Weak,
+            3..=4 => PasswordStrength::Fair,
+            5..=6 => PasswordStrength::Good,
+            7.. => PasswordStrength::Strong,
+        }
     }
 
     /// Generate a secure random token for password reset
@@ -113,5 +164,60 @@ impl PasswordManager {
             .collect();
 
         Ok(token)
+    }
+
+    /// Generate a secure initial password for testing/pre-production
+    /// 
+    /// Creates a password that meets all validation requirements:
+    /// - 12-16 characters long
+    /// - Contains uppercase, lowercase, number, and special character
+    /// - Cryptographically secure random generation
+    /// 
+    /// Format: [Upper][Lower][Number][Special][RandomChars]
+    pub fn generate_initial_password() -> AppResult<String> {
+        // Character sets (exclude ambiguous characters)
+        const UPPERCASE: &[u8] = b"ABCDEFGHJKLMNPQRSTUVWXYZ"; // Exclude I and O for clarity
+        const LOWERCASE: &[u8] = b"abcdefghijkmnpqrstuvwxyz"; // Exclude l and o
+        const NUMBERS: &[u8] = b"23456789"; // Exclude 0 and 1
+        const SPECIAL: &[u8] = b"!@#$%^&*()_+-=[]{}|;:,.<>?";
+        const ALL_CHARS: &[u8] = b"ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%^&*()_+-=[]{}|;:,.<>?";
+        
+        let mut rng = rand::thread_rng();
+        
+        // Ensure we have at least one of each required character type
+        let mut password = String::new();
+        
+        // Add one uppercase
+        password.push(char::from(*UPPERCASE.choose(&mut rng)
+            .ok_or_else(|| AppError::Internal("Failed to generate password: UPPERCASE character set is empty".to_string()))?));
+        
+        // Add one lowercase
+        password.push(char::from(*LOWERCASE.choose(&mut rng)
+            .ok_or_else(|| AppError::Internal("Failed to generate password: LOWERCASE character set is empty".to_string()))?));
+        
+        // Add one number
+        password.push(char::from(*NUMBERS.choose(&mut rng)
+            .ok_or_else(|| AppError::Internal("Failed to generate password: NUMBERS character set is empty".to_string()))?));
+        
+        // Add one special character
+        password.push(char::from(*SPECIAL.choose(&mut rng)
+            .ok_or_else(|| AppError::Internal("Failed to generate password: SPECIAL character set is empty".to_string()))?));
+        
+        // Add random characters to reach 12-16 total length
+        let target_length = rng.gen_range(12..=16);
+        while password.len() < target_length {
+            password.push(char::from(*ALL_CHARS.choose(&mut rng)
+                .ok_or_else(|| AppError::Internal("Failed to generate password: ALL_CHARS character set is empty".to_string()))?));
+        }
+        
+        // Shuffle the password to avoid predictable pattern
+        let mut chars: Vec<char> = password.chars().collect();
+        chars.shuffle(&mut rng);
+        password = chars.into_iter().collect();
+        
+        // Validate the generated password meets requirements
+        Self::validate_password_strength(&password)?;
+        
+        Ok(password)
     }
 }

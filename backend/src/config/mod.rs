@@ -1,6 +1,7 @@
 pub mod billing_config;
 pub mod email_config;
 pub mod monitoring;
+pub mod password_config;
 pub mod shard_config;
 
 use serde::{Deserialize, Serialize};
@@ -262,3 +263,4 @@ impl Config {
 pub use billing_config::BillingConfig;
 pub use email_config::EmailConfig;
 pub use monitoring::MonitoringConfig;
+pub use password_config::{PasswordConfig, PasswordStrength};

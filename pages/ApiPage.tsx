@@ -195,7 +195,7 @@ const ApiPage = ({ project }: ApiPageProps) => {
       {
         id: 'key-1',
         name: 'Production API Key',
-        key: 'sk-prod-1234567890abcdef',
+        key: 'sk-prod-placeholder',
         permissions: ['read', 'write', 'admin'],
         rateLimit: 10000,
         expiresAt: '2024-12-31T23:59:59Z',
@@ -205,7 +205,7 @@ const ApiPage = ({ project }: ApiPageProps) => {
       {
         id: 'key-2',
         name: 'Development API Key',
-        key: 'sk-dev-abcdef1234567890',
+        key: 'sk-dev-placeholder',
         permissions: ['read'],
         rateLimit: 1000,
         lastUsed: '2023-12-14T09:15:00Z',

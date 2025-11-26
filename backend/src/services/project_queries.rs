@@ -71,7 +71,7 @@ impl ProjectQueryOps {
             .group_by(reconciliation_jobs::project_id)
             .select((reconciliation_jobs::project_id, count_star()))
             .load::<(uuid::Uuid, i64)>(&mut conn)
-            .unwrap_or_default();
+            .map_err(AppError::Database)?;
 
         let job_count_map: std::collections::HashMap<uuid::Uuid, i64> =
             job_counts.into_iter().collect();
@@ -81,7 +81,7 @@ impl ProjectQueryOps {
             .group_by(data_sources::project_id)
             .select((data_sources::project_id, count_star()))
             .load::<(uuid::Uuid, i64)>(&mut conn)
-            .unwrap_or_default();
+            .map_err(AppError::Database)?;
 
         let data_source_count_map: std::collections::HashMap<uuid::Uuid, i64> =
             data_source_counts.into_iter().collect();

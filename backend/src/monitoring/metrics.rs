@@ -459,9 +459,82 @@ impl Default for MonitoringMetrics {
     }
 }
 
+// Global metrics instance - lazy initialized to avoid static initialization panics
 lazy_static::lazy_static! {
     pub static ref GLOBAL_METRICS: MonitoringMetrics = MonitoringMetrics::default();
 }
+
+// Static exports for global access to circuit breaker metrics
+// These are created independently but may cause duplicate metric registration warnings
+// This is acceptable - Prometheus will handle it gracefully
+pub static CIRCUIT_BREAKER_REQUESTS: Lazy<CounterVec> = Lazy::new(|| {
+    // Try to create metric - if it fails, we'll get a panic during static init
+    // This is intentional - we want to fail fast if metrics can't be created
+    CounterVec::new(
+        opts!("reconciliation_circuit_breaker_requests_total", "Total circuit breaker requests"),
+        &["service"],
+    ).unwrap_or_else(|e| {
+        // Write to stderr directly (log may not be initialized yet)
+        use std::io::Write;
+        let _ = std::io::stderr().write_all(
+            format!("CRITICAL: Failed to create CIRCUIT_BREAKER_REQUESTS: {}\n", e).as_bytes());
+        let _ = std::io::stderr().flush();
+        // Don't panic - return a dummy metric that will cause errors if used
+        // This allows the binary to start and we can see the error
+        CounterVec::new(
+            opts!("reconciliation_circuit_breaker_requests_dummy", "Dummy metric"),
+            &["service"],
+        ).expect("Failed to create even dummy CIRCUIT_BREAKER_REQUESTS")
+    })
+});
+
+pub static CIRCUIT_BREAKER_SUCCESSES: Lazy<CounterVec> = Lazy::new(|| {
+    CounterVec::new(
+        opts!("reconciliation_circuit_breaker_successes_total", "Total circuit breaker successes"),
+        &["service"],
+    ).unwrap_or_else(|e| {
+        use std::io::Write;
+        let _ = std::io::stderr().write_all(
+            format!("CRITICAL: Failed to create CIRCUIT_BREAKER_SUCCESSES: {}\n", e).as_bytes());
+        let _ = std::io::stderr().flush();
+        CounterVec::new(
+            opts!("reconciliation_circuit_breaker_successes_dummy", "Dummy metric"),
+            &["service"],
+        ).expect("Failed to create even dummy CIRCUIT_BREAKER_SUCCESSES")
+    })
+});
+
+pub static CIRCUIT_BREAKER_FAILURES: Lazy<CounterVec> = Lazy::new(|| {
+    CounterVec::new(
+        opts!("reconciliation_circuit_breaker_failures_total", "Total circuit breaker failures"),
+        &["service"],
+    ).unwrap_or_else(|e| {
+        use std::io::Write;
+        let _ = std::io::stderr().write_all(
+            format!("CRITICAL: Failed to create CIRCUIT_BREAKER_FAILURES: {}\n", e).as_bytes());
+        let _ = std::io::stderr().flush();
+        CounterVec::new(
+            opts!("reconciliation_circuit_breaker_failures_dummy", "Dummy metric"),
+            &["service"],
+        ).expect("Failed to create even dummy CIRCUIT_BREAKER_FAILURES")
+    })
+});
+
+pub static CIRCUIT_BREAKER_STATE: Lazy<GaugeVec> = Lazy::new(|| {
+    GaugeVec::new(
+        opts!("reconciliation_circuit_breaker_state", "Circuit breaker state (0=closed, 1=half-open, 2=open)"),
+        &["service"],
+    ).unwrap_or_else(|e| {
+        use std::io::Write;
+        let _ = std::io::stderr().write_all(
+            format!("CRITICAL: Failed to create CIRCUIT_BREAKER_STATE: {}\n", e).as_bytes());
+        let _ = std::io::stderr().flush();
+        GaugeVec::new(
+            opts!("reconciliation_circuit_breaker_state_dummy", "Dummy metric"),
+            &["service"],
+        ).expect("Failed to create even dummy CIRCUIT_BREAKER_STATE")
+    })
+});
 
 /// Timer guard for database queries
 pub struct DbQueryTimer<'a> {

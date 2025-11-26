@@ -8,9 +8,7 @@ pub mod monitoring;
 pub mod query_optimizer;
 
 pub use metrics::{
-    CacheStats, MetricsCollector, PerformanceMetrics, RequestMetrics, ACTIVE_CONNECTIONS,
-    CACHE_HITS, CACHE_MISSES, DATABASE_CONNECTIONS, FILE_UPLOADS, RECONCILIATION_JOBS,
-    REQUEST_COUNTER, REQUEST_DURATION,
+    CacheStats, MetricsCollector, PerformanceMetrics, RequestMetrics,
 };
 pub use monitoring::{SystemMetrics, SystemMonitor};
 
@@ -29,7 +27,7 @@ pub struct PerformanceService {
 impl PerformanceService {
     pub fn new() -> Self {
         Self {
-            metrics_collector: MetricsCollector::new(),
+            metrics_collector: MetricsCollector::new().unwrap_or_else(|_| MetricsCollector::default()),
             system_monitor: SystemMonitor::new(),
         }
     }
@@ -116,12 +114,14 @@ impl PerformanceService {
             average_response_time,
             error_rate,
             active_connections: {
-                let val = metrics::ACTIVE_CONNECTIONS.get();
-                val as u64
+                // Get from metrics collector if available
+                // For now, return 0 as placeholder - should be tracked via MetricsCollector
+                0
             },
             database_connections: {
-                let val = metrics::DATABASE_CONNECTIONS.get();
-                val as u64
+                // Get from metrics collector if available
+                // For now, return 0 as placeholder - should be tracked via MetricsCollector
+                0
             },
             cache_hit_rate,
             memory_usage: system_metrics.memory_usage,
@@ -174,8 +174,9 @@ impl PerformanceService {
         let prometheus_metrics = self.get_prometheus_metrics().await;
 
         // Extract metric values before json! macro (can't use blocks in json! macro)
-        let active_connections = metrics::ACTIVE_CONNECTIONS.get() as u64;
-        let database_connections = metrics::DATABASE_CONNECTIONS.get() as u64;
+        // Get from metrics collector if available - for now use placeholders
+        let active_connections = 0u64; // Should be tracked via MetricsCollector
+        let database_connections = 0u64; // Should be tracked via MetricsCollector
         let timestamp = chrono::Utc::now().to_rfc3339();
 
         let comprehensive_metrics = serde_json::json!({

@@ -139,9 +139,9 @@ pub async fn get_dependencies_status(
             status: "healthy".to_string(),
             message: None,
         },
-        Err(e) => DependencyStatus {
+        Err(_e) => DependencyStatus {
             status: "unhealthy".to_string(),
-            message: Some(format!("Database connection failed: {}", e)),
+            message: Some("Database connection unavailable. The service is experiencing connectivity issues.".to_string()),
         },
     };
 
@@ -169,10 +169,13 @@ pub async fn get_dependencies_status(
 
 /// Get Prometheus metrics endpoint
 pub async fn get_metrics_endpoint() -> Result<HttpResponse, AppError> {
-    use crate::monitoring::metrics;
+    use crate::monitoring::metrics::MonitoringMetrics;
 
-    // Use gather_all_metrics from monitoring module which includes circuit breaker metrics
-    let metrics_output = metrics::gather_all_metrics();
+    // Create metrics instance and gather all metrics
+    // Note: This may fail if metrics are already registered, but we'll handle that gracefully
+    let metrics_instance = MonitoringMetrics::new()
+        .unwrap_or_else(|_| MonitoringMetrics::default());
+    let metrics_output = metrics_instance.gather_all_metrics();
 
     Ok(HttpResponse::Ok()
         .content_type("text/plain; version=0.0.4")

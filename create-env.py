@@ -7,7 +7,8 @@ env_content = """# =============================================================
 # Generated for Docker & Kubernetes Deployment
 # Last Updated: 2025-01-27
 # ============================================================================
-# IMPORTANT: Keep this file secure and never commit to version control
+# IMPORTANT: Copy this file to .env and fill in the actual values.
+# Keep the .env file secure and never commit it to version control.
 # ============================================================================
 
 # ============================================================================
@@ -15,25 +16,25 @@ env_content = """# =============================================================
 # ============================================================================
 POSTGRES_DB=reconciliation_app
 POSTGRES_USER=postgres
-POSTGRES_PASSWORD=vxd5ORoEGCB2d0ZNwBIshZ6JfSQ8bSS3
+POSTGRES_PASSWORD=placeholder-db-password
 POSTGRES_PORT=5432
 
 # Database URL (for application use)
-DATABASE_URL=postgresql://postgres:vxd5ORoEGCB2d0ZNwBIshZ6JfSQ8bSS3@postgres:5432/reconciliation_app
+DATABASE_URL=postgresql://postgres:placeholder-db-password@postgres:5432/reconciliation_app
 
 # ============================================================================
 # REDIS CONFIGURATION
 # ============================================================================
-REDIS_PASSWORD=1NNavuOInhoOyQvYp1b4rQgh/HU8L915
+REDIS_PASSWORD=placeholder-redis-password
 REDIS_PORT=6379
 
 # Redis URL (for application use)
-REDIS_URL=redis://:1NNavuOInhoOyQvYp1b4rQgh/HU8L915@redis:6379
+REDIS_URL=redis://:placeholder-redis-password@redis:6379
 
 # ============================================================================
 # JWT & AUTHENTICATION
 # ============================================================================
-JWT_SECRET=adaeb3dd6907f67a2d7eb0cb14b46420ff80e00e19617c686aab2ac1f7884d5f
+JWT_SECRET=placeholder-jwt-secret
 JWT_EXPIRES_IN=24h
 JWT_REFRESH_EXPIRES_IN=7d
 
@@ -102,7 +103,8 @@ PORT=2000
 LOG_FORMAT=json
 """
 
-with open('.env', 'w') as f:
+with open('.env.example', 'w') as f:
     f.write(env_content)
-print("✅ .env file created successfully")
+print("✅ .env.example file created successfully")
+print("Please copy .env.example to .env and fill in the actual secret values.")
 

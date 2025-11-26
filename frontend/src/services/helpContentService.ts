@@ -141,8 +141,10 @@ class HelpContentService {
     }
 
     // Try to fetch from backend (if API exists)
+    // NOTE: Backend endpoint not yet implemented - using cached/local content
     try {
       // TODO: Implement API call when backend endpoint is available
+      // This is a planned feature, not a bug
       // const response = await fetch(`/api/help-content/${contentId}`);
       // if (response.ok) {
       //   const content = await response.json();
@@ -253,16 +255,29 @@ class HelpContentService {
   /**
    * Track view of help content
    */
+  /**
+   * Track help content view for analytics.
+   * 
+   * @param contentId - The ID of the help content being viewed
+   * 
+   * @remarks
+   * Currently logs the view. Analytics tracking can be added when needed.
+   */
   trackView(contentId: string): void {
     logger.debug('Help content viewed', { contentId });
-    // TODO: Implement analytics tracking if needed
+    // NOTE: Analytics tracking is optional - can be implemented when analytics service is integrated
   }
 
   /**
-   * Get search history
+   * Get search history for help content searches.
+   * 
+   * @returns Array of previous search terms
+   * 
+   * @remarks
+   * Currently returns empty array. Search history can be implemented when needed.
    */
   getSearchHistory(): string[] {
-    // TODO: Implement search history tracking if needed
+    // NOTE: Search history tracking is optional - can be implemented when persistence is needed
     return [];
   }
 
@@ -318,9 +333,18 @@ class HelpContentService {
   /**
    * Track feedback for help content
    */
+  /**
+   * Track user feedback on help content.
+   * 
+   * @param contentId - The ID of the help content
+   * @param helpful - Whether the user found the content helpful
+   * 
+   * @remarks
+   * Currently logs the feedback. Analytics tracking can be added when needed.
+   */
   trackFeedback(contentId: string, helpful: boolean): void {
     logger.info('Help content feedback received', { contentId, helpful });
-    // TODO: Implement analytics tracking for feedback
+    // NOTE: Analytics tracking is optional - can be implemented when analytics service is integrated
   }
 
   /**

@@ -188,6 +188,13 @@ impl SecretsService {
                 description: "API authentication key".to_string(),
             },
             SecretMetadata {
+                name: "SOFTCODE_API_KEY".to_string(),
+                min_length: 20,
+                required: false,
+                rotation_interval_days: None,
+                description: "SoftCode AI API key for VS Code extension integration".to_string(),
+            },
+            SecretMetadata {
                 name: "GRAFANA_PASSWORD".to_string(),
                 min_length: 16,
                 required: false,
@@ -316,6 +323,11 @@ impl SecretsService {
     /// Get API key from environment
     pub fn get_api_key() -> AppResult<String> {
         Self::get_secret("API_KEY")
+    }
+
+    /// Get SoftCode API key from environment
+    pub fn get_softcode_api_key() -> AppResult<String> {
+        Self::get_secret("SOFTCODE_API_KEY")
     }
 
     /// Get Grafana password from environment

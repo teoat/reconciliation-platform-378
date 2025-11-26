@@ -1,34 +1,15 @@
 'use client';
 import { logger } from '../services/logger';
 import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { MessageCircle } from 'lucide-react';
-import { X } from 'lucide-react';
-import { Minimize2 } from 'lucide-react';
-import { Maximize2 } from 'lucide-react';
-import { Volume2 } from 'lucide-react';
-import { VolumeX } from 'lucide-react';
-import { Settings } from 'lucide-react';
-import { Lightbulb } from 'lucide-react';
-import { AlertTriangle } from 'lucide-react';
-import { PartyPopper } from 'lucide-react';
-import { HelpCircle } from 'lucide-react';
-import { Play } from 'lucide-react';
-import { ChevronDown } from 'lucide-react';
-import { ChevronUp } from 'lucide-react';
-import { Sparkles } from 'lucide-react';
-import { Heart } from 'lucide-react';
-import { Zap } from 'lucide-react';
-import { Star } from 'lucide-react';
-import { Target } from 'lucide-react';
-import { CheckCircle } from 'lucide-react';
-import { Clock } from 'lucide-react';
-import { Users } from 'lucide-react';
-import { BookOpen } from 'lucide-react';
-import { Wand2 } from 'lucide-react';
-import { Smile } from 'lucide-react';
-import { Frown } from 'lucide-react';
-import { Meh } from 'lucide-react';
-import { Laugh } from 'lucide-react';
+import {
+  MessageCircle,
+  X,
+  Minimize2,
+  Lightbulb,
+  AlertTriangle,
+  PartyPopper,
+  Star,
+} from 'lucide-react';
 import { FrenlyState, FrenlyMessage, FrenlyAnimation, FrenlyExpression } from '../types/frenly';
 import { frenlyAgentService } from '@/services/frenlyAgentService';
 
@@ -42,7 +23,7 @@ interface FrenlyAIProps {
   onAction?: (action: string) => void;
 }
 
-const FrenlyAI: React.FC<FrenlyAIProps> = ({ currentPage, userProgress, onAction }) => {
+const FrenlyAI: React.FC<FrenlyAIProps> = ({ currentPage, userProgress, onAction: _onAction }) => {
   const [state, setState] = useState<FrenlyState>({
     isVisible: true,
     isMinimized: false,
@@ -70,7 +51,7 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({ currentPage, userProgress, onAction
     accessories: [],
   });
 
-  const [currentAnimation, setCurrentAnimation] = useState<FrenlyAnimation | null>(null);
+  const [_currentAnimation, _setCurrentAnimation] = useState<FrenlyAnimation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messageTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -159,7 +140,7 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({ currentPage, userProgress, onAction
     }
   }, [currentPage, userProgress, createDefaultMessage]);
 
-  const generateContextualMessageSync = useCallback((): FrenlyMessage => {
+  const _generateContextualMessageSync = useCallback((): FrenlyMessage => {
     const pageGuidance = {
       '/projects': {
         greeting:

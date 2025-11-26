@@ -87,9 +87,10 @@ impl UserService {
         // Hash password
         let password_hash = self.auth_service.hash_password(&request.password)?;
         
-        // Set password expiration (90 days from now, configurable)
+        // Set password expiration (configurable)
+        let config = crate::config::PasswordConfig::from_env();
         let now = chrono::Utc::now();
-        let password_expires_at = now + chrono::Duration::days(90);
+        let password_expires_at = now + config.expiration_duration();
         let password_last_changed = now;
 
         // Determine role
@@ -153,6 +154,94 @@ impl UserService {
         self.get_user_by_id(created_user_id).await
     }
 
+    /// Create a new user with an initial password (for testing/pre-production)
+    /// 
+    /// This method generates a secure initial password that meets all validation
+    /// requirements. The password is marked as initial and must be changed on first login.
+    pub async fn create_user_with_initial_password(
+        &self,
+        request: CreateUserRequest,
+    ) -> AppResult<(UserInfo, String)> {
+        use crate::services::auth::password::PasswordManager;
+        
+        // Generate initial password
+        let initial_password = PasswordManager::generate_initial_password()?;
+        
+        // Validate email
+        ValidationUtils::validate_email(&request.email)?;
+        
+        // Hash the initial password
+        let password_hash = self.auth_service.hash_password(&initial_password)?;
+        
+        // Set password expiration (7 days for initial passwords, 90 days for regular)
+        let now = chrono::Utc::now();
+        let password_expires_at = now + chrono::Duration::days(7); // Shorter expiration for initial passwords
+        let password_last_changed = now;
+        
+        // Determine role
+        let role = request.role.unwrap_or_else(|| "user".to_string());
+        if role != "user" && role != "admin" && role != "manager" && role != "viewer" {
+            return Err(AppError::Validation(
+                "Invalid role. Must be one of: user, admin, manager, viewer".to_string(),
+            ));
+        }
+        
+        // Create user with initial password flag
+        let sanitized_email = ValidationUtils::sanitize_string(&request.email);
+        let new_user = NewUser {
+            email: sanitized_email.clone(),
+            password_hash,
+            username: None,
+            first_name: Some(ValidationUtils::sanitize_string(&request.first_name)),
+            last_name: Some(ValidationUtils::sanitize_string(&request.last_name)),
+            status: role.clone(),
+            email_verified: false,
+            password_expires_at: Some(password_expires_at),
+            password_last_changed: Some(password_last_changed),
+            password_history: Some(serde_json::json!([])),
+            is_initial_password: Some(true),
+            initial_password_set_at: Some(now),
+            auth_provider: Some("password".to_string()),
+        };
+        
+        let created_user_id = with_transaction(self.db.get_pool(), |tx| {
+            // Check if user already exists
+            let count = users::table
+                .filter(users::email.eq(&sanitized_email))
+                .count()
+                .get_result::<i64>(tx)
+                .map_err(AppError::Database)?;
+            
+            if count > 0 {
+                return Err(AppError::Conflict(
+                    "User with this email already exists".to_string(),
+                ));
+            }
+            
+            // Insert user
+            let result = diesel::insert_into(users::table)
+                .values(&new_user)
+                .returning(users::id)
+                .get_result::<Uuid>(tx)
+                .map_err(|e| {
+                    if e.to_string().contains("duplicate key") || e.to_string().contains("unique") {
+                        AppError::Conflict("User with this email already exists".to_string())
+                    } else {
+                        AppError::Database(e)
+                    }
+                })?;
+            
+            Ok(result)
+        })
+        .await?;
+        
+        // Get created user
+        let user_info = self.get_user_by_id(created_user_id).await?;
+        
+        // Return user info and initial password (for testing/pre-production only)
+        Ok((user_info, initial_password))
+    }
+
     /// Create a new OAuth user (no password validation)
     pub async fn create_oauth_user(&self, request: CreateOAuthUserRequest) -> AppResult<UserInfo> {
         // Validate input
@@ -174,7 +263,8 @@ impl UserService {
         // Create user - check if exists inside transaction to prevent race condition
         let sanitized_email = ValidationUtils::sanitize_string(&request.email);
         let now = chrono::Utc::now();
-        let password_expires_at = now + chrono::Duration::days(90);
+        let config = crate::config::PasswordConfig::from_env();
+        let password_expires_at = now + config.initial_expiration_duration();
         let new_user = NewUser {
             email: sanitized_email.clone(),
             password_hash,
@@ -464,6 +554,18 @@ impl UserService {
     ) -> AppResult<()> {
         self.account_service
             .change_password(user_id, current_password, new_password, password_manager)
+            .await
+    }
+
+    /// Change initial password (for users with initial passwords)
+    pub async fn change_initial_password(
+        &self,
+        user_id: Uuid,
+        current_password: &str,
+        new_password: &str,
+    ) -> AppResult<()> {
+        self.account_service
+            .change_initial_password(user_id, current_password, new_password)
             .await
     }
 

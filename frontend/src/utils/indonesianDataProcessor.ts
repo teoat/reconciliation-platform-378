@@ -1,5 +1,23 @@
-// Indonesian Data Processor - Stub implementation
-// TODO: Implement full Indonesian data processing functionality
+/**
+ * Indonesian Data Processor
+ * 
+ * Processes Indonesian financial data (bank records, expense records) for reconciliation.
+ * 
+ * @remarks
+ * This is a stub implementation with basic functionality. Full Indonesian-specific
+ * data processing features (currency formatting, date parsing, etc.) can be added
+ * when needed for production use.
+ * 
+ * Current functionality:
+ * - Basic record processing
+ * - Simple matching algorithms
+ * - Reconciliation summaries
+ * 
+ * Planned enhancements:
+ * - Indonesian Rupiah (IDR) specific formatting
+ * - Indonesian date format parsing
+ * - Regional tax code handling
+ */
 
 export interface ProcessedBankRecord {
   id: string;

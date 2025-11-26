@@ -398,7 +398,15 @@ impl ResponseError for AppError {
                     code: "OPTIMISTIC_UPDATE".to_string(),
                     correlation_id: None, // Will be set by ErrorHandlerMiddleware
                 })
-            }
+            },
+            AppError::Monitoring(msg) => {
+                HttpResponse::InternalServerError().json(ErrorResponse {
+                    error: "Monitoring Error".to_string(),
+                    message: msg.clone(),
+                    code: "MONITORING_ERROR".to_string(),
+                    correlation_id: None, // Will be set by ErrorHandlerMiddleware
+                })
+            },
         }
     }
 }

@@ -2,7 +2,7 @@
 import { logger } from '@/services/logger';
 import { toRecord } from '../utils/typeHelpers';
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, memo } from 'react';
 import { Workflow, Zap } from 'lucide-react';
 import { WorkflowStageComponent } from './workflow/WorkflowStage';
 import { WorkflowBreadcrumbs } from './workflow/WorkflowBreadcrumbs';
@@ -41,6 +41,15 @@ interface TransitionCondition {
   value: string | number | boolean | null | undefined;
 }
 
+/**
+ * Props for the WorkflowOrchestrator component
+ * 
+ * @interface WorkflowOrchestratorProps
+ * @property {string} currentStage - The current active workflow stage ID
+ * @property {(stage: string) => void} onStageChange - Callback when stage changes
+ * @property {(stage: string) => ValidationResult} onValidation - Validation function for stages
+ * @property {(fromStage: string, toStage: string) => Promise<void>} onDataSync - Async function to sync data between stages
+ */
 interface WorkflowOrchestratorProps {
   currentStage: string;
   onStageChange: (stage: string) => void;
@@ -65,7 +74,28 @@ interface ValidationWarning {
   message: string;
 }
 
-const WorkflowOrchestrator = ({
+/**
+ * WorkflowOrchestrator Component
+ * 
+ * Manages multi-stage workflow progression with validation, data synchronization,
+ * and automatic stage transitions. Provides visual progress tracking and breadcrumb
+ * navigation.
+ * 
+ * @component
+ * @example
+ * ```tsx
+ * <WorkflowOrchestrator
+ *   currentStage="data_setup"
+ *   onStageChange={(stage) => navigateToStage(stage)}
+ *   onValidation={(stage) => validateStageData(stage)}
+ *   onDataSync={async (from, to) => await syncData(from, to)}
+ * />
+ * ```
+ * 
+ * @param {WorkflowOrchestratorProps} props - Component props
+ * @returns {JSX.Element} The workflow orchestration UI
+ */
+const WorkflowOrchestrator = memo(({
   currentStage,
   onStageChange,
   onValidation,
@@ -382,6 +412,8 @@ const WorkflowOrchestrator = ({
       )}
     </div>
   );
-};
+});
+
+WorkflowOrchestrator.displayName = 'WorkflowOrchestrator';
 
 export default WorkflowOrchestrator;

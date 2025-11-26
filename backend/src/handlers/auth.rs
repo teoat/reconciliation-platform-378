@@ -9,7 +9,7 @@ use uuid::Uuid;
 use crate::errors::AppError;
 use crate::handlers::helpers::{get_client_ip, get_user_agent, mask_email};
 use crate::services::auth::{
-    AuthService, ChangePasswordRequest, GoogleOAuthRequest, LoginRequest, RegisterRequest,
+    AuthService, ChangeInitialPasswordRequest, ChangePasswordRequest, GoogleOAuthRequest, LoginRequest, RegisterRequest,
 };
 use crate::services::security_monitor::{
     SecurityEvent, SecurityEventType, SecurityMonitor, SecuritySeverity,
@@ -23,6 +23,7 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .route("/refresh", web::post().to(refresh_token))
         .route("/logout", web::post().to(logout))
         .route("/change-password", web::post().to(change_password))
+        .route("/change-initial-password", web::post().to(change_initial_password))
         .route("/password-reset", web::post().to(request_password_reset))
         .route(
             "/password-reset/confirm",
@@ -243,6 +244,15 @@ pub async fn login(
         ));
     }
 
+    // Check if password has expired
+    if let Some(expires_at) = user.password_expires_at {
+        if expires_at < chrono::Utc::now() {
+            return Err(AppError::Authentication(
+                "Your password has expired. Please reset your password using the 'Forgot Password' link.".to_string(),
+            ));
+        }
+    }
+
     // Clear login attempts on successful authentication
     if let Some(monitor) = security_monitor.as_ref() {
         let _ = monitor.record_login_attempt(&ip, Some(&user.id.to_string()), true).await;
@@ -265,7 +275,34 @@ pub async fn login(
     // Get user role from status field
     let role = user.status.clone();
 
+    // Check if user has initial password that needs to be changed
+    let requires_password_change = user.is_initial_password;
+    
+    // Check if password is expiring soon (configurable threshold)
+    let config = crate::config::PasswordConfig::from_env();
+    let password_expires_soon = if let Some(expires_at) = user.password_expires_at {
+        let days_until_expiry = (expires_at - chrono::Utc::now()).num_days();
+        days_until_expiry <= config.warning_days_before_expiry as i64 && days_until_expiry > 0
+    } else {
+        false
+    };
+    
+    let message = if requires_password_change {
+        Some("Please change your initial password".to_string())
+    } else if password_expires_soon {
+        let days = (user.password_expires_at.unwrap() - chrono::Utc::now()).num_days();
+        Some(format!("Your password will expire in {} day(s). Please change it soon.", days))
+    } else {
+        None
+    };
+
     // Create response
+    let password_expires_in_days = if password_expires_soon {
+        Some((user.password_expires_at.unwrap() - chrono::Utc::now()).num_days() as u32)
+    } else {
+        None
+    };
+
     let auth_response = crate::services::auth::AuthResponse {
         token,
         user: crate::services::auth::UserInfo {
@@ -279,6 +316,10 @@ pub async fn login(
         },
         expires_at: (chrono::Utc::now().timestamp() + auth_service.as_ref().get_expiration())
             as usize,
+        requires_password_change: if requires_password_change { Some(true) } else { None },
+        password_expires_soon: if password_expires_soon { Some(true) } else { None },
+        password_expires_in_days,
+        message,
     };
 
     Ok(HttpResponse::Ok().json(auth_response))
@@ -317,6 +358,29 @@ pub async fn register(
         .await?;
     let token = auth_service.as_ref().generate_token(&user)?;
 
+    // Check if user has initial password and password expiration status
+    let requires_password_change = user.is_initial_password;
+    let password_expires_soon = if let Some(expires_at) = user.password_expires_at {
+        let days_until_expiry = (expires_at - chrono::Utc::now()).num_days();
+        days_until_expiry <= 7 && days_until_expiry > 0
+    } else {
+        false
+    };
+    
+    let password_expires_in_days = if password_expires_soon {
+        Some((user.password_expires_at.unwrap() - chrono::Utc::now()).num_days() as u32)
+    } else {
+        None
+    };
+    
+    let message = if requires_password_change {
+        Some("Please change your initial password".to_string())
+    } else if password_expires_soon {
+        Some(format!("Your password will expire in {} day(s). Please change it soon.", password_expires_in_days.unwrap()))
+    } else {
+        None
+    };
+
     // Create response
     let auth_response = crate::services::auth::AuthResponse {
         token,
@@ -331,6 +395,10 @@ pub async fn register(
         },
         expires_at: (chrono::Utc::now().timestamp() + auth_service.as_ref().get_expiration())
             as usize,
+        requires_password_change: if requires_password_change { Some(true) } else { None },
+        password_expires_soon: if password_expires_soon { Some(true) } else { None },
+        password_expires_in_days,
+        message,
     };
 
     Ok(HttpResponse::Created().json(auth_response))
@@ -383,6 +451,8 @@ pub async fn refresh_token(
         password_expires_at: None,
         password_last_changed: None,
         password_history: None,
+        is_initial_password: false,
+        initial_password_set_at: None,
         auth_provider: None,
         created_at: chrono::Utc::now(),
         updated_at: chrono::Utc::now(),
@@ -438,6 +508,54 @@ pub async fn change_password(
             success: true,
             data: None,
             message: Some("Password changed successfully".to_string()),
+            error: None,
+        }),
+    )
+}
+
+/// Change initial password endpoint
+/// 
+/// This endpoint is used to change an initial/temporary password.
+/// It verifies the current password and sets a new password, marking it as non-initial.
+pub async fn change_initial_password(
+    req: web::Json<ChangeInitialPasswordRequest>,
+    http_req: HttpRequest,
+    user_service: web::Data<Arc<UserService>>,
+    auth_service: web::Data<Arc<AuthService>>,
+) -> Result<HttpResponse, AppError> {
+    // Extract user_id from request
+    let user_id = crate::handlers::helpers::extract_user_id(&http_req)?;
+
+    // Get user to verify initial password status
+    let user = user_service.as_ref().get_user_by_id_raw(user_id).await?;
+    
+    if !user.is_initial_password {
+        return Err(AppError::Validation(
+            "This endpoint is only for changing initial passwords. Use /change-password instead.".to_string(),
+        ));
+    }
+
+    // Verify current password
+    if !auth_service
+        .as_ref()
+        .verify_password(&req.current_password, &user.password_hash)?
+    {
+        return Err(AppError::Authentication(
+            "Current password is incorrect".to_string(),
+        ));
+    }
+
+    // Use user service to change initial password
+    user_service
+        .as_ref()
+        .change_initial_password(user_id, &req.current_password, &req.new_password)
+        .await?;
+
+    Ok(
+        HttpResponse::Ok().json(crate::handlers::types::ApiResponse::<()> {
+            success: true,
+            data: None,
+            message: Some("Initial password changed successfully. You can now use your new password to login.".to_string()),
             error: None,
         }),
     )
@@ -696,6 +814,30 @@ pub async fn google_oauth(
     // Update last login
     user_service.as_ref().update_last_login(user.id).await?;
 
+    // Check if user has initial password and password expiration status
+    let config = crate::config::PasswordConfig::from_env();
+    let requires_password_change = user.is_initial_password;
+    let password_expires_soon = if let Some(expires_at) = user.password_expires_at {
+        let days_until_expiry = (expires_at - chrono::Utc::now()).num_days();
+        days_until_expiry <= config.warning_days_before_expiry as i64 && days_until_expiry > 0
+    } else {
+        false
+    };
+    
+    let password_expires_in_days = if password_expires_soon {
+        Some((user.password_expires_at.unwrap() - chrono::Utc::now()).num_days() as u32)
+    } else {
+        None
+    };
+    
+    let message = if requires_password_change {
+        Some("Please change your initial password".to_string())
+    } else if password_expires_soon {
+        Some(format!("Your password will expire in {} day(s). Please change it soon.", password_expires_in_days.unwrap()))
+    } else {
+        None
+    };
+
     // Create response
     let auth_response = crate::services::auth::AuthResponse {
         token,
@@ -710,6 +852,10 @@ pub async fn google_oauth(
         },
         expires_at: (chrono::Utc::now().timestamp() + auth_service.as_ref().get_expiration())
             as usize,
+        requires_password_change: if requires_password_change { Some(true) } else { None },
+        password_expires_soon: if password_expires_soon { Some(true) } else { None },
+        password_expires_in_days,
+        message,
     };
 
     Ok(HttpResponse::Ok().json(auth_response))

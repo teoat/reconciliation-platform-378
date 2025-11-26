@@ -9,10 +9,15 @@ edition = "2021"
 # name = "apply-query-indexes"
 # path = "scripts/apply-query-indexes.rs"
 
-# Minimal test binary for debugging
+# Minimal test binary (commented out - was for debugging)
+# [[bin]]
+# name = "test-minimal"
+# path = "src/bin/test-minimal.rs"
+
+# Binary for setting initial passwords
 [[bin]]
-name = "test-minimal"
-path = "src/bin/test-minimal.rs"
+name = "set-initial-passwords"
+path = "src/bin/set-initial-passwords.rs"
 
 [profile.release]
 opt-level = 3              # Maximum optimization

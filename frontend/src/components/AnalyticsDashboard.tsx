@@ -16,16 +16,19 @@
 import { logger } from '@/services/logger';
 
 import React, { useState, useEffect, useCallback, useMemo, memo, lazy, Suspense } from 'react';
-import { Target } from 'lucide-react';
-import { Shield } from 'lucide-react';
-import { AlertCircle } from 'lucide-react';
-import { CheckCircle } from 'lucide-react';
-import { RefreshCw } from 'lucide-react';
-import { BarChart3 } from 'lucide-react';
-import { Users } from 'lucide-react';
-import { Zap } from 'lucide-react';
-import { Folder } from 'lucide-react';
-import { GitCompare } from 'lucide-react';
+// Note: lazy is used for dynamic imports below
+import {
+  Target,
+  Shield,
+  AlertCircle,
+  CheckCircle,
+  RefreshCw,
+  BarChart3,
+  Users,
+  Zap,
+  Folder,
+  GitCompare,
+} from 'lucide-react';
 import { apiClient } from '../services/apiClient';
 import { useWebSocketIntegration } from '../hooks/useWebSocketIntegration';
 
@@ -118,7 +121,8 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
   // State management
   const [dashboardMetrics, setDashboardMetrics] = useState<DashboardMetrics | null>(null);
   const [, setProjectStats] = useState<ProjectStats[]>([]);
-  const [userActivityStats, setUserActivityStats] = useState<UserActivityStats[]>([]);
+  // User activity stats - reserved for future use
+  // const [userActivityStats, setUserActivityStats] = useState<UserActivityStats[]>([]);
   const [reconciliationStats, setReconciliationStats] = useState<ReconciliationStats | null>(null);
   const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState(false);

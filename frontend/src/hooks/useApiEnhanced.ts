@@ -17,7 +17,7 @@ import {
 } from '../store/unifiedStore';
 import ApiService from '../services/ApiService';
 import { useNotificationHelpers } from '../store/hooks';
-import type { ReconciliationResultDetail, ReconciliationJob } from '../types/backend-aligned';
+import type { ReconciliationResultDetail, ReconciliationJob, BackendUser } from '../types/backend-aligned';
 import type { ReconciliationRecord } from '../types/reconciliation';
 import type { ReconciliationMatch } from '../store/unifiedStore';
 import type { UploadedFile as IngestionUploadedFile } from '../types/ingestion';
@@ -42,7 +42,12 @@ export const useAuthAPI = () => {
         dispatch(authActions.loginStart());
         const authData = await ApiService.authenticate(email, password);
 
-        dispatch(authActions.loginSuccess((authData as any).user));
+        // Type-safe extraction of user from response
+        const user = authData.data?.user || (authData.data && 'user' in authData.data ? (authData.data as { user: BackendUser }).user : null);
+        if (!user) {
+          throw new Error('Invalid response: user not found');
+        }
+        dispatch(authActions.loginSuccess(user));
         showSuccess('Login Successful', 'Welcome back!');
 
         return { success: true };
@@ -69,7 +74,12 @@ export const useAuthAPI = () => {
         dispatch(authActions.loginStart());
         const authData = await ApiService.register(userData);
 
-        dispatch(authActions.loginSuccess((authData.data as any)!.user));
+        // Type-safe extraction of user from response
+        const user = authData.data?.user || (authData.data && 'user' in authData.data ? (authData.data as { user: BackendUser }).user : null);
+        if (!user) {
+          throw new Error('Invalid response: user not found');
+        }
+        dispatch(authActions.loginSuccess(user));
         showSuccess('Registration Successful - Account created successfully!');
 
         return { success: true };
@@ -672,7 +682,14 @@ export const useReconciliationJobsAPI = (projectId?: string) => {
     try {
       dispatch(reconciliationJobsActions.fetchJobsStart());
       const response = await ApiService.getReconciliationJobs(projectId);
-      const jobsList = Array.isArray(response) ? response : (response as any).data || response;
+      // Type-safe extraction of jobs list from response
+      const jobsList: ReconciliationJob[] = Array.isArray(response) 
+        ? response 
+        : (response && typeof response === 'object' && 'data' in response 
+            ? (Array.isArray((response as { data: unknown }).data) 
+                ? (response as { data: ReconciliationJob[] }).data 
+                : [])
+            : []);
 
       dispatch(reconciliationJobsActions.fetchJobsSuccess(jobsList as ReconciliationJob[]));
     } catch (error) {

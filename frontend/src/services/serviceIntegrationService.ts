@@ -127,7 +127,7 @@ class ServiceIntegrationService {
 
     // Listen to error context service events
     if (this.config.enableErrorContext) {
-      errorContextService.on('errorEvent', (event: ErrorContextEvent) => {
+      errorContextService.on('errorEvent', (event: ErrorContextEvent, _error?: unknown) => {
         this.emit('errorEvent', event);
       });
     }
@@ -437,7 +437,11 @@ class ServiceIntegrationService {
   private emit(event: string, data?: unknown): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
-      callbacks.forEach((callback) => callback(data));
+      callbacks.forEach((callback) => {
+        // Callback signature is (...args: unknown[]) => void
+        // Some callbacks may have unused error parameter, which is acceptable
+        callback(data);
+      });
     }
   }
 

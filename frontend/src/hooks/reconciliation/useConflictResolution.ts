@@ -11,6 +11,49 @@ interface ConflictResolution {
   assignedAt?: string;
 }
 
+// Type guard for ConflictResolution
+function isConflictResolution(obj: unknown): obj is ConflictResolution {
+  if (!obj || typeof obj !== 'object') return false;
+  const resolution = obj as Record<string, unknown>;
+  if (resolution.status && typeof resolution.status !== 'string') return false;
+  if (resolution.resolvedAt && typeof resolution.resolvedAt !== 'string') return false;
+  if (resolution.resolution && typeof resolution.resolution !== 'string') return false;
+  if (resolution.comments && !Array.isArray(resolution.comments)) return false;
+  return true;
+}
+
+// Helper to safely get resolution status
+function getResolutionStatus(record: EnhancedReconciliationRecord): 'pending' | 'approved' | 'rejected' | 'escalated' | undefined {
+  if (!record.resolution) return undefined;
+  if (isConflictResolution(record.resolution)) {
+    return record.resolution.status;
+  }
+  // Fallback: check if resolution is an object with status property
+  if (typeof record.resolution === 'object' && record.resolution !== null) {
+    const res = record.resolution as Record<string, unknown>;
+    if (typeof res.status === 'string') {
+      return res.status as 'pending' | 'approved' | 'rejected' | 'escalated';
+    }
+  }
+  return undefined;
+}
+
+// Helper to safely get resolution comments
+function getResolutionComments(record: EnhancedReconciliationRecord): string[] {
+  if (!record.resolution) return [];
+  if (isConflictResolution(record.resolution)) {
+    return record.resolution.comments || [];
+  }
+  // Fallback: check if resolution is an object with comments property
+  if (typeof record.resolution === 'object' && record.resolution !== null) {
+    const res = record.resolution as Record<string, unknown>;
+    if (Array.isArray(res.comments)) {
+      return res.comments.filter((c): c is string => typeof c === 'string');
+    }
+  }
+  return [];
+}
+
 export interface ConflictResolutionState {
   conflicts: EnhancedReconciliationRecord[];
   resolvedConflicts: EnhancedReconciliationRecord[];
@@ -77,8 +120,8 @@ export const useConflictResolution = () => {
   });
 
   const setConflicts = useCallback((conflicts: EnhancedReconciliationRecord[]) => {
-    const pendingConflicts = conflicts.filter((c) => (c.resolution as any)?.status === 'pending');
-    const resolvedConflicts = conflicts.filter((c) => (c.resolution as any)?.status !== 'pending');
+    const pendingConflicts = conflicts.filter((c) => getResolutionStatus(c) === 'pending');
+    const resolvedConflicts = conflicts.filter((c) => getResolutionStatus(c) !== 'pending');
 
     setState((prev) => ({
       ...prev,
@@ -94,10 +137,15 @@ export const useConflictResolution = () => {
       setState((prev) => {
         const updatedConflicts = prev.conflicts.map((conflict) => {
           if (conflict.id === conflictId) {
+            const currentResolution = isConflictResolution(conflict.resolution) 
+              ? conflict.resolution 
+              : (typeof conflict.resolution === 'object' && conflict.resolution !== null 
+                  ? conflict.resolution as Partial<ConflictResolution>
+                  : {});
             return {
               ...conflict,
               resolution: {
-                ...(conflict.resolution as any),
+                ...currentResolution,
                 status:
                   resolution === 'approve'
                     ? 'approved'
@@ -106,15 +154,15 @@ export const useConflictResolution = () => {
                       : 'escalated',
                 resolvedAt: new Date().toISOString(),
                 comments: comment ? [comment] : [],
-              },
+              } as ConflictResolution,
             };
           }
           return conflict;
         });
 
-        const pendingConflicts = updatedConflicts.filter((c) => (c.resolution as any)?.status === 'pending');
+        const pendingConflicts = updatedConflicts.filter((c) => getResolutionStatus(c) === 'pending');
         const resolvedConflicts = updatedConflicts.filter(
-          (c) => (c.resolution as any)?.status !== 'pending'
+          (c) => getResolutionStatus(c) !== 'pending'
         );
 
         return {
@@ -139,10 +187,16 @@ export const useConflictResolution = () => {
         setState((prev) => {
           const updatedConflicts = prev.conflicts.map((conflict) => {
             if (conflictIds.includes(conflict.id)) {
+              const currentResolution = isConflictResolution(conflict.resolution) 
+                ? conflict.resolution 
+                : (typeof conflict.resolution === 'object' && conflict.resolution !== null 
+                    ? conflict.resolution as Partial<ConflictResolution>
+                    : {});
+              const existingComments = getResolutionComments(conflict);
               return {
                 ...conflict,
                 resolution: {
-                  ...(conflict.resolution as any),
+                  ...currentResolution,
                   status:
                     resolution === 'approve'
                       ? 'approved'
@@ -152,7 +206,7 @@ export const useConflictResolution = () => {
                   resolvedAt: new Date().toISOString(),
                   resolution: comment || `${resolution} action taken`,
                   comments: [
-                    ...((conflict.resolution as any)?.comments || []),
+                    ...existingComments,
                     comment ? `Bulk resolution: ${comment}` : `Bulk marked as ${resolution}`,
                   ].filter(Boolean),
                 } as ConflictResolution,
@@ -162,10 +216,10 @@ export const useConflictResolution = () => {
           });
 
           const pendingConflicts = updatedConflicts.filter(
-            (c) => (c.resolution as any)?.status === 'pending'
+            (c) => getResolutionStatus(c) === 'pending'
           );
           const resolvedConflicts = updatedConflicts.filter(
-            (c) => (c.resolution as any)?.status !== 'pending'
+            (c) => getResolutionStatus(c) !== 'pending'
           );
 
           return {
@@ -219,9 +273,9 @@ export const useConflictResolution = () => {
           ? {
               ...conflict,
               resolution: {
-                ...conflict.resolution,
+                ...(isConflictResolution(conflict.resolution) ? conflict.resolution : {}),
                 comments: [
-                  ...((conflict.resolution as any)?.comments || []),
+                  ...getResolutionComments(conflict),
                   `${new Date().toISOString()}: ${comment}`,
                 ],
               } as ConflictResolution,
@@ -327,10 +381,10 @@ export const useConflictResolution = () => {
 // Helper function to calculate resolution statistics
 function calculateResolutionStats(conflicts: EnhancedReconciliationRecord[]) {
   const total = conflicts.length;
-  const approved = conflicts.filter((c) => (c.resolution as any)?.status === 'approved').length;
-  const rejected = conflicts.filter((c) => (c.resolution as any)?.status === 'rejected').length;
-  const escalated = conflicts.filter((c) => (c.resolution as any)?.status === 'escalated').length;
-  const pending = conflicts.filter((c) => (c.resolution as any)?.status === 'pending').length;
+  const approved = conflicts.filter((c) => getResolutionStatus(c) === 'approved').length;
+  const rejected = conflicts.filter((c) => getResolutionStatus(c) === 'rejected').length;
+  const escalated = conflicts.filter((c) => getResolutionStatus(c) === 'escalated').length;
+  const pending = conflicts.filter((c) => getResolutionStatus(c) === 'pending').length;
 
   return {
     total,

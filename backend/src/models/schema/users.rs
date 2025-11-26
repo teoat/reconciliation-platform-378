@@ -23,6 +23,8 @@ diesel::table! {
         password_expires_at -> Nullable<Timestamptz>,
         password_last_changed -> Nullable<Timestamptz>,
         password_history -> Nullable<Jsonb>,
+        is_initial_password -> Bool,
+        initial_password_set_at -> Nullable<Timestamptz>,
         #[max_length = 50]
         auth_provider -> Nullable<Varchar>,
         created_at -> Timestamptz,

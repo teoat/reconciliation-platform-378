@@ -1,0 +1,96 @@
+# Enhanced Rust Clippy Configuration for Safe Refactoring
+#
+# This configuration adds stricter clippy rules to prevent regressions during refactoring.
+# Use this config when refactoring Rust files to ensure no breaking changes.
+
+[build]
+rustflags = [
+  "-D", "warnings",           # Deny all warnings
+  "-D", "missing_docs",       # Require documentation
+]
+
+[lints.clippy]
+# ============================================================================
+# REFACTORING SAFETY RULES
+# ============================================================================
+
+# Documentation
+missing_docs = "warn"          # Warn on missing documentation
+missing_doc_code_examples = "warn"
+
+# Unused code
+unused_imports = "warn"
+unused_variables = "warn"
+dead_code = "warn"
+
+# Module organization
+module_inception = "warn"      # Warn on deeply nested modules
+too_many_lines = "warn"        # Warn on large modules (>500 lines)
+
+# ============================================================================
+# CODE QUALITY RULES
+# ============================================================================
+
+# Error handling
+unwrap_used = "deny"            # Deny unwrap() - use proper error handling
+expect_used = "warn"            # Warn on expect() - prefer proper error handling
+panic = "warn"                  # Warn on panic! - use proper error handling
+
+# Type safety
+as_conversions = "warn"         # Warn on as conversions
+cast_possible_truncation = "warn"
+cast_possible_wrap = "warn"
+cast_precision_loss = "warn"
+cast_sign_loss = "warn"
+
+# Unsafe code
+unsafe_code = "deny"            # Deny unsafe code blocks
+unsafe_derive_deserialize = "warn"
+
+# ============================================================================
+# PERFORMANCE RULES
+# ============================================================================
+
+# Cloning
+redundant_clone = "warn"
+unnecessary_to_owned = "warn"
+clone_on_ref_ptr = "warn"
+
+# Allocations
+single_char_pattern = "warn"
+string_add = "warn"
+string_add_assign = "warn"
+
+# ============================================================================
+# COMPLEXITY RULES
+# ============================================================================
+
+cognitive_complexity = "warn"
+cyclomatic_complexity = "warn"
+too_many_arguments = "warn"
+too_many_lines = "warn"
+type_complexity = "warn"
+
+# ============================================================================
+# STYLE RULES
+# ============================================================================
+
+# Naming
+nonstandard_macro_braces = "warn"
+similar_names = "warn"
+too_many_arguments = "warn"
+
+# Formatting
+format_push_string = "warn"
+print_stdout = "warn"
+print_stderr = "warn"
+
+[lints.rust]
+# Rust compiler lints
+unsafe_code = "deny"
+missing_docs = "warn"
+unused_imports = "warn"
+unused_variables = "warn"
+dead_code = "warn"
+
+

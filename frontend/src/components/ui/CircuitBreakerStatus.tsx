@@ -8,7 +8,7 @@ import { logger } from '@/services/logger';
  */
 
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, CheckCircle, Clock, RefreshCw, Info } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 // Import ariaLiveRegionsService with type-safe access
 import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';

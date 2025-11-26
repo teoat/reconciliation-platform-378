@@ -20,7 +20,6 @@ import {
 } from 'lucide-react';
 import { useData } from './DataProvider';
 import type { BackendProject } from '../services/apiClient/types';
-import type { ReconciliationData } from './data/types';
 import type { ReconciliationRecord } from '@/types/index';
 import type { ReconciliationRecord as DataManagementRecord } from '../services/dataManagement/types';
 import { extractNumber, extractString, extractDate } from '../types/sourceData';

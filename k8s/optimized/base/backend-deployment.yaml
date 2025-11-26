@@ -44,17 +44,13 @@ spec:
         image: reconciliation-backend:latest
         imagePullPolicy: IfNotPresent
         command: ["/app/reconciliation-backend", "migrate"]
+        envFrom:
+        - secretRef:
+            name: reconciliation-secrets
+        - configMapRef:
+            name: reconciliation-config
         env:
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: reconciliation-secrets
-              key: DATABASE_URL
-        - name: RUST_LOG
-          valueFrom:
-            configMapKeyRef:
-              name: reconciliation-config
-              key: RUST_LOG
+        # DATABASE_URL and RUST_LOG are now loaded via envFrom above
         resources:
           requests:
             memory: "64Mi"
@@ -79,52 +75,31 @@ spec:
           protocol: TCP
         
         # Environment Variables
+        # Load all secrets from reconciliation-secrets Secret
+        envFrom:
+        - secretRef:
+            name: reconciliation-secrets
+        # Load all config from reconciliation-config ConfigMap
+        - configMapRef:
+            name: reconciliation-config
+        # Override specific values or add non-secret env vars
         env:
         - name: HOST
           value: "0.0.0.0"
         - name: PORT
           value: "2000"
-        - name: DATABASE_URL
-          valueFrom:
-            secretKeyRef:
-              name: reconciliation-secrets
-              key: DATABASE_URL
-        - name: REDIS_URL
-          valueFrom:
-            secretKeyRef:
-              name: reconciliation-secrets
-              key: REDIS_URL
-        - name: JWT_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: reconciliation-secrets
-              key: JWT_SECRET
-        - name: JWT_REFRESH_SECRET
-          valueFrom:
-            secretKeyRef:
-              name: reconciliation-secrets
-              key: JWT_REFRESH_SECRET
-        - name: GOOGLE_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              name: reconciliation-secrets
-              key: GOOGLE_CLIENT_ID
-              optional: true
-        - name: RUST_LOG
-          valueFrom:
-            configMapKeyRef:
-              name: reconciliation-config
-              key: RUST_LOG
-        - name: RUST_BACKTRACE
-          valueFrom:
-            configMapKeyRef:
-              name: reconciliation-config
-              key: RUST_BACKTRACE
-        - name: DATABASE_POOL_SIZE
-          valueFrom:
-            configMapKeyRef:
-              name: reconciliation-config
-              key: DATABASE_POOL_SIZE
+        # Optional: Explicitly set required secrets (for clarity and validation)
+        # These are already loaded via envFrom above, but listed here for documentation
+        # - name: CSRF_SECRET
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: reconciliation-secrets
+        #       key: CSRF_SECRET
+        # - name: PASSWORD_MASTER_KEY
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: reconciliation-secrets
+        #       key: PASSWORD_MASTER_KEY
         
         # Resource Limits
         resources:

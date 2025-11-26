@@ -63,9 +63,7 @@ const FileDropzone = lazy(() =>
   import('@/components/EnhancedDropzone').then((module) => ({ default: module.FileDropzone }))
 );
 
-interface ReconciliationPageProps {}
-
-const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
+const ReconciliationPage: React.FC = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
 
@@ -142,7 +140,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
 
   // Error recovery
   const { recoveryActions, suggestions, errorTitle } = useErrorRecovery({
-    error: error || '',
+    error: error ? (error instanceof Error ? error : new Error(String(error))) : '',
     context: { component: 'ReconciliationPage', action: 'data-operation' },
     onRetry: async () => {
       setError(null);

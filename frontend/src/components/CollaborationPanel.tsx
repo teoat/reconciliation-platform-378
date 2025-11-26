@@ -94,11 +94,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
     }
   };
 
-  const formatLastSeen = (_lastSeen: string) => {
-    // Format last seen timestamp
-    // Implementation can be added if needed
-    return 'Active';
-  };
+  // formatLastSeen function removed - unused
 
   // Type guard for user messages
   const isUserMessage = (user: unknown): user is WebSocketUserMessage => {

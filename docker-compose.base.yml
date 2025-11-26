@@ -57,9 +57,35 @@ x-backend-base: &backend-base
     BACKEND_PORT: 2000
     LOG_FORMAT: json
     JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
+    JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-this-refresh-secret-in-production}
     JWT_EXPIRATION: ${JWT_EXPIRATION:-86400}
+    CSRF_SECRET: ${CSRF_SECRET:-change-this-csrf-secret-in-production}
+    PASSWORD_MASTER_KEY: ${PASSWORD_MASTER_KEY:-change-this-password-master-key-in-production}
     CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:1000}
     RUST_LOG: ${RUST_LOG:-info}
+    RUST_BACKTRACE: ${RUST_BACKTRACE:-1}
+    # Google OAuth (Optional)
+    GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+    # Email/SMTP (Optional)
+    SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    # Payment Processing (Optional)
+    STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+    STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+    # API Authentication (Optional)
+    API_KEY: ${API_KEY:-}
+    SOFTCODE_API_KEY: ${SOFTCODE_API_KEY:-}
+    # Monitoring (Optional)
+    SENTRY_DSN: ${SENTRY_DSN:-}
+    # Backup & Storage (Optional)
+    BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-}
+    AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+    AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    # Database/Redis Pool Configuration
+    DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-20}
+    DATABASE_TIMEOUT: ${DATABASE_TIMEOUT:-30}
+    REDIS_POOL_SIZE: ${REDIS_POOL_SIZE:-10}
+    REDIS_TIMEOUT: ${REDIS_TIMEOUT:-5}
     MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
     UPLOAD_PATH: /app/uploads
     DISABLE_AUTH: ${DISABLE_AUTH:-false}
@@ -89,6 +115,7 @@ x-frontend-base: &frontend-base
       BUILDKIT_INLINE_CACHE: 1
       VITE_API_URL: ${VITE_API_URL:-http://localhost:2000}/api/v1
       VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:2000}
+      VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
   environment:
     - NODE_ENV=${NODE_ENV:-production}
     - DOCKER_BUILDKIT=1

@@ -2,23 +2,18 @@
 import { logger } from '@/services/logger';
 
 import { useState, useEffect, useCallback } from 'react';
-import { BarChart3 } from 'lucide-react';
-import { Target } from 'lucide-react';
-import { Shield } from 'lucide-react';
-import { Database } from 'lucide-react';
-import { Tag } from 'lucide-react';
-import { Calendar } from 'lucide-react';
-import { Eye } from 'lucide-react';
-import { RefreshCw } from 'lucide-react';
-// Removed unused lucide-react imports: Phone, User, UserCheck, UserX, UserPlus, UserMinus, Crown, Bell, BellOff, Bookmark, Share2, ExternalLink, File, FileCheck, FileX, FilePlus, FileMinus, FileEdit, FileSearch, Download, Upload, FileArchive, FileImage
-import { FileVideo } from 'lucide-react';
-import { Download } from 'lucide-react';
-import { FileAudio } from 'lucide-react';
-import { FileText } from 'lucide-react';
-import { FileSpreadsheet } from 'lucide-react';
-import { FileCode } from 'lucide-react';
-import { FileJson } from 'lucide-react';
-import { X } from 'lucide-react';
+import {
+  BarChart3,
+  Target,
+  Shield,
+  Database,
+  Tag,
+  Calendar,
+  Eye,
+  RefreshCw,
+  X,
+  FileText,
+} from 'lucide-react';
 import {
   IndonesianDataProcessor,
   ProcessedExpenseRecord,
@@ -565,7 +560,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
             Close
           </button>
           <button className="btn-primary flex items-center space-x-2">
-            <Download className="w-4 h-4" />
+            {/* Download icon removed - unused */}
             <span>Export Analysis</span>
           </button>
         </div>

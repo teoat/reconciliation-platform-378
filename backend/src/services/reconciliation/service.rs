@@ -71,12 +71,44 @@ pub async fn get_active_jobs(service: &ReconciliationService) -> AppResult<Vec<U
         .collect())
 }
 
-/// Get queued reconciliation jobs
+/// Get list of reconciliation jobs currently queued for processing.
+///
+/// Returns UUIDs of all jobs that are waiting in the processing queue.
+///
+/// # Returns
+/// `AppResult<Vec<Uuid>>` - List of queued job UUIDs
+///
+/// # Example
+/// ```rust
+/// let queued_jobs = get_queued_jobs(&service).await?;
+/// println!("Queued jobs: {:?}", queued_jobs);
+/// ```
 pub async fn get_queued_jobs(service: &ReconciliationService) -> AppResult<Vec<Uuid>> {
     Ok(service.job_processor.job_queue.read().await.clone())
 }
 
-/// Get reconciliation job progress
+/// Get detailed progress information for a reconciliation job.
+///
+/// Retrieves progress from in-memory job processor if available, otherwise
+/// falls back to database. Includes progress percentage, record counts, and
+/// estimated completion time.
+///
+/// # Arguments
+/// * `service` - The reconciliation service instance
+/// * `job_id` - UUID of the job to get progress for
+/// * `project_id` - UUID of the project (for validation)
+///
+/// # Returns
+/// `AppResult<JobProgress>` - Detailed progress information
+///
+/// # Errors
+/// Returns `AppError::NotFound` if the job doesn't exist
+///
+/// # Example
+/// ```rust
+/// let progress = get_reconciliation_progress(&service, job_id, project_id).await?;
+/// println!("Progress: {}%", progress.progress);
+/// ```
 pub async fn get_reconciliation_progress(
     service: &ReconciliationService,
     job_id: Uuid,
@@ -145,7 +177,27 @@ pub async fn get_reconciliation_progress(
     }
 }
 
-/// Cancel reconciliation job
+/// Cancel a running reconciliation job.
+///
+/// Attempts to gracefully stop a job that's currently processing.
+/// The job status will be updated to "cancelled" in the database.
+///
+/// # Arguments
+/// * `service` - The reconciliation service instance
+/// * `job_id` - UUID of the job to cancel
+/// * `user_id` - UUID of the user requesting cancellation
+///
+/// # Returns
+/// `AppResult<()>` - Success if job was cancelled
+///
+/// # Errors
+/// Returns `AppError::NotFound` if the job doesn't exist
+/// Returns `AppError::Validation` if the job is already completed
+///
+/// # Example
+/// ```rust
+/// cancel_reconciliation_job(&service, job_id, user_id).await?;
+/// ```
 pub async fn cancel_reconciliation_job(
     service: &ReconciliationService,
     job_id: Uuid,

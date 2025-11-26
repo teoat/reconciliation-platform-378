@@ -144,12 +144,35 @@ impl SecurityService {
     // Authentication security
     // NOTE: Password hashing/verification is handled by services/auth/password.rs (PasswordManager)
     // These methods are deprecated and should not be used. Use AuthService instead.
+    /// Hash a password using bcrypt.
+    ///
+    /// # Deprecated
+    /// This method is deprecated. Use `AuthService::hash_password()` instead.
+    /// Password operations are handled by `services/auth/password.rs::PasswordManager`.
+    ///
+    /// # Arguments
+    /// * `password` - The plain text password to hash
+    ///
+    /// # Returns
+    /// `Result<String, String>` - The hashed password or an error message
     #[deprecated(note = "Use AuthService::hash_password() instead. Password operations are handled by services/auth/password.rs")]
     pub async fn hash_password(&self, password: &str) -> Result<String, String> {
         hash(password, self.config.bcrypt_cost)
             .map_err(|e| format!("Password hashing failed: {}", e))
     }
 
+    /// Verify a password against a bcrypt hash.
+    ///
+    /// # Deprecated
+    /// This method is deprecated. Use `AuthService::verify_password()` instead.
+    /// Password operations are handled by `services/auth/password.rs::PasswordManager`.
+    ///
+    /// # Arguments
+    /// * `password` - The plain text password to verify
+    /// * `hash` - The bcrypt hash to verify against
+    ///
+    /// # Returns
+    /// `Result<bool, String>` - True if password matches, false otherwise, or an error message
     #[deprecated(note = "Use AuthService::verify_password() instead. Password operations are handled by services/auth/password.rs")]
     pub async fn verify_password(&self, password: &str, hash: &str) -> Result<bool, String> {
         verify(password, hash).map_err(|e| format!("Password verification failed: {}", e))

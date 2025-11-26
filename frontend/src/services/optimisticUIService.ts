@@ -187,7 +187,7 @@ class OptimisticUIService {
     this.emit('conflictDetected', conflict);
   }
 
-  private retryUpdate(update: OptimisticUpdate, errorMessage: string): void {
+  private retryUpdate(update: OptimisticUpdate, _errorMessage: string): void {
     const delay = this.retryDelays[update.retryCount] || 16000;
 
     setTimeout(() => {

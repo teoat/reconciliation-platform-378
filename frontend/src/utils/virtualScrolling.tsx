@@ -11,16 +11,17 @@ interface VirtualScrollConfig {
   threshold?: number
 }
 
-interface VirtualScrollState {
-  scrollTop: number
-  startIndex: number
-  endIndex: number
-  visibleItems: Array<{
-    index: number
-    top: number
-    height: number
-  }>
-}
+// VirtualScrollState interface reserved for future use
+// interface VirtualScrollState {
+//   scrollTop: number
+//   startIndex: number
+//   endIndex: number
+//   visibleItems: Array<{
+//     index: number
+//     top: number
+//     height: number
+//   }>
+// }
 
 export interface VirtualScrollResult {
   containerRef: React.RefObject<HTMLDivElement>
@@ -60,7 +61,9 @@ export function useVirtualScroll<T>(
 ): VirtualScrollResult {
   const [scrollTop, setScrollTop] = useState(0)
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const { itemHeight, containerHeight, overscan = 5, threshold = 0.1 } = config
+  const { itemHeight, containerHeight, overscan = 5 } = config
+  // threshold is reserved for future scroll threshold detection
+  // const { itemHeight, containerHeight, overscan = 5, threshold = 0.1 } = config
 
   const totalHeight = items.length * itemHeight
   const visibleCount = Math.ceil(containerHeight / itemHeight)
@@ -124,7 +127,9 @@ export function useDynamicVirtualScroll<T>(
   const [scrollTop, setScrollTop] = useState(0)
   const [itemHeights, setItemHeights] = useState<number[]>([])
   const containerRef = useRef<HTMLDivElement>(null)
-  const { containerHeight, overscan = 5, getItemHeight, estimatedItemHeight } = config
+  const { containerHeight, overscan = 5, getItemHeight } = config
+  // estimatedItemHeight is reserved for future optimization
+  // const { containerHeight, overscan = 5, getItemHeight, estimatedItemHeight } = config
 
   // Calculate item heights
   useEffect(() => {

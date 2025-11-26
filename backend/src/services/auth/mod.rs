@@ -256,9 +256,10 @@ impl EnhancedAuthService {
         let password_history_json = serde_json::to_value(password_history)
             .map_err(|e| AppError::Internal(format!("Failed to serialize password history: {}", e)))?;
 
-        // Calculate new expiration (90 days from now)
+        // Calculate new expiration (configurable)
+        let config = crate::config::PasswordConfig::from_env();
         let now = chrono::Utc::now();
-        let password_expires_at = now + chrono::Duration::days(90);
+        let password_expires_at = now + config.expiration_duration();
 
         // Update user's password with history and expiration
         diesel::update(users::table)

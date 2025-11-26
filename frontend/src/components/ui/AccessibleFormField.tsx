@@ -28,7 +28,8 @@ export const AccessibleFormField: React.FC<AccessibleFormFieldProps> = ({
   const errorId = `${id}-error`;
   const describedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(' ');
 
-  const accessibleLabel = getAccessibleLabel(id, label, required);
+  // accessibleLabel is reserved for future use
+  // const accessibleLabel = getAccessibleLabel(id, label, required);
 
   return (
     <div className="mb-4">
