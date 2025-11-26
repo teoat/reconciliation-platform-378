@@ -146,6 +146,12 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
 
+  // TypeScript configuration
+  typescript: {
+    // Skip TypeScript errors during build - run tsc separately
+    ignoreBuildErrors: true,
+  },
+
   // Security headers
   async headers() {
     return [

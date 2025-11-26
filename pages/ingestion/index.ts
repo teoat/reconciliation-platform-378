@@ -2,4 +2,4 @@
 export { default as FileUploadSection } from './FileUploadSection';
 export { default as FileListSection } from './FileListSection';
 export { default as DataPreviewSection } from './DataPreviewSection';
-export * from './types';
+export type * from './types';
