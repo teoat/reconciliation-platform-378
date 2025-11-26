@@ -30,7 +30,8 @@ const SERVER_NAME = 'agent-coordination-mcp';
 const SERVER_VERSION = '1.0.0';
 
 // Configuration
-const REDIS_URL = process.env.REDIS_URL || 'redis://:redis_pass@localhost:6379';
+// Default to no password if not specified (Redis may not require auth)
+const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const COORDINATION_TTL = parseInt(process.env.COORDINATION_TTL || '3600', 10); // 1 hour default
 const REDIS_CONNECT_TIMEOUT = 5000; // 5 seconds
 
@@ -102,18 +103,59 @@ async function initRedis(): Promise<RedisClientType> {
 
   redisClientPromise = (async () => {
     try {
-      redisClient = createClient({
-        url: REDIS_URL,
-        socket: {
-          connectTimeout: REDIS_CONNECT_TIMEOUT,
-          reconnectStrategy: (retries) => {
-            if (retries > 3) {
-              return new Error('Redis connection failed after 3 retries');
-            }
-            return Math.min(retries * 100, 1000);
+      // Parse REDIS_URL to handle both password and no-password cases
+      let redisConfig: { url?: string; password?: string; socket: any };
+      
+      if (REDIS_URL.includes('@') && REDIS_URL.includes(':')) {
+        // Parse URL format: redis://:password@host:port or redis://host:port
+        const urlMatch = REDIS_URL.match(/^redis:\/\/(?::([^@]+)@)?([^:]+):(\d+)$/);
+        if (urlMatch) {
+          const [, password, host, port] = urlMatch;
+          redisConfig = {
+            url: `redis://${host}:${port}`,
+            password: password || undefined,
+            socket: {
+              connectTimeout: REDIS_CONNECT_TIMEOUT,
+              reconnectStrategy: (retries: number) => {
+                if (retries > 3) {
+                  return new Error('Redis connection failed after 3 retries');
+                }
+                return Math.min(retries * 100, 1000);
+              },
+            },
+          };
+        } else {
+          // Fallback to original URL
+          redisConfig = {
+            url: REDIS_URL,
+            socket: {
+              connectTimeout: REDIS_CONNECT_TIMEOUT,
+              reconnectStrategy: (retries: number) => {
+                if (retries > 3) {
+                  return new Error('Redis connection failed after 3 retries');
+                }
+                return Math.min(retries * 100, 1000);
+              },
+            },
+          };
+        }
+      } else {
+        // Simple URL format
+        redisConfig = {
+          url: REDIS_URL,
+          socket: {
+            connectTimeout: REDIS_CONNECT_TIMEOUT,
+            reconnectStrategy: (retries: number) => {
+              if (retries > 3) {
+                return new Error('Redis connection failed after 3 retries');
+              }
+              return Math.min(retries * 100, 1000);
+            },
           },
-        },
-      });
+        };
+      }
+      
+      redisClient = createClient(redisConfig);
 
       redisClient.on('error', (err) => {
         console.error('[Agent Coordination MCP] Redis error:', err);

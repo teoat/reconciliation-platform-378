@@ -153,7 +153,7 @@ class OptimisticUIService {
   }
 
   private handleUpdateError(update: OptimisticUpdate, error: unknown): void {
-    const errorMessage = error.message || 'Unknown error';
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
     // Check if it's a conflict
     if (errorMessage.includes('CONFLICT')) {
@@ -420,7 +420,7 @@ class OptimisticUIService {
 
 // React hook for optimistic UI updates
 export const useOptimisticUI = () => {
-  const service = OptimisticUIService.getInstance();
+  const _service = OptimisticUIService.getInstance();
 
   const createUpdate = (
     type: OptimisticUpdate['type'],

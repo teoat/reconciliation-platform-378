@@ -4,7 +4,7 @@
  * Features related to discrepancy resolution and approval workflows
  */
 
-import { registerFeature, type FeatureMetadata } from '../registry';
+import { registerFeature } from '../registry';
 
 // Adjudication Workflow Feature
 registerFeature({

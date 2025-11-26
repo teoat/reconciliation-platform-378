@@ -35,8 +35,9 @@ export const ReconciliationSummary: React.FC<ReconciliationSummaryProps> = ({
     metrics.totalRecords > 0 ? (metrics.matchedRecords / metrics.totalRecords) * 100 : 0;
   const discrepancyRate =
     metrics.totalRecords > 0 ? (metrics.discrepancyRecords / metrics.totalRecords) * 100 : 0;
-  const unresolvedRate =
-    metrics.totalRecords > 0 ? ((metrics.pendingRecords || 0) / metrics.totalRecords) * 100 : 0;
+  // Removed unused unresolvedRate variable
+  // const unresolvedRate =
+  //   metrics.totalRecords > 0 ? ((metrics.pendingRecords || 0) / metrics.totalRecords) * 100 : 0;
 
   return (
     <div className="space-y-6">

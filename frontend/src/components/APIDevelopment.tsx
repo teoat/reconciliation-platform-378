@@ -98,7 +98,7 @@ interface APIDevelopmentProps {
 }
 
 const APIDevelopment = ({ project, onProgressUpdate }: APIDevelopmentProps) => {
-  const { currentProject } = useData();
+  const { currentProject: _currentProject } = useData();
   const [endpoints, setEndpoints] = useState<APIEndpoint[]>([]);
   const [webhooks, setWebhooks] = useState<Webhook[]>([]);
   const [logs, setLogs] = useState<APILog[]>([]);

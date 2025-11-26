@@ -3,6 +3,8 @@
 //! Provides initialization and configuration helpers for the application,
 //! including resilience manager, database, cache, and service setup.
 
+pub mod error_handler;
+
 use crate::config::Config;
 use crate::database::Database;
 use crate::errors::AppResult;

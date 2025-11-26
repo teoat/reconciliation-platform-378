@@ -19,7 +19,7 @@ export const DataTransformPanel: React.FC<DataTransformPanelProps> = ({
   columns,
   mappings,
   onTransformComplete,
-  isLoading = false,
+  isLoading: _isLoading = false,
 }) => {
   const [isTransforming, setIsTransforming] = useState(false);
   const [transformProgress, setTransformProgress] = useState(0);

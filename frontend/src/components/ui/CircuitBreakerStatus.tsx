@@ -42,7 +42,7 @@ export const CircuitBreakerStatus: React.FC<CircuitBreakerStatusProps> = ({
   className = '',
 }) => {
   const [isRetrying, setIsRetrying] = useState(false);
-  const [tooltipOpen, setTooltipOpen] = useState(false);
+  const [_tooltipOpen, setTooltipOpen] = useState(false);
 
   // Announce status changes to screen readers
   useEffect(() => {

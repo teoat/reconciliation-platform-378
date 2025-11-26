@@ -283,7 +283,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
   return {
     syncStatus,
     syncData,
-    requestData,
+    requestData: _requestData,
     triggerSync,
     clearErrors,
     getSyncStatusSummary,

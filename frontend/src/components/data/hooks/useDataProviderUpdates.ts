@@ -1,7 +1,6 @@
 // Data Provider Updates Hook
 import React from 'react';
 import { useCrossPageDataUpdates } from '../updates';
-import { createInitialCrossPageData } from '../initialData';
 import type { CrossPageData } from '../types';
 
 export const useDataProviderUpdates = (

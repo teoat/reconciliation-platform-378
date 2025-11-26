@@ -151,8 +151,11 @@ class ServiceIntegrationService {
 
     try {
       // Extract error code and message
-      const errorCode = error.code || error.status || 'UNKNOWN_ERROR';
-      const errorMessage = error.message || 'An unknown error occurred';
+      const errorCode = 
+        (error && typeof error === 'object' && 'code' in error && typeof error.code === 'string' ? error.code : null) ||
+        (error && typeof error === 'object' && 'status' in error && typeof error.status === 'string' ? error.status : null) ||
+        'UNKNOWN_ERROR';
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
 
       // Set error context
       if (this.config.enableErrorContext) {

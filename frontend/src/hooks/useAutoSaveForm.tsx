@@ -18,7 +18,7 @@ interface UseAutoSaveFormOptions {
 }
 
 export const useAutoSaveForm = (options: UseAutoSaveFormOptions) => {
-  const { formId, enabled = true } = options;
+  const { formId: _formId, enabled: _enabled = true } = options;
 
   // Mock implementation since dependencies don't exist
   const [formData, setFormData] = React.useState<Record<string, unknown>>({});

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useFrenly } from './frenly/FrenlyProvider';
 import type { FrenlyMessage } from './frenly/FrenlyProvider';
 import { CheckCircle } from 'lucide-react';
@@ -12,7 +12,6 @@ import { Eye } from 'lucide-react';
 import { MessageCircle } from 'lucide-react';
 import { Settings } from 'lucide-react';
 import { Zap } from 'lucide-react';
-import { Heart } from 'lucide-react';
 
 interface FrenlyTestResult {
   testName: string;
@@ -28,8 +27,8 @@ const FrenlyAITester: React.FC = () => {
     showMessage,
     hideMessage,
     updatePage,
-    toggleVisibility,
-    toggleMinimize,
+    toggleVisibility: _toggleVisibility,
+    toggleMinimize: _toggleMinimize,
   } = useFrenly();
   const [testResults, setTestResults] = useState<FrenlyTestResult[]>([]);
   const [isRunning, setIsRunning] = useState(false);

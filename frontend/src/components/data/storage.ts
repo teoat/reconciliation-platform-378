@@ -1,7 +1,6 @@
 // Data Storage & Legacy Methods Module
 import { useState, useCallback, useEffect } from 'react';
 import DataManagementService, { ProjectData } from '../../services/dataManagement';
-import { CrossPageData } from './types';
 import type { IngestionData, ReconciliationData, CashflowData } from '../../services/dataManagement/types';
 
 export const useDataStorage = (

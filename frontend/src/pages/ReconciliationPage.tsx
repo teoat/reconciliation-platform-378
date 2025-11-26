@@ -70,14 +70,14 @@ const ReconciliationPage: React.FC = () => {
   // Hooks
   const { project, isLoading: projectLoading } = useProject(projectId || null);
   const { dataSources, uploadFile, processFile } = useDataSources(projectId || null);
-  const { jobs, createJob, startJob } = useReconciliationJobs(projectId || null);
+  const { jobs, createJob: _createJob, startJob } = useReconciliationJobs(projectId || null);
   const { matches, updateMatch } = useReconciliationMatches(projectId || null);
 
   // Reconciliation operations hook
   const {
-    isCreatingJob,
-    isStartingJob,
-    error: reconciliationError,
+    isCreatingJob: _isCreatingJob,
+    isStartingJob: _isStartingJob,
+    error: _reconciliationError,
     startReconciliation,
   } = useReconciliationOperations({
     projectId,

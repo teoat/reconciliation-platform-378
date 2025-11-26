@@ -186,7 +186,7 @@ const WorkflowOrchestrator = memo(({
     },
   ]);
 
-  const [workflowTransitions, setWorkflowTransitions] = useState<WorkflowTransition[]>([
+  const [workflowTransitions] = useState<WorkflowTransition[]>([
     {
       from: 'data_setup',
       to: 'reconciliation',
@@ -206,7 +206,7 @@ const WorkflowOrchestrator = memo(({
   ]);
 
   const [isAutoAdvancing, setIsAutoAdvancing] = useState(false);
-  const [validationResults, setValidationResults] = useState<Record<string, ValidationResult>>({});
+  const [validationResults] = useState<Record<string, ValidationResult>>({});
 
   // Calculate workflow progress
   const workflowProgress = useMemo(() => {
@@ -331,9 +331,6 @@ const WorkflowOrchestrator = memo(({
     }
   }, [workflowStages, validateStageTransition, onDataSync, onStageChange]);
 
-  const goToNextStage = useCallback(() => {
-    advanceToNextStage();
-  }, [advanceToNextStage]);
 
   return (
     <div

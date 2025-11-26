@@ -1,232 +1,74 @@
 #!/bin/bash
-# ============================================================================
-# STAGING DEPLOYMENT SCRIPT
-# ============================================================================
-# Deploys the application to staging environment with comprehensive checks
-#
-# Usage:
-#   ./scripts/deploy-staging.sh [version]
-#   ./scripts/deploy-staging.sh v1.0.0
-# ============================================================================
+# Deploy to Staging Environment
+# Validates deployment and runs health checks
 
-set -euo pipefail
+set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/common-functions.sh"
 
-# Configuration
-VERSION=${1:-latest}
-ENVIRONMENT="staging"
-NAMESPACE="reconciliation-staging"
-BASE_URL="${STAGING_URL:-http://staging.example.com}"
+echo "🚀 Deploying to Staging Environment..."
 
-# Colors
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-NC='\033[0m'
+# Set working directory
+cd "$SCRIPT_DIR/.."
 
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+# Check prerequisites
+log_info "Checking prerequisites..."
+check_command docker
+check_command docker-compose
 
-log_success() {
-    echo -e "${GREEN}[SUCCESS]${NC} $1"
-}
+# Set environment
+export ENVIRONMENT=staging
+export NODE_ENV=production
 
-log_warning() {
-    echo -e "${YELLOW}[WARNING]${NC} $1"
-}
+# Run database migrations
+log_info "Running database migrations..."
+if [ -f "scripts/execute-migrations.sh" ]; then
+    ./scripts/execute-migrations.sh
+else
+    log_warning "Migration script not found, skipping migrations"
+fi
 
-log_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
+# Build and start services
+log_info "Building and starting services..."
+if docker-compose -f docker-compose.staging.yml up -d --build; then
+    log_success "✅ Services started successfully"
+else
+    log_error "❌ Failed to start services"
+    exit 1
+fi
 
-# ============================================================================
-# PRE-DEPLOYMENT CHECKS
-# ============================================================================
+# Wait for services to be ready
+log_info "Waiting for services to be ready..."
+sleep 10
 
-pre_deployment_checks() {
-    log_info "Running pre-deployment checks..."
-    
-    # Check if kubectl is available
-    if ! command -v kubectl &> /dev/null; then
-        log_error "kubectl is not installed"
-        exit 1
-    fi
-    
-    # Check if we can connect to cluster
-    if ! kubectl cluster-info &> /dev/null; then
-        log_error "Cannot connect to Kubernetes cluster"
-        exit 1
-    fi
-    
-    # Check if namespace exists
-    if ! kubectl get namespace "$NAMESPACE" &> /dev/null; then
-        log_warning "Namespace $NAMESPACE does not exist, creating..."
-        kubectl create namespace "$NAMESPACE"
-    fi
-    
-    # Check if secrets exist
-    if ! kubectl get secret reconciliation-staging-secrets -n "$NAMESPACE" &> /dev/null; then
-        log_warning "Secrets not found. Please create them first:"
-        log_info "  kubectl apply -f k8s/optimized/base/secrets.yaml"
-        log_info "  (Update secrets.yaml with staging values first)"
-        exit 1
-    fi
-    
-    log_success "Pre-deployment checks passed"
-}
+# Run deployment validation
+log_info "Running deployment validation..."
+if [ -f "scripts/validate-deployment.sh" ]; then
+    API_BASE_URL="http://localhost:2000" ./scripts/validate-deployment.sh
+else
+    log_warning "Validation script not found, skipping validation"
+fi
 
-# ============================================================================
-# BUILD IMAGES
-# ============================================================================
+# Health check
+log_info "Performing health check..."
+if curl -f -s http://localhost:2000/api/health > /dev/null; then
+    log_success "✅ Health check passed"
+else
+    log_error "❌ Health check failed"
+    exit 1
+fi
 
-build_images() {
-    log_info "Building Docker images..."
-    
-    # Build backend
-    log_info "Building backend image..."
-    docker build \
-        -f infrastructure/docker/Dockerfile.backend \
-        -t reconciliation-backend:${VERSION} \
-        -t reconciliation-backend:staging \
-        --target runtime \
-        backend/
-    
-    # Build frontend
-    log_info "Building frontend image..."
-    docker build \
-        -f infrastructure/docker/Dockerfile.frontend \
-        -t reconciliation-frontend:${VERSION} \
-        -t reconciliation-frontend:staging \
-        --target runtime \
-        frontend/
-    
-    log_success "Images built successfully"
-}
+# Check metrics endpoint
+log_info "Checking metrics endpoint..."
+if curl -f -s http://localhost:2000/api/metrics/health > /dev/null; then
+    log_success "✅ Metrics endpoint available"
+else
+    log_warning "⚠️  Metrics endpoint not available"
+fi
 
-# ============================================================================
-# DEPLOY TO KUBERNETES
-# ============================================================================
-
-deploy_kubernetes() {
-    log_info "Deploying to Kubernetes..."
-    
-    # Apply ConfigMaps
-    if [[ -f "k8s/optimized/base/configmap.yaml" ]]; then
-        log_info "Applying ConfigMaps..."
-        kubectl apply -f k8s/optimized/base/configmap.yaml -n "$NAMESPACE"
-    fi
-    
-    # Apply Deployments
-    if [[ -f "infrastructure/kubernetes/staging-deployment.yaml" ]]; then
-        log_info "Applying deployments..."
-        kubectl apply -f infrastructure/kubernetes/staging-deployment.yaml
-    else
-        log_warning "Staging deployment file not found, using base deployment..."
-        if [[ -f "k8s/optimized/base/deployment.yaml" ]]; then
-            kubectl apply -f k8s/optimized/base/deployment.yaml -n "$NAMESPACE"
-        fi
-    fi
-    
-    # Wait for rollout
-    log_info "Waiting for deployment rollout..."
-    kubectl rollout status deployment/reconciliation-backend -n "$NAMESPACE" --timeout=5m || {
-        log_error "Backend deployment failed"
-        kubectl rollout undo deployment/reconciliation-backend -n "$NAMESPACE"
-        exit 1
-    }
-    
-    kubectl rollout status deployment/reconciliation-frontend -n "$NAMESPACE" --timeout=5m || {
-        log_error "Frontend deployment failed"
-        kubectl rollout undo deployment/reconciliation-frontend -n "$NAMESPACE"
-        exit 1
-    }
-    
-    log_success "Deployment completed"
-}
-
-# ============================================================================
-# RUN MIGRATIONS
-# ============================================================================
-
-run_migrations() {
-    log_info "Running database migrations..."
-    
-    # Get backend pod name
-    local pod_name=$(kubectl get pods -n "$NAMESPACE" -l app=reconciliation-backend -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || echo "")
-    
-    if [[ -z "$pod_name" ]]; then
-        log_error "Backend pod not found"
-        exit 1
-    fi
-    
-    # Run migrations
-    kubectl exec -n "$NAMESPACE" "$pod_name" -- \
-        diesel migration run || {
-        log_error "Migrations failed"
-        exit 1
-    }
-    
-    log_success "Migrations completed"
-}
-
-# ============================================================================
-# POST-DEPLOYMENT VERIFICATION
-# ============================================================================
-
-post_deployment_verification() {
-    log_info "Running post-deployment verification..."
-    
-    # Wait for services to be ready
-    log_info "Waiting for services to be ready..."
-    sleep 30
-    
-    # Run smoke tests
-    if [[ -f "$SCRIPT_DIR/smoke-tests.sh" ]]; then
-        log_info "Running smoke tests..."
-        "$SCRIPT_DIR/smoke-tests.sh" "$ENVIRONMENT" "$BASE_URL" || {
-            log_error "Smoke tests failed"
-            exit 1
-        }
-    else
-        log_warning "Smoke test script not found, skipping..."
-    fi
-    
-    log_success "Post-deployment verification passed"
-}
-
-# ============================================================================
-# MAIN EXECUTION
-# ============================================================================
-
-main() {
-    echo "============================================================================"
-    echo "STAGING DEPLOYMENT"
-    echo "============================================================================"
-    echo "Version: $VERSION"
-    echo "Environment: $ENVIRONMENT"
-    echo "Namespace: $NAMESPACE"
-    echo "Started: $(date)"
-    echo ""
-    
-    pre_deployment_checks
-    build_images
-    deploy_kubernetes
-    run_migrations
-    post_deployment_verification
-    
-    echo ""
-    echo "============================================================================"
-    log_success "Staging deployment completed successfully!"
-    echo "============================================================================"
-    echo "Access staging at: $BASE_URL"
-    echo "View logs: kubectl logs -f -n $NAMESPACE deployment/reconciliation-backend"
-    echo ""
-}
-
-# Run main function
-main "$@"
-
+log_success "🎉 Staging deployment completed successfully!"
+log_info "Services available at:"
+log_info "  - API: http://localhost:2000"
+log_info "  - Health: http://localhost:2000/api/health"
+log_info "  - Metrics: http://localhost:2000/api/metrics/summary"

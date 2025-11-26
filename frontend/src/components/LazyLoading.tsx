@@ -1,4 +1,4 @@
-import React, { ComponentType, ReactNode, lazy, Suspense } from 'react';
+import React, { ComponentType, ReactNode, Suspense } from 'react';
 import { logger } from '@/services/logger';
 
 // Loading component

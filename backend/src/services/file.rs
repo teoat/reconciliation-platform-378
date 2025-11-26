@@ -401,11 +401,49 @@ impl FileService {
     }
 
     /// Get file info
-    pub async fn get_file(&self, _file_id: Uuid) -> AppResult<FileUploadResult> {
-        // Placeholder implementation
-        Err(AppError::Internal(
-            "Get file not yet implemented".to_string(),
-        ))
+    pub async fn get_file(&self, file_id: Uuid) -> AppResult<FileUploadResult> {
+        use crate::models::schema::uploaded_files::dsl::*;
+
+        let uploaded_file: UploadedFile = {
+            if let Some(ref resilience) = self.resilience {
+                // Use async database connection with circuit breaker
+                let mut conn = resilience
+                    .execute_database(async { self.db.get_connection_async().await })
+                    .await?;
+
+                uploaded_files
+                    .find(file_id)
+                    .first(&mut conn)
+                    .map_err(|e| {
+                        if e == diesel::NotFound {
+                            AppError::NotFound(format!("File with id {} not found", file_id))
+                        } else {
+                            AppError::Database(e)
+                        }
+                    })?
+            } else {
+                // Fallback to direct connection
+                let mut conn = self.db.get_connection()?;
+                uploaded_files
+                    .find(file_id)
+                    .first(&mut conn)
+                    .map_err(|e| {
+                        if e == diesel::NotFound {
+                            AppError::NotFound(format!("File with id {} not found", file_id))
+                        } else {
+                            AppError::Database(e)
+                        }
+                    })?
+            }
+        };
+
+        Ok(FileUploadResult {
+            id: uploaded_file.id,
+            filename: uploaded_file.filename,
+            size: uploaded_file.file_size,
+            status: uploaded_file.status,
+            project_id: uploaded_file.project_id,
+        })
     }
 
     /// Delete a file

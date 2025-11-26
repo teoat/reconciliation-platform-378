@@ -391,16 +391,16 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
     onClose();
   };
 
-  // Keyboard navigation
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      handleSkip();
-    } else if (e.key === 'ArrowRight' && !isLastStep && !isValidating) {
-      handleNext();
-    } else if (e.key === 'ArrowLeft' && !isFirstStep) {
-      handlePrevious();
-    }
-  };
+  // Keyboard navigation - Removed unused handleKeyDown function
+  // const handleKeyDown = (e: React.KeyboardEvent) => {
+  //   if (e.key === 'Escape') {
+  //     handleSkip();
+  //   } else if (e.key === 'ArrowRight' && !isLastStep && !isValidating) {
+  //     handleNext();
+  //   } else if (e.key === 'ArrowLeft' && !isFirstStep) {
+  //     handlePrevious();
+  //   }
+  // };
 
   if (!isOpen || !currentStepData) return null;
 

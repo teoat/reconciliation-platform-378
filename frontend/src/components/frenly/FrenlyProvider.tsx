@@ -282,7 +282,7 @@ export const FrenlyProvider: React.FC<FrenlyProviderProps> = ({
     if (!enablePersistence) return;
 
     try {
-      const userId = localStorage.getItem('userId') || 'unknown';
+      const _userId = localStorage.getItem('userId') || 'unknown';
       await frenlyAgentService.updateOnboardingProgress({
         pageId: state.currentPage,
         completedSteps: state.userProgress.completedSteps,

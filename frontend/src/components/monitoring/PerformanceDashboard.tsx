@@ -47,7 +47,7 @@ const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
   const [selectedTimeframe, setSelectedTimeframe] = useState<'1h' | '24h' | '7d' | '30d'>('7d');
   const [loading, setLoading] = useState(false);
   const [circuitBreakers, setCircuitBreakers] = useState<CircuitBreakerMetrics[]>([]);
-  const [circuitBreakerLoading, setCircuitBreakerLoading] = useState(false);
+  const [_circuitBreakerLoading, setCircuitBreakerLoading] = useState(false);
 
   // Load circuit breaker metrics
   const loadCircuitBreakers = async () => {

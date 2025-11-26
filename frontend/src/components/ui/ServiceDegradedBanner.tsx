@@ -40,7 +40,7 @@ export const ServiceDegradedBanner: React.FC<ServiceDegradedBannerProps> = ({
   onRetry,
   estimatedRecovery,
   onDismiss,
-  severity = 'error',
+  severity: _severity = 'error',
 }) => {
   const [isRetrying, setIsRetrying] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);

@@ -17,7 +17,7 @@ export function renderWithRouter(
   ui: ReactElement,
   options: CustomRenderOptions = {}
 ): ReturnType<typeof render> {
-  const { route = '/', initialEntries = [route], store } = options;
+  const { route = '/', initialEntries: _initialEntries = [route], store } = options;
 
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
     <Provider store={store || configureStore({ reducer: rootReducer })}>

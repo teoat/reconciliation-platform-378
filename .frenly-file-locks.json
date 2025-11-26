@@ -1,0 +1,75 @@
+{
+  "locks": {
+    "docs/project-management/PROJECT_STATUS.md": {
+      "locked": true,
+      "reason": "Master status document - single source of truth",
+      "timestamp": "2025-11-26T18:03:42Z"
+    },
+    "docs/project-management/COMPREHENSIVE_DIAGNOSTIC_REPORT.md": {
+      "locked": true,
+      "reason": "Master diagnostic report - single source of truth",
+      "timestamp": "2025-11-26T18:03:42Z"
+    },
+    "docs/project-management/CONSOLIDATION_SUMMARY.md": {
+      "locked": true,
+      "reason": "Master consolidation reference",
+      "timestamp": "2025-11-26T18:03:42Z"
+    }
+  },
+  "master_documents": {
+    "status": "docs/project-management/PROJECT_STATUS.md",
+    "todos": "docs/project-management/MASTER_TODOS.md",
+    "diagnostic": "docs/project-management/COMPREHENSIVE_DIAGNOSTIC_REPORT.md",
+    "deployment": "docs/deployment/DEPLOYMENT_GUIDE.md",
+    "quick_start": "docs/getting-started/QUICK_START.md",
+    "mcp": "docs/development/MCP_SETUP_GUIDE.md",
+    "consolidation": "docs/project-management/CONSOLIDATION_SUMMARY.md"
+  },
+  "restricted_patterns": [
+    "*COMPLETE*.md",
+    "*SUMMARY*.md",
+    "*REPORT*.md",
+    "*STATUS*.md",
+    "*PLAN*.md",
+    "*DIAGNOSTIC*.md"
+  ],
+  "restricted_locations": [
+    "./",
+    "./docs/"
+  ],
+  "allowed_exceptions": [
+    "docs/project-management/PROJECT_STATUS.md",
+    "docs/project-management/MASTER_TODOS.md",
+    "docs/project-management/COMPREHENSIVE_DIAGNOSTIC_REPORT.md",
+    "docs/project-management/CONSOLIDATION_SUMMARY.md",
+    "docs/deployment/DEPLOYMENT_GUIDE.md",
+    "docs/getting-started/QUICK_START.md",
+    "docs/development/MCP_SETUP_GUIDE.md",
+    "docs/project-management/PHASED_IMPLEMENTATION_PLAN.md",
+    "docs/project-management/FOUR_AGENT_ORCHESTRATION_PLAN.md",
+    "docs/project-management/THREE_AGENT_COORDINATION_PLAN.md",
+    "docs/project-management/AGENT_COORDINATION_EXECUTION_PLAN.md",
+    "docs/project-management/MASTER_STATUS_AND_CHECKLIST.md",
+    "docs/project-management/FILES_CONSOLIDATION_FINAL_REPORT.md",
+    "docs/deployment/PRODUCTION_DEPLOYMENT_PLAN.md",
+    "docs/deployment/DEPLOYMENT_STATUS.md",
+    "docs/api/OPENAPI_INTEGRATION_STATUS.md",
+    "docs/testing/TESTING_STATUS.md",
+    "docs/testing/UAT_PLAN.md",
+    "docs/testing/TEST_COVERAGE_PLAN.md",
+    "docs/security/SECURITY_AUDIT_REPORT.md",
+    "docs/project-management/SECRETS_AUDIT_REPORT.md",
+    "docs/operations/SCRIPT_CONSOLIDATION_PLAN.md",
+    "docs/refactoring/COMPONENT_ORGANIZATION_PLAN.md",
+    "docs/refactoring/LARGE_FILES_REFACTORING_PLAN.md",
+    "docs/refactoring/COMPONENT_ORGANIZATION_IMPLEMENTATION_PLAN.md",
+    "docs/performance/PERFORMANCE_OPTIMIZATION_STATUS.md",
+    "docs/performance/BUNDLE_OPTIMIZATION_STATUS.md",
+    "docs/performance/LAZY_LOADING_STATUS.md",
+    "docs/performance/IMAGE_OPTIMIZATION_STATUS.md",
+    "docs/features/frenly-ai/FRENLY_INTEGRATION_DIAGNOSTIC.md",
+    "docs/features/GOOGLE_OAUTH_DIAGNOSTIC_GUIDE.md",
+    "docs/refactoring/CONSOLIDATION_SUMMARY.md"
+  ],
+  "last_maintenance": "2025-11-26T18:03:32Z"
+}

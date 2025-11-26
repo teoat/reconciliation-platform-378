@@ -139,7 +139,7 @@ export const useObject = <T extends Record<string, unknown>>(initialValue: T) =>
   const removeKey = useCallback(
     (key: keyof T) =>
       setObject((obj) => {
-        const { [key]: removed, ...rest } = obj;
+        const { [key]: _removed, ...rest } = obj;
         return rest as T;
       }),
     []

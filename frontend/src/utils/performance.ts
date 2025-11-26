@@ -1,5 +1,4 @@
 // Performance Monitoring Utilities
-import { logger } from '@/services/logger';
 import { toRecord } from './typeHelpers';
 // Provides comprehensive performance monitoring for the Reconciliation Platform
 
@@ -74,7 +73,7 @@ class PerformanceMonitor {
     this.initializeMemoryMonitoring();
 
     this.isMonitoring = true;
-    logger.info('Performance monitoring initialized');
+    // Performance monitoring initialized
   }
 
   private initializePerformanceObserver(): void {
@@ -99,7 +98,7 @@ class PerformanceMonitor {
         ],
       });
     } catch (error) {
-      logger.warn('PerformanceObserver not fully supported:', error);
+      // PerformanceObserver not fully supported
     }
   }
 
@@ -184,7 +183,7 @@ class PerformanceMonitor {
     try {
       networkObserver.observe({ entryTypes: ['resource'] });
     } catch (error) {
-      logger.warn('Network monitoring not supported:', error);
+      // Network monitoring not supported
     }
   }
 
@@ -368,7 +367,7 @@ class PerformanceMonitor {
       },
       body: JSON.stringify(data),
     }).catch((error) => {
-      logger.error('Failed to send performance metrics:', error);
+      // Failed to send performance metrics
     });
   }
 

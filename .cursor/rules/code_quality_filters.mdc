@@ -1,0 +1,204 @@
+---
+description: Stricter code quality filters and SSOT enforcement rules for agents
+globs: **/*.{ts,tsx,rs}
+alwaysApply: true
+---
+
+- **Code Quality Filters:**
+  - **MANDATORY**: All code must pass TypeScript/Rust compiler checks
+  - **MANDATORY**: All code must pass linter checks
+  - **MANDATORY**: All code must pass test suite
+  - **MANDATORY**: All code must follow SSOT principles
+  - **MANDATORY**: All exports must have JSDoc documentation
+
+- **SSOT Compliance:**
+  - **CRITICAL**: Never create duplicate implementations
+  - **CRITICAL**: Always import from SSOT locations (see [SSOT_LOCK.yml](../../SSOT_LOCK.yml))
+  - **CRITICAL**: Check SSOT_LOCK.yml before creating new utilities
+  - **FORBIDDEN**: Creating new validation/error/sanitization functions outside SSOT modules
+  ```typescript
+  // ❌ FORBIDDEN: Duplicate implementation
+  export function validateEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+  
+  // ✅ REQUIRED: Import from SSOT
+  import { validateEmail } from '@/utils/common/validation';
+  ```
+
+- **Import Path Rules:**
+  - **MANDATORY**: Use absolute imports for utilities (`@/utils/...`)
+  - **MANDATORY**: Use SSOT paths only (see SSOT_LOCK.yml)
+  - **FORBIDDEN**: Relative imports for utilities (use `@/` alias)
+  - **FORBIDDEN**: Importing from deprecated paths
+  ```typescript
+  // ❌ FORBIDDEN: Relative import
+  import { validateEmail } from '../../../utils/inputValidation';
+  
+  // ❌ FORBIDDEN: Deprecated path
+  import { validateEmail } from '@/utils/passwordValidation';
+  
+  // ✅ REQUIRED: SSOT path
+  import { validateEmail } from '@/utils/common/validation';
+  ```
+
+- **Type Safety:**
+  - **MANDATORY**: No `any` types (use `unknown` if type is truly unknown)
+  - **MANDATORY**: All function parameters and return types must be typed
+  - **MANDATORY**: Use proper error types (not generic Error)
+  ```typescript
+  // ❌ FORBIDDEN: Any types
+  function processError(error: any): string {
+    return error.message;
+  }
+  
+  // ✅ REQUIRED: Proper types
+  function processError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    return 'An unknown error occurred';
+  }
+  ```
+
+- **Documentation Requirements:**
+  - **MANDATORY**: All exported functions must have JSDoc comments
+  - **MANDATORY**: JSDoc must include @param, @returns, and @example
+  - **MANDATORY**: Complex functions must include @throws documentation
+  ```typescript
+  // ❌ FORBIDDEN: Undocumented export
+  export function validateEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+  
+  // ✅ REQUIRED: JSDoc documentation
+  /**
+   * Validates an email address format.
+   * 
+   * @param email - Email address to validate
+   * @returns True if email is valid, false otherwise
+   * 
+   * @example
+   * ```typescript
+   * validateEmail('user@example.com'); // Returns: true
+   * validateEmail('invalid-email'); // Returns: false
+   * ```
+   */
+  export function validateEmail(email: string): boolean {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+  ```
+
+- **Function Consolidation:**
+  - **MANDATORY**: Check for existing implementations before creating new functions
+  - **MANDATORY**: Consolidate similar functions into SSOT modules
+  - **FORBIDDEN**: Creating duplicate utility functions
+  - **REQUIRED**: Use shared function library for scripts (see [consolidation.mdc](./consolidation.mdc))
+
+- **Error Handling:**
+  - **MANDATORY**: Use AppError/AppResult pattern (Rust) or proper error types (TypeScript)
+  - **MANDATORY**: Never expose internal errors to users
+  - **MANDATORY**: Mask PII in error messages (see [security.mdc](./security.mdc))
+  - **MANDATORY**: Use error handling utilities from SSOT
+  ```typescript
+  // ❌ FORBIDDEN: Generic error handling
+  catch (error) {
+    console.error(error);
+    throw error;
+  }
+  
+  // ✅ REQUIRED: Proper error handling
+  import { getErrorMessage, createError } from '@/utils/common/errorHandling';
+  
+  catch (error) {
+    const message = getErrorMessage(error, 'An error occurred');
+    logger.error('Operation failed', { error: message });
+    throw createError('OPERATION_FAILED', message);
+  }
+  ```
+
+- **Validation:**
+  - **MANDATORY**: Use validation utilities from SSOT (`@/utils/common/validation`)
+  - **MANDATORY**: Validate all user input
+  - **FORBIDDEN**: Creating custom validation functions outside SSOT
+  - **REQUIRED**: Use Zod schemas for complex validation
+  ```typescript
+  // ❌ FORBIDDEN: Custom validation
+  function isValidEmail(email: string): boolean {
+    return email.includes('@');
+  }
+  
+  // ✅ REQUIRED: SSOT validation
+  import { validateEmail, emailSchema } from '@/utils/common/validation';
+  
+  const result = emailSchema.safeParse(email);
+  if (!result.success) {
+    // Handle validation error
+  }
+  ```
+
+- **Pre-Commit Validation:**
+  - **MANDATORY**: Run SSOT validation (`./scripts/validate-ssot.sh`)
+  - **MANDATORY**: Run import validation (`./scripts/validate-imports.sh`)
+  - **MANDATORY**: Run type checking (`npx tsc --noEmit`)
+  - **MANDATORY**: Run linter (`npm run lint`)
+  - **MANDATORY**: Run test suite (`npm run test`)
+
+- **Agent Coordination:**
+  - **MANDATORY**: Lock files before editing (see [agent-coordination.mdc](./agent-coordination.mdc))
+  - **MANDATORY**: Check for conflicts before starting work
+  - **MANDATORY**: Update agent status during work
+  - **MANDATORY**: Release locks after completion
+  ```typescript
+  // ✅ REQUIRED: Agent coordination workflow
+  // 1. Register
+  await agent_register({ agentId, capabilities });
+  
+  // 2. Check conflicts
+  const conflicts = await agent_detect_conflicts({ agentId, files });
+  
+  // 3. Lock files
+  await agent_lock_file({ file, agentId, reason });
+  
+  // 4. Do work
+  // ... make changes ...
+  
+  // 5. Validate
+  await validate_ssot();
+  await validate_imports();
+  await type_check();
+  
+  // 6. Unlock
+  await agent_unlock_file({ file, agentId });
+  ```
+
+- **File Locking Rules:**
+  - **MANDATORY**: Lock SSOT files before modification
+  - **MANDATORY**: Lock target files before consolidation
+  - **MANDATORY**: Lock index/barrel files after consolidation
+  - **FORBIDDEN**: Editing files locked by other agents
+  - **REQUIRED**: Check lock status before editing
+
+- **Consolidation Rules:**
+  - **MANDATORY**: Follow zero-error consolidation plan (see [ZERO_ERROR_CONSOLIDATION_PLAN.md](../../docs/refactoring/ZERO_ERROR_CONSOLIDATION_PLAN.md))
+  - **MANDATORY**: Validate dependencies before consolidation
+  - **MANDATORY**: Update SSOT_LOCK.yml after consolidation
+  - **MANDATORY**: Add deprecation warnings to old files
+  - **MANDATORY**: Update all imports after consolidation
+
+- **Quality Metrics:**
+  - **Target**: Zero TypeScript errors
+  - **Target**: Zero linting errors
+  - **Target**: Zero test failures
+  - **Target**: 100% SSOT compliance
+  - **Target**: 100% import path consistency
+  - **Target**: 100% documentation coverage
+
+- **Automated Checks:**
+  - Pre-commit hooks enforce all quality rules
+  - CI/CD pipeline validates all changes
+  - Automated SSOT compliance checking
+  - Automated import path validation
+  - Automated type checking
+
+Follow [SSOT_LOCK.yml](../../SSOT_LOCK.yml) for SSOT definitions and [ZERO_ERROR_CONSOLIDATION_PLAN.md](../../docs/refactoring/ZERO_ERROR_CONSOLIDATION_PLAN.md) for consolidation procedures.

@@ -4,7 +4,7 @@
  * Reusable UI components with AI integration metadata
  */
 
-import { registerFeature, type FeatureMetadata } from '../registry';
+import { registerFeature } from '../registry';
 
 // Data Table Feature
 registerFeature({

@@ -4,7 +4,7 @@
  * General utility features and helpers
  */
 
-import { registerFeature, type FeatureMetadata } from '../registry';
+import { registerFeature } from '../registry';
 
 // Virtual Scrolling Feature
 registerFeature({

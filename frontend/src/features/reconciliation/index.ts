@@ -4,7 +4,7 @@
  * Features related to matching, comparing, and reconciling data records
  */
 
-import { registerFeature, type FeatureMetadata } from '../registry';
+import { registerFeature } from '../registry';
 
 // Reconciliation Engine Feature
 registerFeature({

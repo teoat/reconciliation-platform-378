@@ -4,7 +4,6 @@
 import React from 'react';
 import { Flame } from 'lucide-react';
 import { Shield } from 'lucide-react';
-import { Trophy } from 'lucide-react';
 import Card from '../ui/Card';
 import { useReconciliationStreak } from '../../hooks/useReconciliationStreak';
 

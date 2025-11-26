@@ -22,7 +22,6 @@ import {
   ProjectExportService,
   ExportOptions,
 } from '../services/integration';
-import type { Project } from '../types/backend-aligned';
 
 interface IntegrationSettingsProps {
   isVisible: boolean;
@@ -38,7 +37,6 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
   const [integrations, setIntegrations] = useState<IntegrationConfig[]>(
     IntegrationService.getIntegrations()
   );
-  const [_selectedIntegration, _setSelectedIntegration] = useState<IntegrationConfig | null>(null);
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     format: 'csv',
     includeMetadata: true,
@@ -63,12 +61,6 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
     }
   };
 
-  const _handleUpdateIntegration = (id: string, settings: Record<string, unknown>) => {
-    const success = IntegrationService.updateIntegration(id, settings);
-    if (success) {
-      setIntegrations(IntegrationService.getIntegrations());
-    }
-  };
 
   const handleExport = async () => {
     setIsExporting(true);

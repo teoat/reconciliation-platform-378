@@ -2,7 +2,6 @@
 // Reduced from 532 lines to ~100 lines by focusing on essential functionality
 
 import React from 'react';
-import { uiService } from '../services/uiService';
 
 export interface ResponsiveProps {
   children: React.ReactNode;
@@ -14,22 +13,11 @@ export interface ResponsiveProps {
 
 export const Responsive: React.FC<ResponsiveProps> = ({
   children,
-  breakpoint = 'md',
+  breakpoint: _breakpoint = 'md',
   hideOn,
   showOn,
   className = '',
 }) => {
-  const getBreakpointClasses = () => {
-    const breakpoints = {
-      sm: 'sm:',
-      md: 'md:',
-      lg: 'lg:',
-      xl: 'xl:',
-      '2xl': '2xl:',
-    };
-    return breakpoints[breakpoint];
-  };
-
   const getVisibilityClasses = () => {
     let classes = '';
 

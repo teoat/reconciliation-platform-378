@@ -4,9 +4,7 @@ import { logger } from '@/services/logger';
 
 import React, { useState, useEffect } from 'react';
 import { Check } from 'lucide-react';
-import { CreditCard } from 'lucide-react';
 import { AlertTriangle } from 'lucide-react';
-import { TrendingUp } from 'lucide-react';
 import { Calendar } from 'lucide-react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';

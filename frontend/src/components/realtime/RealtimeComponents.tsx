@@ -15,7 +15,7 @@ import { AlertCircle } from 'lucide-react';
 
 // Connection Status Indicator
 export const ConnectionStatus: React.FC = () => {
-  const { isConnected, connectionStatus } = useRealtimeConnection();
+  const { isConnected: _isConnected, connectionStatus } = useRealtimeConnection();
 
   const getStatusColor = () => {
     switch (connectionStatus) {
@@ -112,18 +112,6 @@ export const NotificationsPanel: React.FC = () => {
     }
   };
 
-  const getNotificationBgColor = (level: string) => {
-    switch (level) {
-      case 'error':
-        return 'bg-red-50 border-red-200';
-      case 'warning':
-        return 'bg-yellow-50 border-yellow-200';
-      case 'success':
-        return 'bg-green-50 border-green-200';
-      default:
-        return 'bg-blue-50 border-blue-200';
-    }
-  };
 
   return (
     <div className="relative">
@@ -346,13 +334,15 @@ export const ProgressIndicator: React.FC<{
 
 // Real-time Activity Feed
 export const ActivityFeed: React.FC = () => {
-  const [activities, setActivities] = useState<Array<Record<string, unknown>>>([]);
+  // Removed unused activities state (setActivities was unused, activities only used in commented code)
+  const [activities] = useState<Array<Record<string, unknown>>>([]);
 
   useEffect(() => {
     // This would integrate with the real-time updates
-    const handleActivity = (data: Record<string, unknown>) => {
-      setActivities((prev) => [data, ...prev.slice(0, 49)]); // Keep last 50 activities
-    };
+    // Removed unused handleActivity function
+    // const handleActivity = (data: Record<string, unknown>) => {
+    //   setActivities((prev) => [data, ...prev.slice(0, 49)]); // Keep last 50 activities
+    // };
 
     // Add event listeners for various activities
     // realtimeService.on('user_join', handleActivity);

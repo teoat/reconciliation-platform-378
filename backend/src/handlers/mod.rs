@@ -43,6 +43,9 @@ pub mod logs;
 // Security handlers
 pub mod security;
 
+// Metrics handlers
+pub mod metrics;
+
 // WebSocket handlers
 use crate::websocket;
 
@@ -94,5 +97,7 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         // Health check routes (from existing health.rs)
         // Register at both /health and /api/health for compatibility
         .configure(health::configure_health_routes)
-        .service(web::scope("/api").configure(health::configure_health_routes));
+        .service(web::scope("/api").configure(health::configure_health_routes))
+        // Metrics routes
+        .service(web::scope("/api/metrics").configure(metrics::configure_routes));
 }

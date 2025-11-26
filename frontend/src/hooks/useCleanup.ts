@@ -14,7 +14,7 @@ interface CleanupConfig {
 export function useCleanup(
   cleanupFn: () => void | (() => void),
   deps: React.DependencyList = [],
-  config: CleanupConfig = { timers: true, subscriptions: true, stateCleanup: true }
+  _config: CleanupConfig = { timers: true, subscriptions: true, stateCleanup: true }
 ) {
   useEffect(() => {
     // Execute cleanup function on unmount

@@ -40,7 +40,7 @@ export const OnboardingAnalyticsDashboard: React.FC<OnboardingAnalyticsDashboard
   className = '',
   showRealTime = true,
 }) => {
-  const [analytics, setAnalytics] = useState<OnboardingAnalytics[]>([]);
+  const [_analytics, setAnalytics] = useState<OnboardingAnalytics[]>([]);
   const [processedData, setProcessedData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d');
@@ -158,7 +158,7 @@ export const OnboardingAnalyticsDashboard: React.FC<OnboardingAnalyticsDashboard
     });
   };
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  const _COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
   if (isLoading) {
     return (

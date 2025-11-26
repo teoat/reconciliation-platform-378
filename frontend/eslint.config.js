@@ -29,7 +29,14 @@ export default [
       ...tsPlugin.configs.recommended.rules,
       ...jsxA11yPlugin.configs.recommended.rules,
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       '@typescript-eslint/no-explicit-any': 'off', // Disable strict any checking for now
       'no-console': 'off',
       'no-undef': 'off', // TypeScript handles this
@@ -59,7 +66,14 @@ export default [
     rules: {
       ...tsPlugin.configs.recommended.rules,
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+          caughtErrorsIgnorePattern: '^_',
+        },
+      ],
       '@typescript-eslint/no-var-requires': 'off', // Allow require() in test files for dynamic mocking
       'no-console': 'off',
     },

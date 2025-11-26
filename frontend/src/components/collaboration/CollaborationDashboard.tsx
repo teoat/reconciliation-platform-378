@@ -18,7 +18,6 @@ import {
   Activity,
   Eye,
   Clock,
-  UserPlus,
   Send,
   CheckCircle,
   AlertCircle,
@@ -90,16 +89,16 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
     const [activeUsers, setActiveUsers] = useState<CollaborationUser[]>([]);
     const [activities, setActivities] = useState<CollaborationActivity[]>([]);
     const [comments, setComments] = useState<CollaborationComment[]>([]);
-    const [sessions, setSessions] = useState<CollaborationSession[]>([]);
+    const [_sessions, _setSessions] = useState<CollaborationSession[]>([]);
     const [selectedSession, setSelectedSession] = useState<CollaborationSession | null>(null);
     const [newComment, setNewComment] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const [_isLoading, _setIsLoading] = useState(false);
     const [sessionSubscriptionId, setSessionSubscriptionId] = useState<string | null>(null);
     const [usersSubscriptionId, setUsersSubscriptionId] = useState<string | null>(null);
     const [activitiesSubscriptionId, setActivitiesSubscriptionId] = useState<string | null>(null);
 
     // Memoized handlers
-    const handleJoinSession = useCallback(
+    const _handleJoinSession = useCallback(
       (sessionId: string) => {
         logger.logUserAction('join_collaboration_session', 'CollaborationDashboard', { sessionId });
 
@@ -182,7 +181,7 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
       [subscribe]
     );
 
-    const handleLeaveSession = useCallback(
+    const _handleLeaveSession = useCallback(
       (sessionId: string) => {
         logger.logUserAction('leave_collaboration_session', 'CollaborationDashboard', {
           sessionId,
@@ -245,7 +244,7 @@ export const CollaborationDashboard: React.FC<CollaborationDashboardProps> = mem
         {
           key: 'userName' as const,
           header: 'User',
-          render: (value: string, row: CollaborationActivity) => (
+          render: (value: string, _row: CollaborationActivity) => (
             <div className="flex items-center space-x-2">
               <Users className="w-4 h-4 text-gray-400" aria-hidden="true" />
               <span>{value}</span>

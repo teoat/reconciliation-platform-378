@@ -388,6 +388,133 @@ EOF
     log_success "SSOT registry created: $SSOT_REGISTRY"
 }
 
+# Function to diagnose SSOT system
+diagnose_ssot() {
+    local component=${2:-all}
+    
+    log_info "Running SSOT diagnostic for: $component"
+    
+    case "$component" in
+        file)
+            if [ -z "$3" ]; then
+                log_error "Usage: $0 diagnose file <SSOT_FILE>"
+                exit 1
+            fi
+            validate_ssot_file "$3"
+            ;;
+        category)
+            if [ -z "$3" ]; then
+                log_error "Usage: $0 diagnose category <CATEGORY>"
+                exit 1
+            fi
+            list_ssot_files | grep -A 10 "$3" || log_warning "Category not found: $3"
+            ;;
+        system|all)
+            log_info "Running full system diagnostic..."
+            check_consistency
+            list_ssot_files
+            if check_agent_coordination; then
+                log_success "Agent coordination: Available"
+            else
+                log_warning "Agent coordination: Unavailable"
+            fi
+            ;;
+        mcp)
+            log_info "Diagnosing MCP integration..."
+            if check_agent_coordination; then
+                log_success "MCP agent coordination: Available"
+            else
+                log_error "MCP agent coordination: Unavailable"
+            fi
+            ;;
+        redis)
+            log_info "Diagnosing Redis integration..."
+            if command -v docker &> /dev/null; then
+                if docker ps | grep -q reconciliation-redis; then
+                    log_success "Redis container: Running"
+                else
+                    log_error "Redis container: Not running"
+                fi
+            fi
+            ;;
+        sync)
+            log_info "Diagnosing synchronization status..."
+            check_consistency
+            ;;
+        *)
+            log_error "Unknown diagnostic component: $component"
+            log_info "Available components: file, category, system, mcp, redis, sync"
+            exit 1
+            ;;
+    esac
+}
+
+# Function to sync SSOT files
+sync_ssot() {
+    local target=${2:-all}
+    
+    log_info "Synchronizing SSOT: $target"
+    
+    case "$target" in
+        all)
+            log_info "Syncing all SSOT systems..."
+            if [ -f "$PROJECT_ROOT/scripts/manage-passwords.sh" ]; then
+                "$PROJECT_ROOT/scripts/manage-passwords.sh" sync
+            fi
+            ;;
+        docker)
+            log_info "Syncing Docker services..."
+            if [ -f "$PROJECT_ROOT/scripts/manage-passwords.sh" ]; then
+                "$PROJECT_ROOT/scripts/manage-passwords.sh" sync
+            fi
+            ;;
+        mcp)
+            log_info "Syncing MCP configuration..."
+            if [ -f "$PROJECT_ROOT/scripts/setup-mcp.sh" ]; then
+                "$PROJECT_ROOT/scripts/setup-mcp.sh"
+            fi
+            ;;
+        *)
+            log_error "Unknown sync target: $target"
+            log_info "Available targets: all, docker, mcp"
+            exit 1
+            ;;
+    esac
+    
+    log_success "Synchronization complete"
+}
+
+# Function to check health
+health_check() {
+    local component=${2:-all}
+    
+    log_info "Health check for: $component"
+    
+    case "$component" in
+        all|files)
+            log_info "Checking SSOT files..."
+            list_ssot_files
+            check_consistency
+            ;;
+        mcp)
+            diagnose_ssot mcp
+            ;;
+        docker)
+            diagnose_ssot docker
+            ;;
+        redis)
+            diagnose_ssot redis
+            ;;
+        sync)
+            diagnose_ssot sync
+            ;;
+        *)
+            log_error "Unknown health component: $component"
+            exit 1
+            ;;
+    esac
+}
+
 # Main command handler
 case "${1:-}" in
     list)
@@ -428,26 +555,60 @@ case "${1:-}" in
     registry)
         create_registry
         ;;
+    diagnose)
+        diagnose_ssot "$@"
+        ;;
+    sync)
+        sync_ssot "$@"
+        ;;
+    health)
+        health_check "$@"
+        ;;
     *)
         echo "SSOT Management Script with Agent Coordination"
         echo ""
         echo "Usage: $0 <command> [options]"
         echo ""
         echo "Commands:"
-        echo "  list              List all SSOT files by category"
-        echo "  check             Check SSOT file consistency"
-        echo "  validate <file>   Validate SSOT file syntax"
-        echo "  edit <file>       Edit SSOT file with locking"
-        echo "  lock <file>       Lock SSOT file via agent coordination"
-        echo "  unlock <file>     Unlock SSOT file"
-        echo "  registry          Create SSOT registry JSON"
+        echo "  list                    List all SSOT files by category"
+        echo "  check                   Check SSOT file consistency"
+        echo "  validate <file>         Validate SSOT file syntax"
+        echo "  edit <file>            Edit SSOT file with locking"
+        echo "  lock <file> [reason]   Lock SSOT file via agent coordination"
+        echo "  unlock <file>          Unlock SSOT file"
+        echo "  registry               Create SSOT registry JSON"
+        echo "  diagnose [component]   Diagnose SSOT system"
+        echo "  sync [target]          Synchronize SSOT files"
+        echo "  health [component]     Health check"
+        echo ""
+        echo "Diagnostic Components:"
+        echo "  file <file>            Diagnose specific file"
+        echo "  category <category>   Diagnose category"
+        echo "  system|all             Full system diagnostic"
+        echo "  mcp                   MCP integration"
+        echo "  redis                 Redis integration"
+        echo "  sync                  Synchronization status"
+        echo ""
+        echo "Sync Targets:"
+        echo "  all                   Sync all systems"
+        echo "  docker                Sync Docker services"
+        echo "  mcp                   Sync MCP configuration"
+        echo ""
+        echo "Health Components:"
+        echo "  all|files             All SSOT files"
+        echo "  mcp                   MCP servers"
+        echo "  docker                Docker services"
+        echo "  redis                 Redis connection"
+        echo "  sync                  Synchronization"
         echo ""
         echo "Examples:"
         echo "  $0 list"
         echo "  $0 check"
         echo "  $0 edit .env"
         echo "  $0 lock SSOT_LOCK.yml 'Updating SSOT definitions'"
-        echo "  $0 registry"
+        echo "  $0 diagnose system"
+        echo "  $0 sync all"
+        echo "  $0 health"
         exit 1
         ;;
 esac

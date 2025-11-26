@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { TrendingUp } from 'lucide-react'
 import { BarChart3 } from 'lucide-react'
 import { Activity } from 'lucide-react'
@@ -60,7 +60,7 @@ interface ReconciliationAnalyticsProps {
 
 const ReconciliationAnalytics: React.FC<ReconciliationAnalyticsProps> = ({
   metrics,
-  trendData,
+  trendData: _trendData,
   systemPerformance,
   isVisible,
   onClose,
@@ -97,24 +97,6 @@ const ReconciliationAnalytics: React.FC<ReconciliationAnalyticsProps> = ({
     timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : timeRange === '90d' ? 90 : 365
   );
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'matched':
-        return 'text-green-600';
-      case 'unmatched':
-        return 'text-red-600';
-      case 'discrepancy':
-        return 'text-yellow-600';
-      case 'pending':
-        return 'text-blue-600';
-      case 'resolved':
-        return 'text-green-600';
-      case 'escalated':
-        return 'text-red-600';
-      default:
-        return 'text-gray-600';
-    }
-  };
 
   const getPerformanceColor = (value: number, threshold: number) => {
     if (value >= threshold) return 'text-green-600';

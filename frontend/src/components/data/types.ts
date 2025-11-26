@@ -1,5 +1,5 @@
 // Type definitions for DataProvider
-import { ProjectData, UploadedFile, ReconciliationRecord } from '../../services/dataManagement';
+import { UploadedFile, ReconciliationRecord } from '../../services/dataManagement';
 
 export interface WorkflowState {
   id: string;

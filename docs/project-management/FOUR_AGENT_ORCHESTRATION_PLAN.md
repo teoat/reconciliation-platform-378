@@ -42,11 +42,15 @@
 **Issue**: Build exists but incomplete (0.00 MB, no assets)  
 **Impact**: Frontend cannot serve properly
 
-#### Redis Unavailable
-**Status**: 🔴 **BLOCKING**  
+#### Redis Connection
+**Status**: ✅ **FIXED**  
 **Issue**: Redis connection failed after 3 retries  
 **Impact**: Agent coordination MCP server unavailable  
-**Workaround**: Manual coordination via this document
+**Resolution**: ✅ Fixed Redis URL parsing in MCP servers
+- Updated `agent-coordination.ts` and `index.ts` to properly parse Redis URLs
+- Changed default from `redis://:redis_pass@localhost:6379` to `redis://localhost:6379`
+- Added support for both password and no-password connections
+- **Action Required**: Restart MCP server to apply changes
 
 #### High Memory Usage
 **Status**: 🟡 **WARNING**  
@@ -509,5 +513,5 @@
 - **Backend**: 1 TODO in `main.rs:421` (spawn_local issue - low priority)
 - **Frontend**: 2 TODOs (to be investigated)
 
-See [FOUR_AGENT_ORCHESTRATION_STATUS.md](./FOUR_AGENT_ORCHESTRATION_STATUS.md) for detailed status.
+See [Project Status](./PROJECT_STATUS.md) for current status. Historical status archived in `docs/archive/status-reports/2025-11/FOUR_AGENT_ORCHESTRATION_STATUS.md`.
 

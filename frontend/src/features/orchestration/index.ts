@@ -4,7 +4,7 @@
  * Features related to page orchestration, workflow management, and Frenly AI integration
  */
 
-import { registerFeature, type FeatureMetadata } from '../registry';
+import { registerFeature } from '../registry';
 
 // Page Orchestration Feature
 registerFeature({

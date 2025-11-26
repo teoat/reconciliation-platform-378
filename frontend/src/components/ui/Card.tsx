@@ -67,7 +67,7 @@ const Card: React.FC<CardProps> = memo(
         } : undefined}
         role={onClick ? 'button' : undefined}
         tabIndex={onClick ? 0 : undefined}
-        style={onClick ? { cursor: 'pointer' } : undefined}
+        className={onClick ? 'cursor-pointer' : ''}
         aria-label={onClick ? title || 'Clickable card' : undefined}
       >
         {showHeader && (

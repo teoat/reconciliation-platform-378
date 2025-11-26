@@ -171,11 +171,6 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
     return 'text-red-600';
   };
 
-  const _getConfidenceBgColor = (confidence: number) => {
-    if (confidence >= 90) return 'bg-green-100';
-    if (confidence >= 70) return 'bg-yellow-100';
-    return 'bg-red-100';
-  };
 
   if (!isVisible) return null;
 

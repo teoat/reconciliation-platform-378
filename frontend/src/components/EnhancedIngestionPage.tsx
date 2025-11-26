@@ -229,7 +229,7 @@ const EnhancedIngestionPage = () => {
   const [processedData, setProcessedData] = useState<ProcessedData[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
-  const [_showDataAnalysis, setShowDataAnalysis] = useState(false);
+  const [_showDataAnalysis, _setShowDataAnalysis] = useState(false);
   const [activeTab, setActiveTab] = useState<'upload' | 'process' | 'analyze' | 'sync'>('upload');
 
   // Indonesian file detection

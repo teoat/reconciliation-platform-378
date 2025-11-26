@@ -1,6 +1,5 @@
 import React, { useState, useMemo } from 'react';
 import { BarChart3 } from 'lucide-react';
-import { PieChart } from 'lucide-react';
 import { TrendingUp } from 'lucide-react';
 import { Download } from 'lucide-react';
 import { Filter } from 'lucide-react';

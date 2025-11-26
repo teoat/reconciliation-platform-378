@@ -172,7 +172,7 @@ export interface IconProps {
   [key: string]: unknown;
 }
 
-export const Icon: React.FC<IconProps> = ({ name, className = '', size = 20, color, ...props }) => {
+export const Icon: React.FC<IconProps> = ({ name, className = '', size: _size = 20, color, ...props }) => {
   const IconComponent = getIcon(name);
 
   if (!IconComponent) {

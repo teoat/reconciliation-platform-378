@@ -61,6 +61,18 @@ pub mod structured_logging;
 pub mod billing;
 pub mod query_optimizer;
 pub mod reconciliation_engine;
+pub mod registry;
+pub mod metrics;
+
+// Cache enhancements
+#[path = "cache/warming.rs"]
+pub mod cache_warming;
+#[path = "cache/analytics.rs"]
+pub mod cache_analytics;
+
+// Performance enhancements
+#[path = "performance/query_tuning.rs"]
+pub mod query_tuning;
 
 // Re-export commonly used services
 pub use auth::AuthService;

@@ -1027,52 +1027,52 @@ export class WorkflowSyncTester {
     logger.info('Rollback state', { rollbackState });
   }
 
-  private async getBrowserWorkflowState(browser: string): Promise<WorkflowState> {
+  private async getBrowserWorkflowState(_browser: string): Promise<WorkflowState> {
     // Mock implementation
     return { step: 'reconciliation', progress: 50, data: { records: 1000 } };
   }
 
-  private async getBrowserCurrentStep(browser: string): Promise<string> {
+  private async getBrowserCurrentStep(_browser: string): Promise<string> {
     // Mock implementation
     return 'reconciliation';
   }
 
-  private async getBrowserDataState(browser: string): Promise<DataState> {
+  private async getBrowserDataState(_browser: string): Promise<DataState> {
     // Mock implementation
     return { records: 1000, matches: 950, discrepancies: 50 };
   }
 
-  private async getBrowserStepValidation(browser: string): Promise<StepValidation> {
+  private async getBrowserStepValidation(_browser: string): Promise<StepValidation> {
     // Mock implementation
     return { valid: true, errors: [], warnings: [] };
   }
 
-  private async getBrowserStepPermissions(browser: string): Promise<StepPermissions> {
+  private async getBrowserStepPermissions(_browser: string): Promise<StepPermissions> {
     // Mock implementation
     return { canEdit: true, canDelete: false, canAdvance: true };
   }
 
-  private async getBrowserProgress(browser: string): Promise<number> {
+  private async getBrowserProgress(_browser: string): Promise<number> {
     // Mock implementation
     return 75;
   }
 
-  private async getBrowserProgressIndicator(browser: string): Promise<ProgressIndicator> {
+  private async getBrowserProgressIndicator(_browser: string): Promise<ProgressIndicator> {
     // Mock implementation
     return { progress: 75, label: 'Almost complete', color: 'orange' };
   }
 
-  private async getBrowserErrorState(browser: string): Promise<ErrorState> {
+  private async getBrowserErrorState(_browser: string): Promise<ErrorState> {
     // Mock implementation
     return { hasError: true, errorType: 'validation', message: 'Data validation failed' };
   }
 
-  private async getBrowserRecoveryState(browser: string): Promise<RecoveryState> {
+  private async getBrowserRecoveryState(_browser: string): Promise<RecoveryState> {
     // Mock implementation
     return { isRecovering: true, recoveryStep: 'rollback', progress: 50 };
   }
 
-  private async getBrowserRollbackState(browser: string): Promise<RollbackState> {
+  private async getBrowserRollbackState(_browser: string): Promise<RollbackState> {
     // Mock implementation
     return { isRollingBack: true, rollbackStep: 'ingestion', progress: 75 };
   }

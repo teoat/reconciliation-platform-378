@@ -23,7 +23,7 @@ export const SecurityDashboard: React.FC = () => {
     [key: string]: unknown;
   }
   const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
-  const [isMonitoring, setIsMonitoring] = useState(false);
+  const [isMonitoring, _setIsMonitoring] = useState(false);
 
   useEffect(() => {
     const handleSecurityEvent = (event: SecurityEvent) => {

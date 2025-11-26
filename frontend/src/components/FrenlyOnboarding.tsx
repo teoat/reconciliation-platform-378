@@ -161,8 +161,15 @@ const FrenlyOnboarding: React.FC<FrenlyOnboardingProps> = ({ isVisible, onComple
                 <p className="text-purple-100">Let&apos;s get you started!</p>
               </div>
             </div>
-            <button onClick={onSkip} className="text-white hover:text-purple-200 transition-colors">
-              <X className="w-6 h-6" />
+            <button 
+              onClick={onSkip} 
+              className="text-white hover:text-purple-200 transition-colors"
+              aria-label="Skip onboarding"
+              title="Skip onboarding"
+              type="button"
+            >
+              <span className="sr-only">Skip onboarding</span>
+              <X className="w-6 h-6" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -231,7 +238,7 @@ const FrenlyOnboarding: React.FC<FrenlyOnboardingProps> = ({ isVisible, onComple
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
                 className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-100"
-                style={{ width: `${progress}%` }}
+                style={{ width: `${progress}%` } as React.CSSProperties}
               />
             </div>
           </div>
@@ -243,6 +250,7 @@ const FrenlyOnboarding: React.FC<FrenlyOnboardingProps> = ({ isVisible, onComple
                 onClick={handleRestart}
                 className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                 title="Restart"
+                aria-label="Restart onboarding"
               >
                 <RotateCcw className="w-5 h-5" />
               </button>
@@ -250,6 +258,7 @@ const FrenlyOnboarding: React.FC<FrenlyOnboardingProps> = ({ isVisible, onComple
                 onClick={isPlaying ? handlePause : handlePlay}
                 className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
                 title={isPlaying ? 'Pause' : 'Play'}
+                aria-label={isPlaying ? 'Pause onboarding' : 'Play onboarding'}
               >
                 {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5" />}
               </button>
@@ -260,6 +269,7 @@ const FrenlyOnboarding: React.FC<FrenlyOnboardingProps> = ({ isVisible, onComple
                 <button
                   onClick={currentStepData.action.onClick}
                   className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg hover:shadow-md transition-all duration-200 flex items-center space-x-2"
+                  aria-label={currentStepData.action.text}
                 >
                   <span>{currentStepData.action.text}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -268,6 +278,7 @@ const FrenlyOnboarding: React.FC<FrenlyOnboardingProps> = ({ isVisible, onComple
                 <button
                   onClick={handleSkip}
                   className="bg-gray-100 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-200 transition-colors flex items-center space-x-2"
+                  aria-label="Next step"
                 >
                   <span>Next</span>
                   <SkipForward className="w-4 h-4" />

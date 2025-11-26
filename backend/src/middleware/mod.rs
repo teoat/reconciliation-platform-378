@@ -48,3 +48,11 @@ pub use error_handler::{
     add_correlation_id_to_response, create_error_response_with_correlation_id,
     extract_correlation_id_from_request, ErrorHandlerMiddleware,
 };
+
+// Zero-trust security middleware
+pub mod zero_trust;
+pub use zero_trust::{ZeroTrustMiddleware, ZeroTrustConfig};
+
+// Rate limiting middleware (per-endpoint) - renamed to avoid conflict
+pub mod rate_limit;
+pub use rate_limit::{PerEndpointRateLimitMiddleware, PerEndpointRateLimitConfig, PerEndpointRateLimiter};

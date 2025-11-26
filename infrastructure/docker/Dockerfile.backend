@@ -18,9 +18,10 @@ WORKDIR /app/backend
 COPY backend/Cargo.toml backend/Cargo.lock ./
 
 # Create dummy source to build dependencies only
-RUN mkdir src && \
+RUN mkdir -p src/bin && \
     echo "fn main() {}" > src/main.rs && \
-    echo "pub fn lib() {}" > src/lib.rs
+    echo "pub fn lib() {}" > src/lib.rs && \
+    echo "fn main() {}" > src/bin/set-initial-passwords.rs
 
 # Build dependencies with BuildKit cache mounts
 RUN --mount=type=cache,target=/usr/local/cargo/registry \

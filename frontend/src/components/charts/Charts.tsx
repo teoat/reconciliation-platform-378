@@ -1,8 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { TrendingUp } from 'lucide-react';
-import { TrendingDown } from 'lucide-react';
-import { BarChart3 } from 'lucide-react';
-import { Activity } from 'lucide-react';
 
 export interface ChartData {
   label: string;
@@ -25,7 +21,7 @@ export const LineChart: React.FC<LineChartProps> = ({
   width = 400,
   height = 200,
   showGrid = true,
-  showLegend = true,
+  showLegend: _showLegend = true,
   className = '',
   title,
 }) => {
@@ -173,10 +169,10 @@ export const BarChart: React.FC<BarChartProps> = ({
   data,
   width = 400,
   height = 200,
-  showLegend = true,
+  showLegend: _showLegend = true,
   className = '',
   title,
-  orientation = 'vertical',
+  orientation: _orientation = 'vertical',
 }) => {
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width, height });

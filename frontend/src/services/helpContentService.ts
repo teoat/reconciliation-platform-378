@@ -142,18 +142,19 @@ class HelpContentService {
 
     // Try to fetch from backend (if API exists)
     // NOTE: Backend endpoint not yet implemented - using cached/local content
-    try {
-      // TODO: Implement API call when backend endpoint is available
-      // This is a planned feature, not a bug
-      // const response = await fetch(`/api/help-content/${contentId}`);
-      // if (response.ok) {
-      //   const content = await response.json();
-      //   this.contentStore.set(contentId, content);
-      //   return content;
-      // }
-    } catch (error) {
-      logger.error('Failed to fetch help content from backend', { contentId, error });
-    }
+    // FUTURE: Implement API call when backend endpoint is available
+    // This is a planned feature, not a bug
+    // When implemented, uncomment:
+    // try {
+    //   const response = await fetch(`/api/help-content/${contentId}`);
+    //   if (response.ok) {
+    //     const content = await response.json();
+    //     this.contentStore.set(contentId, content);
+    //     return content;
+    //   }
+    // } catch (error) {
+    //   logger.error('Failed to fetch help content from backend', { contentId, error });
+    // }
 
     logger.warn('Help content not found', { contentId });
     return null;

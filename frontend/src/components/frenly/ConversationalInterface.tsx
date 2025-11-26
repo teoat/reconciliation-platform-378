@@ -7,7 +7,7 @@ import { logger } from '../services/logger'; * Conversational Interface Componen
 'use client';
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Send, X, Minimize2, Maximize2, Download, Search } from 'lucide-react';
+import { MessageCircle, Send, X, Minimize2, Maximize2, Download } from 'lucide-react';
 import { frenlyAgentService } from '@/services/frenlyAgentService';
 import { conversationStorage, ConversationMessage } from '../../utils/conversationStorage';
 import { logger } from '../../services/logger';

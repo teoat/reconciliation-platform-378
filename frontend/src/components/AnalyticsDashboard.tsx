@@ -69,17 +69,6 @@ interface ProjectStats {
   created_at: string;
 }
 
-interface UserActivityStats {
-  user_id: string;
-  user_name: string;
-  total_logins: number;
-  last_login: string;
-  total_files_uploaded: number;
-  total_jobs_created: number;
-  total_jobs_completed: number;
-  average_session_duration: number;
-  activity_score: number;
-}
 
 interface ReconciliationStats {
   total_jobs: number;

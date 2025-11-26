@@ -4,7 +4,7 @@
  * Features for meta agent framework integration
  */
 
-import { registerFeature, type FeatureMetadata } from '../registry';
+import { registerFeature } from '../registry';
 
 // Meta Agent Framework Feature
 registerFeature({

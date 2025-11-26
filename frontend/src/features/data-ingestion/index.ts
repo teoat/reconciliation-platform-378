@@ -4,7 +4,7 @@
  * Features related to data upload, processing, and transformation
  */
 
-import { registerFeature, type FeatureMetadata } from '../registry';
+import { registerFeature } from '../registry';
 
 // File Upload Feature
 registerFeature({

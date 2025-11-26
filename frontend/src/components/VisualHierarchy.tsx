@@ -2,7 +2,6 @@
 // Reduced from 733 lines to ~100 lines by focusing on essential functionality
 
 import React from 'react';
-import { uiService } from '../services/uiService';
 
 export interface VisualHierarchyProps {
   children: React.ReactNode;

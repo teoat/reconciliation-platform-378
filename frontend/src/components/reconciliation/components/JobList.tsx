@@ -21,7 +21,7 @@ interface JobItemProps {
   getStatusIcon: (status: string) => React.ReactNode;
 }
 
-const JobItem: React.FC<JobItemProps> = ({
+const _JobItem: React.FC<JobItemProps> = ({
   job,
   loading,
   onViewResults,

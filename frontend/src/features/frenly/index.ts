@@ -4,7 +4,7 @@
  * Features specifically for Frenly AI integration and guidance
  */
 
-import { registerFeature, type FeatureMetadata } from '../registry';
+import { registerFeature } from '../registry';
 
 // Frenly Guidance Agent Feature
 registerFeature({

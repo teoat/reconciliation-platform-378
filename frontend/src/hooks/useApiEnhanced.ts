@@ -17,7 +17,7 @@ import {
 } from '../store/unifiedStore';
 import ApiService from '../services/ApiService';
 import { useNotificationHelpers } from '../store/hooks';
-import type { ReconciliationResultDetail, ReconciliationJob, BackendUser } from '../types/backend-aligned';
+import type { ReconciliationResultDetail, ReconciliationJob, User } from '../types/backend-aligned';
 import type { ReconciliationRecord } from '../types/reconciliation';
 import type { ReconciliationMatch } from '../store/unifiedStore';
 import type { UploadedFile as IngestionUploadedFile } from '../types/ingestion';
@@ -43,7 +43,11 @@ export const useAuthAPI = () => {
         const authData = await ApiService.authenticate(email, password);
 
         // Type-safe extraction of user from response
-        const user = authData.data?.user || (authData.data && 'user' in authData.data ? (authData.data as { user: BackendUser }).user : null);
+        const isValidAuthData = (data: unknown): data is { user: User } => {
+          return typeof data === 'object' && data !== null && 'user' in data;
+        };
+        
+        const user = isValidAuthData(authData.data) ? authData.data.user : null;
         if (!user) {
           throw new Error('Invalid response: user not found');
         }
@@ -75,7 +79,11 @@ export const useAuthAPI = () => {
         const authData = await ApiService.register(userData);
 
         // Type-safe extraction of user from response
-        const user = authData.data?.user || (authData.data && 'user' in authData.data ? (authData.data as { user: BackendUser }).user : null);
+        const isValidAuthData = (data: unknown): data is { user: User } => {
+          return typeof data === 'object' && data !== null && 'user' in data;
+        };
+        
+        const user = isValidAuthData(authData.data) ? authData.data.user : null;
         if (!user) {
           throw new Error('Invalid response: user not found');
         }
@@ -108,7 +116,13 @@ export const useAuthAPI = () => {
   const refreshUser = useCallback(async () => {
     try {
       const userData = await ApiService.getCurrentUser();
-      dispatch(authActions.updateUser(userData));
+      const isValidUser = (data: unknown): data is Partial<User> => {
+        return typeof data === 'object' && data !== null;
+      };
+      
+      if (isValidUser(userData)) {
+        dispatch(authActions.updateUser(userData));
+      }
     } catch (error) {
       logger.error('Refresh user failed:', toRecord(error));
       dispatch(authActions.logout());
@@ -180,7 +194,11 @@ export const useProjectsAPI = () => {
         const newProject = await ApiService.createProject(projectData);
         // Project is already added via createProject thunk in unifiedStore
         // No need to dispatch additional action
-        showSuccess('Project Created', `Project "${newProject.name}" created successfully`);
+        if (newProject?.name) {
+          showSuccess('Project Created', `Project "${newProject.name}" created successfully`);
+        } else {
+          showSuccess('Project Created', 'Project created successfully');
+        }
 
         return { success: true, project: newProject };
       } catch (error) {
@@ -208,7 +226,11 @@ export const useProjectsAPI = () => {
         const updatedProject = await ApiService.updateProject(projectId, projectData);
         // Project is already updated via updateProject thunk in unifiedStore
         // No need to dispatch additional action
-        showSuccess('Project Updated', `Project "${updatedProject.name}" updated successfully`);
+        if (updatedProject?.name) {
+          showSuccess('Project Updated', `Project "${updatedProject.name}" updated successfully`);
+        } else {
+          showSuccess('Project Updated', 'Project updated successfully');
+        }
 
         return { success: true, project: updatedProject };
       } catch (error) {
@@ -272,8 +294,14 @@ export const useDataSourcesAPI = (projectId?: string) => {
     try {
       dispatch(dataSourcesActions.fetchDataSourcesStart());
       const sources = await ApiService.getDataSources(projectId);
+      // Type-safe conversion with validation
+      const isValidSourceArray = (data: unknown): data is Array<Record<string, unknown>> => {
+        return Array.isArray(data);
+      };
+      
+      const validSources = isValidSourceArray(sources) ? sources : [];
       // Convert FileInfo[] to UploadedFile[] format (backend-aligned)
-      const uploadedFiles: UploadedFile[] = sources.map((file) => ({
+      const uploadedFiles: UploadedFile[] = validSources.map((file) => ({
         id: file.id,
         project_id: file.project_id,
         filename: file.filename,
@@ -306,7 +334,7 @@ export const useDataSourcesAPI = (projectId?: string) => {
       if (!projectId) return { success: false, error: 'No project ID' };
 
       try {
-        const fileId = `${file.name}-${Date.now()}`;
+        const _fileId = `${file.name}-${Date.now()}`;
         dispatch(dataSourcesActions.uploadFileStart());
 
         const response = await ApiService.uploadFile(projectId, file, metadata.name);
@@ -444,9 +472,18 @@ export const useReconciliationRecordsAPI = (projectId?: string) => {
         dispatch(reconciliationRecordsActions.fetchRecordsStart());
         const result = await ApiService.getReconciliationRecords(projectId, params);
 
+        // Type-safe conversion with validation
+        const isValidRecordArray = (data: unknown): data is ReconciliationRecord[] => {
+          return Array.isArray(data) && data.every(item =>
+            typeof item === 'object' && item !== null && 'id' in item
+          );
+        };
+
+        const validRecords = isValidRecordArray(result.records) ? result.records : [];
+        
         dispatch(
           reconciliationRecordsActions.fetchRecordsSuccess({
-            records: result.records as unknown as ReconciliationRecord[],
+            records: validRecords,
             pagination: result.pagination,
           })
         );
@@ -529,9 +566,18 @@ export const useReconciliationMatchesAPI = (projectId?: string) => {
         dispatch(reconciliationMatchesActions.fetchMatchesStart());
         const result = await ApiService.getReconciliationMatches(projectId, params);
 
+        // Type-safe conversion with validation
+        const isValidMatchArray = (data: unknown): data is ReconciliationMatch[] => {
+          return Array.isArray(data) && data.every(item =>
+            typeof item === 'object' && item !== null && 'id' in item
+          );
+        };
+
+        const validMatches = isValidMatchArray(result.matches) ? result.matches : [];
+        
         dispatch(
           reconciliationMatchesActions.fetchMatchesSuccess({
-            matches: result.matches as unknown as ReconciliationMatch[],
+            matches: validMatches,
             pagination: result.pagination,
           })
         );
@@ -561,7 +607,14 @@ export const useReconciliationMatchesAPI = (projectId?: string) => {
           match_type: 'manual',
           confidence_score: matchData.confidence_score,
         });
-        dispatch(reconciliationMatchesActions.createMatch(newMatch as unknown as ReconciliationMatch));
+        // Type-safe conversion with validation
+        const isValidMatch = (data: unknown): data is ReconciliationMatch => {
+          return typeof data === 'object' && data !== null && 'id' in data;
+        };
+
+        if (isValidMatch(newMatch)) {
+          dispatch(reconciliationMatchesActions.createMatch(newMatch));
+        }
         showSuccess('Match Created', 'Reconciliation match created successfully');
 
         return { success: true, match: newMatch };
@@ -596,7 +649,14 @@ export const useReconciliationMatchesAPI = (projectId?: string) => {
             status: matchData.status as 'matched' | 'unmatched' | 'discrepancy' | 'resolved' | undefined,
           }
         );
-        dispatch(reconciliationMatchesActions.updateMatch(updatedMatch as unknown as ReconciliationMatch));
+        // Type-safe conversion with validation
+        const isValidMatch = (data: unknown): data is ReconciliationMatch => {
+          return typeof data === 'object' && data !== null && 'id' in data;
+        };
+
+        if (isValidMatch(updatedMatch)) {
+          dispatch(reconciliationMatchesActions.updateMatch(updatedMatch));
+        }
         showSuccess('Match Updated', 'Reconciliation match updated successfully');
 
         return { success: true, match: updatedMatch };
@@ -823,7 +883,12 @@ export const useAnalyticsAPI = () => {
       setIsLoading(true);
       setError(null);
       const data = await ApiService.getDashboardData();
-      setDashboardData(data as unknown as Record<string, unknown>);
+      // Type-safe conversion with validation
+      const isValidDashboardData = (data: unknown): data is Record<string, unknown> => {
+        return typeof data === 'object' && data !== null;
+      };
+      
+      setDashboardData(isValidDashboardData(data) ? data : {});
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to fetch dashboard data';
@@ -840,7 +905,12 @@ export const useAnalyticsAPI = () => {
         setIsLoading(true);
         setError(null);
         const stats = await ApiService.getProjectStats(projectId);
-        setProjectStats(stats as unknown as Record<string, unknown>);
+        // Type-safe conversion with validation
+        const isValidStats = (data: unknown): data is Record<string, unknown> => {
+          return typeof data === 'object' && data !== null;
+        };
+        
+        setProjectStats(isValidStats(stats) ? stats : {});
       } catch (error) {
         const errorMessage =
           error instanceof Error ? error.message : 'Failed to fetch project stats';
@@ -858,7 +928,12 @@ export const useAnalyticsAPI = () => {
       setIsLoading(true);
       setError(null);
       const stats = await ApiService.getReconciliationStats();
-      setReconciliationStats(stats as unknown as Record<string, unknown>);
+      // Type-safe conversion with validation
+      const isValidStats = (data: unknown): data is Record<string, unknown> => {
+        return typeof data === 'object' && data !== null;
+      };
+      
+      setReconciliationStats(isValidStats(stats) ? stats : {});
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Failed to fetch reconciliation stats';
@@ -896,7 +971,11 @@ export const useHealthCheckAPI = () => {
       setIsChecking(true);
       setError(null);
       const result = await ApiService.healthCheck();
-      setIsHealthy(result.status === 'ok');
+      const isValidHealthResult = (data: unknown): data is { status: string } => {
+        return typeof data === 'object' && data !== null && 'status' in data;
+      };
+      
+      setIsHealthy(isValidHealthResult(result) ? result.status === 'ok' : false);
       setLastChecked(new Date());
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Health check failed';

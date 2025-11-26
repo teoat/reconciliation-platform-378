@@ -1,0 +1,69 @@
+{
+  "maintenance": {
+    "enabled": true,
+    "schedule": {
+      "daily": true,
+      "weekly": true,
+      "monthly": true,
+      "quarterly": true
+    },
+    "tasks": {
+      "check_duplicates": {
+        "enabled": true,
+        "frequency": "daily"
+      },
+      "archive_old_reports": {
+        "enabled": true,
+        "frequency": "monthly",
+        "age_days": 30
+      },
+      "archive_old_diagnostics": {
+        "enabled": true,
+        "frequency": "monthly",
+        "age_days": 90
+      },
+      "check_root_scripts": {
+        "enabled": true,
+        "frequency": "daily"
+      },
+      "verify_master_documents": {
+        "enabled": true,
+        "frequency": "weekly"
+      },
+      "check_broken_references": {
+        "enabled": true,
+        "frequency": "weekly"
+      }
+    }
+  },
+  "file_locking": {
+    "enabled": true,
+    "strict_mode": true,
+    "auto_lock_master_documents": true,
+    "prevent_duplicates": true,
+    "restricted_patterns": [
+      "*COMPLETE*.md",
+      "*SUMMARY*.md",
+      "*REPORT*.md",
+      "*STATUS*.md",
+      "*PLAN*.md",
+      "*DIAGNOSTIC*.md"
+    ],
+    "master_documents": {
+      "status": "docs/project-management/PROJECT_STATUS.md",
+      "todos": "docs/project-management/MASTER_TODOS.md",
+      "diagnostic": "docs/project-management/COMPREHENSIVE_DIAGNOSTIC_REPORT.md",
+      "deployment": "docs/deployment/DEPLOYMENT_GUIDE.md",
+      "quick_start": "docs/getting-started/QUICK_START.md",
+      "mcp": "docs/development/MCP_SETUP_GUIDE.md",
+      "consolidation": "docs/project-management/CONSOLIDATION_SUMMARY.md"
+    }
+  },
+  "notifications": {
+    "on_duplicate_found": "warning",
+    "on_old_file_archived": "info",
+    "on_master_document_outdated": "warning",
+    "on_broken_reference": "warning"
+  }
+}
+

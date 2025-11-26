@@ -1,576 +1,281 @@
 # Deployment Guide
-## 378 Reconciliation Platform
 
-**Version**: 1.0.0  
-**Status**: Production Ready  
-**Last Updated**: January 2025
+**Last Updated**: November 26, 2025  
+**Status**: Production Ready
 
----
+## Overview
 
-## 🚀 Quick Deployment Options
+This guide covers deployment procedures for the Reconciliation Platform, including staging and production deployments with comprehensive validation.
 
-### **Option 1: Docker Compose (Recommended)**
+## Prerequisites
 
-**Status**: ✅ Production Ready  
-**Requirements**:
-- Docker Engine 20.10+
-- Docker Compose v2.0+
-- 4GB+ RAM available
-- 10GB+ disk space
+- Docker and Docker Compose installed
+- Database migrations script available
+- Required environment variables set
+- Deployment validation script available
 
-#### Quick Start
+## Quick Start
+
+### Staging Deployment
 
 ```bash
-# Clone repository
-git clone <repository-url>
-cd 378
+# Deploy to staging
+./scripts/deploy-staging.sh
 
-# Set environment variables
-cp .env.example .env
-# Edit .env with your values
+# Validate deployment
+./scripts/validate-deployment.sh
 
-# Deploy all services
-./deploy.sh
-
-# Or manually:
-docker-compose build
-docker-compose up -d
-
-# Verify services
-docker-compose ps
+# Monitor deployment
+./scripts/monitor-deployment.sh
 ```
 
-#### Environment Configuration
-
-Create `.env` file in project root with the following required variables:
+### Production Deployment
 
 ```bash
-# Required - Change these values!
-POSTGRES_PASSWORD=your_strong_db_password
-REDIS_PASSWORD=your_strong_redis_password  
-JWT_SECRET=generate_with_openssl_rand_hex_32
+# Set production environment
+export ENVIRONMENT=production
+export API_BASE_URL=https://api.example.com
 
-# Optional - with defaults
-POSTGRES_DB=reconciliation_app
-POSTGRES_USER=postgres
-BACKEND_PORT=2000
-FRONTEND_PORT=1000
-GRAFANA_PASSWORD=admin
+# Deploy to production
+./scripts/deploy-production.sh
+
+# Validate deployment
+API_BASE_URL=https://api.example.com ./scripts/validate-deployment.sh
 ```
 
-**Generate secure secrets:**
+## Deployment Steps
+
+### 1. Pre-Deployment
+
+#### Verify Environment
 ```bash
-# JWT Secret (64 characters)
-openssl rand -hex 32
+# Check environment variables
+env | grep -E "(ENVIRONMENT|DATABASE_URL|JWT_SECRET|CSRF_SECRET)"
 
-# Database Password
-openssl rand -base64 24
-
-# Redis Password
-openssl rand -base64 24
+# Verify Docker
+docker --version
+docker-compose --version
 ```
 
-#### Build and Start Services
-
+#### Run Database Migrations
 ```bash
-# Build with BuildKit cache (faster rebuilds)
-DOCKER_BUILDKIT=1 docker-compose build --parallel
-
-# Start all services
-docker-compose up -d
-
-# Check status
-docker-compose ps
-
-# View logs
-docker-compose logs -f
+# Migrations run automatically on startup in production
+# Or run manually:
+./scripts/execute-migrations.sh
 ```
 
-#### Apply Database Migrations & Indexes
+### 2. Staging Deployment
 
+#### Deploy Services
 ```bash
-# Wait for postgres to be ready (30 seconds)
-sleep 30
+# Build and start services
+docker-compose -f docker-compose.staging.yml up -d --build
 
-# Apply performance indexes
-export POSTGRES_HOST=localhost
-export POSTGRES_PORT=5432
-export POSTGRES_DB=reconciliation_app
-export POSTGRES_USER=postgres
-export POSTGRES_PASSWORD=your_password
-
-bash backend/apply-indexes.sh
+# Check service status
+docker-compose -f docker-compose.staging.yml ps
 ```
 
-**Service Endpoints**:
-
-| Service | URL | Default Port |
-|---------|-----|--------------|
-| Backend API | http://localhost:2000 | 2000 |
-| Frontend | http://localhost:1000 | 1000 |
-| Prometheus | http://localhost:9090 | 9090 |
-| Grafana | http://localhost:3001 | 3001 |
-
-**Default Credentials:**
-- Grafana: `admin` / `admin` (change via `GRAFANA_PASSWORD` in .env)
-
-#### Docker Common Operations
-
-**View Logs:**
+#### Validate Deployment
 ```bash
-# All services
-docker-compose logs -f
-
-# Specific service
-docker-compose logs -f backend
-docker-compose logs -f frontend
-docker-compose logs -f postgres
+# Run validation script
+API_BASE_URL=http://localhost:2000 ./scripts/validate-deployment.sh
 ```
 
-**Restart Services:**
+#### Monitor Services
 ```bash
-# Restart all
-docker-compose restart
+# Check logs
+docker-compose -f docker-compose.staging.yml logs -f backend
 
-# Restart specific service
-docker-compose restart backend
+# Monitor metrics
+curl http://localhost:2000/api/metrics/summary
 ```
 
-**Stop Services:**
-```bash
-# Stop (keeps data volumes)
-docker-compose stop
+### 3. Production Deployment
 
-# Stop and remove containers (keeps volumes)
+#### Pre-Deployment Checklist
+- [ ] All tests passing
+- [ ] Database migrations tested
+- [ ] Secrets configured
+- [ ] Backup created
+- [ ] Rollback plan ready
+
+#### Deploy Services
+```bash
+# Set production environment
+export ENVIRONMENT=production
+
+# Deploy
+./scripts/deploy-production.sh
+```
+
+#### Post-Deployment Validation
+```bash
+# Health check
+curl https://api.example.com/api/health
+
+# Metrics check
+curl https://api.example.com/api/metrics/summary
+
+# Full validation
+API_BASE_URL=https://api.example.com ./scripts/validate-deployment.sh
+```
+
+## Monitoring
+
+### Health Endpoints
+
+- **Health Check**: `GET /api/health`
+- **Metrics Health**: `GET /api/metrics/health`
+- **Resilience Metrics**: `GET /api/health/resilience`
+
+### Metrics Endpoints
+
+- **All Metrics**: `GET /api/metrics`
+- **Metrics Summary**: `GET /api/metrics/summary`
+- **Specific Metric**: `GET /api/metrics/{metric_name}`
+
+### Monitoring Script
+
+```bash
+# Continuous monitoring
+./scripts/monitor-deployment.sh
+
+# With custom API URL
+API_BASE_URL=https://api.example.com ./scripts/monitor-deployment.sh
+
+# With custom interval (seconds)
+MONITOR_INTERVAL=60 ./scripts/monitor-deployment.sh
+```
+
+## Validation
+
+### Automated Validation
+
+The deployment validation script checks:
+- Health endpoints
+- Metrics endpoints
+- Database migration status
+- Service availability
+
+```bash
+# Run validation
+./scripts/validate-deployment.sh
+
+# With custom API URL
+API_BASE_URL=https://api.example.com ./scripts/validate-deployment.sh
+```
+
+### Manual Validation
+
+```bash
+# Health check
+curl http://localhost:2000/api/health
+
+# Metrics summary
+curl http://localhost:2000/api/metrics/summary
+
+# Specific metric
+curl http://localhost:2000/api/metrics/cqrs_command_total
+```
+
+## Rollback Procedure
+
+### Quick Rollback
+
+```bash
+# Stop current services
 docker-compose down
 
-# Stop and remove everything including volumes (⚠️ DESTROYS DATA)
-docker-compose down -v
+# Restore previous version
+docker-compose -f docker-compose.previous.yml up -d
+
+# Verify rollback
+./scripts/validate-deployment.sh
 ```
 
-**Update Services:**
-```bash
-# Pull latest images (if using pre-built)
-docker-compose pull
-
-# Rebuild and restart
-docker-compose build --no-cache
-docker-compose up -d
-```
-
-**Access Database:**
-```bash
-# Connect to PostgreSQL
-docker-compose exec postgres psql -U postgres -d reconciliation_app
-
-# Or from host
-psql -h localhost -p 5432 -U postgres -d reconciliation_app
-```
-
-**Access Redis:**
-```bash
-# Connect to Redis CLI
-docker-compose exec redis redis-cli -a $REDIS_PASSWORD
-```
-
-#### Resource Limits
-
-Services are configured with resource limits:
-
-| Service | CPU Limit | Memory Limit |
-|---------|-----------|--------------|
-| Backend | 1.0 core | 1GB |
-| Frontend | 1.0 core | 1GB |
-| Postgres | 2.0 cores | 2GB |
-| Redis | Default | 512MB |
-
-Adjust in `docker-compose.yml` if needed.
-
-#### Data Persistence
-
-Data is stored in Docker volumes:
-
-- `postgres_data`: Database data
-- `redis_data`: Redis persistence
-- `uploads_data`: File uploads
-- `logs_data`: Application logs
-- `prometheus_data`: Prometheus metrics
-- `grafana_data`: Grafana dashboards
-
-**Backup volumes:**
-```bash
-docker run --rm -v reconciliation-platform_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_backup.tar.gz /data
-```
-
----
-
-### **Option 2: Kubernetes (Production)**
+### Database Rollback
 
 ```bash
-# Apply all Kubernetes manifests
-kubectl apply -f k8s/
-
-# Verify deployment
-kubectl get deployments
-kubectl get services
-kubectl get pods
-
-# Check ingress
-kubectl get ingress
-```
-
-**Required Files**:
-- `k8s/deployment.yaml` - Application deployment
-- `k8s/service.yaml` - Service definition
-- `k8s/configmap.yaml` - Configuration
-- `k8s/ingress.yaml` - Ingress configuration
-
----
-
-### **Option 3: Terraform (Infrastructure as Code)**
-
-```bash
-cd terraform
-
-# Initialize Terraform
-terraform init
-
-# Review plan
-terraform plan
-
-# Apply infrastructure
-terraform apply
-
-# Get outputs
-terraform output
-```
-
-**Required Files**:
-- `terraform/main.tf` - Main infrastructure
-- `terraform/variables.tf` - Variable definitions
-- `terraform/outputs.tf` - Output values
-
----
-
-## 📋 Pre-Deployment Checklist
-
-### **Environment Variables**
-
-Create `.env` file with:
-
-```bash
-# Database
-DATABASE_URL=postgresql://user:password@host:5432/reconciliation_app
-
-# Security
-JWT_SECRET=your-secret-key-minimum-32-characters
-CSRF_SECRET=your-csrf-secret-minimum-32-characters
-
-# Redis
-REDIS_URL=redis://host:6379
-
-# Application
-NODE_ENV=production
-VITE_API_URL=https://api.example.com/api/v1
-VITE_WS_URL=wss://api.example.com
-```
-
-### **Database Setup**
-
-```bash
-# Run migrations
+# Rollback migrations (if needed)
 cd backend
-diesel migration run
-
-# Verify database
-psql -h localhost -U postgres -d reconciliation_app -c "\dt"
+diesel migration revert
 ```
 
-### **Security Hardening**
+## Troubleshooting
 
-1. ✅ Generate strong secrets (32+ characters)
-2. ✅ Enable SSL/TLS
-3. ✅ Configure CORS origins
-4. ✅ Set up rate limiting
-5. ✅ Enable audit logging
-
----
-
-## 🔒 Production Security
-
-### **Required Configurations**
-
-1. **Environment Variables**:
-   - All secrets must be environment variables
-   - No hardcoded credentials
-   - Use secret management (AWS Secrets Manager, etc.)
-
-2. **Database**:
-   - Enable SSL connections
-   - Use connection pooling
-   - Regular backups
-
-3. **API Security**:
-   - JWT token expiration
-   - Rate limiting
-   - Input validation
-
-4. **Network**:
-   - Use HTTPS only
-   - Configure CORS properly
-   - Firewall rules
-
-### **Docker-Specific Security**
-
-⚠️ **Important for Production:**
-
-1. **Change all default passwords** in `.env`
-2. **Use strong JWT_SECRET** (64+ characters, random)
-3. **Restrict CORS_ORIGINS** to your actual domains
-4. **Use secrets manager** in production (AWS Secrets Manager, HashiCorp Vault, etc.)
-5. **Enable HTTPS** via reverse proxy (nginx/traefik)
-6. **Firewall rules**: Only expose necessary ports
-7. **Network isolation**: Use Docker networks for service isolation
-8. **Non-root containers**: Ensure containers don't run as root
-9. **Image scanning**: Regularly scan images for vulnerabilities
-
----
-
-## 📊 Monitoring & Observability
-
-### **Prometheus Metrics**
-
-- Available at: `/metrics`
-- Endpoints: Request count, latency, errors
-
-### **Grafana Dashboards**
-
-- Pre-configured dashboards available
-- Access: http://localhost:3001 (default: admin/admin)
-
-### **Health Checks**
-
-- Frontend: `GET /`
-- Backend: `GET /health`
-- Database: Connection check
-- Redis: PING check
-
----
-
-## 🔄 Rolling Updates
-
-### **Kubernetes Rolling Update**
+### Services Not Starting
 
 ```bash
-# Update deployment
-kubectl set image deployment/reconciliation-platform \
-  frontend=reconciliation-platform-frontend:v1.0.1 \
-  backend=reconciliation-platform-backend:v1.0.1
+# Check logs
+docker-compose logs backend
 
-# Monitor rollout
-kubectl rollout status deployment/reconciliation-platform
-
-# Rollback if needed
-kubectl rollout undo deployment/reconciliation-platform
-```
-
-### **Docker Compose Update**
-
-```bash
-# Pull latest images
-docker-compose pull
+# Check service status
+docker-compose ps
 
 # Restart services
-docker-compose up -d
-
-# Verify
-docker-compose ps
+docker-compose restart
 ```
 
----
-
-## 🚨 Troubleshooting
-
-### **Common Issues**
-
-1. **Services Won't Start (Docker)**
-   ```bash
-   # Check logs
-   docker-compose logs
-   
-   # Check if ports are in use
-   netstat -tulpn | grep -E ':(2000|1000|5432|6379)'
-   
-   # Restart Docker daemon (if needed)
-   sudo systemctl restart docker
-   ```
-
-2. **Database Connection Failed**
-   ```bash
-   # Check database status (Docker)
-   docker-compose ps postgres
-   docker-compose logs postgres
-   
-   # Verify postgres is healthy
-   docker-compose exec postgres psql -U postgres -d reconciliation_app
-   
-   # Check DATABASE_URL format
-   echo $DATABASE_URL
-   # Should be: postgresql://user:password@postgres:5432/dbname (Docker)
-   # Should be: postgresql://user:password@localhost:5432/dbname (host)
-   
-   # Test connection from host
-   psql -h localhost -U postgres -d reconciliation_app
-   ```
-
-3. **Redis Connection Failed**
-   ```bash
-   # Check Redis status (Docker)
-   docker-compose ps redis
-   docker-compose logs redis
-   
-   # Verify redis is healthy
-   docker-compose exec redis redis-cli -a $REDIS_PASSWORD ping
-   
-   # Check REDIS_URL format
-   echo $REDIS_URL
-   # Should be: redis://:password@redis:6379 (Docker)
-   # Should be: redis://:password@localhost:6379 (host)
-   
-   # Test connection from host
-   redis-cli -h localhost -p 6379 -a $REDIS_PASSWORD PING
-   ```
-
-4. **Port Conflicts**
-   ```bash
-   # Check port usage
-   lsof -i :1000  # Frontend
-   lsof -i :2000  # Backend
-   lsof -i :5432  # PostgreSQL
-   lsof -i :6379  # Redis
-   
-   # Kill process if needed
-   kill -9 <PID>
-   ```
-
-5. **Build Failures**
-   ```bash
-   # Docker build failures
-   # Clear Docker build cache
-   docker builder prune -a
-   
-   # Rebuild without cache
-   docker-compose build --no-cache --pull
-   
-   # Manual build
-   cd frontend && npm run build:clean
-   cd backend && cargo clean && cargo build
-   ```
-
-6. **Permission Issues (Docker)**
-   ```bash
-   # Fix volume permissions
-   sudo chown -R $USER:$USER $(docker volume inspect reconciliation-platform_uploads_data | jq -r '.[0].Mountpoint')
-   ```
-
----
-
-## 📈 Scaling
-
-### **Horizontal Scaling**
+### Database Connection Issues
 
 ```bash
-# Scale deployment
-kubectl scale deployment reconciliation-platform --replicas=5
+# Verify DATABASE_URL
+echo $DATABASE_URL
 
-# Auto-scaling (requires HPA)
-kubectl apply -f k8s/hpa.yaml
+# Test connection
+psql "$DATABASE_URL" -c "SELECT 1"
 ```
 
-### **Database Scaling**
-
-- Connection pooling configured
-- Read replicas for read-heavy workloads
-- Partitioning for large datasets
-
----
-
-## 🔙 Backup & Recovery
-
-### **Database Backups**
+### Metrics Not Available
 
 ```bash
-# Create backup
-pg_dump -h localhost -U postgres reconciliation_app > backup.sql
+# Check metrics service
+curl http://localhost:2000/api/metrics/health
 
-# Restore backup
-psql -h localhost -U postgres reconciliation_app < backup.sql
+# Check service logs
+docker-compose logs backend | grep metrics
 ```
 
-### **Application State**
+## Environment Variables
 
-- Redis snapshots configured
-- File uploads stored in persistent volume
-- Export functionality available
-
----
-
-## 📝 Post-Deployment
-
-### **Verification Steps**
-
-1. ✅ Health checks passing
-2. ✅ API endpoints responding
-3. ✅ Database connections active
-4. ✅ Redis cache working
-5. ✅ WebSocket connections established
-6. ✅ Monitoring dashboards visible
-
-### **Performance Testing**
+### Required for Production
 
 ```bash
-# Load testing
-ab -n 1000 -c 10 http://localhost:2000/health
-
-# API testing
-curl http://localhost:2000/api/v1/health
-
-# Docker health checks
-docker-compose ps
-
-# Container resource usage
-docker stats
+ENVIRONMENT=production
+DATABASE_URL=postgres://...
+JWT_SECRET=<32+ character secret>
+CSRF_SECRET=<32+ character secret>
+PASSWORD_MASTER_KEY=<32+ character secret>
 ```
 
-### **Docker Performance Optimization**
+### Optional
 
-The deployment uses:
-- ✅ Multi-stage Docker builds (smaller images)
-- ✅ BuildKit cache mounts (faster rebuilds)
-- ✅ Optimized base images (Alpine Linux)
-- ✅ Database connection pooling
-- ✅ Redis caching layer
-- ✅ Resource limits to prevent OOM
+```bash
+ZERO_TRUST_REQUIRE_MTLS=true  # Enable mTLS
+REDIS_URL=redis://...
+API_BASE_URL=https://api.example.com
+```
 
-### **Next Steps After Docker Deployment**
+## Security Checklist
 
-1. **Apply performance indexes** (if not automated)
-2. **Set up monitoring alerts** in Grafana
-3. **Configure backup schedule** for Docker volumes
-4. **Set up reverse proxy** for HTTPS (nginx/traefik)
-5. **Configure logging aggregation** (ELK, Loki, etc.)
-6. **Review container resource usage** and adjust limits
-7. **Set up health check monitoring**
+- [ ] All secrets set and validated
+- [ ] Zero-trust enabled in production
+- [ ] Rate limiting configured
+- [ ] Database migrations verified
+- [ ] HTTPS enabled
+- [ ] Security headers configured
+- [ ] CORS properly configured
 
----
+## Performance Checklist
 
-## 🔗 Additional Resources
+- [ ] Cache warming enabled
+- [ ] Query optimization indexes created
+- [ ] Bundle size verified (<500KB)
+- [ ] Database connection pooling configured
+- [ ] Rate limits configured appropriately
 
-## 12. Operations & Maintenance
-- Daily/weekly/monthly routines: health review, log rotation, security patching, capacity planning, and disaster-recovery drills.
-- Monitoring stack: Prometheus scrapes backend metrics at `/metrics`; Grafana dashboards cover application, infrastructure, and business KPIs; Alertmanager drives escalation.
-- Backups: PostgreSQL and Redis snapshots automated via CronJobs; verify restores quarterly.
-- Maintenance tooling: `kubectl rollout restart`, `docker compose up -d --build`, and `helm upgrade` support zero-downtime updates.
-- Security posture: rotate secrets, enforce RBAC, keep fail2ban/network policies aligned with compliance requirements.
+## Related Documentation
 
-For detailed operational procedures, see `docs/TROUBLESHOOTING.md`, `docs/SUPPORT_MAINTENANCE_GUIDE.md`, and `docs/INCIDENT_RESPONSE_RUNBOOKS.md`.
+- [New Features API](../api/NEW_FEATURES_API.md)
+- [CQRS Architecture](../architecture/CQRS_AND_EVENT_DRIVEN_ARCHITECTURE.md)
+- [Security Hardening](../security/SECURITY_HARDENING_CHECKLIST.md)

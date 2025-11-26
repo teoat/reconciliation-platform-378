@@ -49,7 +49,7 @@ const QuickReconciliationWizard: React.FC = () => {
 
   // Projects list
   const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [_loading, setLoading] = useState(false);
 
   // Load projects
   useEffect(() => {

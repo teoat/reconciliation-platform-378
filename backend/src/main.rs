@@ -15,6 +15,8 @@ use reconciliation_backend::{
         error_handler::ErrorHandlerMiddleware,
         AuthRateLimitMiddleware,
         security::{SecurityHeadersMiddleware, SecurityHeadersConfig},
+        zero_trust::{ZeroTrustMiddleware, ZeroTrustConfig},
+        rate_limit::PerEndpointRateLimitMiddleware,
     },
     services::{
         performance::QueryOptimizer,
@@ -173,9 +175,23 @@ async fn async_main() -> std::io::Result<()> {
     log::info!("Logging initialized - backend starting up");
 
     // Validate environment variables before loading configuration
+    // Use tier-based error handling with fallbacks
     log::info!("Validating environment variables...");
     eprintln!("Validating environment variables...");
     std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
+    
+    // Use startup error handler for validation
+    let startup_handler = reconciliation_backend::startup::error_handler::StartupErrorHandler::new();
+    
+    // Validate with tier-based error handling
+    if let Err(e) = startup_handler.validate_startup_requirements().await {
+        eprintln!("❌ Startup validation failed: {}", e);
+        log::error!("Startup validation failed: {}", e);
+        eprintln!("💡 Please check environment variables and service connectivity");
+        std::process::exit(1);
+    }
+    
+    // Also run standard validation for compatibility
     reconciliation_backend::utils::env_validation::validate_and_exit_on_error();
 
     // Load configuration (initial load from env - needed for database connection)
@@ -193,17 +209,27 @@ async fn async_main() -> std::io::Result<()> {
     };
 
     // Run database migrations before initializing services
+    // In production, migrations MUST succeed or startup fails
     log::info!("Running database migrations...");
+    let is_production_env = std::env::var("ENVIRONMENT")
+        .unwrap_or_else(|_| "development".to_string())
+        .to_lowercase() == "production";
+    
     match reconciliation_backend::database_migrations::run_migrations(&config.database_url) {
         Ok(_) => {
             log::info!("Database migrations completed successfully");
         }
         Err(e) => {
-            log::warn!("Database migrations encountered issues: {}", e);
-            log::warn!("Continuing startup - tables may be created on first use");
-            eprintln!("Migration warning (non-fatal): {}", e);
-            // Don't exit - allow application to start even if migrations fail
-            // This allows the app to work with an empty database
+            if is_production_env {
+                eprintln!("❌ Database migrations failed in production: {}", e);
+                log::error!("Database migrations failed in production: {}", e);
+                eprintln!("💡 Please ensure all migrations are applied before starting the application");
+                std::process::exit(1);
+            } else {
+                log::warn!("Database migrations encountered issues: {}", e);
+                log::warn!("Continuing startup in development mode - tables may be created on first use");
+                eprintln!("⚠️  Migration warning (non-fatal in development): {}", e);
+            }
         }
     }
 
@@ -287,6 +313,7 @@ async fn async_main() -> std::io::Result<()> {
     use reconciliation_backend::services::password_manager::PasswordManager;
     use reconciliation_backend::services::auth::AuthService;
     use reconciliation_backend::services::user::UserService;
+    use reconciliation_backend::services::metrics::MetricsService;
     
     // Create auth service (not wrapped in Arc yet, as UserService needs the value)
     let auth_service_value = AuthService::new(
@@ -418,9 +445,14 @@ async fn async_main() -> std::io::Result<()> {
     }
     
     // Start automatic rotation scheduler (disabled temporarily to fix spawn_local issue)
-    // TODO: Re-enable once spawn_local issue is resolved
+    // FUTURE: Re-enable once spawn_local issue is resolved
+    // This is a planned enhancement, not a bug
     // secret_manager.start_rotation_scheduler().await;
     log::info!("Automatic secret manager initialized (rotation scheduler disabled)");
+    
+    // Initialize metrics service
+    let metrics_service = Arc::new(MetricsService::new());
+    log::info!("Metrics service initialized");
 
     // Clone config for use in HttpServer closure
     let config_clone = config.clone();
@@ -440,6 +472,17 @@ async fn async_main() -> std::io::Result<()> {
     
     // Clone CORS origins for use in closure
     let cors_origins = config.cors_origins.clone();
+    
+    // Initialize zero-trust and rate limiting middleware configs
+    let zero_trust_config = ZeroTrustConfig {
+        require_mtls: is_production_env && std::env::var("ZERO_TRUST_REQUIRE_MTLS")
+            .unwrap_or_else(|_| "false".to_string())
+            .parse()
+            .unwrap_or(false),
+        require_identity_verification: true,
+        enforce_least_privilege: true,
+        network_segmentation: is_production_env,
+    };
     
     // Clone database for WebSocket server (will be started in HttpServer closure)
     let database_for_ws = Arc::new(database.clone());
@@ -486,6 +529,10 @@ async fn async_main() -> std::io::Result<()> {
             .wrap(SecurityHeadersMiddleware::new(SecurityHeadersConfig::default()))
             // Add auth rate limiting middleware (applies to /api/auth/* endpoints)
             .wrap(AuthRateLimitMiddleware::default())
+            // Add per-endpoint rate limiting middleware
+            .wrap(PerEndpointRateLimitMiddleware::new())
+            // Add zero-trust security middleware (if enabled)
+            .wrap(ZeroTrustMiddleware::new(zero_trust_config.clone()))
             // Add CORS middleware (after other middleware)
             .wrap(cors)
             // Configure app data with resilience-protected services
@@ -497,6 +544,8 @@ async fn async_main() -> std::io::Result<()> {
             // Add authentication and user services (required by auth handlers)
             .app_data(web::Data::new(auth_service.clone()))
             .app_data(web::Data::new(user_service.clone()))
+            // Add metrics service (required by metrics handlers)
+            .app_data(web::Data::new(metrics_service.clone()))
             // Add WebSocket server (required by WebSocket handlers)
             // Note: ws_server is created in this closure to ensure it runs in Actix runtime context
             .app_data(web::Data::new(ws_server))

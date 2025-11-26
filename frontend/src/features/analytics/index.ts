@@ -4,7 +4,7 @@
  * Features related to data analysis, visualization, and reporting
  */
 
-import { registerFeature, type FeatureMetadata } from '../registry';
+import { registerFeature } from '../registry';
 
 // Analytics Dashboard Feature
 registerFeature({

@@ -113,7 +113,7 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
 
           if (response.data) {
             const user = response.data as unknown as Record<string, unknown>;
-            const role = (user.role as string)?.toLowerCase();
+            const _role = (user.role as string)?.toLowerCase();
             const roleMap: Record<string, UserRole> = {
               admin: 'admin',
               administrator: 'admin',
@@ -399,7 +399,8 @@ export const EnhancedFrenlyOnboarding: React.FC<EnhancedFrenlyOnboardingProps> =
   const detectUserRole = async (): Promise<UserRole> => {
     try {
       // Use onboarding integration hook for role detection
-      const { useOnboardingIntegration } = await import('../../hooks/useOnboardingIntegration');
+      // Removed unused useOnboardingIntegration import
+      // const { useOnboardingIntegration } = await import('../../hooks/useOnboardingIntegration');
       // Note: This will be handled by the hook when integrated
       // For now, check localStorage as fallback
       const userStr = localStorage.getItem('user');

@@ -6,6 +6,7 @@
 
 pub mod api;
 pub mod config;
+pub mod cqrs;
 pub mod database;
 pub mod database_migrations;
 pub mod handlers;

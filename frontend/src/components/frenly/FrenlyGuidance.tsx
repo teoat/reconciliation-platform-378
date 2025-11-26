@@ -1,13 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MessageCircle } from 'lucide-react';
 import { X } from 'lucide-react';
 import { Minimize2 } from 'lucide-react';
 import { Lightbulb } from 'lucide-react';
-import { AlertTriangle } from 'lucide-react';
 import { PartyPopper } from 'lucide-react';
 import { Star } from 'lucide-react';
 import { Smile } from 'lucide-react';
-import { BookOpen } from 'lucide-react';
 import { Target } from 'lucide-react';
 import { CheckCircle } from 'lucide-react';
 import { ArrowRight } from 'lucide-react';
@@ -39,13 +37,13 @@ export interface FrenlyGuidanceProps {
 export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
   currentPage,
   userProgress,
-  onStepComplete,
+  onStepComplete: _onStepComplete,
   onStartTutorial,
   className = '',
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [currentStep, setCurrentStep] = useState<GuidanceStep | null>(null);
-  const [showCelebration, setShowCelebration] = useState(false);
+  const [showCelebration, _setShowCelebration] = useState(false);
 
   const guidanceSteps: GuidanceStep[] = [
     {
@@ -124,14 +122,15 @@ export const FrenlyGuidance: React.FC<FrenlyGuidanceProps> = ({
     }
   }, [currentPage, nextStep]);
 
-  const handleStepComplete = useCallback(
-    (stepId: string) => {
-      onStepComplete(stepId);
-      setShowCelebration(true);
-      setTimeout(() => setShowCelebration(false), 3000);
-    },
-    [onStepComplete]
-  );
+  // Removed unused handleStepComplete function
+  // const handleStepComplete = useCallback(
+  //   (stepId: string) => {
+  //     onStepComplete(stepId);
+  //     setShowCelebration(true);
+  //     setTimeout(() => setShowCelebration(false), 3000);
+  //   },
+  //   [onStepComplete]
+  // );
 
   const getProgressPercentage = () => {
     return Math.round((completedSteps.length / guidanceSteps.length) * 100);

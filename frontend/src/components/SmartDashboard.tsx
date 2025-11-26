@@ -41,7 +41,7 @@ interface DashboardData {
   next_actions: string[];
 }
 
-const SmartDashboard = ({ project }: SmartDashboardProps) => {
+const SmartDashboard = ({ project: _project }: SmartDashboardProps) => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -109,8 +109,8 @@ setDashboardData(response.data as DashboardData)
     average_task_time: 0,
   };
   const projects = prioritized_projects ?? [];
-  const insights = smart_insights ?? [];
-  const actions = next_actions ?? [];
+  const _insights = smart_insights ?? [];
+  const _actions = next_actions ?? [];
 
   return (
     <div className="p-6 space-y-6">
@@ -219,7 +219,7 @@ setDashboardData(response.data as DashboardData)
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {projects.map((project, index) => (
+              {projects.map((project, _index) => (
                 <div
                   key={project.id}
                   className="border rounded-lg p-4 hover:shadow-md transition-shadow"

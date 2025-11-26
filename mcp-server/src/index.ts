@@ -197,18 +197,60 @@ async function initRedis(): Promise<RedisClientType> {
   // Create new connection
   redisClientPromise = (async () => {
     try {
-      redisClient = createClient({
-        url: process.env.REDIS_URL || 'redis://:redis_pass@localhost:6379',
-        socket: {
-          connectTimeout: REDIS_CONNECT_TIMEOUT,
-          reconnectStrategy: (retries) => {
-            if (retries > 3) {
-              return new Error('Redis connection failed after 3 retries');
-            }
-            return Math.min(retries * 100, 1000);
+      // Parse REDIS_URL to handle both password and no-password cases
+      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+      let redisConfig: { url: string; password?: string; socket: any };
+      
+      if (redisUrl.includes('@') && redisUrl.includes(':')) {
+        // Parse URL format: redis://:password@host:port or redis://host:port
+        const urlMatch = redisUrl.match(/^redis:\/\/(?::([^@]+)@)?([^:]+):(\d+)$/);
+        if (urlMatch) {
+          const [, password, host, port] = urlMatch;
+          redisConfig = {
+            url: `redis://${host}:${port}`,
+            password: password || undefined,
+            socket: {
+              connectTimeout: REDIS_CONNECT_TIMEOUT,
+              reconnectStrategy: (retries: number) => {
+                if (retries > 3) {
+                  return new Error('Redis connection failed after 3 retries');
+                }
+                return Math.min(retries * 100, 1000);
+              },
+            },
+          };
+        } else {
+          // Fallback to original URL
+          redisConfig = {
+            url: redisUrl,
+            socket: {
+              connectTimeout: REDIS_CONNECT_TIMEOUT,
+              reconnectStrategy: (retries: number) => {
+                if (retries > 3) {
+                  return new Error('Redis connection failed after 3 retries');
+                }
+                return Math.min(retries * 100, 1000);
+              },
+            },
+          };
+        }
+      } else {
+        // Simple URL format
+        redisConfig = {
+          url: redisUrl,
+          socket: {
+            connectTimeout: REDIS_CONNECT_TIMEOUT,
+            reconnectStrategy: (retries: number) => {
+              if (retries > 3) {
+                return new Error('Redis connection failed after 3 retries');
+              }
+              return Math.min(retries * 100, 1000);
+            },
           },
-        },
-      });
+        };
+      }
+      
+      redisClient = createClient(redisConfig);
 
       redisClient.on('error', (err) => {
         console.error('[MCP Server] Redis client error:', err);

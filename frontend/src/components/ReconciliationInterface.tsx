@@ -6,19 +6,12 @@ import {
   GitCompare,
   CheckCircle,
   XCircle,
-  Search,
   RefreshCw,
-  Eye,
-  Trash2,
   Plus,
-  Play,
   Square,
   Clock,
   Activity,
   AlertCircle,
-  Calendar,
-  Target,
-  Database,
 } from 'lucide-react';
 import { CreateJobModal } from './reconciliation/CreateJobModal';
 import { ResultsModal } from './reconciliation/ResultsModal';
@@ -27,9 +20,7 @@ import { JobFilters } from './reconciliation/components/JobFilters';
 import { useReconciliationJobs } from './reconciliation/hooks/useReconciliationJobs';
 import type {
   ReconciliationJob,
-  ReconciliationProgress,
   ReconciliationResult,
-  CreateReconciliationJobRequest,
   ReconciliationInterfaceProps,
 } from './reconciliation/types';
 

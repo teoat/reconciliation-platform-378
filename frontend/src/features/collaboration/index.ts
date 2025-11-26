@@ -4,7 +4,7 @@
  * Features related to real-time collaboration, comments, and team coordination
  */
 
-import { registerFeature, type FeatureMetadata } from '../registry';
+import { registerFeature } from '../registry';
 
 // Real-time Collaboration Feature
 registerFeature({

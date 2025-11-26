@@ -564,8 +564,8 @@ export const getTypographyClasses = (
   return classes.join(' ');
 };
 
-export const createTypographyScale = (baseFontSize: number = 16): TypographyScale => {
-  const scale = [0.75, 0.875, 1, 1.125, 1.25, 1.5, 1.875, 2.25, 3, 3.75, 4.5];
+export const createTypographyScale = (_baseFontSize: number = 16): TypographyScale => {
+  const _scale = [0.75, 0.875, 1, 1.125, 1.25, 1.5, 1.875, 2.25, 3, 3.75, 4.5];
 
   return {
     xs: {

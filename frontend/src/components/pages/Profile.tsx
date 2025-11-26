@@ -25,11 +25,12 @@ const Profile: React.FC = () => {
     last_name: '',
     email: '',
   });
-  const [passwordData, setPasswordData] = useState({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
+  // Removed unused passwordData state (function was commented out)
+  // const [passwordData, setPasswordData] = useState({
+  //   currentPassword: '',
+  //   newPassword: '',
+  //   confirmPassword: '',
+  // });
 
   useEffect(() => {
     loadProfile();
@@ -91,48 +92,49 @@ const Profile: React.FC = () => {
     }
   };
 
-  const handlePasswordChange = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError('New passwords do not match');
-      toast.error('New passwords do not match');
-      return;
-    }
-
-    if (passwordData.newPassword.length < 8) {
-      setError('New password must be at least 8 characters long');
-      toast.error('New password must be at least 8 characters long');
-      return;
-    }
-
-    setIsSaving(true);
-
-    try {
-      const response = await apiClient.changePassword({
-        currentPassword: passwordData.currentPassword,
-        newPassword: passwordData.newPassword,
-      });
-
-      if (!response.success) {
-        const errorMsg = (response.error && typeof response.error === 'object' && 'message' in response.error ? response.error.message : response.error) || response.message || 'Failed to change password';
-        throw new Error(errorMsg as string);
-      }
-      toast.success('Password changed successfully');
-      setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-      });
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Failed to change password';
-      setError(errorMsg);
-      toast.error(errorMsg);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  // Removed unused handlePasswordChange function
+  // const handlePasswordChange = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setError(null);
+  //
+  //   if (passwordData.newPassword !== passwordData.confirmPassword) {
+  //     setError('New passwords do not match');
+  //     toast.error('New passwords do not match');
+  //     return;
+  //   }
+  //
+  //   if (passwordData.newPassword.length < 8) {
+  //     setError('New password must be at least 8 characters long');
+  //     toast.error('New password must be at least 8 characters long');
+  //     return;
+  //   }
+  //
+  //   setIsSaving(true);
+  //
+  //   try {
+  //     const response = await apiClient.changePassword({
+  //       currentPassword: passwordData.currentPassword,
+  //       newPassword: passwordData.newPassword,
+  //     });
+  //
+  //     if (!response.success) {
+  //       const errorMsg = (response.error && typeof response.error === 'object' && 'message' in response.error ? response.error.message : response.error) || response.message || 'Failed to change password';
+  //       throw new Error(errorMsg as string);
+  //     }
+  //     toast.success('Password changed successfully');
+  //     setPasswordData({
+  //       currentPassword: '',
+  //       newPassword: '',
+  //       confirmPassword: '',
+  //     });
+  //   } catch (error) {
+  //     const errorMsg = error instanceof Error ? error.message : 'Failed to change password';
+  //     setError(errorMsg);
+  //     toast.error(errorMsg);
+  //   } finally {
+  //     setIsSaving(false);
+  //   }
+  // };
 
   if (isLoading) {
     return (

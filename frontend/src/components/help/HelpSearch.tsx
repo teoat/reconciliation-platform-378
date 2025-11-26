@@ -22,7 +22,7 @@ export const HelpSearchInline: React.FC<HelpSearchInlineProps> = ({
   onSelectContent,
   placeholder = 'Search help articles...',
   className = '',
-  autoFocus = false,
+  autoFocus: _autoFocus = false,
 }) => {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<HelpSearchResult[]>([]);

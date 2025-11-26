@@ -19,7 +19,7 @@ mod user_workflow_tests {
     #[tokio::test]
     async fn test_complete_reconciliation_workflow() {
         let _test_config = TestConfig::default();
-        let _test_client = TestClient::new();
+        let test_client = TestClient::new();
 
         // Step 1: User registration and authentication
         test_client
@@ -77,7 +77,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let _resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let data_source2_data = serde_json::json!({
@@ -100,7 +100,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let _resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 5: Create reconciliation job
@@ -137,7 +137,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let _resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 7: Start reconciliation job
@@ -155,7 +155,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let _resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 8: Monitor job progress
@@ -173,7 +173,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let _resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req).await;
             let body: serde_json::Value = test::read_body_json(resp).await;
 
             let status = body["status"].as_str().unwrap();
@@ -205,7 +205,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let _resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -226,7 +226,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let _resp = test::call_service(&app, req).await;
+        let resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 11: Clean up
@@ -262,7 +262,7 @@ mod user_workflow_tests {
     #[tokio::test]
     async fn test_file_upload_workflow() {
         let _test_config = TestConfig::default();
-        let _test_client = TestClient::new();
+        let test_client = TestClient::new();
 
         // Step 1: User authentication
         test_client
@@ -305,7 +305,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-            let _resp = test::call_service(&app, req).await;
+            let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
 
             let file_data: serde_json::Value = test::read_body_json(resp).await;
@@ -325,7 +325,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-            let _resp = test::call_service(&app, req).await;
+            let resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
 
             // Wait for processing to complete
@@ -342,7 +342,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-                let _resp = test::call_service(&app, req).await;
+                let resp = test::call_service(&app, req).await;
                 let file_data: serde_json::Value = test::read_body_json(resp).await;
 
                 if file_data["data"]["status"] == "completed"

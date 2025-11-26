@@ -133,15 +133,16 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({
     });
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      onClose();
-    } else if (e.key === 'ArrowRight' && !isLastStep) {
-      handleNext();
-    } else if (e.key === 'ArrowLeft' && !isFirstStep) {
-      handlePrevious();
-    }
-  };
+  // Removed unused handleKeyDown function
+  // const handleKeyDown = (e: React.KeyboardEvent) => {
+  //   if (e.key === 'Escape') {
+  //     onClose();
+  //   } else if (e.key === 'ArrowRight' && !isLastStep) {
+  //     handleNext();
+  //   } else if (e.key === 'ArrowLeft' && !isFirstStep) {
+  //     handlePrevious();
+  //   }
+  // };
 
   if (!isOpen || !currentStepData) return null;
 

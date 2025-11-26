@@ -314,19 +314,22 @@ const DataTableComponent = <T extends Record<string, unknown>>({
                   <div
                     ref={v!.containerRef}
                     onScroll={v!.handleScroll}
+                    className="overflow-auto relative"
                     style={{
                       height: virtualContainerHeight,
-                      overflow: 'auto',
-                      position: 'relative',
-                    }}
+                    } as React.CSSProperties}
                   >
-                    <div style={{ height: v!.totalHeight, position: 'relative' }}>
+                    <div 
+                      className="relative"
+                      style={{ height: v!.totalHeight } as React.CSSProperties}
+                    >
                       {v!.visibleItems.map(({ index, top, height }) => {
                         const row = sortedData[index];
                         return (
                           <div
                             key={index}
-                            style={{ position: 'absolute', top, height, left: 0, right: 0 }}
+                            className="absolute left-0 right-0"
+                            style={{ top, height } as React.CSSProperties}
                             data-row-index={index}
                           >
                             <div

@@ -9,8 +9,9 @@ import {
   AlertTriangle,
   PartyPopper,
   Star,
+  Smile,
 } from 'lucide-react';
-import { FrenlyState, FrenlyMessage, FrenlyAnimation, FrenlyExpression } from '../types/frenly';
+import { FrenlyState, FrenlyMessage, FrenlyExpression } from '../types/frenly';
 import { frenlyAgentService } from '@/services/frenlyAgentService';
 
 interface FrenlyAIProps {
@@ -51,7 +52,6 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({ currentPage, userProgress, onAction
     accessories: [],
   });
 
-  const [_currentAnimation, _setCurrentAnimation] = useState<FrenlyAnimation | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const messageTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -140,100 +140,6 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({ currentPage, userProgress, onAction
     }
   }, [currentPage, userProgress, createDefaultMessage]);
 
-  const _generateContextualMessageSync = useCallback((): FrenlyMessage => {
-    const pageGuidance = {
-      '/projects': {
-        greeting:
-          "Hey there! 👋 Ready to start your reconciliation journey? Let's create some amazing projects together!",
-        tip: '💡 Pro tip: Use templates to speed up your project creation process!',
-        warning: "⚠️ Don't forget to set proper permissions for team collaboration!",
-        celebration: '🎉 Great job! Your project is ready to go!',
-      },
-      '/ingestion': {
-        greeting:
-          "Welcome to the data ingestion zone! 📊 Let's get your files uploaded and processed!",
-        tip: '💡 Make sure your CSV files have headers for better data recognition!',
-        warning: '⚠️ Large files might take a while to process - grab a coffee! ☕',
-        celebration: '🎉 Excellent! Your data is ready for reconciliation!',
-      },
-      '/reconciliation': {
-        greeting: "Time for the magic! ✨ Let's match those records and find the perfect pairs!",
-        tip: '💡 Adjust matching rules to improve your match rate!',
-        warning: '⚠️ Review unmatched records carefully - they might need special attention!',
-        celebration: "🎉 Fantastic matching results! You're doing great!",
-      },
-      '/adjudication': {
-        greeting: "Detective mode activated! 🔍 Let's solve these discrepancies together!",
-        tip: '💡 Use comments to document your resolution decisions!',
-        warning: '⚠️ High priority discrepancies need immediate attention!',
-        celebration: '🎉 Case closed! All discrepancies resolved!',
-      },
-      '/visualization': {
-        greeting: "Data visualization time! 📈 Let's turn those numbers into beautiful insights!",
-        tip: '💡 Try different chart types to find the best view of your data!',
-        warning: '⚠️ Make sure your data is complete before creating visualizations!',
-        celebration: '🎉 Stunning visualizations! Your data tells a great story!',
-      },
-      '/presummary': {
-        greeting: "Almost there! 🏁 Let's review everything before the final summary!",
-        tip: '💡 Double-check all categories before proceeding to export!',
-        warning: '⚠️ Make sure all discrepancies are resolved!',
-        celebration: '🎉 Perfect! Ready for the final summary!',
-      },
-      '/summary': {
-        greeting: 'The grand finale! 🎊 Time to create your comprehensive report!',
-        tip: '💡 Choose the right export format for your audience!',
-        warning: '⚠️ Save your work before exporting large reports!',
-        celebration: '🎉 Congratulations! Your reconciliation is complete!',
-      },
-      '/auth': {
-        greeting: "Welcome! 🔐 Let's get you securely logged in!",
-        tip: '💡 Use a strong password and enable two-factor authentication!',
-        warning: '⚠️ Never share your login credentials with anyone!',
-        celebration: '🎉 Welcome back! Ready to start reconciling!',
-      },
-      '/cashflow-evaluation': {
-        greeting: "Cashflow analysis time! 💰 Let's dive into your financial patterns!",
-        tip: '💡 Look for seasonal trends and anomalies in your data!',
-        warning: '⚠️ Verify data accuracy before making financial decisions!',
-        celebration: '🎉 Excellent cashflow insights! Great analysis work!',
-      },
-    };
-
-    const guidance = pageGuidance[currentPage as keyof typeof pageGuidance];
-    if (!guidance) return createDefaultMessage();
-
-    const progressPercentage = (userProgress.completedSteps.length / userProgress.totalSteps) * 100;
-
-    // Determine message type based on context
-    let messageType: FrenlyMessage['type'] = 'tip';
-    let content = guidance.tip;
-
-    if (progressPercentage === 0) {
-      messageType = 'greeting';
-      content = guidance.greeting;
-    } else if (progressPercentage === 100) {
-      messageType = 'celebration';
-      content = guidance.celebration;
-    } else if (progressPercentage < 30) {
-      messageType = 'instruction';
-      content = guidance.tip;
-    } else if (progressPercentage > 70) {
-      messageType = 'encouragement';
-      content = "You're almost there! Keep up the great work! 🚀";
-    }
-
-    return {
-      id: Math.random().toString(36).substr(2, 9),
-      type: messageType,
-      content,
-      timestamp: new Date(),
-      page: currentPage,
-      priority: 'medium',
-      dismissible: true,
-      autoHide: messageType === 'greeting' ? 5000 : undefined,
-    };
-  }, [currentPage, userProgress, createDefaultMessage]);
 
   // Update expression based on mood and message type
   const updateExpression = useCallback((messageType: FrenlyMessage['type']) => {
@@ -283,10 +189,13 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({ currentPage, userProgress, onAction
     [updateExpression, hideMessage]
   );
 
+  // These functions are used in JSX event handlers (lines 226, 398, 406)
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const toggleVisibility = () => {
     setState((prev) => ({ ...prev, isVisible: !prev.isVisible }));
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const toggleMinimize = () => {
     setState((prev) => ({ ...prev, isMinimized: !prev.isMinimized }));
   };
@@ -383,15 +292,15 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({ currentPage, userProgress, onAction
                   <div className="flex space-x-1">
                     <div
                       className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-                      style={{ animationDelay: '0ms' }}
+                      style={{ animationDelay: '0ms' } as React.CSSProperties}
                     />
                     <div
                       className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-                      style={{ animationDelay: '150ms' }}
+                      style={{ animationDelay: '150ms' } as React.CSSProperties}
                     />
                     <div
                       className="w-2 h-2 bg-purple-500 rounded-full animate-bounce"
-                      style={{ animationDelay: '300ms' }}
+                      style={{ animationDelay: '300ms' } as React.CSSProperties}
                     />
                   </div>
                   <span className="text-sm text-gray-600">Thinking...</span>
@@ -520,7 +429,7 @@ const FrenlyAI: React.FC<FrenlyAIProps> = ({ currentPage, userProgress, onAction
                 className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full transition-all duration-500"
                 style={{
                   width: `${(userProgress.completedSteps.length / userProgress.totalSteps) * 100}%`,
-                }}
+                } as React.CSSProperties}
               />
             </div>
           </div>

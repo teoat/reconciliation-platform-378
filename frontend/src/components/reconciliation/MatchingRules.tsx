@@ -15,8 +15,8 @@ export const MatchingRules: React.FC<MatchingRulesProps> = ({
   onRulesChange,
   isLoading = false,
 }) => {
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [editingRule, setEditingRule] = useState<MatchingRule | null>(null);
+  const [_showAddModal, _setShowAddModal] = useState(false);
+  const [_editingRule, _setEditingRule] = useState<MatchingRule | null>(null);
 
   const handleAddRule = () => {
     const newRule: MatchingRule = {

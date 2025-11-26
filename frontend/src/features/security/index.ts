@@ -4,7 +4,7 @@
  * Features related to authentication, authorization, and data security
  */
 
-import { registerFeature, type FeatureMetadata } from '../registry';
+import { registerFeature } from '../registry';
 
 // Authentication Feature
 registerFeature({

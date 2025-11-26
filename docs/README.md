@@ -9,8 +9,11 @@
 ## 🎯 Master Documents (Start Here)
 
 - **[Master Status and Checklist](./project-management/MASTER_STATUS_AND_CHECKLIST.md)** - ⭐ **Single source of truth** for project status and implementation checklists
-- **[Implementation Status Summary](./project-management/IMPLEMENTATION_STATUS_SUMMARY.md)** - Quick reference for implementation status
-- **[Project Status](./project-management/PROJECT_STATUS.md)** - Overall project health and metrics
+- **[Project Status](./project-management/PROJECT_STATUS.md)** - ⭐ **Master status document** - Overall project health and metrics
+- **[Master TODOs](./project-management/MASTER_TODOS.md)** - ⭐ **Complete list of unimplemented tasks** (200+ items, organized by priority)
+- **[Comprehensive Diagnostic Report](./project-management/COMPREHENSIVE_DIAGNOSTIC_REPORT.md)** - ⭐ **Master diagnostic** - Gaps, errors, bugs, and improvements analysis
+- **[Phased Implementation Plan](./project-management/PHASED_IMPLEMENTATION_PLAN.md)** - ⭐ **Orchestrated 4-phase plan** for completing all tasks (12+ weeks)
+- **[Production Deployment Plan](./deployment/PRODUCTION_DEPLOYMENT_PLAN.md)** - ⭐ **Comprehensive deployment guide** for all services
 
 ---
 
@@ -71,10 +74,19 @@
 - **[Cursor Optimization Guide](./development/CURSOR_OPTIMIZATION_GUIDE.md)** - Cursor IDE optimization
 - **[Quick Reference Commands](./development/QUICK-REFERENCE-COMMANDS.md)** - Common commands
 
+### 🔧 Refactoring
+- **[Consolidation & Optimization Plan](./refactoring/CONSOLIDATION_OPTIMIZATION_PLAN.md)** - ⭐ **Code consolidation strategy** - Consolidate small files and refactor large files
+- **[Consolidation Summary](./refactoring/CONSOLIDATION_SUMMARY.md)** - Quick overview of consolidation plan
+- **[Consolidation Quick Reference](./refactoring/CONSOLIDATION_QUICK_REFERENCE.md)** - Quick lookup for import migrations
+- **[Component Organization Plan](./refactoring/COMPONENT_ORGANIZATION_PLAN.md)** - Component organization strategy
+
 ### 📊 Project Management
+- **[Production Launch Phased Plan](./project-management/PRODUCTION_LAUNCH_PHASED_PLAN.md)** - ⭐ **NEW** - Multi-agent orchestrated production launch (4-6 weeks)
+- **[Production Launch TODOs](./project-management/PRODUCTION_LAUNCH_TODOS.md)** - ⭐ **NEW** - Actionable todos with agent coordination
 - **[Master Status and Checklist](./project-management/MASTER_STATUS_AND_CHECKLIST.md)** - ⭐ **Master document** - Single source of truth
 - **[Implementation Status Summary](./project-management/IMPLEMENTATION_STATUS_SUMMARY.md)** - Quick implementation reference
 - **[Project Status](./project-management/PROJECT_STATUS.md)** - Overall project health and metrics
+- **[Priority Recommendations](./project-management/PRIORITY_RECOMMENDATIONS.md)** - Prioritized improvements
 - **[Roadmap V5](./project-management/ROADMAP_V5.md)** - Feature roadmap
 - **[Unimplemented TODOs](./UNIMPLEMENTED_TODOS_AND_RECOMMENDATIONS.md)** - Future work items
 
@@ -92,7 +104,7 @@ Historical documentation organized by date and category:
 - **[Status Reports](./archive/status-reports/)** - Archived status reports (organized by date)
 - **[Legacy Archives](./archive/)** - Other historical documentation
 
-**Note**: All completion, status, and diagnostic reports older than 30 days are archived. See [Documentation Consolidation](./DOCUMENTATION_CONSOLIDATION_COMPLETE.md) for details.
+**Note**: All completion, status, and diagnostic reports older than 30 days are archived. See [Consolidation Summary](./project-management/CONSOLIDATION_SUMMARY.md) for details.
 
 ---
 

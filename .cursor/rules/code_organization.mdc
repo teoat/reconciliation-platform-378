@@ -10,7 +10,11 @@ alwaysApply: true
   - **One responsibility per file** - Each file serves one clear purpose
   - **One way to do things** - Consistent patterns across the codebase
   - **One truth source** - No conflicting information or implementations
+  - **MANDATORY**: Check [SSOT_LOCK.yml](mdc:SSOT_LOCK.yml) before creating new utilities
+  - **MANDATORY**: Import from SSOT locations only (see SSOT_LOCK.yml)
+  - **FORBIDDEN**: Creating duplicate implementations outside SSOT modules
   - Follow [SSOT Guidance](mdc:docs/architecture/SSOT_GUIDANCE.md) for detailed principles
+  - Follow [Code Quality Filters](mdc:.cursor/rules/code_quality_filters.mdc) for strict enforcement
 
 - **Directory Structure:**
   - Frontend: `frontend/src/` with `components/`, `services/`, `hooks/`, `types/`, `utils/`

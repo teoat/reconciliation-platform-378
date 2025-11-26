@@ -66,10 +66,34 @@ echo "About to execute binary..." >&2
 echo "  HOST: $HOST" >&2
 echo "  PORT: $PORT" >&2
 
-# Use exec to replace shell process (proper signal handling)
-# This ensures the binary receives signals correctly
-# Note: Using exec means we won't see "Binary exited" message
-# but it's necessary for proper signal handling
-# Force unbuffered output
-exec /app/reconciliation-backend 2>&1
+# Enhanced error capture: Run binary and capture exit code
+# This allows us to see if the binary crashes immediately
+/app/reconciliation-backend 2>&1
+EXIT_CODE=$?
+
+if [ $EXIT_CODE -ne 0 ]; then
+    echo "❌ Backend binary exited with code: $EXIT_CODE" >&2
+    echo "💡 This may indicate:" >&2
+    echo "   - Missing environment variables" >&2
+    echo "   - Database connection failure" >&2
+    echo "   - Configuration error" >&2
+    echo "   - Runtime error or panic" >&2
+    
+    # Check for panic files
+    if [ -f /tmp/backend-panic.txt ]; then
+        echo "📋 Panic file found:" >&2
+        cat /tmp/backend-panic.txt >&2
+    fi
+    if [ -f /tmp/backend-panic-main.txt ]; then
+        echo "📋 Main panic file found:" >&2
+        cat /tmp/backend-panic-main.txt >&2
+    fi
+    if [ -f /tmp/backend-main-called.txt ]; then
+        echo "✅ Main function was called" >&2
+    else
+        echo "❌ Main function was NOT called - binary may have crashed before main()" >&2
+    fi
+    
+    exit $EXIT_CODE
+fi
 

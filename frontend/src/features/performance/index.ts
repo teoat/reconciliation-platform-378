@@ -4,7 +4,7 @@
  * Features related to performance monitoring, optimization, and caching
  */
 
-import { registerFeature, type FeatureMetadata } from '../registry';
+import { registerFeature } from '../registry';
 
 // Performance Monitoring Feature
 registerFeature({

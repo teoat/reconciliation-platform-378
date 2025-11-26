@@ -43,7 +43,7 @@ interface ComplianceRequirement {
 export const useSecurity = () => {
   const [securityPolicies, setSecurityPolicies] = useState<SecurityPolicy[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
-  const [complianceRequirements, setComplianceRequirements] = useState<ComplianceRequirement[]>([]);
+  const [complianceRequirements, _setComplianceRequirements] = useState<ComplianceRequirement[]>([]);
   const [isSecurityEnabled, setIsSecurityEnabled] = useState(true);
 
   // Initialize security policies

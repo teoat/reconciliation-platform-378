@@ -3,6 +3,8 @@
 //! Provides secure access to application secrets with validation, rotation support,
 //! and Kubernetes integration. Follows 12-Factor App principles.
 
+pub mod rotation;
+
 use crate::errors::{AppError, AppResult};
 use std::collections::HashMap;
 

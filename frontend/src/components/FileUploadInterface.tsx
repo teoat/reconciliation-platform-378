@@ -2,7 +2,7 @@
 import { logger } from '@/services/logger';
 import { getErrorMessageFromApiError } from '../utils/errorExtraction';
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useLoading } from '../hooks/useLoading';
 import {
   File,

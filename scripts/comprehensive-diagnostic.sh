@@ -28,8 +28,8 @@ SCORE_SECURITY=0
 SCORE_CODE_QUALITY=0
 
 # Declare associative arrays for scores and details
-local SCORES=()
-local DETAILS=()
+SCORES=()
+DETAILS=()
 
 # Details storage (using a temp file for compatibility - kept for backward compatibility)
 DETAILS_FILE=$(mktemp)
@@ -115,9 +115,11 @@ diagnose_backend() {
         clippy_warnings=${clippy_warnings:-0}
         clippy_errors=${clippy_errors:-0}
         local total_issues=$((clippy_warnings + clippy_errors))
+        set -x
         local quality_pct=$((100 - total_issues * 2))
         if [ $quality_pct -lt 0 ]; then quality_pct=0; fi
         local quality_score=$(calculate_score $quality_pct 20)
+        set +x
         backend_score=$(echo "$backend_score + $quality_score" | bc)
         DETAILS["backend_quality"]="Warnings: $clippy_warnings, Errors: $clippy_errors, Score: $quality_score/20"
     else

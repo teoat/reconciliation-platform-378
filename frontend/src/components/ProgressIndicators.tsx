@@ -29,7 +29,7 @@ export interface ProgressIndicatorProps {
 
 export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
   steps,
-  currentStep = 0,
+  currentStep: _currentStep = 0,
   orientation = 'horizontal',
   variant = 'default',
   showLabels = true,
@@ -38,7 +38,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
   onStepClick,
   className = '',
 }) => {
-  const getStepIcon = (step: ProgressStep, index: number) => {
+  const getStepIcon = (step: ProgressStep, _index: number) => {
     if (step.icon) return step.icon;
 
     switch (step.status) {
@@ -55,7 +55,7 @@ export const ProgressIndicator: React.FC<ProgressIndicatorProps> = ({
     }
   };
 
-  const getStepClasses = (step: ProgressStep, index: number) => {
+  const getStepClasses = (_step: ProgressStep, _index: number) => {
     const baseClasses = 'flex items-center space-x-3';
     const interactiveClasses = interactive ? 'cursor-pointer hover:bg-gray-50 rounded-lg p-2' : '';
 

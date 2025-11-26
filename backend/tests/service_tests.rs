@@ -1,8 +1,11 @@
 //! Comprehensive test suite for backend services
 //! Tests services, utilities, and integration points beyond handlers
 
+use uuid::Uuid;
+
 #[cfg(test)]
 mod error_translation_service_tests {
+    use super::*;
     use chrono::Utc;
     use reconciliation_backend::services::error_translation::{
         ErrorContext, ErrorTranslationService,
@@ -16,7 +19,7 @@ mod error_translation_service_tests {
 
     #[test]
     fn test_translate_database_error() {
-        let _service = ErrorTranslationService::new();
+        let service = ErrorTranslationService::new();
         let db_error = diesel::result::Error::NotFound;
         let context = ErrorContext {
             user_id: Some(Uuid::new_v4()),
@@ -36,7 +39,7 @@ mod error_translation_service_tests {
 
     #[test]
     fn test_translate_error_with_context() {
-        let _service = ErrorTranslationService::new();
+        let service = ErrorTranslationService::new();
         let context = ErrorContext {
             user_id: Some(Uuid::new_v4()),
             project_id: Some(Uuid::new_v4()),
@@ -59,7 +62,7 @@ mod error_translation_service_tests {
 
     #[test]
     fn test_translate_common_error_codes() {
-        let _service = ErrorTranslationService::new();
+        let service = ErrorTranslationService::new();
         let empty_context = ErrorContext {
             user_id: None,
             project_id: None,
@@ -97,7 +100,7 @@ mod error_translation_service_tests {
 
     #[test]
     fn test_translate_unknown_error_code() {
-        let _service = ErrorTranslationService::new();
+        let service = ErrorTranslationService::new();
         let empty_context = ErrorContext {
             user_id: None,
             project_id: None,
@@ -120,6 +123,7 @@ mod error_translation_service_tests {
 
 #[cfg(test)]
 mod file_service_tests {
+    use super::*;
     use reconciliation_backend::database::Database;
     use reconciliation_backend::services::file::{FileService, FileUploadResult};
     // Mock database for testing
@@ -172,7 +176,7 @@ mod validation_service_tests {
 
     #[test]
     fn test_email_validation() {
-        let _service = ValidationService::new().unwrap();
+        let service = ValidationService::new().unwrap();
 
         // Valid emails
         assert!(service.validate_email("test@example.com").is_ok());
@@ -186,7 +190,7 @@ mod validation_service_tests {
 
     #[test]
     fn test_password_validation() {
-        let _service = ValidationService::new().unwrap();
+        let service = ValidationService::new().unwrap();
 
         // Valid passwords
         assert!(service.validate_password("StrongPass123!").is_ok());
@@ -199,7 +203,7 @@ mod validation_service_tests {
 
     #[test]
     fn test_uuid_validation() {
-        let _service = ValidationService::new().unwrap();
+        let service = ValidationService::new().unwrap();
 
         // Valid UUID
         assert!(service
@@ -213,7 +217,7 @@ mod validation_service_tests {
 
     #[test]
     fn test_json_schema_validation() {
-        let _service = ValidationService::new().unwrap();
+        let service = ValidationService::new().unwrap();
 
         let schema = serde_json::json!({
             "type": "object",
@@ -237,7 +241,7 @@ mod validation_service_tests {
 
     #[test]
     fn test_file_validation() {
-        let _service = ValidationService::new().unwrap();
+        let service = ValidationService::new().unwrap();
 
         // Valid filenames
         assert!(service
@@ -266,8 +270,8 @@ mod security_service_tests {
     use reconciliation_backend::services::security::SecuritySeverity;
     #[test]
     fn test_security_service_creation() {
-        let _config = reconciliation_backend::services::security::SecurityConfig::default();
-        let _service = SecurityService::new(config);
+        let config = reconciliation_backend::services::security::SecurityConfig::default();
+        let service = SecurityService::new(config);
         assert!(true);
     }
 
@@ -305,8 +309,8 @@ mod security_service_tests {
 
     #[test]
     fn test_threat_detection() {
-        let _config = reconciliation_backend::services::security::SecurityConfig::default();
-        let _service = SecurityService::new(config);
+        let config = reconciliation_backend::services::security::SecurityConfig::default();
+        let service = SecurityService::new(config);
 
         // Note: SecurityService doesn't have detect_sql_injection, detect_xss, or detect_brute_force methods
         // These would be implemented in a threat detection service or middleware
@@ -321,13 +325,13 @@ mod monitoring_service_tests {
 
     #[test]
     fn test_monitoring_service_creation() {
-        let _service = MonitoringService::new();
+        let service = MonitoringService::new();
         assert!(true);
     }
 
     #[test]
     fn test_metric_recording() {
-        let _service = MonitoringService::new();
+        let service = MonitoringService::new();
 
         // Note: MonitoringService doesn't have MetricValue enum
         // These tests are simplified to just test service creation
@@ -337,7 +341,7 @@ mod monitoring_service_tests {
 
     #[test]
     fn test_health_check() {
-        let _service = MonitoringService::new();
+        let service = MonitoringService::new();
 
         let health = service.health_check();
         assert!(health.contains_key("status"));
@@ -346,7 +350,7 @@ mod monitoring_service_tests {
 
     #[test]
     fn test_performance_tracking() {
-        let _service = MonitoringService::new();
+        let service = MonitoringService::new();
 
         let start = std::time::Instant::now();
         // Simulate some work
@@ -368,13 +372,13 @@ mod cache_service_tests {
     #[test]
     fn test_cache_service_creation() {
         // Use a mock Redis URL for testing
-        let _service = CacheService::new("redis://localhost:6379").unwrap();
+        let service = CacheService::new("redis://localhost:6379").unwrap();
         assert!(true);
     }
 
     #[test]
     fn test_cache_operations() {
-        let _service = CacheService::new("redis://localhost:6379").unwrap();
+        let service = CacheService::new("redis://localhost:6379").unwrap();
         let key = "test_key";
         let value = "test_value";
         let ttl = Duration::from_secs(300);
@@ -392,7 +396,7 @@ mod cache_service_tests {
 
     #[test]
     fn test_cache_expiration() {
-        let _service = CacheService::new("redis://localhost:6379").unwrap();
+        let service = CacheService::new("redis://localhost:6379").unwrap();
         let key = "expiring_key";
         let value = "expiring_value";
         let short_ttl = Duration::from_millis(10);
@@ -414,7 +418,7 @@ mod cache_service_tests {
     #[test]
     #[ignore] // Ignore if Redis is not available
     fn test_cache_clear() {
-        let _service = CacheService::new("redis://localhost:6379").unwrap();
+        let service = CacheService::new("redis://localhost:6379").unwrap();
 
         // Set multiple entries
         service.set("key1", &"value1", None).unwrap();
@@ -450,7 +454,7 @@ mod email_service_tests {
 
     #[test]
     fn test_email_service_creation() {
-        let _service = EmailService::new();
+        let service = EmailService::new();
         assert!(true);
     }
 
@@ -458,7 +462,7 @@ mod email_service_tests {
     fn test_email_message_creation() {
         // Note: EmailMessage doesn't exist - EmailService uses different structure
         // This test is simplified to just test service creation
-        let _service = EmailService::new();
+        let service = EmailService::new();
         assert!(true); // Service creation test
     }
 
@@ -489,21 +493,21 @@ mod backup_recovery_service_tests {
 
     #[test]
     fn test_backup_recovery_service_creation() {
-        let _service = BackupService::new(BackupConfig::default());
+        let service = BackupService::new(BackupConfig::default());
         assert!(true);
     }
 
     #[test]
     fn test_backup_config_creation() {
         // Note: BackupConfig structure may differ - using default for now
-        let _config = BackupConfig::default();
+        let config = BackupConfig::default();
         assert!(true); // Config creation test
     }
 
     #[test]
     fn test_recovery_point_creation() {
         // Note: RecoveryPoint doesn't exist - use BackupService methods instead
-        let _service = BackupService::new(BackupConfig::default());
+        let service = BackupService::new(BackupConfig::default());
         assert!(true); // Service creation test
     }
 
@@ -552,7 +556,7 @@ mod project_service_tests {
     #[tokio::test]
     async fn test_project_service_creation() {
         let (db, _) = setup_test_database().await;
-        let _service = ProjectService::new(db);
+        let service = ProjectService::new(db);
         // Service should be created successfully
         assert!(true);
     }
@@ -561,7 +565,7 @@ mod project_service_tests {
     #[tokio::test]
     async fn test_project_creation_and_retrieval() {
         let (db, _) = setup_test_database().await;
-        let _service = ProjectService::new(db.clone());
+        let service = ProjectService::new(db.clone());
 
         // Create test user first
         let user_service = reconciliation_backend::services::user::UserService::new(
@@ -601,7 +605,7 @@ mod project_service_tests {
     #[tokio::test]
     async fn test_project_update() {
         let (db, _) = setup_test_database().await;
-        let _service = ProjectService::new(db.clone());
+        let service = ProjectService::new(db.clone());
 
         // Create test user and project
         let user_service = reconciliation_backend::services::user::UserService::new(
@@ -646,7 +650,7 @@ mod project_service_tests {
     #[tokio::test]
     async fn test_project_deletion() {
         let (db, _) = setup_test_database().await;
-        let _service = ProjectService::new(db.clone());
+        let service = ProjectService::new(db.clone());
 
         // Create test user and project
         let user_service = reconciliation_backend::services::user::UserService::new(
@@ -693,7 +697,7 @@ mod user_service_tests {
     async fn test_user_service_creation() {
         let (db, _) = setup_test_database().await;
         let auth_service = reconciliation_backend::services::auth::AuthService::new("test_secret".to_string(), 3600);
-        let _service = UserService::new(Arc::new(db), auth_service);
+        let service = UserService::new(Arc::new(db), auth_service);
         // Service should be created successfully
         assert!(true);
     }
@@ -703,7 +707,7 @@ mod user_service_tests {
     async fn test_user_creation_and_authentication() {
         let (db, _) = setup_test_database().await;
         let auth_service = reconciliation_backend::services::auth::AuthService::new("test_secret".to_string(), 3600);
-        let _service = UserService::new(Arc::new(db), auth_service.clone());
+        let service = UserService::new(Arc::new(db), auth_service.clone());
 
         // Create user
         let user = service.create_user(reconciliation_backend::services::user::CreateUserRequest {
@@ -731,7 +735,7 @@ mod user_service_tests {
     async fn test_user_profile_updates() {
         let (db, _) = setup_test_database().await;
         let auth_service = reconciliation_backend::services::auth::AuthService::new("test_secret".to_string(), 3600);
-        let _service = UserService::new(Arc::new(db), auth_service.clone());
+        let service = UserService::new(Arc::new(db), auth_service.clone());
 
         // Create user
         let user = service.create_user(reconciliation_backend::services::user::CreateUserRequest {
@@ -769,7 +773,7 @@ mod password_manager_service_tests {
     #[tokio::test]
     async fn test_password_manager_creation() {
         let (db, _) = setup_test_database().await;
-        let _service = PasswordManager::new(Arc::new(db), "test_master_key".to_string());
+        let service = PasswordManager::new(Arc::new(db), "test_master_key".to_string());
         // Service should be created successfully
         assert!(true);
     }
@@ -778,7 +782,7 @@ mod password_manager_service_tests {
     #[tokio::test]
     async fn test_password_storage_and_retrieval() {
         let (db, _) = setup_test_database().await;
-        let _service = PasswordManager::new(Arc::new(db), "test_master_key".to_string());
+        let service = PasswordManager::new(Arc::new(db), "test_master_key".to_string());
 
         let password_name = "test_password";
         let password_value = "SecretPassword123!";
@@ -796,7 +800,7 @@ mod password_manager_service_tests {
     #[tokio::test]
     async fn test_password_rotation() {
         let (db, _) = setup_test_database().await;
-        let _service = PasswordManager::new(Arc::new(db), "test_master_key".to_string());
+        let service = PasswordManager::new(Arc::new(db), "test_master_key".to_string());
 
         let password_name = "rotatable_password";
         let old_password = "OldPassword123!";
@@ -823,7 +827,7 @@ mod realtime_service_tests {
     /// Test notification service creation
     #[tokio::test]
     async fn test_notification_service_creation() {
-        let _service = NotificationService::new();
+        let service = NotificationService::new();
         // Service should be created successfully
         assert!(true);
     }
@@ -831,7 +835,7 @@ mod realtime_service_tests {
     /// Test collaboration service creation
     #[tokio::test]
     async fn test_collaboration_service_creation() {
-        let _service = CollaborationService::new();
+        let service = CollaborationService::new();
         // Service should be created successfully
         assert!(true);
     }

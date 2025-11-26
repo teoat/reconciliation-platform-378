@@ -10,7 +10,7 @@ export const useDataProviderStorage = (
 ) => {
   const {
     currentProject,
-    setCurrentProject: setCurrentProjectInternal,
+    setCurrentProject: _setCurrentProjectInternal,
     createProject,
     updateProject,
     addIngestionData,
