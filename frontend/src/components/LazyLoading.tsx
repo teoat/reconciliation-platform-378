@@ -1,6 +1,5 @@
 import React, { ComponentType, ReactNode, lazy, Suspense } from 'react';
 import { logger } from '@/services/logger';
-import { APP_CONFIG } from '../config/AppConfig';
 
 // Loading component
 const LoadingSpinner = () => (

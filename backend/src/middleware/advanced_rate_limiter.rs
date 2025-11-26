@@ -118,7 +118,7 @@ impl AdvancedRateLimiter {
                 .atomic()
                 .zrembyscore(&redis_key, 0, (now - (window as u128 * 1_000_000)) as i64)
                 .zadd(&redis_key, now as i64, now as i64)
-                .expire(&redis_key, window)
+                .expire(&redis_key, window as i64)
                 .zcard(&redis_key)
                 .query_async(&mut conn)
                 .await

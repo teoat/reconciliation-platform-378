@@ -207,6 +207,164 @@ sources_of_truth:
       middleware:
         path: "backend/src/middleware/performance.rs"
 
+  # -------------------------------------------------------------------------
+  # PASSWORDS AND SECRETS (SSOT)
+  # -------------------------------------------------------------------------
+  passwords_secrets:
+    description: "Application passwords and secrets management - SSOT"
+    ssot_location: ".env"
+    management_script: "scripts/manage-passwords.sh"
+    files:
+      - path: ".env"
+        description: "Active configuration (SSOT) - git-ignored"
+        locking_required: true
+      - path: ".env.example"
+        description: "Template (reference only)"
+        locking_required: false
+      - path: "env.consolidated"
+        description: "Legacy consolidated file (deprecated)"
+        deprecated: true
+    consumers:
+      - "Docker services (docker-compose.yml)"
+      - "MCP servers (.cursor/mcp.json)"
+      - "Backend (SecretsService)"
+      - "Frontend (environment variables)"
+    rules:
+      - "All passwords MUST be in .env file"
+      - "Use scripts/manage-passwords.sh for all operations"
+      - "Lock .env before editing"
+      - "Sync to Docker after password changes"
+      - "Never commit .env to version control"
+    sync_targets:
+      - "Docker containers (restart services)"
+      - "MCP server environment"
+      - "Backend configuration reload"
+    deprecated_paths:
+      - "env.consolidated"
+    removal_version: "2.0.0"
+
+  # -------------------------------------------------------------------------
+  # DOCKER COMPOSE CONFIGURATION
+  # -------------------------------------------------------------------------
+  docker_compose:
+    description: "Docker Compose configuration files"
+    ssot_location: "docker-compose.yml"
+    management_script: "scripts/manage-ssot.sh"
+    files:
+      - path: "docker-compose.yml"
+        description: "Production configuration (SSOT)"
+        locking_required: true
+      - path: "docker-compose.base.yml"
+        description: "Base services configuration"
+        locking_required: true
+      - path: "docker-compose.staging.yml"
+        description: "Staging environment"
+        locking_required: true
+      - path: "docker-compose.dev.yml"
+        description: "Development environment"
+        locking_required: false
+      - path: "docker-compose.test.yml"
+        description: "Testing environment"
+        locking_required: false
+      - path: "docker-compose.monitoring.yml"
+        description: "Monitoring stack"
+        locking_required: false
+      - path: "docker-compose.optimized.yml"
+        description: "Optimized build"
+        locking_required: false
+      - path: "docker-compose.fast.yml"
+        description: "Fast development"
+        locking_required: false
+      - path: "docker-compose.simple.yml"
+        description: "Minimal setup"
+        locking_required: false
+      - path: "docker-compose.backend.yml"
+        description: "Backend only"
+        locking_required: false
+    rules:
+      - "docker-compose.yml is SSOT for production"
+      - "All variants inherit from base"
+      - "Environment-specific overrides only"
+      - "Lock before editing production configs"
+
+  # -------------------------------------------------------------------------
+  # TYPE DEFINITIONS
+  # -------------------------------------------------------------------------
+  type_definitions:
+    description: "TypeScript type definitions - SSOT"
+    frontend:
+      ssot:
+        - path: "frontend/src/types/backend-aligned.ts"
+          description: "Backend-aligned types (SSOT)"
+          locking_required: true
+        - path: "frontend/src/types/index.ts"
+          description: "Type exports (re-exports only)"
+          locking_required: true
+      feature_types:
+        - path: "frontend/src/types/auth.ts"
+        - path: "frontend/src/types/service.ts"
+        - path: "frontend/src/types/forms.ts"
+        - path: "frontend/src/types/ingestion/index.ts"
+    rules:
+      - "All backend-aligned types MUST be in backend-aligned.ts"
+      - "index.ts only re-exports, no new definitions"
+      - "Feature-specific types in their respective files"
+      - "Lock before editing type definitions"
+
+  # -------------------------------------------------------------------------
+  # API ENDPOINTS
+  # -------------------------------------------------------------------------
+  api_endpoints:
+    description: "API endpoint definitions - SSOT"
+    frontend:
+      ssot: "frontend/src/config/AppConfig.ts"
+      exports:
+        - "API_ENDPOINTS"
+      deprecated: "constants/index.ts"
+    backend:
+      ssot: "backend/src/handlers/mod.rs"
+      description: "Route configuration"
+    rules:
+      - "Frontend endpoints must match backend routes"
+      - "Use /api/v1/ prefix for versioned endpoints"
+      - "Document breaking changes"
+      - "Lock before editing endpoint definitions"
+
+  # -------------------------------------------------------------------------
+  # DOCUMENTATION
+  # -------------------------------------------------------------------------
+  documentation:
+    description: "Project documentation - SSOT"
+    architecture:
+      - path: "docs/architecture/SSOT_GUIDANCE.md"
+        description: "SSOT principles"
+        locking_required: true
+      - path: "docs/architecture/SSOT_AREAS_AND_LOCKING.md"
+        description: "SSOT areas and locking system"
+        locking_required: true
+    registry:
+      - path: "SSOT_LOCK.yml"
+        description: "SSOT registry (this file)"
+        locking_required: true
+    rules:
+      - "One document per topic"
+      - "Archive outdated docs to docs/archive/"
+      - "Cross-reference related docs"
+      - "Lock before editing documentation"
+
+  # -------------------------------------------------------------------------
+  # SHARED SCRIPTS
+  # -------------------------------------------------------------------------
+  shared_scripts:
+    description: "Shared shell script functions - SSOT"
+    ssot_location: "scripts/lib/common-functions.sh"
+    management_script: "scripts/manage-ssot.sh"
+    rules:
+      - "All scripts MUST source common-functions.sh"
+      - "No duplicate function definitions"
+      - "Shared functions in common-functions.sh only"
+      - "Lock before editing shared scripts"
+
 # ============================================================================
 # DEPRECATED MODULES
 # ============================================================================
@@ -374,4 +532,16 @@ changelog:
       - "Initial SSOT lock file creation"
       - "Defined all critical SSOT modules"
       - "Added enforcement rules and migration plan"
+  
+  - version: "1.1.0"
+    date: "2025-11-26"
+    changes:
+      - "Added passwords and secrets SSOT section"
+      - "Added Docker Compose configuration SSOT"
+      - "Added type definitions SSOT"
+      - "Added API endpoints SSOT"
+      - "Added documentation SSOT"
+      - "Added shared scripts SSOT"
+      - "Integrated with agent coordination for file locking"
+      - "Added comprehensive SSOT management scripts"
 

@@ -37,6 +37,19 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ==========================================================================
   # REDIS CACHE (Essential)
@@ -56,12 +69,24 @@ services:
     command:
       - sh
       - -c
-      - "redis-server --requirepass \"$${REDIS_PASSWORD}\""
+      - "redis-server --requirepass \"$${REDIS_PASSWORD}\" --maxmemory 512mb --maxmemory-policy allkeys-lru"
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping"]
       interval: 10s
       timeout: 3s
       retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ==========================================================================
   # BACKEND API (Rust) - Essential
@@ -70,6 +95,10 @@ services:
     build:
       context: .
       dockerfile: infrastructure/docker/Dockerfile.backend
+      args:
+        - BUILDKIT_INLINE_CACHE=1
+        - BUILD_MODE=release
+        - RUSTFLAGS=-C target-cpu=native
     container_name: reconciliation-backend-dev
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
@@ -107,6 +136,19 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ==========================================================================
   # FRONTEND (React/Vite) - Essential
@@ -149,6 +191,11 @@ services:
         reservations:
           cpus: '0.5'
           memory: 512M
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 # ============================================================================
 # NETWORKS

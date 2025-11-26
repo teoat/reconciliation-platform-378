@@ -468,6 +468,7 @@ mod reconciliation_job_tests {
 mod matching_algorithm_tests {
     use reconciliation_backend::services::reconciliation::matching::{
         ContainsMatchingAlgorithm, ExactMatchingAlgorithm, FuzzyMatchingAlgorithm,
+        MatchingAlgorithm,
     };
     use reconciliation_backend::services::reconciliation::types::FuzzyAlgorithmType;
 
@@ -793,7 +794,7 @@ mod job_management_tests {
 mod edge_case_tests {
     use super::*;
     use reconciliation_backend::services::reconciliation::matching::{
-        ExactMatchingAlgorithm, FuzzyMatchingAlgorithm, match_records,
+        ExactMatchingAlgorithm, FuzzyMatchingAlgorithm, match_records, MatchingAlgorithm,
     };
     use reconciliation_backend::services::reconciliation::types::{
         FuzzyAlgorithmType, ReconciliationRecord,

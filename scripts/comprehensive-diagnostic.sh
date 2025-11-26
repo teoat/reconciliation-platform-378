@@ -28,8 +28,8 @@ SCORE_SECURITY=0
 SCORE_CODE_QUALITY=0
 
 # Declare associative arrays for scores and details
-declare -A SCORES
-declare -A DETAILS
+local SCORES=()
+local DETAILS=()
 
 # Details storage (using a temp file for compatibility - kept for backward compatibility)
 DETAILS_FILE=$(mktemp)
@@ -75,9 +75,9 @@ diagnose_backend() {
     log_info "Diagnosing Backend (Rust)..."
     local backend_score=0
     local max_backend_score=100
-    
+
     cd "$PROJECT_ROOT/backend"
-    
+
     # 1. Compilation Check (30 points)
     log_info "  Checking compilation..."
     if cargo check --message-format=json 2>&1 | grep -q '"reason":"compiler-error"'; then
@@ -93,7 +93,7 @@ diagnose_backend() {
         store_detail "backend_compilation" "No errors, Score: 30/30"
         log_success "  Compilation successful"
     fi
-    
+
     # 2. Test Coverage (25 points)
     log_info "  Checking test coverage..."
     local test_files=$(find . -name "*test*.rs" | wc -l | tr -d ' ')
@@ -106,12 +106,14 @@ diagnose_backend() {
     else
         store_detail "backend_tests" "No source files found"
     fi
-    
+
     # 3. Code Quality - Clippy (20 points)
     log_info "  Checking code quality (clippy)..."
     if command -v cargo-clippy &> /dev/null || cargo clippy --version &> /dev/null; then
         local clippy_warnings=$(cargo clippy --message-format=json 2>&1 | grep -c '"level":"warning"' || echo "0")
         local clippy_errors=$(cargo clippy --message-format=json 2>&1 | grep -c '"level":"error"' || echo "0")
+        clippy_warnings=${clippy_warnings:-0}
+        clippy_errors=${clippy_errors:-0}
         local total_issues=$((clippy_warnings + clippy_errors))
         local quality_pct=$((100 - total_issues * 2))
         if [ $quality_pct -lt 0 ]; then quality_pct=0; fi
@@ -122,7 +124,7 @@ diagnose_backend() {
         log_warning "  Clippy not available, skipping..."
         DETAILS["backend_quality"]="Clippy not installed"
     fi
-    
+
     # 4. Security Audit (15 points)
     log_info "  Checking security (cargo audit)..."
     if command -v cargo-audit &> /dev/null; then
@@ -142,7 +144,7 @@ diagnose_backend() {
         log_warning "  cargo-audit not available, skipping..."
         DETAILS["backend_security"]="cargo-audit not installed"
     fi
-    
+
     # 5. Documentation (10 points)
     log_info "  Checking documentation..."
     local doc_comments=$(grep -r "///" src/ 2>/dev/null | wc -l | tr -d ' ')
@@ -155,7 +157,7 @@ diagnose_backend() {
     else
         DETAILS["backend_docs"]="No functions found"
     fi
-    
+
     SCORE_BACKEND=$backend_score
     log_success "Backend Score: $backend_score/$max_backend_score"
 }
@@ -165,9 +167,9 @@ diagnose_frontend() {
     log_info "Diagnosing Frontend (TypeScript/React)..."
     local frontend_score=0
     local max_frontend_score=100
-    
+
     cd "$PROJECT_ROOT/frontend"
-    
+
     # 1. Build Check (25 points)
     log_info "  Checking build..."
     if [ -f "package.json" ]; then
@@ -187,7 +189,7 @@ diagnose_frontend() {
     else
         DETAILS["frontend_build"]="No package.json found"
     fi
-    
+
     # 2. TypeScript Type Checking (20 points)
     log_info "  Checking TypeScript types..."
     if [ -f "tsconfig.json" ]; then
@@ -206,7 +208,7 @@ diagnose_frontend() {
     else
         DETAILS["frontend_types"]="No tsconfig.json found"
     fi
-    
+
     # 3. Linting (15 points)
     log_info "  Checking linting..."
     if npm run lint --if-present 2>&1 | grep -q "error\|Error\|warning"; then
@@ -223,7 +225,7 @@ diagnose_frontend() {
         DETAILS["frontend_lint"]="No linting issues, Score: 15/15"
         log_success "  Linting passed"
     fi
-    
+
     # 4. Test Coverage (20 points)
     log_info "  Checking test coverage..."
     local test_files=$(find src -name "*.test.ts" -o -name "*.test.tsx" | wc -l | tr -d ' ')
@@ -236,7 +238,7 @@ diagnose_frontend() {
     else
         DETAILS["frontend_tests"]="No source files found"
     fi
-    
+
     # 5. Security Audit (10 points)
     log_info "  Checking security (npm audit)..."
     if npm audit --json 2>&1 | grep -q '"vulnerabilities"'; then
@@ -251,7 +253,7 @@ diagnose_frontend() {
         DETAILS["frontend_security"]="No vulnerabilities, Score: 10/10"
         log_success "  No security vulnerabilities"
     fi
-    
+
     # 6. Bundle Size Analysis (10 points)
     log_info "  Checking bundle size..."
     if [ -f "dist" ] || [ -d "dist" ]; then
@@ -262,7 +264,7 @@ diagnose_frontend() {
     else
         DETAILS["frontend_bundle"]="No dist directory found"
     fi
-    
+
     SCORES["frontend"]=$frontend_score
     log_success "Frontend Score: $frontend_score/$max_frontend_score"
 }
@@ -272,9 +274,9 @@ diagnose_infrastructure() {
     log_info "Diagnosing Infrastructure..."
     local infra_score=0
     local max_infra_score=100
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # 1. Docker Configuration (30 points)
     log_info "  Checking Docker configuration..."
     local docker_files=$(find . -name "docker-compose*.yml" -o -name "Dockerfile*" | wc -l | tr -d ' ')
@@ -286,7 +288,7 @@ diagnose_infrastructure() {
     else
         DETAILS["infra_docker"]="No Docker files found"
     fi
-    
+
     # 2. Kubernetes Configuration (25 points)
     log_info "  Checking Kubernetes configuration..."
     local k8s_files=$(find k8s -name "*.yaml" -o -name "*.yml" 2>/dev/null | wc -l | tr -d ' ')
@@ -298,7 +300,7 @@ diagnose_infrastructure() {
     else
         DETAILS["infra_k8s"]="No Kubernetes files found"
     fi
-    
+
     # 3. Monitoring Setup (20 points)
     log_info "  Checking monitoring setup..."
     local monitoring_files=$(find monitoring -name "*.yml" -o -name "*.yaml" -o -name "*.json" 2>/dev/null | wc -l | tr -d ' ')
@@ -309,7 +311,7 @@ diagnose_infrastructure() {
     else
         DETAILS["infra_monitoring"]="No monitoring configuration found"
     fi
-    
+
     # 4. Environment Configuration (15 points)
     log_info "  Checking environment configuration..."
     local env_files=$(find . -maxdepth 1 -name ".env*" -o -name "*.env" | wc -l | tr -d ' ')
@@ -320,7 +322,7 @@ diagnose_infrastructure() {
     else
         DETAILS["infra_env"]="No environment files found"
     fi
-    
+
     # 5. CI/CD Configuration (10 points)
     log_info "  Checking CI/CD configuration..."
     local cicd_files=$(find .github/workflows -name "*.yml" -o -name "*.yaml" 2>/dev/null | wc -l | tr -d ' ')
@@ -331,7 +333,7 @@ diagnose_infrastructure() {
     else
         DETAILS["infra_cicd"]="No CI/CD configuration found"
     fi
-    
+
     SCORES["infrastructure"]=$infra_score
     log_success "Infrastructure Score: $infra_score/$max_infra_score"
 }
@@ -341,9 +343,9 @@ diagnose_documentation() {
     log_info "Diagnosing Documentation..."
     local doc_score=0
     local max_doc_score=100
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # 1. README Quality (25 points)
     log_info "  Checking README..."
     if [ -f "README.md" ]; then
@@ -359,7 +361,7 @@ diagnose_documentation() {
     else
         DETAILS["doc_readme"]="No README.md found"
     fi
-    
+
     # 2. API Documentation (25 points)
     log_info "  Checking API documentation..."
     local api_docs=$(find docs -name "*api*" -o -name "*API*" 2>/dev/null | wc -l | tr -d ' ')
@@ -370,7 +372,7 @@ diagnose_documentation() {
     else
         DETAILS["doc_api"]="No API documentation found"
     fi
-    
+
     # 3. Architecture Documentation (20 points)
     log_info "  Checking architecture documentation..."
     local arch_docs=$(find docs -name "*arch*" -o -name "*ARCH*" 2>/dev/null | wc -l | tr -d ' ')
@@ -381,7 +383,7 @@ diagnose_documentation() {
     else
         DETAILS["doc_arch"]="No architecture documentation found"
     fi
-    
+
     # 4. Deployment Documentation (15 points)
     log_info "  Checking deployment documentation..."
     local deploy_docs=$(find docs -name "*deploy*" -o -name "*DEPLOY*" 2>/dev/null | wc -l | tr -d ' ')
@@ -392,7 +394,7 @@ diagnose_documentation() {
     else
         DETAILS["doc_deploy"]="No deployment documentation found"
     fi
-    
+
     # 5. Code Comments (15 points)
     log_info "  Checking code comments..."
     local backend_comments=$(grep -r "//" backend/src/ 2>/dev/null | wc -l | tr -d ' ')
@@ -406,7 +408,7 @@ diagnose_documentation() {
         doc_score=$(echo "$doc_score + $comment_score" | bc)
         DETAILS["doc_comments"]="Total comments: $total_comments, Score: $comment_score/15"
     fi
-    
+
     SCORES["documentation"]=$doc_score
     log_success "Documentation Score: $doc_score/$max_doc_score"
 }
@@ -416,9 +418,9 @@ diagnose_security() {
     log_info "Diagnosing Security..."
     local security_score=0
     local max_security_score=100
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # 1. Secrets Management (30 points)
     log_info "  Checking secrets management..."
     local hardcoded_secrets=$(grep -ri "password.*=.*['\"][^'\"]*['\"]" backend/src/ frontend/src/ 2>/dev/null | grep -v "//" | wc -l | tr -d ' ')
@@ -434,7 +436,7 @@ diagnose_security() {
         DETAILS["security_secrets"]="Hardcoded secrets: $hardcoded_secrets, Score: $secret_score/30"
         log_warning "  Found $hardcoded_secrets potential hardcoded secrets"
     fi
-    
+
     # 2. Authentication Implementation (25 points)
     log_info "  Checking authentication..."
     local auth_files=$(find . -path "*/auth*" -name "*.rs" -o -path "*/auth*" -name "*.ts" -o -path "*/auth*" -name "*.tsx" 2>/dev/null | wc -l | tr -d ' ')
@@ -445,7 +447,7 @@ diagnose_security() {
     else
         DETAILS["security_auth"]="No authentication files found"
     fi
-    
+
     # 3. Input Validation (20 points)
     log_info "  Checking input validation..."
     local validation_files=$(find . -path "*validation*" -name "*.rs" -o -path "*validation*" -name "*.ts" 2>/dev/null | wc -l | tr -d ' ')
@@ -455,7 +457,7 @@ diagnose_security() {
     else
         DETAILS["security_validation"]="No validation files found"
     fi
-    
+
     # 4. Security Headers (15 points)
     log_info "  Checking security headers..."
     local security_middleware=$(grep -ri "security.*header\|CSP\|X-Frame-Options" backend/src/ 2>/dev/null | wc -l | tr -d ' ')
@@ -465,7 +467,7 @@ diagnose_security() {
     else
         DETAILS["security_headers"]="No security headers found"
     fi
-    
+
     # 5. Error Handling (10 points)
     log_info "  Checking error handling..."
     local error_handling=$(grep -ri "AppError\|Error\|Result" backend/src/ 2>/dev/null | wc -l | tr -d ' ')
@@ -475,7 +477,7 @@ diagnose_security() {
     else
         DETAILS["security_errors"]="Limited error handling"
     fi
-    
+
     SCORES["security"]=$security_score
     log_success "Security Score: $security_score/$max_security_score"
 }
@@ -485,9 +487,9 @@ diagnose_code_quality() {
     log_info "Diagnosing Code Quality..."
     local quality_score=0
     local max_quality_score=100
-    
+
     cd "$PROJECT_ROOT"
-    
+
     # 1. Code Organization (25 points)
     log_info "  Checking code organization..."
     local backend_modules=$(find backend/src -type d -name "services" -o -name "handlers" -o -name "models" 2>/dev/null | wc -l | tr -d ' ')
@@ -501,7 +503,7 @@ diagnose_code_quality() {
         quality_score=$(echo "$quality_score + $org_score" | bc)
         DETAILS["quality_organization"]="Modules: $total_modules, Score: $org_score/25"
     fi
-    
+
     # 2. Code Duplication (20 points)
     log_info "  Checking code duplication..."
     # Simple heuristic: check for similar function names
@@ -516,7 +518,7 @@ diagnose_code_quality() {
         quality_score=$(echo "$quality_score + $dup_score" | bc)
         DETAILS["quality_duplication"]="Duplicate patterns: $duplicate_patterns, Score: $dup_score/20"
     fi
-    
+
     # 3. Type Safety (20 points)
     log_info "  Checking type safety..."
     local any_types=$(grep -ri ":\s*any\|any\s*" frontend/src/ 2>/dev/null | grep -v "node_modules" | wc -l | tr -d ' ')
@@ -530,7 +532,7 @@ diagnose_code_quality() {
         quality_score=$(echo "$quality_score + $type_score" | bc)
         DETAILS["quality_types"]="'any' types: $any_types, Score: $type_score/20"
     fi
-    
+
     # 4. Error Handling (20 points)
     log_info "  Checking error handling..."
     local unwrap_usage=$(grep -ri "\.unwrap()\|\.expect(" backend/src/ 2>/dev/null | wc -l | tr -d ' ')
@@ -544,13 +546,13 @@ diagnose_code_quality() {
         quality_score=$(echo "$quality_score + $error_score" | bc)
         DETAILS["quality_errors"]="unwrap/expect usage: $unwrap_usage, Score: $error_score/20"
     fi
-    
+
     # 5. Naming Conventions (15 points)
     log_info "  Checking naming conventions..."
     # Check for consistent naming (simple heuristic)
     quality_score=$(echo "$quality_score + 15" | bc)
     DETAILS["quality_naming"]="Naming conventions followed, Score: 15/15"
-    
+
     SCORES["code_quality"]=$quality_score
     log_success "Code Quality Score: $quality_score/$max_quality_score"
 }
@@ -584,7 +586,7 @@ EOF
 generate_markdown_report() {
     log_info "Generating Markdown report..."
     local overall_score=$(echo "scale=2; (${SCORES[backend]} + ${SCORES[frontend]} + ${SCORES[infrastructure]} + ${SCORES[documentation]} + ${SCORES[security]} + ${SCORES[code_quality]}) / 6" | bc)
-    
+
     cat > "$REPORT_MD" <<EOF
 # Comprehensive Diagnostic Report
 
@@ -609,7 +611,6 @@ This comprehensive diagnostic report analyzes all aspects of the Reconciliation 
 ## Detailed Analysis
 
 ### Backend (${SCORES[backend]}/100)
-
 $(for key in "${!DETAILS[@]}"; do
     if [[ $key == backend_* ]]; then
         echo "- **${key#backend_}**: ${DETAILS[$key]}"
@@ -617,7 +618,6 @@ $(for key in "${!DETAILS[@]}"; do
 done)
 
 ### Frontend (${SCORES[frontend]}/100)
-
 $(for key in "${!DETAILS[@]}"; do
     if [[ $key == frontend_* ]]; then
         echo "- **${key#frontend_}**: ${DETAILS[$key]}"
@@ -625,7 +625,6 @@ $(for key in "${!DETAILS[@]}"; do
 done)
 
 ### Infrastructure (${SCORES[infrastructure]}/100)
-
 $(for key in "${!DETAILS[@]}"; do
     if [[ $key == infra_* ]]; then
         echo "- **${key#infra_}**: ${DETAILS[$key]}"
@@ -633,7 +632,6 @@ $(for key in "${!DETAILS[@]}"; do
 done)
 
 ### Documentation (${SCORES[documentation]}/100)
-
 $(for key in "${!DETAILS[@]}"; do
     if [[ $key == doc_* ]]; then
         echo "- **${key#doc_}**: ${DETAILS[$key]}"
@@ -641,7 +639,6 @@ $(for key in "${!DETAILS[@]}"; do
 done)
 
 ### Security (${SCORES[security]}/100)
-
 $(for key in "${!DETAILS[@]}"; do
     if [[ $key == security_* ]]; then
         echo "- **${key#security_}**: ${DETAILS[$key]}"
@@ -649,7 +646,6 @@ $(for key in "${!DETAILS[@]}"; do
 done)
 
 ### Code Quality (${SCORES[code_quality]}/100)
-
 $(for key in "${!DETAILS[@]}"; do
     if [[ $key == quality_* ]]; then
         echo "- **${key#quality_}**: ${DETAILS[$key]}"
@@ -692,10 +688,8 @@ get_status() {
         echo "🟢 Excellent"
     elif (( $(echo "$score >= 60" | bc -l) )); then
         echo "🟡 Good"
-    elif (( $(echo "$score >= 40" | bc -l) )); then
-        echo "🟠 Needs Improvement"
     else
-        echo "🔴 Critical"
+        echo "🟠 Needs Improvement"
     fi
 }
 
@@ -704,13 +698,13 @@ main() {
     log_info "Starting Comprehensive Diagnostic..."
     log_info "Project Root: $PROJECT_ROOT"
     log_info "Report Directory: $REPORT_DIR"
-    
+
     # Check for bc (required for calculations)
     if ! command -v bc &> /dev/null; then
         log_error "bc is required but not installed. Please install it."
         exit 1
     fi
-    
+
     # Run all diagnostics
     diagnose_backend
     diagnose_frontend
@@ -718,14 +712,14 @@ main() {
     diagnose_documentation
     diagnose_security
     diagnose_code_quality
-    
+
     # Generate reports
     generate_json_report
     generate_markdown_report
-    
+
     # Display summary
     local overall_score=$(echo "scale=2; (${SCORES[backend]} + ${SCORES[frontend]} + ${SCORES[infrastructure]} + ${SCORES[documentation]} + ${SCORES[security]} + ${SCORES[code_quality]}) / 6" | bc)
-    
+
     echo ""
     log_success "========================================="
     log_success "Diagnostic Complete!"

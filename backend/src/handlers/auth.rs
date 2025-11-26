@@ -359,10 +359,11 @@ pub async fn register(
     let token = auth_service.as_ref().generate_token(&user)?;
 
     // Check if user has initial password and password expiration status
+    let config = crate::config::PasswordConfig::from_env();
     let requires_password_change = user.is_initial_password;
     let password_expires_soon = if let Some(expires_at) = user.password_expires_at {
         let days_until_expiry = (expires_at - chrono::Utc::now()).num_days();
-        days_until_expiry <= 7 && days_until_expiry > 0
+        days_until_expiry <= config.warning_days_before_expiry as i64 && days_until_expiry > 0
     } else {
         false
     };

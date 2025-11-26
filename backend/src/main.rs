@@ -312,7 +312,7 @@ async fn async_main() -> std::io::Result<()> {
         .to_lowercase() == "production";
     
     // Validate CSRF_SECRET (required for CSRF protection)
-    let csrf_secret = match SecretsService::get_csrf_secret() {
+    let _csrf_secret = match SecretsService::get_csrf_secret() {
         Ok(secret) => {
             // Additional validation for production - reject default values
             if is_production {

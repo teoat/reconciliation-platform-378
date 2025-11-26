@@ -25,6 +25,7 @@ pub struct PasswordResetRateLimitConfig {
 }
 
 impl Default for PasswordResetRateLimitConfig {
+    #[allow(clippy::default_trait_access)]
     fn default() -> Self {
         Self {
             max_attempts_per_token: 5,
@@ -62,7 +63,8 @@ impl PasswordResetRateLimiter {
     }
     
     /// Create with default configuration
-    pub fn default() -> Self {
+    #[allow(clippy::default_trait_access)]
+    pub fn with_default_config() -> Self {
         Self::new(PasswordResetRateLimitConfig::default())
     }
     
@@ -109,9 +111,9 @@ impl PasswordResetRateLimiter {
         if entry.count >= self.config.max_attempts_per_token {
             // Lock the token
             entry.locked_until = Some(now + Duration::from_secs(self.config.lockout_duration_secs));
-            return Err(AppError::Authentication(format!(
-                "Too many attempts for this reset token. Please request a new password reset link."
-            )));
+            return Err(AppError::Authentication(
+                "Too many attempts for this reset token. Please request a new password reset link.".to_string()
+            ));
         }
         
         // Increment attempt count
@@ -164,9 +166,9 @@ impl PasswordResetRateLimiter {
         if entry.count >= self.config.max_attempts_per_ip {
             // Lock the IP
             entry.locked_until = Some(now + Duration::from_secs(self.config.lockout_duration_secs));
-            return Err(AppError::Authentication(format!(
-                "Too many password reset attempts from this IP. Please try again later."
-            )));
+            return Err(AppError::Authentication(
+                "Too many password reset attempts from this IP. Please try again later.".to_string()
+            ));
         }
         
         // Increment attempt count

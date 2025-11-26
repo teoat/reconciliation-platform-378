@@ -4,7 +4,7 @@ use actix_web::{
     dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform},
     Error, HttpResponse,
 };
-use futures::future::{ok, LocalBoxFuture, Ready};
+use futures::future::{err, ok, LocalBoxFuture, Ready};
 use std::rc::Rc;
 use std::sync::Arc;
 use std::time::Duration;
@@ -51,7 +51,7 @@ where
             );
             log::error!("Cache middleware will not function correctly - ensure REDIS_URL is set correctly");
             // Return error instead of panicking - let the application handle it gracefully
-            return ok(Err(()));
+            return err(());
             }
         };
         ok(CacheMiddleware::new(

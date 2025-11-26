@@ -74,13 +74,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 users::is_initial_password.eq(true),
                 users::initial_password_set_at.eq(now),
                 users::password_last_changed.eq(now),
-                users::password_expires_at.eq(now + chrono::Duration::days(90)),
+                users::password_expires_at.eq({
+                    let config = reconciliation_backend::config::PasswordConfig::from_env();
+                    now + config.initial_expiration_duration()
+                }),
                 users::updated_at.eq(now),
             ))
             .execute(&mut conn)
             .map_err(|e| format!("Failed to update user {}: {}", email, e))?;
         
-        password_list.push((email, initial_password));
+        password_list.push((email.clone(), initial_password));
         println!("✓ Generated initial password for: {}", email);
     }
 

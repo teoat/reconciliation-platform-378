@@ -115,6 +115,8 @@ impl UserService {
             password_expires_at: Some(password_expires_at),
             password_last_changed: Some(password_last_changed),
             password_history: Some(serde_json::json!([])), // Empty history for new users
+            is_initial_password: None,
+            initial_password_set_at: None,
             auth_provider: Some("password".to_string()),
         };
 
@@ -173,9 +175,10 @@ impl UserService {
         // Hash the initial password
         let password_hash = self.auth_service.hash_password(&initial_password)?;
         
-        // Set password expiration (7 days for initial passwords, 90 days for regular)
+        // Set password expiration (configurable - shorter for initial passwords)
+        let config = crate::config::PasswordConfig::from_env();
         let now = chrono::Utc::now();
-        let password_expires_at = now + chrono::Duration::days(7); // Shorter expiration for initial passwords
+        let password_expires_at = now + config.initial_expiration_duration();
         let password_last_changed = now;
         
         // Determine role
@@ -276,6 +279,8 @@ impl UserService {
             password_expires_at: Some(password_expires_at),
             password_last_changed: Some(now),
             password_history: Some(serde_json::json!([])), // Empty history for new users
+            is_initial_password: None,
+            initial_password_set_at: None,
             auth_provider: Some("google".to_string()),
         };
 
@@ -491,6 +496,8 @@ impl UserService {
                 password_expires_at: None,
                 password_last_changed: None,
                 password_history: None,
+                is_initial_password: None,
+                initial_password_set_at: None,
             };
 
             // Update user

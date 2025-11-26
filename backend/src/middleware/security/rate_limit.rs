@@ -203,7 +203,7 @@ impl<S> RateLimitService<S> {
             .zrembyscore(&key, "-inf", window_start)
             .zadd(&key, now, now)
             .zcard(&key)
-            .pexpire(&key, (window_seconds * 1000) as usize)
+            .pexpire(&key, (window_seconds * 1000) as i64)
             .query_async(&mut conn)
             .await?;
 

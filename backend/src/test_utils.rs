@@ -65,7 +65,8 @@ impl TestUser {
     
     pub fn to_new_user(&self, password_hash: String) -> NewUser {
         let now = chrono::Utc::now();
-        let password_expires_at = now + chrono::Duration::days(90);
+        let config = crate::config::PasswordConfig::from_env();
+        let password_expires_at = now + config.expiration_duration();
         NewUser {
             email: self.email.clone(),
             username: None,
@@ -77,6 +78,8 @@ impl TestUser {
             password_expires_at: Some(password_expires_at),
             password_last_changed: Some(now),
             password_history: Some(serde_json::json!([])),
+            is_initial_password: None,
+            initial_password_set_at: None,
             auth_provider: Some("password".to_string()),
         }
     }

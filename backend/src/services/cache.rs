@@ -421,7 +421,7 @@ impl CacheService {
 
         match ttl {
             Some(duration) => {
-                conn.set_ex::<_, _, ()>(key, serialized, duration.as_secs() as usize)
+                conn.set_ex::<_, _, ()>(key, serialized, duration.as_secs())
                     .map_err(|e| {
                         AppError::InternalServerError(format!("Redis set_ex error: {}", e))
                     })?;
@@ -526,7 +526,7 @@ impl CacheService {
 
         if let Some(duration) = ttl {
             for key in serialized_values.keys() {
-                conn.expire::<_, ()>(key, duration.as_secs() as usize)
+                conn.expire::<_, ()>(key, duration.as_secs() as i64)
                     .map_err(|e| {
                         AppError::InternalServerError(format!("Redis expire error: {}", e))
                     })?;

@@ -38,7 +38,7 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
   const [integrations, setIntegrations] = useState<IntegrationConfig[]>(
     IntegrationService.getIntegrations()
   );
-  const [selectedIntegration, setSelectedIntegration] = useState<IntegrationConfig | null>(null);
+  const [_selectedIntegration, _setSelectedIntegration] = useState<IntegrationConfig | null>(null);
   const [exportOptions, setExportOptions] = useState<ExportOptions>({
     format: 'csv',
     includeMetadata: true,
@@ -63,7 +63,7 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
     }
   };
 
-  const handleUpdateIntegration = (id: string, settings: Record<string, unknown>) => {
+  const _handleUpdateIntegration = (id: string, settings: Record<string, unknown>) => {
     const success = IntegrationService.updateIntegration(id, settings);
     if (success) {
       setIntegrations(IntegrationService.getIntegrations());

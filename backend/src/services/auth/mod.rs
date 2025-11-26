@@ -6,6 +6,7 @@
 pub mod jwt;
 pub mod middleware;
 pub mod password;
+pub mod password_reset_rate_limit;
 pub mod roles;
 pub mod types;
 pub mod validation;

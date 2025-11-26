@@ -14,8 +14,6 @@ impl PasswordManager {
     fn get_config() -> PasswordConfig {
         PasswordConfig::from_env()
     }
-
-impl PasswordManager {
     /// Hash a password using bcrypt with configurable cost factor
     /// This provides strong security while maintaining reasonable performance
     pub fn hash_password(password: &str) -> AppResult<String> {
@@ -110,7 +108,7 @@ impl PasswordManager {
     /// Calculate password strength score
     /// Returns a strength level (weak, fair, good, strong)
     pub fn calculate_password_strength(password: &str) -> PasswordStrength {
-        let mut score = 0;
+        let mut score: u32 = 0;
         
         // Length scoring
         if password.len() >= 16 {
@@ -147,11 +145,15 @@ impl PasswordManager {
             score = 0;
         }
         
-        match score {
-            0..=2 => PasswordStrength::Weak,
-            3..=4 => PasswordStrength::Fair,
-            5..=6 => PasswordStrength::Good,
-            7.. => PasswordStrength::Strong,
+        // Score is always non-negative (u32), so we can safely match
+        if score <= 2 {
+            PasswordStrength::Weak
+        } else if score <= 4 {
+            PasswordStrength::Fair
+        } else if score <= 6 {
+            PasswordStrength::Good
+        } else {
+            PasswordStrength::Strong
         }
     }
 
@@ -219,5 +221,87 @@ impl PasswordManager {
         Self::validate_password_strength(&password)?;
         
         Ok(password)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_password_hashing() {
+        let password = "TestPassword123!";
+        let hash = PasswordManager::hash_password(password).unwrap();
+        
+        // Verify hash is different from password
+        assert_ne!(password, hash);
+        
+        // Verify password matches hash
+        let is_valid = PasswordManager::verify_password(password, &hash).unwrap();
+        assert!(is_valid);
+        
+        // Verify wrong password doesn't match
+        let is_invalid = PasswordManager::verify_password("WrongPassword", &hash).unwrap();
+        assert!(!is_invalid);
+    }
+
+    #[test]
+    fn test_password_strength_validation() {
+        // Valid password
+        assert!(PasswordManager::validate_password_strength("ValidPass123!").is_ok());
+        
+        // Too short
+        assert!(PasswordManager::validate_password_strength("Short1!").is_err());
+        
+        // Missing uppercase
+        assert!(PasswordManager::validate_password_strength("lowercase123!").is_err());
+        
+        // Missing lowercase
+        assert!(PasswordManager::validate_password_strength("UPPERCASE123!").is_err());
+        
+        // Missing number
+        assert!(PasswordManager::validate_password_strength("NoNumber!").is_err());
+        
+        // Missing special character
+        assert!(PasswordManager::validate_password_strength("NoSpecial123").is_err());
+        
+        // Banned password
+        assert!(PasswordManager::validate_password_strength("password123").is_err());
+    }
+
+    #[test]
+    fn test_password_strength_scoring() {
+        // Weak password
+        let weak = PasswordManager::calculate_password_strength("weak");
+        assert_eq!(weak, PasswordStrength::Weak);
+        
+        // Fair password
+        let fair = PasswordManager::calculate_password_strength("FairPass123");
+        assert!(matches!(fair, PasswordStrength::Fair | PasswordStrength::Good));
+        
+        // Good password
+        let good = PasswordManager::calculate_password_strength("GoodPassword123!");
+        assert!(matches!(good, PasswordStrength::Good | PasswordStrength::Strong));
+        
+        // Strong password
+        let strong = PasswordManager::calculate_password_strength("VeryStrongPassword123!@#");
+        assert_eq!(strong, PasswordStrength::Strong);
+    }
+
+    #[test]
+    fn test_initial_password_generation() {
+        let password = PasswordManager::generate_initial_password().unwrap();
+        
+        // Should meet all validation requirements
+        assert!(PasswordManager::validate_password_strength(&password).is_ok());
+        
+        // Should be 12-16 characters
+        assert!(password.len() >= 12 && password.len() <= 16);
+        
+        // Should contain required character types
+        assert!(password.chars().any(|c| c.is_uppercase()));
+        assert!(password.chars().any(|c| c.is_lowercase()));
+        assert!(password.chars().any(|c| c.is_numeric()));
+        assert!(password.chars().any(|c| "!@#$%^&*()_+-=[]{}|;:,.<>?".contains(c)));
     }
 }

@@ -8,7 +8,7 @@
 
 use once_cell::sync::Lazy;
 use prometheus::{
-    histogram_opts, opts, Counter, CounterVec, Encoder, Gauge, GaugeVec, Histogram, HistogramVec,
+    histogram_opts, opts, Counter, CounterVec, Encoder, Gauge, GaugeVec, HistogramVec,
     Registry, TextEncoder,
 };
 use std::sync::atomic::{AtomicU64, Ordering};

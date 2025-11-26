@@ -300,7 +300,7 @@ async fn check_redis_rate_limit(
         .zrembyscore(&redis_key, "-inf", window_start)
         .zadd(&redis_key, now, now)
         .zcard(&redis_key)
-        .pexpire(&redis_key, (window_seconds * 1000) as usize)
+        .pexpire(&redis_key, (window_seconds * 1000) as i64)
         .query_async(&mut conn)
         .await?;
 

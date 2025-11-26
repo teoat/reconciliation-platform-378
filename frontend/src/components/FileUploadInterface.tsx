@@ -84,16 +84,15 @@ export const FileUploadInterface: React.FC<FileUploadInterfaceProps> = ({
   const [dragActive, setDragActive] = useState(false);
   const { loading, withLoading } = useLoading(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [filters, setFilters] = useState({
     status: '',
     search: '',
   });
   const [showUploadModal, setShowUploadModal] = useState(false);
 
-  // Refs
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const dropZoneRef = useRef<HTMLDivElement>(null);
+  // Refs (reserved for future use)
+  // const fileInputRef = useRef<HTMLInputElement>(null);
+  // const dropZoneRef = useRef<HTMLDivElement>(null);
 
   // WebSocket integration for real-time updates
 const { isConnected, subscribe, unsubscribe } = useWebSocketIntegration()

@@ -21,8 +21,9 @@ This guide covers configuring Redis and MCP tools for the Reconciliation Platfor
 - **Status**: ✅ Running
 - **Container**: `reconciliation-redis` (healthy)
 - **Port**: `6379`
-- **Password**: `redis_pass` (default, change in production)
-- **Connection URL**: `redis://:redis_pass@localhost:6379`
+- **Password**: Managed via SSOT (`.env` file)
+- **Connection URL**: `redis://:${REDIS_PASSWORD}@localhost:6379`
+- **SSOT Management**: Use `scripts/manage-passwords.sh` for password operations
 
 ### MCP Servers
 - **reconciliation-platform**: ✅ Built and configured
@@ -50,12 +51,18 @@ docker-compose up -d
 #### Verify Redis Connection
 
 ```bash
+# Get password from SSOT
+REDIS_PASSWORD=$(scripts/manage-passwords.sh get REDIS_PASSWORD)
+
 # Test connection with password
-redis-cli -a redis_pass ping
+redis-cli -a "$REDIS_PASSWORD" ping
 # Should return: PONG
 
 # Or using Docker
-docker exec -it reconciliation-redis redis-cli -a redis_pass ping
+docker exec reconciliation-redis redis-cli -a "$REDIS_PASSWORD" ping
+
+# Or use diagnostic command
+scripts/manage-ssot.sh diagnose redis
 ```
 
 #### Redis Configuration File
@@ -70,60 +77,114 @@ Key settings:
 
 ---
 
-### 2. Environment Variables
+### 2. Environment Variables (SSOT System)
+
+#### SSOT Password Management
+
+**⚠️ IMPORTANT**: All passwords are managed via the SSOT system using `.env` as the single source of truth.
+
+**Management Script**: `scripts/manage-passwords.sh`
 
 #### Backend Environment
 
-The backend needs `REDIS_URL` in the format:
-```
-REDIS_URL=redis://:password@host:port
+The backend reads `REDIS_URL` from `.env` file via `SecretsService`:
+
+```bash
+# Get Redis password from SSOT
+REDIS_PASSWORD=$(scripts/manage-passwords.sh get REDIS_PASSWORD)
+
+# REDIS_URL format
+REDIS_URL=redis://:${REDIS_PASSWORD}@localhost:6379
 ```
 
-**Current Configuration**:
-- **Docker**: `redis://:redis_pass@redis:6379` (internal Docker network)
-- **Local**: `redis://:redis_pass@localhost:6379` (host machine)
+**Configuration**:
+- **Docker**: `redis://:${REDIS_PASSWORD}@redis:6379` (internal Docker network)
+- **Local**: `redis://:${REDIS_PASSWORD}@localhost:6379` (host machine)
+- **SSOT**: `.env` file (managed via `scripts/manage-passwords.sh`)
 
 #### MCP Server Environment
 
-MCP servers are configured in `.cursor/mcp.json`:
+MCP servers are configured in `.cursor/mcp.json` and automatically synced from `.env`:
 
 ```json
 {
   "mcpServers": {
     "reconciliation-platform": {
       "env": {
-        "REDIS_URL": "redis://:redis_pass@localhost:6379"
+        "REDIS_URL": "redis://:${REDIS_PASSWORD}@localhost:6379"
       }
     },
     "agent-coordination": {
       "env": {
-        "REDIS_URL": "redis://:redis_pass@localhost:6379"
+        "REDIS_URL": "redis://:${REDIS_PASSWORD}@localhost:6379"
       }
     }
   }
 }
 ```
 
-#### Update Environment Files
+**Auto-sync**: MCP configuration is automatically updated when passwords change via `scripts/manage-passwords.sh sync`
 
-If you need to change the Redis password, update:
+#### Updating Redis Password (SSOT Method)
 
-1. **docker-compose.yml**:
-   ```yaml
-   redis:
-     environment:
-       REDIS_PASSWORD: ${REDIS_PASSWORD:-your_new_password}
-   ```
+**✅ DO**: Use SSOT management script
 
-2. **.cursor/mcp.json**:
-   ```json
-   "REDIS_URL": "redis://:your_new_password@localhost:6379"
-   ```
+```bash
+# 1. Set new password in .env (SSOT)
+scripts/manage-passwords.sh set REDIS_PASSWORD new_secure_password
 
-3. **env.consolidated** (if using):
-   ```
-   REDIS_URL=redis://:your_new_password@localhost:6379
-   ```
+# 2. Sync to all systems
+scripts/manage-passwords.sh sync
+
+# This automatically:
+# - Updates docker-compose.yml
+# - Updates .cursor/mcp.json
+# - Restarts Docker services
+# - Verifies connection
+```
+
+**❌ DON'T**: Edit files directly
+
+```bash
+# Don't edit .env directly
+nano .env  # Bypasses SSOT system
+
+# Don't edit docker-compose.yml directly
+# Don't edit .cursor/mcp.json directly
+```
+
+#### Password Management Commands
+
+```bash
+# Show current passwords (masked)
+scripts/manage-passwords.sh show
+
+# Get specific password
+scripts/manage-passwords.sh get REDIS_PASSWORD
+
+# Set password
+scripts/manage-passwords.sh set REDIS_PASSWORD new_password
+
+# Generate secure password
+scripts/manage-passwords.sh generate REDIS_PASSWORD
+
+# Sync passwords to all systems
+scripts/manage-passwords.sh sync
+
+# Check password consistency
+scripts/manage-passwords.sh check
+```
+
+#### SSOT Integration
+
+The password system integrates with:
+- **Agent Coordination**: File locking for `.env` edits
+- **Docker Services**: Automatic service restart on password change
+- **MCP Servers**: Automatic configuration update
+- **Backend**: Configuration reload via `SecretsService`
+- **Frontend**: Environment variable updates
+
+See [SSOT Areas and Locking](../architecture/SSOT_AREAS_AND_LOCKING.md) for details.
 
 ---
 

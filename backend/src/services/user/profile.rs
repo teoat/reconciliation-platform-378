@@ -115,6 +115,8 @@ impl ProfileService {
             password_expires_at: None,
             password_last_changed: None,
             password_history: None,
+            is_initial_password: None,
+            initial_password_set_at: None,
         };
 
         // Update user
