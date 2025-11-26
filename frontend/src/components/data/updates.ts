@@ -42,7 +42,7 @@ export const useCrossPageDataUpdates = <T = unknown>(
       if (!hasPermission) {
         logAuditEvent('current-user', 'unauthorized_update_attempt', page, 'failure', {
           page,
-          data: typeof data === 'object' ? Object.keys(data as Record<string, unknown>) : 'unknown',
+          data: typeof data === 'object' ? Object.keys(data as unknown as Record<string, unknown>) : 'unknown',
         });
         return;
       }

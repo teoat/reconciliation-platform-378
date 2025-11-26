@@ -157,7 +157,15 @@ export const useSecurity = () => {
       data: T,
       dataType: string
     ): T & { _encrypted: boolean; _encryptionType: string; _encryptedAt: string } => {
-      if (!isSecurityEnabled) return data;
+      if (!isSecurityEnabled) {
+        // Return data with encryption metadata set to false
+        return {
+          ...data,
+          _encrypted: false,
+          _encryptionType: 'none',
+          _encryptedAt: '',
+        } as T & { _encrypted: boolean; _encryptionType: string; _encryptedAt: string };
+      }
 
       // Simple encryption simulation
       const encryptedData = {
@@ -179,11 +187,11 @@ export const useSecurity = () => {
 
   // Decrypt sensitive data
   const decryptData = useCallback(
-    <T>(encryptedData: T & { _encrypted?: boolean }, dataType: string): T => {
+    <T>(encryptedData: T & { _encrypted?: boolean; _encryptionType?: string; _encryptedAt?: string }, dataType: string): T => {
       if (!isSecurityEnabled || !encryptedData._encrypted) return encryptedData;
 
       // Simple decryption simulation
-      const decryptedData = { ...encryptedData };
+      const decryptedData = { ...encryptedData } as T & { _encrypted?: boolean; _encryptionType?: string; _encryptedAt?: string };
       delete decryptedData._encrypted;
       delete decryptedData._encryptionType;
       delete decryptedData._encryptedAt;
@@ -193,7 +201,7 @@ export const useSecurity = () => {
         decryptedAt: new Date().toISOString(),
       });
 
-      return decryptedData;
+      return decryptedData as T;
     },
     [isSecurityEnabled, logAuditEvent]
   );
