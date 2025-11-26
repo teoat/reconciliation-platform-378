@@ -6,9 +6,27 @@
       "env": {
         "DATABASE_URL": "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app",
         "REDIS_URL": "redis://:redis_pass@localhost:6379",
-        "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378"
+        "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378",
+        "ENABLE_DOCKER_TOOLS": "true"
+      }
+    },
+    "agent-coordination": {
+      "command": "node",
+      "args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/agent-coordination.js"],
+      "env": {
+        "REDIS_URL": "redis://:redis_pass@localhost:6379",
+        "COORDINATION_TTL": "3600"
+      }
+    },
+    "playwright": {
+      "command": "node",
+      "args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/playwright/dist/index.js"],
+      "env": {
+        "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378",
+        "PLAYWRIGHT_CONFIG": "playwright.config.ts",
+        "PLAYWRIGHT_REPORT_DIR": "playwright-report",
+        "TEST_RESULTS_DIR": "test-results/playwright"
       }
     }
   }
 }
-

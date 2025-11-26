@@ -1,0 +1,16 @@
+export type ToolError = { code: string; message: string; details?: unknown };
+
+export const E = {
+  REDIS_UNAVAILABLE: 'ERR_REDIS_UNAVAILABLE',
+  DOCKER_NOT_AVAILABLE: 'ERR_DOCKER_NOT_AVAILABLE',
+  PLAYWRIGHT_TIMEOUT: 'ERR_PLAYWRIGHT_TIMEOUT',
+  EXTERNAL_TOOL_MISSING: 'ERR_EXTERNAL_TOOL_MISSING',
+  RATE_LIMITED: 'ERR_RATE_LIMITED',
+  UNKNOWN_TOOL: 'ERR_UNKNOWN_TOOL',
+  RUN_NOT_FOUND: 'ERR_RUN_NOT_FOUND',
+  UNEXPECTED: 'ERR_UNEXPECTED',
+} as const;
+
+export function err(code: string, message: string, details?: unknown): ToolError {
+  return { code, message, details };
+}

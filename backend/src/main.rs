@@ -419,12 +419,22 @@ async fn async_main() -> std::io::Result<()> {
         master_key,
     ));
     
-    // Initialize default passwords on startup
-    if let Err(e) = password_manager.initialize_default_passwords().await {
-        log::warn!("Failed to initialize default passwords: {:?}", e);
-    } else {
-        // Note: Default passwords are only initialized in non-production environments
-        // See password_manager.rs for security notes
+    // Initialize default passwords on startup (only if table exists)
+    // This gracefully handles cases where migrations haven't run yet
+    match password_manager.verify_table_exists().await {
+        Ok(_) => {
+            if let Err(e) = password_manager.initialize_default_passwords().await {
+                log::warn!("Failed to initialize default passwords: {:?}", e);
+                log::info!("Password manager is still functional - default passwords are optional");
+            } else {
+                log::info!("Password manager initialized successfully");
+            }
+        }
+        Err(e) => {
+            log::info!("Password manager table not found: {}", e);
+            log::info!("Password manager will be available after running migrations: diesel migration run");
+            log::info!("Application will continue without password manager features");
+        }
     }
     
     // Application secrets are now managed via environment variables (.env)
