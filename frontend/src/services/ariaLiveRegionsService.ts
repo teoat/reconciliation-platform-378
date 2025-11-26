@@ -648,5 +648,4 @@ export default AriaLiveRegionsService;
 // Export singleton instance for convenience
 export const ariaLiveRegionsService = getAriaLiveRegionsService();
 
-// Re-export types for convenience
-export type { AnnouncementContext, AriaLiveRegion, Announcement };
+// Types are already exported above, no need to re-export

@@ -23,7 +23,6 @@ interface NLUUnderstanding {
 }
 
 interface NLUService {
-  processQuery: (query: string) => Promise<NLUUnderstanding>;
   understand: (query: string, context?: MessageContext) => Promise<NLUUnderstanding>;
   generateResponse: (intent: string, query: string, context?: MessageContext) => Promise<string>;
 }
@@ -256,7 +255,7 @@ class FrenlyAgentService {
         try {
           // Try with retry mechanism
           const result = await this.retryWithBackoff(async () => {
-            const execResult = await this.agent.execute(context);
+            const execResult = await this.agent.execute(context as unknown as import('../../../agents/guidance/FrenlyGuidanceAgent').ExecutionContext);
             if (!execResult.success) {
               throw new Error('Agent execution failed');
             }
@@ -396,9 +395,9 @@ class FrenlyAgentService {
       await this.retryWithBackoff(async () => {
         // Track page state sync
         await this.agent.trackInteraction(
-          data.state.userId || 'unknown',
+          ((data.state as Record<string, unknown>)?.userId as string) || 'unknown',
           'page_state_sync',
-          data.pageId
+          (data.pageId as string) || ''
         );
       });
     } catch (error) {

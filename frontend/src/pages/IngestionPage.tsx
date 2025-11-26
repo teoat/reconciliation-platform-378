@@ -10,11 +10,8 @@ const logger = {
 };
 import { useData } from '@/components/DataProvider';
 import { useToast } from '@/hooks/useToast';
-// PageConfig, StatsCard, ActionConfig are defined in BasePage component
-type PageConfig = { title: string; description: string; icon: React.ElementType; path?: string; showStats?: boolean; showActions?: boolean };
-type StatsCard = { title: string; value: string | number; icon: React.ElementType; color: string; progress?: number };
-type ActionConfig = { label: string; onClick: () => void; icon: React.ElementType; variant: 'primary' | 'secondary' | 'danger'; loading?: boolean };
 import { UploadedFile } from '@/types/ingestion';
+import type { PageConfig, StatsCard, ActionConfig as PageActionConfig } from './index';
 
 import { Modal } from '@/components/ui/Modal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
@@ -124,16 +121,16 @@ const IngestionPageContent: React.FC = () => {
     }
   };
 
-  const config: PageConfig = {
+  const config = {
     title: 'Data Ingestion',
     description: 'Upload and process your data files for reconciliation',
     icon: Upload,
     path: '/ingestion',
     showStats: true,
     showActions: true,
-  };
+  } as PageConfig;
 
-  const stats: StatsCard[] = [
+  const stats = [
     {
       title: 'Total Files',
       value: files.length,
@@ -158,19 +155,19 @@ const IngestionPageContent: React.FC = () => {
       icon: () => <div>⚠️</div>,
       color: 'bg-red-100 text-red-600',
     },
-  ];
+  ] as StatsCard[];
 
-  const actions: ActionConfig[] = [
+  const actions = [
     {
       label: isUploading ? 'Uploading...' : 'Upload Files',
       icon: Upload,
       onClick: () => {
         document.getElementById('file-upload')?.click();
       },
-      variant: 'primary',
+      variant: 'primary' as const,
       loading: isUploading,
     },
-  ];
+  ] as PageActionConfig[];
 
   return (
     <BasePage config={config} stats={stats} actions={actions}>
@@ -316,7 +313,7 @@ const IngestionPageContent: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-medium text-gray-600">Content Preview</p>
-                    {previewContent.truncated && (
+                    {(previewContent as { truncated?: boolean })?.truncated && (
                       <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded">
                         Preview truncated
                       </span>
@@ -324,7 +321,7 @@ const IngestionPageContent: React.FC = () => {
                   </div>
                   <div className="bg-gray-50 border rounded-lg p-3 max-h-64 overflow-auto">
                     <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono">
-                      {previewContent.preview || 'No preview available'}
+                      {(previewContent as { preview?: string })?.preview || 'No preview available'}
                     </pre>
                   </div>
                   <p className="text-xs text-gray-500">

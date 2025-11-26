@@ -62,7 +62,8 @@ export type AuthTokens = {
  * Base Service Classes
  * Provides foundation for all services with persistence and caching
  */
-export { BaseService, PersistenceService, CachingService, type ServiceConfig } from './BaseService';
+export { BaseService, PersistenceService, CachingService, createServiceConfig } from './BaseService';
+export type ServiceConfig = ReturnType<typeof import('./BaseService').createServiceConfig>;
 
 // ============================================================================
 // ERROR HANDLING SERVICES
@@ -342,10 +343,7 @@ export {
  */
 export {
   helpContentService,
-  default as helpContentServiceInstance,
   type HelpContent,
-  type HelpContentType,
-  type HelpContentCategory,
   type HelpSearchResult,
 } from './helpContentService';
 

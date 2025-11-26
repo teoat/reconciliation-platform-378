@@ -203,17 +203,17 @@ export const useIngestionWorkflow = () => {
           uniqueness: qualityMetrics.duplicates > 0 ? 100 - (qualityMetrics.duplicates / mockData.length) * 100 : 100,
           overallScore: (qualityMetrics.completeness + qualityMetrics.accuracy + qualityMetrics.consistency + qualityMetrics.validity) / 4,
         } as DataQualityMetrics & { uniqueness: number; overallScore: number },
-        validations: validations as DataValidation[],
+        validations: validations as unknown as DataValidation[],
       };
 
       setState((prev) => ({
         ...prev,
         files: prev.files.map((f) => (f.id === file.id ? updatedFile : f)),
         selectedFile: updatedFile,
-        validations,
+        validations: validations as unknown as DataValidation[],
         qualityMetrics,
         isValidating: false,
-      }));
+      } as unknown as IngestionWorkflowState));
     } catch (error) {
       setState((prev) => ({
         ...prev,

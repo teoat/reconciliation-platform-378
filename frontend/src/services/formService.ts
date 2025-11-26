@@ -95,7 +95,7 @@ export class FormService extends PersistenceService {
   }
 
   private getAll(): FormData[] {
-    return Array.from(this.data.values());
+    return Array.from(this.data.values()) as FormData[];
   }
 
   private setTimer(key: string, callback: () => void, delay: number): void {

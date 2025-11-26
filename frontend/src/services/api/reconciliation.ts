@@ -3,7 +3,8 @@
 // ============================================================================
 
 import { apiClient } from '../apiClient';
-import type { ReconciliationRecord, ReconciliationStats } from '../../types/index';
+import type { ReconciliationRecord } from '../../types/index';
+import type { ReconciliationStats } from '../../types/backend-aligned';
 import type { ReconciliationMatch } from '../../store/unifiedStore';
 import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
 
@@ -26,13 +27,14 @@ export class ReconciliationApiService {
         throw new Error(getErrorMessageFromApiError(response.error));
       }
 
+      const responseData = response.data as { data?: unknown[]; pagination?: unknown } | undefined;
       return {
-        jobs: response.data?.data || [],
-        pagination: response.data?.pagination || {
+        jobs: responseData?.data || [],
+        pagination: responseData?.pagination || {
           page,
           per_page,
-          total: response.data?.data?.length || 0,
-          total_pages: Math.ceil((response.data?.data?.length || 0) / per_page),
+          total: (responseData?.data as unknown[])?.length || 0,
+          total_pages: Math.ceil(((responseData?.data as unknown[])?.length || 0) / per_page),
         },
       };
     } catch (error) {
@@ -117,13 +119,14 @@ export class ReconciliationApiService {
         throw new Error(getErrorMessageFromApiError(response.error));
       }
 
+      const responseData = response.data as { data?: unknown[]; pagination?: unknown } | undefined;
       return {
-        results: response.data?.data || [],
-        pagination: response.data?.pagination || {
+        results: responseData?.data || [],
+        pagination: responseData?.pagination || {
           page,
           per_page,
-          total: response.data?.data?.length || 0,
-          total_pages: Math.ceil((response.data?.data?.length || 0) / per_page),
+          total: (responseData?.data as unknown[])?.length || 0,
+          total_pages: Math.ceil(((responseData?.data as unknown[])?.length || 0) / per_page),
         },
       };
     } catch (error) {

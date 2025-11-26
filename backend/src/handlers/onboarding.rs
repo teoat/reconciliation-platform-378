@@ -113,9 +113,12 @@ pub async fn get_onboarding_progress(
             synced_at: Utc::now(),
         };
         
+        let progress_value = serde_json::to_value(empty_progress)
+            .map_err(|e| AppError::Internal(format!("Failed to serialize progress: {}", e)))?;
+        
         Ok(HttpResponse::Ok().json(ApiResponse {
             success: true,
-            data: Some(serde_json::to_value(empty_progress).unwrap()),
+            data: Some(progress_value),
             message: None,
             error: None,
         }))
@@ -176,9 +179,12 @@ pub async fn sync_onboarding_progress(
     .execute(&mut conn)
     .map_err(|e| AppError::Internal(format!("Failed to sync onboarding progress: {}", e)))?;
 
+    let progress_value = serde_json::to_value(&progress_response)
+        .map_err(|e| AppError::Internal(format!("Failed to serialize progress response: {}", e)))?;
+    
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
-        data: Some(serde_json::to_value(progress_response).unwrap()),
+        data: Some(progress_value),
         message: Some("Onboarding progress synced successfully".to_string()),
         error: None,
     }))

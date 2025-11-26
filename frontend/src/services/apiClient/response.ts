@@ -2,7 +2,7 @@
 // API CLIENT RESPONSE UTILITIES
 // ============================================================================
 
-import { ApiResponse, CacheEntry } from './types';
+import { ApiResponse, CacheEntry, ApiErrorLike } from './types';
 import { errorTranslationService } from '../errorTranslationService';
 
 export class ResponseHandler {
@@ -33,8 +33,9 @@ export class ResponseHandler {
     method: string
   ): ApiResponse {
     // ✅ ERROR TRANSLATION: Use translation service for backend error context
-    let translatedMessage = error.message || error.error || 'An error occurred';
-    let errorCode = error.code;
+    const errorRecord = error as Error & { message?: string; error?: string; code?: string };
+    let translatedMessage = errorRecord.message || errorRecord.error || 'An error occurred';
+    let errorCode = errorRecord.code;
 
     // ✅ CORRELATION ID: Extract from error response (supports multiple formats)
     // Supports: correlationId, correlation_id, and x-correlation-id header
@@ -53,13 +54,14 @@ export class ResponseHandler {
         : undefined);
 
     // Handle backend error response format: { error, message, code }
-    if (error.code) {
-      errorCode = error.code;
-    } else if (typeof error === 'object' && error.error) {
+    const errorObj = error as Error & { code?: string; error?: string; message?: string };
+    if (errorObj.code) {
+      errorCode = errorObj.code;
+    } else if (typeof error === 'object' && errorObj.error) {
       // Backend format: { error: "title", message: "msg", code: "CODE" }
-      errorCode = error.code || this.mapErrorTitleToCode(error.error);
-      if (error.message) {
-        translatedMessage = error.message;
+      errorCode = errorObj.code || this.mapErrorTitleToCode(errorObj.error);
+      if (errorObj.message) {
+        translatedMessage = errorObj.message;
       }
     }
 
@@ -68,7 +70,7 @@ export class ResponseHandler {
       const translation = errorTranslationService.translateError(errorCode, {
         component: 'apiClient',
         action: method,
-        data: { endpoint, statusCode: error.statusCode },
+        data: { endpoint, statusCode: (error as unknown as ApiErrorLike & { statusCode?: number }).statusCode },
       });
 
       translatedMessage = translation.userMessage;
@@ -123,7 +125,7 @@ export class ResponseCache {
       return null;
     }
 
-    return entry.data;
+    return entry.data as T;
   }
 
   has(key: string): boolean {
@@ -182,7 +184,7 @@ export class ResponseValidator {
   private validateAgainstSchema(data: unknown, schema: Record<string, unknown>): void {
     // Basic schema validation - could be enhanced with libraries like zod
     if (schema.type === 'object' && typeof data === 'object') {
-      if (schema.required) {
+      if (schema.required && Array.isArray(schema.required)) {
         for (const field of schema.required) {
           if (!(field in data)) {
             throw new Error(`Missing required field: ${field}`);

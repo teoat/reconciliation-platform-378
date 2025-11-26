@@ -16,7 +16,7 @@ import {
 export interface PageConfig {
   title: string;
   description: string;
-  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | string }>;
   path: string;
   showStats?: boolean;
   showFilters?: boolean;
@@ -26,7 +26,7 @@ export interface PageConfig {
 export interface StatsCard {
   title: string;
   value: string | number;
-  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
+  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean | string }>;
   color: string;
   trend?: {
     direction: 'up' | 'down' | 'neutral';

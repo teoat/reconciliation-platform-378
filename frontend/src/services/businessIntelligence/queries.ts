@@ -88,11 +88,11 @@ export class QueryManager {
 
   async executeQuery(
     id: string,
-    parameters?: Metadata,
     queryExecutor: (
       query: AnalyticsQuery,
       parameters?: Metadata
-    ) => Promise<Array<Record<string, unknown>>>
+    ) => Promise<Array<Record<string, unknown>>>,
+    parameters?: Metadata
   ): Promise<Array<Record<string, unknown>>> {
     const query = this.queries.get(id);
     if (!query) {

@@ -309,7 +309,9 @@ export class DataManagementService {
         record.sources[0]?.data?.Debit ||
         0;
       const description =
-        record.sources[0]?.data?.description || record.sources[0]?.data?.Uraian || 'Unknown';
+        (record.sources[0]?.data as Record<string, unknown>)?.description as string ||
+        (record.sources[0]?.data as Record<string, unknown>)?.Uraian as string ||
+        'Unknown';
       const category = DataManagementUtils.inferCategory(description);
 
       if (!categoryMap.has(category)) {
@@ -331,7 +333,7 @@ export class DataManagementService {
       }
 
       const categoryData = categoryMap.get(category)!;
-      categoryData.totalReported += amount;
+      categoryData.totalReported += (amount as number) || 0;
       categoryData.transactionCount++;
 
       // Check for discrepancies

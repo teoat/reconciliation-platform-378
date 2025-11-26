@@ -274,7 +274,7 @@ mod password_manager_service_tests {
         let result = password_manager.list_passwords().await;
         assert!(result.is_ok());
 
-        let passwords = result.unwrap();
+        let _passwords = result.unwrap();
         // Can be empty - no assertion needed as len() is always >= 0
     }
 

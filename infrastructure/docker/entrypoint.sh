@@ -68,5 +68,8 @@ echo "  PORT: $PORT" >&2
 
 # Use exec to replace shell process (proper signal handling)
 # This ensures the binary receives signals correctly
-exec /app/reconciliation-backend
+# Note: Using exec means we won't see "Binary exited" message
+# but it's necessary for proper signal handling
+# Force unbuffered output
+exec /app/reconciliation-backend 2>&1
 

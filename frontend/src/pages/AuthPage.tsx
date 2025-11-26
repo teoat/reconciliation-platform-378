@@ -372,7 +372,7 @@ const AuthPage: React.FC = () => {
         const errorDetails = {
           message: 'Failed to load Google Identity Services script',
           url: scriptElement?.src,
-          readyState: scriptElement?.readyState,
+          readyState: (scriptElement as HTMLScriptElement & { readyState?: number })?.readyState,
           error: error instanceof Error ? error.message : 'Unknown error',
         };
         logger.error('Failed to load Google Identity Services script', {

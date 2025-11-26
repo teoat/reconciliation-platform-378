@@ -14,7 +14,7 @@ mod performance_service_tests {
 
     #[tokio::test]
     async fn test_performance_service_creation() {
-        let service = PerformanceService::new();
+        let _service = PerformanceService::new();
         
         // Verify service is created
         assert!(true);

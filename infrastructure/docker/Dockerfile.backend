@@ -53,10 +53,12 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/backend/target \
     cargo build --release && \
+    cargo build --release --bin test-minimal && \
     # Don't strip binary to preserve debugging info
     # strip target/release/reconciliation-backend && \
     # Copy the binary to a known location for next stage
-    cp target/release/reconciliation-backend /tmp/reconciliation-backend
+    cp target/release/reconciliation-backend /tmp/reconciliation-backend && \
+    cp target/release/test-minimal /tmp/test-minimal
 
 # Stage 3: Runtime Image (Minimal)
 FROM debian:bookworm-slim AS runtime
@@ -80,6 +82,7 @@ WORKDIR /app
 
 # Copy binary and migrations from builder
 COPY --from=builder --chown=appuser:appuser /tmp/reconciliation-backend /app/reconciliation-backend
+COPY --from=builder --chown=appuser:appuser /tmp/test-minimal /app/test-minimal
 COPY --from=builder --chown=appuser:appuser /app/backend/migrations /app/migrations
 
 # Copy entrypoint script

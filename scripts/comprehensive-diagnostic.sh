@@ -27,7 +27,11 @@ SCORE_DOCUMENTATION=0
 SCORE_SECURITY=0
 SCORE_CODE_QUALITY=0
 
-# Details storage (using a temp file for compatibility)
+# Declare associative arrays for scores and details
+declare -A SCORES
+declare -A DETAILS
+
+# Details storage (using a temp file for compatibility - kept for backward compatibility)
 DETAILS_FILE=$(mktemp)
 
 # Create report directory
@@ -98,9 +102,9 @@ diagnose_backend() {
         local test_ratio=$(echo "scale=2; $test_files * 100 / $source_files" | bc)
         local test_score=$(calculate_score $test_ratio 25)
         backend_score=$(echo "$backend_score + $test_score" | bc)
-        DETAILS["backend_tests"]="Test files: $test_files, Source files: $source_files, Ratio: ${test_ratio}%, Score: $test_score/25"
+        store_detail "backend_tests" "Test files: $test_files, Source files: $source_files, Ratio: ${test_ratio}%, Score: $test_score/25"
     else
-        DETAILS["backend_tests"]="No source files found"
+        store_detail "backend_tests" "No source files found"
     fi
     
     # 3. Code Quality - Clippy (20 points)

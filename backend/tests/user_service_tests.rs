@@ -367,7 +367,7 @@ mod user_service_tests {
 
         let result = user_service.list_users(None, None).await;
         assert!(result.is_ok());
-        let users = result.unwrap();
+        let _users = result.unwrap();
         // Can be empty - no assertion needed as len() is always >= 0
     }
 

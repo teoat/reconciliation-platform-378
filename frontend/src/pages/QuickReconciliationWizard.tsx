@@ -61,10 +61,11 @@ const QuickReconciliationWizard: React.FC = () => {
     try {
       const response = await apiClient.getProjects();
       if (response.success && response.data) {
-        setProjects(response.data);
+        const projects = Array.isArray(response.data) ? response.data : (response.data as { data?: Project[] })?.data || [];
+        setProjects(projects);
         // Auto-select first project if available
-        if (response.data.length > 0) {
-          setSelectedProject(response.data[0]);
+        if (projects.length > 0) {
+          setSelectedProject(projects[0]);
         }
       }
     } catch (error) {
@@ -90,11 +91,13 @@ const QuickReconciliationWizard: React.FC = () => {
       // Create data sources
       const dataSources = [];
       for (const file of uploadedFiles) {
-        const result = await apiClient.uploadDataSource(
-          file,
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('project_id', selectedProject.id);
+        const result = await apiClient.uploadFile(
           selectedProject.id,
-          file.name,
-          'reconciliation_data'
+          file,
+          { project_id: selectedProject.id, name: file.name, source_type: 'reconciliation_data' }
         );
         if (result.success) {
           dataSources.push(result.data);
@@ -118,7 +121,9 @@ const QuickReconciliationWizard: React.FC = () => {
       if (jobResult.success) {
         setJobStatus('running');
         // Auto-start the job
-        await apiClient.startReconciliationJob(jobResult.data.id);
+        if (selectedProject) {
+          await apiClient.startReconciliationJob(selectedProject.id, jobResult.data.id);
+        }
 
         // Navigate to results after a moment
         setTimeout(() => {
@@ -136,7 +141,7 @@ const QuickReconciliationWizard: React.FC = () => {
       id: 1,
       title: 'Select Project',
       description: 'Choose the project for reconciliation',
-      icon: FileText,
+      icon: FileText as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       component: (
         <div className="space-y-4">
           <div className="text-sm text-gray-600">Select a project to reconcile data for</div>
@@ -178,7 +183,7 @@ const QuickReconciliationWizard: React.FC = () => {
       id: 2,
       title: 'Upload Files',
       description: 'Upload your data files for reconciliation',
-      icon: Upload,
+      icon: Upload as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       component: (
         <div className="space-y-4">
           <FileDropzone
@@ -218,7 +223,7 @@ const QuickReconciliationWizard: React.FC = () => {
       id: 3,
       title: 'Configure Settings',
       description: 'Set reconciliation matching rules and thresholds',
-      icon: Settings,
+      icon: Settings as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       component: (
         <div className="space-y-6">
           <div>
@@ -286,7 +291,7 @@ const QuickReconciliationWizard: React.FC = () => {
       id: 4,
       title: 'Review & Start',
       description: 'Review your settings and start reconciliation',
-      icon: Play,
+      icon: Play as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       component: (
         <div className="space-y-4">
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

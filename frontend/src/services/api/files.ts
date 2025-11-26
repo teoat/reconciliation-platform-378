@@ -17,7 +17,11 @@ export class FilesApiService {
       formData.append('file', file);
       formData.append('project_id', projectId);
 
-      const response = await apiClient.uploadFile(formData, onProgress);
+      const response = await apiClient.uploadFile(
+        projectId,
+        file,
+        { project_id: projectId, name: file.name, source_type: 'file' }
+      );
       if (response.error) {
         throw new Error(getErrorMessageFromApiError(response.error));
       }
@@ -46,12 +50,12 @@ export class FilesApiService {
       }
 
       return {
-        files: response.data?.data || [],
-        pagination: response.data?.pagination || {
+        files: (response.data as { data?: unknown[] })?.data || [],
+        pagination: (response.data as { pagination?: unknown })?.pagination || {
           page,
           per_page,
-          total: response.data?.data?.length || 0,
-          total_pages: Math.ceil((response.data?.data?.length || 0) / per_page),
+          total: (response.data as { data?: unknown[] })?.data?.length || 0,
+          total_pages: Math.ceil(((response.data as { data?: unknown[] })?.data?.length || 0) / per_page),
         },
       };
     } catch (error) {

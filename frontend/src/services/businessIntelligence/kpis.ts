@@ -93,9 +93,9 @@ export class KPIManager {
 
   async calculateKPI(
     id: string,
-    parameters?: Metadata,
     calculator: (kpi: KPIDefinition, parameters?: Metadata) => Promise<number>,
-    alertChecker: (kpi: KPIDefinition, value: number) => Promise<void>
+    alertChecker: (kpi: KPIDefinition, value: number) => Promise<void>,
+    parameters?: Metadata
   ): Promise<{
     kpi: KPIDefinition;
     value: number;

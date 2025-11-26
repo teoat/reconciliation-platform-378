@@ -98,9 +98,7 @@ impl JsonSchemaValidator {
             return Err(AppError::Validation("Expected string".to_string()));
         }
 
-        let string_value = data
-            .as_str()
-            .ok_or_else(|| AppError::Validation("Expected string".to_string()))?;
+        let string_value = data.as_str().unwrap();
 
         if let Some(min_length) = schema.get("minLength").and_then(|v| v.as_u64()) {
             if string_value.len() < min_length as usize {
@@ -145,9 +143,7 @@ impl JsonSchemaValidator {
             return Err(AppError::Validation("Expected number".to_string()));
         }
 
-        let number_value = data
-            .as_f64()
-            .ok_or_else(|| AppError::Validation("Expected number".to_string()))?;
+        let number_value = data.as_f64().unwrap();
 
         if let Some(minimum) = schema.get("minimum").and_then(|v| v.as_f64()) {
             if number_value < minimum {
@@ -179,9 +175,7 @@ impl JsonSchemaValidator {
             return Err(AppError::Validation("Expected integer".to_string()));
         }
 
-        let int_value = data
-            .as_i64()
-            .ok_or_else(|| AppError::Validation("Expected integer".to_string()))?;
+        let int_value = data.as_i64().unwrap();
 
         if let Some(minimum) = schema.get("minimum").and_then(|v| v.as_i64()) {
             if int_value < minimum {

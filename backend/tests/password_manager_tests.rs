@@ -46,7 +46,7 @@ async fn test_password_manager_user_specific_encryption() -> AppResult<()> {
     // Note: set_user_master_key and clear_user_master_key are deprecated
     // Master keys are no longer stored in memory, so we test without them
     // Create password with user-specific encryption (user_id is used for encryption context)
-    let entry = pm.create_password("user-password", "secret-value", 90, Some(user_id)).await?;
+    let _entry = pm.create_password("user-password", "secret-value", 90, Some(user_id)).await?;
     
     // Retrieve with correct user
     let retrieved = pm.get_password_by_name("user-password", Some(user_id)).await?;

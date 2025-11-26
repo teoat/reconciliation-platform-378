@@ -211,7 +211,7 @@ export class AuthInterceptor {
 
   async error(error: ApiErrorLike, config: RequestConfig): Promise<ApiErrorLike> {
     // Handle 401 unauthorized - try token refresh
-    if (error.statusCode === 401 && !config.skipAuth && !config.skipTokenRefresh) {
+    if ((error as ApiErrorLike & { statusCode?: number }).statusCode === 401 && !config.skipAuth && !config.skipTokenRefresh) {
       logger.info('Attempting token refresh due to 401');
       const newToken = await this.refreshAccessToken();
 

@@ -9,10 +9,10 @@ edition = "2021"
 # name = "apply-query-indexes"
 # path = "scripts/apply-query-indexes.rs"
 
-# Minimal test binary (commented out - was for testing only)
-# [[bin]]
-# name = "test-minimal"
-# path = "test_minimal.rs"
+# Minimal test binary for debugging
+[[bin]]
+name = "test-minimal"
+path = "src/bin/test-minimal.rs"
 
 [profile.release]
 opt-level = 3              # Maximum optimization

@@ -11,7 +11,7 @@ import { apiClient } from './apiClient';
 export type UserRole = 'admin' | 'analyst' | 'viewer' | 'user';
 export type OnboardingType = 'initial' | 'feature_tour' | 'contextual_help' | 'empty_state';
 
-interface OnboardingProgress {
+export interface OnboardingProgress {
   userId?: string;
   completedOnboarding: boolean;
   completedSteps: string[];

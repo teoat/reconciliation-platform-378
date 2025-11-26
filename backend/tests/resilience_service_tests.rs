@@ -14,7 +14,7 @@ mod resilience_service_tests {
 
     #[test]
     fn test_resilience_manager_creation() {
-        let manager = ResilienceManager::new();
+        let _manager = ResilienceManager::new();
         
         // Verify manager is created
         assert!(true);
@@ -49,7 +49,7 @@ mod resilience_service_tests {
             },
         };
 
-        let manager = ResilienceManager::with_config(config);
+        let _manager = ResilienceManager::with_config(config);
         
         // Verify manager is created with custom config
         assert!(true);

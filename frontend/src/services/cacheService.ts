@@ -38,7 +38,7 @@ export const CacheStrategy = {
 };
 
 // Cache entry factory
-const createCacheEntry = (key, value, options = {}) => ({
+const createCacheEntry = (key: string, value: unknown, options: { ttl?: number; strategy?: string; tags?: string[]; metadata?: Record<string, unknown> } = {}) => ({
   key,
   value,
   timestamp: new Date(),
@@ -120,14 +120,16 @@ class CacheService {
   setupMemoryMonitoring() {
     if ('memory' in performance) {
       setInterval(() => {
-        const memory = performance.memory;
-        this.stats.memoryUsage = memory.usedJSHeapSize;
+        const memory = (performance as unknown as { memory?: { usedJSHeapSize: number } }).memory;
+        if (memory) {
+          this.stats.memoryUsage = memory.usedJSHeapSize;
+        }
       }, 5000);
     }
   }
 
   // Public cache methods
-  async get(key, strategy) {
+  async get(key: string, strategy?: string) {
     const cacheStrategy = strategy || this.getStrategyForKey(key);
 
     switch (cacheStrategy) {
@@ -151,7 +153,7 @@ class CacheService {
     }
   }
 
-  async set(key, value, options = {}) {
+  async set(key: string, value: unknown, options: { ttl?: number; strategy?: string; tags?: string[]; metadata?: Record<string, unknown> } = {}) {
     const entry = createCacheEntry(key, value, {
       ttl: options.ttl || this.getTTLForKey(key),
       strategy: options.strategy || this.getStrategyForKey(key),
@@ -440,8 +442,8 @@ class CacheService {
     return total > 0 ? this.stats.hits / total : 0;
   }
 
-  async preload(keys) {
-    const promises = keys.map((key) => this.get(key));
+  async preload(keys: string[]) {
+    const promises = keys.map((key) => this.get(key, undefined));
     await Promise.all(promises);
   }
 

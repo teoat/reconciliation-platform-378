@@ -212,7 +212,11 @@ export class ApiService {
     description?: string;
     settings?: unknown;
   }) {
-    return ProjectsApiService.createProject(projectData as Record<string, unknown>);
+    return ProjectsApiService.createProject({
+      name: projectData.name,
+      description: projectData.description,
+      settings: projectData.settings as unknown as import('../../types/backend-aligned').ProjectSettings,
+    });
   }
 
   static async updateProject(

@@ -1,7 +1,7 @@
 // Main Business Intelligence Service Orchestrator
 import React from 'react';
 import { logger } from '../logger';
-import { ReportConfig, DashboardConfig, KPIDefinition, AnalyticsQuery, KPIAlert } from './types';
+import { ReportConfig, DashboardConfig, KPIDefinition, AnalyticsQuery, KPIAlert, ReportMetadata } from './types';
 import { ReportManager } from './reports';
 import { DashboardManager } from './dashboards';
 import { KPIManager } from './kpis';
@@ -43,7 +43,7 @@ class BusinessIntelligenceService {
     return BusinessIntelligenceService.instance;
   }
 
-  private async init(): Promise<void> {
+  public async init(): Promise<void> {
     try {
       await this.reportManager.loadReports();
       await this.dashboardManager.loadDashboards();
@@ -112,12 +112,12 @@ class BusinessIntelligenceService {
     return this.reportManager.getAllReports();
   }
 
-  public async executeReport(id: string, parameters?: Metadata): Promise<Record<string, unknown>> {
+  public async executeReport(id: string, parameters?: Metadata): Promise<{ data: Array<Record<string, unknown>>; metadata: ReportMetadata }> {
     return this.reportManager.executeReport(
       id,
-      parameters,
       (report, params) => this.queryExecutors.executeReportQuery(report, params),
-      (data, filters, params) => this.filterApplier.applyFilters(data, filters, params)
+      (data, filters, params) => this.filterApplier.applyFilters(data, filters, params),
+      parameters
     );
   }
 
@@ -157,8 +157,9 @@ class BusinessIntelligenceService {
       loadTime: number;
     }
   > {
-    return this.dashboardManager.renderDashboard(id, filters, (widget, filters) =>
-      this.queryExecutors.renderWidget(widget, filters)
+    return this.dashboardManager.renderDashboard(id, (widget, filters) =>
+      this.queryExecutors.renderWidget(widget, filters),
+      filters
     );
   }
 
@@ -201,7 +202,6 @@ class BusinessIntelligenceService {
   }> {
     return this.kpiManager.calculateKPI(
       id,
-      parameters,
       (kpi, params) => this.queryExecutors.executeKPICalculation(kpi, params),
       async (kpi, value) => {
         await this.queryExecutors.checkKPIAlerts(kpi, value, async (kpi, alert, value) => {
@@ -243,8 +243,10 @@ class BusinessIntelligenceService {
     id: string,
     parameters?: Metadata
   ): Promise<Array<Record<string, unknown>>> {
-    return this.queryManager.executeQuery(id, parameters, (query, params) =>
-      this.queryExecutors.executeAnalyticsQuery(query, params)
+    return this.queryManager.executeQuery(
+      id,
+      (query, params) => this.queryExecutors.executeAnalyticsQuery(query, params),
+      parameters
     );
   }
 

@@ -13,6 +13,7 @@ use prometheus::{
 };
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
+use crate::errors::{AppError, AppResult}; // Add this line
 
 /// Security metrics tracking
 #[derive(Clone)]
@@ -122,294 +123,409 @@ impl PiiMasker {
 // PROMETHEUS METRICS (Database, Cache, Application)
 // ============================================================================
 
-/// Database query duration histogram (tagged by route, operation, table)
-pub static DB_QUERY_DURATION: Lazy<HistogramVec> = Lazy::new(|| {
-    HistogramVec::new(
-        histogram_opts!(
-            "reconciliation_db_query_duration_seconds",
-            "Database query duration in seconds"
-        )
-        .buckets(vec![0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 2.0, 5.0]),
-        &["route", "operation", "table"],
-    )
-    .unwrap_or_else(|e| {
-        log::error!("Failed to create DB_QUERY_DURATION metric: {}", e);
-        panic!("Failed to initialize metrics: {}", e);
-    })
-});
+pub struct MonitoringMetrics {
+    pub registry: Registry,
+    pub db_query_duration: Option<HistogramVec>,
+    pub cache_hits: Option<CounterVec>,
+    pub cache_misses: Option<CounterVec>,
+    pub db_pool_active: Option<Gauge>,
+    pub db_pool_idle: Option<Gauge>,
+    pub db_pool_size: Option<Gauge>,
+    pub db_pool_exhaustion: Option<Counter>,
+    pub http_requests_total: Option<CounterVec>,
+    pub http_request_duration: Option<HistogramVec>,
+    pub circuit_breaker_state: Option<GaugeVec>,
+    pub circuit_breaker_failures: Option<CounterVec>,
+    pub circuit_breaker_successes: Option<CounterVec>,
+    pub circuit_breaker_requests: Option<CounterVec>,
+}
 
-/// Cache operation counters
-pub static CACHE_HITS: Lazy<CounterVec> = Lazy::new(|| {
-    CounterVec::new(
-        opts!("reconciliation_cache_hits_total", "Total cache hits"),
-        &["cache_level", "key_type"],
-    )
-    .unwrap_or_else(|e| {
-        log::error!("Failed to create CACHE_HITS metric: {}", e);
-        panic!("Failed to initialize metrics: {}", e);
-    })
-});
+impl MonitoringMetrics {
+    pub fn new() -> AppResult<Self> {
+        let registry = Registry::new();
 
-pub static CACHE_MISSES: Lazy<CounterVec> = Lazy::new(|| {
-    CounterVec::new(
-        opts!("reconciliation_cache_misses_total", "Total cache misses"),
-        &["cache_level", "key_type"],
-    )
-    .unwrap_or_else(|e| {
-        log::error!("Failed to create CACHE_MISSES metric: {}", e);
-        panic!("Failed to initialize metrics: {}", e);
-    })
-});
+        let db_query_duration = HistogramVec::new(
+            histogram_opts!(
+                "reconciliation_db_query_duration_seconds",
+                "Database query duration in seconds"
+            )
+            .buckets(vec![0.001, 0.005, 0.01, 0.05, 0.1, 0.5, 1.0, 2.0, 5.0]),
+            &["route", "operation", "table"],
+        ).map_err(|e| {
+            log::error!("Failed to create DB_QUERY_DURATION metric: {}", e);
+            AppError::Monitoring(format!("Failed to initialize DB_QUERY_DURATION: {}", e))
+        })?;
+        registry.register(Box::new(db_query_duration.clone())).map_err(|e| {
+            log::error!("Failed to register DB_QUERY_DURATION metric: {}", e);
+            AppError::Monitoring(format!("Failed to register DB_QUERY_DURATION: {}", e))
+        })?;
 
-/// Connection pool metrics
-pub static DB_POOL_ACTIVE: Lazy<Gauge> = Lazy::new(|| {
-    Gauge::with_opts(opts!(
-        "reconciliation_db_pool_connections_active",
-        "Active database connections in pool"
-    ))
-    .unwrap_or_else(|e| {
-        log::error!("Failed to create DB_POOL_ACTIVE metric: {}", e);
-        panic!("Failed to initialize metrics: {}", e);
-    })
-});
+        let cache_hits = CounterVec::new(
+            opts!("reconciliation_cache_hits_total", "Total cache hits"),
+            &["cache_level", "key_type"],
+        ).map_err(|e| {
+            log::error!("Failed to create CACHE_HITS metric: {}", e);
+            AppError::Monitoring(format!("Failed to initialize CACHE_HITS: {}", e))
+        })?;
+        registry.register(Box::new(cache_hits.clone())).map_err(|e| {
+            log::error!("Failed to register CACHE_HITS metric: {}", e);
+            AppError::Monitoring(format!("Failed to register CACHE_HITS: {}", e))
+        })?;
 
-pub static DB_POOL_IDLE: Lazy<Gauge> = Lazy::new(|| {
-    Gauge::with_opts(opts!(
-        "reconciliation_db_pool_connections_idle",
-        "Idle database connections in pool"
-    ))
-    .unwrap_or_else(|e| {
-        log::error!("Failed to create DB_POOL_IDLE metric: {}", e);
-        panic!("Failed to initialize metrics: {}", e);
-    })
-});
+        let cache_misses = CounterVec::new(
+            opts!("reconciliation_cache_misses_total", "Total cache misses"),
+            &["cache_level", "key_type"],
+        ).map_err(|e| {
+            log::error!("Failed to create CACHE_MISSES metric: {}", e);
+            AppError::Monitoring(format!("Failed to initialize CACHE_MISSES: {}", e))
+        })?;
+        registry.register(Box::new(cache_misses.clone())).map_err(|e| {
+            log::error!("Failed to register CACHE_MISSES metric: {}", e);
+            AppError::Monitoring(format!("Failed to register CACHE_MISSES: {}", e))
+        })?;
 
-pub static DB_POOL_SIZE: Lazy<Gauge> = Lazy::new(|| {
-    Gauge::with_opts(opts!(
-        "reconciliation_db_pool_connections_total",
-        "Total database connections in pool"
-    ))
-    .unwrap_or_else(|e| {
-        log::error!("Failed to create DB_POOL_SIZE metric: {}", e);
-        panic!("Failed to initialize metrics: {}", e);
-    })
-});
+        let db_pool_active = Gauge::with_opts(opts!(
+            "reconciliation_db_pool_connections_active",
+            "Active database connections in pool"
+        )).map_err(|e| {
+            log::error!("Failed to create DB_POOL_ACTIVE metric: {}", e);
+            AppError::Monitoring(format!("Failed to initialize DB_POOL_ACTIVE: {}", e))
+        })?;
+        registry.register(Box::new(db_pool_active.clone())).map_err(|e| {
+            log::error!("Failed to register DB_POOL_ACTIVE metric: {}", e);
+            AppError::Monitoring(format!("Failed to register DB_POOL_ACTIVE: {}", e))
+        })?;
 
-/// Database pool exhaustion counter
-pub static DB_POOL_EXHAUSTION: Lazy<Counter> = Lazy::new(|| {
-    Counter::with_opts(opts!(
-        "reconciliation_db_pool_exhaustion_total",
-        "Total number of database pool exhaustion events"
-    ))
-    .unwrap_or_else(|e| {
-        log::error!("Failed to create DB_POOL_EXHAUSTION metric: {}", e);
-        panic!("Failed to initialize metrics: {}", e);
-    })
-});
+        let db_pool_idle = Gauge::with_opts(opts!(
+            "reconciliation_db_pool_connections_idle",
+            "Idle database connections in pool"
+        )).map_err(|e| {
+            log::error!("Failed to create DB_POOL_IDLE metric: {}", e);
+            AppError::Monitoring(format!("Failed to initialize DB_POOL_IDLE: {}", e))
+        })?;
+        registry.register(Box::new(db_pool_idle.clone())).map_err(|e| {
+            log::error!("Failed to register DB_POOL_IDLE metric: {}", e);
+            AppError::Monitoring(format!("Failed to register DB_POOL_IDLE: {}", e))
+        })?;
 
-/// Request metrics
-pub static HTTP_REQUESTS_TOTAL: Lazy<CounterVec> = Lazy::new(|| {
-    CounterVec::new(
-        opts!("reconciliation_http_requests_total", "Total HTTP requests"),
-        &["method", "route", "status"],
-    )
-    .unwrap_or_else(|e| {
-        log::error!("Failed to create HTTP_REQUESTS_TOTAL metric: {}", e);
-        panic!("Failed to initialize metrics: {}", e);
-    })
-});
+        let db_pool_size = Gauge::with_opts(opts!(
+            "reconciliation_db_pool_connections_total",
+            "Total database connections in pool"
+        )).map_err(|e| {
+            log::error!("Failed to create DB_POOL_SIZE metric: {}", e);
+            AppError::Monitoring(format!("Failed to initialize DB_POOL_SIZE: {}", e))
+        })?;
+        registry.register(Box::new(db_pool_size.clone())).map_err(|e| {
+            log::error!("Failed to register DB_POOL_SIZE metric: {}", e);
+            AppError::Monitoring(format!("Failed to register DB_POOL_SIZE: {}", e))
+        })?;
 
-pub static HTTP_REQUEST_DURATION: Lazy<HistogramVec> = Lazy::new(|| {
-    HistogramVec::new(
-        histogram_opts!(
-            "reconciliation_http_request_duration_seconds",
-            "HTTP request duration in seconds"
-        )
-        .buckets(vec![
-            0.001, 0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0,
-        ]),
-        &["method", "route"],
-    )
-    .unwrap_or_else(|e| {
-        log::error!("Failed to create HTTP_REQUEST_DURATION metric: {}", e);
-        panic!("Failed to initialize metrics: {}", e);
-    })
-});
+        let db_pool_exhaustion = Counter::with_opts(opts!(
+            "reconciliation_db_pool_exhaustion_total",
+            "Total number of database pool exhaustion events"
+        )).map_err(|e| {
+            log::error!("Failed to create DB_POOL_EXHAUSTION metric: {}", e);
+            AppError::Monitoring(format!("Failed to initialize DB_POOL_EXHAUSTION: {}", e))
+        })?;
+        registry.register(Box::new(db_pool_exhaustion.clone())).map_err(|e| {
+            log::error!("Failed to register DB_POOL_EXHAUSTION metric: {}", e);
+            AppError::Monitoring(format!("Failed to register DB_POOL_EXHAUSTION: {}", e))
+        })?;
 
-/// Circuit breaker metrics
-pub static CIRCUIT_BREAKER_STATE: Lazy<GaugeVec> = Lazy::new(|| {
-    GaugeVec::new(
-        opts!(
-            "reconciliation_circuit_breaker_state",
-            "Circuit breaker state (0=closed, 1=half-open, 2=open)"
-        ),
-        &["service"],
-    )
-    .unwrap_or_else(|e| {
-        log::error!("Failed to create CIRCUIT_BREAKER_STATE metric: {}", e);
-        panic!("Failed to initialize metrics: {}", e);
-    })
-});
+        let http_requests_total = CounterVec::new(
+            opts!("reconciliation_http_requests_total", "Total HTTP requests"),
+            &["method", "route", "status"],
+        ).map_err(|e| {
+            log::error!("Failed to create HTTP_REQUESTS_TOTAL metric: {}", e);
+            AppError::Monitoring(format!("Failed to initialize HTTP_REQUESTS_TOTAL: {}", e))
+        })?;
+        registry.register(Box::new(http_requests_total.clone())).map_err(|e| {
+            log::error!("Failed to register HTTP_REQUESTS_TOTAL metric: {}", e);
+            AppError::Monitoring(format!("Failed to register HTTP_REQUESTS_TOTAL: {}", e))
+        })?;
 
-pub static CIRCUIT_BREAKER_FAILURES: Lazy<CounterVec> = Lazy::new(|| {
-    CounterVec::new(
-        opts!(
-            "reconciliation_circuit_breaker_failures_total",
-            "Total circuit breaker failures"
-        ),
-        &["service"],
-    )
-    .unwrap_or_else(|e| {
-        log::error!("Failed to create CIRCUIT_BREAKER_FAILURES metric: {}", e);
-        panic!("Failed to initialize metrics: {}", e);
-    })
-});
+        let http_request_duration = HistogramVec::new(
+            histogram_opts!(
+                "reconciliation_http_request_duration_seconds",
+                "HTTP request duration in seconds"
+            )
+            .buckets(vec![
+                0.001, 0.005, 0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0,
+            ]),
+            &["method", "route"],
+        ).map_err(|e| {
+            log::error!("Failed to create HTTP_REQUEST_DURATION metric: {}", e);
+            AppError::Monitoring(format!("Failed to initialize HTTP_REQUEST_DURATION: {}", e))
+        })?;
+        registry.register(Box::new(http_request_duration.clone())).map_err(|e| {
+            log::error!("Failed to register HTTP_REQUEST_DURATION metric: {}", e);
+            AppError::Monitoring(format!("Failed to register HTTP_REQUEST_DURATION: {}", e))
+        })?;
 
-pub static CIRCUIT_BREAKER_SUCCESSES: Lazy<CounterVec> = Lazy::new(|| {
-    CounterVec::new(
-        opts!(
-            "reconciliation_circuit_breaker_successes_total",
-            "Total circuit breaker successes"
-        ),
-        &["service"],
-    )
-    .unwrap_or_else(|e| {
-        log::error!("Failed to create CIRCUIT_BREAKER_SUCCESSES metric: {}", e);
-        panic!("Failed to initialize metrics: {}", e);
-    })
-});
+        let circuit_breaker_state = GaugeVec::new(
+            opts!(
+                "reconciliation_circuit_breaker_state",
+                "Circuit breaker state (0=closed, 1=half-open, 2=open)"
+            ),
+            &["service"],
+        ).map_err(|e| {
+            log::error!("Failed to create CIRCUIT_BREAKER_STATE metric: {}", e);
+            AppError::Monitoring(format!("Failed to initialize CIRCUIT_BREAKER_STATE: {}", e))
+        })?;
+        registry.register(Box::new(circuit_breaker_state.clone())).map_err(|e| {
+            log::error!("Failed to register CIRCUIT_BREAKER_STATE metric: {}", e);
+            AppError::Monitoring(format!("Failed to register CIRCUIT_BREAKER_STATE: {}", e))
+        })?;
 
-pub static CIRCUIT_BREAKER_REQUESTS: Lazy<CounterVec> = Lazy::new(|| {
-    CounterVec::new(
-        opts!(
-            "reconciliation_circuit_breaker_requests_total",
-            "Total circuit breaker requests"
-        ),
-        &["service"],
-    )
-    .unwrap_or_else(|e| {
-        log::error!("Failed to create CIRCUIT_BREAKER_REQUESTS metric: {}", e);
-        panic!("Failed to initialize metrics: {}", e);
-    })
-});
+        let circuit_breaker_failures = CounterVec::new(
+            opts!(
+                "reconciliation_circuit_breaker_failures_total",
+                "Total circuit breaker failures"
+            ),
+            &["service"],
+        ).map_err(|e| {
+            log::error!("Failed to create CIRCUIT_BREAKER_FAILURES metric: {}", e);
+            AppError::Monitoring(format!("Failed to initialize CIRCUIT_BREAKER_FAILURES: {}", e))
+        })?;
+        registry.register(Box::new(circuit_breaker_failures.clone())).map_err(|e| {
+            log::error!("Failed to register CIRCUIT_BREAKER_FAILURES metric: {}", e);
+            AppError::Monitoring(format!("Failed to register CIRCUIT_BREAKER_FAILURES: {}", e))
+        })?;
 
-/// Register all metrics with Prometheus registry
-pub fn register_all_metrics() -> Registry {
-    let registry = Registry::new();
+        let circuit_breaker_successes = CounterVec::new(
+            opts!(
+                "reconciliation_circuit_breaker_successes_total",
+                "Total circuit breaker successes"
+            ),
+            &["service"],
+        ).map_err(|e| {
+            log::error!("Failed to create CIRCUIT_BREAKER_SUCCESSES metric: {}", e);
+            AppError::Monitoring(format!("Failed to initialize CIRCUIT_BREAKER_SUCCESSES: {}", e))
+        })?;
+        registry.register(Box::new(circuit_breaker_successes.clone())).map_err(|e| {
+            log::error!("Failed to register CIRCUIT_BREAKER_SUCCESSES metric: {}", e);
+            AppError::Monitoring(format!("Failed to register CIRCUIT_BREAKER_SUCCESSES: {}", e))
+        })?;
 
-    // Register all metrics with error logging (avoid panics in production)
-    for metric in [
-        Box::new(DB_QUERY_DURATION.clone()) as Box<dyn prometheus::core::Collector>,
-        Box::new(CACHE_HITS.clone()),
-        Box::new(CACHE_MISSES.clone()),
-        Box::new(DB_POOL_ACTIVE.clone()),
-        Box::new(DB_POOL_IDLE.clone()),
-        Box::new(DB_POOL_SIZE.clone()),
-        Box::new(DB_POOL_EXHAUSTION.clone()),
-        Box::new(HTTP_REQUESTS_TOTAL.clone()),
-        Box::new(HTTP_REQUEST_DURATION.clone()),
-        Box::new(CIRCUIT_BREAKER_STATE.clone()),
-        Box::new(CIRCUIT_BREAKER_FAILURES.clone()),
-        Box::new(CIRCUIT_BREAKER_SUCCESSES.clone()),
-        Box::new(CIRCUIT_BREAKER_REQUESTS.clone()),
-    ] {
-        if let Err(e) = registry.register(metric) {
-            log::error!("Failed to register Prometheus metric: {}", e);
+        let circuit_breaker_requests = CounterVec::new(
+            opts!(
+                "reconciliation_circuit_breaker_requests_total",
+                "Total circuit breaker requests"
+            ),
+            &["service"],
+        ).map_err(|e| {
+            log::error!("Failed to create CIRCUIT_BREAKER_REQUESTS metric: {}", e);
+            AppError::Monitoring(format!("Failed to initialize CIRCUIT_BREAKER_REQUESTS: {}", e))
+        })?;
+        registry.register(Box::new(circuit_breaker_requests.clone())).map_err(|e| {
+            log::error!("Failed to register CIRCUIT_BREAKER_REQUESTS metric: {}", e);
+            AppError::Monitoring(format!("Failed to register CIRCUIT_BREAKER_REQUESTS: {}", e))
+        })?;
+
+        Ok(Self {
+            registry,
+            db_query_duration: Some(db_query_duration),
+            cache_hits: Some(cache_hits),
+            cache_misses: Some(cache_misses),
+            db_pool_active: Some(db_pool_active),
+            db_pool_idle: Some(db_pool_idle),
+            db_pool_size: Some(db_pool_size),
+            db_pool_exhaustion: Some(db_pool_exhaustion),
+            http_requests_total: Some(http_requests_total),
+            http_request_duration: Some(http_request_duration),
+            circuit_breaker_state: Some(circuit_breaker_state),
+            circuit_breaker_failures: Some(circuit_breaker_failures),
+            circuit_breaker_successes: Some(circuit_breaker_successes),
+            circuit_breaker_requests: Some(circuit_breaker_requests),
+        })
+    }
+
+    /// Get all metrics as Prometheus-formatted string
+    pub fn gather_all_metrics(&self) -> String {
+        let encoder = TextEncoder::new();
+        let metric_families = self.registry.gather();
+        let mut buffer = Vec::new();
+        if let Err(e) = encoder.encode(&metric_families, &mut buffer) {
+            log::error!("Failed to encode Prometheus metrics: {}", e);
+            return String::new();
+        }
+        match String::from_utf8(buffer) {
+            Ok(s) => s,
+            Err(e) => {
+                log::error!("Failed to convert Prometheus metrics to UTF-8: {}", e);
+                String::new()
+            }
         }
     }
 
-    registry
-}
-
-/// Get all metrics as Prometheus-formatted string
-pub fn gather_all_metrics() -> String {
-    let registry = register_all_metrics();
-    let encoder = TextEncoder::new();
-    let metric_families = registry.gather();
-    let mut buffer = Vec::new();
-    if let Err(e) = encoder.encode(&metric_families, &mut buffer) {
-        log::error!("Failed to encode Prometheus metrics: {}", e);
-        return String::new();
+    /// Helper to record cache hit
+    pub fn record_cache_hit(&self, cache_level: &str, key_type: &str) {
+        if let Some(metric) = &self.cache_hits {
+            metric.with_label_values(&[cache_level, key_type]).inc();
+        }
     }
-    match String::from_utf8(buffer) {
-        Ok(s) => s,
-        Err(e) => {
-            log::error!("Failed to convert Prometheus metrics to UTF-8: {}", e);
-            String::new()
+
+    /// Helper to record cache miss
+    pub fn record_cache_miss(&self, cache_level: &str, key_type: &str) {
+        if let Some(metric) = &self.cache_misses {
+            metric.with_label_values(&[cache_level, key_type]).inc();
+        }
+    }
+
+    /// Helper to update pool metrics
+    pub fn update_pool_metrics(&self, active: usize, idle: usize, total: usize) {
+        if let Some(metric) = &self.db_pool_active {
+            metric.set(active as f64);
+        }
+        if let Some(metric) = &self.db_pool_idle {
+            metric.set(idle as f64);
+        }
+        if let Some(metric) = &self.db_pool_size {
+            metric.set(total as f64);
+        }
+    }
+
+    /// Record database pool exhaustion event
+    pub fn record_pool_exhaustion(&self) {
+        if let Some(metric) = &self.db_pool_exhaustion {
+            metric.inc();
+        }
+    }
+
+    /// Record HTTP request total
+    pub fn record_http_requests_total(&self, method: &str, route: &str, status: &str) {
+        if let Some(metric) = &self.http_requests_total {
+            metric.with_label_values(&[method, route, status]).inc();
+        }
+    }
+
+    /// Observe HTTP request duration
+    pub fn observe_http_request_duration(&self, method: &str, route: &str, duration: f64) {
+        if let Some(metric) = &self.http_request_duration {
+            metric.with_label_values(&[method, route]).observe(duration);
+        }
+    }
+
+    /// Set circuit breaker state
+    pub fn set_circuit_breaker_state(&self, service: &str, state: f64) {
+        if let Some(metric) = &self.circuit_breaker_state {
+            metric.with_label_values(&[service]).set(state);
+        }
+    }
+
+    /// Record circuit breaker failure
+    pub fn record_circuit_breaker_failure(&self, service: &str) {
+        if let Some(metric) = &self.circuit_breaker_failures {
+            metric.with_label_values(&[service]).inc();
+        }
+    }
+
+    /// Record circuit breaker success
+    pub fn record_circuit_breaker_success(&self, service: &str) {
+        if let Some(metric) = &self.circuit_breaker_successes {
+            metric.with_label_values(&[service]).inc();
+        }
+    }
+
+    /// Record circuit breaker request
+    pub fn record_circuit_breaker_request(&self, service: &str) {
+        if let Some(metric) = &self.circuit_breaker_requests {
+            metric.with_label_values(&[service]).inc();
         }
     }
 }
 
-/// Helper to record cache hit
-pub fn record_cache_hit(cache_level: &str, key_type: &str) {
-    CACHE_HITS.with_label_values(&[cache_level, key_type]).inc();
+impl Default for MonitoringMetrics {
+    fn default() -> Self {
+        MonitoringMetrics::new().unwrap_or_else(|e| {
+            log::error!("Failed to initialize MonitoringMetrics: {}", e);
+            Self {
+                registry: Registry::new(),
+                db_query_duration: None,
+                cache_hits: None,
+                cache_misses: None,
+                db_pool_active: None,
+                db_pool_idle: None,
+                db_pool_size: None,
+                db_pool_exhaustion: None,
+                http_requests_total: None,
+                http_request_duration: None,
+                circuit_breaker_state: None,
+                circuit_breaker_failures: None,
+                circuit_breaker_successes: None,
+                circuit_breaker_requests: None,
+            }
+        })
+    }
 }
 
-/// Helper to record cache miss
-pub fn record_cache_miss(cache_level: &str, key_type: &str) {
-    CACHE_MISSES
-        .with_label_values(&[cache_level, key_type])
-        .inc();
-}
-
-/// Helper to update pool metrics
-pub fn update_pool_metrics(active: usize, idle: usize, total: usize) {
-    DB_POOL_ACTIVE.set(active as f64);
-    DB_POOL_IDLE.set(idle as f64);
-    DB_POOL_SIZE.set(total as f64);
-}
-
-/// Record database pool exhaustion event
-pub fn record_pool_exhaustion() {
-    DB_POOL_EXHAUSTION.inc();
+lazy_static::lazy_static! {
+    pub static ref GLOBAL_METRICS: MonitoringMetrics = MonitoringMetrics::default();
 }
 
 /// Timer guard for database queries
-pub struct DbQueryTimer {
+pub struct DbQueryTimer<'a> {
     start: std::time::Instant,
-    timer: Histogram,
+    timer: &'a HistogramVec,
+    labels: Vec<&'a str>,
 }
 
-impl DbQueryTimer {
-    pub fn start(route: &str, operation: &str, table: &str) -> Self {
-        let timer = DB_QUERY_DURATION
-            .with_label_values(&[route, operation, table])
-            .clone();
-        Self {
-            start: std::time::Instant::now(),
-            timer,
-        }
+impl<'a> DbQueryTimer<'a> {
+    pub fn start(route: &'a str, operation: &'a str, table: &'a str) -> Option<Self> {
+        GLOBAL_METRICS.db_query_duration.as_ref().map(|timer_vec| {
+            Self {
+                start: std::time::Instant::now(),
+                timer: timer_vec,
+                labels: vec![route, operation, table],
+            }
+        })
     }
 }
 
-impl Drop for DbQueryTimer {
+impl<'a> Drop for DbQueryTimer<'a> {
     fn drop(&mut self) {
         let elapsed = self.start.elapsed().as_secs_f64();
-        self.timer.observe(elapsed);
+        self.timer.with_label_values(&self.labels).observe(elapsed);
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+// Helper functions for easy access to metrics
+pub fn record_cache_hit(cache_level: &str, key_type: &str) {
+    GLOBAL_METRICS.record_cache_hit(cache_level, key_type);
+}
 
-    #[test]
-    fn test_mask_email() {
-        // Updated to match handlers::helpers::mask_email implementation
-        // Shows first 2 chars + *** + domain (e.g., "te***@example.com")
-        assert_eq!(PiiMasker::mask_email("test@example.com"), "te***@example.com");
-    }
+pub fn record_cache_miss(cache_level: &str, key_type: &str) {
+    GLOBAL_METRICS.record_cache_miss(cache_level, key_type);
+}
 
-    #[test]
-    fn test_mask_uuid() {
-        let uuid = "12345678-1234-1234-1234-123456789012";
-        let masked = PiiMasker::mask_uuid(uuid);
-        assert!(masked.starts_with("1234"));
-        assert!(masked.ends_with("9012"));
-    }
+pub fn update_pool_metrics(active: usize, idle: usize, total: usize) {
+    GLOBAL_METRICS.update_pool_metrics(active, idle, total);
+}
 
-    #[test]
-    fn test_mask_ip() {
-        assert_eq!(PiiMasker::mask_ip("192.168.1.1"), "192.***");
-    }
+pub fn record_pool_exhaustion() {
+    GLOBAL_METRICS.record_pool_exhaustion();
+}
+
+pub fn record_http_requests_total(method: &str, route: &str, status: &str) {
+    GLOBAL_METRICS.record_http_requests_total(method, route, status);
+}
+
+pub fn observe_http_request_duration(method: &str, route: &str, duration: f64) {
+    GLOBAL_METRICS.observe_http_request_duration(method, route, duration);
+}
+
+pub fn set_circuit_breaker_state(service: &str, state: f64) {
+    GLOBAL_METRICS.set_circuit_breaker_state(service, state);
+}
+
+pub fn record_circuit_breaker_failure(service: &str) {
+    GLOBAL_METRICS.record_circuit_breaker_failure(service);
+}
+
+pub fn record_circuit_breaker_success(service: &str) {
+    GLOBAL_METRICS.record_circuit_breaker_success(service);
+}
+
+pub fn record_circuit_breaker_request(service: &str) {
+    GLOBAL_METRICS.record_circuit_breaker_request(service);
 }

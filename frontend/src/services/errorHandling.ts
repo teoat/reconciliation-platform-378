@@ -101,7 +101,7 @@ export function handleServiceError<T>(
     const errorObj = errorOrResponse instanceof Error 
       ? errorOrResponse 
       : new Error(errorMessage);
-    const translatedMessage = unifiedErrorService.getUserFriendlyMessage(errorObj, {
+    const translatedMessage = (unifiedErrorService.constructor as typeof import('./unifiedErrorService').UnifiedErrorService).getUserFriendlyMessage(errorObj, {
       component,
       action,
       projectId,

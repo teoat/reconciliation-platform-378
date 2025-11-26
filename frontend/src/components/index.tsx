@@ -949,6 +949,19 @@ export { default as EnhancedIngestionPage } from './EnhancedIngestionPage';
 export { default as IntegrationSettings } from './IntegrationSettings';
 // MobileNavigation removed - using UnifiedNavigation instead
 
+// Export new onboarding and feature components
+export {
+  FeatureGate,
+  FeatureBadge,
+  useFeatureGate,
+  type FeatureGateProps,
+  type FeatureBadgeProps,
+  type FeatureGateConfig,
+  type UserRole as FeatureUserRole,
+  type FeaturePermission,
+} from './ui/FeatureGate';
+export { OnboardingAnalyticsDashboard } from './onboarding/OnboardingAnalyticsDashboard';
+
 // Context providers moved - use hooks directly or import from individual files
 // Export context providers
 // export { ... } from '../contexts' // Removed - contexts directory may not exist

@@ -1,11 +1,11 @@
 import { RequestInterceptor, ApiError } from './enhancedApiClient';
 import type { ResponseInterceptor } from './enhancedApiClient';
 import { logger } from '@/services/logger';
-import { ApiRequestConfig, ApiResponse } from '../types/api';
+import { RequestConfig, ApiResponse } from '../types/api';
 
 // Request interceptor for adding common headers and logging
 export const createRequestInterceptor = (): RequestInterceptor => {
-  return async (config: ApiRequestConfig): Promise<ApiRequestConfig> => {
+  return async (config: RequestConfig): Promise<RequestConfig> => {
     // Add request ID for tracking
     const requestId = Math.random().toString(36).substr(2, 9);
     config.headers = {
@@ -51,7 +51,7 @@ export const createResponseInterceptor = (): ResponseInterceptor => {
 
 // Authentication interceptor
 export const createAuthInterceptor = (): RequestInterceptor => {
-  return async (config: ApiRequestConfig): Promise<ApiRequestConfig> => {
+  return async (config: RequestConfig): Promise<RequestConfig> => {
     // Skip auth for certain endpoints
     const skipAuthEndpoints = ['/auth/login', '/auth/register', '/health'];
     const shouldSkipAuth = skipAuthEndpoints.some((endpoint) => config.url?.includes(endpoint));
@@ -96,7 +96,7 @@ export const createRateLimitInterceptor = (): ResponseInterceptor => {
 
 // Offline detection interceptor
 export const createOfflineInterceptor = (): RequestInterceptor => {
-  return async (config: ApiRequestConfig): Promise<ApiRequestConfig> => {
+  return async (config: RequestConfig): Promise<RequestConfig> => {
     if (!navigator.onLine) {
       const offlineError = new Error('You are currently offline') as ApiError;
       offlineError.status = 0;
@@ -116,9 +116,9 @@ export const createOfflineInterceptor = (): RequestInterceptor => {
 
 // Request timing interceptor
 export const createTimingInterceptor = (): RequestInterceptor => {
-  return async (config: ApiRequestConfig): Promise<ApiRequestConfig> => {
+  return async (config: RequestConfig): Promise<RequestConfig> => {
     // Add performance timing
-    (config as ApiRequestConfig & { startTime?: number }).startTime = performance.now();
+    (config as RequestConfig & { startTime?: number }).startTime = performance.now();
 
     return config;
   };

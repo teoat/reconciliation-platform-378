@@ -12,7 +12,7 @@ mod email_service_tests {
 
     #[test]
     fn test_email_service_creation() {
-        let service = EmailService::new();
+        let _service = EmailService::new();
         
         // Verify service is created (no public fields to check)
         assert!(true);
@@ -24,7 +24,7 @@ mod email_service_tests {
         use reconciliation_backend::services::resilience::ResilienceManager;
         
         let resilience = Arc::new(ResilienceManager::new());
-        let service = EmailService::new_with_resilience(resilience);
+        let _service = EmailService::new_with_resilience(resilience);
         
         // Verify service is created
         assert!(true);

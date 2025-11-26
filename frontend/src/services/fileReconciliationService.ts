@@ -104,11 +104,11 @@ class FileReconciliationService {
   }
 
   async getFilesForProject(projectId: string): Promise<ApiResponse<DataSource[]>> {
-    return apiClient.makeRequest<DataSource[]>(`/projects/${projectId}/files`);
+    return apiClient.makeRequest<DataSource[]>(`/projects/${projectId}/files`, {});
   }
 
   async getFileById(projectId: string, fileId: string): Promise<ApiResponse<DataSource>> {
-    return apiClient.makeRequest<DataSource>(`/projects/${projectId}/files/${fileId}`);
+    return apiClient.makeRequest<DataSource>(`/projects/${projectId}/files/${fileId}`, {});
   }
 
   async deleteFile(projectId: string, fileId: string): Promise<ApiResponse<void>> {
@@ -133,17 +133,18 @@ class FileReconciliationService {
 
   async getReconciliationResults(projectId: string): Promise<ApiResponse<ReconciliationResult[]>> {
     return apiClient.makeRequest<ReconciliationResult[]>(
-      `/projects/${projectId}/reconciliation-results`
+      `/projects/${projectId}/reconciliation-results`,
+      {}
     );
   }
 
   async getProjectAnalytics(projectId: string): Promise<ApiResponse<ProjectAnalytics>> {
-    return apiClient.makeRequest<ProjectAnalytics>(`/projects/${projectId}/analytics`);
+    return apiClient.makeRequest<ProjectAnalytics>(`/projects/${projectId}/analytics`, {});
   }
 
   // Dashboard Methods
   async getDashboardData(): Promise<ApiResponse<Record<string, unknown>>> {
-    return apiClient.makeRequest<Record<string, unknown>>('/dashboard');
+    return apiClient.makeRequest<Record<string, unknown>>('/dashboard', {});
   }
 
   // System Methods
@@ -164,7 +165,7 @@ class FileReconciliationService {
   }
 
   async getSystemMetrics(): Promise<ApiResponse<string>> {
-    return apiClient.makeRequest<string>('/system/metrics');
+    return apiClient.makeRequest<string>('/system/metrics', {});
   }
 
   // Health Check

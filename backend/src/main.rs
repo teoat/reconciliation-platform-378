@@ -23,9 +23,33 @@ use reconciliation_backend::{
     startup::{resilience_config_from_env, AppStartup},
 };
 
+// Set up panic handler BEFORE any static initialization that might panic
+// This must be at the module level, not in main()
+#[cfg_attr(target_os = "linux", link_section = ".init_array")]
+#[used]
+static INIT_PANIC_HANDLER: extern "C" fn() = {
+    extern "C" fn init_panic_handler() {
+        std::panic::set_hook(Box::new(|panic_info| {
+            let _ = std::fs::write("/tmp/backend-panic.txt", format!("PANIC: {:?}\n", panic_info));
+            eprintln!("PANIC: {:?}", panic_info);
+            eprintln!("Location: {:?}", panic_info.location());
+            if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
+                eprintln!("Message: {}", s);
+            } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
+                eprintln!("Message: {}", s);
+            }
+            std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
+        }));
+    }
+    init_panic_handler
+};
+
 // Add a synchronous main wrapper to ensure we can print before async runtime
 #[inline(never)]
 fn main() {
+    // CRITICAL: Write to file first to verify main() is called
+    let _ = std::fs::write("/tmp/backend-main-called.txt", "MAIN CALLED\n");
+    
     // CRITICAL: Multiple output methods to ensure we see something
     eprintln!("=== MAIN FUNCTION START ===");
     std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
@@ -38,8 +62,10 @@ fn main() {
     println!("MAIN FUNCTION CALLED (stdout)");
     std::io::Write::flush(&mut std::io::stdout()).unwrap_or(());
     
-    // Set up panic handler to capture panics
+    // Panic handler is already set up in INIT_PANIC_HANDLER above
+    // This is a backup in case the init handler didn't work
     std::panic::set_hook(Box::new(|panic_info| {
+        let _ = std::fs::write("/tmp/backend-panic-main.txt", format!("PANIC IN MAIN: {:?}\n", panic_info));
         eprintln!("PANIC: {:?}", panic_info);
         eprintln!("Location: {:?}", panic_info.location());
         if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
@@ -47,6 +73,7 @@ fn main() {
         } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
             eprintln!("Message: {}", s);
         }
+        std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
     }));
 
     // Print to stderr immediately (before logging init) for debugging
@@ -147,6 +174,8 @@ async fn async_main() -> std::io::Result<()> {
 
     // Validate environment variables before loading configuration
     log::info!("Validating environment variables...");
+    eprintln!("Validating environment variables...");
+    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
     reconciliation_backend::utils::env_validation::validate_and_exit_on_error();
 
     // Load configuration (initial load from env - needed for database connection)

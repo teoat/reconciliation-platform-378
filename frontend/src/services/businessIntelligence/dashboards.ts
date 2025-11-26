@@ -88,11 +88,11 @@ export class DashboardManager {
 
   async renderDashboard(
     id: string,
-    filters?: Metadata,
     widgetRenderer: (
       widget: DashboardWidget,
       filters?: Metadata
-    ) => Promise<Record<string, unknown>>
+    ) => Promise<Record<string, unknown>>,
+    filters?: Metadata
   ): Promise<
     DashboardConfig & {
       widgets: Array<DashboardWidget & { data: Record<string, unknown> }>;

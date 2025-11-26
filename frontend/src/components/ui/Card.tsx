@@ -9,6 +9,7 @@ export interface CardProps {
   padding?: 'none' | 'sm' | 'md' | 'lg';
   shadow?: 'none' | 'sm' | 'md' | 'lg';
   border?: boolean;
+  onClick?: () => void;
 }
 
 const Card: React.FC<CardProps> = memo(
@@ -21,6 +22,7 @@ const Card: React.FC<CardProps> = memo(
     padding = 'md',
     shadow = 'sm',
     border = true,
+    onClick,
   }) => {
     // Memoize padding classes
     const paddingClasses = useMemo(
@@ -54,7 +56,7 @@ const Card: React.FC<CardProps> = memo(
     const showHeader = useMemo(() => !!(title || subtitle || actions), [title, subtitle, actions]);
 
     return (
-      <div className={classes}>
+      <div className={classes} onClick={onClick} style={onClick ? { cursor: 'pointer' } : undefined}>
         {showHeader && (
           <div className="mb-4">
             <div className="flex items-center justify-between">

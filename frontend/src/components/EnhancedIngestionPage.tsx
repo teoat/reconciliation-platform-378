@@ -1,7 +1,7 @@
 'use client';
 import { logger } from '@/services/logger';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useCallback } from 'react';
 import { FileText } from 'lucide-react';
 import { CheckCircle } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';

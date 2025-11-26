@@ -15,7 +15,7 @@ export class AuthApiService {
       async () => {
         const response = await apiClient.login({ email, password });
         if (response.error) {
-          throw new Error(response.error);
+          throw new Error(typeof response.error === 'string' ? response.error : response.error.message || 'Authentication failed');
         }
         return response.data;
       },
@@ -34,7 +34,7 @@ export class AuthApiService {
       async () => {
         const response = await apiClient.register(userData);
         if (response.error) {
-          throw new Error(response.error);
+          throw new Error(typeof response.error === 'string' ? response.error : response.error.message || 'Authentication failed');
         }
         return response.data;
       },
@@ -56,7 +56,7 @@ export class AuthApiService {
       async () => {
         const response = await apiClient.getCurrentUser();
         if (response.error) {
-          throw new Error(response.error);
+          throw new Error(typeof response.error === 'string' ? response.error : response.error.message || 'Authentication failed');
         }
         return response.data;
       },
@@ -72,7 +72,7 @@ export class AuthApiService {
       async () => {
         const response = await apiClient.post('/api/auth/change-password', passwordData);
         if (response.error) {
-          throw new Error(response.error);
+          throw new Error(typeof response.error === 'string' ? response.error : response.error.message || 'Authentication failed');
         }
         return response.data;
       },
@@ -85,7 +85,7 @@ export class AuthApiService {
       async () => {
         const response = await apiClient.post('/api/auth/password-reset', { email });
         if (response.error) {
-          throw new Error(response.error);
+          throw new Error(typeof response.error === 'string' ? response.error : response.error.message || 'Authentication failed');
         }
         return response.data;
       },
@@ -104,7 +104,7 @@ export class AuthApiService {
           new_password: newPassword,
         });
         if (response.error) {
-          throw new Error(response.error);
+          throw new Error(typeof response.error === 'string' ? response.error : response.error.message || 'Authentication failed');
         }
         return response.data;
       },

@@ -2,7 +2,8 @@
 import { logger } from '@/services/logger';
 // Implements comprehensive service integration with unified error handling and state management
 
-import { errorTranslationService, ErrorTranslation, ErrorContext } from './errorTranslationService';
+import { errorTranslationService, ErrorTranslation } from './errorTranslationService';
+import { ErrorContext } from './errorContextService';
 import { offlineDataService, OfflineData } from './offlineDataService';
 import { optimisticUIService, OptimisticUpdate } from './optimisticUIService';
 import { retryService, RetryResult } from './retryService';

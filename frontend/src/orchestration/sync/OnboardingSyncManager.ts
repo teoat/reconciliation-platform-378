@@ -70,8 +70,8 @@ export class OnboardingSyncManager {
           pageId,
           completedSteps: progress.completedSteps,
           currentStep: stepId,
-          totalSteps: (progress as OnboardingProgress).totalSteps || 0,
-        });
+          totalSteps: (progress as unknown as { totalSteps?: number }).totalSteps || progress.completedSteps.length || 0,
+        } as OnboardingProgress);
       }
     } catch (error) {
       logger.error('Error completing onboarding step', { error, pageId, stepId });
@@ -93,8 +93,8 @@ export class OnboardingSyncManager {
           pageId,
           completedSteps: progress.completedSteps,
           currentStep: null,
-          totalSteps: (progress as OnboardingProgress).totalSteps || 0,
-        });
+          totalSteps: (progress as unknown as { totalSteps?: number }).totalSteps || progress.completedSteps.length || 0,
+        } as OnboardingProgress);
       }
     } catch (error) {
       logger.error('Error skipping onboarding step', { error, pageId, stepId });

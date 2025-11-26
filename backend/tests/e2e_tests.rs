@@ -18,8 +18,8 @@ mod user_workflow_tests {
 
     #[tokio::test]
     async fn test_complete_reconciliation_workflow() {
-        let test_config = TestConfig::default();
-        let mut test_client = TestClient::new();
+        let _test_config = TestConfig::default();
+        let _test_client = TestClient::new();
 
         // Step 1: User registration and authentication
         test_client
@@ -77,7 +77,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let data_source2_data = serde_json::json!({
@@ -100,7 +100,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 5: Create reconciliation job
@@ -137,7 +137,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 7: Start reconciliation job
@@ -155,7 +155,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 8: Monitor job progress
@@ -173,7 +173,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
             let body: serde_json::Value = test::read_body_json(resp).await;
 
             let status = body["status"].as_str().unwrap();
@@ -205,7 +205,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -226,7 +226,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 11: Clean up
@@ -241,7 +241,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let req = test_client
@@ -255,14 +255,14 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
 
     #[tokio::test]
     async fn test_file_upload_workflow() {
-        let test_config = TestConfig::default();
-        let mut test_client = TestClient::new();
+        let _test_config = TestConfig::default();
+        let _test_client = TestClient::new();
 
         // Step 1: User authentication
         test_client
@@ -305,7 +305,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-            let resp = test::call_service(&app, req).await;
+            let _resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
 
             let file_data: serde_json::Value = test::read_body_json(resp).await;
@@ -325,7 +325,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-            let resp = test::call_service(&app, req).await;
+            let _resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
 
             // Wait for processing to complete
@@ -342,7 +342,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-                let resp = test::call_service(&app, req).await;
+                let _resp = test::call_service(&app, req).await;
                 let file_data: serde_json::Value = test::read_body_json(resp).await;
 
                 if file_data["data"]["status"] == "completed"
@@ -368,7 +368,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let files_data: serde_json::Value = test::read_body_json(resp).await;
@@ -388,7 +388,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 8: Verify file was deleted
@@ -403,7 +403,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
         println!("✅ File upload workflow E2E test passed");
@@ -411,7 +411,7 @@ mod user_workflow_tests {
 
     #[tokio::test]
     async fn test_multi_user_collaboration_workflow() {
-        let test_config = TestConfig::default();
+        let _test_config = TestConfig::default();
 
         // Create multiple test clients for different users
         let mut admin_client = TestClient::new();
@@ -459,15 +459,15 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 3: Analyst uploads files
-        let file1_id = analyst_client
+        let _file1_id = analyst_client
             .upload_file(&project_id, "./test_data/analyst_file1.csv")
             .await
             .unwrap();
-        let file2_id = analyst_client
+        let _file2_id = analyst_client
             .upload_file(&project_id, "./test_data/analyst_file2.csv")
             .await
             .unwrap();
@@ -493,7 +493,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 6: All users monitor progress
@@ -512,7 +512,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
             let body: serde_json::Value = test::read_body_json(resp).await;
 
             let status = body["status"].as_str().unwrap();
@@ -539,7 +539,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 8: Admin exports final results
@@ -557,7 +557,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 9: Clean up
@@ -572,7 +572,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let req = admin_client
@@ -586,14 +586,14 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
 
     #[tokio::test]
     async fn test_data_management_workflow() {
-        let test_config = TestConfig::default();
-        let mut test_client = TestClient::new();
+        let _test_config = TestConfig::default();
+        let _test_client = TestClient::new();
 
         // Authenticate as admin
         test_client
@@ -647,7 +647,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
         }
 
@@ -663,7 +663,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -692,7 +692,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Step 6: Validate data sources
@@ -712,7 +712,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
         }
 
@@ -729,7 +729,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-            let resp = test::call_service(&app, req).await;
+            let _resp = test::call_service(&app, req).await;
             assert!(resp.status().is_success());
         }
 
@@ -744,7 +744,7 @@ mod user_workflow_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
 }
@@ -756,8 +756,8 @@ mod system_integration_tests {
 
     #[tokio::test]
     async fn test_system_health_monitoring() {
-        let test_config = TestConfig::default();
-        let mut test_client = TestClient::new();
+        let _test_config = TestConfig::default();
+        let _test_client = TestClient::new();
 
         // Test health check endpoint
         let req = test::TestRequest::get().uri("/health").to_request();
@@ -769,7 +769,7 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -787,7 +787,7 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -809,7 +809,7 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -818,8 +818,8 @@ mod system_integration_tests {
 
     #[tokio::test]
     async fn test_error_handling_and_recovery() {
-        let test_config = TestConfig::default();
-        let mut test_client = TestClient::new();
+        let _test_config = TestConfig::default();
+        let _test_client = TestClient::new();
 
         // Test invalid authentication
         let req = test::TestRequest::post()
@@ -837,7 +837,7 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
         // Test invalid project access
@@ -856,7 +856,7 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
         // Test rate limiting
@@ -883,14 +883,14 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         // Rate limit might not be hit in this test, but the system should handle it gracefully
     }
 
     #[tokio::test]
     async fn test_security_features() {
-        let test_config = TestConfig::default();
-        let mut test_client = TestClient::new();
+        let _test_config = TestConfig::default();
+        let _test_client = TestClient::new();
 
         // Test CSRF protection
         let req = test::TestRequest::post()
@@ -908,7 +908,7 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         // Should fail without CSRF token
 
         // Test input validation
@@ -929,7 +929,7 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_client_error());
 
         // Test SQL injection protection
@@ -944,7 +944,7 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         // Should not cause database issues
 
         // Test XSS protection
@@ -963,14 +963,14 @@ mod system_integration_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         // Should sanitize input
     }
 
     #[tokio::test]
     async fn test_performance_under_load() {
-        let test_config = TestConfig::default();
-        let mut test_client = TestClient::new();
+        let _test_config = TestConfig::default();
+        let _test_client = TestClient::new();
 
         // Authenticate first
         test_client
@@ -1032,8 +1032,8 @@ mod data_integrity_tests {
 
     #[tokio::test]
     async fn test_data_consistency() {
-        let test_config = TestConfig::default();
-        let mut test_client = TestClient::new();
+        let _test_config = TestConfig::default();
+        let _test_client = TestClient::new();
 
         // Authenticate as admin
         test_client
@@ -1074,7 +1074,7 @@ mod data_integrity_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Wait for completion
@@ -1092,7 +1092,7 @@ mod data_integrity_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
             let body: serde_json::Value = test::read_body_json(resp).await;
 
             let status = body["status"].as_str().unwrap();
@@ -1119,7 +1119,7 @@ mod data_integrity_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -1146,7 +1146,7 @@ mod data_integrity_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let req = test_client
@@ -1160,13 +1160,13 @@ mod data_integrity_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
 
     #[tokio::test]
     async fn test_concurrent_access() {
-        let test_config = TestConfig::default();
+        let _test_config = TestConfig::default();
 
         // Create multiple clients
         let mut client1 = TestClient::new();
@@ -1233,7 +1233,7 @@ mod data_integrity_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -1251,7 +1251,7 @@ mod data_integrity_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
 }
@@ -1263,8 +1263,8 @@ mod system_recovery_tests {
 
     #[tokio::test]
     async fn test_system_recovery_after_failure() {
-        let test_config = TestConfig::default();
-        let mut test_client = TestClient::new();
+        let _test_config = TestConfig::default();
+        let _test_client = TestClient::new();
 
         // Authenticate
         test_client
@@ -1299,7 +1299,7 @@ mod system_recovery_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Simulate system failure by stopping the job
@@ -1314,7 +1314,7 @@ mod system_recovery_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Verify system can recover
@@ -1329,7 +1329,7 @@ mod system_recovery_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let body: serde_json::Value = test::read_body_json(resp).await;
@@ -1350,7 +1350,7 @@ mod system_recovery_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         // Verify job is running again
@@ -1365,7 +1365,7 @@ mod system_recovery_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         let body: serde_json::Value = test::read_body_json(resp).await;
         assert_eq!(body["status"].as_str().unwrap(), "running");
 
@@ -1381,7 +1381,7 @@ mod system_recovery_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
 
         let req = test_client
@@ -1395,7 +1395,7 @@ mod system_recovery_tests {
                 .configure(configure_routes),
         )
         .await;
-        let resp = test::call_service(&app, req).await;
+        let _resp = test::call_service(&app, req).await;
         assert!(resp.status().is_success());
     }
 }

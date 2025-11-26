@@ -1,6 +1,6 @@
 // Filter Application Module
 import { ReportFilter } from './types';
-import { Metadata } from '@/types/metadata';
+import { Metadata, MetadataValue } from '@/types/metadata';
 
 export class FilterApplier {
   applyFilters(
@@ -34,9 +34,9 @@ export class FilterApplier {
               (value as number) <= (filterValue[1] as number)
             );
           case 'in':
-            return Array.isArray(filterValue) && filterValue.includes(value);
+            return Array.isArray(filterValue) && filterValue.includes(value as MetadataValue);
           case 'not_in':
-            return Array.isArray(filterValue) && !filterValue.includes(value);
+            return Array.isArray(filterValue) && !filterValue.includes(value as MetadataValue);
           default:
             return true;
         }

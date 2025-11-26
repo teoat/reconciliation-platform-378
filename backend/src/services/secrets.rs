@@ -402,35 +402,81 @@ impl DefaultSecretsManager {
     }
 
     /// Get JWT secret
-    /// In production, JWT_SECRET must be set or the application will fail to start
-    pub fn get_jwt_secret(&self) -> String {
-        // In production, fail if JWT_SECRET is not set
+    /// In production, JWT_SECRET must be set or the application will return an error
+    pub fn get_jwt_secret(&self) -> AppResult<String> {
+        // In production, return an error if JWT_SECRET is not set
         #[cfg(not(debug_assertions))]
         {
-            SecretsService::get_jwt_secret().unwrap_or_else(|_| {
-                panic!("JWT_SECRET environment variable must be set in production");
-            })
+            SecretsService::get_jwt_secret()
         }
 
         // In development, allow fallback
         #[cfg(debug_assertions)]
         {
-            self.get_secret("JWT_SECRET", "development-secret-key-only")
+            Ok(self.get_secret("JWT_SECRET", "development-secret-key-only"))
         }
     }
 
     /// Get database URL
-    pub fn get_database_url(&self) -> String {
+    pub fn get_database_url(&self) -> AppResult<String> {
         #[cfg(not(debug_assertions))]
         {
-            SecretsService::get_database_url().unwrap_or_else(|_| {
-                panic!("DATABASE_URL environment variable must be set in production");
-            })
+            SecretsService::get_database_url()
         }
 
         #[cfg(debug_assertions)]
         {
-            self.get_secret("DATABASE_URL", "postgresql://reconciliation_user:reconciliation_pass@localhost:5432/reconciliation_app")
+            Ok(self.get_secret("DATABASE_URL", "postgresql://reconciliation_user:reconciliation_pass@localhost:5432/reconciliation_app"))
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::env;
+
+    #[test]
+    fn test_default_secrets_manager_production_error() {
+        let manager = DefaultSecretsManager;
+
+        // Store original environment variables to restore them later
+        let original_jwt_secret = env::var("JWT_SECRET").ok();
+        let original_database_url = env::var("DATABASE_URL").ok();
+
+        // Unset JWT_SECRET and DATABASE_URL
+        env::remove_var("JWT_SECRET");
+        env::remove_var("DATABASE_URL");
+
+        // Test get_jwt_secret in a production-like scenario (debug_assertions off)
+        // Since get_jwt_secret calls SecretsService::get_secret_validated, which calls SecretsService::get_secret
+        // and that returns AppError::NotFound, we expect AppError::Config due to length validation.
+        // However, the current code in DefaultSecretsManager simply calls SecretsService::get_jwt_secret() which returns
+        // AppError::NotFound on missing env var.
+        let jwt_result = manager.get_jwt_secret();
+        assert!(jwt_result.is_err());
+        if let Err(AppError::NotFound(msg)) = jwt_result {
+            assert!(msg.contains("Secret 'JWT_SECRET' not found"), "Unexpected error message for JWT_SECRET: {}", msg);
+        } else {
+            panic!("Expected AppError::NotFound for missing JWT_SECRET, but got: {:?}", jwt_result);
+        }
+
+        // Test get_database_url in a production-like scenario (debug_assertions off)
+        let db_result = manager.get_database_url();
+        assert!(db_result.is_err());
+        if let Err(AppError::NotFound(msg)) = db_result {
+            assert!(msg.contains("Secret 'DATABASE_URL' not found"), "Unexpected error message for DATABASE_URL: {}", msg);
+        } else {
+            panic!("Expected AppError::NotFound for missing DATABASE_URL, but got: {:?}", db_result);
+        }
+
+        // Restore original environment variables
+        if let Some(val) = original_jwt_secret {
+            env::set_var("JWT_SECRET", val);
+        }
+        if let Some(val) = original_database_url {
+            env::set_var("DATABASE_URL", val);
+        }
+    }
+}
+

@@ -449,7 +449,7 @@ mod reconciliation_service_tests {
             .await;
 
         assert!(result.is_ok());
-        let jobs = result.unwrap();
+        let _jobs = result.unwrap();
         // Can be empty if no jobs created - no assertion needed as len() is always >= 0
     }
 

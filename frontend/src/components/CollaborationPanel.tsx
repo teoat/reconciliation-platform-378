@@ -25,21 +25,7 @@ interface LiveComment {
   replies?: LiveComment[];
 }
 
-interface Comment {
-  id?: string;
-  userName?: string;
-  message?: string;
-  timestamp?: number | string;
-}
-
-interface ActiveUser {
-  id: string;
-  userId?: string;
-  name?: string;
-  page?: string;
-  lastSeen?: string;
-  action?: string;
-}
+// Comment and ActiveUser interfaces removed - unused
 
 interface WebSocketUserMessage {
   userId?: string;
@@ -100,7 +86,7 @@ export const CollaborationPanel: React.FC<CollaborationPanelProps> = ({
     }
   };
 
-  const handleSendReply = (commentId: string) => {
+  const handleSendReply = (_commentId: string) => {
     if (replyText.trim()) {
       // In a real implementation, this would send a reply
       setReplyText('');

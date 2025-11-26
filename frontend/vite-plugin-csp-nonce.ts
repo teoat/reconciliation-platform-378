@@ -23,7 +23,7 @@ export function cspNoncePlugin(options: CSPNoncePluginOptions = {}): Plugin {
     enforce: 'pre',
     transformIndexHtml: {
       enforce: 'pre',
-      transform(html: string, context) {
+      transform(html: string, _context) {
         if (!enabled) {
           return html;
         }

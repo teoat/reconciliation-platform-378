@@ -35,7 +35,7 @@ mod security_service_tests {
     #[test]
     fn test_security_service_creation() {
         let config = create_test_security_config();
-        let service = SecurityService::new(config);
+        let _service = SecurityService::new(config);
         
         // Verify service is created
         assert!(true);
@@ -54,7 +54,7 @@ mod security_service_tests {
     #[tokio::test]
     async fn test_rate_limit_check() {
         let config = create_test_security_config();
-        let service = SecurityService::new(config);
+        let _service = SecurityService::new(config);
 
         let result = service.check_rate_limit("127.0.0.1").await;
         
@@ -73,7 +73,7 @@ mod security_service_tests {
     #[tokio::test]
     async fn test_record_login_attempt_creates_event() {
         let config = create_test_security_config();
-        let service = SecurityService::new(config);
+        let _service = SecurityService::new(config);
 
         // record_login_attempt internally logs security events
         service
@@ -87,21 +87,21 @@ mod security_service_tests {
     #[tokio::test]
     async fn test_get_security_events() {
         let config = create_test_security_config();
-        let service = SecurityService::new(config);
+        let _service = SecurityService::new(config);
 
         // Record some events via login attempts
         service
             .record_login_attempt("127.0.0.1", Some("user123"), true)
             .await;
 
-        let events = service.get_security_events(Some(10)).await;
+        let _events = service.get_security_events(Some(10)).await;
         // Can be empty or have events - no assertion needed as len() is always >= 0
     }
 
     #[tokio::test]
     async fn test_record_login_attempt() {
         let config = create_test_security_config();
-        let service = SecurityService::new(config);
+        let _service = SecurityService::new(config);
 
         service
             .record_login_attempt("127.0.0.1", Some("user123"), true)
@@ -114,7 +114,7 @@ mod security_service_tests {
     #[tokio::test]
     async fn test_generate_jwt_token() {
         let config = create_test_security_config();
-        let service = SecurityService::new(config);
+        let _service = SecurityService::new(config);
         let mut claims = std::collections::HashMap::new();
         claims.insert("role".to_string(), "user".to_string());
 
@@ -127,7 +127,7 @@ mod security_service_tests {
     #[tokio::test]
     async fn test_validate_jwt_token() {
         let config = create_test_security_config();
-        let service = SecurityService::new(config);
+        let _service = SecurityService::new(config);
         let mut claims = std::collections::HashMap::new();
         claims.insert("role".to_string(), "user".to_string());
 

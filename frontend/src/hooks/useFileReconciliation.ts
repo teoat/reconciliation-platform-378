@@ -245,7 +245,7 @@ export const useDashboard = () => {
       if (response.error) {
         setError(getErrorMessageFromApiError(response.error));
       } else {
-        setDashboardData(response.data);
+        setDashboardData(response.data as unknown as DashboardData);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch dashboard data');

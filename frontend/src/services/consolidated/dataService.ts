@@ -324,7 +324,7 @@ export class DataService {
   async getProjectData(projectId: string): Promise<ProjectData> {
     const response = await apiClient.get<ProjectData>(`/api/projects/${projectId}`);
     if (!response.success || !response.data) {
-      throw new Error(response.error || 'Failed to fetch project data');
+      throw new Error(typeof response.error === 'string' ? response.error : 'Failed to fetch project data');
     }
     return response.data as ProjectData;
   }
@@ -332,7 +332,7 @@ export class DataService {
   async updateProjectData(projectId: string, data: Partial<ProjectData>): Promise<ProjectData> {
     const response = await apiClient.put<ProjectData>(`/api/projects/${projectId}`, data);
     if (!response.success || !response.data) {
-      throw new Error(response.error || 'Failed to update project data');
+      throw new Error(typeof response.error === 'string' ? response.error : 'Failed to update project data');
     }
     return response.data as ProjectData;
   }
@@ -342,7 +342,7 @@ export class DataService {
   ): Promise<ProjectData> {
     const response = await apiClient.post<ProjectData>('/api/projects', projectData);
     if (!response.success || !response.data) {
-      throw new Error(response.error || 'Failed to create project');
+      throw new Error(typeof response.error === 'string' ? response.error : 'Failed to create project');
     }
     return response.data as ProjectData;
   }
@@ -383,7 +383,7 @@ export class DataService {
       });
 
       session.status = 'completed';
-      return response.data as UploadedFile;
+      return response.data as unknown as UploadedFile;
     } catch (error) {
       session.status = 'failed';
       throw error;

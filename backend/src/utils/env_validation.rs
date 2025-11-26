@@ -190,6 +190,10 @@ pub fn validate_and_exit_on_error() {
         eprintln!("{}", result.error_message());
         eprintln!("\n💡 Tip: Copy env.consolidated to .env and update required variables");
         eprintln!("   See docs/deployment/ENVIRONMENT_VARIABLES.md for details\n");
+        // Force flush before exit to ensure error message is visible
+        use std::io::Write;
+        std::io::stderr().flush().unwrap_or(());
+        std::io::stdout().flush().unwrap_or(());
         std::process::exit(1);
     }
 

@@ -68,9 +68,9 @@ export class ErrorClassifier {
     const name = error instanceof Error ? error.name : error.name;
     const message = error instanceof Error ? error.message : error.message;
     const statusCode =
-      error.statusCode ||
+      (error as ApiErrorLike & { statusCode?: number }).statusCode ||
       (error instanceof Error && 'statusCode' in error
-        ? (error as ApiErrorLike).statusCode
+        ? (error as ApiErrorLike & { statusCode?: number }).statusCode
         : undefined);
 
     if (name === 'TypeError' || (message && message.includes('fetch'))) {
@@ -97,9 +97,9 @@ export class ErrorClassifier {
 
   static isAuthError(error: ApiErrorLike): boolean {
     const statusCode =
-      error.statusCode ||
+      (error as ApiErrorLike & { statusCode?: number }).statusCode ||
       (error instanceof Error && 'statusCode' in error
-        ? (error as ApiErrorLike).statusCode
+        ? (error as ApiErrorLike & { statusCode?: number }).statusCode
         : undefined);
     return statusCode === 401 || statusCode === 403;
   }
@@ -117,9 +117,9 @@ export class ErrorClassifier {
     if (this.isAuthError(error)) return 'auth';
     if (this.isNetworkError(error)) return 'network';
     const statusCode =
-      error.statusCode ||
+      (error as ApiErrorLike & { statusCode?: number }).statusCode ||
       (error instanceof Error && 'statusCode' in error
-        ? (error as ApiErrorLike).statusCode
+        ? (error as ApiErrorLike & { statusCode?: number }).statusCode
         : undefined);
     if (statusCode && statusCode >= 500) return 'server';
     if (statusCode && statusCode >= 400) return 'client';

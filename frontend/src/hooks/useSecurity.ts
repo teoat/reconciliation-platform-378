@@ -157,7 +157,7 @@ export const useSecurity = () => {
       data: T,
       dataType: string
     ): T & { _encrypted: boolean; _encryptionType: string; _encryptedAt: string } => {
-      if (!isSecurityEnabled) return data;
+      if (!isSecurityEnabled) return data as T & { _encrypted: boolean; _encryptionType: string; _encryptedAt: string };
 
       // Simple encryption simulation
       const encryptedData = {

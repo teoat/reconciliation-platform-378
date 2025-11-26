@@ -62,6 +62,7 @@ pub enum AppError {
     Alert(String),
     Offline(String),
     OptimisticUpdate(String),
+    Monitoring(String),
 }
 
 impl fmt::Display for AppError {
@@ -94,6 +95,7 @@ impl fmt::Display for AppError {
             AppError::Alert(msg) => write!(f, "Alert: {}", msg),
             AppError::Offline(msg) => write!(f, "Offline error: {}", msg),
             AppError::OptimisticUpdate(msg) => write!(f, "Optimistic update error: {}", msg),
+            AppError::Monitoring(msg) => write!(f, "Monitoring error: {}", msg),
         }
     }
 }

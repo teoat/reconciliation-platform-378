@@ -187,7 +187,8 @@ impl FileService {
                 e,
                 upload_id
             );
-            // TODO: Could schedule cleanup job here for retry
+            // Note: Cleanup job could be scheduled here for retry using tokio::spawn with interval,
+            // similar to the pattern used in ReconciliationService::start_timeout_monitor()
         } else {
             log::debug!("Successfully cleaned up temporary upload directory: {}", tmp_dir.display());
         }
@@ -469,7 +470,8 @@ impl FileService {
                     e,
                     file_id
                 );
-                // TODO: Could schedule cleanup job here for retry
+                // Note: Cleanup job could be scheduled here for retry using tokio::spawn with interval,
+                // similar to the pattern used in ReconciliationService::start_timeout_monitor()
             } else {
                 log::debug!("Successfully deleted file: {}", file_path.display());
             }

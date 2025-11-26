@@ -3,7 +3,6 @@
 /// These tests are commented out until the service is implemented
 #[cfg(test)]
 mod database_sharding_service_tests {
-    use super::*;
     // Note: DatabaseShardingService doesn't exist - use ShardManager from database_sharding module
     // use reconciliation_backend::services::database_sharding::ShardManager;
 
@@ -42,7 +41,6 @@ mod database_sharding_service_tests {
 /// These tests are commented out until the service is implemented
 #[cfg(test)]
 mod realtime_service_tests {
-    use super::*;
     // Note: RealtimeService doesn't exist - use NotificationService or CollaborationService
     // use reconciliation_backend::services::realtime::NotificationService;
 
@@ -72,21 +70,20 @@ mod realtime_service_tests {
 /// NOTE: BackupRecoveryService doesn't exist - use BackupService or DisasterRecoveryService instead
 #[cfg(test)]
 mod backup_recovery_service_tests {
-    use super::*;
-    use reconciliation_backend::services::backup_recovery::{BackupService, DisasterRecoveryService, BackupConfig, BackupType};
+    use reconciliation_backend::services::backup_recovery::{BackupService, BackupConfig};
 
     #[tokio::test]
     async fn test_backup_recovery_creation() {
         // Use BackupService instead of BackupRecoveryService
         let config = BackupConfig::default();
-        let service = BackupService::new(config);
+        let _service = BackupService::new(config);
         assert!(true); // Service creation test
     }
 
     #[tokio::test]
     async fn test_backup_creation() {
         let config = BackupConfig::default();
-        let service = BackupService::new(config);
+        let _service = BackupService::new(config);
 
         // Note: BackupService has different API - use create_full_backup() or create_incremental_backup()
         // let result = service.create_full_backup().await;
@@ -113,12 +110,11 @@ mod backup_recovery_service_tests {
 /// NOTE: EmailMessage doesn't exist - EmailService uses different structure
 #[cfg(test)]
 mod email_service_tests {
-    use super::*;
     use reconciliation_backend::services::email::EmailService;
 
     #[tokio::test]
     async fn test_email_service_creation() {
-        let service = EmailService::new();
+        let _service = EmailService::new();
         assert!(true); // Service creation test
     }
 
@@ -145,14 +141,13 @@ mod email_service_tests {
 /// NOTE: MetricType doesn't exist in monitoring module - exists in advanced_metrics module
 #[cfg(test)]
 mod monitoring_service_tests {
-    use super::*;
     use reconciliation_backend::services::monitoring::MonitoringService;
     // Note: MetricType is in advanced_metrics module, not monitoring
     // use reconciliation_backend::services::advanced_metrics::MetricType;
 
     #[tokio::test]
     async fn test_monitoring_service_creation() {
-        let service = MonitoringService::new();
+        let _service = MonitoringService::new();
         assert!(true); // Service creation test
     }
 
@@ -186,7 +181,6 @@ mod monitoring_service_tests {
 /// NOTE: SecretType doesn't exist - SecretsService may use different API
 #[cfg(test)]
 mod secrets_service_tests {
-    use super::*;
 
     #[tokio::test]
     async fn test_secrets_service_creation() {

@@ -285,11 +285,11 @@ export const ProjectPage: React.FC = () => {
     },
     onSubmit: async (values) => {
       const newProject = await ApiService.createProject({
-        name: values.name.trim(),
-        description: values.description.trim() || undefined,
+        name: (values.name as string).trim(),
+        description: (values.description as string)?.trim() || undefined,
       });
 
-      setProjects((prev) => [newProject, ...prev]);
+      setProjects((prev) => [newProject as unknown as ProjectInfo, ...prev]);
       setShowCreateModal(false);
       createProjectForm.reset();
       toast.success('Project created successfully');

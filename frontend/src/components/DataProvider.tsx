@@ -4,7 +4,7 @@ import React, { useState, useEffect, memo } from 'react';
 import { DataContext, DataContextType } from './data/context';
 import { useDataValidation } from './data/sync';
 import { createInitialCrossPageData } from './data/initialData';
-import { WorkflowStage, Alert, Notification } from './data/types';
+import { WorkflowStage, Alert, Notification, CashflowData } from './data/types';
 import type { ReactNode } from 'react';
 import type { ProjectData } from '../services/dataManagement/types';
 import {
@@ -41,7 +41,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [crossPageData, setCrossPageData] = useState(createInitialCrossPageData());
-  const [currentProject, setCurrentProject] = useState<ProjectData | null>(null);
+  const [_currentProject, setCurrentProject] = useState<ProjectData | null>(null);
 
   // Security hook
   const securityData = useDataProviderSecurity();
@@ -203,7 +203,7 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   );
 
   const exportAuditLogsWrapper = React.useCallback(
-    (startDate?: string, endDate?: string) => {
+    (_startDate?: string, _endDate?: string) => {
       return securityData.exportAuditLogs();
     },
     [securityData]
@@ -258,6 +258,13 @@ export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
     // Storage methods
     exportProject: storageData.exportProject,
     importProject: storageData.importProject,
+    getCashflowData: (): CashflowData | null => {
+      // Type conversion needed: service CashflowData -> component CashflowData
+      // Component type has: id, projectId, records, lastUpdated
+      // Service type has: categories, metrics, discrepancies, lastAnalyzed
+      // Return null for now - types need to be aligned between service and component layers
+      return null;
+    },
   };
 
   // Accessibility: Announce loading and error states to screen readers

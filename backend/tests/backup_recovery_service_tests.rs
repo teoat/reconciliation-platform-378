@@ -37,7 +37,7 @@ mod backup_recovery_service_tests {
     #[tokio::test]
     async fn test_backup_service_creation() {
         let config = create_test_backup_config();
-        let service = BackupService::new(config);
+        let _service = BackupService::new(config);
         
         // Verify service is created
         assert!(true);
@@ -63,7 +63,7 @@ mod backup_recovery_service_tests {
         let result = service.list_backups().await;
         assert!(result.is_ok());
 
-        let backups = result.unwrap();
+        let _backups = result.unwrap();
         // Can be empty - no assertion needed as len() is always >= 0
     }
 
@@ -82,7 +82,7 @@ mod backup_recovery_service_tests {
     async fn test_disaster_recovery_service_creation() {
         let config = create_test_backup_config();
         let backup_service = BackupService::new(config);
-        let service = DisasterRecoveryService::new(backup_service);
+        let _service = DisasterRecoveryService::new(backup_service);
         
         // Verify service is created
         assert!(true);

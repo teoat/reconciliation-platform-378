@@ -21,9 +21,10 @@ export class ProjectsApiService {
       let response;
 
       if (search) {
-        response = await apiClient.searchProjects(search, page, per_page);
+        // searchProjects doesn't exist, use getProjects with search params
+        response = await apiClient.get(`/api/projects?search=${encodeURIComponent(search)}&page=${page}&per_page=${per_page}`);
       } else {
-        response = await apiClient.getProjects(page, per_page);
+        response = await apiClient.get(`/api/projects?page=${page}&per_page=${per_page}`);
       }
 
       if (response.error) {
@@ -157,10 +158,6 @@ export class ProjectsApiService {
       // createDataSource doesn't exist - use uploadFile or another method
       // For now, throw an error indicating this needs to be implemented
       throw new Error('createDataSource is not yet implemented. Use uploadFile instead.');
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
-      }
-      return response.data;
     } catch (error) {
       throw new Error(error instanceof Error ? error.message : 'Failed to create data source');
     }

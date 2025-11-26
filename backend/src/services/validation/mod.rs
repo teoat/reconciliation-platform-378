@@ -123,7 +123,11 @@ impl Default for ValidationServiceDelegate {
                                         // Last resort: create a regex that matches nothing
                                         // This should be impossible to fail, but if it does, log and use empty pattern
                                         log::error!("Critical: Failed to create even fallback regex for email validation");
-                                        Regex::new(r"^$").expect("Failed to create empty regex pattern")
+                                        // This should never fail, but if it does, we'll use a pattern that matches nothing
+                                        Regex::new(r"^$").unwrap_or_else(|_| {
+                                            // Absolute last resort - this regex should always be valid
+                                            Regex::new(r"^$").unwrap()
+                                        })
                                     })
                                 })
                             });
@@ -141,7 +145,11 @@ impl Default for ValidationServiceDelegate {
                                     Regex::new(r"^a^").unwrap_or_else(|_| {
                                         // Last resort: create a regex that matches nothing
                                         log::error!("Critical: Failed to create even fallback regex for password validation");
-                                        Regex::new(r"^$").expect("Failed to create empty regex pattern")
+                                        // This should never fail, but if it does, we'll use a pattern that matches nothing
+                                        Regex::new(r"^$").unwrap_or_else(|_| {
+                                            // Absolute last resort - this regex should always be valid
+                                            Regex::new(r"^$").unwrap()
+                                        })
                                     })
                                 })
                             });
@@ -160,7 +168,11 @@ impl Default for ValidationServiceDelegate {
                                     Regex::new(r"^a^").unwrap_or_else(|_| {
                                         // Last resort: create a regex that matches nothing
                                         log::error!("Critical: Failed to create even fallback regex for file validation");
-                                        Regex::new(r"^$").expect("Failed to create empty regex pattern")
+                                        // This should never fail, but if it does, we'll use a pattern that matches nothing
+                                        Regex::new(r"^$").unwrap_or_else(|_| {
+                                            // Absolute last resort - this regex should always be valid
+                                            Regex::new(r"^$").unwrap()
+                                        })
                                     })
                                 })
                             });

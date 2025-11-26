@@ -13,7 +13,7 @@ export class StorageUtils {
     const numRecords = Math.floor(sizeInBytes / recordSize);
 
     for (let i = 0; i < numRecords; i++) {
-      data.records.push({
+      (data.records as unknown[]).push({
         id: i,
         name: `Record ${i}`,
         data: `Data for record ${i}`,

@@ -88,7 +88,6 @@ export class ReportManager {
 
   async executeReport(
     id: string,
-    parameters?: Metadata,
     queryExecutor: (
       report: ReportConfig,
       parameters?: Metadata
@@ -97,8 +96,9 @@ export class ReportManager {
       data: Array<Record<string, unknown>>,
       filters: ReportFilter[],
       parameters?: Metadata
-    ) => Array<Record<string, unknown>>
-  ): Promise<Record<string, unknown>> {
+    ) => Array<Record<string, unknown>>,
+    parameters?: Metadata
+  ): Promise<{ data: Array<Record<string, unknown>>; metadata: ReportMetadata }> {
     const report = this.reports.get(id);
     if (!report) {
       throw new Error(`Report ${id} not found`);

@@ -40,7 +40,7 @@ export class QueryExecutors {
       case 'kpi':
         return this.dataGenerators.generateKPIData();
       case 'table':
-        return this.dataGenerators.generateTableData();
+        return this.dataGenerators.generateTableData() as unknown as Record<string, unknown>;
       default:
         return { message: 'Widget data not available' };
     }

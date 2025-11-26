@@ -217,9 +217,9 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   };
 
   // Data table columns for data sources
-  const dataSourceColumns: Column<Record<string, unknown>>[] = [
+  const dataSourceColumns: Column<BackendDataSource>[] = [
     {
-      key: 'filename' as keyof Record<string, unknown>,
+      key: 'filename' as keyof BackendDataSource,
       header: 'Name',
       sortable: true,
       render: (value) => (
@@ -230,7 +230,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       ),
     },
     {
-      key: 'content_type' as keyof Record<string, unknown>,
+      key: 'content_type' as keyof BackendDataSource,
       header: 'Type',
       sortable: true,
       render: (value) => (
@@ -240,7 +240,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       ),
     },
     {
-      key: 'status' as keyof Record<string, unknown>,
+      key: 'status' as keyof BackendDataSource,
       header: 'Status',
       sortable: true,
       render: (value) => (
@@ -252,21 +252,21 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       ),
     },
     {
-      key: 'created_at' as keyof Record<string, unknown>,
+      key: 'created_at' as keyof BackendDataSource,
       header: 'Uploaded',
       sortable: true,
       render: (value) => new Date(String(value)).toLocaleDateString(),
     },
     {
-      key: 'id' as keyof Record<string, unknown>,
+      key: 'id' as keyof BackendDataSource,
       header: 'Actions',
       render: (_, row) => (
         <div className="flex space-x-2">
           <Button
             size="sm"
             variant="outline"
-            onClick={() => processFile(String((row as Record<string, unknown>).id))}
-            disabled={(row as Record<string, unknown>).status === 'processing'}
+            onClick={() => processFile(String((row as unknown as BackendDataSource).id))}
+            disabled={(row as unknown as BackendDataSource).status === 'processing'}
           >
             Process
           </Button>
@@ -276,9 +276,9 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   ];
 
   // Data table columns for reconciliation jobs
-  const jobColumns: Column<Record<string, unknown>>[] = [
+  const jobColumns: Column<BackendReconciliationJob>[] = [
     {
-      key: 'id' as keyof Record<string, unknown>,
+      key: 'id' as keyof BackendReconciliationJob,
       header: 'Job ID',
       sortable: true,
       render: (value) => (
@@ -286,7 +286,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       ),
     },
     {
-      key: 'status' as keyof Record<string, unknown>,
+      key: 'status' as keyof BackendReconciliationJob,
       header: 'Status',
       sortable: true,
       render: (value) => (
@@ -298,13 +298,13 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       ),
     },
     {
-      key: 'created_at' as keyof Record<string, unknown>,
+      key: 'created_at' as keyof BackendReconciliationJob,
       header: 'Started',
       sortable: true,
       render: (value) => (value ? new Date(String(value)).toLocaleString() : 'N/A'),
     },
     {
-      key: 'progress' as keyof Record<string, unknown>,
+      key: 'progress' as keyof BackendReconciliationJob,
       header: 'Progress',
       render: (value, row) => (
         <div className="flex items-center space-x-2">
@@ -326,12 +326,12 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       ),
     },
     {
-      key: 'actions',
+      key: 'id' as keyof BackendReconciliationJob,
       header: 'Actions',
       render: (_, row) => (
         <div className="flex space-x-2">
-          {row.status === 'pending' && (
-            <Button size="sm" variant="primary" onClick={() => startJob(row.id)}>
+          {(row as unknown as BackendReconciliationJob).status === 'pending' && (
+            <Button size="sm" variant="primary" onClick={() => startJob(String(row.id))}>
               <Play className="h-4 w-4 mr-1" />
               Start
             </Button>
@@ -364,9 +364,9 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
   ];
 
   // Data table columns for matches
-  const matchColumns: Column<Record<string, unknown>>[] = [
+  const matchColumns: Column<BackendReconciliationMatch>[] = [
     {
-      key: 'id' as keyof Record<string, unknown>,
+      key: 'id' as keyof BackendReconciliationMatch,
       header: 'Match ID',
       sortable: true,
       render: (value) => (
@@ -374,7 +374,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       ),
     },
     {
-      key: 'confidence_score' as keyof Record<string, unknown>,
+      key: 'confidence_score' as keyof BackendReconciliationMatch,
       header: 'Confidence',
       sortable: true,
       render: (value) => {
@@ -397,7 +397,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       },
     },
     {
-      key: 'match_type' as keyof Record<string, unknown>,
+      key: 'match_type' as keyof BackendReconciliationMatch,
       header: 'Status',
       sortable: true,
       render: (value) => (
@@ -409,13 +409,13 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
       ),
     },
     {
-      key: 'created_at',
+      key: 'created_at' as keyof BackendReconciliationMatch,
       header: 'Created',
       sortable: true,
       render: (value) => (value ? new Date(value).toLocaleDateString() : 'N/A'),
     },
     {
-      key: 'actions',
+      key: 'id' as keyof BackendReconciliationMatch,
       header: 'Actions',
       render: (_, row) => (
         <div className="flex space-x-2">
@@ -428,7 +428,7 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
           >
             View Details
           </Button>
-          {row.status === 'pending' && (
+          {((row as unknown as BackendReconciliationMatch).match_type === 'pending' || (row as unknown as BackendReconciliationMatch).match_type === 'manual') && (
             <>
               <Button
                 size="sm"
@@ -436,12 +436,15 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
                 onClick={async () => {
                   // Optimistic approve
                   const original = { ...row };
-                  await updateMatch(row.id, { ...row, status: 'approved' });
+                  const matchId = String((row as unknown as BackendReconciliationMatch).id);
+                  await updateMatch(matchId, { match_type: 'exact' } as Partial<BackendReconciliationMatch>);
                   try {
-                    await apiClient.batchResolveMatches([{ match_id: row.id, action: 'approve' }]);
+                    if (projectId) {
+                      await apiClient.updateReconciliationMatch(projectId, matchId, { status: 'approved' });
+                    }
                   } catch (e) {
                     // Rollback on failure
-                    await updateMatch(row.id, original);
+                    await updateMatch(matchId, original as Partial<BackendReconciliationMatch>);
                   }
                 }}
               >
@@ -453,11 +456,14 @@ const ReconciliationPage: React.FC<ReconciliationPageProps> = () => {
                 variant="danger"
                 onClick={async () => {
                   const original = { ...row };
-                  await updateMatch(row.id, { ...row, status: 'rejected' });
+                  const matchId = String((row as unknown as BackendReconciliationMatch).id);
+                  await updateMatch(matchId, { match_type: 'manual' } as Partial<BackendReconciliationMatch>);
                   try {
-                    await apiClient.batchResolveMatches([{ match_id: row.id, action: 'reject' }]);
+                    if (projectId) {
+                      await apiClient.updateReconciliationMatch(projectId, matchId, { status: 'rejected' });
+                    }
                   } catch (e) {
-                    await updateMatch(row.id, original);
+                    await updateMatch(matchId, original as Partial<BackendReconciliationMatch>);
                   }
                 }}
               >

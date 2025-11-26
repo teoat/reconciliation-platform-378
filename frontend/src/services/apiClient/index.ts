@@ -36,7 +36,8 @@ import {
   ProjectQueryParams,
   UserQueryParams,
 } from './types';
-import { DashboardData, ReconciliationStats } from '../../types/index';
+import { DashboardData } from '../../types/index';
+import type { ReconciliationStats } from '../../types/backend-aligned';
 import {
   BackendUser,
   BackendProject,

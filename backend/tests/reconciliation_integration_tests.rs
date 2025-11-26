@@ -467,7 +467,7 @@ mod reconciliation_job_tests {
 #[cfg(test)]
 mod matching_algorithm_tests {
     use reconciliation_backend::services::reconciliation::matching::{
-        ContainsMatchingAlgorithm, ExactMatchingAlgorithm, FuzzyMatchingAlgorithm, MatchingAlgorithm,
+        ContainsMatchingAlgorithm, ExactMatchingAlgorithm, FuzzyMatchingAlgorithm,
     };
     use reconciliation_backend::services::reconciliation::types::FuzzyAlgorithmType;
 
@@ -607,7 +607,7 @@ mod job_management_tests {
         let result = get_active_jobs(&reconciliation_service).await;
         assert!(result.is_ok());
         
-        let active_jobs = result.unwrap();
+        let _active_jobs = result.unwrap();
         // Can be empty - no assertion needed as len() is always >= 0
     }
 
@@ -622,7 +622,7 @@ mod job_management_tests {
         let result = get_queued_jobs(&reconciliation_service).await;
         assert!(result.is_ok());
         
-        let queued_jobs = result.unwrap();
+        let _queued_jobs = result.unwrap();
         // Can be empty - no assertion needed as len() is always >= 0
     }
 
@@ -709,7 +709,7 @@ mod job_management_tests {
 
     #[tokio::test]
     async fn test_confidence_scoring_edge_cases() {
-        use reconciliation_backend::services::reconciliation::matching::{match_records, MatchingAlgorithm};
+        use reconciliation_backend::services::reconciliation::matching::match_records;
         use reconciliation_backend::services::reconciliation::types::ReconciliationRecord;
         use std::collections::HashMap;
 
@@ -754,7 +754,7 @@ mod job_management_tests {
     #[tokio::test]
     async fn test_job_processor_concurrent_limit() {
         let (db, _temp_dir) = setup_test_database().await;
-        let db_arc = Arc::new(db);
+        let _db_arc = Arc::new(db);
         let job_processor = reconciliation_backend::services::reconciliation::JobProcessor::new(2, 100);
 
         // Test that max_concurrent_jobs limit is enforced
@@ -793,7 +793,7 @@ mod job_management_tests {
 mod edge_case_tests {
     use super::*;
     use reconciliation_backend::services::reconciliation::matching::{
-        ExactMatchingAlgorithm, FuzzyMatchingAlgorithm, MatchingAlgorithm, match_records,
+        ExactMatchingAlgorithm, FuzzyMatchingAlgorithm, match_records,
     };
     use reconciliation_backend::services::reconciliation::types::{
         FuzzyAlgorithmType, ReconciliationRecord,
@@ -978,7 +978,7 @@ mod edge_case_tests {
 
     #[tokio::test]
     async fn test_confidence_scoring_edge_cases() {
-        use reconciliation_backend::services::reconciliation::matching::{match_records, MatchingAlgorithm};
+        use reconciliation_backend::services::reconciliation::matching::match_records;
         use reconciliation_backend::services::reconciliation::types::ReconciliationRecord;
         use std::collections::HashMap;
 
