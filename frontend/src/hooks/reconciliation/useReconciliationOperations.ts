@@ -5,7 +5,7 @@
 
 import { useState, useCallback } from 'react';
 import { logger } from '../../services/logger';
-import { useReconciliationJobs } from '../useApi';
+import { useReconciliationJobs } from '@/components/reconciliation/hooks/useReconciliationJobs';
 
 export interface UseReconciliationOperationsOptions {
   projectId: string | null;

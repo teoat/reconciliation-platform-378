@@ -2,16 +2,20 @@
  * Audit Logs Tab Component
  */
 
-import { Activity } from 'lucide-react';
+import { useState } from 'react';
+import { Activity, Eye } from 'lucide-react';
 import type { AuditLog } from '../types';
 import { getStatusColor, getSeverityColor } from '../utils/formatters';
 import { formatTimeAgo } from '../../../utils/common/dateFormatting';
+import { AuditLogDetailModal } from './AuditLogDetailModal';
 
 interface AuditTabProps {
   auditLogs: AuditLog[];
 }
 
 export const AuditTab = ({ auditLogs }: AuditTabProps) => {
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [showModal, setShowModal] = useState(false);
   return (
     <div className="p-6">
       <div className="space-y-3">
@@ -47,10 +51,31 @@ export const AuditTab = ({ auditLogs }: AuditTabProps) => {
               >
                 {log.riskLevel}
               </span>
+              <button
+                onClick={() => {
+                  setSelectedLog(log);
+                  setShowModal(true);
+                }}
+                className="p-1 text-secondary-400 hover:text-secondary-600"
+                title="View Details"
+                aria-label={`View details for audit log ${log.id}`}
+              >
+                <Eye className="w-4 h-4" />
+              </button>
             </div>
           </div>
         ))}
       </div>
+
+      {showModal && selectedLog && (
+        <AuditLogDetailModal
+          log={selectedLog}
+          onClose={() => {
+            setShowModal(false);
+            setSelectedLog(null);
+          }}
+        />
+      )}
     </div>
   );
 };

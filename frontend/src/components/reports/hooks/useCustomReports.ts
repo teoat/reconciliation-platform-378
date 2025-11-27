@@ -42,12 +42,13 @@ export function useCustomReports({
         // Fallback to sample data if API fails
         logger.warn('API call failed, using sample data');
         setReports(getSampleReports());
+        setError('Using sample data - API unavailable');
       }
     } catch (error) {
       logger.error('Failed to load reports:', {
         error: error instanceof Error ? error.message : String(error),
       });
-      setError('Failed to load reports');
+      setError('Failed to load reports. Using sample data.');
       // Fallback to sample data
       setReports(getSampleReports());
     } finally {

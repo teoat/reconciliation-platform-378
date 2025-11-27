@@ -25,3 +25,33 @@ export {
   useRealtimeCollaboration,
   useHealthCheck,
 } from './api';
+
+// Reconciliation hooks - re-export from components for backward compatibility
+export { useReconciliationJobs } from '@/components/reconciliation/hooks/useReconciliationJobs';
+
+// Wrapper hooks for API-enhanced hooks to match expected interface
+import { useDataSourcesAPI } from './api-enhanced/useDataSourcesAPI';
+import { useReconciliationMatchesAPI } from './api-enhanced/useReconciliationMatchesAPI';
+
+// Wrapper to match expected interface
+export const useDataSources = (projectId: string | null) => {
+  const result = useDataSourcesAPI(projectId || undefined);
+  return {
+    dataSources: result.dataSources || [],
+    uploadFile: result.uploadFile,
+    processFile: result.processFile,
+    isLoading: result.isLoading,
+    error: result.error,
+  };
+};
+
+// Wrapper to match expected interface  
+export const useReconciliationMatches = (projectId: string | null) => {
+  const result = useReconciliationMatchesAPI(projectId || undefined);
+  return {
+    matches: result.matches || [],
+    updateMatch: result.updateMatch,
+    isLoading: result.isLoading,
+    error: result.error,
+  };
+};

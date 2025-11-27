@@ -4,9 +4,7 @@ import { Plus, FileText } from 'lucide-react';
 import { useData } from './DataProvider';
 import type { CustomReportsProps } from './types';
 import { useCustomReports } from './hooks/useCustomReports';
-import { ReportCard } from './components/ReportCard';
-import { ReportDetailModal } from './components/ReportDetailModal';
-import { CreateReportModal } from './components/CreateReportModal';
+import { ReportCard, ReportDetailModal, CreateReportModal, ReportsErrorBoundary } from './components';
 
 const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
   const { getReconciliationData, getCashflowData } = useData();
@@ -18,12 +16,14 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
     showReportModal,
     isLoading,
     filterTags,
+    error,
     setSelectedReport,
     setShowCreateModal,
     setShowReportModal,
     setFilterTags,
     exportReport,
     deleteReport,
+    loadReports,
   } = useCustomReports({
     getReconciliationData,
     getCashflowData,
@@ -56,7 +56,8 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <ReportsErrorBoundary>
+      <div className="max-w-7xl mx-auto">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
@@ -84,6 +85,12 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
             </button>
           </div>
         </div>
+
+        {error && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">{error}</p>
+          </div>
+        )}
 
         {project && (
           <div className="text-sm text-primary-600 bg-primary-50 px-3 py-2 rounded-lg inline-block">
@@ -132,8 +139,18 @@ const CustomReports = ({ project, onProgressUpdate }: CustomReportsProps) => {
       )}
 
       {/* Create Report Modal */}
-      {showCreateModal && <CreateReportModal onClose={() => setShowCreateModal(false)} />}
-    </div>
+      {showCreateModal && (
+        <CreateReportModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={async (report) => {
+            // Reload reports after creation
+            await loadReports();
+            setShowCreateModal(false);
+          }}
+        />
+      )}
+      </div>
+    </ReportsErrorBoundary>
   );
 };
 

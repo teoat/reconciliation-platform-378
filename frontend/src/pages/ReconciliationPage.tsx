@@ -61,7 +61,7 @@ import { ResultsTabContent } from '@/components/reconciliation/ResultsTabContent
 
 // Lazy load heavy components
 const FileDropzone = lazy(() =>
-  import('@/components/EnhancedDropzone').then((module) => ({ default: module.FileDropzone }))
+  import('@/components/files').then((module) => ({ default: module.FileDropzone }))
 );
 
 const ReconciliationPage: React.FC = () => {

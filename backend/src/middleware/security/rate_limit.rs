@@ -192,7 +192,7 @@ impl<S> RateLimitService<S> {
         max_requests: u32,
         window_seconds: u64,
     ) -> Result<bool, redis::RedisError> {
-        let mut conn = redis_client.get_async_connection().await?;
+        let mut conn = redis_client.get_multiplexed_async_connection().await?;
         let key = format!("ratelimit:{}", client_id);
         let now = chrono::Utc::now().timestamp() as f64;
         let window_start = now - window_seconds as f64;

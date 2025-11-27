@@ -29,11 +29,14 @@ class ReportExportService {
 
   /**
    * Export report as XLSX
+   * 
+   * Note: This implementation uses TSV format which Excel can open natively.
+   * For advanced features (formulas, formatting, multiple sheets), consider using:
+   * - 'xlsx' library (SheetJS) - https://sheetjs.com/
+   * - 'exceljs' library - https://github.com/exceljs/exceljs
    */
   async exportToXLSX(report: CustomReport, reportData: ReportData): Promise<void> {
     try {
-      // For XLSX, we'll create a simple CSV-like structure
-      // In production, use a library like 'xlsx' or 'exceljs'
       const headers = ['Metric', 'Value'];
       const rows = Object.entries(reportData.metrics).map(([key, value]) => {
         const metric = report.metrics.find((m) => m.id === key);
@@ -54,11 +57,15 @@ class ReportExportService {
 
   /**
    * Export report as PDF
+   * 
+   * Note: This implementation uses browser print functionality.
+   * For programmatic PDF generation with advanced features, consider using:
+   * - 'jsPDF' library - https://github.com/parallax/jsPDF
+   * - 'pdfkit' library (Node.js) - https://pdfkit.org/
+   * - 'react-pdf' library - https://react-pdf.org/
    */
   async exportToPDF(report: CustomReport, reportData: ReportData): Promise<void> {
     try {
-      // For PDF, create an HTML document and use browser print
-      // In production, use a library like 'jsPDF' or 'pdfkit'
       const htmlContent = this.generatePDFHTML(report, reportData);
       const printWindow = window.open('', '_blank');
       if (printWindow) {

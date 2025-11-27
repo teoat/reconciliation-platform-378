@@ -35,13 +35,6 @@
         "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378",
         "FRONTEND_BASE_URL": "http://localhost:3000"
       }
-    },
-    "ui-ux-diagnose": {
-      "command": "node",
-      "args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/ui-ux-diagnose/dist/index.js"],
-      "env": {
-        "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378"
-      }
     }
   }
 }

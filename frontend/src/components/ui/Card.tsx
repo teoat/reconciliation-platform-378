@@ -58,15 +58,15 @@ const Card: React.FC<CardProps> = memo(
     const interactiveProps = useMemo(() => {
       if (!onClick) return {};
       return {
-        role: 'button' as const,
-        tabIndex: 0,
-        'aria-label': title || 'Clickable card',
-        onKeyDown: (e: React.KeyboardEvent) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            onClick();
-          }
-        },
+          role: 'button' as const,
+          tabIndex: 0,
+          'aria-label': title || 'Clickable card',
+          onKeyDown: (e: React.KeyboardEvent) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onClick();
+            }
+          },
       };
     }, [onClick, title]);
 

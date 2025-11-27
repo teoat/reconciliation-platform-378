@@ -1,5 +1,4 @@
-import { memo, useMemo } from 'react';
-import { ProgressBar } from '@/components/ui/ProgressBar';
+import { memo, useMemo, useRef, useEffect } from 'react';
 
 interface Project {
   id: string;
@@ -35,12 +34,14 @@ export const SmartDashboardProjectCard = memo<SmartDashboardProjectCardProps>(({
     [project.priority_score]
   );
 
-  // Use CSS custom property for dynamic width
-  // Set via inline style on parent, used via Tailwind arbitrary value on child
-  const progressStyle = useMemo(
-    () => ({ '--progress-width': `${progressPercentage}%` } as React.CSSProperties),
-    [progressPercentage]
-  );
+  // Use ref to set width directly via DOM to avoid inline style warnings
+  const progressBarRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (progressBarRef.current) {
+      progressBarRef.current.style.width = `${progressPercentage}%`;
+    }
+  }, [progressPercentage]);
 
   // ARIA attributes as object to avoid linter false positives
   const ariaProps = useMemo(
@@ -81,16 +82,10 @@ export const SmartDashboardProjectCard = memo<SmartDashboardProjectCardProps>(({
           role="progressbar" 
           aria-label={`Priority score: ${progressPercentage}%`}
           {...ariaProps}
-          style={progressStyle}
         >
-          {/* 
-            Inline styles are required for dynamic progress bar width.
-            CSS variables must be set via inline style, and the width must reference the variable.
-            This is a standard React pattern for dynamic styling and is acceptable for this use case.
-          */}
           <div
+            ref={progressBarRef}
             className="absolute inset-y-0 left-0 h-full rounded-full bg-blue-500 transition-all duration-300 ease-out"
-            style={{ width: 'var(--progress-width)' }}
             aria-hidden="true"
           />
         </div>

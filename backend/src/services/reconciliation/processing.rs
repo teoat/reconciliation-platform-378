@@ -10,12 +10,12 @@ use uuid::Uuid;
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::models::schema::reconciliation_results;
-use crate::models::{DataSource, MatchType, NewReconciliationResult, ReconciliationRecord};
+use crate::models::{DataSource, NewReconciliationResult, ReconciliationRecord as DbReconciliationRecord};
 use diesel::RunQueryDsl;
 
 use super::job_management::{JobProgress, JobStatus};
 use super::matching::{ExactMatchingAlgorithm, FuzzyMatchingAlgorithm, MatchingAlgorithm};
-use super::types::FuzzyAlgorithmType;
+use super::types::{FuzzyAlgorithmType, MatchingResult, MatchingRuleType, ReconciliationRecord};
 use super::processing_config::{ChunkedProcessingConfig, ChunkProcessingConfig};
 use crate::models::ReconciliationResult as ReconciliationResultType;
 
@@ -127,11 +127,39 @@ async fn process_data_sources_chunked_internal(
     Ok(results)
 }
 
+/// Convert database reconciliation record to service reconciliation record
+fn convert_db_record_to_service_record(db_record: &DbReconciliationRecord) -> ReconciliationRecord {
+    // Extract fields from source_data JSON
+    let fields = if let serde_json::Value::Object(map) = &db_record.source_data {
+        map.iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
+    } else {
+        std::collections::HashMap::new()
+    };
+
+    // Extract metadata from audit_trail or create empty
+    let metadata = if let serde_json::Value::Object(map) = &db_record.audit_trail {
+        map.iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect()
+    } else {
+        std::collections::HashMap::new()
+    };
+
+    ReconciliationRecord {
+        id: db_record.id,
+        source_id: db_record.external_id.clone().unwrap_or_else(|| db_record.id.to_string()),
+        fields,
+        metadata,
+    }
+}
+
 /// Process a single chunk of data
 async fn process_chunk(
     config: ChunkProcessingConfig,
-    records_a_chunk: &[ReconciliationRecord],
-    records_b: &[ReconciliationRecord],
+    records_a_chunk: &[DbReconciliationRecord],
+    records_b: &[DbReconciliationRecord],
     exact_algorithm: &dyn MatchingAlgorithm,
     fuzzy_algorithm: &FuzzyMatchingAlgorithm,
 ) -> AppResult<Vec<ReconciliationResultType>> {
@@ -143,16 +171,19 @@ async fn process_chunk(
         .collect();
 
     for record_a in records_a_chunk {
-        let mut best_match: Option<super::matching::MatchingResult> = None;
+        let mut best_match: Option<MatchingResult> = None;
+        let service_record_a = convert_db_record_to_service_record(record_a);
 
         for record_b in records_b {
+            let service_record_b = convert_db_record_to_service_record(record_b);
+            
             // Determine which algorithm to use based on rules
             // For simplicity, we'll prefer exact and fallback to fuzzy
             // A more robust implementation would iterate through rules
             let algorithm: &dyn MatchingAlgorithm = if config
                 .matching_rules
                 .iter()
-                .any(|r| r.algorithm == "exact")
+                .any(|r| matches!(r.rule_type, MatchingRuleType::Exact))
             {
                 exact_algorithm
             } else {
@@ -160,8 +191,8 @@ async fn process_chunk(
             };
 
             if let Some(match_result) = super::matching::match_records(
-                record_a,
-                record_b,
+                &service_record_a,
+                &service_record_b,
                 algorithm,
                 &fields_to_match,
                 config.confidence_threshold,
@@ -204,7 +235,7 @@ async fn process_chunk(
                 job_id: config.job_id,
                 record_a_id: record_a.id,
                 record_b_id: None,
-                match_type: MatchType::None.to_string(),
+                match_type: "unmatched".to_string(),
                 confidence_score: None,
                 match_details: None,
                 status: Some("unmatched".to_string()),
@@ -336,13 +367,13 @@ pub async fn send_progress(
 pub async fn load_records_from_data_source(
     db: &Database,
     data_source: &DataSource,
-) -> AppResult<Vec<ReconciliationRecord>> {
+) -> AppResult<Vec<DbReconciliationRecord>> {
     let mut conn = db.get_connection()?;
     use crate::models::schema::reconciliation_records::dsl::*;
     use diesel::prelude::*;
     let records = reconciliation_records
         .filter(project_id.eq(&data_source.project_id))
-        .select(ReconciliationRecord::as_select())
+        .select(DbReconciliationRecord::as_select())
         .load(&mut conn)
         .map_err(AppError::Database)?;
     Ok(records)

@@ -25,8 +25,29 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
     handleCreatePolicy,
     updatePolicy,
     deletePolicy,
+    loadSecurityData,
   } = useEnterpriseSecurity(onProgressUpdate);
   const [showScanModal, setShowScanModal] = useState(false);
+
+  const handleAccessUpdate = async (updatedAccess: import('./types').AccessControl) => {
+    try {
+      await loadSecurityData();
+      // Access control is updated via the modal's API call
+      // This handler ensures the list is refreshed
+    } catch (error) {
+      logger.error('Error updating access control', { error });
+    }
+  };
+
+  const handleAccessRevoke = async (accessId: string) => {
+    try {
+      await loadSecurityData();
+      // Access control is revoked via the modal's API call
+      // This handler ensures the list is refreshed
+    } catch (error) {
+      logger.error('Error revoking access control', { error });
+    }
+  };
 
   const tabs: Array<{ id: SecurityTab; label: string; icon: typeof Shield }> = [
     { id: 'policies', label: 'Security Policies', icon: Shield },
@@ -98,7 +119,7 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
                       : 'border-transparent text-secondary-500 hover:text-secondary-700 hover:border-secondary-300'
                   }`}
                   role="tab"
-                  aria-selected={activeTab === tab.id ? 'true' : 'false'}
+                  aria-selected={activeTab === tab.id}
                   aria-label={tab.label}
                   type="button"
                 >
@@ -114,21 +135,30 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
         {activeTab === 'policies' && (
           <PoliciesTab
             policies={securityPolicies}
-            onPolicyUpdate={(updatedPolicy) => {
-              // Update policy in list
-              const updated = securityPolicies.map((p) =>
-                p.id === updatedPolicy.id ? updatedPolicy : p
-              );
-              // This would need to be handled by the hook
+            onPolicyUpdate={async (updatedPolicy) => {
+              try {
+                await updatePolicy(updatedPolicy);
+              } catch (error) {
+                console.error('Failed to update policy', error);
+              }
             }}
-            onPolicyDelete={(policyId) => {
-              // Delete policy from list
-              // This would need to be handled by the hook
+            onPolicyDelete={async (policyId) => {
+              try {
+                await deletePolicy(policyId);
+              } catch (error) {
+                console.error('Failed to delete policy', error);
+              }
             }}
           />
         )}
 
-        {activeTab === 'access' && <AccessTab accessControls={accessControls} />}
+        {activeTab === 'access' && (
+          <AccessTab
+            accessControls={accessControls}
+            onAccessUpdate={handleAccessUpdate}
+            onAccessRevoke={handleAccessRevoke}
+          />
+        )}
 
         {activeTab === 'audit' && <AuditTab auditLogs={auditLogs} />}
 

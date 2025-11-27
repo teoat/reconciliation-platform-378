@@ -99,7 +99,7 @@ impl AdvancedRateLimiter {
     async fn check_redis_rate_limit(&self, key: &str) -> AppResult<RateLimitResult> {
         if let Some(client) = &self.redis_client {
             let mut conn = client
-                .get_async_connection()
+                .get_multiplexed_async_connection()
                 .await
                 .map_err(|e| AppError::Internal(format!("Redis connection failed: {}", e)))?;
 
@@ -185,7 +185,7 @@ impl AdvancedRateLimiter {
 
         if let Some(client) = &self.redis_client {
             let mut conn = client
-                .get_async_connection()
+                .get_multiplexed_async_connection()
                 .await
                 .map_err(|e| AppError::Internal(format!("Redis connection failed: {}", e)))?;
 

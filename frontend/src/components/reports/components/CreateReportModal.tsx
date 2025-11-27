@@ -7,6 +7,7 @@ import { X, Save, Plus, Trash2, Filter, BarChart3 } from 'lucide-react';
 import type { CustomReport, ReportFilter, ReportMetric, ReportVisualization } from '../types';
 import { reportsApiService } from '@/services/reportsApiService';
 import { logger } from '@/services/logger';
+import { validateReport } from '../utils/validation';
 import Input from '../../ui/Input';
 import Select from '../../ui/Select';
 
@@ -34,12 +35,13 @@ export function CreateReportModal({ onClose, onSuccess }: CreateReportModalProps
   const [showVisualizationForm, setShowVisualizationForm] = useState(false);
 
   const validate = (): boolean => {
+    const validationErrors = validateReport(formData);
     const newErrors: Record<string, string> = {};
-    if (!formData.name?.trim()) newErrors.name = 'Report name is required';
-    if (!formData.description?.trim()) newErrors.description = 'Description is required';
-    if (!formData.dataSource) newErrors.dataSource = 'Data source is required';
+    validationErrors.forEach((err) => {
+      newErrors[err.field] = err.message;
+    });
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return validationErrors.length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { X, Shield, AlertTriangle, CheckCircle, Loader } from 'lucide-react';
+import { X, Shield, AlertTriangle, CheckCircle } from 'lucide-react';
 import { securityApiService } from '@/services/securityApiService';
 import { logger } from '@/services/logger';
 import Select from '../../ui/Select';
@@ -125,7 +125,7 @@ export function SecurityScanModal({ onClose }: SecurityScanModalProps) {
 
           {isScanning && (
             <div className="text-center py-12">
-              <Loader className="w-16 h-16 text-primary-600 mx-auto mb-4 animate-spin" />
+              <div className="w-16 h-16 border-4 border-primary-600 border-t-transparent rounded-full mx-auto mb-4 animate-spin"></div>
               <h4 className="text-lg font-semibold text-secondary-900 mb-2">Scanning...</h4>
               <p className="text-secondary-600">Please wait while we analyze your security configuration</p>
             </div>

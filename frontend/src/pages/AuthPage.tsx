@@ -12,12 +12,12 @@ import { useToast } from '@/hooks/useToast';
 import { logger } from '@/services/logger';
 import { PageMeta } from '@/components/seo/PageMeta';
 import { isDemoModeEnabled } from '@/config/demoCredentials';
-import type { LoginForm, RegisterForm, DemoRole } from './types';
+import type { LoginForm, RegisterForm, DemoRole } from '@/pages/auth/types';
 import { useOAuth } from '@/pages/auth/hooks/useOAuth';
-import { LoginForm as LoginFormComponent } from './components/LoginForm';
-import { SignupForm as SignupFormComponent } from './components/SignupForm';
-import { OAuthButtons } from './components/OAuthButtons';
-import { DemoCredentials } from './components/DemoCredentials';
+import { LoginForm as LoginFormComponent } from '@/pages/auth/components/LoginForm';
+import { SignupForm as SignupFormComponent } from '@/pages/auth/components/SignupForm';
+import { OAuthButtons } from '@/pages/auth/components/OAuthButtons';
+import { DemoCredentials } from '@/pages/auth/components/DemoCredentials';
 
 const AuthPage: React.FC = () => {
   const { login, register: registerUser, isLoading, isAuthenticated } = useAuth();

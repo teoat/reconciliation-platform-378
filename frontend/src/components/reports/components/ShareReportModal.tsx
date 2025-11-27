@@ -7,6 +7,7 @@ import { X, Share2, Mail, Link as LinkIcon } from 'lucide-react';
 import type { CustomReport } from '../types';
 import { reportsApiService } from '@/services/reportsApiService';
 import { logger } from '@/services/logger';
+import { useToast } from '@/hooks/useToast';
 import Input from '../../ui/Input';
 import Select from '../../ui/Select';
 
@@ -16,6 +17,7 @@ interface ShareReportModalProps {
 }
 
 export function ShareReportModal({ report, onClose }: ShareReportModalProps) {
+  const toast = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [shareType, setShareType] = useState<'users' | 'link'>('users');
   const [userIds, setUserIds] = useState<string[]>([]);
@@ -42,8 +44,10 @@ export function ShareReportModal({ report, onClose }: ShareReportModalProps) {
         if (response.success && response.data) {
           setShareLink(response.data.shareLink);
           logger.info('Report shared successfully', { reportId: report.id });
+          toast.success('Report shared successfully');
         } else {
           setErrors({ submit: 'Failed to share report' });
+          toast.error('Failed to share report');
         }
       } else {
         // Generate share link
@@ -55,8 +59,10 @@ export function ShareReportModal({ report, onClose }: ShareReportModalProps) {
 
         if (response.success && response.data) {
           setShareLink(response.data.shareLink);
+          toast.success('Share link generated successfully');
         } else {
           setErrors({ submit: 'Failed to generate share link' });
+          toast.error('Failed to generate share link');
         }
       }
     } catch (error) {
@@ -67,9 +73,14 @@ export function ShareReportModal({ report, onClose }: ShareReportModalProps) {
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(shareLink);
-    // Show toast notification (would need toast service)
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(shareLink);
+      toast.success('Link copied to clipboard');
+    } catch (error) {
+      logger.error('Failed to copy to clipboard', { error });
+      toast.error('Failed to copy link');
+    }
   };
 
   return (
@@ -99,6 +110,7 @@ export function ShareReportModal({ report, onClose }: ShareReportModalProps) {
               { value: 'link', label: 'Generate Share Link' },
             ]}
             fullWidth
+            aria-label="Select share type"
           />
 
           {shareType === 'users' && (
@@ -126,6 +138,7 @@ export function ShareReportModal({ report, onClose }: ShareReportModalProps) {
                   { value: 'edit', label: 'View and Edit' },
                 ]}
                 fullWidth
+                aria-label="Select permissions level"
               />
             </>
           )}
@@ -139,8 +152,9 @@ export function ShareReportModal({ report, onClose }: ShareReportModalProps) {
                   onClick={copyToClipboard}
                   className="btn-secondary flex items-center space-x-2"
                   title="Copy to clipboard"
+                  aria-label="Copy share link to clipboard"
                 >
-                  <LinkIcon className="w-4 h-4" />
+                  <LinkIcon className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
             </div>

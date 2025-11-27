@@ -289,7 +289,7 @@ async fn check_redis_rate_limit(
     max_requests: u32,
     window_seconds: u64,
 ) -> Result<bool, redis::RedisError> {
-    let mut conn = redis_client.get_async_connection().await?;
+    let mut conn = redis_client.get_multiplexed_async_connection().await?;
     let redis_key = format!("ratelimit:{}", key);
     let now = chrono::Utc::now().timestamp() as f64;
     let window_start = now - window_seconds as f64;

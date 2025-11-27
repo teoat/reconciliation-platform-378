@@ -2,16 +2,26 @@
  * Access Control Tab Component
  */
 
-import { User, Lock } from 'lucide-react';
+import { useState } from 'react';
+import { User, Lock, Eye, Settings } from 'lucide-react';
 import type { AccessControl } from '../types';
 import { getStatusColor } from '../utils/formatters';
 import { formatTimeAgo } from '../../../utils/common/dateFormatting';
+import { AccessControlModal } from './AccessControlModal';
 
 interface AccessTabProps {
   accessControls: AccessControl[];
+  onAccessUpdate?: (access: AccessControl) => void;
+  onAccessRevoke?: (accessId: string) => void;
 }
 
-export const AccessTab = ({ accessControls }: AccessTabProps) => {
+export const AccessTab = ({
+  accessControls,
+  onAccessUpdate,
+  onAccessRevoke,
+}: AccessTabProps) => {
+  const [selectedAccess, setSelectedAccess] = useState<AccessControl | null>(null);
+  const [showModal, setShowModal] = useState(false);
   return (
     <div className="p-6">
       <div className="space-y-4">
@@ -83,9 +93,51 @@ export const AccessTab = ({ accessControls }: AccessTabProps) => {
                 Expires: {new Date(access.expiresAt).toLocaleString()}
               </div>
             )}
+
+            <div className="flex space-x-2 mt-3">
+              <button
+                onClick={() => {
+                  setSelectedAccess(access);
+                  setShowModal(true);
+                }}
+                className="btn-secondary text-sm flex-1 flex items-center justify-center space-x-1"
+              >
+                <Eye className="w-4 h-4" />
+                <span>View Details</span>
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedAccess(access);
+                  setShowModal(true);
+                }}
+                className="btn-primary text-sm flex-1 flex items-center justify-center space-x-1"
+              >
+                <Settings className="w-4 h-4" />
+                <span>Manage Access</span>
+              </button>
+            </div>
           </div>
         ))}
       </div>
+
+      {showModal && selectedAccess && (
+        <AccessControlModal
+          access={selectedAccess}
+          onClose={() => {
+            setShowModal(false);
+            setSelectedAccess(null);
+          }}
+          onUpdate={(updatedAccess) => {
+            onAccessUpdate?.(updatedAccess);
+            setSelectedAccess(updatedAccess);
+          }}
+          onRevoke={(accessId) => {
+            onAccessRevoke?.(accessId);
+            setShowModal(false);
+            setSelectedAccess(null);
+          }}
+        />
+      )}
     </div>
   );
 };

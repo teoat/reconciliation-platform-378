@@ -99,8 +99,8 @@ export function calculateMetrics(
       case 'percentage': {
         if (metric.calculation) {
           // Use enhanced calculation parser
-          const { evaluateCalculation } = await import('./calculationParser');
           try {
+            const { evaluateCalculation } = require('./calculationParser');
             const result = evaluateCalculation(metric.calculation, metricsData);
             metricsData[metric.id] = result;
           } catch (error) {

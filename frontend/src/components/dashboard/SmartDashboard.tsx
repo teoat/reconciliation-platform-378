@@ -131,15 +131,15 @@ const SmartDashboard = memo(({ project: _project }: SmartDashboardProps) => {
           iconColor="text-blue-600"
           trend={
             <div className="flex items-center">
-              {userMetrics.productivity_trend === 'increasing' ? (
-                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-              ) : (
-                <TrendingDown className="w-4 h-4 text-gray-400 mr-1" />
-              )}
-              <span className="text-sm text-gray-600 capitalize">
-                {userMetrics.productivity_trend ?? 'stable'}
-              </span>
-            </div>
+            {userMetrics.productivity_trend === 'increasing' ? (
+              <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+            ) : (
+              <TrendingDown className="w-4 h-4 text-gray-400 mr-1" />
+            )}
+            <span className="text-sm text-gray-600 capitalize">
+              {userMetrics.productivity_trend ?? 'stable'}
+            </span>
+          </div>
           }
         />
         <SmartDashboardMetricCard

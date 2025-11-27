@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { X, Download, Share, Filter } from 'lucide-react';
+import { X, Download, Share, Filter, AlertCircle } from 'lucide-react';
 import type { CustomReport } from '../types';
 import { formatMetricValue } from '../utils/reportUtils';
 import { ReportChart } from './ReportChart';
@@ -23,6 +23,7 @@ export function ReportDetailModal({ report, onClose, onExport }: ReportDetailMod
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadReportData();
@@ -30,13 +31,17 @@ export function ReportDetailModal({ report, onClose, onExport }: ReportDetailMod
 
   const loadReportData = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const response = await reportsApiService.getReportData(report.id);
       if (response.success && response.data) {
         setReportData(response.data);
+      } else {
+        setError('Failed to load report data');
       }
     } catch (error) {
       logger.error('Error loading report data', { error });
+      setError(error instanceof Error ? error.message : 'Failed to load report data');
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +87,17 @@ export function ReportDetailModal({ report, onClose, onExport }: ReportDetailMod
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto mb-4"></div>
                 <p className="text-secondary-600">Loading report data...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+                <h4 className="text-lg font-semibold text-secondary-900 mb-2">Error Loading Data</h4>
+                <p className="text-secondary-600 mb-4">{error}</p>
+                <button onClick={loadReportData} className="btn-primary">
+                  Retry
+                </button>
               </div>
             </div>
           ) : (
