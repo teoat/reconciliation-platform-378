@@ -138,6 +138,11 @@ export { default as IntegrationSettings } from './IntegrationSettings';
 export { Dashboard, AnalyticsDashboard, SmartDashboard } from './dashboard';
 
 // ============================================================================
+// RECONCILIATION COMPONENTS
+// ============================================================================
+export * from './reconciliation';
+
+// ============================================================================
 // FILE MANAGEMENT COMPONENTS
 // ============================================================================
 export { FileUploadInterface, EnhancedDropzone } from './files';
@@ -150,9 +155,7 @@ export { WorkflowOrchestrator, WorkflowAutomation } from './workflow';
 // ============================================================================
 // COLLABORATION COMPONENTS
 // ============================================================================
-export { CollaborationDashboard } from './collaboration/CollaborationDashboard';
-export { default as CollaborationPanel } from './collaboration/CollaborationPanel';
-export { default as CollaborativeFeatures } from './collaboration/CollaborativeFeatures';
+export * from './collaboration';
 
 // ============================================================================
 // REPORTING COMPONENTS
@@ -162,8 +165,7 @@ export { CustomReports, ReconciliationAnalytics as ReconciliationAnalyticsReport
 // ============================================================================
 // SECURITY COMPONENTS
 // ============================================================================
-export { SecurityComponents } from './security/SecurityComponents';
-export { default as EnterpriseSecurity } from './security/EnterpriseSecurity';
+export * from './security';
 
 // ============================================================================
 // API DEVELOPMENT COMPONENTS

@@ -82,7 +82,7 @@ impl Config {
     /// Use `Config::from_env()` instead.
     #[deprecated(note = "Use Config::from_env() instead. Application secrets should be in environment variables.")]
     pub async fn from_password_manager(
-        password_manager: std::sync::Arc<crate::services::password_manager::PasswordManager>,
+        _password_manager: std::sync::Arc<crate::services::password_manager::PasswordManager>,
     ) -> Result<Self, crate::errors::AppError> {
         dotenvy::dotenv().ok();
 
@@ -142,7 +142,7 @@ impl Config {
     #[deprecated(note = "Application secrets should be in environment variables. This method is no longer needed.")]
     pub async fn update_from_password_manager(
         &mut self,
-        password_manager: std::sync::Arc<crate::services::password_manager::PasswordManager>,
+        _password_manager: std::sync::Arc<crate::services::password_manager::PasswordManager>,
     ) -> Result<(), crate::errors::AppError> {
         // DEPRECATED: This method is a no-op - configuration now uses environment variables directly
         log::warn!("Config::update_from_password_manager is deprecated - configuration uses environment variables");

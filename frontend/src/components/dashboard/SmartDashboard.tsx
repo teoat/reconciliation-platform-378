@@ -1,18 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { TrendingUp } from 'lucide-react';
-import { TrendingDown } from 'lucide-react';
-import { Clock } from 'lucide-react';
-import { Users } from 'lucide-react';
-import { Target } from 'lucide-react';
-import { AlertCircle } from 'lucide-react';
-import { CheckCircle } from 'lucide-react';
-import { BarChart3 } from 'lucide-react';
-import { PieChart } from 'lucide-react';
-import { apiClient } from '../services/apiClient';
-import type { BackendProject } from '../services/apiClient/types';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
+import { TrendingUp, TrendingDown, Clock, Users, Target, AlertCircle, CheckCircle, BarChart3, PieChart } from 'lucide-react';
+import { apiClient } from '@/services/apiClient';
+import type { BackendProject } from '@/services/apiClient/types';
 import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
+import { SmartDashboardMetricCard } from './SmartDashboardMetricCard';
+import { SmartDashboardProjectCard } from './SmartDashboardProjectCard';
 
 interface SmartDashboardProps {
   project?: BackendProject;
@@ -41,16 +35,12 @@ interface DashboardData {
   next_actions: string[];
 }
 
-const SmartDashboard = ({ project: _project }: SmartDashboardProps) => {
+const SmartDashboard = memo(({ project: _project }: SmartDashboardProps) => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       const response = await apiClient.get('/dashboard/smart');
@@ -58,14 +48,18 @@ const SmartDashboard = ({ project: _project }: SmartDashboardProps) => {
       if (response.error) {
         setError(getErrorMessageFromApiError(response.error));
       } else if (response.data) {
-setDashboardData(response.data as DashboardData)
+        setDashboardData(response.data as DashboardData);
       }
     } catch (err) {
       setError('Failed to load dashboard data');
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
 
   if (loading) {
     return (
@@ -109,8 +103,9 @@ setDashboardData(response.data as DashboardData)
     average_task_time: 0,
   };
   const projects = prioritized_projects ?? [];
-  const _insights = smart_insights ?? [];
-  const _actions = next_actions ?? [];
+  // Future use: smart_insights and next_actions
+  // const insights = smart_insights ?? [];
+  // const actions = next_actions ?? [];
 
   return (
     <div className="p-6 space-y-6">
@@ -128,83 +123,52 @@ setDashboardData(response.data as DashboardData)
 
       {/* Metrics Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Productivity Score</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {Math.round((userMetrics.overall_score ?? 0) * 100)}%
-              </p>
+        <SmartDashboardMetricCard
+          label="Productivity Score"
+          value={`${Math.round((userMetrics.overall_score ?? 0) * 100)}%`}
+          icon={Target}
+          iconBgColor="bg-blue-100"
+          iconColor="text-blue-600"
+          trend={
+            <div className="flex items-center">
+              {userMetrics.productivity_trend === 'increasing' ? (
+                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+              ) : (
+                <TrendingDown className="w-4 h-4 text-gray-400 mr-1" />
+              )}
+              <span className="text-sm text-gray-600 capitalize">
+                {userMetrics.productivity_trend ?? 'stable'}
+              </span>
             </div>
-            <div className="p-3 bg-blue-100 rounded-full">
-              <Target className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center">
-            {userMetrics.productivity_trend === 'increasing' ? (
-              <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-            ) : (
-              <TrendingDown className="w-4 h-4 text-gray-400 mr-1" />
-            )}
-            <span className="text-sm text-gray-600 capitalize">
-              {userMetrics.productivity_trend ?? 'stable'}
-            </span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Completion Rate</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {Math.round((userMetrics.project_completion_rate ?? 0) * 100)}%
-              </p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-full">
-              <CheckCircle className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <div className="w-full bg-gray-200 rounded-full h-2">
-              <div
-                className="bg-green-500 h-2 rounded-full"
-                style={{ width: `${(userMetrics.project_completion_rate ?? 0) * 100}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Avg Task Time</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {(userMetrics.average_task_time ?? 0).toFixed(1)}h
-              </p>
-            </div>
-            <div className="p-3 bg-yellow-100 rounded-full">
-              <Clock className="w-6 h-6 text-yellow-600" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <span className="text-sm text-gray-600">Per task</span>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-600">Active Projects</p>
-              <p className="text-2xl font-bold text-gray-900">{projects.length}</p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-full">
-              <Users className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-          <div className="mt-4">
-            <span className="text-sm text-gray-600">In progress</span>
-          </div>
-        </div>
+          }
+        />
+        <SmartDashboardMetricCard
+          label="Completion Rate"
+          value={`${Math.round((userMetrics.project_completion_rate ?? 0) * 100)}%`}
+          icon={CheckCircle}
+          iconBgColor="bg-green-100"
+          iconColor="text-green-600"
+          progressBar={{
+            value: (userMetrics.project_completion_rate ?? 0) * 100,
+            color: 'bg-green-500',
+          }}
+        />
+        <SmartDashboardMetricCard
+          label="Avg Task Time"
+          value={`${(userMetrics.average_task_time ?? 0).toFixed(1)}h`}
+          icon={Clock}
+          iconBgColor="bg-yellow-100"
+          iconColor="text-yellow-600"
+          subtitle="Per task"
+        />
+        <SmartDashboardMetricCard
+          label="Active Projects"
+          value={projects.length}
+          icon={Users}
+          iconBgColor="bg-purple-100"
+          iconColor="text-purple-600"
+          subtitle="In progress"
+        />
       </div>
 
       {/* Main Content */}
@@ -219,63 +183,8 @@ setDashboardData(response.data as DashboardData)
           </div>
           <div className="p-6">
             <div className="space-y-4">
-              {projects.map((project, _index) => (
-                <div
-                  key={project.id}
-                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex items-start justify-between mb-2">
-                    <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{project.name}</h3>
-                      {project.description && (
-                        <p className="text-sm text-gray-600 mt-1">{project.description}</p>
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span
-                        className={`px-2 py-1 text-xs rounded-full ${
-                          project.status === 'active'
-                            ? 'bg-green-100 text-green-800'
-                            : project.status === 'pending'
-                              ? 'bg-yellow-100 text-yellow-800'
-                              : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        {project.status}
-                      </span>
-                      <span className="text-sm font-medium text-blue-600">
-                        {Math.round(project.priority_score * 100)}%
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="mt-3">
-                    <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
-                      <span>Priority Score</span>
-                      <span>{Math.round(project.priority_score * 100)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="bg-blue-500 h-2 rounded-full"
-                        style={{ width: `${project.priority_score * 100}%` }}
-                      ></div>
-                    </div>
-                  </div>
-
-                  {project.smart_recommendations.length > 0 && (
-                    <div className="mt-3">
-                      <p className="text-sm font-medium text-gray-700 mb-1">Recommendations:</p>
-                      <ul className="text-sm text-gray-600 space-y-1">
-                        {project.smart_recommendations.slice(0, 2).map((rec, i) => (
-                          <li key={i} className="flex items-start">
-                            <span className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0"></span>
-                            {rec}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
+              {projects.map((project) => (
+                <SmartDashboardProjectCard key={project.id} project={project} />
               ))}
             </div>
           </div>
@@ -350,6 +259,8 @@ setDashboardData(response.data as DashboardData)
       )}
     </div>
   );
-};
+});
+
+SmartDashboard.displayName = 'SmartDashboard';
 
 export default SmartDashboard;

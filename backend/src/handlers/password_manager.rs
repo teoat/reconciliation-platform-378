@@ -9,8 +9,6 @@ use utoipa;
 use crate::services::password_manager::{PasswordManager, PasswordEntry, RotationSchedule};
 use crate::errors::AppResult;
 use crate::handlers::helpers::{extract_user_id, get_client_ip, get_user_agent};
-use crate::handlers::types::ApiResponse;
-use crate::errors::AppError;
 
 /// Request to create a password
 #[derive(Debug, Deserialize, utoipa::ToSchema)]

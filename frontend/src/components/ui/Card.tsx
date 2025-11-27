@@ -55,20 +55,26 @@ const Card: React.FC<CardProps> = memo(
     // Memoize header visibility
     const showHeader = useMemo(() => !!(title || subtitle || actions), [title, subtitle, actions]);
 
-    return (
-      <div
-        className={classes}
-        onClick={onClick}
-        onKeyDown={onClick ? (e) => {
+    const interactiveProps = useMemo(() => {
+      if (!onClick) return {};
+      return {
+        role: 'button' as const,
+        tabIndex: 0,
+        'aria-label': title || 'Clickable card',
+        onKeyDown: (e: React.KeyboardEvent) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
             onClick();
           }
-        } : undefined}
-        role={onClick ? 'button' : undefined}
-        tabIndex={onClick ? 0 : undefined}
-        className={onClick ? 'cursor-pointer' : ''}
-        aria-label={onClick ? title || 'Clickable card' : undefined}
+        },
+      };
+    }, [onClick, title]);
+
+    return (
+      <div
+        className={`${classes} ${onClick ? 'cursor-pointer' : ''}`}
+        onClick={onClick}
+        {...interactiveProps}
       >
         {showHeader && (
           <div className="mb-4">

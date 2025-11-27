@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { AlertTriangle, CheckCircle, XCircle, Eye, ArrowRight } from 'lucide-react';
-import Card from '../ui/Card';
-import Button from '../ui/Button';
-import Modal from '../ui/Modal';
-import { EnhancedReconciliationRecord } from '../../types/reconciliation';
+import React, { useState, useCallback, useMemo, memo } from 'react';
+import { AlertTriangle, CheckCircle, XCircle, Eye } from 'lucide-react';
+import Card from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
+import { EnhancedReconciliationRecord, ReconciliationSource } from '@/types/reconciliation/index';
+import { ProgressiveFeatureDisclosure } from '@/components/ui/ProgressiveFeatureDisclosure';
+import { onboardingService } from '@/services/onboardingService';
 
 interface ConflictResolutionProps {
   conflicts: EnhancedReconciliationRecord[];
@@ -12,7 +14,7 @@ interface ConflictResolutionProps {
   isLoading?: boolean;
 }
 
-export const ConflictResolution: React.FC<ConflictResolutionProps> = ({
+export const ConflictResolution: React.FC<ConflictResolutionProps> = memo(({
   conflicts,
   onResolveConflict,
   onBulkResolve,
@@ -22,27 +24,27 @@ export const ConflictResolution: React.FC<ConflictResolutionProps> = ({
   const [viewingConflict, setViewingConflict] = useState<EnhancedReconciliationRecord | null>(null);
   const [bulkAction, setBulkAction] = useState<'approve' | 'reject' | 'escalate' | null>(null);
 
-  const handleSelectConflict = (recordId: string) => {
+  const handleSelectConflict = useCallback((recordId: string) => {
     setSelectedConflicts((prev) =>
       prev.includes(recordId) ? prev.filter((id) => id !== recordId) : [...prev, recordId]
     );
-  };
+  }, []);
 
-  const handleSelectAll = () => {
+  const handleSelectAll = useCallback(() => {
     setSelectedConflicts(
       selectedConflicts.length === conflicts.length ? [] : conflicts.map((c) => c.id)
     );
-  };
+  }, [selectedConflicts.length, conflicts]);
 
-  const handleBulkAction = () => {
+  const handleBulkAction = useCallback(() => {
     if (bulkAction && selectedConflicts.length > 0) {
       onBulkResolve(selectedConflicts, bulkAction);
       setSelectedConflicts([]);
       setBulkAction(null);
     }
-  };
+  }, [bulkAction, selectedConflicts, onBulkResolve]);
 
-  const getRiskColor = (riskLevel: string) => {
+  const getRiskColor = useCallback((riskLevel: string) => {
     switch (riskLevel) {
       case 'critical':
         return 'text-red-600 bg-red-100';
@@ -55,9 +57,9 @@ export const ConflictResolution: React.FC<ConflictResolutionProps> = ({
       default:
         return 'text-gray-600 bg-gray-100';
     }
-  };
+  }, []);
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = useCallback((status: string) => {
     switch (status) {
       case 'discrepancy':
         return 'text-red-600 bg-red-100';
@@ -68,7 +70,7 @@ export const ConflictResolution: React.FC<ConflictResolutionProps> = ({
       default:
         return 'text-gray-600 bg-gray-100';
     }
-  };
+  }, []);
 
   if (isLoading) {
     return (
@@ -101,29 +103,45 @@ export const ConflictResolution: React.FC<ConflictResolutionProps> = ({
             </div>
 
             {selectedConflicts.length > 0 && (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600">{selectedConflicts.length} selected</span>
-                <select
-                  value={bulkAction || ''}
-                  onChange={(e) =>
-                    setBulkAction(e.target.value as 'approve' | 'reject' | 'escalate' | null)
-                  }
-                  className="px-3 py-1 border border-gray-300 rounded text-sm"
-                >
-                  <option value="">Bulk action</option>
-                  <option value="approve">Approve All</option>
-                  <option value="reject">Reject All</option>
-                  <option value="escalate">Escalate All</option>
-                </select>
-                <Button
-                  size="sm"
-                  variant="primary"
-                  onClick={handleBulkAction}
-                  disabled={!bulkAction}
-                >
-                  Apply
-                </Button>
-              </div>
+              <ProgressiveFeatureDisclosure
+                feature={{
+                  id: 'bulk-operations',
+                  name: 'Bulk Operations',
+                  description: 'Process multiple conflicts at once with bulk approve, reject, or escalate',
+                  unlockRequirements: {
+                    onboardingSteps: ['review-matches', 'resolve-conflicts'],
+                    minProgress: 50,
+                  },
+                  lockedMessage: 'Complete conflict resolution workflow to unlock bulk operations',
+                }}
+                userProgress={onboardingService.getProgress('initial').completedSteps}
+                showUnlockAnimation={true}
+              >
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-600">{selectedConflicts.length} selected</span>
+                  <select
+                    value={bulkAction || ''}
+                    onChange={(e) =>
+                      setBulkAction(e.target.value as 'approve' | 'reject' | 'escalate' | null)
+                    }
+                    className="px-3 py-1 border border-gray-300 rounded text-sm"
+                    aria-label="Bulk action selection"
+                  >
+                    <option value="">Bulk action</option>
+                    <option value="approve">Approve All</option>
+                    <option value="reject">Reject All</option>
+                    <option value="escalate">Escalate All</option>
+                  </select>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={handleBulkAction}
+                    disabled={!bulkAction}
+                  >
+                    Apply
+                  </Button>
+                </div>
+              </ProgressiveFeatureDisclosure>
             )}
           </div>
 
@@ -138,11 +156,15 @@ export const ConflictResolution: React.FC<ConflictResolutionProps> = ({
               <div className="flex items-center space-x-2 pb-2 border-b border-gray-200">
                 <input
                   type="checkbox"
+                  id="select-all-conflicts"
                   checked={selectedConflicts.length === conflicts.length}
                   onChange={handleSelectAll}
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  aria-label="Select all conflicts"
                 />
-                <span className="text-sm font-medium text-gray-700">Select All</span>
+                <label htmlFor="select-all-conflicts" className="text-sm font-medium text-gray-700">
+                  Select All
+                </label>
               </div>
 
               {/* Conflict List */}
@@ -155,9 +177,11 @@ export const ConflictResolution: React.FC<ConflictResolutionProps> = ({
                     <div className="flex items-start space-x-3 flex-1">
                       <input
                         type="checkbox"
+                        id={`conflict-${conflict.id}`}
                         checked={selectedConflicts.includes(conflict.id)}
                         onChange={() => handleSelectConflict(conflict.id)}
                         className="mt-1 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        aria-label={`Select conflict ${conflict.id}`}
                       />
 
                       <div className="flex-1">
@@ -177,7 +201,7 @@ export const ConflictResolution: React.FC<ConflictResolutionProps> = ({
 
                         <div className="text-sm text-gray-600 mb-3">
                           <div className="grid grid-cols-2 gap-4">
-                            {conflict.sources.map((source, index) => (
+                            {conflict.sources.map((source: ReconciliationSource, index: number) => (
                               <div key={index} className="bg-white p-3 rounded border">
                                 <div className="font-medium text-gray-900 mb-1">
                                   {source.systemName}
@@ -272,7 +296,7 @@ export const ConflictResolution: React.FC<ConflictResolutionProps> = ({
             <div>
               <h4 className="font-medium text-gray-900 mb-3">Data Sources</h4>
               <div className="space-y-3">
-                {viewingConflict.sources.map((source, index) => (
+                {viewingConflict.sources.map((source: ReconciliationSource, index: number) => (
                   <div key={index} className="bg-gray-50 p-4 rounded-lg">
                     <div className="flex items-center justify-between mb-2">
                       <h5 className="font-medium text-gray-900">{source.systemName}</h5>
@@ -294,4 +318,6 @@ export const ConflictResolution: React.FC<ConflictResolutionProps> = ({
       </Modal>
     </>
   );
-};
+});
+
+ConflictResolution.displayName = 'ConflictResolution';

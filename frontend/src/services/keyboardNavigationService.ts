@@ -1,8 +1,25 @@
-// Enhanced Keyboard Navigation + Focus Management
-import { logger } from '@/services/logger';
-// Comprehensive keyboard navigation and focus management system
+/**
+ * @deprecated This file has been refactored. Import from '@/services/keyboard/KeyboardNavigationService' instead.
+ * This file is kept for backward compatibility and will be removed in a future version.
+ */
 
-import { useEffect, useRef, useCallback } from 'react';
+// Re-export from new location
+export {
+  default as KeyboardNavigationService,
+} from './keyboard/KeyboardNavigationService';
+
+export type {
+  KeyboardNavigationConfig,
+  FocusableElement,
+  NavigationGroup,
+  KeyboardShortcut,
+  FocusHistory,
+  NavigationState,
+} from './keyboard/types';
+
+// Legacy exports for backward compatibility
+import KeyboardNavigationService from './keyboard/KeyboardNavigationService';
+export default KeyboardNavigationService;
 
 export interface KeyboardNavigationConfig {
   enableTabNavigation: boolean;

@@ -4,7 +4,6 @@
 
 use crate::errors::AppResult;
 use crate::services::metrics::{MetricsService, metric_names};
-use crate::handlers::types::ApiResponse;
 use actix_web::{web, HttpResponse, Responder};
 use std::sync::Arc;
 use utoipa;

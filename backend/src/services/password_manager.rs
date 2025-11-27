@@ -214,7 +214,7 @@ impl PasswordManager {
 
         // ⚠️ SECURITY: Default passwords should only be used in development
         // In production, use environment variables or secure secret management
-        let default_passwords: Vec<(&str, &str)> = if std::env::var("ENVIRONMENT")
+        let _default_passwords: Vec<(&str, &str)> = if std::env::var("ENVIRONMENT")
             .unwrap_or_else(|_| "development".to_string())
             .to_lowercase() == "production"
         {

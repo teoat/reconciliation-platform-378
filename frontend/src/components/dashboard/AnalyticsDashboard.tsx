@@ -29,11 +29,11 @@ import {
   Folder,
   GitCompare,
 } from 'lucide-react';
-import { apiClient } from '../services/apiClient';
-import { useWebSocketIntegration } from '../hooks/useWebSocketIntegration';
-import { EnhancedContextualHelp } from '../ui/EnhancedContextualHelp';
-import { ProgressiveFeatureDisclosure } from '../ui/ProgressiveFeatureDisclosure';
-import { onboardingService } from '../services/onboardingService';
+import { apiClient } from '@/services/apiClient';
+import { useWebSocketIntegration } from '@/hooks/useWebSocketIntegration';
+import { EnhancedContextualHelp } from '@/components/ui/EnhancedContextualHelp';
+import { ProgressiveFeatureDisclosure } from '@/components/ui/ProgressiveFeatureDisclosure';
+import { onboardingService } from '@/services/onboardingService';
 
 // Lazy load chart components for better performance
 const LineChart = lazy(() => import('../charts').then((module) => ({ default: module.LineChart })));
@@ -762,7 +762,6 @@ export const AnalyticsDashboard: React.FC<AnalyticsDashboardProps> = ({
                 />
               </Suspense>
             </div>
-          </div>
           </div>
         </ProgressiveFeatureDisclosure>
         </>

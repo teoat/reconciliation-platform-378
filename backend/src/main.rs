@@ -8,7 +8,6 @@ use actix_web::middleware::Compress;
 use chrono::Utc;
 use futures::future;
 use reconciliation_backend::{
-    // api::openapi::ApiDoc,  // Temporarily disabled
     config::Config,
     handlers,
     middleware::{
@@ -26,8 +25,6 @@ use reconciliation_backend::{
     },
     startup::{resilience_config_from_env, AppStartup},
 };
-// Swagger UI temporarily disabled - uncomment when needed
-// use utoipa_swagger_ui::SwaggerUi;
 
 // Set up panic handler BEFORE any static initialization that might panic
 // This must be at the module level, not in main()
@@ -36,7 +33,6 @@ use reconciliation_backend::{
 static INIT_PANIC_HANDLER: extern "C" fn() = {
     extern "C" fn init_panic_handler() {
         std::panic::set_hook(Box::new(|panic_info| {
-            let _ = std::fs::write("/tmp/backend-panic.txt", format!("PANIC: {:?}\n", panic_info));
             eprintln!("PANIC: {:?}", panic_info);
             eprintln!("Location: {:?}", panic_info.location());
             if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
@@ -44,7 +40,6 @@ static INIT_PANIC_HANDLER: extern "C" fn() = {
             } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
                 eprintln!("Message: {}", s);
             }
-            std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
         }));
     }
     init_panic_handler
@@ -53,25 +48,7 @@ static INIT_PANIC_HANDLER: extern "C" fn() = {
 // Add a synchronous main wrapper to ensure we can print before async runtime
 #[inline(never)]
 fn main() {
-    // CRITICAL: Write to file first to verify main() is called
-    let _ = std::fs::write("/tmp/backend-main-called.txt", "MAIN CALLED\n");
-    
-    // CRITICAL: Multiple output methods to ensure we see something
-    eprintln!("=== MAIN FUNCTION START ===");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-    
-    // Print IMMEDIATELY - before anything else
-    let _ = std::io::Write::write_all(&mut std::io::stderr(), b"MAIN FUNCTION CALLED\n");
-    let _ = std::io::Write::flush(&mut std::io::stderr());
-    
-    // Also try stdout
-    println!("MAIN FUNCTION CALLED (stdout)");
-    std::io::Write::flush(&mut std::io::stdout()).unwrap_or(());
-    
-    // Panic handler is already set up in INIT_PANIC_HANDLER above
-    // This is a backup in case the init handler didn't work
     std::panic::set_hook(Box::new(|panic_info| {
-        let _ = std::fs::write("/tmp/backend-panic-main.txt", format!("PANIC IN MAIN: {:?}\n", panic_info));
         eprintln!("PANIC: {:?}", panic_info);
         eprintln!("Location: {:?}", panic_info.location());
         if let Some(s) = panic_info.payload().downcast_ref::<&str>() {
@@ -79,56 +56,23 @@ fn main() {
         } else if let Some(s) = panic_info.payload().downcast_ref::<String>() {
             eprintln!("Message: {}", s);
         }
-        std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
     }));
 
-    // Print to stderr immediately (before logging init) for debugging
-    eprintln!("🚀 Backend starting...");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-    
-    // Verify we reach this point
-    eprintln!("✅ Main function reached, creating Tokio runtime...");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-    
-    // Now call the async main
     let rt = match tokio::runtime::Runtime::new() {
         Ok(runtime) => runtime,
         Err(e) => {
-            eprintln!("❌ Failed to create Tokio runtime: {}", e);
-            eprintln!("💡 This may indicate a system resource issue or configuration problem");
+            eprintln!("Failed to create Tokio runtime: {}", e);
             std::process::exit(1);
         }
     };
     
-    eprintln!("✅ Tokio runtime created, calling async_main...");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-    
-    match rt.block_on(async_main()) {
-        Ok(_) => {
-            eprintln!("✅ async_main completed successfully");
-            std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-        }
-        Err(e) => {
-            eprintln!("❌ Application error: {:?}", e);
-            eprintln!("❌ Error details: {:?}", e);
-            std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-            std::process::exit(1);
-        }
+    if let Err(e) = rt.block_on(async_main()) {
+        eprintln!("Application error: {:?}", e);
+        std::process::exit(1);
     }
-    
-    eprintln!("✅ Main function completed");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
 }
 
 async fn async_main() -> std::io::Result<()> {
-    // CRITICAL: Print immediately to verify we reach async_main
-    eprintln!("✅ async_main() called - starting initialization");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-
-    // Initialize logging with unbuffered stderr output
-    eprintln!("Initializing logging...");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-    
     // Configure env_logger to write to stderr with unbuffered output
     // env_logger writes to stderr by default, which Docker captures
     // The write_style ensures colors/styles are always applied (for visibility)
@@ -157,7 +101,6 @@ async fn async_main() -> std::io::Result<()> {
             writeln!(buf, "{}", json)
         });
         log::info!("JSON logging enabled - logs will be in structured JSON format");
-        eprintln!("JSON logging enabled - logs will be in structured JSON format");
     } else {
         // Use human-readable format (default)
         builder
@@ -170,29 +113,19 @@ async fn async_main() -> std::io::Result<()> {
     // Initialize logger
     builder.init();
     
-    // Force flush stderr to ensure logs are visible immediately in Docker
-    use std::io::Write;
-    std::io::stderr().flush().unwrap_or(());
-    
-    eprintln!("Logging initialized");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
     log::info!("Logging initialized - backend starting up");
 
     // Validate environment variables before loading configuration
     // Use tier-based error handling with fallbacks
     log::info!("Validating environment variables...");
-    eprintln!("Validating environment variables...");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
     
     // Use startup error handler for validation
     let startup_handler = reconciliation_backend::startup::error_handler::StartupErrorHandler::new();
     
     // Validate with tier-based error handling
     if let Err(e) = startup_handler.validate_startup_requirements().await {
-        eprintln!("❌ Startup validation failed: {}", e);
         log::error!("Startup validation failed: {}", e);
-        eprintln!("💡 Please check environment variables and service connectivity");
-        std::process::exit(1);
+        return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Startup validation failed: {}", e)));
     }
     
     // Also run standard validation for compatibility
@@ -206,9 +139,8 @@ async fn async_main() -> std::io::Result<()> {
             cfg
         }
         Err(e) => {
-            eprintln!("Failed to load configuration: {}", e);
             log::error!("Configuration error: {}", e);
-            std::process::exit(1);
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Configuration error: {}", e)));
         }
     };
 
@@ -219,36 +151,20 @@ async fn async_main() -> std::io::Result<()> {
         .unwrap_or_else(|_| "development".to_string())
         .to_lowercase() == "production";
     
-    match reconciliation_backend::database_migrations::run_migrations(&config.database_url) {
-        Ok(_) => {
-            log::info!("Database migrations completed successfully");
-        }
-        Err(e) => {
-            if is_production_env {
-                eprintln!("❌ Database migrations failed in production: {}", e);
-                log::error!("Database migrations failed in production: {}", e);
-                eprintln!("💡 Please ensure all migrations are applied before starting the application");
-                std::process::exit(1);
-            } else {
-                log::warn!("Database migrations encountered issues: {}", e);
-                log::warn!("Continuing startup in development mode - tables may be created on first use");
-                eprintln!("⚠️  Migration warning (non-fatal in development): {}", e);
-            }
+    if let Err(e) = reconciliation_backend::database_migrations::run_migrations(&config.database_url) {
+        if is_production_env {
+            log::error!("Database migrations failed in production: {}", e);
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Database migrations failed in production: {}", e)));
+        } else {
+            log::warn!("Database migrations encountered issues: {}", e);
         }
     }
 
     // Verify database connection and critical tables
     log::info!("Verifying database connection and schema...");
-    match reconciliation_backend::utils::schema_verification::verify_database_connection(&config.database_url) {
-        Ok(_) => {
-            log::info!("Database connection verified");
-        }
-        Err(e) => {
-            eprintln!("❌ Database connection verification failed: {}", e);
-            log::error!("Database connection verification failed: {}", e);
-            eprintln!("💡 Please check DATABASE_URL and ensure PostgreSQL is running");
-            std::process::exit(1);
-        }
+    if let Err(e) = reconciliation_backend::utils::schema_verification::verify_database_connection(&config.database_url) {
+        log::error!("Database connection verification failed: {}", e);
+        return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Database connection verification failed: {}", e)));
     }
 
     // Verify critical tables exist (non-fatal in development, fatal in production)
@@ -256,21 +172,12 @@ async fn async_main() -> std::io::Result<()> {
         .unwrap_or_else(|_| "development".to_string())
         .to_lowercase() == "production";
     
-    match reconciliation_backend::utils::schema_verification::verify_critical_tables(&config.database_url) {
-        Ok(_) => {
-            log::info!("Critical database tables verified");
-        }
-        Err(e) => {
-            if is_production {
-                eprintln!("❌ Critical database tables missing: {}", e);
-                log::error!("Critical database tables missing: {}", e);
-                eprintln!("💡 Please run migrations: diesel migration run");
-                std::process::exit(1);
-            } else {
-                log::warn!("Critical database tables missing: {}", e);
-                log::warn!("Continuing in development mode - tables will be created when needed");
-                eprintln!("⚠️  Warning: {}", e);
-            }
+    if let Err(e) = reconciliation_backend::utils::schema_verification::verify_critical_tables(&config.database_url) {
+        if is_production {
+            log::error!("Critical database tables missing: {}", e);
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Critical database tables missing: {}", e)));
+        } else {
+            log::warn!("Critical database tables missing: {}", e);
         }
     }
 
@@ -281,8 +188,8 @@ async fn async_main() -> std::io::Result<()> {
     let app_startup = match AppStartup::with_resilience_config(&config, resilience_config).await {
         Ok(startup) => startup,
         Err(e) => {
-            eprintln!("Failed to initialize application: {}", e);
-            std::process::exit(1);
+            log::error!("Failed to initialize application: {}", e);
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to initialize application: {}", e)));
         }
     };
 
@@ -353,18 +260,16 @@ async fn async_main() -> std::io::Result<()> {
                     "default-csrf-secret",
                 ];
                 if default_patterns.iter().any(|&pattern| secret.contains(pattern)) {
-                    eprintln!("❌ CSRF_SECRET cannot use default value in production");
                     log::error!("CSRF_SECRET validation failed: using default value");
-                    std::process::exit(1);
+                    return Err(std::io::Error::new(std::io::ErrorKind::Other, "CSRF_SECRET cannot use default value in production"));
                 }
             }
             secret
         }
         Err(_) => {
             if is_production {
-                eprintln!("❌ CSRF_SECRET is required in production");
                 log::error!("CSRF_SECRET not set in production");
-                std::process::exit(1);
+                return Err(std::io::Error::new(std::io::ErrorKind::Other, "CSRF_SECRET is required in production"));
             } else {
                 log::warn!("CSRF_SECRET not set, using default (CHANGE IN PRODUCTION!)");
                 "default-csrf-secret-change-in-production".to_string()
@@ -383,18 +288,16 @@ async fn async_main() -> std::io::Result<()> {
                     "default-master-key-change-in-production",
                 ];
                 if default_patterns.iter().any(|&pattern| key.contains(pattern)) {
-                    eprintln!("❌ PASSWORD_MASTER_KEY cannot use default value in production");
                     log::error!("PASSWORD_MASTER_KEY validation failed: using default value");
-                    std::process::exit(1);
+                    return Err(std::io::Error::new(std::io::ErrorKind::Other, "PASSWORD_MASTER_KEY cannot use default value in production"));
                 }
             }
             key
         }
         Err(_) => {
             if is_production {
-                eprintln!("❌ PASSWORD_MASTER_KEY is required in production");
                 log::error!("PASSWORD_MASTER_KEY not set in production");
-                std::process::exit(1);
+                return Err(std::io::Error::new(std::io::ErrorKind::Other, "PASSWORD_MASTER_KEY is required in production"));
             } else {
                 log::warn!("PASSWORD_MASTER_KEY not set, using default (CHANGE IN PRODUCTION!)");
                 "default-master-key-change-in-production".to_string()
@@ -411,9 +314,8 @@ async fn async_main() -> std::io::Result<()> {
                 "your-super-secret-key-change-in-production",
             ];
             if default_patterns.iter().any(|&pattern| jwt_secret.contains(pattern)) {
-                eprintln!("❌ JWT_SECRET cannot use default value in production");
                 log::error!("JWT_SECRET validation failed: using default value");
-                std::process::exit(1);
+                return Err(std::io::Error::new(std::io::ErrorKind::Other, "JWT_SECRET cannot use default value in production"));
             }
         }
     }
@@ -425,20 +327,14 @@ async fn async_main() -> std::io::Result<()> {
     
     // Initialize default passwords on startup (only if table exists)
     // This gracefully handles cases where migrations haven't run yet
-    match password_manager.verify_table_exists().await {
-        Ok(_) => {
-            if let Err(e) = password_manager.initialize_default_passwords().await {
-                log::warn!("Failed to initialize default passwords: {:?}", e);
-                log::info!("Password manager is still functional - default passwords are optional");
-            } else {
-                log::info!("Password manager initialized successfully");
-            }
+    if password_manager.verify_table_exists().await.is_ok() {
+        if let Err(e) = password_manager.initialize_default_passwords().await {
+            log::warn!("Failed to initialize default passwords: {:?}", e);
+        } else {
+            log::info!("Password manager initialized successfully");
         }
-        Err(e) => {
-            log::info!("Password manager table not found: {}", e);
-            log::info!("Password manager will be available after running migrations: diesel migration run");
-            log::info!("Application will continue without password manager features");
-        }
+    } else {
+        log::info!("Password manager table not found, skipping password manager initialization");
     }
     
     // Application secrets are now managed via environment variables (.env)
@@ -476,8 +372,6 @@ async fn async_main() -> std::io::Result<()> {
     // Log server binding attempt
     let bind_addr = format!("{}:{}", config.host, config.port);
     log::info!("🔗 Binding server to {}...", bind_addr);
-    eprintln!("🔗 Binding server to {}...", bind_addr);
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
 
     // Determine if we're in production
     let is_production_env = std::env::var("ENVIRONMENT")
@@ -566,147 +460,22 @@ async fn async_main() -> std::io::Result<()> {
             // Note: ws_server is created in this closure to ensure it runs in Actix runtime context
             .app_data(web::Data::new(ws_server))
             .app_data(web::Data::new(config_clone.clone()))
-            // Add Swagger UI for API documentation
-            // Note: Swagger UI integration requires all handlers to have utoipa annotations
-            // Currently using manual openapi.yaml file - Swagger UI can be enabled when more handlers are annotated
-            // .service(
-            //     SwaggerUi::new("/swagger-ui/{_:.*}")
-            //         .url("/api-docs/openapi.json", ApiDoc::openapi())
-            // )
+            // Swagger UI can be enabled when all handlers have utoipa annotations
+            // See: docs/development/API_CLIENT_SDK_GENERATION.md for details
             // Configure routes
             .configure(handlers::configure_routes)
     })
     .workers(1);  // Reduce workers to 1 to minimize stack usage
     
-    eprintln!("✅ HttpServer configured, attempting to bind to {}...", bind_addr);
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-    
     let server = server.bind(&bind_addr)
-    .map_err(|e| {
-        let error_msg = format!("Failed to bind to {}: {}", bind_addr, e);
-        eprintln!("❌ {}", error_msg);
-        log::error!("{}", error_msg);
-        std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-        std::io::Error::new(std::io::ErrorKind::AddrInUse, error_msg)
-    })?;
+        .map_err(|e| {
+            let error_msg = format!("Failed to bind to {}: {}", bind_addr, e);
+            log::error!("{}", error_msg);
+            std::io::Error::new(std::io::ErrorKind::AddrInUse, error_msg)
+        })?;
     
-    eprintln!("✅ Server bound successfully, preparing to start...");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-
-    // Log successful binding
     log::info!("✅ Server bound successfully to {}", bind_addr);
-    eprintln!("✅ Server bound successfully to {}", bind_addr);
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
 
-    // Start server with detailed logging
-    log::info!("🚀 Starting HTTP server...");
-    eprintln!("🚀 Starting HTTP server...");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-
-    // Log runtime information for debugging
-    log::info!("Runtime: Tokio runtime initialized by actix-web");
-    eprintln!("Runtime: Tokio runtime initialized by actix-web");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-    
-    // Log that we're about to enter the blocking server.run() call
-    log::info!("Entering server.run().await - this should block indefinitely");
-    eprintln!("Entering server.run().await - this should block indefinitely");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-    
-    // Record start time to measure how long server runs
-    let start_time = std::time::Instant::now();
-    
-    // Set up signal monitoring to log when signals are received
-    // Note: Actix-web handles SIGTERM/SIGINT automatically, but we log for diagnostics
-    let signal_handle = {
-        let mut sigterm = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
-            .map_err(|e| {
-                log::warn!("Failed to register SIGTERM handler: {}", e);
-                e
-            }).ok();
-        let mut sigint = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::interrupt())
-            .map_err(|e| {
-                log::warn!("Failed to register SIGINT handler: {}", e);
-                e
-            }).ok();
-        
-        tokio::spawn(async move {
-            loop {
-                tokio::select! {
-                    _ = async {
-                        if let Some(ref mut sig) = sigterm {
-                            sig.recv().await
-                        } else {
-                            future::pending().await
-                        }
-                    } => {
-                        log::warn!("📡 SIGTERM signal received - server will shutdown gracefully");
-                        eprintln!("📡 SIGTERM signal received - server will shutdown gracefully");
-                        std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-                    }
-                    _ = async {
-                        if let Some(ref mut sig) = sigint {
-                            sig.recv().await
-                        } else {
-                            future::pending().await
-                        }
-                    } => {
-                        log::warn!("📡 SIGINT signal received - server will shutdown gracefully");
-                        eprintln!("📡 SIGINT signal received - server will shutdown gracefully");
-                        std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-                    }
-                }
-            }
-        })
-    };
-    
     // Run server - this will block until the server stops
-    // Actix-web handles SIGTERM/SIGINT automatically for graceful shutdown
-    // The server.run().await will complete when the server stops
-    // Note: server.run().await returns Result<(), std::io::Error>
-    // If it returns Ok(()), the server stopped gracefully
-    // If it returns Err, there was an error
-    let run_result = server.run().await;
-    
-    // Cancel signal monitoring task
-    signal_handle.abort();
-    
-    // Calculate runtime duration
-    let runtime_duration = start_time.elapsed();
-    log::info!("Server.run().await completed after {:?}", runtime_duration);
-    eprintln!("Server.run().await completed after {:?}", runtime_duration);
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-    
-    match run_result {
-        Ok(_) => {
-            log::info!("Server stopped gracefully (Ok(())) after {:?}", runtime_duration);
-            eprintln!("Server stopped gracefully (Ok(())) after {:?}", runtime_duration);
-            std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-            
-            // Log potential reasons for graceful shutdown
-            if runtime_duration.as_secs() < 5 {
-                log::warn!("⚠️  Server stopped very quickly ({:?}) - possible signal received or runtime issue", runtime_duration);
-                eprintln!("⚠️  Server stopped very quickly ({:?}) - possible signal received or runtime issue", runtime_duration);
-                std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-            }
-        }
-        Err(e) => {
-            let error_msg = format!("Server error after {:?}: {}", runtime_duration, e);
-            log::error!("❌ {}", error_msg);
-            eprintln!("❌ {}", error_msg);
-            std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-            return Err(e);
-        }
-    }
-    
-    // Log server completion (only reached if server stops)
-    log::info!("✅ HTTP server stopped");
-    eprintln!("✅ HTTP server stopped");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-
-    log::info!("👋 Backend shutting down gracefully");
-    eprintln!("👋 Backend shutting down gracefully");
-    std::io::Write::flush(&mut std::io::stderr()).unwrap_or(());
-
-    Ok(())
+    server.run().await
 }

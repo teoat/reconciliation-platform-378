@@ -13,7 +13,7 @@ export interface ModalProps {
   closeOnEscape?: boolean;
 }
 
-const Modal: React.FC<ModalProps> = ({
+const Modal: React.FC<ModalProps> = memo(({
   isOpen,
   onClose,
   title,

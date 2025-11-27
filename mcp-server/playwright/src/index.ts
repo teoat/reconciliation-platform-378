@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+!/usr/bin/env node
 /**
  * Playwright MCP Server
  * - run_playwright: run tests with filters and settings

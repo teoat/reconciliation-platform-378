@@ -4,8 +4,6 @@ use actix_web::{web, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
 use utoipa;
 use crate::services::ai::{AIService, AIRequest, AIResponse};
-use crate::handlers::types::ApiResponse;
-use crate::errors::AppError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AIChatRequest {

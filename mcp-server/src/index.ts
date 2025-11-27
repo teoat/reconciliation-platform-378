@@ -684,7 +684,7 @@ const tools: Tool[] = [
   },
   {
     name: 'run_e2e_tests',
-    description: 'Run Playwright E2E tests (DEPRECATED: use the Playwright MCP server tool "run_playwright" for richer controls and artifacts)',
+    description: 'Run Playwright E2E tning tasests (DEPRECATED: use the Playwright MCP server tool "run_playwright" for richer controls and artifacts)',
     inputSchema: {
       type: 'object',
       properties: {

@@ -48,7 +48,7 @@ async fn process_data_sources_chunked_internal(
     let records_a = load_records_from_data_source(&config.db, &config.source_a).await?;
     let records_b = load_records_from_data_source(&config.db, &config.source_b).await?;
 
-    let total_records = records_a.len().max(records_b.len());
+    let total_records = records_a.len(); // We iterate through records_a
     let total_chunks = total_records.div_ceil(config.chunk_size);
 
     // Update total records in job status
@@ -64,6 +64,8 @@ async fn process_data_sources_chunked_internal(
     for chunk_index in 0..total_chunks {
         let start_record = chunk_index * config.chunk_size;
         let end_record = ((chunk_index + 1) * config.chunk_size).min(total_records);
+        
+        let records_a_chunk = &records_a[start_record..end_record];
 
         // Update current phase
         let phase = format!("Processing chunk {}/{}", chunk_index + 1, total_chunks);
@@ -87,6 +89,8 @@ async fn process_data_sources_chunked_internal(
         };
         let chunk_results = process_chunk(
             chunk_config,
+            records_a_chunk,
+            &records_b,
             &exact_algorithm,
             &fuzzy_algorithm,
         )
@@ -97,20 +101,9 @@ async fn process_data_sources_chunked_internal(
         // Update progress
         let progress = ((end_record as f64 / total_records as f64) * 80.0) as i32;
         let processed_records = end_record as i32;
-        use bigdecimal::BigDecimal;
-        use std::str::FromStr;
-        let threshold_bd = BigDecimal::from_str(&config.confidence_threshold.to_string())
-            .unwrap_or_else(|_| BigDecimal::from(0));
-        let matched_records = results
-            .iter()
-            .filter(|r| {
-                r.confidence_score
-                    .as_ref()
-                    .map(|score| score >= &threshold_bd)
-                    .unwrap_or(false)
-            })
-            .count() as i32;
-        let unmatched_records = processed_records - matched_records;
+        
+        let matched_records = results.iter().filter(|r| r.record_b_id.is_some()).count() as i32;
+        let unmatched_records = results.iter().filter(|r| r.record_b_id.is_none()).count() as i32;
 
         update_job_progress(
             &config.status,
@@ -137,42 +130,89 @@ async fn process_data_sources_chunked_internal(
 /// Process a single chunk of data
 async fn process_chunk(
     config: ChunkProcessingConfig,
-    _exact_algorithm: &dyn MatchingAlgorithm,
-    _fuzzy_algorithm: &FuzzyMatchingAlgorithm,
+    records_a_chunk: &[ReconciliationRecord],
+    records_b: &[ReconciliationRecord],
+    exact_algorithm: &dyn MatchingAlgorithm,
+    fuzzy_algorithm: &FuzzyMatchingAlgorithm,
 ) -> AppResult<Vec<ReconciliationResultType>> {
     let mut results = Vec::new();
+    let fields_to_match: Vec<String> = config
+        .matching_rules
+        .iter()
+        .map(|r| r.field.clone())
+        .collect();
 
-    // Simulate processing records in this chunk
-    for i in config.start_record..config.end_record {
-        // In real implementation, load actual records from sources
-        // For now, create mock results
-        let confidence = if i % 2 == 0 {
-            Some(0.95) // Matched
-        } else {
-            Some(0.3) // Unmatched
-        };
+    for record_a in records_a_chunk {
+        let mut best_match: Option<super::matching::MatchingResult> = None;
 
-        if let Some(conf) = confidence {
-            if conf >= config.confidence_threshold {
-                use bigdecimal::BigDecimal;
-                use std::str::FromStr;
-                let conf_bd =
-                    BigDecimal::from_str(&conf.to_string()).unwrap_or_else(|_| BigDecimal::from(0));
-                results.push(ReconciliationResultType {
-                    id: Uuid::new_v4(),
-                    job_id: config.job_id,
-                    record_a_id: Uuid::new_v4(),
-                    record_b_id: Some(Uuid::new_v4()),
-                    match_type: MatchType::Exact.to_string(),
-                    confidence_score: Some(conf_bd),
-                    match_details: Some(serde_json::json!({})),
-                    status: Some("matched".to_string()),
-                    updated_at: Some(chrono::Utc::now()),
-                    notes: Some(format!("Matched record {}", i)),
-                    reviewed_by: None,
-                    created_at: chrono::Utc::now(),
-                });
+        for record_b in records_b {
+            // Determine which algorithm to use based on rules
+            // For simplicity, we'll prefer exact and fallback to fuzzy
+            // A more robust implementation would iterate through rules
+            let algorithm: &dyn MatchingAlgorithm = if config
+                .matching_rules
+                .iter()
+                .any(|r| r.algorithm == "exact")
+            {
+                exact_algorithm
+            } else {
+                fuzzy_algorithm
+            };
+
+            if let Some(match_result) = super::matching::match_records(
+                record_a,
+                record_b,
+                algorithm,
+                &fields_to_match,
+                config.confidence_threshold,
+            ) {
+                if best_match.as_ref().map_or(true, |current_best| {
+                    match_result.confidence_score > current_best.confidence_score
+                }) {
+                    best_match = Some(match_result);
+                }
             }
+        }
+
+        if let Some(matched_result) = best_match {
+            use bigdecimal::BigDecimal;
+            use std::str::FromStr;
+            let conf_bd = BigDecimal::from_str(&matched_result.confidence_score.to_string())
+                .unwrap_or_else(|_| BigDecimal::from(0));
+
+            results.push(ReconciliationResultType {
+                id: Uuid::new_v4(),
+                job_id: config.job_id,
+                record_a_id: record_a.id,
+                record_b_id: Some(matched_result.target_record.id),
+                match_type: matched_result.match_type.to_string(),
+                confidence_score: Some(conf_bd),
+                match_details: Some(serde_json::json!({
+                    "matching_fields": matched_result.matching_fields,
+                    "differences": matched_result.differences
+                })),
+                status: Some("matched".to_string()),
+                updated_at: Some(chrono::Utc::now()),
+                notes: None,
+                reviewed_by: None,
+                created_at: chrono::Utc::now(),
+            });
+        } else {
+            // No match found for record_a in the entire source B
+            results.push(ReconciliationResultType {
+                id: Uuid::new_v4(),
+                job_id: config.job_id,
+                record_a_id: record_a.id,
+                record_b_id: None,
+                match_type: MatchType::None.to_string(),
+                confidence_score: None,
+                match_details: None,
+                status: Some("unmatched".to_string()),
+                updated_at: Some(chrono::Utc::now()),
+                notes: None,
+                reviewed_by: None,
+                created_at: chrono::Utc::now(),
+            });
         }
     }
 

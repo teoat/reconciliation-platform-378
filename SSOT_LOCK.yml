@@ -39,10 +39,10 @@ sources_of_truth:
     deprecated_paths:
       - "frontend/src/utils/apiClient.ts"
       - "frontend/src/services/ApiService.ts"  # Re-export wrapper (keep for compatibility)
-      - "frontend/src/services/enhancedApiClient.ts"  # Type definitions - migrate to apiClient/types.ts
+      - "frontend/src/services/enhancedApiClient.ts"  # REMOVED - types migrated to apiClient/interceptors.ts and apiClient/types.ts
     removal_version: "2.0.0"
     notes:
-      - "enhancedApiClient.ts contains duplicate type definitions"
+      - "enhancedApiClient.ts REMOVED (2025-11-26) - types already exist in apiClient/interceptors.ts and apiClient/types.ts"
       - "Types should be imported from apiClient/interceptors.ts and apiClient/types.ts"
 
   # -------------------------------------------------------------------------
@@ -102,6 +102,9 @@ sources_of_truth:
       - "createStandardizedError"
       - "isRetryableError"
       - "ExtractedErrorInfo"
+    wrappers:
+      - "frontend/src/utils/errorExtractionAsync.ts"  # Legitimate wrapper - provides async versions of error extraction functions
+        note: "Wrapper that imports from SSOT location (common/errorHandling) and provides async error extraction for fetch Response objects"
     deprecated_paths:
       - "frontend/src/utils/errorExtraction.ts"  # REMOVED - migrated to common/errorHandling
       - "frontend/src/services/errorHandler.ts"
@@ -232,11 +235,34 @@ sources_of_truth:
   # PERFORMANCE UTILITIES
   # -------------------------------------------------------------------------
   performance:
+    description: "Performance utilities (debounce, throttle, memoize)"
     frontend:
-      path: "frontend/src/utils/performance.ts"
+      path: "frontend/src/utils/common/performance.ts"
+      exports:
+        - "debounce"
+        - "throttle"
+        - "memoize"
+      note: "SSOT for performance utilities - consolidates duplicate implementations"
+    deprecated_paths:
+      - "frontend/src/utils/performance.ts"  # May contain additional utilities
+      - "frontend/src/utils/performanceMonitoring.tsx"  # Monitoring-specific
     backend:
       middleware:
         path: "backend/src/middleware/performance.rs"
+
+  # -------------------------------------------------------------------------
+  # DATE FORMATTING UTILITIES
+  # -------------------------------------------------------------------------
+  date_formatting:
+    description: "Date and time formatting utilities"
+    frontend:
+      path: "frontend/src/utils/common/dateFormatting.ts"
+      exports:
+        - "formatTimeAgo"
+        - "formatTimestamp"
+        - "formatTime"
+        - "formatDate"
+      note: "SSOT for date formatting - consolidates duplicate 'time ago' formatters"
 
   # -------------------------------------------------------------------------
   # PASSWORDS AND SECRETS (SSOT)
@@ -384,6 +410,37 @@ sources_of_truth:
       - "Lock before editing documentation"
 
   # -------------------------------------------------------------------------
+  # DEPLOYMENT OPERATIONS
+  # -------------------------------------------------------------------------
+  deployment_operations:
+    description: "Deployment scripts and utilities - SSOT for shell script functions"
+    path: "scripts/lib/common-functions.sh"
+    exports:
+      - "verify_deployment"
+      - "check_prerequisites"
+      - "check_command"
+      - "validate_file_exists"
+      - "validate_directory_exists"
+      - "check_docker"
+      - "check_docker_compose"
+    note: "SSOT for all deployment-related shell script functions. All deployment scripts should source this library."
+
+  # -------------------------------------------------------------------------
+  # MONITORING OPERATIONS
+  # -------------------------------------------------------------------------
+  monitoring_operations:
+    description: "Monitoring and health check utilities - SSOT for shell script functions"
+    path: "scripts/lib/common-functions.sh"
+    exports:
+      - "health_check"
+      - "check_endpoint"
+      - "log_info"
+      - "log_success"
+      - "log_warning"
+      - "log_error"
+    note: "SSOT for all monitoring-related shell script functions. All monitoring scripts should source this library."
+
+  # -------------------------------------------------------------------------
   # SHARED SCRIPTS
   # -------------------------------------------------------------------------
   shared_scripts:
@@ -439,6 +496,20 @@ deprecated_modules:
     reason: "Replaced by config/monitoring.rs and services/monitoring.rs"
     use_instead: "backend/src/config/monitoring.rs"
     removal_version: "2.0.0"
+    
+  - path: "frontend/src/services/enhancedApiClient.ts"
+    reason: "REMOVED - Type definitions migrated to apiClient/interceptors.ts and apiClient/types.ts"
+    use_instead: "frontend/src/services/apiClient/interceptors.ts or frontend/src/services/apiClient/types.ts"
+    removal_version: "2.0.0"
+    status: "removed"
+    removal_date: "2025-11-26"
+    
+  - path: "frontend/src/services/smartFilterService.ts"
+    reason: "REMOVED - Deprecated wrapper, use ./smartFilter directly"
+    use_instead: "frontend/src/services/smartFilter"
+    removal_version: "2.0.0"
+    status: "removed"
+    removal_date: "2025-11-26"
 
 # ============================================================================
 # ENFORCEMENT RULES

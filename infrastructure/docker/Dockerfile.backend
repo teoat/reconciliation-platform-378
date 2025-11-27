@@ -49,11 +49,22 @@ COPY backend/migrations ./migrations
 COPY backend/scripts ./scripts
 
 # Build application with cached dependencies
-# Note: target directory is created by cargo build, so we use cache mount
+# CRITICAL: Clear the release target directory to remove any stub binaries from deps stage
+# The cache mount preserves the target directory, so we need to clear release artifacts
 RUN --mount=type=cache,target=/usr/local/cargo/registry \
     --mount=type=cache,target=/usr/local/cargo/git \
     --mount=type=cache,target=/app/backend/target \
-    cargo build --release && \
+    rm -rf target/release/reconciliation-backend target/release/deps/reconciliation_backend* target/release/.fingerprint/reconciliation-backend-* && \
+    cargo build --release --bin reconciliation-backend && \
+    # Verify binary exists and has reasonable size (should be ~16MB, not 1.7MB stub)
+    test -f target/release/reconciliation-backend && \
+    BINARY_SIZE=$(stat -c%s target/release/reconciliation-backend 2>/dev/null || stat -f%z target/release/reconciliation-backend 2>/dev/null || echo 0) && \
+    if [ "$BINARY_SIZE" -lt 5000000 ]; then \
+        echo "ERROR: Binary too small ($BINARY_SIZE bytes), likely stub binary. Expected ~16MB." >&2; \
+        ls -lh target/release/reconciliation-backend >&2; \
+        exit 1; \
+    fi && \
+    echo "✅ Binary built successfully: $(stat -c%s target/release/reconciliation-backend 2>/dev/null || stat -f%z target/release/reconciliation-backend 2>/dev/null) bytes" && \
     # Don't strip binary to preserve debugging info
     # strip target/release/reconciliation-backend && \
     # Copy the binary to a known location for next stage

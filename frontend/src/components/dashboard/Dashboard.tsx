@@ -13,13 +13,13 @@
  */
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useHealthCheck } from '../hooks/useFileReconciliation';
-import { useProjects } from '../hooks/useApi';
-import { apiClient } from '../services/apiClient';
-import { logger } from '../services/logger';
-import Button from '../ui/Button';
-import { PageMeta } from '../seo/PageMeta';
-import { EnhancedContextualHelp } from '../ui/EnhancedContextualHelp';
+import { useHealthCheck } from '@/hooks/useFileReconciliation';
+import { useProjects } from '@/hooks/useApi';
+import { apiClient } from '@/services/apiClient';
+import { logger } from '@/services/logger';
+import Button from '@/components/ui/Button';
+import { PageMeta } from '@/components/seo/PageMeta';
+import { EnhancedContextualHelp } from '@/components/ui/EnhancedContextualHelp';
 
 const Dashboard: React.FC = () => {
   const { isHealthy, isChecking, lastChecked } = useHealthCheck();

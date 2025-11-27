@@ -5,41 +5,24 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/common-functions.sh"
+
 # Configuration
 MONITORING_DIR="/opt/monitoring"
 GRAFANA_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-"admin123"}
 PROMETHEUS_RETENTION=${PROMETHEUS_RETENTION:-"30d"}
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
-
-# Logging function
-log() {
-    echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
-}
-
-error() {
-    echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}"
+# Note: # Root check handled at script start from common-functions.sh checks for non-root
+# This script needs root, so we check directly
+if [[ $EUID -ne 0 ]]; then
+    log_error "This script must be run as root"
     exit 1
-}
-
-warning() {
-    echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}"
-}
-
-# Check if running as root
-check_root() {
-    if [[ $EUID -ne 0 ]]; then
-        error "This script must be run as root"
-    fi
-}
+fi
 
 # Install required packages
 install_packages() {
-    log "Installing required packages..."
+    log_info "Installing required packages..."
     
     # Update package list
     apt-get update
@@ -47,7 +30,7 @@ install_packages() {
     # Install required packages
     apt-get install -y curl wget gnupg2 software-properties-common apt-transport-https ca-certificates
     
-    log "Packages installed"
+    log_success "Packages installed"
 }
 
 # Install Docker

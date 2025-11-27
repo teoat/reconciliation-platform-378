@@ -2,6 +2,7 @@
 // COLLABORATIVE FEATURES HELPER FUNCTIONS
 // ============================================================================
 
+import React from 'react';
 import { Search, MessageSquare, Bell, Activity, Upload, CheckCircle, XCircle } from 'lucide-react';
 import type { TeamMember } from '../types';
 

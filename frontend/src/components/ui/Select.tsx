@@ -11,7 +11,7 @@ export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElemen
   fullWidth?: boolean;
 }
 
-const Select: React.FC<SelectProps> = ({
+const SelectComponent: React.FC<SelectProps> = ({
   label,
   error,
   helperText,
@@ -54,7 +54,7 @@ const Select: React.FC<SelectProps> = ({
         <select
           id={selectId}
           className={selectClasses}
-          aria-invalid={error ? 'true' : 'false'}
+          aria-invalid={error ? 'true' : undefined}
           aria-describedby={describedBy}
           aria-required={props.required ? 'true' : undefined}
           aria-label={props['aria-label'] || (label ? undefined : 'Select')}
@@ -95,5 +95,9 @@ const Select: React.FC<SelectProps> = ({
   );
 };
 
+const Select = memo(SelectComponent);
+
+Select.displayName = 'Select';
+
 export { Select };
-export default memo(Select);
+export default Select;

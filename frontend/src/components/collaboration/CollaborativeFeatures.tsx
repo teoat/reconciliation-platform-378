@@ -29,6 +29,8 @@ import {
   NotificationsTab,
   MemberDetailModal,
 } from './components';
+import { ProgressiveFeatureDisclosure } from '../ui/ProgressiveFeatureDisclosure';
+import { onboardingService } from '../../services/onboardingService';
 
 interface CollaborativeFeaturesProps {
   project: BackendProject;
@@ -242,10 +244,26 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
     );
   };
 
+  const userProgress = onboardingService.getProgress('initial').completedSteps;
+
   return (
-    <div className="max-w-7xl mx-auto">
-      {/* Header */}
-      <div className="mb-8">
+    <ProgressiveFeatureDisclosure
+      feature={{
+        id: 'collaboration-features',
+        name: 'Collaboration Features',
+        description: 'Team collaboration, workspaces, assignments, and real-time activities',
+        unlockRequirements: {
+          onboardingSteps: ['upload-files', 'configure-reconciliation'],
+          minProgress: 30,
+        },
+        lockedMessage: 'Complete basic reconciliation setup to unlock collaboration features',
+      }}
+      userProgress={userProgress}
+      showUnlockAnimation={true}
+    >
+      <div className="max-w-7xl mx-auto">
+        {/* Header */}
+        <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-3xl font-bold text-secondary-900">Collaborative Features</h1>
@@ -355,7 +373,8 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
           }}
         />
       )}
-    </div>
+      </div>
+    </ProgressiveFeatureDisclosure>
   );
 };
 

@@ -3,7 +3,7 @@
 
 import React, { Component, ErrorInfo, ReactNode } from 'react'
 import { toast } from 'react-hot-toast'
-import { addNotification } from '@/store'
+// Note: addNotification is available from '@/store/unifiedStore' if needed in the future
 
 // ============================================================================
 // ERROR TYPES
