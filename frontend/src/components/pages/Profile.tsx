@@ -157,7 +157,7 @@ const Profile: React.FC = () => {
         description="View and edit your user profile, account information, and preferences."
         keywords="profile, account, user settings, preferences"
       />
-      <main id="main-content" className="max-w-2xl mx-auto p-6">
+      <div className="max-w-2xl mx-auto p-6">
         <div className="mb-6">
           <button
             onClick={() => navigate('/')}
@@ -311,8 +311,8 @@ const Profile: React.FC = () => {
           <Lock className="w-5 h-5 text-gray-400" />
           <h2 className="text-xl font-semibold text-gray-900">Change Password</h2>
         </div>
+        </div>
       </div>
-    </main>
     </>
   );
 };

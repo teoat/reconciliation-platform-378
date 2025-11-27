@@ -95,7 +95,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
         description="Monitor API integration status, connection health, and endpoint availability."
         keywords="API, integration, status, health check, monitoring"
       />
-      <main id="main-content" role="main" className={`space-y-4 ${className}`}>
+      <div className={`space-y-4 ${className}`}>
         <h1 className="text-3xl font-bold text-gray-900 mb-6">API Integration Status</h1>
         {/* Connection Status */}
         <Card>
@@ -127,7 +127,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
                       {connectionStatus}
                     </StatusBadge>
                     {isConnected && (
-                      <span className="text-xs text-gray-500">Real-time enabled</span>
+                      <span className="text-xs text-gray-600">Real-time enabled</span>
                     )}
                   </div>
                 </div>
@@ -161,7 +161,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
                             : 'unknown'}
                     </StatusBadge>
                     {lastChecked && (
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-600">
                         {lastChecked.toLocaleTimeString()}
                       </span>
                     )}
@@ -208,7 +208,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
                   </span>
                 </div>
                 {lastSyncTime && (
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-600">
                     Last sync: {lastSyncTime.toLocaleTimeString()}
                   </span>
                 )}
@@ -240,7 +240,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
                   <Database className="h-5 w-5 text-blue-600" />
                 </div>
                 <p className="text-sm font-medium text-gray-900">{projects.projects.length}</p>
-                <p className="text-xs text-gray-500">Projects</p>
+                <p className="text-xs text-gray-600">Projects</p>
               </div>
 
               <div className="text-center">
@@ -248,7 +248,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
                   <Activity className="h-5 w-5 text-green-600" />
                 </div>
                 <p className="text-sm font-medium text-gray-900">{projects.projects.length}</p>
-                <p className="text-xs text-gray-500">Projects</p>
+                <p className="text-xs text-gray-600">Projects</p>
               </div>
 
               <div className="text-center">
@@ -256,7 +256,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
                   <BarChart3 className="h-5 w-5 text-purple-600" />
                 </div>
                 <p className="text-sm font-medium text-gray-900">{reconciliation.records.length}</p>
-                <p className="text-xs text-gray-500">Records</p>
+                <p className="text-xs text-gray-600">Records</p>
               </div>
 
               <div className="text-center">
@@ -264,7 +264,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
                   <Users className="h-5 w-5 text-orange-600" />
                 </div>
                 <p className="text-sm font-medium text-gray-900">{ui.notifications.length}</p>
-                <p className="text-xs text-gray-500">Notifications</p>
+                <p className="text-xs text-gray-600">Notifications</p>
               </div>
             </div>
           </div>
@@ -334,7 +334,7 @@ const ApiIntegrationStatus: React.FC<ApiIntegrationStatusProps> = memo(({ classN
             </div>
           </div>
         </Card>
-      </main>
+      </div>
     </>
   );
 });

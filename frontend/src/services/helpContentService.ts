@@ -110,11 +110,190 @@ class HelpContentService {
         tags: ['matching', 'reconciliation', 'rules'],
         relatedFeatures: ['reconciliation:matching'],
       },
+      // Register help content from markdown files
+      ...this.loadHelpContentFromDocs(),
     ];
 
     defaultContent.forEach((content) => {
       this.contentStore.set(content.id, content);
     });
+  }
+
+  /**
+   * Load help content from documentation files
+   * This creates help content entries from markdown files
+   */
+  private loadHelpContentFromDocs(): HelpContent[] {
+    // Help content IDs mapped to documentation files
+    const helpContentMap: Array<{
+      id: string;
+      docFile: string;
+      category: string;
+      tags: string[];
+      relatedFeatures: string[];
+    }> = [
+      {
+        id: 'project-management',
+        docFile: 'project-management-help.md',
+        category: 'project-management',
+        tags: ['projects', 'organization', 'management'],
+        relatedFeatures: ['project-management'],
+      },
+      {
+        id: 'data-source-configuration',
+        docFile: 'data-source-configuration-help.md',
+        category: 'data-ingestion',
+        tags: ['data-sources', 'configuration', 'connections'],
+        relatedFeatures: ['data-ingestion:data-sources'],
+      },
+      {
+        id: 'file-upload',
+        docFile: 'file-upload-help.md',
+        category: 'data-ingestion',
+        tags: ['upload', 'files', 'data'],
+        relatedFeatures: ['data-ingestion:file-upload'],
+      },
+      {
+        id: 'field-mapping',
+        docFile: 'field-mapping-help.md',
+        category: 'data-ingestion',
+        tags: ['mapping', 'fields', 'transformation'],
+        relatedFeatures: ['data-ingestion:field-mapping'],
+      },
+      {
+        id: 'matching-rules',
+        docFile: 'matching-rules-help.md',
+        category: 'reconciliation',
+        tags: ['matching', 'rules', 'criteria'],
+        relatedFeatures: ['reconciliation:matching'],
+      },
+      {
+        id: 'reconciliation-execution',
+        docFile: 'reconciliation-execution-help.md',
+        category: 'reconciliation',
+        tags: ['execution', 'reconciliation', 'processing'],
+        relatedFeatures: ['reconciliation:execution'],
+      },
+      {
+        id: 'match-review',
+        docFile: 'match-review-help.md',
+        category: 'reconciliation',
+        tags: ['review', 'matches', 'validation'],
+        relatedFeatures: ['reconciliation:review'],
+      },
+      {
+        id: 'discrepancy-resolution',
+        docFile: 'discrepancy-resolution-help.md',
+        category: 'reconciliation',
+        tags: ['discrepancies', 'resolution', 'differences'],
+        relatedFeatures: ['reconciliation:resolution'],
+      },
+      {
+        id: 'visualization',
+        docFile: 'visualization-help.md',
+        category: 'analytics',
+        tags: ['visualization', 'charts', 'analytics'],
+        relatedFeatures: ['analytics:visualization'],
+      },
+      {
+        id: 'export-functionality',
+        docFile: 'export-functionality-help.md',
+        category: 'data-export',
+        tags: ['export', 'download', 'reports'],
+        relatedFeatures: ['export:functionality'],
+      },
+      {
+        id: 'settings-management',
+        docFile: 'settings-management-help.md',
+        category: 'settings',
+        tags: ['settings', 'preferences', 'configuration'],
+        relatedFeatures: ['settings:management'],
+      },
+      {
+        id: 'user-management',
+        docFile: 'user-management-help.md',
+        category: 'administration',
+        tags: ['users', 'roles', 'permissions'],
+        relatedFeatures: ['admin:user-management'],
+      },
+      {
+        id: 'audit-logging',
+        docFile: 'audit-logging-help.md',
+        category: 'administration',
+        tags: ['audit', 'logging', 'compliance'],
+        relatedFeatures: ['admin:audit-logging'],
+      },
+      {
+        id: 'api-integration',
+        docFile: 'api-integration-help.md',
+        category: 'api',
+        tags: ['api', 'integration', 'automation'],
+        relatedFeatures: ['api:integration'],
+      },
+      {
+        id: 'webhook-configuration',
+        docFile: 'webhook-configuration-help.md',
+        category: 'api',
+        tags: ['webhooks', 'notifications', 'events'],
+        relatedFeatures: ['api:webhooks'],
+      },
+      {
+        id: 'scheduled-jobs',
+        docFile: 'scheduled-jobs-help.md',
+        category: 'automation',
+        tags: ['scheduling', 'automation', 'jobs'],
+        relatedFeatures: ['automation:scheduled-jobs'],
+      },
+      {
+        id: 'report-generation',
+        docFile: 'report-generation-help.md',
+        category: 'reporting',
+        tags: ['reports', 'generation', 'export'],
+        relatedFeatures: ['reporting:generation'],
+      },
+      {
+        id: 'data-quality-checks',
+        docFile: 'data-quality-checks-help.md',
+        category: 'data-ingestion',
+        tags: ['quality', 'validation', 'checks'],
+        relatedFeatures: ['data-ingestion:quality-checks'],
+      },
+      {
+        id: 'error-handling',
+        docFile: 'error-handling-help.md',
+        category: 'operations',
+        tags: ['errors', 'handling', 'troubleshooting'],
+        relatedFeatures: ['operations:error-handling'],
+      },
+      {
+        id: 'performance-optimization',
+        docFile: 'performance-optimization-help.md',
+        category: 'operations',
+        tags: ['performance', 'optimization', 'speed'],
+        relatedFeatures: ['operations:performance'],
+      },
+    ];
+
+    // For now, return placeholder content that references the markdown files
+    // In a real implementation, these would be loaded from the markdown files
+    // or fetched from a backend API
+    return helpContentMap.map((item) => ({
+      id: item.id,
+      title: item.docFile.replace('-help.md', '').replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+      content: `Help content for ${item.id}. See documentation file: ${item.docFile}`,
+      format: 'markdown' as const,
+      category: item.category,
+      tags: item.tags,
+      relatedFeatures: item.relatedFeatures,
+      links: [
+        {
+          id: 'doc-link',
+          url: `/docs/getting-started/help-content/${item.docFile}`,
+          label: 'View Full Documentation',
+          type: 'internal' as const,
+        },
+      ],
+    }));
   }
 
   /**
@@ -258,9 +437,9 @@ class HelpContentService {
    */
   /**
    * Track help content view for analytics.
-   * 
+   *
    * @param contentId - The ID of the help content being viewed
-   * 
+   *
    * @remarks
    * Currently logs the view. Analytics tracking can be added when needed.
    */
@@ -271,9 +450,9 @@ class HelpContentService {
 
   /**
    * Get search history for help content searches.
-   * 
+   *
    * @returns Array of previous search terms
-   * 
+   *
    * @remarks
    * Currently returns empty array. Search history can be implemented when needed.
    */
@@ -336,10 +515,10 @@ class HelpContentService {
    */
   /**
    * Track user feedback on help content.
-   * 
+   *
    * @param contentId - The ID of the help content
    * @param helpful - Whether the user found the content helpful
-   * 
+   *
    * @remarks
    * Currently logs the feedback. Analytics tracking can be added when needed.
    */

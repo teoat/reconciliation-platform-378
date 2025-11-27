@@ -14,7 +14,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useHealthCheck } from '@/hooks/useFileReconciliation';
-import { useProjects } from '@/hooks/useApi';
+import { useProjects } from '@/hooks/api';
 import { apiClient } from '@/services/apiClient';
 import { logger } from '@/services/logger';
 import Button from '@/components/ui/Button';
@@ -37,10 +37,7 @@ const Dashboard: React.FC = () => {
         description="View and manage reconciliation projects, track progress, and analyze data in real-time."
         keywords="reconciliation, dashboard, projects, analytics"
       />
-      <main
-        id="main-content"
-        role="main"
-        aria-label="Main content"
+      <div
         className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
         data-testid="dashboard"
       >
@@ -237,7 +234,7 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
         </div>
-      </main>
+      </div>
     </>
   );
 };

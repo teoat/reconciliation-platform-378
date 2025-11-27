@@ -6,7 +6,6 @@
 use actix_cors::Cors;
 use actix_web::middleware::Compress;
 use chrono::Utc;
-use futures::future;
 use reconciliation_backend::{
     config::Config,
     handlers,

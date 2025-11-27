@@ -12,10 +12,33 @@ interface SecurityScanModalProps {
   onClose: () => void;
 }
 
+interface Vulnerability {
+  title: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  description?: string;
+  recommendation?: string;
+  category?: string;
+}
+
+interface ScanSummary {
+  totalIssues: number;
+  criticalIssues: number;
+  highIssues: number;
+  mediumIssues?: number;
+  lowIssues?: number;
+}
+
+interface SecurityScanResults {
+  summary?: ScanSummary;
+  vulnerabilities?: Vulnerability[];
+  timestamp?: string;
+  scanId?: string;
+}
+
 export function SecurityScanModal({ onClose }: SecurityScanModalProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [scanId, setScanId] = useState<string | null>(null);
-  const [scanResults, setScanResults] = useState<any>(null);
+  const [scanResults, setScanResults] = useState<SecurityScanResults | null>(null);
   const [scope, setScope] = useState<'full' | 'policies' | 'access' | 'compliance'>('full');
   const [error, setError] = useState<string | null>(null);
 
@@ -157,7 +180,7 @@ export function SecurityScanModal({ onClose }: SecurityScanModalProps) {
               <div>
                 <h4 className="text-lg font-semibold text-secondary-900 mb-4">Vulnerabilities</h4>
                 <div className="space-y-3">
-                  {scanResults.vulnerabilities?.map((vuln: any, index: number) => (
+                  {scanResults.vulnerabilities?.map((vuln: Vulnerability, index: number) => (
                     <div
                       key={index}
                       className="border border-secondary-200 rounded-lg p-4"

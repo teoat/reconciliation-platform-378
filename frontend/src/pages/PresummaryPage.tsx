@@ -30,10 +30,10 @@ interface ReconciliationSummary {
 }
 
 interface PresummaryPageProps {
-  project: any
+  project?: any
 }
 
-const PresummaryPage = ({ project }: PresummaryPageProps) => {
+const PresummaryPage = ({ project }: PresummaryPageProps = {}) => {
   const [summaries] = useState<ReconciliationSummary[]>([
     {
       id: '1',

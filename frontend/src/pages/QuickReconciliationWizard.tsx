@@ -353,7 +353,7 @@ const QuickReconciliationWizard: React.FC = () => {
         description="Quickly create and process reconciliation jobs with our step-by-step wizard."
         keywords="reconciliation, wizard, quick start, data matching"
       />
-      <main id="main-content" className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto">
         <h1 className="text-3xl font-bold text-gray-900 mb-8">Quick Reconciliation</h1>
         {/* Progress Bar */}
         <div className="mb-8">
@@ -422,7 +422,7 @@ const QuickReconciliationWizard: React.FC = () => {
             )}
           </div>
         </Card>
-      </main>
+      </div>
     </>
   );
 };

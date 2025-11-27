@@ -229,7 +229,7 @@ const EnhancedIngestionPage = () => {
   const [processedData, setProcessedData] = useState<ProcessedData[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
-  const [_showDataAnalysis, _setShowDataAnalysis] = useState(false);
+  const [showDataAnalysis, setShowDataAnalysis] = useState(false);
   const [activeTab, setActiveTab] = useState<'upload' | 'process' | 'analyze' | 'sync'>('upload');
 
   // Indonesian file detection
@@ -254,7 +254,7 @@ const EnhancedIngestionPage = () => {
     let processedData: ProcessedData[];
 
     if (file.name.includes('expenses')) {
-const expenses = IndonesianDataProcessor.processExpenseData(rawData)
+const expenses = IndonesianDataProcessor.processExpensesData(rawData)
       processedData = expenses.map((expense: ProcessedExpenseRecord) => ({
         id: expense.id,
         source: 'ingestion' as const,

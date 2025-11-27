@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProjects } from '../../hooks/useApi';
+import { useProjects } from '../../hooks/api';
 import { apiClient } from '../../services/apiClient';
 import { Button } from '../ui/Button';
 import { useToast } from '../../hooks/useToast';
@@ -58,7 +58,7 @@ const ProjectCreate: React.FC = () => {
         description="Create a new reconciliation project with custom settings and configurations."
         keywords="project, create, reconciliation, new project"
       />
-      <main id="main-content" className="max-w-2xl mx-auto p-6">
+      <div className="max-w-2xl mx-auto p-6">
         <div className="mb-6">
           <button
             onClick={() => navigate('/')}
@@ -148,7 +148,7 @@ const ProjectCreate: React.FC = () => {
             </Button>
           </div>
         </form>
-      </main>
+      </div>
     </>
   );
 };

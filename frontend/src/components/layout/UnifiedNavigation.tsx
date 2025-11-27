@@ -2,8 +2,9 @@
 // UNIFIED NAVIGATION COMPONENT - Single Source of Truth
 // ============================================================================
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useRoutePreloader } from '@/utils/routePreloader';
 import { Menu } from 'lucide-react';
 import { X } from 'lucide-react';
 import { Search } from 'lucide-react';
@@ -30,14 +31,28 @@ const UnifiedNavigation: React.FC<UnifiedNavigationProps> = ({ className = '' })
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
+  const { preloadOnHover, preloadOnFocus } = useRoutePreloader();
+  const navItemRefs = useRef<Record<string, HTMLElement | null>>({});
+
   const navigationItems = [
-    { id: 'dashboard', label: 'Dashboard', path: '/', icon: Home },
-    { id: 'projects', label: 'Projects', path: '/projects', icon: FileText },
-    { id: 'reconciliation', label: 'Reconciliation', path: '/reconciliation', icon: Upload },
-    { id: 'analytics', label: 'Analytics', path: '/analytics', icon: BarChart3 },
-    { id: 'users', label: 'Users', path: '/users', icon: Users },
-    { id: 'settings', label: 'Settings', path: '/settings', icon: Settings },
+    { id: 'dashboard', label: 'Dashboard', path: '/', route: 'dashboard', icon: Home },
+    { id: 'projects', label: 'Projects', path: '/projects', route: 'projects', icon: FileText },
+    { id: 'reconciliation', label: 'Reconciliation', path: '/quick-reconciliation', route: 'quick-reconciliation', icon: Upload },
+    { id: 'analytics', label: 'Analytics', path: '/analytics', route: 'analytics', icon: BarChart3 },
+    { id: 'users', label: 'Users', path: '/users', route: 'users', icon: Users },
+    { id: 'settings', label: 'Settings', path: '/settings', route: 'settings', icon: Settings },
   ];
+
+  // Set up route preloading on mount
+  useEffect(() => {
+    navigationItems.forEach((item) => {
+      const element = navItemRefs.current[item.id];
+      if (element && item.route) {
+        preloadOnHover(element, item.route);
+        preloadOnFocus(element, item.route);
+      }
+    });
+  }, []);
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -87,6 +102,9 @@ const UnifiedNavigation: React.FC<UnifiedNavigationProps> = ({ className = '' })
             {navigationItems.map((item) => (
               <button
                 key={item.id}
+                ref={(el) => {
+                  if (el) navItemRefs.current[item.id] = el;
+                }}
                 onClick={() => navigate(item.path)}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors flex items-center space-x-2 ${
                   isActive(item.path)
@@ -120,9 +138,10 @@ const UnifiedNavigation: React.FC<UnifiedNavigationProps> = ({ className = '' })
             <button
               className="p-2 text-gray-400 hover:text-gray-600 relative"
               aria-label="Notifications"
+              aria-describedby="notification-badge"
             >
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+              <Bell className="h-5 w-5" aria-hidden="true" />
+              <span id="notification-badge" className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full" aria-label="Unread notifications"></span>
             </button>
 
             {/* User Menu */}
@@ -160,9 +179,10 @@ const UnifiedNavigation: React.FC<UnifiedNavigationProps> = ({ className = '' })
             <button
               className="p-2 text-gray-400 hover:text-gray-600 relative"
               aria-label="Notifications"
+              aria-describedby="mobile-notification-badge"
             >
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full"></span>
+              <Bell className="h-5 w-5" aria-hidden="true" />
+              <span id="mobile-notification-badge" className="absolute top-0 right-0 h-2 w-2 bg-red-500 rounded-full" aria-label="Unread notifications"></span>
             </button>
 
             {/* Mobile Menu Button */}
@@ -170,7 +190,7 @@ const UnifiedNavigation: React.FC<UnifiedNavigationProps> = ({ className = '' })
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="p-2 text-gray-400 hover:text-gray-600"
               aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={isMobileMenuOpen}
+              {...(isMobileMenuOpen ? { 'aria-expanded': true } : { 'aria-expanded': false })}
             >
               {isMobileMenuOpen ? (
                 <X className="h-6 w-6" aria-hidden="true" />

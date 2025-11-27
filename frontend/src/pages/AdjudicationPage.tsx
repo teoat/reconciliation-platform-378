@@ -233,7 +233,8 @@ const BasePage: React.FC<BasePageProps> = ({
               <div className="mt-4 flex justify-end">
                 <button
                   onClick={clearFilters}
-                  className="px-3 py-1 text-sm text-gray-500 hover:text-gray-700"
+                  aria-label="Clear all filters"
+                  className="px-3 py-1 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   Clear All Filters
                 </button>
@@ -250,15 +251,18 @@ const BasePage: React.FC<BasePageProps> = ({
             <button
               key={index}
               onClick={action.onClick}
+              disabled={action.loading}
+              aria-label={action.label}
+              aria-busy={action.loading}
               className={`${
                 action.variant === 'primary'
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
+                  ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
                   : action.variant === 'danger'
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-gray-600 text-white hover:bg-gray-700'
-              } px-4 py-2 rounded-lg flex items-center`}
+                    ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
+                    : 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'
+              } px-4 py-2 rounded-lg flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
             >
-              <action.icon className="w-4 h-4 mr-2" />
+              <action.icon className="w-4 h-4 mr-2" aria-hidden="true" />
               {action.label}
             </button>
           ))}

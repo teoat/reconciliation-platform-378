@@ -141,9 +141,9 @@ const DEFAULT_EMPTY_STATES: Record<
           if (props.onCreateJob) {
             await props.onCreateJob();
           } else if (props.projectId) {
-            navigate(`/projects/${props.projectId}/jobs/new`);
+            navigate(`/projects/${props.projectId}/reconciliation`);
           } else {
-            navigate('/reconciliation/new');
+            navigate('/quick-reconciliation');
           }
         },
         description: 'Set up a new reconciliation job',
@@ -171,9 +171,9 @@ const DEFAULT_EMPTY_STATES: Record<
         icon: <Play className="w-5 h-5" />,
         onClick: () => {
           if (props.projectId) {
-            navigate(`/projects/${props.projectId}/jobs`);
+            navigate(`/projects/${props.projectId}/reconciliation`);
           } else {
-            navigate('/reconciliation');
+            navigate('/quick-reconciliation');
           }
         },
         description: 'Execute a reconciliation job',

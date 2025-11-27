@@ -300,7 +300,8 @@ export * from './monitoring';
  * WebSocket Service
  * Real-time communication via WebSocket
  */
-export { default as WebSocketService } from './webSocketService';
+export { WebSocketService, webSocketService } from './websocket';
+export type { WebSocketMessage, ConnectionStatus } from './websocket/types';
 
 /**
  * Realtime Sync Service

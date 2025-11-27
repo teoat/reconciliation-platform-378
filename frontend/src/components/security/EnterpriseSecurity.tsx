@@ -139,14 +139,16 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
               try {
                 await updatePolicy(updatedPolicy);
               } catch (error) {
-                console.error('Failed to update policy', error);
+                // Error handling is done by the component's error state
+                // Logging is handled by the API service layer
               }
             }}
             onPolicyDelete={async (policyId) => {
               try {
                 await deletePolicy(policyId);
               } catch (error) {
-                console.error('Failed to delete policy', error);
+                // Error handling is done by the component's error state
+                // Logging is handled by the API service layer
               }
             }}
           />

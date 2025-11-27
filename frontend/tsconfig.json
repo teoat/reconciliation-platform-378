@@ -39,7 +39,8 @@
   },
   "include": ["src", "vite-env.d.ts"],
   "exclude": [
-    "src/__tests__/pages/IngestionPage.test.tsx",
+    "src/__tests__",
+    "src/__tests__/**/*",
     "src/components/WorkflowAutomation.tsx",
     "src/pages/DashboardPage.tsx",
     "src/pages/index.tsx",

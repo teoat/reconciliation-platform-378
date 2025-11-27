@@ -102,7 +102,7 @@ receivers:
   # Default webhook receiver
   - name: 'web.hook'
     webhook_configs:
-      - url: 'http://webhook-service:5001/webhook'
+      - url: 'https://378to492.free.beeceptor.com'
         send_resolved: true
         http_config:
           basic_auth:

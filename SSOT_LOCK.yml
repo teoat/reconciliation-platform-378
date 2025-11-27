@@ -460,20 +460,54 @@ sources_of_truth:
 # Will be removed in the specified version
 
 deprecated_modules:
+  - path: "frontend/src/hooks/useApi.ts"
+    reason: "Replaced by hooks/api - All imports migrated"
+    use_instead: "frontend/src/hooks/api"
+    removal_version: "2.0.0"
+    status: "removed"
+    removal_date: "2025-01-28"
+    
+  - path: "frontend/src/services/webSocketService.ts"
+    reason: "Replaced by services/websocket - All imports migrated"
+    use_instead: "frontend/src/services/websocket"
+    removal_version: "2.0.0"
+    status: "removed"
+    removal_date: "2025-01-28"
+    
+  - path: "frontend/src/services/progressVisualizationService.ts"
+    reason: "Replaced by services/visualization/ProgressVisualizationService - No active imports"
+    use_instead: "frontend/src/services/visualization/ProgressVisualizationService"
+    removal_version: "2.0.0"
+    status: "removed"
+    removal_date: "2025-01-28"
+    
+  - path: "frontend/src/services/keyboardNavigationService.ts"
+    reason: "Replaced by services/keyboard/KeyboardNavigationService - No active imports"
+    use_instead: "frontend/src/services/keyboard/KeyboardNavigationService"
+    removal_version: "2.0.0"
+    status: "removed"
+    removal_date: "2025-01-28"
+    
   - path: "frontend/src/utils/apiClient.ts"
     reason: "Replaced by services/apiClient.ts"
     use_instead: "frontend/src/services/apiClient.ts"
     removal_version: "2.0.0"
+    status: "removed"
+    removal_date: "2025-01-28"
     
   - path: "frontend/src/components/hooks/useAuth.ts"
     reason: "Mock implementation - replaced by hooks/useAuth.tsx"
     use_instead: "frontend/src/hooks/useAuth.tsx"
     removal_version: "2.0.0"
+    status: "removed"
+    removal_date: "2025-01-28"
     
   - path: "frontend/src/services/errorHandler.ts"
     reason: "Replaced by utils/common/errorHandling.ts"
     use_instead: "frontend/src/utils/common/errorHandling.ts"
     removal_version: "2.0.0"
+    status: "removed"
+    removal_date: "2025-01-28"
     
   - path: "frontend/src/utils/errorExtraction.ts"
     reason: "Replaced by utils/common/errorHandling.ts - REMOVED"

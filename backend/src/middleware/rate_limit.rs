@@ -132,6 +132,7 @@ impl PerEndpointRateLimitMiddleware {
         }
     }
 
+    #[allow(dead_code)] // Method reserved for future rate limiting enhancements
     fn get_rate_limit_key(&self, req: &ServiceRequest) -> String {
         let path = req.path();
         let user_id = req.extensions()

@@ -1,85 +1,272 @@
 // Auto-Save Form Hook
 // Provides easy integration of auto-save functionality into forms
 
-import React from 'react';
+import React from 'react'
+import { useAutoSave } from '../services/autoSaveService'
+import { AutoSaveRecoveryPrompt, DataComparisonModal } from './AutoSaveRecoveryPrompt'
 
 interface UseAutoSaveFormOptions {
-  formId: string;
+  formId: string
   metadata: {
-    page: string;
-    userId?: string;
-    sessionId?: string;
-  };
-  enabled?: boolean;
-  autoSaveInterval?: number;
-  maxVersions?: number;
-  onDataRestore?: (data: Record<string, unknown>) => void;
-  onDataCompare?: (original: Record<string, unknown>, current: Record<string, unknown>) => void;
+    page: string
+    userId?: string
+    projectId?: string
+    workflowStage?: string
+  }
+  enabled?: boolean
+  onDataRestore?: (data: Record<string, any>) => void
+  onDataCompare?: (data: Record<string, any>) => void
 }
 
-export const useAutoSaveForm = (options: UseAutoSaveFormOptions) => {
-  const { formId: _formId, enabled: _enabled = true } = options;
+export const useAutoSaveForm = ({
+  formId,
+  metadata,
+  enabled = true,
+  onDataRestore,
+  onDataCompare
+}: UseAutoSaveFormOptions) => {
+  const [formData, setFormData] = React.useState<Record<string, any>>({})
+  const [showComparison, setShowComparison] = React.useState(false)
+  const [comparisonData, setComparisonData] = React.useState<Record<string, any> | null>(null)
 
-  // Mock implementation since dependencies don't exist
-  const [formData, setFormData] = React.useState<Record<string, unknown>>({});
+  const getData = React.useCallback(() => formData, [formData])
 
-  const updateFormData = React.useCallback((updates: Record<string, unknown>) => {
-    setFormData(prev => ({ ...prev, ...updates }));
-  }, []);
+  const {
+    isAutoSaving,
+    lastSaved,
+    recoveryPrompt,
+    handleRecovery,
+    clearRecovery,
+    manualSave
+  } = useAutoSave(formId, getData, metadata, enabled)
 
-  const setField = React.useCallback((field: string, value: unknown) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  }, []);
+  // Handle recovery actions
+  const handleRecoveryAction = React.useCallback((action: 'restore' | 'discard' | 'compare') => {
+    if (action === 'restore') {
+      if (recoveryPrompt) {
+        setFormData(recoveryPrompt.data)
+        onDataRestore?.(recoveryPrompt.data)
+        handleRecovery('restore')
+      }
+    } else if (action === 'compare') {
+      if (recoveryPrompt) {
+        setComparisonData(recoveryPrompt.data)
+        setShowComparison(true)
+        onDataCompare?.(recoveryPrompt.data)
+      }
+    } else {
+      handleRecovery('discard')
+    }
+  }, [recoveryPrompt, handleRecovery, onDataRestore, onDataCompare])
 
-  const getField = React.useCallback((field: string) => {
-    return formData[field];
-  }, [formData]);
-
-  const saveForm = React.useCallback(() => {
-    // Mock save implementation
-    console.log('Saving form data:', formData);
-  }, [formData]);
-
-  const restoreForm = React.useCallback((data: Record<string, unknown>) => {
-    setFormData(data);
-  }, []);
-
-  const clearForm = React.useCallback(() => {
-    setFormData({});
-  }, []);
-
-  const hasUnsavedChanges = React.useCallback(() => {
-    return Object.keys(formData).length > 0;
-  }, [formData]);
-
-  const getFormVersions = React.useCallback(() => {
-    return [];
-  }, []);
-
-  const restoreVersion = React.useCallback((_versionId: string) => {
-    // Mock implementation
-  }, []);
-
-  const compareVersions = React.useCallback((_versionId1: string, _versionId2: string) => {
-    return { differences: [] };
-  }, []);
-
+  // Handle comparison restore
   const handleComparisonRestore = React.useCallback(() => {
-    // Mock implementation
-  }, []);
+    if (comparisonData) {
+      setFormData(comparisonData)
+      onDataRestore?.(comparisonData)
+    }
+    setShowComparison(false)
+    setComparisonData(null)
+    clearRecovery()
+  }, [comparisonData, onDataRestore, clearRecovery])
+
+  // Update form data
+  const updateFormData = React.useCallback((updates: Record<string, any>) => {
+    setFormData(prev => ({ ...prev, ...updates }))
+  }, [])
+
+  // Set specific field
+  const setField = React.useCallback((field: string, value: any) => {
+    setFormData(prev => ({ ...prev, [field]: value }))
+  }, [])
+
+  // Get specific field
+  const getField = React.useCallback((field: string) => {
+    return formData[field]
+  }, [formData])
+
+  // Clear form data
+  const clearFormData = React.useCallback(() => {
+    setFormData({})
+  }, [])
+
+  // Reset form data
+  const resetFormData = React.useCallback((initialData: Record<string, any> = {}) => {
+    setFormData(initialData)
+  }, [])
 
   return {
+    // Form data management
     formData,
     updateFormData,
     setField,
     getField,
-    saveForm,
-    restoreForm,
-    clearForm,
-    hasUnsavedChanges,
-    getFormVersions,
-    restoreVersion,
-    compareVersions,
-    handleComparisonRestore,
-  };
-};
+    clearFormData,
+    resetFormData,
+    
+    // Auto-save status
+    isAutoSaving,
+    lastSaved,
+    
+    // Recovery handling
+    recoveryPrompt,
+    handleRecoveryAction,
+    clearRecovery,
+    
+    // Manual save
+    manualSave,
+    
+    // Comparison modal
+    showComparison,
+    comparisonData,
+    setShowComparison,
+    handleComparisonRestore
+  }
+}
+
+// Auto-Save Form Component
+interface AutoSaveFormProps {
+  formId: string
+  metadata: {
+    page: string
+    userId?: string
+    projectId?: string
+    workflowStage?: string
+  }
+  children: (props: {
+    formData: Record<string, any>
+    updateFormData: (updates: Record<string, any>) => void
+    setField: (field: string, value: any) => void
+    getField: (field: string) => any
+    clearFormData: () => void
+    resetFormData: (initialData?: Record<string, any>) => void
+    isAutoSaving: boolean
+    lastSaved: Date | null
+    manualSave: () => void
+  }) => React.ReactNode
+  enabled?: boolean
+  onDataRestore?: (data: Record<string, any>) => void
+  onDataCompare?: (data: Record<string, any>) => void
+}
+
+export const AutoSaveForm: React.FC<AutoSaveFormProps> = ({
+  formId,
+  metadata,
+  children,
+  enabled = true,
+  onDataRestore,
+  onDataCompare
+}) => {
+  const {
+    formData,
+    updateFormData,
+    setField,
+    getField,
+    clearFormData,
+    resetFormData,
+    isAutoSaving,
+    lastSaved,
+    manualSave,
+    recoveryPrompt,
+    handleRecoveryAction,
+    clearRecovery,
+    showComparison,
+    comparisonData,
+    setShowComparison,
+    handleComparisonRestore
+  } = useAutoSaveForm({
+    formId,
+    metadata,
+    enabled,
+    onDataRestore,
+    onDataCompare
+  })
+
+  return (
+    <>
+      {children({
+        formData,
+        updateFormData,
+        setField,
+        getField,
+        clearFormData,
+        resetFormData,
+        isAutoSaving,
+        lastSaved,
+        manualSave
+      })}
+
+      {/* Recovery Prompt */}
+      {recoveryPrompt && (
+        <AutoSaveRecoveryPrompt
+          prompt={recoveryPrompt}
+          onAction={handleRecoveryAction}
+          onDismiss={clearRecovery}
+          onCompare={(data) => {
+            setComparisonData(data)
+            setShowComparison(true)
+          }}
+        />
+      )}
+
+      {/* Comparison Modal */}
+      {showComparison && comparisonData && (
+        <DataComparisonModal
+          savedData={comparisonData}
+          currentData={formData}
+          onClose={() => setShowComparison(false)}
+          onRestore={handleComparisonRestore}
+        />
+      )}
+    </>
+  )
+}
+
+// Auto-Save Status Indicator Component
+interface AutoSaveStatusProps {
+  isAutoSaving: boolean
+  lastSaved: Date | null
+  className?: string
+}
+
+export const AutoSaveStatus: React.FC<AutoSaveStatusProps> = ({
+  isAutoSaving,
+  lastSaved,
+  className = ''
+}) => {
+  const formatLastSaved = (date: Date): string => {
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffMinutes = Math.floor(diffMs / (1000 * 60))
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+
+    if (diffMinutes < 1) return 'Just now'
+    if (diffMinutes < 60) return `${diffMinutes}m ago`
+    if (diffHours < 24) return `${diffHours}h ago`
+    
+    return date.toLocaleDateString()
+  }
+
+  return (
+    <div className={`flex items-center space-x-2 text-sm ${className}`}>
+      {isAutoSaving ? (
+        <>
+          <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+          <span className="text-blue-600">Saving...</span>
+        </>
+      ) : lastSaved ? (
+        <>
+          <div className="rounded-full h-3 w-3 bg-green-500"></div>
+          <span className="text-gray-600">Saved {formatLastSaved(lastSaved)}</span>
+        </>
+      ) : (
+        <>
+          <div className="rounded-full h-3 w-3 bg-gray-300"></div>
+          <span className="text-gray-500">Not saved</span>
+        </>
+      )}
+    </div>
+  )
+}
+
+export default useAutoSaveForm

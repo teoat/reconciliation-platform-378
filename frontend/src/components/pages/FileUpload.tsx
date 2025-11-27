@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useProjects } from '../../hooks/useApi';
+import { useProjects } from '../../hooks/api';
 import { apiClient } from '../../services/apiClient';
 import { Button } from '../ui/Button';
 import { useToast } from '../../hooks/useToast';
@@ -98,7 +98,7 @@ const FileUpload: React.FC = () => {
         description="Upload files for reconciliation processing and data import."
         keywords="upload, file, import, data, reconciliation"
       />
-      <main id="main-content" className="max-w-2xl mx-auto p-6">
+      <div className="max-w-2xl mx-auto p-6">
         <div className="mb-6">
           <button
             onClick={() => navigate('/')}
@@ -247,7 +247,7 @@ const FileUpload: React.FC = () => {
             </Button>
           </div>
         </div>
-      </main>
+      </div>
     </>
   );
 };

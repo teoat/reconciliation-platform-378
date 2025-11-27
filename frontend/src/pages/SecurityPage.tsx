@@ -28,7 +28,7 @@ import {
 } from 'lucide-react'
 
 interface SecurityPageProps {
-  project: any
+  project?: any
 }
 
 // Security Interfaces
@@ -92,7 +92,7 @@ interface EncryptionConfig {
   nextRotation: string
 }
 
-const SecurityPage = ({ project }: SecurityPageProps) => {
+const SecurityPage = ({ project }: SecurityPageProps = {}) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'policies' | 'compliance' | 'audit' | 'encryption'>('overview')
   const [securityPolicies, setSecurityPolicies] = useState<SecurityPolicy[]>([])
   const [complianceFrameworks, setComplianceFrameworks] = useState<ComplianceFramework[]>([])

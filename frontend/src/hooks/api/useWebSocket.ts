@@ -18,7 +18,8 @@ export const useWebSocket = () => {
       setConnectionStatus('connected');
       wsRef.current = wsClient;
     } catch (error) {
-      console.error('WebSocket connection failed:', error);
+      // Error is handled by setting connection status to 'error'
+      // For production, consider integrating with error tracking service
       setIsConnected(false);
       setConnectionStatus('error');
     }

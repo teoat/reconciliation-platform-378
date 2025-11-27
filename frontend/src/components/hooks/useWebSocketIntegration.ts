@@ -1,7 +1,7 @@
 // WebSocket Integration Hook for Real-time Progress Tracking
 import { logger } from '@/services/logger';
 import { useState, useEffect, useCallback } from 'react';
-import { useWebSocket } from '../../services/webSocketService';
+import { useWebSocket } from '@/services/websocket/hooks/useWebSocket';
 
 interface ReconciliationProgress {
   job_id: string;

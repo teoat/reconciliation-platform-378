@@ -306,7 +306,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
         description="Manage users, roles, and permissions for the reconciliation platform."
         keywords="users, management, roles, permissions, access control"
       />
-      <main id="main-content" className="min-h-screen bg-gray-50 p-6" data-testid="user-management">
+      <div className="min-h-screen bg-gray-50 p-6" data-testid="user-management">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -641,7 +641,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ projectId }) => {
             </div>
           </Modal>
         </div>
-      </main>
+      </div>
     </>
   );
 };

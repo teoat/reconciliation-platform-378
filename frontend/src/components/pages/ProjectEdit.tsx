@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../../services/apiClient';
-import { useProjects } from '../../hooks/useApi';
+import { useProjects } from '../../hooks/api';
 import { Button } from '../ui/Button';
 import { useToast } from '../../hooks/useToast';
 import { ArrowLeft, Save } from 'lucide-react';
@@ -123,7 +123,7 @@ const ProjectEdit: React.FC = () => {
         description="Edit project settings, configurations, and reconciliation parameters."
         keywords="project, edit, update, reconciliation, settings"
       />
-      <main id="main-content" className="max-w-2xl mx-auto p-6">
+      <div className="max-w-2xl mx-auto p-6">
         <div className="mb-6">
           <button
             onClick={() => navigate(id ? `/projects/${id}` : '/')}
@@ -213,7 +213,7 @@ const ProjectEdit: React.FC = () => {
             </Button>
           </div>
         </form>
-      </main>
+      </div>
     </>
   );
 };

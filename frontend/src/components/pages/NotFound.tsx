@@ -16,10 +16,8 @@ const NotFound: React.FC = () => {
         description="The page you're looking for doesn't exist or has been moved."
         robots="noindex, follow"
       />
-      <main
-        id="main-content"
-        role="main"
-        aria-label="Main content"
+      <div
+        id="not-found-content"
         className="min-h-screen bg-gray-50 flex items-center justify-center p-4 overflow-x-hidden"
       >
         <div className="max-w-md w-full text-center">
@@ -34,7 +32,7 @@ const NotFound: React.FC = () => {
           <div className="bg-white rounded-lg shadow-md p-6 space-y-4">
             <div className="flex items-center justify-center mb-4">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                <Search className="w-8 h-8 text-gray-400" />
+                <Search className="w-8 h-8 text-gray-600" aria-hidden="true" />
               </div>
             </div>
 
@@ -51,7 +49,7 @@ const NotFound: React.FC = () => {
             </div>
 
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <p className="text-sm text-gray-500 mb-3">Common pages:</p>
+              <p className="text-sm text-gray-600 mb-3">Common pages:</p>
               <div className="flex flex-wrap gap-2 justify-center">
                 <button
                   onClick={() => navigate('/projects/new')}
@@ -84,7 +82,7 @@ const NotFound: React.FC = () => {
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </>
   );
 };

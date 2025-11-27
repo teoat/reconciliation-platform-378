@@ -28,6 +28,7 @@ trait ErasedEventHandler: Send + Sync {
 
 /// Handler wrapper for type erasure
 struct HandlerWrapper<E: Event, H: EventHandler<E>> {
+    #[allow(dead_code)] // Handler is stored for future use in event processing
     handler: Arc<H>,
     _phantom: std::marker::PhantomData<E>,
 }

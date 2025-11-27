@@ -3,11 +3,12 @@ import { renderHook, waitFor } from '@testing-library/react';
 import {
   useProjects,
   useProject,
-  useDataSources,
-  useReconciliationRecords,
-  useReconciliationJobs,
   useWebSocket,
-} from '../useApi';
+} from '../api';
+// Note: useDataSources, useReconciliationRecords, useReconciliationJobs are wrapper hooks
+// They should be tested via their underlying API hooks or component hooks
+import { useDataSourcesAPI } from '../api-enhanced/useDataSourcesAPI';
+import { useReconciliationJobsAPI } from '../api-enhanced/useReconciliationJobsAPI';
 import type { ApiResponse } from '../../services/apiClient/types';
 
 // Mock the apiClient

@@ -220,12 +220,14 @@ mod tests {
 
         // First 5 requests should be allowed
         for _ in 0..5 {
-            let result = limiter.is_allowed(&key).await.unwrap();
+            let result = limiter.is_allowed(&key).await
+                .expect("Rate limiter should not fail in test");
             assert!(result.allowed);
         }
 
         // 6th request should be rejected
-        let result = limiter.is_allowed(&key).await.unwrap();
+        let result = limiter.is_allowed(&key).await
+            .expect("Rate limiter should not fail in test");
         assert!(!result.allowed);
     }
 
@@ -236,14 +238,17 @@ mod tests {
 
         // Exceed limit
         for _ in 0..65 {
-            limiter.is_allowed(&key).await.unwrap();
+            limiter.is_allowed(&key).await
+                .expect("Rate limiter should not fail in test");
         }
 
         // Reset
-        limiter.reset(&key).await.unwrap();
+        limiter.reset(&key).await
+            .expect("Rate limiter reset should not fail in test");
 
         // Should be allowed again
-        let result = limiter.is_allowed(&key).await.unwrap();
+        let result = limiter.is_allowed(&key).await
+            .expect("Rate limiter should not fail in test");
         assert!(result.allowed);
     }
 }

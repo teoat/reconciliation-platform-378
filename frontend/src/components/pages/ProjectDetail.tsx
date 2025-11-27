@@ -4,7 +4,7 @@ import { toRecord } from '../../utils/typeHelpers';
 import { useParams, useNavigate } from 'react-router-dom';
 import { PageMeta } from '../seo/PageMeta';
 import { apiClient } from '../../services/apiClient';
-import { useProjects } from '../../hooks/useApi';
+import { useProjects } from '../../hooks/api';
 import { Button } from '../ui/Button';
 import { useToast } from '../../hooks/useToast';
 import { ArrowLeft } from 'lucide-react';
@@ -145,7 +145,7 @@ const ProjectDetail: React.FC = () => {
         description="View project details, reconciliation status, and manage project settings."
         keywords="project, details, reconciliation, status"
       />
-      <main id="main-content" className="max-w-7xl mx-auto p-6">
+      <div className="max-w-7xl mx-auto p-6">
         {/* Header */}
         <div className="mb-6">
           <button
@@ -417,7 +417,7 @@ const ProjectDetail: React.FC = () => {
             </div>
           )}
         </div>
-      </main>
+      </div>
     </>
   );
 };

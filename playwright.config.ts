@@ -150,7 +150,7 @@ export default defineConfig({
   testResultsDir: 'test-results/',
   
   // Update snapshots
-  updateSnapshots: process.env.UPDATE_SNAPSHOTS === 'true',
+  updateSnapshots: process.env.UPDATE_SNAPSHOTS === 'true' ? 'all' : 'none',
   
   // Preserve output
   preserveOutput: 'always',

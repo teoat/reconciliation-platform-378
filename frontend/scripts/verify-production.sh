@@ -114,12 +114,72 @@ fi
 # Performance check
 print_info "Checking performance..."
 RESPONSE_TIME=$(curl -o /dev/null -s -w '%{time_total}' "$FRONTEND_URL")
-if (( $(echo "$RESPONSE_TIME < 2.0" | bc -l) )); then
-    print_status "Response time acceptable: ${RESPONSE_TIME}s"
+if command -v bc >/dev/null 2>&1; then
+    if (( $(echo "$RESPONSE_TIME < 2.0" | bc -l) )); then
+        print_status "Response time acceptable: ${RESPONSE_TIME}s"
+    else
+        print_warning "Response time slow: ${RESPONSE_TIME}s"
+    fi
 else
-    print_warning "Response time slow: ${RESPONSE_TIME}s"
+    # Fallback if bc is not available
+    RESPONSE_TIME_INT=$(echo "$RESPONSE_TIME" | cut -d. -f1)
+    if [ "$RESPONSE_TIME_INT" -lt 2 ]; then
+        print_status "Response time acceptable: ${RESPONSE_TIME}s"
+    else
+        print_warning "Response time slow: ${RESPONSE_TIME}s"
+    fi
 fi
 
+# Check security headers
+print_info "Checking security headers..."
+SECURITY_HEADERS=$(curl -I -s "$FRONTEND_URL" | grep -iE "(content-security-policy|x-frame-options|x-content-type-options|x-xss-protection|referrer-policy)" || echo "")
+if [ -n "$SECURITY_HEADERS" ]; then
+    print_status "Security headers present"
+    echo "$SECURITY_HEADERS" | while read header; do
+        echo "    - $header"
+    done
+else
+    print_warning "Security headers not detected"
+fi
+
+# Check healthz endpoint (Kubernetes)
+print_info "Checking healthz endpoint..."
+HEALTHZ_RESPONSE=$(curl -s "$FRONTEND_URL/healthz" || echo "")
+if [ "$HEALTHZ_RESPONSE" = "ok" ] || [ "$HEALTHZ_RESPONSE" = "healthy" ]; then
+    print_status "Healthz endpoint responding"
+else
+    print_warning "Healthz endpoint not responding correctly"
+fi
+
+# Check multiple asset types
+print_info "Checking asset types..."
+ASSET_TYPES=("js" "css" "png" "svg")
+ASSET_CHECK_PASSED=true
+for asset_type in "${ASSET_TYPES[@]}"; do
+    ASSET_PATTERN=$(curl -s "$FRONTEND_URL" | grep -oP "src=\"[^\"]*\.$asset_type\"" | head -1 | sed 's/src="//;s/"//' || echo "")
+    if [ -n "$ASSET_PATTERN" ]; then
+        ASSET_URL="$FRONTEND_URL$ASSET_PATTERN"
+        if curl -f -s -o /dev/null "$ASSET_URL" 2>/dev/null; then
+            print_status "$asset_type assets load correctly"
+        else
+            print_warning "$asset_type assets may not load correctly"
+            ASSET_CHECK_PASSED=false
+        fi
+    fi
+done
+
+# Check HTTPS (if URL starts with https)
+if [[ "$FRONTEND_URL" == https://* ]]; then
+    print_info "Checking HTTPS..."
+    SSL_CHECK=$(curl -I -s "$FRONTEND_URL" 2>&1 | grep -i "SSL\|TLS\|certificate" || echo "")
+    if [ -z "$SSL_CHECK" ]; then
+        print_status "HTTPS connection successful"
+    else
+        print_warning "HTTPS issues detected: $SSL_CHECK"
+    fi
+fi
+
+# Summary
 echo ""
 print_status "Production verification complete!"
 echo ""
@@ -128,4 +188,9 @@ echo "  - Frontend: ✅ Accessible"
 echo "  - Health: ✅ Responding"
 echo "  - Assets: ✅ Loading"
 echo "  - Performance: ✅ Acceptable"
+if [ "$ASSET_CHECK_PASSED" = true ]; then
+    echo "  - Asset Types: ✅ All types loading"
+else
+    echo "  - Asset Types: ⚠️  Some types may have issues"
+fi
 

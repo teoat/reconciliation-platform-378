@@ -231,7 +231,7 @@ const Settings: React.FC = () => {
         description="Configure application settings, preferences, and account options."
         keywords="settings, preferences, configuration, account"
       />
-      <main id="main-content" className="max-w-4xl mx-auto p-6">
+      <div className="max-w-4xl mx-auto p-6">
         <SkipLink />
         <ARIALiveRegion message={liveMessage} priority="polite" />
         <div className="mb-6">
@@ -672,7 +672,7 @@ const Settings: React.FC = () => {
             </Button>
           </div>
         </div>
-      </main>
+      </div>
     </>
   );
 };

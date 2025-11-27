@@ -224,7 +224,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
         description="Test API endpoints, view responses, and debug integration issues."
         keywords="API, tester, testing, endpoints, debugging"
       />
-      <main id="main-content" role="main" className={`space-y-6 ${className}`}>
+      <div className={`space-y-6 ${className}`}>
         <h1 className="text-3xl font-bold text-gray-900 mb-6">API Tester</h1>
         {/* API Test Controls */}
         <Card>
@@ -339,7 +339,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
                         <p className="text-sm font-medium text-gray-900">
                           {result.method} {result.endpoint}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-600">
                           {result.timestamp.toLocaleTimeString()}
                           {result.duration && ` • ${result.duration}ms`}
                         </p>
@@ -400,7 +400,7 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-medium text-gray-900">{endpoint.label}</p>
-                      <p className="text-xs text-gray-500 font-mono">
+                      <p className="text-xs text-gray-600 font-mono">
                         {endpoint.method} {endpoint.endpoint}
                       </p>
                     </div>
@@ -428,21 +428,21 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center">
                 <p className="text-2xl font-bold text-gray-900">{testResults.length}</p>
-                <p className="text-sm text-gray-500">Total Tests</p>
+                <p className="text-sm text-gray-600">Total Tests</p>
               </div>
 
               <div className="text-center">
                 <p className="text-2xl font-bold text-green-600">
                   {testResults.filter((r) => r.status === 'success').length}
                 </p>
-                <p className="text-sm text-gray-500">Successful</p>
+                <p className="text-sm text-gray-600">Successful</p>
               </div>
 
               <div className="text-center">
                 <p className="text-2xl font-bold text-red-600">
                   {testResults.filter((r) => r.status === 'error').length}
                 </p>
-                <p className="text-sm text-gray-500">Failed</p>
+                <p className="text-sm text-gray-600">Failed</p>
               </div>
 
               <div className="text-center">
@@ -455,12 +455,12 @@ const ApiTester: React.FC<ApiTesterProps> = ({ className = '' }) => {
                     : 0}
                   ms
                 </p>
-                <p className="text-sm text-gray-500">Avg Response</p>
+                <p className="text-sm text-gray-600">Avg Response</p>
               </div>
             </div>
           </div>
         </Card>
-      </main>
+      </div>
     </>
   );
 };

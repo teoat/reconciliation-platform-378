@@ -62,6 +62,17 @@ impl TestUser {
             role: UserRole::Manager,
         }
     }
+
+    pub fn viewer() -> Self {
+        Self {
+            id: Uuid::new_v4(),
+            email: "viewer@example.com".to_string(),
+            password: "ViewerPassword123!".to_string(),
+            first_name: "Viewer".to_string(),
+            last_name: "User".to_string(),
+            role: UserRole::Viewer,
+        }
+    }
     
     pub fn to_new_user(&self, password_hash: String) -> NewUser {
         let now = chrono::Utc::now();
@@ -190,7 +201,8 @@ impl TestReconciliationJob {
             description: self.description.clone(),
             status: "pending".to_string(),
             created_by: Uuid::new_v4(), // Test user ID
-            confidence_threshold: Some(BigDecimal::from_str(&format!("{:.2}", self.confidence_threshold)).unwrap()),
+            confidence_threshold: Some(BigDecimal::from_str(&format!("{:.2}", self.confidence_threshold))
+                .expect("Confidence threshold should be valid decimal")),
             settings: Some(serde_json::json!({
                 "matching_rules": [
                     {
@@ -288,7 +300,7 @@ pub mod database {
     pub async fn create_test_db() -> Database {
         Database::new(TEST_DATABASE_URL)
             .await
-            .unwrap()
+            .expect("Test database connection should succeed")
     }
     
     /// Setup test database (alias for create_test_db for backward compatibility)
@@ -431,8 +443,10 @@ pub mod http {
         response: actix_web::dev::ServiceResponse,
     ) -> T {
         let body = test::read_body(response).await;
-        let body_str = String::from_utf8(body.to_vec()).unwrap();
-        serde_json::from_str(&body_str).unwrap()
+        let body_str = String::from_utf8(body.to_vec())
+            .expect("Response body should be valid UTF-8");
+        serde_json::from_str(&body_str)
+            .expect("Response body should be valid JSON")
     }
 }
 
@@ -495,29 +509,34 @@ pub mod mock {
         }
         
         pub fn set(&self, key: &str, value: &str) -> Result<(), String> {
-            let mut data = self.data.lock().unwrap();
+            let mut data = self.data.lock()
+                .map_err(|e| format!("Mutex lock failed: {}", e))?;
             data.insert(key.to_string(), value.to_string());
             Ok(())
         }
         
         pub fn get(&self, key: &str) -> Result<Option<String>, String> {
-            let data = self.data.lock().unwrap();
+            let data = self.data.lock()
+                .map_err(|e| format!("Mutex lock failed: {}", e))?;
             Ok(data.get(key).cloned())
         }
         
         pub fn delete(&self, key: &str) -> Result<(), String> {
-            let mut data = self.data.lock().unwrap();
+            let mut data = self.data.lock()
+                .map_err(|e| format!("Mutex lock failed: {}", e))?;
             data.remove(key);
             Ok(())
         }
         
         pub fn exists(&self, key: &str) -> Result<bool, String> {
-            let data = self.data.lock().unwrap();
+            let data = self.data.lock()
+                .map_err(|e| format!("Mutex lock failed: {}", e))?;
             Ok(data.contains_key(key))
         }
         
         pub fn flushall(&self) -> Result<(), String> {
-            let mut data = self.data.lock().unwrap();
+            let mut data = self.data.lock()
+                .map_err(|e| format!("Mutex lock failed: {}", e))?;
             data.clear();
             Ok(())
         }

@@ -63,13 +63,15 @@ export interface CashflowMetrics {
 export interface FilterConfig {
   field: string;
   operator: 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'greaterThan' | 'lessThan' | 'between' | 'in' | 'notIn';
-  value: any;
-  value2?: any;
+  value: string | number | boolean | string[] | number[] | null;
+  value2?: string | number | null;
   active: boolean;
 }
 
+import type { Project } from '@/types/backend-aligned';
+
 export interface CashflowEvaluationPageProps {
-  project: any;
+  project?: Project;
   onProgressUpdate?: (step: string) => void;
 }
 

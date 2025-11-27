@@ -231,17 +231,20 @@ mod tests {
     #[test]
     fn test_password_hashing() {
         let password = "TestPassword123!";
-        let hash = PasswordManager::hash_password(password).unwrap();
+        let hash = PasswordManager::hash_password(password)
+            .expect("Password hashing should succeed for valid password");
         
         // Verify hash is different from password
         assert_ne!(password, hash);
         
         // Verify password matches hash
-        let is_valid = PasswordManager::verify_password(password, &hash).unwrap();
+        let is_valid = PasswordManager::verify_password(password, &hash)
+            .expect("Password verification should succeed");
         assert!(is_valid);
         
         // Verify wrong password doesn't match
-        let is_invalid = PasswordManager::verify_password("WrongPassword", &hash).unwrap();
+        let is_invalid = PasswordManager::verify_password("WrongPassword", &hash)
+            .expect("Password verification should succeed even for wrong password");
         assert!(!is_invalid);
     }
 
@@ -290,7 +293,8 @@ mod tests {
 
     #[test]
     fn test_initial_password_generation() {
-        let password = PasswordManager::generate_initial_password().unwrap();
+        let password = PasswordManager::generate_initial_password()
+            .expect("Password generation should succeed");
         
         // Should meet all validation requirements
         assert!(PasswordManager::validate_password_strength(&password).is_ok());

@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useProjects } from '../../hooks/useApi';
+import { useProjects } from '../../hooks/api';
 import Button from '../ui/Button';
 import { EnhancedContextualHelp } from '../ui/EnhancedContextualHelp';
 

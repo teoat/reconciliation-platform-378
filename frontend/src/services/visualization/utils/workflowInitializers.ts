@@ -257,7 +257,9 @@ export function initializeDefaultContextualHelp(): Map<string, ContextualHelp> {
       actions: [
         {
           label: 'Use AI Suggestions',
-          action: () => console.log('Use AI suggestions'),
+          action: () => {
+            // TODO: Implement AI suggestions feature
+          },
           type: 'primary',
         },
       ],

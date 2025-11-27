@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useWebSocket } from './useApi';
+import { useWebSocket } from './api';
 
 interface SyncStatus {
   isConnected: boolean;

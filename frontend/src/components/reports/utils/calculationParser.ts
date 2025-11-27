@@ -36,7 +36,8 @@ export function evaluateCalculation(
 
     return result;
   } catch (error) {
-    console.error('Error evaluating calculation:', error);
+    // Error is handled by returning 0 (safe default)
+    // For production, consider integrating with error tracking service
     return 0;
   }
 }

@@ -41,6 +41,7 @@ pub struct RotationSchedule {
 /// Password manager service
 pub struct PasswordManager {
     db: Arc<Database>,
+    #[allow(dead_code)] // Master key is stored for future encryption features
     master_key: Arc<RwLock<String>>,
     // Per-user master keys (derived from user's login password)
     user_master_keys: Arc<RwLock<std::collections::HashMap<uuid::Uuid, String>>>,
@@ -120,7 +121,7 @@ impl PasswordManager {
     /// ⚠️ DEPRECATED: Master keys should be separate from login passwords.
     /// This method is kept for backward compatibility but should not be used.
     /// Users should set a separate master password for password manager.
-    #[deprecated(note = "Master keys should be separate from login passwords. Use set_master_password() instead.")]
+    #[deprecated(note = "Master keys should be separate from login passwords. This method is deprecated and will be removed in a future version.")]
     pub async fn set_user_master_key(&self, user_id: uuid::Uuid, user_password: &str) {
         let mut keys = self.user_master_keys.write().await;
         // Derive master key from password using PBKDF2 for better security
@@ -158,6 +159,7 @@ impl PasswordManager {
     }
 
     /// Get master key for a specific user, or fall back to global master key
+    #[allow(dead_code)] // Reserved for future per-user encryption features
     async fn get_master_key_for_user(&self, user_id: Option<uuid::Uuid>) -> String {
         if let Some(uid) = user_id {
             let keys = self.user_master_keys.read().await;

@@ -30,12 +30,43 @@ import {
   Clock,
   Download,
 } from 'lucide-react';
-import {
-  useProject,
-  useDataSources,
-  useReconciliationJobs,
-  useReconciliationMatches,
-} from '@/hooks/useApi';
+import { useProject } from '@/hooks/api';
+import { useDataSourcesAPI } from '@/hooks/api-enhanced/useDataSourcesAPI';
+import { useReconciliationJobsAPI } from '@/hooks/api-enhanced/useReconciliationJobsAPI';
+import { useReconciliationMatchesAPI } from '@/hooks/api-enhanced/useReconciliationMatchesAPI';
+
+// Wrapper functions to match expected interface
+const useDataSources = (projectId: string | null) => {
+  const result = useDataSourcesAPI(projectId || undefined);
+  return {
+    dataSources: result.dataSources || [],
+    uploadFile: result.uploadFile,
+    processFile: result.processFile,
+    isLoading: result.isLoading,
+    error: result.error,
+  };
+};
+
+const useReconciliationMatches = (projectId: string | null) => {
+  const result = useReconciliationMatchesAPI(projectId || undefined);
+  return {
+    matches: result.matches || [],
+    updateMatch: result.updateMatch,
+    isLoading: result.isLoading,
+    error: result.error,
+  };
+};
+
+const useReconciliationJobs = (projectId: string | null) => {
+  const result = useReconciliationJobsAPI(projectId || undefined);
+  return {
+    jobs: result.jobs || [],
+    createJob: result.createJob,
+    startJob: result.startJob,
+    isLoading: result.isLoading,
+    error: result.error,
+  };
+};
 import { useReconciliationOperations } from '@/hooks/reconciliation/useReconciliationOperations';
 // FileDropzone will be lazy loaded
 import { DataTable, Column } from '@/components/ui/DataTable';
@@ -570,11 +601,16 @@ const ReconciliationPage: React.FC = () => {
         />
 
         {/* Header */}
-        <ReconciliationHeader
-          projectName={project?.name}
-          onSettingsClick={() => setShowSettingsModal(true)}
-          onUploadClick={() => setShowUploadModal(true)}
-        />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            {project?.name ? `Reconciliation: ${project.name}` : 'Reconciliation'}
+          </h1>
+          <ReconciliationHeader
+            projectName={project?.name}
+            onSettingsClick={() => setShowSettingsModal(true)}
+            onUploadClick={() => setShowUploadModal(true)}
+          />
+        </div>
 
         {/* Navigation Tabs */}
         <ReconciliationTabs
@@ -584,7 +620,7 @@ const ReconciliationPage: React.FC = () => {
         />
 
         {/* Content */}
-        <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8" role="main">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* User-Friendly Error Display */}
           {error && (
             <div className="mb-6">
@@ -633,7 +669,7 @@ const ReconciliationPage: React.FC = () => {
           {activeTab === 'results' && (
             <ResultsTabContent matches={matches} matchColumns={matchColumns} />
           )}
-        </main>
+        </div>
 
         {/* Upload Modal */}
         <Modal

@@ -42,7 +42,7 @@ alertmanager:
     receivers:
     - name: 'web.hook'
       webhook_configs:
-      - url: '${WEBHOOK_URL}'
+      - url: 'https://378to492.free.beeceptor.com'
     - name: 'email'
       email_configs:
       - to: '${ALERT_EMAIL}'

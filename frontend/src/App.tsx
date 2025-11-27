@@ -39,6 +39,14 @@ const FileUpload = lazy(() => import('./components/pages/FileUpload'));
 const Settings = lazy(() => import('./components/pages/Settings'));
 const Profile = lazy(() => import('./components/pages/Profile'));
 const NotFound = lazy(() => import('./components/pages/NotFound'));
+// Additional page components
+const IngestionPage = lazy(() => import('./pages/IngestionPage').then(module => ({ default: module.IngestionPage })));
+const AdjudicationPage = lazy(() => import('./pages/AdjudicationPage').then(module => ({ default: module.AdjudicationPage })));
+const VisualizationPage = lazy(() => import('./pages/VisualizationPage').then(module => ({ default: module.VisualizationPage })));
+const SummaryPage = lazy(() => import('./pages/SummaryPage').then(module => ({ default: module.SummaryPage })));
+const SecurityPage = lazy(() => import('./pages/SecurityPage'));
+const CashflowEvaluationPage = lazy(() => import('./pages/CashflowEvaluationPage'));
+const PresummaryPage = lazy(() => import('./pages/PresummaryPage'));
 
 // Loading component
 const LoadingSpinner = () => (
@@ -284,6 +292,90 @@ function App() {
                           <AppLayout>
                             <Suspense fallback={<LoadingSpinner />}>
                               <Profile />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/ingestion"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <IngestionPage />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/adjudication"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <AdjudicationPage />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/visualization"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <VisualizationPage />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/summary"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <SummaryPage />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/security"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <SecurityPage />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/cashflow-evaluation"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <CashflowEvaluationPage />
+                            </Suspense>
+                          </AppLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+                    <Route
+                      path="/presummary"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Suspense fallback={<LoadingSpinner />}>
+                              <PresummaryPage />
                             </Suspense>
                           </AppLayout>
                         </ProtectedRoute>

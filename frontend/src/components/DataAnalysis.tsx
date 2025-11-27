@@ -83,7 +83,7 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
       // Process expenses data
       if (expensesData.length > 0) {
         setProcessingProgress(25);
-        const processedExpenses = IndonesianDataProcessor.processExpenseData(expensesData);
+        const processedExpenses = IndonesianDataProcessor.processExpensesData(expensesData);
         setProcessedExpenses(processedExpenses);
       }
 
@@ -95,46 +95,41 @@ const DataAnalysis: React.FC<DataAnalysisProps> = ({
       }
 
       // Perform matching
-      let matchingResults: IndonesianMatchingResult[] = [];
+      let matchingResults: Array<{
+        expense: ProcessedExpenseRecord;
+        bank: ProcessedBankRecord;
+        match: IndonesianMatchingResult;
+      }> = [];
       if (processedExpenses.length > 0 && processedBankRecords.length > 0) {
         setProcessingProgress(75);
-        matchingResults = IndonesianDataProcessor.matchRecords(
+        matchingResults = IndonesianDataProcessor.batchMatchRecords(
           processedExpenses,
           processedBankRecords
         );
-        // Transform to expected shape
-        const transformedMatches = matchingResults.map((match) => ({
-          expense: match.sourceRecord as unknown as ProcessedExpenseRecord,
-          bank: match.targetRecord,
-          match,
-        }));
-        setMatches(transformedMatches);
+        setMatches(matchingResults);
       }
 
       // Generate summary
       setProcessingProgress(90);
-      const summary = IndonesianDataProcessor.generateReconciliationSummary(
+      const summaryResult = IndonesianDataProcessor.generateReconciliationSummary(
         processedExpenses,
         processedBankRecords,
         matchingResults
       );
       // Convert IndonesianDataProcessor.ReconciliationSummary to DataAnalysis.ReconciliationSummary
       const convertedSummary: ReconciliationSummary = {
-        categories: {
-          expenses: {},
-          bankRecords: {},
-        },
-        totalExpenses: summary.totalExpenses,
-        totalBankTransactions: summary.totalBank,
-        matchedAmount: summary.matched * (summary.totalExpenseAmount / summary.totalExpenses || 0),
-        unmatchedExpenses: summary.unmatched,
-        unmatchedBankTransactions: summary.unmatched,
+        categories: summaryResult.categories,
+        totalExpenses: summaryResult.summary.totalExpenses,
+        totalBankTransactions: summaryResult.summary.totalBankRecords,
+        matchedAmount: summaryResult.summary.matchedAmount,
+        unmatchedExpenses: summaryResult.summary.unmatchedExpenses,
+        unmatchedBankTransactions: summaryResult.summary.unmatchedBankRecords,
         quality: {
-          matchRate: summary.matched / (summary.totalExpenses || 1),
-          averageConfidence: 0.85,
-          highConfidenceMatches: Math.floor(summary.matched * 0.6),
-          mediumConfidenceMatches: Math.floor(summary.matched * 0.3),
-          lowConfidenceMatches: Math.floor(summary.matched * 0.1),
+          matchRate: summaryResult.summary.matchRate / 100,
+          averageConfidence: summaryResult.quality.averageConfidence,
+          highConfidenceMatches: summaryResult.quality.highConfidenceMatches,
+          mediumConfidenceMatches: summaryResult.quality.mediumConfidenceMatches,
+          lowConfidenceMatches: summaryResult.quality.lowConfidenceMatches,
         },
       };
       setSummary(convertedSummary);
