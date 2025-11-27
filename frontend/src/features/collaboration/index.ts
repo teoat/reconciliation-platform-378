@@ -50,6 +50,6 @@ registerFeature({
 });
 
 // Re-export components
-export { CollaborationPanel } from '../../components/CollaborationPanel';
+export { CollaborationPanel } from '../../components/collaboration/CollaborationPanel';
 export { CollaborationDashboard } from '../../components/collaboration/CollaborationDashboard';
 

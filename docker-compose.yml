@@ -203,7 +203,7 @@ services:
       - reconciliation-network
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
       redis:
         condition: service_healthy
       logstash:

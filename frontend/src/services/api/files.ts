@@ -4,7 +4,7 @@
 
 import { apiClient } from '../apiClient';
 import { FileUploadResponse } from '../apiClient/types';
-import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
+import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
 
 export class FilesApiService {
   static async uploadFile(

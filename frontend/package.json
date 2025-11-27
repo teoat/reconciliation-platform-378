@@ -15,6 +15,12 @@
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",
+    "test:unit": "vitest --run src/__tests__",
+    "test:integration": "vitest --run src/__tests__/integration",
+    "test:e2e": "playwright test",
+    "test:security": "vitest --run src/__tests__/security",
+    "test:performance": "vitest --run src/__tests__/performance",
+    "test:accessibility": "vitest --run src/__tests__/accessibility",
     "cache:clean": "rm -rf .vite-cache node_modules/.tmp",
     "devtools:diag": "cd tools/cdp-runner && npm run diag",
     "devtools:diag:full": "cd tools/cdp-runner && npm run diag:full",
@@ -59,6 +65,8 @@
     "terser": "^5.36.0",
     "typescript": "^5.2.2",
     "vite": "^5.0.0",
+    "vite-plugin-compression": "^0.5.1",
+    "vite-plugin-compression2": "^2.3.1",
     "vitest": "^1.0.4"
   }
 }

@@ -6,7 +6,7 @@
 
 import { logger } from './logger';
 import { unifiedErrorService } from './unifiedErrorService';
-import { getErrorMessageFromApiError } from '../utils/errorExtraction';
+import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
 
 /**
  * Standardized error handling result

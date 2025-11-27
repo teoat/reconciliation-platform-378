@@ -18,14 +18,15 @@ import ToastContainer from './components/ui/ToastContainer';
 import { APP_CONFIG } from './config/AppConfig';
 import KeyboardShortcuts from './components/pages/KeyboardShortcuts';
 import { SessionTimeoutHandler } from './components/SessionTimeoutHandler';
+import { SmartTipProvider } from './components/ui/SmartTipProvider';
 // Note: useFeatureRegistryInit is available but not currently used in App component
 // import { useFeatureRegistryInit } from './features/integration';
 
 // Lazy load route components for better performance
-const Dashboard = lazy(() => import('./components/Dashboard'));
+const Dashboard = lazy(() => import('./components/dashboard/Dashboard'));
 const ReconciliationPage = lazy(() => import('./pages/ReconciliationPage'));
 const QuickReconciliationWizard = lazy(() => import('./pages/QuickReconciliationWizard'));
-const AnalyticsDashboard = lazy(() => import('./components/AnalyticsDashboard'));
+const AnalyticsDashboard = lazy(() => import('./components/dashboard/AnalyticsDashboard'));
 const UserManagement = lazy(() => import('./components/UserManagement'));
 const ApiIntegrationStatus = lazy(() => import('./components/ApiIntegrationStatus'));
 const ApiTester = lazy(() => import('./components/ApiTester'));
@@ -100,10 +101,11 @@ function App() {
                   v7_relativeSplatPath: true,
                 }}
               >
-                <div className="min-h-screen bg-gray-100">
-                  <KeyboardShortcuts />
-                  <ToastContainer />
-                  <SessionTimeoutHandler />
+                <SmartTipProvider maxTips={3} enabled={true}>
+                  <div className="min-h-screen bg-gray-100">
+                    <KeyboardShortcuts />
+                    <ToastContainer />
+                    <SessionTimeoutHandler />
                   <Routes>
                     <Route path="/login" element={<AuthPage />} />
                     <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -298,7 +300,8 @@ function App() {
                       }
                     />
                   </Routes>
-                </div>
+                  </div>
+                </SmartTipProvider>
               </Router>
             </AuthProvider>
           </WebSocketProvider>

@@ -10,30 +10,51 @@ use crate::errors::AppError;
 use crate::handlers::types::ApiResponse;
 
 /// Log entry from frontend
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct FrontendLogEntry {
+    /// Log level (error, warn, info, debug, trace)
     pub level: String,
+    /// Log message
     pub message: String,
-    #[allow(dead_code)]
+    /// Optional timestamp (ISO 8601 format)
     pub timestamp: Option<String>,
+    /// Optional metadata as key-value pairs
     pub metadata: Option<HashMap<String, serde_json::Value>>,
 }
 
 /// Request body for logs endpoint
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct LogsRequest {
-    pub logs: Vec<crate::handlers::logs::FrontendLogEntry>,
+    /// Array of log entries to process
+    pub logs: Vec<FrontendLogEntry>,
+    /// Optional batch timestamp (ISO 8601 format)
     pub timestamp: Option<String>,
 }
 
 /// Response for logs endpoint
-#[derive(Debug, Serialize)]
-struct LogsResponse {
-    received: usize,
-    processed: usize,
+#[derive(Debug, Serialize, utoipa::ToSchema)]
+pub struct LogsResponse {
+    /// Number of log entries received
+    pub received: usize,
+    /// Number of log entries processed
+    pub processed: usize,
 }
 
 /// POST /api/logs - Receive logs from frontend
+/// 
+/// Accepts client-side log entries and processes them on the backend.
+/// Logs are forwarded to the backend logging system based on their level.
+#[utoipa::path(
+    post,
+    path = "/api/logs",
+    tag = "Logging",
+    request_body = LogsRequest,
+    responses(
+        (status = 200, description = "Logs processed successfully", body = ApiResponse<LogsResponse>),
+        (status = 400, description = "Invalid request body", body = ErrorResponse),
+        (status = 422, description = "Validation error", body = ErrorResponse)
+    )
+)]
 pub async fn post_logs(body: web::Json<LogsRequest>) -> Result<HttpResponse, AppError> {
     let logs_count = body.logs.len();
     
@@ -70,6 +91,19 @@ pub async fn post_logs(body: web::Json<LogsRequest>) -> Result<HttpResponse, App
                 log::debug!("Log metadata: {:?}", metadata);
             }
         }
+    }
+    
+    // Validate input
+    if logs_count == 0 {
+        return Err(AppError::Validation(
+            "At least one log entry is required".to_string(),
+        ));
+    }
+    
+    if logs_count > 100 {
+        return Err(AppError::Validation(
+            "Maximum 100 log entries per request".to_string(),
+        ));
     }
     
     // Return success response

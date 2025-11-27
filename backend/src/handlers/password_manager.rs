@@ -3,14 +3,17 @@
 use actix_web::{web, HttpRequest, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use utoipa;
 
 // Import directly from password_manager module
 use crate::services::password_manager::{PasswordManager, PasswordEntry, RotationSchedule};
 use crate::errors::AppResult;
 use crate::handlers::helpers::{extract_user_id, get_client_ip, get_user_agent};
+use crate::handlers::types::ApiResponse;
+use crate::errors::AppError;
 
 /// Request to create a password
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CreatePasswordRequest {
     pub name: String,
     pub password: String,
@@ -18,21 +21,21 @@ pub struct CreatePasswordRequest {
 }
 
 /// Request to rotate a password
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct RotatePasswordRequest {
     pub name: String,
     pub new_password: Option<String>,
 }
 
 /// Request to update rotation interval
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UpdateRotationRequest {
     pub name: String,
     pub rotation_interval_days: i32,
 }
 
 /// Response for password operations
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct PasswordResponse {
     pub success: bool,
     pub message: String,
@@ -40,18 +43,31 @@ pub struct PasswordResponse {
 }
 
 /// Response for password list
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct PasswordListResponse {
     pub passwords: Vec<PasswordEntry>,
 }
 
 /// Response for rotation schedule
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct RotationScheduleResponse {
     pub schedule: Vec<RotationSchedule>,
 }
 
 /// Get all passwords (metadata only)
+/// 
+/// Lists all password entries (metadata only, no decrypted passwords).
+#[utoipa::path(
+    get,
+    path = "/api/v1/password-manager",
+    tag = "Password Manager",
+    responses(
+        (status = 200, description = "Password list retrieved successfully", body = PasswordListResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn list_passwords(
     password_manager: web::Data<Arc<PasswordManager>>,
     req: HttpRequest,
@@ -80,6 +96,22 @@ pub async fn list_passwords(
 }
 
 /// Get a specific password
+/// 
+/// Retrieves a specific password entry with decrypted password.
+#[utoipa::path(
+    get,
+    path = "/api/v1/password-manager/{name}",
+    tag = "Password Manager",
+    params(
+        ("name" = String, Path, description = "Password entry name")
+    ),
+    responses(
+        (status = 200, description = "Password retrieved successfully", body = PasswordResponse),
+        (status = 404, description = "Password not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_password(
     password_manager: web::Data<Arc<PasswordManager>>,
     path: web::Path<String>,
@@ -117,6 +149,21 @@ pub async fn get_password(
 }
 
 /// Create a new password entry
+/// 
+/// Creates a new password entry with optional rotation schedule.
+#[utoipa::path(
+    post,
+    path = "/api/v1/password-manager",
+    tag = "Password Manager",
+    request_body = CreatePasswordRequest,
+    responses(
+        (status = 201, description = "Password created successfully", body = PasswordResponse),
+        (status = 400, description = "Invalid request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 409, description = "Password already exists", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn create_password(
     password_manager: web::Data<Arc<PasswordManager>>,
     req: web::Json<CreatePasswordRequest>,
@@ -152,6 +199,20 @@ pub async fn create_password(
 }
 
 /// Rotate a password
+/// 
+/// Rotates a password entry, optionally with a new password.
+#[utoipa::path(
+    post,
+    path = "/api/v1/password-manager/rotate",
+    tag = "Password Manager",
+    request_body = RotatePasswordRequest,
+    responses(
+        (status = 200, description = "Password rotated successfully", body = PasswordResponse),
+        (status = 404, description = "Password not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn rotate_password(
     password_manager: web::Data<Arc<PasswordManager>>,
     req: web::Json<RotatePasswordRequest>,
@@ -200,6 +261,20 @@ pub async fn rotate_due_passwords(
 }
 
 /// Update rotation interval
+/// 
+/// Updates the rotation interval for a password entry.
+#[utoipa::path(
+    put,
+    path = "/api/v1/password-manager/rotation",
+    tag = "Password Manager",
+    request_body = UpdateRotationRequest,
+    responses(
+        (status = 200, description = "Rotation interval updated successfully", body = PasswordResponse),
+        (status = 404, description = "Password not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn update_rotation_interval(
     password_manager: web::Data<Arc<PasswordManager>>,
     req: web::Json<UpdateRotationRequest>,
@@ -216,6 +291,18 @@ pub async fn update_rotation_interval(
 }
 
 /// Get rotation schedule
+/// 
+/// Retrieves the rotation schedule for all passwords.
+#[utoipa::path(
+    get,
+    path = "/api/v1/password-manager/rotation/schedule",
+    tag = "Password Manager",
+    responses(
+        (status = 200, description = "Rotation schedule retrieved successfully", body = RotationScheduleResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_rotation_schedule(
     password_manager: web::Data<Arc<PasswordManager>>,
 ) -> AppResult<impl Responder> {

@@ -1,49 +1,40 @@
-// frontend/src/types/ingestion.ts
+// types/ingestion.ts
 
-export interface UploadedFile {
-  id: string;
-  name: string;
-  size: number;
-  type: string;
-  status: 'uploading' | 'completed' | 'error' | 'processing' | 'validating' | 'extracting' | 'analyzing';
-  progress: number;
-  records?: number;
-  uploadedAt?: Date;
-  error?: string;
-  data?: Record<string, unknown>;
-  columns?: ColumnInfo[];
-  qualityMetrics?: DataQualityMetrics;
-  validations?: DataValidation[];
-  cleanedData?: Record<string, unknown>[];
-}
+import { ComparisonOperator } from './common';
 
-export interface ColumnInfo {
-  name: string;
-  type: 'string' | 'number' | 'boolean' | 'date';
-  nullable: boolean;
-  unique: boolean;
-  sampleValues: (string | number | boolean | null)[];
-}
-
-export interface DataValidation {
-  id: string;
+export interface FilterConfig {
   field: string;
-  rule: string;
-  status: 'passed' | 'failed';
-  message: string;
-  severity: 'low' | 'medium' | 'high';
+  operator: ComparisonOperator;
+  value: any;
 }
 
-export interface DataQualityMetrics {
-  completeness: number;
-  uniqueness: number;
-  consistency: number;
-  validity: number;
-  overallScore: number;
+export interface PaginationConfig {
+  page: number;
+  limit: number;
 }
 
-export interface DataRow {
-  [key: string]: string | number | boolean | Date | null;
+export interface SortConfig {
+  field: string;
+  direction: 'asc' | 'desc';
+}
+
+export interface IngestionJob {
+  id: string;
+  projectId: string;
+  fileName: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  totalRows: number;
+  processedRows: number;
+  errorCount: number;
+  createdAt: Date;
+  completedAt?: Date;
+}
+
+export interface IngestionStatistics {
+  totalFiles: number;
+  totalRows: number;
+  totalErrors: number;
+  averageProcessingTime: number;
 }
 
 export interface FieldMapping {

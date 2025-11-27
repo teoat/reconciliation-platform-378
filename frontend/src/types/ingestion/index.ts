@@ -1,8 +1,4 @@
-// ============================================================================
-// DATA INGESTION TYPES
-// ============================================================================
-
-import type { ID, Status, Timestamp } from '../backend-aligned';
+// Extracted types from IngestionPage.tsx for better organization
 
 export interface DataQualityMetrics {
   completeness: number;
@@ -11,6 +7,154 @@ export interface DataQualityMetrics {
   validity: number;
   duplicates: number;
   errors: number;
+}
+
+export interface FieldMapping {
+  sourceField: string;
+  targetField: string;
+  transformation?: string;
+  validation?: string[];
+  isRequired: boolean;
+}
+
+export interface DataValidation {
+  field: string;
+  rule: string;
+  passed: boolean;
+  message: string;
+  severity: 'error' | 'warning' | 'info';
+}
+
+export type ColumnValue = string | number | boolean | null;
+
+export type DataRow = Record<string, ColumnValue> & {
+  id: string;
+};
+
+export interface ColumnInfo {
+  name: string;
+  type: 'string' | 'number' | 'date' | 'currency' | 'boolean';
+  nullable: boolean;
+  unique: boolean;
+  sampleValues: ColumnValue[];
+  statistics?: {
+    min?: number;
+    max?: number;
+    avg?: number;
+    count: number;
+    nullCount: number;
+  };
+}
+
+export interface EXIFData {
+  camera?: {
+    make?: string;
+    model?: string;
+    lens?: string;
+    serialNumber?: string;
+  };
+  settings?: {
+    aperture?: string;
+    shutterSpeed?: string;
+    iso?: number;
+    focalLength?: string;
+    exposureMode?: string;
+    whiteBalance?: string;
+    flash?: string;
+  };
+  location?: {
+    latitude?: number;
+    longitude?: number;
+    altitude?: number;
+    address?: string;
+  };
+  timestamp?: string;
+  software?: string;
+  orientation?: number;
+  colorSpace?: string;
+  compression?: string;
+}
+
+export interface VideoMetadata {
+  duration?: number;
+  resolution?: {
+    width: number;
+    height: number;
+  };
+  frameRate?: number;
+  bitrate?: number;
+  codec?: {
+    video?: string;
+    audio?: string;
+  };
+  container?: string;
+  creationDate?: string;
+  modificationDate?: string;
+  fileSize?: number;
+  aspectRatio?: string;
+  colorSpace?: string;
+  audioChannels?: number;
+  audioSampleRate?: number;
+}
+
+export interface ExtractedContent {
+  text?: string;
+  metadata?: Record<string, any>;
+  entities?: Array<{
+    type: string;
+    value: string;
+    confidence: number;
+  }>;
+  summary?: string;
+  keyTerms?: string[];
+  sentiment?: 'positive' | 'negative' | 'neutral';
+  language?: string;
+  pages?: number;
+  duration?: number;
+  resolution?: string;
+  format?: string;
+  exif?: EXIFData;
+  videoMetadata?: VideoMetadata;
+  fileSize?: number;
+  creationDate?: string;
+  modificationDate?: string;
+  mimeType?: string;
+  checksum?: string;
+}
+
+export interface ChatMessage {
+  timestamp: string;
+  sender: string;
+  content: string;
+  type: 'text' | 'image' | 'file' | 'voice';
+  metadata?: Record<string, any>;
+}
+
+export interface ContractAnalysis {
+  parties: string[];
+  keyTerms: Array<{
+    term: string;
+    value: string;
+    importance: number;
+  }>;
+  dates: Array<{
+    type: string;
+    date: string;
+  }>;
+  amounts: Array<{
+    description: string;
+    amount: number;
+    currency: string;
+  }>;
+  clauses: Array<{
+    type: string;
+    content: string;
+    risk: 'low' | 'medium' | 'high';
+  }>;
+  compliance: Array<{
+    requirement: string;
+    status: 'compliant' | 'non-compliant' | 'unknown';
+  }>;
 }
 
 export interface UploadedFile {
@@ -28,164 +172,58 @@ export interface UploadedFile {
     | 'analyzing';
   progress: number;
   records?: number;
-  uploadedAt?: Date;
-  error?: string;
-  data?: Record<string, unknown>;
+  data?: DataRow[];
+  columns?: ColumnInfo[];
+  fileType:
+    | 'expenses'
+    | 'bank_statement'
+    | 'chat_history'
+    | 'pdf_document'
+    | 'image'
+    | 'video'
+    | 'audio'
+    | 'contract'
+    | 'other';
+  qualityMetrics?: DataQualityMetrics;
+  validations?: DataValidation[];
+  mappings?: FieldMapping[];
+  cleanedData?: DataRow[];
+  originalData?: DataRow[];
+  extractedContent?: ExtractedContent;
+  chatMessages?: ChatMessage[];
+  contractAnalysis?: ContractAnalysis;
+  previewUrl?: string;
+  thumbnailUrl?: string;
+  file?: File;
 }
 
-export interface DataRow {
-  [key: string]: string | number | boolean | Date | null;
+export interface TableData {
+  id: string;
+  [key: string]: ColumnValue;
 }
 
-export interface ColumnInfo {
-  name: string;
-  type: 'string' | 'number' | 'boolean' | 'date';
-  nullable: boolean;
-  sampleValues: (string | number | boolean | Date | null)[];
-}
-
-export interface FieldMapping {
-  sourceField: string;
-  targetField: string;
-  transformation?: 'none' | 'trim' | 'uppercase' | 'lowercase' | 'date_format';
-  defaultValue?: string | number | boolean | Date | null;
-}
-
-export interface DataValidation {
+export interface SortConfig {
   field: string;
-  rule: string;
-  status: 'passed' | 'failed' | 'warning';
-  severity?: 'error' | 'warning' | 'info';
-  message?: string;
-  value?: string | number | boolean | Date | null;
-  expected?: string | number | boolean | Date | null;
+  direction: 'asc' | 'desc';
 }
 
-export interface IngestionJob {
-  id: ID;
-  projectId: ID;
-  name: string;
-  description: string;
-  status: Status;
-  type: 'file' | 'api' | 'database' | 'stream';
-  source: DataSource;
-  destination: DataDestination;
-  config: IngestionConfig;
-  schedule?: ScheduleConfig;
-  statistics: IngestionStatistics;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-  startedAt?: Timestamp;
-  completedAt?: Timestamp;
-}
-
-export interface DataSource {
-  type: 'file' | 'api' | 'database' | 'stream';
-  connection: ConnectionConfig;
-  format: 'csv' | 'json' | 'xml' | 'parquet' | 'avro';
-  schema?: DataSchema;
-}
-
-export interface DataDestination {
-  type: 'database' | 'warehouse' | 'lake' | 'api';
-  connection: ConnectionConfig;
-  table?: string;
-  partition?: PartitionConfig;
-}
-
-export interface ConnectionConfig {
-  host: string;
-  port: number;
-  database?: string;
-  username: string;
-  password: string;
-  ssl: boolean;
-  timeout: number;
-}
-
-export interface DataSchema {
-  fields: SchemaField[];
-  primaryKey?: string[];
-  indexes?: IndexConfig[];
-}
-
-export interface SchemaField {
-  name: string;
-  type: 'string' | 'number' | 'boolean' | 'date' | 'object' | 'array';
-  nullable: boolean;
-  defaultValue?: string | number | boolean | Date | object | unknown[];
-  constraints?: FieldConstraints;
-}
-
-export interface FieldConstraints {
-  minLength?: number;
-  maxLength?: number;
-  min?: number;
-  max?: number;
-  pattern?: string;
-  enum?: (string | number | boolean)[];
-}
-
-export interface IndexConfig {
-  fields: string[];
-  unique: boolean;
-  type: 'btree' | 'hash' | 'gin' | 'gist';
-}
-
-export interface PartitionConfig {
+export interface FilterConfig {
   field: string;
-  type: 'range' | 'list' | 'hash';
-  values?: (string | number | Date)[];
+  operator:
+    | 'equals'
+    | 'contains'
+    | 'startsWith'
+    | 'endsWith'
+    | 'greaterThan'
+    | 'lessThan'
+    | 'between';
+  value: ColumnValue;
+  value2?: ColumnValue;
 }
 
-export interface IngestionConfig {
-  batchSize: number;
-  maxRetries: number;
-  retryDelay: number;
-  timeout: number;
-  validation: ValidationConfig;
-  transformation?: TransformationConfig;
-}
-
-export interface ValidationConfig {
-  enabled: boolean;
-  rules: ValidationRule[];
-  strict: boolean;
-}
-
-export interface ValidationRule {
-  field: string;
-  type: 'required' | 'format' | 'range' | 'custom';
-  value?: string | number | boolean | RegExp;
-  message?: string;
-}
-
-export interface TransformationConfig {
-  enabled: boolean;
-  rules: TransformationRule[];
-}
-
-export interface TransformationRule {
-  field: string;
-  operation: 'map' | 'filter' | 'aggregate' | 'custom';
-  config: Record<string, unknown>;
-}
-
-export interface ScheduleConfig {
-  enabled: boolean;
-  frequency: 'once' | 'hourly' | 'daily' | 'weekly' | 'monthly';
-  cron?: string;
-  timezone: string;
-  startDate: Timestamp;
-  endDate?: Timestamp;
-}
-
-export interface IngestionStatistics {
+export interface PaginationConfig {
+  page: number;
+  pageSize: number;
   totalRecords: number;
-  processedRecords: number;
-  failedRecords: number;
-  skippedRecords: number;
-  processingTime: number;
-  averageRecordSize: number;
-  throughput: number;
 }
+

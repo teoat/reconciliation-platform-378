@@ -10,7 +10,7 @@ import { UsersApiService } from './users';
 import { ProjectsApiService } from './projects';
 import { ReconciliationApiService } from './reconciliation';
 import { FilesApiService } from './files';
-import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
+import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
 
 /**
  * Unified API Service

@@ -1,223 +1,427 @@
-/**
- * Indonesian Data Processor
- * 
- * Processes Indonesian financial data (bank records, expense records) for reconciliation.
- * 
- * @remarks
- * This is a stub implementation with basic functionality. Full Indonesian-specific
- * data processing features (currency formatting, date parsing, etc.) can be added
- * when needed for production use.
- * 
- * Current functionality:
- * - Basic record processing
- * - Simple matching algorithms
- * - Reconciliation summaries
- * 
- * Planned enhancements:
- * - Indonesian Rupiah (IDR) specific formatting
- * - Indonesian date format parsing
- * - Regional tax code handling
- */
+'use client'
+
+// Indonesian Data Processing Utilities
+export interface ProcessedExpenseRecord {
+  id: string
+  date: string
+  amount: number
+  debitAmount: number
+  creditAmount: number
+  description: string
+  recipient: string
+  category1: string
+  category2: string
+  project: boolean
+  comment: string
+  timeline: string
+  priority: number
+  account: string
+  // Enhanced fields for matching
+  normalizedDescription: string
+  normalizedRecipient: string
+  amountHash: string
+  dateHash: string
+  originalRecord: any
+}
 
 export interface ProcessedBankRecord {
-  id: string;
-  amount: number;
-  currency: string;
-  date: string;
-  description: string;
-  type: 'debit' | 'credit';
-  [key: string]: unknown;
-}
-
-export interface ProcessedExpenseRecord {
-  id: string;
-  amount: number;
-  currency: string;
-  date: string;
-  description: string;
-  category: string;
-  [key: string]: unknown;
-}
-
-export interface RecordDifference {
-  field: string;
-  sourceValue: unknown;
-  targetValue: unknown;
+  id: string
+  date: string
+  amount: number
+  debitAmount: number
+  creditAmount: number
+  description: string
+  recipient: string
+  category1: string
+  category2: string
+  project: boolean
+  comment: string
+  timeline: string
+  priority: number
+  account: string
+  city: string
+  accountNumber: string
+  // Enhanced fields for matching
+  normalizedDescription: string
+  normalizedRecipient: string
+  amountHash: string
+  dateHash: string
+  originalRecord: any
 }
 
 export interface IndonesianMatchingResult {
-  matched: boolean;
-  confidence: number;
-  sourceRecord: ProcessedBankRecord;
-  targetRecord: ProcessedBankRecord;
-  differences: Array<RecordDifference>;
-}
-
-export interface ReconciliationSummary {
-  totalExpenses: number;
-  totalBank: number;
-  matched: number;
-  unmatched: number;
-  totalExpenseAmount: number;
-  totalBankAmount: number;
-  difference: number;
+  matched: boolean
+  confidence: number
+  details: {
+    amountScore: number
+    dateScore: number
+    descriptionScore: number
+    recipientScore: number
+    totalScore: number
+  }
+  reason: string
+  expenseId: string
+  bankId: string
 }
 
 export class IndonesianDataProcessor {
-  static processExpenseData(data: unknown[]): ProcessedExpenseRecord[] {
-    return data.map((record, index) => {
-      const rec = record as Record<string, unknown>;
-      return {
-        id: (typeof rec.id === 'string' ? rec.id : `expense-${index}`),
-        amount: (typeof rec.amount === 'number' ? rec.amount : 0),
-        currency: (typeof rec.currency === 'string' ? rec.currency : 'IDR'),
-        date: (typeof rec.date === 'string' ? rec.date : new Date().toISOString()),
-        description: (typeof rec.description === 'string' ? rec.description : ''),
-        category: (typeof rec.category === 'string' ? rec.category : 'uncategorized'),
-        ...Object.fromEntries(
-          Object.entries(rec).filter(([key]) => 
-            !['id', 'amount', 'currency', 'date', 'description', 'category'].includes(key)
-          )
-        )
-      };
-    });
+  private static months: Record<string, string> = {
+    'Jan': '01', 'Feb': '02', 'Mar': '03', 'Apr': '04',
+    'Mei': '05', 'Jun': '06', 'Jul': '07', 'Agu': '08',
+    'Sep': '09', 'Okt': '10', 'Nov': '11', 'Des': '12'
   }
 
-  static processBankData(data: unknown[]): ProcessedBankRecord[] {
-    return data.map((record, index) => {
-      const rec = record as Record<string, unknown>;
-      return {
-        id: (typeof rec.id === 'string' ? rec.id : `bank-${index}`),
-        amount: (typeof rec.amount === 'number' ? rec.amount : 0),
-        currency: (typeof rec.currency === 'string' ? rec.currency : 'IDR'),
-        date: (typeof rec.date === 'string' ? rec.date : new Date().toISOString()),
-        description: (typeof rec.description === 'string' ? rec.description : ''),
-        type: (rec.type === 'credit' || rec.type === 'debit' ? rec.type : 'debit'),
-        ...Object.fromEntries(
-          Object.entries(rec).filter(([key]) => 
-            !['id', 'amount', 'currency', 'date', 'description', 'type'].includes(key)
-          )
-        )
-      };
-    });
+  // Parse Indonesian amount format (e.g., "3,500,000" -> 3500000)
+  static parseIndonesianAmount(amountStr: string): number {
+    if (!amountStr || amountStr === '') return 0
+    
+    // Remove commas and convert to number
+    const cleanAmount = amountStr.toString().replace(/,/g, '').replace(/"/g, '')
+    const parsed = parseFloat(cleanAmount)
+    
+    return isNaN(parsed) ? 0 : parsed
   }
 
-  /**
-   * Match records between source and target datasets
-   * 
-   * Uses a multi-stage matching strategy:
-   * 1. Exact ID match (highest confidence)
-   * 2. Amount + date match (high confidence)
-   * 3. Description match (medium confidence)
-   * 
-   * @param sourceRecords Source records to match
-   * @param targetRecords Target records to match against
-   * @returns Array of matching results with confidence scores
-   */
-  static matchRecords(
-    sourceRecords: ProcessedBankRecord[] | ProcessedExpenseRecord[],
-    targetRecords: ProcessedBankRecord[] | ProcessedExpenseRecord[]
-  ): IndonesianMatchingResult[] {
-    // Validate required fields and handle malformed data.
-    function isValidRecord(record: unknown): record is ProcessedBankRecord | ProcessedExpenseRecord {
-      if (typeof record !== 'object' || record === null) return false;
-      const rec = record as Record<string, unknown>;
-      return (
-        typeof rec.amount === 'number' &&
-        typeof rec.date === 'string' &&
-        typeof rec.description === 'string'
-      );
+  // Parse Indonesian date format (e.g., "1 Jan 2020" -> "2020-01-01")
+  static parseIndonesianDate(dateStr: string): string {
+    if (!dateStr) return ''
+    
+    try {
+      const parts = dateStr.trim().split(' ')
+      if (parts.length !== 3) return ''
+      
+      const day = parts[0].padStart(2, '0')
+      const month = this.months[parts[1]] || '01'
+      const year = parts[2]
+      
+      return `${year}-${month}-${day}`
+    } catch (error) {
+      console.error('Error parsing Indonesian date:', dateStr, error)
+      return ''
     }
-    return sourceRecords.map((source) => {
-      // Validate source record
-      if (!isValidRecord(source)) {
-        // Malformed source record
-        return {
-          matched: false,
-          confidence: 0,
-          sourceRecord: source as ProcessedBankRecord,
-          targetRecord: {} as ProcessedBankRecord,
-          differences: [
-            { field: 'validation', sourceValue: source, targetValue: null }
-          ]
-        };
-      }
-      // Try to find a matching target record by ID
-      let target = targetRecords.find((t) => t.id === source.id && isValidRecord(t));
-      // If not found, try to match by amount and date (simple fuzzy match)
-      if (!target) {
-        target = targetRecords.find(
-          (t) =>
-            isValidRecord(t) &&
-            t.amount === source.amount &&
-            t.date === source.date
-        );
-      }
-      // If still not found, try to match by description (very fuzzy)
-      if (!target) {
-        target = targetRecords.find(
-          (t) =>
-            isValidRecord(t) &&
-            t.description &&
-            source.description &&
-            t.description.trim().toLowerCase() === source.description.trim().toLowerCase()
-        );
-      }
-      // Collect differences if matched
-      const differences: Array<RecordDifference> = [];
-      if (target) {
-        const sourceRec = source as Record<string, unknown>;
-        const targetRec = target as Record<string, unknown>;
-        ['amount', 'date', 'description'].forEach((field) => {
-          if (sourceRec[field] !== targetRec[field]) {
-            differences.push({
-              field,
-              sourceValue: sourceRec[field],
-              targetValue: targetRec[field]
-            });
-          }
-        });
-      }
-      return {
-        matched: !!target,
-        confidence: target ? 0.95 : 0,
-        sourceRecord: source as ProcessedBankRecord,
-        targetRecord: (target as ProcessedBankRecord) || ({} as ProcessedBankRecord),
-        differences
-      };
-    });
   }
 
+  // Normalize Indonesian text for matching
+  static normalizeIndonesianText(text: string): string {
+    if (!text) return ''
+    
+    return text
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '') // Remove special characters
+      .replace(/\s+/g, ' ')    // Normalize whitespace
+      .trim()
+  }
+
+  // Generate hash for amount matching
+  static generateAmountHash(amount: number): string {
+    return `AMT_${Math.round(amount)}`
+  }
+
+  // Generate hash for date matching
+  static generateDateHash(date: string): string {
+    return `DATE_${date}`
+  }
+
+  // Calculate Levenshtein distance for fuzzy matching
+  static levenshteinDistance(str1: string, str2: string): number {
+    const matrix = Array(str2.length + 1).fill(null).map(() => Array(str1.length + 1).fill(null))
+    
+    for (let i = 0; i <= str1.length; i++) matrix[0][i] = i
+    for (let j = 0; j <= str2.length; j++) matrix[j][0] = j
+    
+    for (let j = 1; j <= str2.length; j++) {
+      for (let i = 1; i <= str1.length; i++) {
+        const indicator = str1[i - 1] === str2[j - 1] ? 0 : 1
+        matrix[j][i] = Math.min(
+          matrix[j][i - 1] + 1,
+          matrix[j - 1][i] + 1,
+          matrix[j - 1][i - 1] + indicator
+        )
+      }
+    }
+    
+    return matrix[str2.length][str1.length]
+  }
+
+  // Calculate fuzzy match score for Indonesian text
+  static fuzzyMatchIndonesian(text1: string, text2: string): number {
+    const normalized1 = this.normalizeIndonesianText(text1)
+    const normalized2 = this.normalizeIndonesianText(text2)
+    
+    if (normalized1 === normalized2) return 100
+    if (!normalized1 || !normalized2) return 0
+    
+    const distance = this.levenshteinDistance(normalized1, normalized2)
+    const maxLength = Math.max(normalized1.length, normalized2.length)
+    
+    return maxLength === 0 ? 100 : Math.round(((maxLength - distance) / maxLength) * 100)
+  }
+
+  // Calculate date proximity score
+  static calculateDateScore(date1: string, date2: string, toleranceDays: number = 1): number {
+    if (!date1 || !date2) return 0
+    
+    try {
+      const d1 = new Date(date1)
+      const d2 = new Date(date2)
+      
+      if (isNaN(d1.getTime()) || isNaN(d2.getTime())) return 0
+      
+      const diffDays = Math.abs(d1.getTime() - d2.getTime()) / (1000 * 60 * 60 * 24)
+      
+      if (diffDays <= toleranceDays) {
+        return Math.max(0, 100 - (diffDays / toleranceDays) * 50)
+      }
+      
+      return 0
+    } catch (error) {
+      return 0
+    }
+  }
+
+  // Process expenses data
+  static processExpensesData(rawData: any[]): ProcessedExpenseRecord[] {
+    return rawData.map((record, index) => {
+      const amount = this.parseIndonesianAmount(record['Aldi Awal Transaksi'] || record['Aldi Awal Debit'] || '0')
+      const debitAmount = this.parseIndonesianAmount(record['Aldi Awal Debit'] || '0')
+      const creditAmount = this.parseIndonesianAmount(record['Aldi Awal Kredit'] || '0')
+      const date = this.parseIndonesianDate(record.tanggal || '')
+      
+      return {
+        id: `EXP-${record.No || index + 1}`,
+        date,
+        amount,
+        debitAmount,
+        creditAmount,
+        description: record.Uraian || '',
+        recipient: record.Penerima || '',
+        category1: record.Kode1 || '',
+        category2: record.Kode2 || '',
+        project: record.Proyek === 'TRUE' || record.Proyek === true,
+        comment: record.Comment || '',
+        timeline: record.Timeline || '',
+        priority: parseInt(record.P) || 0,
+        account: record.Account || '',
+        // Enhanced fields for matching
+        normalizedDescription: this.normalizeIndonesianText(record.Uraian || ''),
+        normalizedRecipient: this.normalizeIndonesianText(record.Penerima || ''),
+        amountHash: this.generateAmountHash(amount),
+        dateHash: this.generateDateHash(date),
+        originalRecord: record
+      }
+    })
+  }
+
+  // Process bank statements data
+  static processBankData(rawData: any[]): ProcessedBankRecord[] {
+    return rawData.map((record, index) => {
+      const amount = this.parseIndonesianAmount(record.Transaksi || record.Debit || record.Kredit || '0')
+      const debitAmount = this.parseIndonesianAmount(record.Debit || '0')
+      const creditAmount = this.parseIndonesianAmount(record.Kredit || '0')
+      const date = this.parseIndonesianDate(record.Tanggal || '')
+      
+      return {
+        id: `BANK-${record.No || index + 1}`,
+        date,
+        amount,
+        debitAmount,
+        creditAmount,
+        description: record.Uraian || '',
+        recipient: record.Kode2 || '',
+        category1: record.Kode1 || '',
+        category2: record.Kode2 || '',
+        project: record.Proyek === 'TRUE' || record.Proyek === true,
+        comment: record.Comment || '',
+        timeline: record.Timeline || '',
+        priority: parseInt(record.P) || 0,
+        account: record.Account || '',
+        city: record.CP || '',
+        accountNumber: record.Rek || '',
+        // Enhanced fields for matching
+        normalizedDescription: this.normalizeIndonesianText(record.Uraian || ''),
+        normalizedRecipient: this.normalizeIndonesianText(record.Kode2 || ''),
+        amountHash: this.generateAmountHash(amount),
+        dateHash: this.generateDateHash(date),
+        originalRecord: record
+      }
+    })
+  }
+
+  // Match Indonesian records with enhanced scoring
+  static matchIndonesianRecords(
+    expense: ProcessedExpenseRecord, 
+    bank: ProcessedBankRecord,
+    weights: {
+      amount: number
+      date: number
+      description: number
+      recipient: number
+    } = {
+      amount: 0.4,
+      date: 0.3,
+      description: 0.2,
+      recipient: 0.1
+    }
+  ): IndonesianMatchingResult {
+    // Amount matching (exact match gets 100, close match gets partial score)
+    const amountScore = expense.amount === bank.amount ? 100 : 
+      Math.abs(expense.amount - bank.amount) <= 1000 ? 80 : 0
+    
+    // Date matching with 1-day tolerance
+    const dateScore = this.calculateDateScore(expense.date, bank.date, 1)
+    
+    // Description fuzzy matching
+    const descriptionScore = this.fuzzyMatchIndonesian(expense.description, bank.description)
+    
+    // Recipient fuzzy matching
+    const recipientScore = this.fuzzyMatchIndonesian(expense.recipient, bank.recipient)
+    
+    // Calculate weighted total score
+    const totalScore = (
+      amountScore * weights.amount +
+      dateScore * weights.date +
+      descriptionScore * weights.description +
+      recipientScore * weights.recipient
+    )
+    
+    return {
+      matched: totalScore >= 80,
+      confidence: Math.round(totalScore),
+      details: {
+        amountScore,
+        dateScore,
+        descriptionScore,
+        recipientScore,
+        totalScore
+      },
+      reason: `Indonesian matching: ${totalScore.toFixed(1)}% confidence (Amount: ${amountScore}%, Date: ${dateScore}%, Description: ${descriptionScore}%, Recipient: ${recipientScore}%)`,
+      expenseId: expense.id,
+      bankId: bank.id
+    }
+  }
+
+  // Batch match all records
+  static batchMatchRecords(
+    expenses: ProcessedExpenseRecord[], 
+    bankRecords: ProcessedBankRecord[]
+  ): Array<{
+    expense: ProcessedExpenseRecord
+    bank: ProcessedBankRecord
+    match: IndonesianMatchingResult
+  }> {
+    const matches: Array<{
+      expense: ProcessedExpenseRecord
+      bank: ProcessedBankRecord
+      match: IndonesianMatchingResult
+    }> = []
+    
+    const usedBankIds = new Set<string>()
+    
+    for (const expense of expenses) {
+      let bestMatch: {
+        bank: ProcessedBankRecord
+        match: IndonesianMatchingResult
+      } | null = null
+      
+      for (const bank of bankRecords) {
+        if (usedBankIds.has(bank.id)) continue
+        
+        const match = this.matchIndonesianRecords(expense, bank)
+        
+        if (match.matched && (!bestMatch || match.confidence > bestMatch.match.confidence)) {
+          bestMatch = { bank, match }
+        }
+      }
+      
+      if (bestMatch) {
+        matches.push({
+          expense,
+          bank: bestMatch.bank,
+          match: bestMatch.match
+        })
+        usedBankIds.add(bestMatch.bank.id)
+      }
+    }
+    
+    return matches
+  }
+
+  // Generate reconciliation summary
   static generateReconciliationSummary(
     expenses: ProcessedExpenseRecord[],
     bankRecords: ProcessedBankRecord[],
-    matches: IndonesianMatchingResult[]
-  ): ReconciliationSummary {
-    const matched = matches.filter(m => m.matched).length;
-    const unmatched = matches.length - matched;
-    const totalExpenses = expenses.reduce((sum, exp) => sum + exp.amount, 0);
-    const totalBank = bankRecords.reduce((sum, bank) => sum + bank.amount, 0);
+    matches: Array<{
+      expense: ProcessedExpenseRecord
+      bank: ProcessedBankRecord
+      match: IndonesianMatchingResult
+    }>
+  ) {
+    const totalExpenses = expenses.length
+    const totalBankRecords = bankRecords.length
+    const matchedCount = matches.length
+    const unmatchedExpenses = totalExpenses - matchedCount
+    const unmatchedBankRecords = totalBankRecords - matchedCount
+    
+    const totalExpenseAmount = expenses.reduce((sum, exp) => sum + exp.amount, 0)
+    const totalBankAmount = bankRecords.reduce((sum, bank) => sum + bank.amount, 0)
+    const matchedAmount = matches.reduce((sum, match) => sum + match.expense.amount, 0)
+    
+    const discrepancyAmount = Math.abs(totalExpenseAmount - totalBankAmount)
     
     return {
-      totalExpenses: expenses.length,
-      totalBank: bankRecords.length,
-      matched,
-      unmatched,
-      totalExpenseAmount: totalExpenses,
-      totalBankAmount: totalBank,
-      difference: totalExpenses - totalBank
-    };
+      summary: {
+        totalExpenses,
+        totalBankRecords,
+        matchedRecords: matchedCount,
+        unmatchedExpenses,
+        unmatchedBankRecords,
+        matchRate: totalExpenses > 0 ? (matchedCount / totalExpenses) * 100 : 0,
+        totalExpenseAmount,
+        totalBankAmount,
+        matchedAmount,
+        discrepancyAmount
+      },
+      quality: {
+        averageConfidence: matches.length > 0 ? 
+          matches.reduce((sum, match) => sum + match.match.confidence, 0) / matches.length : 0,
+        highConfidenceMatches: matches.filter(m => m.match.confidence >= 90).length,
+        mediumConfidenceMatches: matches.filter(m => m.match.confidence >= 70 && m.match.confidence < 90).length,
+        lowConfidenceMatches: matches.filter(m => m.match.confidence < 70).length
+      },
+      categories: {
+        expenses: this.analyzeCategories(expenses),
+        bankRecords: this.analyzeCategories(bankRecords)
+      }
+    }
+  }
+
+  // Analyze categories
+  private static analyzeCategories(records: ProcessedExpenseRecord[] | ProcessedBankRecord[]) {
+    const categoryAnalysis: Record<string, { count: number; totalAmount: number }> = {}
+    
+    records.forEach(record => {
+      const category = `${record.category1} - ${record.category2}`
+      if (!categoryAnalysis[category]) {
+        categoryAnalysis[category] = { count: 0, totalAmount: 0 }
+      }
+      categoryAnalysis[category].count++
+      categoryAnalysis[category].totalAmount += record.amount
+    })
+    
+    return categoryAnalysis
   }
 }
 
-export const processIndonesianBankData = (data: unknown[]): ProcessedBankRecord[] => {
-  return IndonesianDataProcessor.processBankData(data);
-};
-
-export const matchIndonesianRecords = (
-  sourceRecords: ProcessedBankRecord[],
-  targetRecords: ProcessedBankRecord[]
-): IndonesianMatchingResult[] => {
-  return IndonesianDataProcessor.matchRecords(sourceRecords, targetRecords);
-};
-
+// Export utility functions for easy use
+export const {
+  parseIndonesianAmount,
+  parseIndonesianDate,
+  normalizeIndonesianText,
+  fuzzyMatchIndonesian,
+  calculateDateScore,
+  processExpensesData,
+  processBankData,
+  matchIndonesianRecords,
+  batchMatchRecords,
+  generateReconciliationSummary
+} = IndonesianDataProcessor

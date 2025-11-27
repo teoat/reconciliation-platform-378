@@ -9,7 +9,7 @@ use crate::handlers::types::ApiResponse;
 use crate::services::cache::MultiLevelCache;
 
 /// Settings data structure
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct UserSettings {
     pub theme: String,
     pub language: String,
@@ -54,6 +54,18 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 }
 
 /// Get user settings endpoint
+/// 
+/// Retrieves the current user's settings.
+#[utoipa::path(
+    get,
+    path = "/api/v1/settings",
+    tag = "Settings",
+    responses(
+        (status = 200, description = "Settings retrieved successfully", body = ApiResponse<UserSettings>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_settings(
     user_id: web::ReqData<Uuid>,
     cache: web::Data<MultiLevelCache>,
@@ -118,6 +130,20 @@ pub async fn get_settings(
 }
 
 /// Update user settings endpoint
+/// 
+/// Updates the current user's settings.
+#[utoipa::path(
+    put,
+    path = "/api/v1/settings",
+    tag = "Settings",
+    request_body = UserSettings,
+    responses(
+        (status = 200, description = "Settings updated successfully", body = ApiResponse<UserSettings>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 422, description = "Validation error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn update_settings(
     user_id: web::ReqData<Uuid>,
     req: web::Json<UserSettings>,
@@ -162,6 +188,18 @@ pub async fn update_settings(
 }
 
 /// Reset user settings to defaults endpoint
+/// 
+/// Resets the current user's settings to default values.
+#[utoipa::path(
+    post,
+    path = "/api/v1/settings/reset",
+    tag = "Settings",
+    responses(
+        (status = 200, description = "Settings reset successfully", body = ApiResponse<UserSettings>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn reset_settings(
     user_id: web::ReqData<Uuid>,
     cache: web::Data<MultiLevelCache>,

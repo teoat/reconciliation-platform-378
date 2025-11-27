@@ -32,14 +32,32 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     .route("/{file_id}/process", web::post().to(process_file));
 }
 
-#[derive(serde::Deserialize)]
+#[derive(serde::Deserialize, utoipa::ToSchema)]
 pub struct InitResumableReq {
+    /// Project ID for the file
     project_id: Uuid,
+    /// Original filename
     filename: String,
+    /// Expected file size in bytes (optional)
     expected_size: Option<i64>,
 }
 
 /// Initialize resumable upload
+/// 
+/// Creates a new resumable upload session for large file uploads.
+#[utoipa::path(
+    post,
+    path = "/api/v1/files/upload/resumable/init",
+    tag = "Files",
+    request_body = InitResumableReq,
+    responses(
+        (status = 200, description = "Upload session initialized", body = ApiResponse),
+        (status = 400, description = "Invalid request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - no project access", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn init_resumable_upload(
     req: web::Json<InitResumableReq>,
     http_req: HttpRequest,
@@ -159,6 +177,23 @@ pub async fn complete_resumable_upload(
 }
 
 /// Get file information
+/// 
+/// Retrieves file metadata by file ID.
+#[utoipa::path(
+    get,
+    path = "/api/v1/files/{file_id}",
+    tag = "Files",
+    params(
+        ("file_id" = Uuid, Path, description = "File ID")
+    ),
+    responses(
+        (status = 200, description = "File retrieved successfully", body = ApiResponse),
+        (status = 404, description = "File not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - no project access", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_file(
     file_id: web::Path<Uuid>,
     http_req: HttpRequest,
@@ -217,6 +252,23 @@ pub async fn get_file_preview(
 }
 
 /// Delete file
+/// 
+/// Deletes a file and its associated data.
+#[utoipa::path(
+    delete,
+    path = "/api/v1/files/{file_id}",
+    tag = "Files",
+    params(
+        ("file_id" = Uuid, Path, description = "File ID")
+    ),
+    responses(
+        (status = 204, description = "File deleted successfully"),
+        (status = 404, description = "File not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - no project access", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn delete_file(
     file_id: web::Path<Uuid>,
     http_req: HttpRequest,

@@ -117,5 +117,5 @@ pub mod password_manager_utils;
 
 // Re-export main types
 pub use password_manager::{
-    PasswordManager, PasswordEntry, RotationSchedule, PasswordRotationScheduler,
+    PasswordManager, PasswordEntry, RotationSchedule,
 };

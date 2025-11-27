@@ -246,3 +246,43 @@ cargo build
 
 **Questions?** Check the troubleshooting guide or open an issue.
 
+
+---
+
+## SSOT (Single Source of Truth) Guidelines
+
+**Important**: This project follows strict SSOT principles to prevent code duplication and ensure consistency.
+
+### Quick Start
+
+1. **Read the SSOT Best Practices Guide**:
+   ```bash
+   cat docs/development/SSOT_BEST_PRACTICES.md
+   ```
+
+2. **Before creating new utilities**, check `SSOT_LOCK.yml`:
+   ```bash
+   grep -i "your_keyword" SSOT_LOCK.yml
+   ```
+
+3. **Validate SSOT compliance** before committing:
+   ```bash
+   ./scripts/validate-ssot.sh
+   ```
+
+### Common SSOT Paths
+
+```typescript
+// ✅ DO: Use SSOT paths
+import { validateEmail } from '@/utils/common/validation';
+import { getErrorMessage } from '@/utils/common/errorHandling';
+import { sanitizeInput } from '@/utils/common/sanitization';
+```
+
+### Resources
+
+- [SSOT Best Practices Guide](../development/SSOT_BEST_PRACTICES.md) - Comprehensive guide
+- [SSOT Migration Guide](../development/SSOT_MIGRATION_GUIDE.md) - Migration procedures
+- [SSOT_LOCK.yml](../../SSOT_LOCK.yml) - Complete SSOT definitions
+
+**Remember**: When in doubt, check `SSOT_LOCK.yml` and run `./scripts/validate-ssot.sh`!

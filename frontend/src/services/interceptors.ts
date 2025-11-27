@@ -1,5 +1,6 @@
-import { RequestInterceptor, ApiError } from './enhancedApiClient';
-import type { ResponseInterceptor } from './enhancedApiClient';
+// Migrated to use SSOT types from apiClient
+import type { RequestInterceptor, ResponseInterceptor } from './apiClient/interceptors';
+import { ApiErrorLike as ApiError } from './apiClient/types';
 import { logger } from '@/services/logger';
 import { RequestConfig, ApiResponse } from '../types/api';
 

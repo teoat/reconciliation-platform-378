@@ -130,33 +130,53 @@ impl StartupErrorHandler {
 
     /// Validate critical startup requirements with fallbacks
     pub async fn validate_startup_requirements(&self) -> AppResult<()> {
-        // Tier 1: Critical - Database connection
-        self.execute_startup_operation(
-            async {
-                // Validate database connection
-                let db_url = std::env::var("DATABASE_URL")
-                    .map_err(|_| AppError::Config("DATABASE_URL not set".to_string()))?;
-                
-                // Try to establish connection
-                use diesel::prelude::*;
-                use diesel::PgConnection;
-                
-                PgConnection::establish(&db_url)
-                    .map_err(|e| AppError::Connection(diesel::ConnectionError::InvalidConnectionUrl(format!("Failed to connect: {}", e))))?;
-                
-                Ok(())
-            },
-            ErrorHandlingTier::Critical,
-            "database_connection",
-            Some(Box::new(|| {
-                Box::pin(async {
-                    // Fallback: Wait and retry
-                    eprintln!("⏳ Waiting 5 seconds before retry...");
-                    sleep(Duration::from_secs(5)).await;
-                    Err(AppError::Connection(diesel::ConnectionError::InvalidConnectionUrl("Fallback retry failed".to_string())))
-                })
-            })),
-        ).await?;
+        // Tier 1: Critical - Database connection with retry logic
+        let db_url = std::env::var("DATABASE_URL")
+            .map_err(|_| AppError::Config("DATABASE_URL not set".to_string()))?;
+        
+        // Retry database connection with exponential backoff
+        let mut retry_count = 0;
+        let max_retries = 10;
+        let mut delay = Duration::from_secs(2);
+        
+        loop {
+            // Clone db_url for use in async closure
+            let db_url_clone = db_url.clone();
+            
+            match self.execute_startup_operation(
+                async move {
+                    // Try to establish connection
+                    use diesel::prelude::*;
+                    use diesel::PgConnection;
+                    
+                    PgConnection::establish(&db_url_clone)
+                        .map_err(|e| AppError::Connection(diesel::ConnectionError::InvalidConnectionUrl(format!("Failed to connect: {}", e))))?;
+                    
+                    Ok(())
+                },
+                ErrorHandlingTier::Critical,
+                "database_connection",
+                None, // No fallback, we handle retries here
+            ).await {
+                Ok(_) => {
+                    eprintln!("✅ Database connection established successfully");
+                    log::info!("Database connection established successfully");
+                    break;
+                }
+                Err(e) => {
+                    retry_count += 1;
+                    if retry_count >= max_retries {
+                        eprintln!("❌ Database connection failed after {} attempts: {}", max_retries, e);
+                        log::error!("Database connection failed after {} attempts: {}", max_retries, e);
+                        return Err(e);
+                    }
+                    eprintln!("⏳ Database connection attempt {}/{} failed, retrying in {:?}...", retry_count, max_retries, delay);
+                    log::warn!("Database connection attempt {}/{} failed, retrying in {:?}...", retry_count, max_retries, delay);
+                    sleep(delay).await;
+                    delay = std::cmp::min(delay * 2, Duration::from_secs(10)); // Exponential backoff, max 10s
+                }
+            }
+        }
 
         // Tier 2: Important - Redis connection (with fallback to in-memory cache)
         let _redis_result = self.execute_startup_operation(

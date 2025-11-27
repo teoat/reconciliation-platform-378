@@ -93,6 +93,6 @@ registerFeature({
 });
 
 // Re-export components and utilities
-export { FileUploadInterface } from '../../components/FileUploadInterface';
+export { FileUploadInterface } from '../../components/files/FileUploadInterface';
 export { default as EnhancedIngestionPage } from '../../components/EnhancedIngestionPage';
 

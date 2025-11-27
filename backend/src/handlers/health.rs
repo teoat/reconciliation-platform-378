@@ -25,6 +25,17 @@ pub fn configure_health_routes(cfg: &mut web::ServiceConfig) {
 }
 
 /// Basic health check endpoint
+/// 
+/// Returns the current health status of the API server.
+#[utoipa::path(
+    get,
+    path = "/health",
+    tag = "Health",
+    responses(
+        (status = 200, description = "Service is healthy", body = ApiResponse),
+        (status = 503, description = "Service is unhealthy", body = ApiResponse)
+    )
+)]
 pub async fn health_check() -> Result<HttpResponse, AppError> {
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
@@ -39,6 +50,18 @@ pub async fn health_check() -> Result<HttpResponse, AppError> {
 }
 
 /// Get resilience status (circuit breaker stats)
+/// 
+/// Returns the current state of circuit breakers for database, cache, and API services.
+#[utoipa::path(
+    get,
+    path = "/health/resilience",
+    tag = "Health",
+    responses(
+        (status = 200, description = "Resilience status retrieved", body = ApiResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_resilience_status(
     resilience: web::Data<Arc<ResilienceManager>>,
 ) -> Result<HttpResponse, AppError> {

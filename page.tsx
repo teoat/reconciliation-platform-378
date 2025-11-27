@@ -3,8 +3,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { Provider } from 'react-redux';
 import { PersistGate } from 'redux-persist/integration/react';
-import { store, persistor } from './store';
-import { ErrorBoundary } from './utils/errorHandler';
+import { store, persistor } from './frontend/src/store';
+import { ErrorBoundary } from './frontend/src/utils/errorHandler';
 import Navigation from './components/Navigation';
 import DataProvider from './components/DataProvider';
 import { FrenlyProvider, useFrenly } from './components/FrenlyProvider';
@@ -14,15 +14,15 @@ import { pwaService } from './services/pwaService';
 import PWAInstallPrompt from './components/PWAInstallPrompt';
 
 // Lazy load pages for better performance
-const AuthPage = lazy(() => import('./pages/AuthPage'));
-const ProjectSelectionPage = lazy(() => import('./pages/ProjectSelectionPage'));
-const IngestionPage = lazy(() => import('./pages/IngestionPage'));
-const ReconciliationPage = lazy(() => import('./pages/ReconciliationPage'));
-const AdjudicationPage = lazy(() => import('./pages/AdjudicationPage'));
-const VisualizationPage = lazy(() => import('./pages/VisualizationPage'));
-const PresummaryPage = lazy(() => import('./pages/PresummaryPage'));
-const CashflowEvaluationPage = lazy(() => import('./pages/CashflowEvaluationPage'));
-const SummaryExportPage = lazy(() => import('./pages/SummaryExportPage'));
+const AuthPage = lazy(() => import('./frontend/src/pages/AuthPage'));
+const ProjectSelectionPage = lazy(() => import('./frontend/src/pages/ProjectSelectionPage'));
+const IngestionPage = lazy(() => import('./frontend/src/pages/IngestionPage'));
+const ReconciliationPage = lazy(() => import('./frontend/src/pages/ReconciliationPage'));
+const AdjudicationPage = lazy(() => import('./frontend/src/pages/AdjudicationPage'));
+const VisualizationPage = lazy(() => import('./frontend/src/pages/VisualizationPage'));
+const PresummaryPage = lazy(() => import('./frontend/src/pages/PresummaryPage'));
+const CashflowEvaluationPage = lazy(() => import('./frontend/src/pages/CashflowEvaluationPage'));
+const SummaryExportPage = lazy(() => import('./frontend/src/pages/SummaryExportPage'));
 
 function AppContent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

@@ -1,246 +1,28 @@
-// ============================================================================
-// RECONCILIATION TYPES
-// ============================================================================
+// types/reconciliation.ts
 
-import type { ID, Timestamp } from './backend-aligned';
-import type { User } from './backend-aligned';
+import { Priority } from './common';
+
+export interface Reconciliation {
+  id: string;
+  projectId: string;
+  name: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  sourceA: string;
+  sourceB: string;
+  matchRate: number;
+  totalMatches: number;
+  totalDiscrepancies: number;
+  createdAt: Date;
+  completedAt?: Date;
+}
 
 export interface ReconciliationRecord {
-  id: ID;
-  projectId: ID;
-  sourceId: ID;
-  targetId: ID;
-  sourceSystem: string;
-  targetSystem: string;
-  amount: number;
-  currency: string;
-  transactionDate: Timestamp;
-  description: string;
-  status: ReconciliationStatus;
-  matchType?: MatchType;
-  confidence?: number;
-  confidence_score?: number; // Backend-aligned property
-  discrepancyAmount?: number; // Calculated discrepancy amount
-  discrepancy_amount?: number; // Backend-aligned property
-  priority?: string; // Record priority
-  discrepancies: Discrepancy[];
-  metadata: RecordMetadata;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-
-export type ReconciliationStatus = 'matched' | 'unmatched' | 'discrepancy' | 'pending' | 'reviewed';
-export type MatchType = 'exact' | 'fuzzy' | 'manual' | 'rule-based';
-
-export interface Discrepancy {
-  id: ID;
-  type: 'amount' | 'date' | 'description' | 'currency' | 'custom';
-  field: string;
-  sourceValue: string | number | boolean | Date;
-  targetValue: string | number | boolean | Date;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  description: string;
-  resolution?: DiscrepancyResolution;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-
-export interface DiscrepancyResolution {
-  type: 'accept' | 'reject' | 'adjust' | 'investigate';
-  value?: string | number | boolean | Date;
-  reason: string;
-  resolvedBy: User;
-  resolvedAt: Timestamp;
-}
-
-export interface RecordMetadata {
-  source: Record<string, unknown>;
-  target: Record<string, unknown>;
-  computed: Record<string, unknown>;
-  tags: string[];
-  notes: string[];
-}
-
-export interface ReconciliationConfig {
-  projectId: ID;
-  rules: ReconciliationRule[];
-  thresholds: ReconciliationThresholds;
-  automation: AutomationConfig;
-  notifications: NotificationConfig;
-}
-
-export interface ReconciliationRule {
-  id: ID;
-  name: string;
-  description: string;
-  enabled: boolean;
-  priority: number;
-  conditions: RuleCondition[];
-  actions: RuleAction[];
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-
-export interface RuleCondition {
-  field: string;
-  operator:
-    | 'equals'
-    | 'not_equals'
-    | 'contains'
-    | 'not_contains'
-    | 'greater_than'
-    | 'less_than'
-    | 'between'
-    | 'in'
-    | 'not_in';
-  value: string | number | boolean | (string | number | boolean)[];
-  caseSensitive?: boolean;
-}
-
-export interface RuleAction {
-  type: 'match' | 'flag' | 'auto_resolve' | 'notify' | 'escalate';
-  config: Record<string, unknown>;
-}
-
-export interface ReconciliationThresholds {
-  amountTolerance: number;
-  dateTolerance: number;
-  confidenceThreshold: number;
-  autoMatchThreshold: number;
-}
-
-export interface AutomationConfig {
-  enabled: boolean;
-  autoMatch: boolean;
-  autoResolve: boolean;
-  escalationRules: EscalationRule[];
-}
-
-export interface EscalationRule {
-  condition: string;
-  action: 'notify' | 'escalate' | 'pause';
-  recipients: User[];
-  delay: number;
-}
-
-export interface NotificationConfig {
-  enabled: boolean;
-  channels: NotificationChannel[];
-  triggers: NotificationTrigger[];
-}
-
-export interface NotificationChannel {
-  type: 'email' | 'slack' | 'teams' | 'webhook';
-  config: Record<string, unknown>;
-}
-
-export interface NotificationTrigger {
-  event: 'match' | 'discrepancy' | 'escalation' | 'completion';
-  conditions: RuleCondition[];
-  recipients: User[];
-}
-
-export interface ReconciliationSource {
-  id: string;
-  systemId: string;
-  systemName: string;
-  recordId: string;
-  data: Record<string, unknown>;
-  timestamp: string;
-  quality: DataQuality;
-  confidence: number;
-  metadata: Record<string, unknown>;
-}
-
-export interface DataQuality {
-  completeness: number;
-  accuracy: number;
-  consistency: number;
-  validity: number;
-  duplicates: number;
-  errors: number;
-}
-
-export interface MatchingRule {
-  id: string;
-  name: string;
-  type: 'exact' | 'fuzzy' | 'algorithmic' | 'manual';
-  criteria: MatchingCriteria[];
-  weight: number;
-  applied: boolean;
-  result: MatchingResult;
-  confidence: number;
-}
-
-export interface MatchingCriteria {
-  field: string;
-  operator: 'equals' | 'contains' | 'startsWith' | 'endsWith' | 'regex' | 'fuzzy';
-  value: unknown;
-  tolerance?: number;
-  weight: number;
-}
-
-export interface MatchingResult {
-  matched: boolean;
-  confidence: number;
-  reason: string;
-  details: Record<string, unknown>;
-}
-
-export interface AuditEntry {
-  id: string;
-  timestamp: string;
-  userId: string;
-  action: string;
-  details: Record<string, unknown>;
-  ipAddress?: string;
-  userAgent?: string;
-}
-
-export interface EnhancedReconciliationRecord {
   id: string;
   reconciliationId: string;
-  batchId: string;
-  sources: ReconciliationSource[];
-  status: 'matched' | 'unmatched' | 'discrepancy' | 'pending' | 'resolved' | 'escalated';
-  confidence: number;
-  matchingRules: MatchingRule[];
-  auditTrail: AuditEntry[];
-  metadata: {
-    createdAt: string;
-    updatedAt: string;
-    createdBy: string;
-    updatedBy: string;
-    version: number;
-    tags: string[];
-    priority: 'low' | 'medium' | 'high' | 'critical';
-    attachments: string[];
-  };
-  resolution?: Resolution | { status?: 'pending' | 'approved' | 'rejected' | 'escalated'; resolvedAt?: string; resolution?: string; comments?: string[]; assignedTo?: string; assignedAt?: string; };
-  matchScore: number;
-  difference?: number;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
-}
-
-export interface Resolution {
-  type: 'accept' | 'reject' | 'adjust' | 'investigate';
-  value?: unknown;
-  reason: string;
-  resolvedBy: string;
-  resolvedAt: string;
-  attachments?: string[];
-}
-
-export interface ReconciliationMetrics {
-  pendingRecords?: number;
-  resolvedRecords?: number;
-  escalatedRecords?: number;
-  totalRecords: number;
-  matchedRecords: number;
-  unmatchedRecords: number;
-  discrepancyRecords: number;
-  matchRate: number;
-  averageConfidence: number;
-  processingTime: number;
-  lastUpdated: string;
+  sourceARecordId: string;
+  sourceBRecordId: string;
+  status: 'matched' | 'unmatched' | 'discrepancy';
+  discrepancyAmount?: number;
+  confidenceScore?: number;
+  priority?: Priority;
 }

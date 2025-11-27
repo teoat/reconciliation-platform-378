@@ -87,6 +87,28 @@ export {
   EnhancedFrenlyOnboarding
 } from '../onboarding/EnhancedFrenlyOnboarding';
 
+// Phase 3 Components
+export {
+  SmartTip,
+  useSmartTips,
+  type SmartTipProps,
+  type SmartTip as SmartTipType,
+  type UseSmartTipsOptions,
+} from './SmartTip';
+
+export {
+  ProgressiveFeatureDisclosure,
+  useProgressiveFeature,
+  type ProgressiveFeatureDisclosureProps,
+  type ProgressiveFeature,
+  type FeatureUnlockLevel,
+} from './ProgressiveFeatureDisclosure';
+
+export {
+  SmartTipProvider,
+  type SmartTipProviderProps,
+} from './SmartTipProvider';
+
 // Component Props Types
 export type { ButtonProps } from './Button';
 export type { InputProps } from './Input';

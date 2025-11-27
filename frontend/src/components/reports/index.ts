@@ -4,5 +4,5 @@
  * Centralized exports for all reporting components
  */
 
-export { default as CustomReports } from '../CustomReports';
-export { default as ReconciliationAnalytics } from '../ReconciliationAnalytics';
+export { default as CustomReports } from './CustomReports';
+export { default as ReconciliationAnalytics } from './ReconciliationAnalytics';

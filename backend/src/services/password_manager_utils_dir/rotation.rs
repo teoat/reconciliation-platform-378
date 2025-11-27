@@ -43,7 +43,9 @@ impl PasswordRotationScheduler {
     /// 
     /// Returns list of password names that were rotated.
     pub async fn rotate_due_passwords(&self) -> AppResult<Vec<String>> {
-        self.password_manager.rotate_due_passwords().await
+        // Map PasswordEntry to String (entry names)
+        let entries = self.password_manager.rotate_due_passwords().await?;
+        Ok(entries.into_iter().map(|e| e.name).collect())
     }
 }
 

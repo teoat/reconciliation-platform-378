@@ -77,7 +77,7 @@ const loadJobResults = useCallback(
           async () => {
             const response = await apiClient.getReconciliationJobResults(jobId, page, perPage);
             if (response.error) {
-              const { getErrorMessageFromApiError } = await import('../utils/errorExtraction');
+              const { getErrorMessageFromApiError } = await import('@/utils/common/errorHandling');
               throw new Error(getErrorMessageFromApiError(response.error));
             }
 

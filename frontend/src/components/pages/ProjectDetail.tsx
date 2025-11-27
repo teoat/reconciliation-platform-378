@@ -19,7 +19,7 @@ import type {
   BackendDataSource,
   BackendReconciliationJob,
 } from '../../services/apiClient/types';
-import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
+import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
 
 const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();

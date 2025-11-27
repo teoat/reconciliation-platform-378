@@ -1,0 +1,42 @@
+name: SSOT Compliance Validation
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main, develop]
+
+jobs:
+  ssot-validation:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+      
+      - name: Run SSOT Validation
+        run: |
+          chmod +x scripts/validate-ssot.sh
+          ./scripts/validate-ssot.sh
+      
+      - name: Run SSOT Audit
+        run: |
+          chmod +x scripts/ssot-audit.sh
+          ./scripts/ssot-audit.sh || true
+      
+      - name: Upload Audit Report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: ssot-audit-report
+          path: docs/project-management/SSOT_AUDIT_REPORT.md

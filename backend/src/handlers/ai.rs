@@ -2,7 +2,10 @@
 
 use actix_web::{web, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
+use utoipa;
 use crate::services::ai::{AIService, AIRequest, AIResponse};
+use crate::handlers::types::ApiResponse;
+use crate::errors::AppError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct AIChatRequest {
@@ -13,14 +16,29 @@ pub struct AIChatRequest {
     pub max_tokens: Option<u32>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct AIChatResponse {
     pub success: bool,
     pub data: Option<AIResponse>,
     pub error: Option<String>,
 }
 
-// POST /api/ai/chat
+/// AI chat endpoint
+/// 
+/// Sends a message to the AI service and returns a response.
+#[utoipa::path(
+    post,
+    path = "/api/v1/ai/chat",
+    tag = "AI",
+    request_body = AIChatRequest,
+    responses(
+        (status = 200, description = "AI response generated successfully", body = AIChatResponse),
+        (status = 400, description = "Invalid request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 500, description = "AI service error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn chat_handler(
     request: web::Json<AIChatRequest>,
 ) -> Result<HttpResponse> {
@@ -54,7 +72,19 @@ pub async fn chat_handler(
     }
 }
 
-// Health check endpoint for AI service
+/// Health check endpoint for AI service
+/// 
+/// Returns the health status of AI providers.
+#[utoipa::path(
+    get,
+    path = "/api/v1/ai/health",
+    tag = "AI",
+    responses(
+        (status = 200, description = "AI service health status", body = ApiResponse),
+        (status = 503, description = "AI service unavailable", body = ApiResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn health_handler() -> Result<HttpResponse> {
     let ai_service = AIService::new();
 

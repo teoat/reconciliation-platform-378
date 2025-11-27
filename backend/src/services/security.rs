@@ -1,7 +1,8 @@
 // Security Hardening Service
 // This service handles security measures, vulnerability scanning, and compliance validation
 
-use bcrypt::{hash, verify, DEFAULT_COST};
+// Password hashing/verification is handled by services/auth/password.rs (PasswordManager)
+// bcrypt imports removed - no longer needed
 use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -15,7 +16,7 @@ use uuid::Uuid;
 pub struct SecurityConfig {
     pub jwt_secret: String,
     pub jwt_expiration: Duration,
-    pub bcrypt_cost: u32,
+    // bcrypt_cost removed - password operations handled by services/auth/password.rs
     pub max_login_attempts: u32,
     pub lockout_duration: Duration,
     pub session_timeout: Duration,
@@ -34,7 +35,7 @@ impl Default for SecurityConfig {
         Self {
             jwt_secret: "your-super-secret-key-change-in-production".to_string(),
             jwt_expiration: Duration::from_secs(86400), // 24 hours
-            bcrypt_cost: DEFAULT_COST,
+            // bcrypt_cost removed - password operations handled by services/auth/password.rs
             max_login_attempts: 5,
             lockout_duration: Duration::from_secs(900), // 15 minutes
             session_timeout: Duration::from_secs(3600), // 1 hour
@@ -143,40 +144,7 @@ impl SecurityService {
 
     // Authentication security
     // NOTE: Password hashing/verification is handled by services/auth/password.rs (PasswordManager)
-    // These methods are deprecated and should not be used. Use AuthService instead.
-    /// Hash a password using bcrypt.
-    ///
-    /// # Deprecated
-    /// This method is deprecated. Use `AuthService::hash_password()` instead.
-    /// Password operations are handled by `services/auth/password.rs::PasswordManager`.
-    ///
-    /// # Arguments
-    /// * `password` - The plain text password to hash
-    ///
-    /// # Returns
-    /// `Result<String, String>` - The hashed password or an error message
-    #[deprecated(note = "Use AuthService::hash_password() instead. Password operations are handled by services/auth/password.rs")]
-    pub async fn hash_password(&self, password: &str) -> Result<String, String> {
-        hash(password, self.config.bcrypt_cost)
-            .map_err(|e| format!("Password hashing failed: {}", e))
-    }
-
-    /// Verify a password against a bcrypt hash.
-    ///
-    /// # Deprecated
-    /// This method is deprecated. Use `AuthService::verify_password()` instead.
-    /// Password operations are handled by `services/auth/password.rs::PasswordManager`.
-    ///
-    /// # Arguments
-    /// * `password` - The plain text password to verify
-    /// * `hash` - The bcrypt hash to verify against
-    ///
-    /// # Returns
-    /// `Result<bool, String>` - True if password matches, false otherwise, or an error message
-    #[deprecated(note = "Use AuthService::verify_password() instead. Password operations are handled by services/auth/password.rs")]
-    pub async fn verify_password(&self, password: &str, hash: &str) -> Result<bool, String> {
-        verify(password, hash).map_err(|e| format!("Password verification failed: {}", e))
-    }
+    // Deprecated password methods removed - use AuthService::hash_password(), AuthService::verify_password() instead
 
     pub async fn generate_jwt_token(
         &self,
@@ -445,34 +413,7 @@ impl SecurityService {
     }
 
     // NOTE: Password validation is handled by services/auth/password.rs (PasswordManager)
-    // This method is deprecated and should not be used. Use AuthService instead.
-    #[deprecated(note = "Use AuthService::validate_password_strength() instead. Password validation is handled by services/auth/password.rs")]
-    pub fn validate_password_strength(&self, password: &str) -> Result<(), String> {
-        if password.len() < 8 {
-            return Err("Password must be at least 8 characters long".to_string());
-        }
-
-        if !password.chars().any(|c| c.is_uppercase()) {
-            return Err("Password must contain at least one uppercase letter".to_string());
-        }
-
-        if !password.chars().any(|c| c.is_lowercase()) {
-            return Err("Password must contain at least one lowercase letter".to_string());
-        }
-
-        if !password.chars().any(|c| c.is_numeric()) {
-            return Err("Password must contain at least one number".to_string());
-        }
-
-        if !password
-            .chars()
-            .any(|c| "!@#$%^&*()_+-=[]{}|;:,.<>?".contains(c))
-        {
-            return Err("Password must contain at least one special character".to_string());
-        }
-
-        Ok(())
-    }
+    // Deprecated validate_password_strength method removed - use AuthService::validate_password_strength() instead
 
     // Security event logging
     pub async fn log_security_event(&self, event: SecurityEvent) {

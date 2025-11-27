@@ -195,14 +195,36 @@ app.get('/health', (req: Request, res: Response) => {
 });
 
 /**
- * List available tools
+ * List available tools (with caching) and MCP inventory
  */
-app.get('/tools', authenticate, async (req: Request, res: Response) => {
+const TOOLS_CACHE_TTL = 60000; // 60 seconds
+let cachedTools: { tools: any[]; at: number; latencyMs: number } | null = null;
+
+// Lightweight per-tool rate limiting for expensive operations
+const HEAVY_TOOL_CONFIG: Record<string, { cooldownMs: number }> = {
+  run_playwright: { cooldownMs: 30000 }, // 30s between calls
+  lighthouse_audit: { cooldownMs: 30000 },
+};
+const heavyToolLastRunAt: Record<string, number> = {};
+
+app.get('/servers', authenticate, async (req: Request, res: Response) => {
   const startTime = Date.now();
   try {
     const client = await initMCPClient();
+    const t0 = Date.now();
     const tools = await client.listTools();
-    
+    const latency = Date.now() - t0;
+
+    const servers = [
+      {
+        name: 'default-mcp',
+        connected: true,
+        toolCount: tools.tools?.length || 0,
+        latencyMs: latency,
+        timestamp: new Date().toISOString(),
+      },
+    ];
+
     logAudit({
       timestamp: new Date().toISOString(),
       method: req.method,
@@ -211,10 +233,65 @@ app.get('/tools', authenticate, async (req: Request, res: Response) => {
       success: true,
       duration: Date.now() - startTime,
     });
-    
+
+    res.json({ success: true, servers });
+  } catch (error: any) {
+    logAudit({
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      path: req.path,
+      ip: req.ip || 'unknown',
+      success: false,
+      duration: Date.now() - startTime,
+    });
+
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/tools', authenticate, async (req: Request, res: Response) => {
+  const startTime = Date.now();
+  try {
+    // Serve from cache if fresh
+    if (cachedTools && Date.now() - cachedTools.at < TOOLS_CACHE_TTL) {
+      logAudit({
+        timestamp: new Date().toISOString(),
+        method: req.method,
+        path: req.path,
+        ip: req.ip || 'unknown',
+        success: true,
+        duration: Date.now() - startTime,
+      });
+
+      return res.json({
+        success: true,
+        tools: cachedTools.tools,
+        cached: true,
+        latencyMs: cachedTools.latencyMs,
+      });
+    }
+
+    const client = await initMCPClient();
+    const t0 = Date.now();
+    const tools = await client.listTools();
+    const latency = Date.now() - t0;
+
+    cachedTools = { tools: tools.tools, at: Date.now(), latencyMs: latency };
+
+    logAudit({
+      timestamp: new Date().toISOString(),
+      method: req.method,
+      path: req.path,
+      ip: req.ip || 'unknown',
+      success: true,
+      duration: Date.now() - startTime,
+    });
+
     res.json({
       success: true,
       tools: tools.tools,
+      cached: false,
+      latencyMs: latency,
     });
   } catch (error: any) {
     logAudit({
@@ -225,7 +302,7 @@ app.get('/tools', authenticate, async (req: Request, res: Response) => {
       success: false,
       duration: Date.now() - startTime,
     });
-    
+
     res.status(500).json({
       success: false,
       error: error.message,
@@ -239,6 +316,25 @@ app.get('/tools', authenticate, async (req: Request, res: Response) => {
 app.post('/tools/:toolName', authenticate, async (req: Request, res: Response) => {
   const startTime = Date.now();
   const { toolName } = req.params;
+
+  // Rate limiting for heavy tools
+  const cfg = HEAVY_TOOL_CONFIG[toolName as keyof typeof HEAVY_TOOL_CONFIG];
+  if (cfg) {
+    const now = Date.now();
+    const last = heavyToolLastRunAt[toolName] || 0;
+    const since = now - last;
+    if (since < cfg.cooldownMs) {
+      const retryAfter = Math.ceil((cfg.cooldownMs - since) / 1000);
+      res.setHeader('Retry-After', String(retryAfter));
+      const body = {
+        ok: false,
+        error: { code: 'ERR_RATE_LIMITED', message: 'Tool rate limit exceeded', details: { retryAfterSeconds: retryAfter } },
+        meta: { tool: toolName, server: 'mcp-http-bridge', durationMs: Date.now() - startTime, timestamp: new Date().toISOString() }
+      };
+      return res.status(429).json(body);
+    }
+    heavyToolLastRunAt[toolName] = now;
+  }
   
   try {
     const args = req.body.args || {};

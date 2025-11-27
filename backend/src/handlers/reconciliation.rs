@@ -101,6 +101,18 @@ pub async fn batch_resolve_conflicts(
 }
 
 /// Get reconciliation jobs (global scope - all projects)
+/// 
+/// Retrieves a list of all reconciliation jobs across all projects.
+#[utoipa::path(
+    get,
+    path = "/api/v1/reconciliation/jobs",
+    tag = "Reconciliation",
+    responses(
+        (status = 200, description = "Jobs retrieved successfully", body = ApiResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_reconciliation_jobs(
     _data: web::Data<Database>,
     _config: web::Data<Config>,
@@ -117,6 +129,21 @@ pub async fn get_reconciliation_jobs(
 }
 
 /// Create reconciliation job (global scope)
+/// 
+/// Creates a new reconciliation job for comparing two data sources.
+#[utoipa::path(
+    post,
+    path = "/api/v1/reconciliation/jobs",
+    tag = "Reconciliation",
+    request_body = CreateReconciliationJobRequest,
+    responses(
+        (status = 201, description = "Job created successfully", body = ApiResponse),
+        (status = 400, description = "Invalid request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - no project access", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn create_reconciliation_job(
     req: web::Json<crate::handlers::types::CreateReconciliationJobRequest>,
     http_req: HttpRequest,
@@ -175,6 +202,22 @@ pub async fn create_reconciliation_job(
 }
 
 /// Get reconciliation job
+/// 
+/// Retrieves a specific reconciliation job by ID.
+#[utoipa::path(
+    get,
+    path = "/api/v1/reconciliation/jobs/{job_id}",
+    tag = "Reconciliation",
+    params(
+        ("job_id" = Uuid, Path, description = "Reconciliation job ID")
+    ),
+    responses(
+        (status = 200, description = "Job retrieved successfully", body = ApiResponse),
+        (status = 404, description = "Job not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_reconciliation_job(
     job_id: web::Path<Uuid>,
     http_req: HttpRequest,
@@ -382,6 +425,26 @@ pub async fn stop_reconciliation_job(
 }
 
 /// Get reconciliation results
+/// 
+/// Retrieves reconciliation results for a specific job with optional filtering and pagination.
+#[utoipa::path(
+    get,
+    path = "/api/v1/reconciliation/jobs/{job_id}/results",
+    tag = "Reconciliation",
+    params(
+        ("job_id" = Uuid, Path, description = "Reconciliation job ID"),
+        ("page" = Option<i64>, Query, description = "Page number (1-based)"),
+        ("per_page" = Option<i64>, Query, description = "Items per page (max 100)"),
+        ("match_type" = Option<String>, Query, description = "Filter by match type"),
+        ("lean" = Option<bool>, Query, description = "Return lean results (minimal data)")
+    ),
+    responses(
+        (status = 200, description = "Results retrieved successfully", body = ApiResponse),
+        (status = 404, description = "Job not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_reconciliation_results(
     job_id: web::Path<Uuid>,
     query: web::Query<ReconciliationResultsQuery>,

@@ -8,6 +8,7 @@ import { logger } from '../../services/logger';
 import { SkipLink, ARIALiveRegion } from '../ui/Accessibility';
 import { OnboardingAnalyticsDashboard } from '../onboarding/OnboardingAnalyticsDashboard';
 import { FeatureGate, UserRole } from '../ui/FeatureGate';
+import { EnhancedContextualHelp } from '../ui/EnhancedContextualHelp';
 import { ArrowLeft, Save, Bell, Shield, Palette, CheckCircle } from 'lucide-react';
 import { PageMeta } from '../seo/PageMeta';
 
@@ -243,8 +244,17 @@ const Settings: React.FC = () => {
             <ArrowLeft className="w-4 h-4 mr-2" aria-hidden="true" />
             <span>Back to Dashboard</span>
           </button>
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
+          <div className="flex items-center gap-3">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
+              <p className="text-gray-600 mt-2">Manage your account settings and preferences</p>
+            </div>
+            <EnhancedContextualHelp
+              feature="settings"
+              trigger="click"
+              position="bottom"
+            />
+          </div>
         </div>
 
         <div className="bg-white rounded-lg shadow-md overflow-hidden">

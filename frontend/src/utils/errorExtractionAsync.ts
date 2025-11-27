@@ -8,7 +8,7 @@ import {
   ExtractedErrorInfo,
   getErrorCodeFromStatusCode,
   extractCorrelationIdFromResponse,
-} from './errorExtraction';
+} from './common/errorHandling';
 
 /**
  * Extract error from fetch Response object asynchronously
@@ -109,7 +109,7 @@ export async function extractErrorFromFetchCall(
     }
 
     // Fall back to regular error extraction
-    const { extractErrorFromApiResponse } = await import('./errorExtraction');
+    const { extractErrorFromApiResponse } = await import('./common/errorHandling');
     const result = extractErrorFromApiResponse(error, defaultError);
 
     // Handle both sync and async results

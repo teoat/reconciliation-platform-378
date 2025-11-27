@@ -65,22 +65,34 @@ check_ssot_violations() {
   local file="$1"
   local violations=0
   
-  # Check for deprecated imports
-  while IFS= read -r deprecated_path; do
-    if grep -q "from ['\"]${deprecated_path}" "$file" 2>/dev/null; then
-      echo -e "${YELLOW}⚠️  SSOT Violation:${NC} $file uses deprecated path: $deprecated_path"
+  # Skip test files
+  if [[ "$file" =~ (__tests__|\.test\.|\.spec\.) ]]; then
+    return 0
+  fi
+  
+  # Check for actual import statements (not comments)
+  # Match: import ... from "path" or import ... from 'path'
+  local deprecated_patterns=(
+    "errorExtraction['\"]"  # errorExtraction.ts (removed)
+    "passwordValidation['\"]"  # passwordValidation.ts (deprecated)
+    "/services/errorHandler['\"]"  # services/errorHandler.ts (deprecated)
+  )
+  
+  # Extract import lines (excluding comments and errorExtractionAsync which is a wrapper)
+  local import_lines=$(grep -E "^[[:space:]]*import.*from" "$file" 2>/dev/null | grep -v "^[[:space:]]*//" | grep -v "errorExtractionAsync" || true)
+  
+  if [ -z "$import_lines" ]; then
+    return 0
+  fi
+  
+  for pattern in "${deprecated_patterns[@]}"; do
+    if echo "$import_lines" | grep -qE "$pattern"; then
+      local matching_line=$(echo "$import_lines" | grep -E "$pattern" | head -1 | sed 's/^[[:space:]]*//')
+      echo -e "${YELLOW}⚠️  SSOT Violation:${NC} $file"
+      echo -e "   ${RED}→${NC} Uses deprecated import: $matching_line"
       ((violations++)) || true
-      
-      if [ "$AUTO_FIX" = true ]; then
-        # Extract SSOT path from SSOT_LOCK.yml
-        local ssot_path=$(yq eval ".sources_of_truth.*.deprecated_paths[] | select(. == \"$deprecated_path\") | parent | .path" "$SSOT_LOCK_FILE" 2>/dev/null || echo "")
-        if [ -n "$ssot_path" ]; then
-          echo -e "${GREEN}  → Auto-fixing:${NC} Replacing with $ssot_path"
-          # Auto-fix would go here (requires sed/perl)
-        fi
-      fi
     fi
-  done < <(yq eval '.sources_of_truth.*.deprecated_paths[]' "$SSOT_LOCK_FILE" 2>/dev/null || true)
+  done
   
   return $violations
 }
@@ -110,9 +122,43 @@ fi
 echo ""
 
 echo -e "${GREEN}2. Checking for deprecated imports...${NC}"
+DEPRECATED_FILES=0
+TEMP_FILE=$(mktemp)
 while IFS= read -r file; do
-  check_ssot_violations "$file" || ((VIOLATIONS++)) || true
-done < <(find "$PROJECT_ROOT/frontend/src" -type f \( -name "*.ts" -o -name "*.tsx" \) 2>/dev/null | head -100)
+  if check_ssot_violations "$file" > "$TEMP_FILE" 2>&1; then
+    if [ -s "$TEMP_FILE" ]; then
+      cat "$TEMP_FILE"
+      ((DEPRECATED_FILES++)) || true
+      ((VIOLATIONS++)) || true
+    fi
+  fi
+done < <(find "$PROJECT_ROOT/frontend/src" -type f \( -name "*.ts" -o -name "*.tsx" \) ! -path "*/__tests__/*" ! -name "*.test.*" ! -name "*.spec.*" 2>/dev/null)
+rm -f "$TEMP_FILE"
+
+if [ $DEPRECATED_FILES -eq 0 ]; then
+  echo -e "${GREEN}✅ No deprecated imports found${NC}"
+else
+  echo -e "${YELLOW}Found $DEPRECATED_FILES file(s) with deprecated imports${NC}"
+fi
+echo ""
+
+echo -e "${GREEN}3. Checking for root-level directory violations...${NC}"
+ROOT_VIOLATIONS=0
+for dir in utils hooks pages types store contexts constants; do
+  if [ -d "$PROJECT_ROOT/$dir" ] && [ "$(find "$PROJECT_ROOT/$dir" -type f 2>/dev/null | wc -l)" -gt 0 ]; then
+    echo -e "${RED}❌ Root-level directory violation:${NC} $dir/ still contains files"
+    echo -e "   ${YELLOW}→${NC} Should be moved to frontend/src/$dir/"
+    ((ROOT_VIOLATIONS++)) || true
+    ((VIOLATIONS++)) || true
+  fi
+done
+
+if [ $ROOT_VIOLATIONS -eq 0 ]; then
+  echo -e "${GREEN}✅ No root-level directory violations${NC}"
+else
+  echo -e "${RED}Found $ROOT_VIOLATIONS root-level directory violation(s)${NC}"
+fi
+echo ""
 
 echo ""
 

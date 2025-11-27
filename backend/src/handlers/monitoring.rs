@@ -18,6 +18,18 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 }
 
 /// Get monitoring health status
+/// 
+/// Returns the health status of the monitoring service.
+#[utoipa::path(
+    get,
+    path = "/api/v1/monitoring/health",
+    tag = "Monitoring",
+    responses(
+        (status = 200, description = "Monitoring service is healthy", body = ApiResponse),
+        (status = 503, description = "Monitoring service is unhealthy", body = ApiResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_health() -> Result<HttpResponse, AppError> {
     let monitoring_service = MonitoringService::new();
     
@@ -41,6 +53,18 @@ pub async fn get_health() -> Result<HttpResponse, AppError> {
 }
 
 /// Get Prometheus metrics
+/// 
+/// Returns system metrics in Prometheus format.
+#[utoipa::path(
+    get,
+    path = "/api/v1/monitoring/metrics",
+    tag = "Monitoring",
+    responses(
+        (status = 200, description = "Metrics retrieved successfully", body = ApiResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_metrics() -> Result<HttpResponse, AppError> {
     let monitoring_service = MonitoringService::new();
     let metrics = monitoring_service.get_system_metrics().await?;
@@ -56,6 +80,18 @@ pub async fn get_metrics() -> Result<HttpResponse, AppError> {
 }
 
 /// Get active alerts
+/// 
+/// Returns a list of currently active system alerts.
+#[utoipa::path(
+    get,
+    path = "/api/v1/monitoring/alerts",
+    tag = "Monitoring",
+    responses(
+        (status = 200, description = "Alerts retrieved successfully", body = ApiResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_alerts() -> Result<HttpResponse, AppError> {
     use crate::services::monitoring::AlertManager;
     
@@ -71,6 +107,18 @@ pub async fn get_alerts() -> Result<HttpResponse, AppError> {
 }
 
 /// Get system metrics
+/// 
+/// Returns comprehensive system performance metrics.
+#[utoipa::path(
+    get,
+    path = "/api/v1/monitoring/system",
+    tag = "Monitoring",
+    responses(
+        (status = 200, description = "System metrics retrieved successfully", body = ApiResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_system_metrics() -> Result<HttpResponse, AppError> {
     let monitoring_service = MonitoringService::new();
     let metrics = monitoring_service.get_system_metrics().await?;

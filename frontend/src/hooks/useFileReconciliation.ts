@@ -7,7 +7,7 @@ import {
   ProjectAnalytics,
 } from '../services/fileReconciliationService';
 import { ApiResponse } from '../services/apiClient';
-import { getErrorMessageFromApiError } from '../utils/errorExtraction';
+import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
 
 // File Upload Hook
 export const useFileUpload = () => {

@@ -10,7 +10,8 @@ import {
   extractErrorFromFetchCall,
   extractErrorFromFetchResponseAsync,
 } from '../utils/errorExtractionAsync';
-import type { ExtractedErrorInfo } from '../utils/errorExtraction';
+// Note: errorExtractionAsync.ts may also need migration - checking dependencies
+import type { ExtractedErrorInfo } from '@/utils/common/errorHandling';
 
 export interface ApiErrorHandlerOptions {
   component?: string;

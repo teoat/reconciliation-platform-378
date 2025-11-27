@@ -56,3 +56,7 @@ pub use zero_trust::{ZeroTrustMiddleware, ZeroTrustConfig};
 // Rate limiting middleware (per-endpoint) - renamed to avoid conflict
 pub mod rate_limit;
 pub use rate_limit::{PerEndpointRateLimitMiddleware, PerEndpointRateLimitConfig, PerEndpointRateLimiter};
+
+// API versioning middleware
+pub mod api_versioning;
+pub use api_versioning::{ApiVersioningMiddleware, ApiVersioningConfig};

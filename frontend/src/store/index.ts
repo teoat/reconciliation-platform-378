@@ -1,6 +1,15 @@
 // ============================================================================
 // UNIFIED STATE MANAGEMENT - SINGLE SOURCE OF TRUTH
 // ============================================================================
+//
+// @deprecated This file is deprecated. Use `store/unifiedStore.ts` instead.
+// This file is kept for backward compatibility and will be removed in a future version.
+//
+// Migration guide:
+// - Import from `store/unifiedStore.ts` instead of `store/index.ts`
+// - All slices are now in `store/slices/`
+// - All types are now in `store/types/`
+//
 
 import { configureStore } from '@reduxjs/toolkit';
 import { createSlice } from '@reduxjs/toolkit';
@@ -17,7 +26,7 @@ import type {
   BackendReconciliationJob,
   BackendReconciliationRecord,
 } from '../services/apiClient/types';
-import { getErrorMessageFromApiError } from '../utils/errorExtraction';
+import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
 
 // Removed unused type imports
 

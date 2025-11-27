@@ -23,6 +23,18 @@ pub async fn system_status() -> Result<HttpResponse, AppError> {
 }
 
 /// Get system metrics
+/// 
+/// Returns comprehensive system performance metrics.
+#[utoipa::path(
+    get,
+    path = "/api/v1/system/metrics",
+    tag = "System",
+    responses(
+        (status = 200, description = "System metrics retrieved successfully", body = ApiResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_metrics(
     _data: web::Data<Database>,
     _config: web::Data<crate::config::Config>,

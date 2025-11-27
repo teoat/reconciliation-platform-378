@@ -6,6 +6,7 @@ import { SkipLink } from '@/components/ui/SkipLink';
 import { useKeyboardNavigation } from '@/hooks/useKeyboardNavigation';
 import { UserFriendlyError } from '@/components/ui/UserFriendlyError';
 import { ContextualHelp } from '@/components/ui/ContextualHelp';
+import { EnhancedContextualHelp } from '@/components/ui/EnhancedContextualHelp';
 import { useErrorRecovery } from '@/hooks/useErrorRecovery';
 import { usePageOrchestration } from '@/hooks/usePageOrchestration';
 import {

@@ -7,6 +7,15 @@ set +e
 export RUST_LOG_STYLE=always
 export RUST_BACKTRACE=${RUST_BACKTRACE:-full}
 
+# Ensure Python unbuffered mode if available
+export PYTHONUNBUFFERED=1
+
+# Install netcat if not available (for database readiness check)
+if ! command -v nc >/dev/null 2>&1; then
+    echo "⚠️  netcat (nc) not found, installing..." >&2
+    apt-get update -qq >/dev/null 2>&1 && apt-get install -y -qq netcat-openbsd >/dev/null 2>&1 || true
+fi
+
 # Print environment for debugging
 echo "🚀 Starting backend with environment:" >&2
 if [ -n "$DATABASE_URL" ]; then
@@ -66,8 +75,44 @@ echo "About to execute binary..." >&2
 echo "  HOST: $HOST" >&2
 echo "  PORT: $PORT" >&2
 
+# Wait for database to be ready before starting
+if [ -n "$DATABASE_URL" ]; then
+    echo "⏳ Waiting for database to be ready..." >&2
+    DB_HOST=$(echo "$DATABASE_URL" | sed -n 's/.*@\([^:]*\):.*/\1/p')
+    DB_PORT=$(echo "$DATABASE_URL" | sed -n 's/.*:\([0-9]*\)\/.*/\1/p')
+    
+    if [ -z "$DB_HOST" ]; then
+        DB_HOST="postgres"
+    fi
+    if [ -z "$DB_PORT" ]; then
+        DB_PORT="5432"
+    fi
+    
+    MAX_RETRIES=30
+    RETRY_COUNT=0
+    while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        if nc -z "$DB_HOST" "$DB_PORT" 2>/dev/null; then
+            echo "✅ Database is ready at $DB_HOST:$DB_PORT" >&2
+            break
+        fi
+        RETRY_COUNT=$((RETRY_COUNT + 1))
+        if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+            echo "⏳ Waiting for database... ($RETRY_COUNT/$MAX_RETRIES)" >&2
+            sleep 2
+        else
+            echo "❌ Database not ready after $MAX_RETRIES attempts" >&2
+            echo "💡 Check that PostgreSQL container is running and healthy" >&2
+            exit 1
+        fi
+    done
+else
+    echo "⚠️  DATABASE_URL not set, skipping database readiness check" >&2
+fi
+
 # Enhanced error capture: Run binary and capture exit code
 # This allows us to see if the binary crashes immediately
+# Use unbuffered output and ensure all output is visible
+# Don't use exec - we need to capture the exit code
 /app/reconciliation-backend 2>&1
 EXIT_CODE=$?
 

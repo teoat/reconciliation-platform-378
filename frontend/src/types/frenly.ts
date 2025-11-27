@@ -1,66 +1,69 @@
-export interface FrenlyState {
-  isVisible: boolean;
-  isMinimized: boolean;
-  currentPage: string;
-  userProgress: {
-    completedSteps: string[];
-    currentStep: string;
-    totalSteps: number;
-  };
-  personality: {
-    mood: 'happy' | 'excited' | 'calm' | 'concerned' | 'celebrating';
-    energy: 'low' | 'medium' | 'high';
-    helpfulness: number;
-  };
-  preferences: {
-    showTips: boolean;
-    showCelebrations: boolean;
-    showWarnings: boolean;
-    voiceEnabled: boolean;
-    animationSpeed: 'slow' | 'normal' | 'fast';
-  };
-  conversationHistory: FrenlyMessage[];
-  activeMessage?: FrenlyMessage;
+// Frenly AI Meta Agent Types and Interfaces
+export interface FrenlyMessage {
+  id: string
+  type: 'greeting' | 'tip' | 'warning' | 'celebration' | 'question' | 'instruction' | 'encouragement'
+  content: string
+  action?: {
+    text: string
+    onClick: () => void
+  }
+  timestamp: Date
+  page?: string
+  priority: 'low' | 'medium' | 'high'
+  dismissible: boolean
+  autoHide?: number // milliseconds
 }
 
-export interface FrenlyMessage {
-  id: string;
-  type:
-    | 'greeting'
-    | 'tip'
-    | 'warning'
-    | 'celebration'
-    | 'help'
-    | 'progress'
-    | 'error'
-    | 'instruction'
-    | 'encouragement';
-  content: string;
-  timestamp: Date;
-  page: string;
-  priority: 'low' | 'medium' | 'high';
-  dismissible: boolean;
-  autoHide?: number;
-  actions?: Array<{
-    label: string;
-    action: () => void;
-    type: 'primary' | 'secondary';
-  }>;
-  action?: {
-    onClick: () => void;
-    text: string;
-  };
+export interface FrenlyState {
+  isVisible: boolean
+  isMinimized: boolean
+  currentPage: string
+  userProgress: {
+    completedSteps: string[]
+    currentStep: string
+    totalSteps: number
+  }
+  personality: {
+    mood: 'happy' | 'excited' | 'concerned' | 'proud' | 'curious'
+    energy: 'low' | 'medium' | 'high'
+    helpfulness: number // 0-100
+  }
+  preferences: {
+    showTips: boolean
+    showCelebrations: boolean
+    showWarnings: boolean
+    voiceEnabled: boolean
+    animationSpeed: 'slow' | 'normal' | 'fast'
+  }
+  conversationHistory: FrenlyMessage[]
+  activeMessage?: FrenlyMessage
 }
 
 export interface FrenlyAnimation {
-  type: 'bounce' | 'shake' | 'pulse' | 'spin' | 'fade' | 'slide';
-  duration: number;
-  repeat?: number;
-  delay?: number;
+  type: 'bounce' | 'wave' | 'spin' | 'pulse' | 'shake' | 'dance' | 'blink'
+  duration: number
+  delay?: number
+  loop?: boolean
 }
 
 export interface FrenlyExpression {
-  eyes: 'happy' | 'excited' | 'calm' | 'concerned' | 'sleepy' | 'surprised' | 'wink' | 'normal';
-  mouth: 'smile' | 'open' | 'frown' | 'neutral' | 'laugh' | 'big-smile';
-  accessories: string[];
+  eyes: 'normal' | 'happy' | 'excited' | 'concerned' | 'sleepy' | 'wink'
+  mouth: 'smile' | 'big-smile' | 'neutral' | 'surprised' | 'thinking'
+  accessories: string[] // hat, glasses, etc.
+}
+
+export interface PageGuidance {
+  page: string
+  title: string
+  description: string
+  steps: Array<{
+    id: string
+    title: string
+    description: string
+    completed: boolean
+    tips: string[]
+  }>
+  tips: string[]
+  warnings: string[]
+  celebrations: string[]
 }

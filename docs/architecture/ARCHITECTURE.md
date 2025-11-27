@@ -1,7 +1,14 @@
 # System Architecture
 
+**Last Updated**: January 2025  
+**Status**: Active  
+**Version**: 2.0.0
+
+---
+
 ## Overview
-The Reconciliation Platform follows a modern microservices architecture with clear separation of concerns.
+
+The Reconciliation Platform follows a modern microservices architecture with clear separation of concerns, implementing Single Source of Truth (SSOT) principles and CQRS patterns for scalability and maintainability.
 
 ## Architecture Diagram
 ```
@@ -21,18 +28,20 @@ The Reconciliation Platform follows a modern microservices architecture with cle
 ## Components
 
 ### Frontend (React + TypeScript)
-- **Location**: `frontend-simple/`
+- **Location**: `frontend/`
 - **Framework**: React 18 + Vite
 - **Styling**: Tailwind CSS
 - **State Management**: Redux Toolkit
 - **Routing**: React Router
+- **Code Organization**: SSOT-compliant structure (see [SSOT Guidance](./SSOT_GUIDANCE.md))
 
 ### Backend (Rust)
-- **Location**: `reconciliation-rust/`
+- **Location**: `backend/`
 - **Framework**: Actix-Web
 - **Database**: Diesel ORM + PostgreSQL
-- **Authentication**: JWT tokens
+- **Authentication**: JWT tokens with password management (see [Password System](../analysis/PASSWORD_SYSTEM_RESOLUTION.md))
 - **Real-time**: WebSocket support
+- **Architecture**: CQRS pattern with event-driven architecture (see [CQRS and Event-Driven Architecture](./CQRS_AND_EVENT_DRIVEN_ARCHITECTURE.md))
 
 ### Infrastructure
 - **Containerization**: Docker + Docker Compose
@@ -46,3 +55,40 @@ The Reconciliation Platform follows a modern microservices architecture with cle
 3. **Reconciliation**: AI-powered matching algorithms
 4. **Collaboration**: Real-time updates via WebSocket
 5. **Export**: Results exported in multiple formats
+
+## Recent Improvements
+
+### SSOT Consolidation
+- **Status**: ✅ Complete (Phases 1-3)
+- **Impact**: Reduced code duplication, improved maintainability
+- **Migration Guide**: See [SSOT Migration Guide](../development/SSOT_MIGRATION_GUIDE.md)
+
+### CQRS & Event-Driven Architecture
+- **Status**: ✅ Implemented
+- **Benefits**: Better separation of concerns, scalability
+- **Documentation**: See [CQRS and Event-Driven Architecture](./CQRS_AND_EVENT_DRIVEN_ARCHITECTURE.md)
+
+### Password System Consolidation
+- **Status**: ✅ Complete
+- **SSOT Location**: `backend/src/services/auth/password.rs`
+- **Documentation**: See [Password System Resolution](../analysis/PASSWORD_SYSTEM_RESOLUTION.md)
+
+### User Experience Enhancements (Phase 3)
+- **Status**: ✅ Implemented
+- **Features**: 
+  - Contextual help expansion (see [Contextual Help Expansion Plan](../features/onboarding/CONTEXTUAL_HELP_EXPANSION_PLAN.md))
+  - Progressive feature disclosure (see [Progressive Feature Disclosure Guide](../features/onboarding/PROGRESSIVE_FEATURE_DISCLOSURE_GUIDE.md))
+  - Smart tip system (see [Smart Tip System Guide](../features/onboarding/SMART_TIP_SYSTEM_GUIDE.md))
+- **Benefits**: Improved user onboarding, feature discovery, and productivity
+
+## Related Documentation
+
+- [SSOT Guidance](./SSOT_GUIDANCE.md) - Single Source of Truth principles
+- [Infrastructure](./INFRASTRUCTURE.md) - Infrastructure design
+- [CQRS and Event-Driven Architecture](./CQRS_AND_EVENT_DRIVEN_ARCHITECTURE.md) - CQRS patterns
+- [SSOT Migration Guide](../development/SSOT_MIGRATION_GUIDE.md) - Migration guide
+
+---
+
+**Last Updated**: January 2025  
+**Maintainer**: Architecture Team

@@ -4,8 +4,10 @@
 
 use crate::errors::AppResult;
 use crate::services::metrics::{MetricsService, metric_names};
+use crate::handlers::types::ApiResponse;
 use actix_web::{web, HttpResponse, Responder};
 use std::sync::Arc;
+use utoipa;
 
 /// Configure metrics routes
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
@@ -16,6 +18,18 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 }
 
 /// Get all metrics
+/// 
+/// Retrieves all collected system metrics.
+#[utoipa::path(
+    get,
+    path = "/api/v1/metrics",
+    tag = "Metrics",
+    responses(
+        (status = 200, description = "Metrics retrieved successfully", body = ApiResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_metrics(
     metrics_service: web::Data<Arc<MetricsService>>,
 ) -> AppResult<impl Responder> {
@@ -24,6 +38,18 @@ pub async fn get_metrics(
 }
 
 /// Get metrics summary
+/// 
+/// Retrieves a summary of key system metrics.
+#[utoipa::path(
+    get,
+    path = "/api/v1/metrics/summary",
+    tag = "Metrics",
+    responses(
+        (status = 200, description = "Metrics summary retrieved successfully", body = ApiResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_metrics_summary(
     metrics_service: web::Data<Arc<MetricsService>>,
 ) -> AppResult<impl Responder> {
@@ -32,6 +58,22 @@ pub async fn get_metrics_summary(
 }
 
 /// Get specific metric
+/// 
+/// Retrieves a specific metric by name.
+#[utoipa::path(
+    get,
+    path = "/api/v1/metrics/{metric_name}",
+    tag = "Metrics",
+    params(
+        ("metric_name" = String, Path, description = "Metric name")
+    ),
+    responses(
+        (status = 200, description = "Metric retrieved successfully", body = ApiResponse),
+        (status = 404, description = "Metric not found", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_metric(
     metrics_service: web::Data<Arc<MetricsService>>,
     path: web::Path<String>,
@@ -49,6 +91,18 @@ pub async fn get_metric(
 }
 
 /// Health check with metrics
+/// 
+/// Returns health status along with key metrics.
+#[utoipa::path(
+    get,
+    path = "/api/v1/metrics/health",
+    tag = "Metrics",
+    responses(
+        (status = 200, description = "Health and metrics retrieved successfully", body = ApiResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn health_with_metrics(
     metrics_service: web::Data<Arc<MetricsService>>,
 ) -> AppResult<impl Responder> {

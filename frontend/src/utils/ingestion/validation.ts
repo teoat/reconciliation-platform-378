@@ -1,161 +1,128 @@
-// Validation utilities for ingestion
-import { UploadedFile, DataRow, ColumnInfo } from '../../types/ingestion';
-import type { DataValidation } from '../../types/ingestion/index';
+// Data validation utilities for ingestion
+import type { DataRow, DataValidation, UploadedFile } from '../../types/ingestion';
 
 /**
- * Validates file type against allowed types
+ * Validates data based on file type and rules
  */
-export const validateFileType = (
-  file: File,
-  allowedTypes: string[] = ['.csv', '.xlsx', '.xls', '.json']
-): boolean => {
-  const fileName = file.name.toLowerCase();
-  return allowedTypes.some((type) => fileName.endsWith(type));
-};
-
-/**
- * Validates file size against maximum size
- */
-export const validateFileSize = (file: File, maxSizeMB: number = 50): boolean => {
-  const maxSizeBytes = maxSizeMB * 1024 * 1024;
-  return file.size <= maxSizeBytes;
-};
-
-/**
- * Validates uploaded file data
- */
-export const validateUploadedFile = (file: UploadedFile): DataValidation[] => {
+export const validateData = (
+  data: DataRow[],
+  fileType: UploadedFile['fileType']
+): DataValidation[] => {
   const validations: DataValidation[] = [];
 
-  // Check if file has data
-  if (!file.data || file.data.length === 0) {
+  if (data.length === 0) {
     validations.push({
       field: 'data',
-      rule: 'hasData',
+      rule: 'Empty Data',
       passed: false,
       message: 'File contains no data',
       severity: 'error',
     });
+    return validations;
   }
 
-  // Check if file has columns
-  if (!file.columns || file.columns.length === 0) {
-    validations.push({
-      field: 'columns',
-      rule: 'hasColumns',
-      passed: false,
-      message: 'File contains no column definitions',
-      severity: 'error',
+  // File type specific validations
+  if (fileType === 'expenses' || fileType === 'bank_statement') {
+    // Check for required fields
+    const requiredFields = fileType === 'expenses' 
+      ? ['date', 'amount', 'description']
+      : ['date', 'amount'];
+
+    requiredFields.forEach((field) => {
+      const missingCount = data.filter((row) => !row[field] || row[field] === '').length;
+      if (missingCount > 0) {
+        validations.push({
+          field,
+          rule: 'Required Field',
+          passed: missingCount === 0,
+          message: `${missingCount} records missing ${field}`,
+          severity: missingCount > data.length * 0.1 ? 'error' : 'warning',
+        });
+      }
     });
-  }
 
-  // Check for minimum records
-  if (file.data && file.data.length < 1) {
-    validations.push({
-      field: 'records',
-      rule: 'minimumRecords',
-      passed: false,
-      message: 'File must contain at least 1 record',
-      severity: 'warning',
-    });
-  }
+    // Validate amounts
+    const invalidAmounts = data.filter((row) => {
+      if (!row.amount) return true;
+      const amount = typeof row.amount === 'number' ? row.amount : parseFloat(String(row.amount));
+      return isNaN(amount) || amount <= 0;
+    }).length;
 
-  return validations;
-};
-
-/**
- * Validates data row against column definitions
- */
-export const validateDataRow = (row: DataRow, columns: ColumnInfo[]): DataValidation[] => {
-  const validations: DataValidation[] = [];
-
-  columns.forEach((column) => {
-    const value = row[column.name];
-
-    // Check required fields
-    if (column.nullable === false && (value === null || value === undefined || value === '')) {
+    if (invalidAmounts > 0) {
       validations.push({
-        field: column.name,
-        rule: 'required',
-        passed: false,
-        message: `${column.name} is required`,
+        field: 'amount',
+        rule: 'Valid Amount',
+        passed: invalidAmounts === 0,
+        message: `${invalidAmounts} records have invalid amounts`,
         severity: 'error',
       });
     }
 
-    // Check data type
-    if (value !== null && value !== undefined && value !== '') {
-      const actualType = typeof value;
-      let expectedType = 'string';
+    // Validate dates
+    const invalidDates = data.filter((row) => {
+      if (!row.date) return true;
+      const date = new Date(String(row.date));
+      return isNaN(date.getTime());
+    }).length;
 
-      switch (column.type) {
-        case 'number':
-        case 'currency':
-          expectedType = 'number';
-          break;
-        case 'date':
-          expectedType = 'string'; // Dates are typically strings in CSV
-          break;
-        case 'boolean':
-          expectedType = 'boolean';
-          break;
-      }
-
-      if (actualType !== expectedType) {
-        validations.push({
-          field: column.name,
-          rule: 'dataType',
-          passed: false,
-          message: `${column.name} should be ${expectedType} but is ${actualType}`,
-          severity: 'warning',
-        });
-      }
-    }
-
-    // Check uniqueness if required
-    if (column.unique && value !== null && value !== undefined) {
-      // This would need to be checked against all rows, so we'll skip for now
-      // In a real implementation, this would check against the entire dataset
-    }
-  });
-
-  return validations;
-};
-
-/**
- * Validates entire dataset
- */
-export const validateDataset = (data: DataRow[], columns: ColumnInfo[]): DataValidation[] => {
-  const validations: DataValidation[] = [];
-
-  data.forEach((row, index) => {
-    const rowValidations = validateDataRow(row, columns);
-    rowValidations.forEach((validation) => {
+    if (invalidDates > 0) {
       validations.push({
-        ...validation,
-        message: `Row ${index + 1}: ${validation.message}`,
+        field: 'date',
+        rule: 'Valid Date',
+        passed: invalidDates === 0,
+        message: `${invalidDates} records have invalid dates`,
+        severity: 'warning',
       });
-    });
-  });
+    }
+  }
 
   return validations;
 };
 
 /**
- * Checks if all validations pass
+ * Validates a single field value
  */
-export const hasValidationErrors = (validations: DataValidation[]): boolean => {
-  return validations.some((v) => v.severity === 'error' || v.status === 'failed');
-};
-
-/**
- * Gets validation summary
- */
-export const getValidationSummary = (validations: DataValidation[]) => {
-  return {
-    total: validations.length,
-    errors: validations.filter((v) => v.severity === 'error' || v.status === 'failed').length,
-    warnings: validations.filter((v) => v.severity === 'warning').length,
-    info: validations.filter((v) => v.severity === 'info').length,
-  };
+export const validateField = (
+  field: string,
+  value: any,
+  rules: string[]
+): DataValidation | null => {
+  for (const rule of rules) {
+    switch (rule) {
+      case 'required':
+        if (value === null || value === undefined || value === '') {
+          return {
+            field,
+            rule: 'required',
+            passed: false,
+            message: `${field} is required`,
+            severity: 'error',
+          };
+        }
+        break;
+      case 'number':
+        if (isNaN(Number(value))) {
+          return {
+            field,
+            rule: 'number',
+            passed: false,
+            message: `${field} must be a number`,
+            severity: 'error',
+          };
+        }
+        break;
+      case 'positive':
+        if (Number(value) <= 0) {
+          return {
+            field,
+            rule: 'positive',
+            passed: false,
+            message: `${field} must be positive`,
+            severity: 'error',
+          };
+        }
+        break;
+    }
+  }
+  return null;
 };

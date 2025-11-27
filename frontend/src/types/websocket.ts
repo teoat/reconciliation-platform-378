@@ -1,20 +1,6 @@
-// ============================================================================
-// WEBSOCKET TYPES
-// ============================================================================
-
-import type { ID, Timestamp } from './backend-aligned';
+// types/websocket.ts
 
 export interface WebSocketMessage {
-  type: string;
-  payload: Record<string, unknown>;
-  timestamp: Timestamp;
-  id?: ID;
-}
-
-export interface WebSocketConfig {
-  url: string;
-  protocols?: string[];
-  reconnectInterval?: number;
-  maxReconnectAttempts?: number;
-  heartbeatInterval?: number;
+  event: string;
+  data: any;
 }

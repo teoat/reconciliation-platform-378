@@ -4,7 +4,7 @@ import { useLoading } from '@/hooks/useLoading';
 import { RetryUtility } from '@/utils/retryUtility';
 import { apiClient } from '@/services/apiClient';
 import { useWebSocketIntegration } from '@/hooks/useWebSocketIntegration';
-import { getErrorMessageFromApiError } from '@/utils/errorExtraction';
+import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
 import type { ReconciliationJob, ReconciliationProgress } from '../types';
 import type { BackendReconciliationJob } from '@/services/apiClient/types';
 

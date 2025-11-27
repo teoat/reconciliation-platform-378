@@ -5,9 +5,41 @@
 import { apiClient } from '../apiClient';
 import type { Project } from '../../types/backend-aligned';
 import type { ProjectSettings } from '../../types/index';
-import { getErrorMessageFromApiError } from '../../utils/errorExtraction';
+import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
 
+/**
+ * Project Management API Service
+ * 
+ * Handles all project-related API operations including fetching, creating, updating,
+ * and deleting projects. Supports project settings, data sources, and statistics.
+ * 
+ * @example
+ * ```typescript
+ * const result = await ProjectsApiService.getProjects({ page: 1, per_page: 20 });
+ * const projects = result.projects;
+ * ```
+ */
 export class ProjectsApiService {
+  /**
+   * Fetches a paginated list of projects with optional filtering and search.
+   * 
+   * @param params - Query parameters
+   * @param params.page - Page number (default: 1)
+   * @param params.per_page - Items per page (default: 20)
+   * @param params.search - Search query to filter projects by name
+   * @param params.status - Filter projects by status
+   * @returns Promise resolving to projects list and pagination info
+   * @throws {Error} If request fails
+   * 
+   * @example
+   * ```typescript
+   * const result = await ProjectsApiService.getProjects({
+   *   page: 1,
+   *   per_page: 20,
+   *   status: 'active'
+   * });
+   * ```
+   */
   static async getProjects(
     params: {
       page?: number;
@@ -50,6 +82,18 @@ export class ProjectsApiService {
     }
   }
 
+  /**
+   * Fetches a single project by ID.
+   * 
+   * @param projectId - Project ID to fetch
+   * @returns Promise resolving to project data
+   * @throws {Error} If project not found or request fails
+   * 
+   * @example
+   * ```typescript
+   * const project = await ProjectsApiService.getProjectById('project-123');
+   * ```
+   */
   static async getProjectById(projectId: string) {
     try {
       const response = await apiClient.getProjectById(projectId);
@@ -62,6 +106,25 @@ export class ProjectsApiService {
     }
   }
 
+  /**
+   * Creates a new project.
+   * 
+   * @param projectData - Project creation data
+   * @param projectData.name - Project name (required)
+   * @param projectData.description - Project description (optional)
+   * @param projectData.settings - Project settings (optional)
+   * @returns Promise resolving to created project data
+   * @throws {Error} If validation fails, name exists, or request fails
+   * 
+   * @example
+   * ```typescript
+   * const project = await ProjectsApiService.createProject({
+   *   name: 'New Project',
+   *   description: 'Project description',
+   *   settings: { autoSave: true }
+   * });
+   * ```
+   */
   static async createProject(projectData: {
     name: string;
     description?: string;
@@ -78,6 +141,26 @@ export class ProjectsApiService {
     }
   }
 
+  /**
+   * Updates an existing project's information.
+   * 
+   * @param projectId - Project ID to update
+   * @param projectData - Project data to update (all fields optional)
+   * @param projectData.name - New project name
+   * @param projectData.description - New description
+   * @param projectData.settings - New settings
+   * @param projectData.status - New status
+   * @returns Promise resolving to updated project data
+   * @throws {Error} If project not found, validation fails, or request fails
+   * 
+   * @example
+   * ```typescript
+   * const updated = await ProjectsApiService.updateProject('project-123', {
+   *   name: 'Updated Name',
+   *   status: 'archived'
+   * });
+   * ```
+   */
   static async updateProject(
     projectId: string,
     projectData: {
@@ -98,6 +181,18 @@ export class ProjectsApiService {
     }
   }
 
+  /**
+   * Deletes a project.
+   * 
+   * @param projectId - Project ID to delete
+   * @returns Promise resolving to true if deletion successful
+   * @throws {Error} If project not found, permission denied, or request fails
+   * 
+   * @example
+   * ```typescript
+   * await ProjectsApiService.deleteProject('project-123');
+   * ```
+   */
   static async deleteProject(projectId: string) {
     try {
       const response = await apiClient.deleteProject(projectId);
@@ -110,6 +205,18 @@ export class ProjectsApiService {
     }
   }
 
+  /**
+   * Fetches project settings.
+   * 
+   * @param projectId - Project ID
+   * @returns Promise resolving to project settings
+   * @throws {Error} If project not found or request fails
+   * 
+   * @example
+   * ```typescript
+   * const settings = await ProjectsApiService.getProjectSettings('project-123');
+   * ```
+   */
   static async getProjectSettings(projectId: string) {
     try {
       const response = await apiClient.get(`/api/projects/${projectId}/settings`);
@@ -122,6 +229,22 @@ export class ProjectsApiService {
     }
   }
 
+  /**
+   * Updates project settings.
+   * 
+   * @param projectId - Project ID
+   * @param settings - New settings to apply
+   * @returns Promise resolving to updated settings
+   * @throws {Error} If project not found, validation fails, or request fails
+   * 
+   * @example
+   * ```typescript
+   * const updated = await ProjectsApiService.updateProjectSettings('project-123', {
+   *   autoSave: true,
+   *   notifications: false
+   * });
+   * ```
+   */
   static async updateProjectSettings(projectId: string, settings: ProjectSettings) {
     try {
       const response = await apiClient.post(`/api/projects/${projectId}/settings`, settings);
@@ -134,6 +257,18 @@ export class ProjectsApiService {
     }
   }
 
+  /**
+   * Fetches data sources for a project.
+   * 
+   * @param projectId - Project ID
+   * @returns Promise resolving to data sources list
+   * @throws {Error} If project not found or request fails
+   * 
+   * @example
+   * ```typescript
+   * const dataSources = await ProjectsApiService.getDataSources('project-123');
+   * ```
+   */
   static async getDataSources(projectId: string) {
     try {
       const response = await apiClient.getDataSources(projectId);
@@ -146,6 +281,22 @@ export class ProjectsApiService {
     }
   }
 
+  /**
+   * Creates a new data source for a project.
+   * 
+   * @param projectId - Project ID
+   * @param dataSourceData - Data source creation data
+   * @param dataSourceData.name - Data source name
+   * @param dataSourceData.type - Data source type
+   * @param dataSourceData.config - Data source configuration
+   * @returns Promise resolving to created data source
+   * @throws {Error} If not implemented (use uploadFile instead) or request fails
+   * 
+   * @example
+   * ```typescript
+   * // Note: This method is not yet implemented, use uploadFile instead
+   * ```
+   */
   static async createDataSource(
     projectId: string,
     dataSourceData: {
@@ -163,6 +314,19 @@ export class ProjectsApiService {
     }
   }
 
+  /**
+   * Deletes a data source from a project.
+   * 
+   * @param projectId - Project ID
+   * @param dataSourceId - Data source ID to delete
+   * @returns Promise resolving to true if deletion successful
+   * @throws {Error} If data source not found or request fails
+   * 
+   * @example
+   * ```typescript
+   * await ProjectsApiService.deleteDataSource('project-123', 'data-source-456');
+   * ```
+   */
   static async deleteDataSource(projectId: string, dataSourceId: string) {
     try {
       const response = await apiClient.deleteDataSource(projectId, dataSourceId);
@@ -175,6 +339,19 @@ export class ProjectsApiService {
     }
   }
 
+  /**
+   * Fetches project statistics including reconciliation metrics.
+   * 
+   * @param projectId - Project ID
+   * @returns Promise resolving to project statistics
+   * @throws {Error} If project not found or request fails
+   * 
+   * @example
+   * ```typescript
+   * const stats = await ProjectsApiService.getProjectStats('project-123');
+   * // Returns: { totalRecords, matchedRecords, unmatchedRecords, confidenceScore }
+   * ```
+   */
   static async getProjectStats(projectId: string) {
     try {
       const response = await apiClient.getProjectStats(projectId);

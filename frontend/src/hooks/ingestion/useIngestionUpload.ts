@@ -8,7 +8,7 @@ import { ApiService } from '../../services/ApiService';
 import { useToast } from '../useToast';
 import { logger } from '@/services/logger';
 import { UploadedFile } from '@/types/ingestion';
-import { getErrorMessage, toError } from '@/utils/errorExtraction';
+import { getErrorMessage, toError } from '@/utils/common/errorHandling';
 
 export interface UseIngestionUploadOptions {
   projectId: string | null;

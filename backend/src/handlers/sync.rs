@@ -5,6 +5,7 @@
 use actix_web::{web, HttpRequest, HttpResponse, Result};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use utoipa;
 
 use crate::errors::AppError;
 use crate::handlers::helpers::extract_user_id;
@@ -21,7 +22,7 @@ pub struct SyncRequest {
 }
 
 /// Response for sync operations
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct SyncResponse {
     pub synced: bool,
     pub key: String,
@@ -38,6 +39,18 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 }
 
 /// Get sync service status
+/// 
+/// Returns the current status of the offline sync service.
+#[utoipa::path(
+    get,
+    path = "/api/v1/sync/status",
+    tag = "Sync",
+    responses(
+        (status = 200, description = "Sync status retrieved successfully", body = ApiResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_sync_status() -> Result<HttpResponse, AppError> {
     #[derive(Serialize)]
     struct StatusResponse {
@@ -57,6 +70,21 @@ pub async fn get_sync_status() -> Result<HttpResponse, AppError> {
 }
 
 /// Sync data to server
+/// 
+/// Synchronizes offline data to the server.
+#[utoipa::path(
+    post,
+    path = "/api/v1/sync/data",
+    tag = "Sync",
+    request_body = SyncRequest,
+    responses(
+        (status = 200, description = "Data synced successfully", body = ApiResponse<SyncResponse>),
+        (status = 400, description = "Invalid request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn sync_data(
     req: web::Json<SyncRequest>,
     http_req: HttpRequest,
@@ -93,6 +121,22 @@ pub async fn sync_data(
 }
 
 /// Get synced data by key
+/// 
+/// Retrieves previously synced data by key.
+#[utoipa::path(
+    get,
+    path = "/api/v1/sync/data/{key}",
+    tag = "Sync",
+    params(
+        ("key" = String, Path, description = "Data key")
+    ),
+    responses(
+        (status = 200, description = "Data retrieved successfully", body = ApiResponse),
+        (status = 404, description = "Data not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_synced_data(
     path: web::Path<String>,
 ) -> Result<HttpResponse, AppError> {
@@ -116,6 +160,18 @@ pub async fn get_synced_data(
 }
 
 /// Get all unsynced data
+/// 
+/// Retrieves all data that has not been synced to the server.
+#[utoipa::path(
+    get,
+    path = "/api/v1/sync/unsynced",
+    tag = "Sync",
+    responses(
+        (status = 200, description = "Unsynced data retrieved successfully", body = ApiResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_unsynced_data(
     http_req: HttpRequest,
 ) -> Result<HttpResponse, AppError> {
@@ -133,6 +189,19 @@ pub async fn get_unsynced_data(
 }
 
 /// Recover and sync unsynced data
+/// 
+/// Attempts to recover and sync previously unsynced data.
+#[utoipa::path(
+    post,
+    path = "/api/v1/sync/recover",
+    tag = "Sync",
+    responses(
+        (status = 200, description = "Data recovery initiated successfully", body = ApiResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 500, description = "Recovery failed", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn recover_unsynced(
     http_req: HttpRequest,
 ) -> Result<HttpResponse, AppError> {

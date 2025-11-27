@@ -1,23 +1,6 @@
-export interface ProcessedRecordData {
-  [key: string]: unknown;
-}
+// types/data.ts
 
-export interface ReconciliationSourceData {
-  [key: string]: unknown;
-}
-
-export interface MatchingResultDetails {
-  [key: string]: unknown;
-}
-
-export interface AuditEntryDetails {
-  [key: string]: unknown;
-}
-
-export interface UploadedFileData {
-  [key: string]: unknown;
-}
-
-export interface ExtractedContentMetadata {
-  [key: string]: unknown;
+export interface Data {
+  id: string;
+  [key: string]: any;
 }

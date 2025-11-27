@@ -7,6 +7,7 @@ use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+use utoipa;
 
 use crate::database::Database;
 use crate::errors::AppError;
@@ -30,7 +31,7 @@ pub struct OnboardingProgressRequest {
 }
 
 /// Onboarding progress response
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub struct OnboardingProgressResponse {
     pub user_id: Uuid,
     pub onboarding_type: String,
@@ -47,7 +48,7 @@ pub struct OnboardingProgressResponse {
 }
 
 /// Device registration request
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct DeviceRegistrationRequest {
     pub device_id: String,
     pub device_name: Option<String>,
@@ -64,6 +65,22 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 }
 
 /// Get onboarding progress for user
+/// 
+/// Retrieves the onboarding progress for the authenticated user.
+#[utoipa::path(
+    get,
+    path = "/api/v1/onboarding/progress",
+    tag = "Onboarding",
+    params(
+        ("type" = String, Query, description = "Onboarding type (default: 'initial')")
+    ),
+    responses(
+        (status = 200, description = "Onboarding progress retrieved successfully", body = ApiResponse<OnboardingProgressResponse>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_onboarding_progress(
     http_req: HttpRequest,
     query: web::Query<serde_json::Map<String, serde_json::Value>>,
@@ -129,6 +146,21 @@ pub async fn get_onboarding_progress(
 }
 
 /// Sync onboarding progress to server
+/// 
+/// Synchronizes onboarding progress to the server.
+#[utoipa::path(
+    post,
+    path = "/api/v1/onboarding/progress",
+    tag = "Onboarding",
+    request_body = OnboardingProgressRequest,
+    responses(
+        (status = 200, description = "Progress synced successfully", body = ApiResponse<OnboardingProgressResponse>),
+        (status = 400, description = "Invalid request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn sync_onboarding_progress(
     http_req: HttpRequest,
     req: web::Json<OnboardingProgressRequest>,
@@ -194,6 +226,20 @@ pub async fn sync_onboarding_progress(
 }
 
 /// Register device for cross-device continuity
+/// 
+/// Registers a device for the authenticated user.
+#[utoipa::path(
+    post,
+    path = "/api/v1/onboarding/devices",
+    tag = "Onboarding",
+    request_body = DeviceRegistrationRequest,
+    responses(
+        (status = 200, description = "Device registered successfully", body = ApiResponse),
+        (status = 400, description = "Invalid request", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn register_device(
     http_req: HttpRequest,
     req: web::Json<DeviceRegistrationRequest>,
@@ -235,6 +281,18 @@ pub async fn register_device(
 }
 
 /// Get user's registered devices
+/// 
+/// Retrieves all registered devices for the authenticated user.
+#[utoipa::path(
+    get,
+    path = "/api/v1/onboarding/devices",
+    tag = "Onboarding",
+    responses(
+        (status = 200, description = "User devices retrieved successfully", body = ApiResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_user_devices(
     _http_req: HttpRequest,
     _data: web::Data<Database>,

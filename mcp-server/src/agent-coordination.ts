@@ -292,6 +292,19 @@ const DetectConflictsSchema = z.object({
   files: z.array(z.string()).min(1).max(1000),
 });
 
+// Batch operations schemas
+const LockFilesSchema = z.object({
+  files: z.array(z.string()).min(1).max(100),
+  agentId: z.string().min(1).max(100),
+  reason: z.string().max(200).optional(),
+  ttl: z.number().int().min(60).max(86400).optional(),
+});
+
+const UnlockFilesSchema = z.object({
+  files: z.array(z.string()).min(1).max(100),
+  agentId: z.string().min(1).max(100),
+});
+
 // Tool definitions
 const tools: Tool[] = [
   // Agent Registration
@@ -532,6 +545,53 @@ const tools: Tool[] = [
         },
       },
       required: ['file', 'agentId'],
+    },
+  },
+  {
+    name: 'agent_lock_files',
+    description: 'Lock multiple files for exclusive editing (batch)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'File paths (relative to project root)',
+        },
+        agentId: {
+          type: 'string',
+          description: 'Agent identifier',
+        },
+        reason: {
+          type: 'string',
+          description: 'Reason for locking',
+        },
+        ttl: {
+          type: 'number',
+          description: 'Lock TTL in seconds (default: 3600)',
+          default: COORDINATION_TTL,
+        },
+      },
+      required: ['files', 'agentId'],
+    },
+  },
+  {
+    name: 'agent_unlock_files',
+    description: 'Release multiple file locks (batch)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        files: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'File paths',
+        },
+        agentId: {
+          type: 'string',
+          description: 'Agent identifier (must be the one who locked them)',
+        },
+      },
+      required: ['files', 'agentId'],
     },
   },
   {
@@ -976,6 +1036,88 @@ async function handleTool(name: string, args: any): Promise<any> {
       };
     }
 
+    case 'agent_lock_files': {
+      const validated = LockFilesSchema.parse(args);
+      const { files, agentId, reason = '', ttl = COORDINATION_TTL } = validated;
+
+      const results: { locked: string[]; skipped: Array<{ file: string; by: string }>; errors: Array<{ file: string; error: string }> } = {
+        locked: [],
+        skipped: [],
+        errors: [],
+      };
+
+      for (const file of files) {
+        const normalizedFile = normalizeFilePath(file);
+        try {
+          const existingLockStr = await redis.get(FILE_LOCK_KEY(normalizedFile));
+          if (existingLockStr) {
+            const existingLock = JSON.parse(existingLockStr);
+            if (existingLock.agentId !== agentId) {
+              results.skipped.push({ file: normalizedFile, by: existingLock.agentId });
+              continue;
+            }
+          }
+
+          const lock = {
+            file: normalizedFile,
+            agentId,
+            reason,
+            lockedAt: new Date().toISOString(),
+            expiresAt: new Date(Date.now() + ttl * 1000).toISOString(),
+          };
+
+          await redis.setEx(FILE_LOCK_KEY(normalizedFile), ttl, JSON.stringify(lock));
+          fileLockCache.set(normalizedFile, lock);
+          results.locked.push(normalizedFile);
+        } catch (e: any) {
+          results.errors.push({ file: normalizedFile, error: e?.message || String(e) });
+        }
+      }
+
+      return {
+        success: true,
+        ...results,
+      };
+    }
+
+    case 'agent_unlock_files': {
+      const validated = UnlockFilesSchema.parse(args);
+      const { files, agentId } = validated;
+
+      const results: { unlocked: string[]; skipped: Array<{ file: string; by?: string }>; errors: Array<{ file: string; error: string }> } = {
+        unlocked: [],
+        skipped: [],
+        errors: [],
+      };
+
+      for (const file of files) {
+        const normalizedFile = normalizeFilePath(file);
+        try {
+          const lockStr = await redis.get(FILE_LOCK_KEY(normalizedFile));
+          if (!lockStr) {
+            results.skipped.push({ file: normalizedFile });
+            continue;
+          }
+          const lock = JSON.parse(lockStr);
+          if (lock.agentId !== agentId) {
+            results.skipped.push({ file: normalizedFile, by: lock.agentId });
+            continue;
+          }
+
+          await redis.del(FILE_LOCK_KEY(normalizedFile));
+          fileLockCache.delete(normalizedFile);
+          results.unlocked.push(normalizedFile);
+        } catch (e: any) {
+          results.errors.push({ file: normalizedFile, error: e?.message || String(e) });
+        }
+      }
+
+      return {
+        success: true,
+        ...results,
+      };
+    }
+
     case 'agent_check_file_lock': {
       const { file } = args;
       const normalizedFile = normalizeFilePath(file);
@@ -1025,8 +1167,12 @@ async function handleTool(name: string, args: any): Promise<any> {
     case 'agent_list_locked_files': {
       const { agentId = null } = args;
       
-      // Get all lock keys (this is a simplified approach - in production, maintain a set)
-      const keys = await redis.keys(`${KEY_PREFIX}lock:*`);
+      // Use SCAN iterator to avoid blocking on large keyspaces
+      const keys: string[] = [];
+      for await (const key of redis.scanIterator({ MATCH: `${KEY_PREFIX}lock:*`, COUNT: 100 })) {
+        keys.push(key as string);
+      }
+
       const locks = await Promise.all(
         keys.map(async (key) => {
           const lockStr = await redis.get(key);

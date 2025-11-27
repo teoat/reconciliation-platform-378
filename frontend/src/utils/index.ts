@@ -55,7 +55,9 @@ export * from './memoryOptimization';
 export { ErrorHandler, ErrorSeverity } from './errorHandler';
 export * from './errorHandling';
 export * from './errorMessages';
-export * from './errorExtraction';
+// Deprecated: errorExtraction.ts - use @/utils/common/errorHandling instead
+// export * from './errorExtraction'; // REMOVED - use common/errorHandling
+// errorExtractionAsync.ts is kept as a wrapper for async operations
 export * from './errorExtractionAsync';
 export * from './errorSanitization';
 export * from './errorStandardization';
@@ -115,9 +117,9 @@ export * from './security';
 // Explicit export to avoid duplicate with cspNonce.ts
 export { buildCSPHeader } from './securityConfig';
 export * from './securityAudit';
-export * from './sanitize';
-// Legacy exports - deprecated, use common/validation instead
-export * from './passwordValidation';
+// Legacy exports removed - use common/sanitization and common/validation instead
+// export * from './sanitize'; // REMOVED - use common/sanitization (already exported above)
+// export * from './passwordValidation'; // REMOVED - use common/validation (already exported above)
 export * from './inputValidation';
 export * from './fileValidation';
 export * from './cspNonce';

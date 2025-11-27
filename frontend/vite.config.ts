@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react-swc';
 import { resolve } from 'path';
 import { cspNoncePlugin } from './vite-plugin-csp-nonce';
+import viteCompression from 'vite-plugin-compression2';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -12,6 +13,23 @@ export default defineConfig(({ mode }) => {
       react(),
       // CSP nonce injection for production builds
       cspNoncePlugin({ enabled: isProduction }),
+      // Compression plugin for production builds
+      ...(isProduction
+        ? [
+            viteCompression({
+              algorithm: 'gzip',
+              ext: '.gz',
+              threshold: 1024, // Only compress files > 1KB
+              deleteOriginFile: false,
+            }),
+            viteCompression({
+              algorithm: 'brotliCompress',
+              ext: '.br',
+              threshold: 1024,
+              deleteOriginFile: false,
+            }),
+          ]
+        : []),
     ],
     server: {
       port: 1000,
@@ -188,11 +206,30 @@ export default defineConfig(({ mode }) => {
               if (id.includes('/src/services/security') || id.includes('/src/services/auth')) {
                 return 'services-security';
               }
+              if (id.includes('/src/services/workflow-sync')) {
+                return 'services-workflow-sync';
+              }
               if (id.includes('/src/utils/indonesian') || id.includes('/src/utils/validation')) {
                 return 'utils-validation';
               }
+              if (id.includes('/src/utils/common')) {
+                return 'utils-common';
+              }
               // Keep other utils/services together but smaller
               return 'utils-services';
+            }
+
+            // Split large page components
+            if (id.includes('/src/pages/CashflowEvaluationPage')) {
+              return 'page-cashflow';
+            }
+            if (id.includes('/src/pages/AuthPage')) {
+              return 'page-auth';
+            }
+
+            // Split collaboration components
+            if (id.includes('/src/components/collaboration')) {
+              return 'components-collaboration';
             }
           },
           // Optimize chunk naming for better caching
@@ -224,8 +261,8 @@ export default defineConfig(({ mode }) => {
           return false;
         },
       },
-      // Optimize chunk size warnings
-      chunkSizeWarningLimit: 300,
+      // Optimize chunk size warnings (increased to 500KB for better splitting)
+      chunkSizeWarningLimit: 500,
       // Enable CSS code splitting
       cssCodeSplit: true,
       // Optimize asset handling

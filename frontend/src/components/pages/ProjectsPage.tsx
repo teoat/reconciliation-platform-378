@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProjects } from '../../hooks/useApi';
 import Button from '../ui/Button';
+import { EnhancedContextualHelp } from '../ui/EnhancedContextualHelp';
 
 const ProjectsPage: React.FC = () => {
   const { projects, isLoading, error, fetchProjects } = useProjects();
@@ -42,7 +43,14 @@ const ProjectsPage: React.FC = () => {
   return (
     <div className="projects-page p-6">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-gray-900">Projects</h1>
+          <EnhancedContextualHelp
+            feature="projects"
+            trigger="click"
+            position="bottom"
+          />
+        </div>
         <Button
           onClick={() => navigate('/projects/new')}
           className="bg-blue-600 hover:bg-blue-700 text-white"

@@ -39,6 +39,6 @@ registerFeature({
 });
 
 // Re-export components
-export { AnalyticsDashboard } from '../../components/AnalyticsDashboard';
-export { default as ReconciliationAnalytics } from '../../components/ReconciliationAnalytics';
+export { AnalyticsDashboard } from '../../components/dashboard/AnalyticsDashboard';
+export { default as ReconciliationAnalytics } from '../../components/reports/ReconciliationAnalytics';
 

@@ -4,6 +4,7 @@ use actix_web::{web, HttpResponse, Result};
 use std::sync::Arc;
 use std::time::Duration;
 use uuid::Uuid;
+use utoipa;
 
 use crate::config::Config;
 use crate::database::Database;
@@ -31,6 +32,19 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 }
 
 /// Get dashboard data
+/// 
+/// Retrieves aggregated analytics data for the dashboard.
+#[utoipa::path(
+    get,
+    path = "/api/v1/analytics/dashboard",
+    tag = "Analytics",
+    responses(
+        (status = 200, description = "Dashboard data retrieved successfully", body = ApiResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_dashboard_data(
     data: web::Data<Database>,
     cache: web::Data<Arc<MultiLevelCache>>,
@@ -54,6 +68,23 @@ pub async fn get_dashboard_data(
 }
 
 /// Get project statistics
+/// 
+/// Retrieves detailed statistics for a specific project.
+#[utoipa::path(
+    get,
+    path = "/api/v1/analytics/projects/{project_id}/stats",
+    tag = "Analytics",
+    params(
+        ("project_id" = Uuid, Path, description = "Project ID")
+    ),
+    responses(
+        (status = 200, description = "Project statistics retrieved successfully", body = ApiResponse),
+        (status = 404, description = "Project not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - no project access", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_project_stats(
     project_id: web::Path<Uuid>,
     http_req: actix_web::HttpRequest,
@@ -103,6 +134,22 @@ pub async fn get_project_stats(
 }
 
 /// Get user activity statistics
+/// 
+/// Retrieves activity statistics for a specific user.
+#[utoipa::path(
+    get,
+    path = "/api/v1/analytics/users/{user_id}/activity",
+    tag = "Analytics",
+    params(
+        ("user_id" = Uuid, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "User activity retrieved successfully", body = ApiResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_user_activity(
     user_id: web::Path<Uuid>,
     data: web::Data<Database>,
@@ -129,6 +176,19 @@ pub async fn get_user_activity(
 }
 
 /// Get reconciliation statistics
+/// 
+/// Retrieves aggregated statistics for reconciliation jobs.
+#[utoipa::path(
+    get,
+    path = "/api/v1/analytics/reconciliation/stats",
+    tag = "Analytics",
+    responses(
+        (status = 200, description = "Reconciliation statistics retrieved successfully", body = ApiResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_reconciliation_stats(
     data: web::Data<Database>,
     cache: web::Data<Arc<MultiLevelCache>>,

@@ -15,7 +15,7 @@ import {
   CircuitBreakerStatus,
 } from '../ui';
 import { useErrorManagement } from '../../hooks/useErrorManagement';
-import { extractErrorFromApiResponse } from '../../utils/errorExtraction';
+import { extractErrorFromApiResponse } from '@/utils/common/errorHandling';
 
 /**
  * Complete Error Handling Example Page

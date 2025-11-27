@@ -30,6 +30,23 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 }
 
 /// Get users endpoint
+/// 
+/// Retrieves a paginated list of users with optional filtering.
+#[utoipa::path(
+    get,
+    path = "/api/v1/users",
+    tag = "Users",
+    params(
+        ("page" = Option<i64>, Query, description = "Page number (1-based)"),
+        ("per_page" = Option<i64>, Query, description = "Items per page (max 100)")
+    ),
+    responses(
+        (status = 200, description = "Users retrieved successfully", body = PaginatedResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_users(
     query: web::Query<UserQueryParams>,
     cache: web::Data<MultiLevelCache>,
@@ -60,6 +77,21 @@ pub async fn get_users(
 }
 
 /// Create user endpoint
+/// 
+/// Creates a new user account with the provided information.
+#[utoipa::path(
+    post,
+    path = "/api/v1/users",
+    tag = "Users",
+    request_body = CreateUserRequest,
+    responses(
+        (status = 201, description = "User created successfully", body = User),
+        (status = 400, description = "Invalid request data", body = ErrorResponse),
+        (status = 409, description = "User already exists", body = ErrorResponse),
+        (status = 422, description = "Validation error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn create_user(
     req: web::Json<crate::services::user::CreateUserRequest>,
     user_service: web::Data<Arc<UserService>>,
@@ -70,6 +102,22 @@ pub async fn create_user(
 }
 
 /// Get user endpoint
+/// 
+/// Retrieves a specific user by ID.
+#[utoipa::path(
+    get,
+    path = "/api/v1/users/{user_id}",
+    tag = "Users",
+    params(
+        ("user_id" = Uuid, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "User retrieved successfully", body = User),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_user(
     user_id: web::Path<Uuid>,
     user_service: web::Data<Arc<UserService>>,
@@ -83,6 +131,24 @@ pub async fn get_user(
 }
 
 /// Update user endpoint
+/// 
+/// Updates an existing user's information.
+#[utoipa::path(
+    put,
+    path = "/api/v1/users/{user_id}",
+    tag = "Users",
+    params(
+        ("user_id" = Uuid, Path, description = "User ID")
+    ),
+    request_body = UpdateUserRequest,
+    responses(
+        (status = 200, description = "User updated successfully", body = User),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 422, description = "Validation error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn update_user(
     user_id: web::Path<Uuid>,
     req: web::Json<crate::services::user::UpdateUserRequest>,
@@ -107,6 +173,22 @@ pub async fn update_user(
 }
 
 /// Delete user endpoint
+/// 
+/// Deletes a user account permanently.
+#[utoipa::path(
+    delete,
+    path = "/api/v1/users/{user_id}",
+    tag = "Users",
+    params(
+        ("user_id" = Uuid, Path, description = "User ID")
+    ),
+    responses(
+        (status = 204, description = "User deleted successfully"),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn delete_user(
     user_id: web::Path<Uuid>,
     user_service: web::Data<Arc<UserService>>,
@@ -120,6 +202,23 @@ pub async fn delete_user(
 }
 
 /// Search users endpoint
+/// 
+/// Searches for users by query string with pagination.
+#[utoipa::path(
+    get,
+    path = "/api/v1/users/search",
+    tag = "Users",
+    params(
+        ("q" = Option<String>, Query, description = "Search query"),
+        ("page" = Option<i32>, Query, description = "Page number (1-based)"),
+        ("per_page" = Option<i32>, Query, description = "Items per page (max 100)")
+    ),
+    responses(
+        (status = 200, description = "Search results retrieved", body = PaginatedResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn search_users(
     query: web::Query<SearchQueryParams>,
     user_service: web::Data<Arc<UserService>>,
@@ -137,6 +236,18 @@ pub async fn search_users(
 }
 
 /// Get user statistics endpoint
+/// 
+/// Retrieves aggregated user statistics.
+#[utoipa::path(
+    get,
+    path = "/api/v1/users/statistics",
+    tag = "Users",
+    responses(
+        (status = 200, description = "Statistics retrieved successfully", body = ApiResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_user_statistics(
     _req: actix_web::HttpRequest,
     user_service: web::Data<Arc<UserService>>,
@@ -152,6 +263,22 @@ pub async fn get_user_statistics(
 }
 
 /// Get user preferences endpoint
+/// 
+/// Retrieves user preferences by user ID.
+#[utoipa::path(
+    get,
+    path = "/api/v1/users/{user_id}/preferences",
+    tag = "Users",
+    params(
+        ("user_id" = Uuid, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "Preferences retrieved successfully", body = ApiResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_user_preferences(
     user_id: web::Path<Uuid>,
     user_service: web::Data<Arc<UserService>>,
@@ -170,6 +297,24 @@ pub async fn get_user_preferences(
 }
 
 /// Update user preferences endpoint
+/// 
+/// Updates user preferences.
+#[utoipa::path(
+    put,
+    path = "/api/v1/users/{user_id}/preferences",
+    tag = "Users",
+    params(
+        ("user_id" = Uuid, Path, description = "User ID")
+    ),
+    request_body = UserPreferences,
+    responses(
+        (status = 200, description = "Preferences updated successfully", body = ApiResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 422, description = "Validation error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn update_user_preferences(
     user_id: web::Path<Uuid>,
     req: web::Json<crate::services::user::preferences::UserPreferences>,

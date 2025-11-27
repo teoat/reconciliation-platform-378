@@ -1,10 +1,10 @@
-import { createClient, RedisClientType } from 'redis';
+import { createClient } from 'redis';
 
-let client: RedisClientType | null = null;
-let connecting: Promise<RedisClientType> | null = null;
+let client: any = null;
+let connecting: Promise<any> | null = null;
 const CONNECT_TIMEOUT = 5000;
 
-export async function getRedis(url: string): Promise<RedisClientType> {
+export async function getRedis(url: string): Promise<any> {
   if (client?.isOpen) return client;
   if (connecting) return connecting;
 

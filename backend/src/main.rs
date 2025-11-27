@@ -8,9 +8,11 @@ use actix_web::middleware::Compress;
 use chrono::Utc;
 use futures::future;
 use reconciliation_backend::{
+    // api::openapi::ApiDoc,  // Temporarily disabled
     config::Config,
     handlers,
     middleware::{
+        api_versioning::{ApiVersioningMiddleware, ApiVersioningConfig},
         correlation_id::CorrelationIdMiddleware,
         error_handler::ErrorHandlerMiddleware,
         AuthRateLimitMiddleware,
@@ -24,6 +26,8 @@ use reconciliation_backend::{
     },
     startup::{resilience_config_from_env, AppStartup},
 };
+// Swagger UI temporarily disabled - uncomment when needed
+// use utoipa_swagger_ui::SwaggerUi;
 
 // Set up panic handler BEFORE any static initialization that might panic
 // This must be at the module level, not in main()
@@ -543,6 +547,8 @@ async fn async_main() -> std::io::Result<()> {
             .wrap(PerEndpointRateLimitMiddleware::new())
             // Add zero-trust security middleware (if enabled)
             .wrap(ZeroTrustMiddleware::new(zero_trust_config.clone()))
+            // Add API versioning middleware (adds version headers and deprecation warnings)
+            .wrap(ApiVersioningMiddleware::new(ApiVersioningConfig::default()))
             // Add CORS middleware (after other middleware)
             .wrap(cors)
             // Configure app data with resilience-protected services

@@ -5,7 +5,8 @@ use uuid::Uuid;
 use validator::Validate;
 
 /// Generic API response wrapper
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
+#[schema(as = ApiResponse)]
 pub struct ApiResponse<T> {
     pub success: bool,
     pub data: Option<T>,
@@ -14,7 +15,8 @@ pub struct ApiResponse<T> {
 }
 
 /// Paginated response wrapper
-#[derive(Serialize)]
+#[derive(Serialize, utoipa::ToSchema)]
+#[schema(as = PaginatedResponse)]
 pub struct PaginatedResponse<T> {
     pub data: Vec<T>,
     pub total: i64,
@@ -24,7 +26,7 @@ pub struct PaginatedResponse<T> {
 }
 
 /// Search query parameters
-#[derive(Deserialize)]
+#[derive(Deserialize, utoipa::ToSchema)]
 pub struct SearchQueryParams {
     pub q: Option<String>,
     pub page: Option<i32>,
@@ -32,14 +34,14 @@ pub struct SearchQueryParams {
 }
 
 /// User query parameters
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UserQueryParams {
     pub page: Option<i64>,
     pub per_page: Option<i64>,
 }
 
 /// Reconciliation results query parameters
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct ReconciliationResultsQuery {
     pub page: Option<i64>,
     pub per_page: Option<i64>,

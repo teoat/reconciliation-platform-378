@@ -412,7 +412,8 @@ impl ResponseError for AppError {
 }
 
 /// Standardized error response format
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
+#[schema(as = ErrorResponse)]
 pub struct ErrorResponse {
     pub error: String,
     pub message: String,

@@ -16,7 +16,7 @@ import { FileText } from 'lucide-react';
 import { Target } from 'lucide-react';
 import { TrendingUp } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
-import { FileDropzone } from '../components/EnhancedDropzone';
+import { FileDropzone } from '../components/files/EnhancedDropzone';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import StatusBadge from '../components/ui/StatusBadge';

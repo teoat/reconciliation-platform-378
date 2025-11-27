@@ -1,299 +1,122 @@
-import { useState, useCallback } from 'react';
-interface DataRow {
-  [key: string]: string | number | boolean | Date | null;
-}
-import { ColumnInfo } from '@/types/ingestion';
-import { sortByProperty, filterByProperty, paginate } from '@/utils/common/filteringSorting';
+// Data preview hook
+import { useState, useCallback, useMemo } from 'react';
+import type { DataRow, SortConfig, FilterConfig, PaginationConfig, ColumnValue } from '../../types/ingestion';
 
-export type FilterOperator =
-  | 'equals'
-  | 'contains'
-  | 'startsWith'
-  | 'endsWith'
-  | 'greaterThan'
-  | 'lessThan'
-  | 'between';
-
-export interface DataPreviewState {
-  data: DataRow[];
-  columns: ColumnInfo[];
-  filteredData: DataRow[];
-  sortedData: DataRow[];
-  paginatedData: DataRow[];
-  currentPage: number;
-  pageSize: number;
-  totalPages: number;
-  totalRecords: number;
-  sortField: string | null;
-  sortDirection: 'asc' | 'desc';
-  filters: Array<{
-    field: string;
-    value: unknown;
-    operator: FilterOperator;
-  }>;
-  isLoading: boolean;
-  error: string | null;
-}
-
-export interface DataPreviewActions {
-  setData: (data: DataRow[], columns: ColumnInfo[]) => void;
-  setPage: (page: number) => void;
-  setPageSize: (pageSize: number) => void;
-  sort: (field: string, direction?: 'asc' | 'desc') => void;
-  addFilter: (field: string, value: unknown, operator?: string) => void;
-  removeFilter: (field: string) => void;
-  clearFilters: () => void;
-  clearSort: () => void;
-  refresh: () => void;
-  exportData: (format: 'csv' | 'json') => void;
-}
-
-export const useDataPreview = () => {
-  const [state, setState] = useState<DataPreviewState>({
-    data: [],
-    columns: [],
-    filteredData: [],
-    sortedData: [],
-    paginatedData: [],
-    currentPage: 1,
-    pageSize: 25,
-    totalPages: 0,
-    totalRecords: 0,
-    sortField: null,
-    sortDirection: 'asc',
-    filters: [],
-    isLoading: false,
-    error: null,
+export const useDataPreview = (data: DataRow[] = []) => {
+  const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
+  const [filters, setFilters] = useState<FilterConfig[]>([]);
+  const [pagination, setPagination] = useState<PaginationConfig>({
+    page: 1,
+    pageSize: 50,
+    totalRecords: data.length,
   });
 
-  const setData = useCallback((data: DataRow[], columns: ColumnInfo[]) => {
-    setState((prev) => ({
-      ...prev,
-      data,
-      columns,
-      filteredData: data,
-      sortedData: data,
-      totalRecords: data.length,
-      currentPage: 1,
+  const handleSort = useCallback((field: string) => {
+    setSortConfig((prev) => ({
+      field,
+      direction: prev?.field === field && prev.direction === 'asc' ? 'desc' : 'asc',
     }));
-
-    // Apply current filters and sorting
-    updateFilteredData(data);
   }, []);
 
-  const updateFilteredData = useCallback((data: DataRow[]) => {
-    setState((prev) => {
-      let filteredData = data;
-
-      // Apply filters
-      prev.filters.forEach((filter) => {
-        filteredData = filterByProperty(filteredData, filter.field, filter.value, filter.operator);
-      });
-
-      // Apply sorting
-      let sortedData = filteredData;
-      if (prev.sortField) {
-        sortedData = sortByProperty(filteredData, prev.sortField, prev.sortDirection);
+  const addFilter = useCallback((filter: FilterConfig) => {
+    setFilters((prev) => {
+      const existing = prev.find((f) => f.field === filter.field);
+      if (existing) {
+        return prev.map((f) => (f.field === filter.field ? filter : f));
       }
-
-      // Apply pagination
-      const paginationResult = paginate(sortedData, prev.currentPage, prev.pageSize);
-
-      return {
-        ...prev,
-        filteredData,
-        sortedData,
-        paginatedData: paginationResult.items,
-        totalPages: paginationResult.totalPages,
-        totalRecords: paginationResult.totalItems,
-      };
-    });
-  }, []);
-
-  const setPage = useCallback((page: number) => {
-    setState((prev) => {
-      const paginationResult = paginate(prev.sortedData, page, prev.pageSize);
-      return {
-        ...prev,
-        currentPage: page,
-        paginatedData: paginationResult.items,
-      };
-    });
-  }, []);
-
-  const setPageSize = useCallback((pageSize: number) => {
-    setState((prev) => {
-      const paginationResult = paginate(prev.sortedData, 1, pageSize);
-      return {
-        ...prev,
-        pageSize,
-        currentPage: 1,
-        paginatedData: paginationResult.items,
-        totalPages: paginationResult.totalPages,
-      };
-    });
-  }, []);
-
-  const sort = useCallback((field: string, direction: 'asc' | 'desc' = 'asc') => {
-    setState((prev) => {
-      const sortedData = sortByProperty(prev.filteredData, field, direction);
-      const paginationResult = paginate(sortedData, prev.currentPage, prev.pageSize);
-
-      return {
-        ...prev,
-        sortField: field,
-        sortDirection: direction,
-        sortedData,
-        paginatedData: paginationResult.items,
-      };
-    });
-  }, []);
-
-  const addFilter = useCallback((field: string, value: unknown, operator: string = 'equals') => {
-    setState((prev) => {
-      const newFilters = [
-        ...prev.filters.filter((f) => f.field !== field),
-        { field, value, operator: operator as FilterOperator },
-      ];
-
-      let filteredData = prev.data;
-      newFilters.forEach((filter) => {
-        filteredData = filterByProperty(filteredData, filter.field, filter.value, filter.operator);
-      });
-
-      const sortedData = prev.sortField
-        ? sortByProperty(filteredData, prev.sortField, prev.sortDirection)
-        : filteredData;
-
-      const paginationResult = paginate(sortedData, 1, prev.pageSize);
-
-      return {
-        ...prev,
-        filters: newFilters,
-        filteredData,
-        sortedData,
-        paginatedData: paginationResult.items,
-        currentPage: 1,
-        totalPages: paginationResult.totalPages,
-        totalRecords: paginationResult.totalItems,
-      };
+      return [...prev, filter];
     });
   }, []);
 
   const removeFilter = useCallback((field: string) => {
-    setState((prev) => {
-      const newFilters = prev.filters.filter((f) => f.field !== field);
-
-      let filteredData = prev.data;
-      newFilters.forEach((filter) => {
-        filteredData = filterByProperty(filteredData, filter.field, filter.value, filter.operator);
-      });
-
-      const sortedData = prev.sortField
-        ? sortByProperty(filteredData, prev.sortField, prev.sortDirection)
-        : filteredData;
-
-      const paginationResult = paginate(sortedData, prev.currentPage, prev.pageSize);
-
-      return {
-        ...prev,
-        filters: newFilters,
-        filteredData,
-        sortedData,
-        paginatedData: paginationResult.items,
-        totalPages: paginationResult.totalPages,
-        totalRecords: paginationResult.totalItems,
-      };
-    });
+    setFilters((prev) => prev.filter((f) => f.field !== field));
   }, []);
 
   const clearFilters = useCallback(() => {
-    setState((prev) => {
-      const sortedData = prev.sortField
-        ? sortByProperty(prev.data, prev.sortField, prev.sortDirection)
-        : prev.data;
-
-      const paginationResult = paginate(sortedData, 1, prev.pageSize);
-
-      return {
-        ...prev,
-        filters: [],
-        filteredData: prev.data,
-        sortedData,
-        paginatedData: paginationResult.items,
-        currentPage: 1,
-        totalPages: paginationResult.totalPages,
-        totalRecords: paginationResult.totalItems,
-      };
-    });
+    setFilters([]);
   }, []);
 
-  const clearSort = useCallback(() => {
-    setState((prev) => {
-      const paginationResult = paginate(prev.filteredData, prev.currentPage, prev.pageSize);
-
-      return {
-        ...prev,
-        sortField: null,
-        sortDirection: 'asc',
-        sortedData: prev.filteredData,
-        paginatedData: paginationResult.items,
-      };
-    });
+  const handlePageChange = useCallback((page: number) => {
+    setPagination((prev) => ({ ...prev, page }));
   }, []);
 
-  const refresh = useCallback(() => {
-    // In a real implementation, this would re-fetch data
-    updateFilteredData(state.data);
-  }, [state.data, updateFilteredData]);
+  const handlePageSizeChange = useCallback((pageSize: number) => {
+    setPagination((prev) => ({ ...prev, pageSize, page: 1 }));
+  }, []);
 
-  const exportData = useCallback(
-    (format: 'csv' | 'json') => {
-      const dataToExport = state.sortedData;
+  // Process data with filters and sorting
+  const processedData = useMemo(() => {
+    let result = [...data];
 
-      if (format === 'csv') {
-        const headers = state.columns.map((col) => col.name).join(',');
-        const rows = dataToExport.map((row) =>
-          state.columns.map((col) => JSON.stringify(row[col.name] || '')).join(',')
-        );
-        const csv = [headers, ...rows].join('\n');
+    // Apply filters
+    filters.forEach((filter) => {
+      result = result.filter((row) => {
+        const value = row[filter.field];
+        switch (filter.operator) {
+          case 'equals':
+            return value === filter.value;
+          case 'contains':
+            return String(value).toLowerCase().includes(String(filter.value).toLowerCase());
+          case 'startsWith':
+            return String(value).toLowerCase().startsWith(String(filter.value).toLowerCase());
+          case 'endsWith':
+            return String(value).toLowerCase().endsWith(String(filter.value).toLowerCase());
+          case 'greaterThan':
+            return Number(value) > Number(filter.value);
+          case 'lessThan':
+            return Number(value) < Number(filter.value);
+          case 'between':
+            return (
+              Number(value) >= Number(filter.value) &&
+              Number(value) <= Number(filter.value2 || 0)
+            );
+          default:
+            return true;
+        }
+      });
+    });
 
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'data_export.csv';
-        a.click();
-        URL.revokeObjectURL(url);
-      } else if (format === 'json') {
-        const json = JSON.stringify(dataToExport, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'data_export.json';
-        a.click();
-        URL.revokeObjectURL(url);
-      }
-    },
-    [state.sortedData, state.columns]
-  );
+    // Apply sorting
+    if (sortConfig) {
+      result.sort((a, b) => {
+        const aVal = a[sortConfig.field];
+        const bVal = b[sortConfig.field];
+        if (aVal == null && bVal == null) return 0;
+        if (aVal == null) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (bVal == null) return sortConfig.direction === 'asc' ? 1 : -1;
+        if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
 
-  const actions: DataPreviewActions = {
-    setData,
-    setPage,
-    setPageSize,
-    sort,
+    return result;
+  }, [data, filters, sortConfig]);
+
+  // Paginate data
+  const paginatedData = useMemo(() => {
+    const startIndex = (pagination.page - 1) * pagination.pageSize;
+    const endIndex = startIndex + pagination.pageSize;
+    return processedData.slice(startIndex, endIndex);
+  }, [processedData, pagination]);
+
+  // Update total records when data changes
+  useMemo(() => {
+    setPagination((prev) => ({ ...prev, totalRecords: processedData.length }));
+  }, [processedData.length]);
+
+  return {
+    sortConfig,
+    filters,
+    pagination,
+    processedData,
+    paginatedData,
+    handleSort,
     addFilter,
     removeFilter,
     clearFilters,
-    clearSort,
-    refresh,
-    exportData,
-  };
-
-  return {
-    state,
-    actions,
+    handlePageChange,
+    handlePageSizeChange,
   };
 };
+

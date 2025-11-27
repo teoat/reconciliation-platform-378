@@ -4,11 +4,12 @@
 
 use actix_web::{web, HttpResponse, Result};
 use serde::Deserialize;
+use utoipa;
 
 use crate::errors::AppError;
 
 /// CSP violation report from browser
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct CSPViolationReport {
     #[serde(rename = "csp-report")]
     pub csp_report: CSPReport,
@@ -44,6 +45,18 @@ pub struct CSPReport {
 }
 
 /// POST /api/security/csp-report - Receive CSP violation reports
+/// 
+/// Receives Content Security Policy violation reports from browsers.
+#[utoipa::path(
+    post,
+    path = "/api/v1/security/csp-report",
+    tag = "Security",
+    request_body = CSPViolationReport,
+    responses(
+        (status = 204, description = "CSP report received successfully"),
+        (status = 400, description = "Invalid report format", body = ErrorResponse)
+    )
+)]
 pub async fn post_csp_report(
     body: web::Json<CSPViolationReport>,
 ) -> Result<HttpResponse, AppError> {

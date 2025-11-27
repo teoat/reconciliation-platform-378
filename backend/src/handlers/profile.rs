@@ -11,7 +11,7 @@ use crate::services::cache::MultiLevelCache;
 use crate::services::user::UserService;
 
 /// Profile data structure
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, utoipa::ToSchema)]
 pub struct UserProfile {
     pub id: Uuid,
     pub email: String,
@@ -80,6 +80,18 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
 }
 
 /// Get user profile endpoint
+/// 
+/// Retrieves the current user's profile information.
+#[utoipa::path(
+    get,
+    path = "/api/v1/profile",
+    tag = "Profile",
+    responses(
+        (status = 200, description = "Profile retrieved successfully", body = ApiResponse<UserProfile>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_profile(
     user_id: web::ReqData<Uuid>,
     cache: web::Data<MultiLevelCache>,
@@ -151,6 +163,20 @@ pub async fn get_profile(
 }
 
 /// Update user profile endpoint
+/// 
+/// Updates the current user's profile information.
+#[utoipa::path(
+    put,
+    path = "/api/v1/profile",
+    tag = "Profile",
+    request_body = UpdateProfileRequest,
+    responses(
+        (status = 200, description = "Profile updated successfully", body = ApiResponse<UserProfile>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 422, description = "Validation error", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn update_profile(
     user_id: web::ReqData<Uuid>,
     req: web::Json<UpdateProfileRequest>,
@@ -219,6 +245,20 @@ pub async fn update_profile(
 }
 
 /// Upload avatar endpoint
+/// 
+/// Uploads a new avatar image for the current user.
+#[utoipa::path(
+    post,
+    path = "/api/v1/profile/avatar",
+    tag = "Profile",
+    request_body(content = String, description = "Avatar image file (multipart/form-data)"),
+    responses(
+        (status = 200, description = "Avatar uploaded successfully", body = ApiResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 400, description = "Invalid file format", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn upload_avatar(
     user_id: web::ReqData<Uuid>,
     cache: web::Data<MultiLevelCache>,
@@ -244,6 +284,18 @@ pub async fn upload_avatar(
 }
 
 /// Get profile statistics endpoint
+/// 
+/// Retrieves statistics for the current user's profile.
+#[utoipa::path(
+    get,
+    path = "/api/v1/profile/stats",
+    tag = "Profile",
+    responses(
+        (status = 200, description = "Profile statistics retrieved successfully", body = ApiResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
 pub async fn get_profile_stats(
     user_id: web::ReqData<Uuid>,
     user_service: web::Data<Arc<UserService>>,

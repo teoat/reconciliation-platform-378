@@ -16,7 +16,7 @@ import { rateLimiter } from '../services/authSecurity';
 import { SessionTimeoutManager, TokenRefreshManager } from '../services/authSecurity';
 import { validatePasswordStrength } from '../utils/security';
 import { secureStorage } from '../services/secureStorage';
-import { getErrorMessageFromApiError } from '../utils/errorExtraction';
+import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
 
 interface AuthContextType {
   user: UserResponse | null;
