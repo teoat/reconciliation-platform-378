@@ -1,8 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import { Shield, User, Activity, CheckCircle, Plus as PlusIcon } from 'lucide-react';
-import { useData } from '../components/DataProvider';
-import type { EnterpriseSecurityProps, SecurityTabId } from './types';
+import type { EnterpriseSecurityProps, SecurityTab } from './types';
 import { useEnterpriseSecurity } from './hooks/useEnterpriseSecurity';
 import {
   SecurityOverview,
@@ -11,9 +11,9 @@ import {
   AuditTab,
   ComplianceTab,
 } from './components';
+import { SecurityScanModal } from './components/SecurityScanModal';
 
 const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityProps) => {
-  const { currentProject } = useData();
   const {
     securityPolicies,
     accessControls,
@@ -23,13 +23,16 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
     isCreating,
     setActiveTab,
     handleCreatePolicy,
+    updatePolicy,
+    deletePolicy,
   } = useEnterpriseSecurity(onProgressUpdate);
+  const [showScanModal, setShowScanModal] = useState(false);
 
-  const tabs = [
-    { id: 'policies' as SecurityTabId, label: 'Security Policies', icon: Shield },
-    { id: 'access' as SecurityTabId, label: 'Access Control', icon: User },
-    { id: 'audit' as SecurityTabId, label: 'Audit Logs', icon: Activity },
-    { id: 'compliance' as SecurityTabId, label: 'Compliance', icon: CheckCircle },
+  const tabs: Array<{ id: SecurityTab; label: string; icon: typeof Shield }> = [
+    { id: 'policies', label: 'Security Policies', icon: Shield },
+    { id: 'access', label: 'Access Control', icon: User },
+    { id: 'audit', label: 'Audit Logs', icon: Activity },
+    { id: 'compliance', label: 'Compliance', icon: CheckCircle },
   ];
 
   return (
@@ -54,7 +57,10 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
               <PlusIcon className="w-4 h-4" />
               <span>New Policy</span>
             </button>
-            <button className="btn-primary flex items-center space-x-2">
+            <button
+              onClick={() => setShowScanModal(true)}
+              className="btn-primary flex items-center space-x-2"
+            >
               <Shield className="w-4 h-4" />
               <span>Security Scan</span>
             </button>
@@ -105,7 +111,22 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
         </div>
 
         {/* Tab Content */}
-        {activeTab === 'policies' && <PoliciesTab policies={securityPolicies} />}
+        {activeTab === 'policies' && (
+          <PoliciesTab
+            policies={securityPolicies}
+            onPolicyUpdate={(updatedPolicy) => {
+              // Update policy in list
+              const updated = securityPolicies.map((p) =>
+                p.id === updatedPolicy.id ? updatedPolicy : p
+              );
+              // This would need to be handled by the hook
+            }}
+            onPolicyDelete={(policyId) => {
+              // Delete policy from list
+              // This would need to be handled by the hook
+            }}
+          />
+        )}
 
         {activeTab === 'access' && <AccessTab accessControls={accessControls} />}
 
@@ -113,6 +134,8 @@ const EnterpriseSecurity = ({ project, onProgressUpdate }: EnterpriseSecurityPro
 
         {activeTab === 'compliance' && <ComplianceTab reports={complianceReports} />}
       </div>
+
+      {showScanModal && <SecurityScanModal onClose={() => setShowScanModal(false)} />}
     </div>
   );
 };

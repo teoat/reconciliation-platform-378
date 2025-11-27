@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import Card from '@/components/ui/Card';
 
 interface ReconciliationSettings {
@@ -13,7 +13,7 @@ interface ConfigureTabContentProps {
   setReconciliationSettings: React.Dispatch<React.SetStateAction<ReconciliationSettings>>;
 }
 
-export const ConfigureTabContent: React.FC<ConfigureTabContentProps> = ({
+const ConfigureTabContentComponent: React.FC<ConfigureTabContentProps> = ({
   reconciliationSettings,
   setReconciliationSettings,
 }) => {
@@ -86,3 +86,7 @@ export const ConfigureTabContent: React.FC<ConfigureTabContentProps> = ({
     </div>
   );
 };
+
+ConfigureTabContentComponent.displayName = 'ConfigureTabContent';
+
+export const ConfigureTabContent = memo(ConfigureTabContentComponent);

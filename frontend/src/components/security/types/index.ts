@@ -82,10 +82,11 @@ export interface ComplianceFinding {
   evidence: string[];
 }
 
-export type SecurityTabId = 'policies' | 'access' | 'audit' | 'compliance';
+export type SecurityTab = 'policies' | 'access' | 'audit' | 'compliance';
+export type SecurityTabId = SecurityTab; // Alias for backward compatibility
 
 export interface EnterpriseSecurityProps {
-  project: import('../../services/apiClient/types').BackendProject;
+  project: import('../../../services/apiClient/types').BackendProject;
   onProgressUpdate?: (step: string) => void;
 }
 

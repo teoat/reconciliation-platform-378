@@ -1,63 +1,102 @@
 /**
  * Presence Handlers
  * 
- * User presence management for WebSocket service
+ * Handles user presence management (join, leave, presence updates)
  */
 
+import { logger } from '@/services/logger';
 import type { WebSocketMessage, UserPresence } from '../types';
+import { MessageType } from '../types';
 
-export class PresenceHandlers {
-  private presence = new Map<string, UserPresence>();
-  private onUserJoinedCallback?: (presence: UserPresence) => void;
-  private onUserLeftCallback?: (userId: string) => void;
-  private onUserPresenceCallback?: (presence: UserPresence) => void;
-
-  setCallbacks(
-    onUserJoined?: (presence: UserPresence) => void,
-    onUserLeft?: (userId: string) => void,
-    onUserPresence?: (presence: UserPresence) => void
-  ) {
-    this.onUserJoinedCallback = onUserJoined;
-    this.onUserLeftCallback = onUserLeft;
-    this.onUserPresenceCallback = onUserPresence;
-  }
-
-  handleUserJoined(message: WebSocketMessage): void {
-    const data = message.data as unknown;
-    if (data && typeof data === 'object' && 'userId' in data) {
-      const userPresence = data as UserPresence;
-      this.presence.set(userPresence.userId, userPresence);
-      this.onUserJoinedCallback?.(userPresence);
-    }
-  }
-
-  handleUserLeft(message: WebSocketMessage): void {
-    const data = message.data as { userId?: string };
-    if (data && typeof data === 'object' && 'userId' in data && typeof data.userId === 'string') {
-      this.presence.delete(data.userId);
-      this.onUserLeftCallback?.(data.userId);
-    }
-  }
-
-  handleUserPresence(message: WebSocketMessage): void {
-    const data = message.data as unknown;
-    if (data && typeof data === 'object' && 'userId' in data) {
-      const userPresence = data as UserPresence;
-      this.presence.set(userPresence.userId, userPresence);
-      this.onUserPresenceCallback?.(userPresence);
-    }
-  }
-
-  getPresence(): Map<string, UserPresence> {
-    return new Map(this.presence);
-  }
-
-  getUserPresence(userId: string): UserPresence | undefined {
-    return this.presence.get(userId);
-  }
-
-  clear(): void {
-    this.presence.clear();
-  }
+export interface PresenceHandlers {
+  handle: (message: WebSocketMessage) => void;
+  updatePresence: (presence: Partial<UserPresence>) => void;
+  getPresence: () => Map<string, UserPresence>;
+  getUserPresence: (userId: string) => UserPresence | undefined;
 }
 
+export interface PresenceState {
+  presence: Map<string, UserPresence>;
+  userId: string;
+}
+
+export interface PresenceCallbacks {
+  emit: (event: string, ...args: unknown[]) => void;
+  sendMessage: (message: { type: string; data?: Record<string, unknown> }) => void;
+  config: { enablePresence: boolean };
+}
+
+/**
+ * Handle presence-related messages
+ */
+export function handlePresenceMessage(
+  state: PresenceState,
+  callbacks: PresenceCallbacks
+): PresenceHandlers {
+  const handle = (message: WebSocketMessage): void => {
+    switch (message.type) {
+      case MessageType.USER_JOINED:
+        handleUserJoined(message);
+        break;
+      case MessageType.USER_LEFT:
+        handleUserLeft(message);
+        break;
+      case MessageType.USER_PRESENCE:
+        handleUserPresence(message);
+        break;
+    }
+  };
+
+  const handleUserJoined = (message: WebSocketMessage): void => {
+    const data = message.data as unknown;
+    if (data && typeof data === 'object' && 'userId' in data) {
+      const userPresence = data as UserPresence;
+      state.presence.set(userPresence.userId, userPresence);
+      callbacks.emit('userJoined', userPresence);
+    }
+  };
+
+  const handleUserLeft = (message: WebSocketMessage): void => {
+    const data = message.data as { userId?: string };
+    if (data && typeof data === 'object' && 'userId' in data && typeof data.userId === 'string') {
+      state.presence.delete(data.userId);
+      callbacks.emit('userLeft', data.userId);
+    }
+  };
+
+  const handleUserPresence = (message: WebSocketMessage): void => {
+    const data = message.data as unknown;
+    if (data && typeof data === 'object' && 'userId' in data) {
+      const userPresence = data as UserPresence;
+      state.presence.set(userPresence.userId, userPresence);
+      callbacks.emit('userPresence', userPresence);
+    }
+  };
+
+  const updatePresence = (presence: Partial<UserPresence>): void => {
+    if (!callbacks.config.enablePresence) return;
+
+    callbacks.sendMessage({
+      type: MessageType.USER_PRESENCE,
+      data: {
+        userId: state.userId,
+        ...presence,
+      },
+    });
+  };
+
+  const getPresence = (): Map<string, UserPresence> => {
+    return new Map(state.presence);
+  };
+
+  const getUserPresence = (userId: string): UserPresence | undefined => {
+    return state.presence.get(userId);
+  };
+
+  return {
+    handle,
+    updatePresence,
+    getPresence,
+    getUserPresence,
+  };
+}

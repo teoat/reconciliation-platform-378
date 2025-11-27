@@ -2,9 +2,11 @@
  * Compliance Tab Component
  */
 
+import { useState } from 'react';
 import { CheckCircle, Eye, Download } from 'lucide-react';
 import type { ComplianceReport } from '../types';
 import { getStatusColor, getFrameworkColor } from '../utils/formatters';
+import { ComplianceReportModal } from './ComplianceReportModal';
 
 interface ComplianceTabProps {
   reports: ComplianceReport[];
@@ -12,6 +14,14 @@ interface ComplianceTabProps {
 }
 
 export const ComplianceTab = ({ reports, onViewReport }: ComplianceTabProps) => {
+  const [selectedReport, setSelectedReport] = useState<ComplianceReport | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  const handleView = (report: ComplianceReport) => {
+    setSelectedReport(report);
+    setShowModal(true);
+    onViewReport?.(report);
+  };
   return (
     <div className="p-6">
       <div className="space-y-4">
@@ -70,15 +80,13 @@ export const ComplianceTab = ({ reports, onViewReport }: ComplianceTabProps) => 
             </div>
 
             <div className="flex space-x-2">
-              {onViewReport && (
-                <button
-                  onClick={() => onViewReport(report)}
-                  className="btn-secondary text-sm flex-1"
-                >
-                  <Eye className="w-4 h-4 mr-1" />
-                  View Report
-                </button>
-              )}
+              <button
+                onClick={() => handleView(report)}
+                className="btn-secondary text-sm flex-1"
+              >
+                <Eye className="w-4 h-4 mr-1" />
+                View Report
+              </button>
               <button className="btn-primary text-sm flex-1">
                 <Download className="w-4 h-4 mr-1" />
                 Export Report
@@ -87,6 +95,16 @@ export const ComplianceTab = ({ reports, onViewReport }: ComplianceTabProps) => 
           </div>
         ))}
       </div>
+
+      {showModal && selectedReport && (
+        <ComplianceReportModal
+          report={selectedReport}
+          onClose={() => {
+            setShowModal(false);
+            setSelectedReport(null);
+          }}
+        />
+      )}
     </div>
   );
 };

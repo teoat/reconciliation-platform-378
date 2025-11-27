@@ -1,190 +1,174 @@
 /**
  * Message Handlers
  * 
- * Core message processing logic for WebSocket service
+ * Handles WebSocket message parsing, validation, and routing
  */
 
 import { logger } from '@/services/logger';
-import { MessageType } from '../types';
-import { PresenceHandlers } from './presenceHandlers';
-import { CollaborationHandlers } from './collaborationHandlers';
 import type { WebSocketMessage } from '../types';
+import { MessageType } from '../types';
+import { handlePresenceMessage } from './presenceHandlers';
+import { handleCollaborationMessage } from './collaborationHandlers';
 
-export class MessageHandlers {
-  private presenceHandlers: PresenceHandlers;
-  private collaborationHandlers: CollaborationHandlers;
-  private onMessageCallback?: (message: WebSocketMessage) => void;
-  private onDataSyncCallback?: (data: unknown) => void;
-  private onConflictResolutionCallback?: (data: unknown) => void;
-  private onNotificationCallback?: (data: unknown) => void;
-  private onErrorCallback?: (error: unknown) => void;
-  private pongTimer?: ReturnType<typeof setTimeout>;
-  private pongTimeout: number;
+export interface MessageHandlers {
+  handleMessage: (data: string | Blob) => void;
+}
 
-  constructor(
-    presenceHandlers: PresenceHandlers,
-    collaborationHandlers: CollaborationHandlers,
-    pongTimeout: number = 5000
-  ) {
-    this.presenceHandlers = presenceHandlers;
-    this.collaborationHandlers = collaborationHandlers;
-    this.pongTimeout = pongTimeout;
-  }
+export interface MessageHandlerCallbacks {
+  emit: (event: string, ...args: unknown[]) => void;
+  handlePong: () => void;
+}
 
-  setCallbacks(
-    onMessage?: (message: WebSocketMessage) => void,
-    onDataSync?: (data: unknown) => void,
-    onConflictResolution?: (data: unknown) => void,
-    onNotification?: (data: unknown) => void,
-    onError?: (error: unknown) => void
-  ) {
-    this.onMessageCallback = onMessage;
-    this.onDataSyncCallback = onDataSync;
-    this.onConflictResolutionCallback = onConflictResolution;
-    this.onNotificationCallback = onNotification;
-    this.onErrorCallback = onError;
-  }
+/**
+ * Parse and validate WebSocket message
+ */
+function parseMessage(data: string | Blob): WebSocketMessage | null {
+  try {
+    // Handle Blob data by converting to string
+    let dataString: string;
+    if (typeof data === 'string') {
+      dataString = data;
+    } else if (data instanceof Blob) {
+      // For Blob, we need to read it asynchronously
+      // This is a limitation - we'll log and return early
+      logger.warning('Received Blob data in WebSocket message - async conversion not supported in sync handler', {
+        blobSize: data.size,
+        blobType: data.type,
+      });
+      return null;
+    } else {
+      logger.warning('Received unknown data type in WebSocket message', { dataType: typeof data });
+      return null;
+    }
 
-  handleMessage(data: string | Blob): void {
+    // Validate data is not empty
+    if (!dataString || dataString.trim().length === 0) {
+      logger.warning('Received empty WebSocket message');
+      return null;
+    }
+
+    // Parse JSON with proper error handling
+    let message: WebSocketMessage;
     try {
-      let dataString: string;
-      if (typeof data === 'string') {
-        dataString = data;
-      } else if (data instanceof Blob) {
-        logger.warning('Received Blob data in WebSocket message - async conversion not supported', {
-          blobSize: data.size,
-          blobType: data.type,
-        });
-        return;
-      } else {
-        logger.warning('Received unknown data type in WebSocket message', { dataType: typeof data });
-        return;
-      }
-
-      if (!dataString || dataString.trim().length === 0) {
-        logger.warning('Received empty WebSocket message');
-        return;
-      }
-
-      let message: WebSocketMessage;
-      try {
-        message = JSON.parse(dataString);
-      } catch (parseError) {
-        logger.error('Failed to parse WebSocket message JSON', {
-          error: parseError instanceof Error ? parseError.message : String(parseError),
-          dataPreview: dataString.substring(0, 100),
-          dataLength: dataString.length,
-        });
-        this.onErrorCallback?.({
-          type: 'parse_error',
-          message: 'Failed to parse WebSocket message',
-          originalError: parseError,
-        });
-        return;
-      }
-
-      if (!message || typeof message !== 'object' || !message.type || typeof message.type !== 'string') {
-        logger.error('Invalid WebSocket message structure', { message });
-        return;
-      }
-
-      try {
-        switch (message.type) {
-          case MessageType.PONG:
-            if (this.pongTimer) {
-              clearTimeout(this.pongTimer);
-              this.pongTimer = undefined;
-            }
-            break;
-
-          case MessageType.USER_JOINED:
-            this.presenceHandlers.handleUserJoined(message);
-            break;
-
-          case MessageType.USER_LEFT:
-            this.presenceHandlers.handleUserLeft(message);
-            break;
-
-          case MessageType.USER_PRESENCE:
-            this.presenceHandlers.handleUserPresence(message);
-            break;
-
-          case MessageType.CURSOR_MOVE:
-            this.collaborationHandlers.handleCursorMove(message);
-            break;
-
-          case MessageType.SELECTION_CHANGE:
-            this.collaborationHandlers.handleSelectionChange(message);
-            break;
-
-          case MessageType.TEXT_EDIT:
-            this.collaborationHandlers.handleTextEdit(message);
-            break;
-
-          case MessageType.FIELD_UPDATE:
-            this.collaborationHandlers.handleFieldUpdate(message);
-            break;
-
-          case MessageType.DATA_SYNC:
-            this.onDataSyncCallback?.(message.data);
-            break;
-
-          case MessageType.CONFLICT_RESOLUTION:
-            this.onConflictResolutionCallback?.(message.data);
-            break;
-
-          case MessageType.NOTIFICATION:
-            this.onNotificationCallback?.(message.data);
-            break;
-
-          case MessageType.ERROR:
-            logger.error('WebSocket error', { data: message.data });
-            this.onErrorCallback?.(message.data);
-            break;
-
-          default:
-            logger.warning('Unknown message type', { messageType: message.type });
-        }
-
-        this.onMessageCallback?.(message);
-      } catch (handlerError) {
-        logger.error('Error handling WebSocket message', {
-          error: handlerError instanceof Error ? handlerError.message : String(handlerError),
-          messageType: message.type,
-          messageId: message.id,
-        });
-        this.onErrorCallback?.({
-          type: 'handler_error',
-          message: `Error handling ${message.type} message`,
-          originalError: handlerError,
-          messageType: message.type,
-        });
-      }
-    } catch (error: unknown) {
-      logger.error('Unexpected error in WebSocket message handler', {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      message = JSON.parse(dataString);
+    } catch (parseError) {
+      logger.error('Failed to parse WebSocket message JSON', {
+        error: parseError instanceof Error ? parseError.message : String(parseError),
+        dataPreview: dataString.substring(0, 100), // Log first 100 chars for debugging
+        dataLength: dataString.length,
       });
-      this.onErrorCallback?.({
-        type: 'unexpected_error',
-        message: 'Unexpected error processing WebSocket message',
-        originalError: error,
-      });
+      return null;
     }
-  }
 
-  setPongTimer(timeoutCallback: () => void): void {
-    this.pongTimer = setTimeout(() => {
-      logger.warning('Pong timeout, reconnecting...');
-      timeoutCallback();
-    }, this.pongTimeout);
-  }
-
-  clearPongTimer(): void {
-    if (this.pongTimer) {
-      clearTimeout(this.pongTimer);
-      this.pongTimer = undefined;
+    // Validate message structure
+    if (!message || typeof message !== 'object') {
+      logger.error('Invalid WebSocket message structure - not an object', { message });
+      return null;
     }
+
+    if (!message.type || typeof message.type !== 'string') {
+      logger.error('Invalid WebSocket message - missing or invalid type field', { message });
+      return null;
+    }
+
+    return message;
+  } catch (error: unknown) {
+    logger.error('Unexpected error parsing WebSocket message', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
   }
 }
 
+/**
+ * Route message to appropriate handler
+ */
+function routeMessage(
+  message: WebSocketMessage,
+  callbacks: MessageHandlerCallbacks,
+  presenceHandlers: ReturnType<typeof handlePresenceMessage>,
+  collaborationHandlers: ReturnType<typeof handleCollaborationMessage>
+): void {
+  try {
+    switch (message.type) {
+      case MessageType.PONG:
+        callbacks.handlePong();
+        break;
+
+      case MessageType.USER_JOINED:
+      case MessageType.USER_LEFT:
+      case MessageType.USER_PRESENCE:
+        presenceHandlers.handle(message);
+        break;
+
+      case MessageType.CURSOR_MOVE:
+      case MessageType.SELECTION_CHANGE:
+      case MessageType.TEXT_EDIT:
+      case MessageType.FIELD_UPDATE:
+        collaborationHandlers.handle(message);
+        break;
+
+      case MessageType.DATA_SYNC:
+        callbacks.emit('dataSync', message.data);
+        break;
+
+      case MessageType.CONFLICT_RESOLUTION:
+        callbacks.emit('conflictResolution', message.data);
+        break;
+
+      case MessageType.NOTIFICATION:
+        callbacks.emit('notification', message.data);
+        break;
+
+      case MessageType.ERROR:
+        logger.error('WebSocket error', { data: message.data });
+        callbacks.emit('error', message.data);
+        break;
+
+      default:
+        logger.warning('Unknown message type', { messageType: message.type });
+    }
+
+    callbacks.emit('message', message);
+  } catch (handlerError) {
+    // Error in message handler - log and emit error event
+    logger.error('Error handling WebSocket message', {
+      error: handlerError instanceof Error ? handlerError.message : String(handlerError),
+      messageType: message.type,
+      messageId: message.id,
+    });
+    callbacks.emit('error', {
+      type: 'handler_error',
+      message: `Error handling ${message.type} message`,
+      originalError: handlerError,
+      messageType: message.type,
+    });
+  }
+}
+
+/**
+ * Create message handlers
+ */
+export function createMessageHandlers(
+  callbacks: MessageHandlerCallbacks,
+  presenceHandlers: ReturnType<typeof handlePresenceMessage>,
+  collaborationHandlers: ReturnType<typeof handleCollaborationMessage>
+): MessageHandlers {
+  const handleMessage = (data: string | Blob): void => {
+    const message = parseMessage(data);
+    if (!message) {
+      // Parse error already logged
+      callbacks.emit('error', {
+        type: 'parse_error',
+        message: 'Failed to parse WebSocket message',
+      });
+      return;
+    }
+
+    routeMessage(message, callbacks, presenceHandlers, collaborationHandlers);
+  };
+
+  return {
+    handleMessage,
+  };
+}

@@ -4,6 +4,7 @@
 
 import type { CustomReport, ReportData, ReportFilter } from '../types';
 import { adaptReconciliationRecord } from '../adapters';
+import { fetchProjectData, fetchUserData } from './dataSources';
 
 /**
  * Apply filters to data based on report filter configuration
@@ -97,11 +98,18 @@ export function calculateMetrics(
       }
       case 'percentage': {
         if (metric.calculation) {
-          // Simple calculation parser (would need more robust implementation)
-          const [numerator, denominator] = metric.calculation.split('/');
-          const num = metricsData[numerator] || 0;
-          const den = metricsData[denominator] || 1;
-          metricsData[metric.id] = (num / den) * 100;
+          // Use enhanced calculation parser
+          const { evaluateCalculation } = await import('./calculationParser');
+          try {
+            const result = evaluateCalculation(metric.calculation, metricsData);
+            metricsData[metric.id] = result;
+          } catch (error) {
+            // Fallback to simple division for backward compatibility
+            const [numerator, denominator] = metric.calculation.split('/');
+            const num = metricsData[numerator] || 0;
+            const den = metricsData[denominator] || 1;
+            metricsData[metric.id] = (num / den) * 100;
+          }
         }
         break;
       }
@@ -114,11 +122,11 @@ export function calculateMetrics(
 /**
  * Generate report data from reconciliation or cashflow data
  */
-export function generateReportData(
+export async function generateReportData(
   report: CustomReport,
   reconciliationData: { records?: unknown[] } | null,
   cashflowData: { records?: unknown[] } | null
-): ReportData {
+): Promise<ReportData> {
   // Get base data based on data source
   let data: unknown[] = [];
   switch (report.dataSource) {
@@ -133,11 +141,11 @@ export function generateReportData(
       break;
     }
     case 'projects': {
-      data = []; // Would fetch project data
+      data = await fetchProjectData();
       break;
     }
     case 'users': {
-      data = []; // Would fetch user data
+      data = await fetchUserData();
       break;
     }
   }

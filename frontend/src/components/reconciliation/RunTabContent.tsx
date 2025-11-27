@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Play } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -12,7 +12,7 @@ interface RunTabContentProps {
   onStartReconciliation: () => void;
 }
 
-export const RunTabContent: React.FC<RunTabContentProps> = ({
+const RunTabContentComponent: React.FC<RunTabContentProps> = ({
   dataSources,
   jobs,
   jobColumns,
@@ -43,3 +43,7 @@ export const RunTabContent: React.FC<RunTabContentProps> = ({
     </div>
   );
 };
+
+RunTabContentComponent.displayName = 'RunTabContent';
+
+export const RunTabContent = memo(RunTabContentComponent);

@@ -1,5 +1,4 @@
-import { lazy, ComponentType } from 'react';
-import { logger } from '../services/logger';
+import React, { lazy, ComponentType } from 'react';
 /**
  * Dynamic import utilities for heavy components
  * These components are loaded only when needed to reduce initial bundle size
@@ -18,15 +17,16 @@ export const LazyPieChart = lazy(() =>
 
 // Heavy form components - loaded only when forms are opened
 export const LazyAdvancedFilters = lazy(() => import('../components/AdvancedFilters'));
-export const LazyCustomReports = lazy(() => import('../components/CustomReports'));
+export const LazyCustomReports = lazy(() => import('../components/reports/CustomReports'));
 
 // Enterprise features - loaded only for enterprise users
-export const LazyEnterpriseSecurity = lazy(() => import('../components/EnterpriseSecurity'));
+export const LazyEnterpriseSecurity = lazy(() => import('../components/security/EnterpriseSecurity'));
 export const LazyAdvancedVisualization = lazy(() => import('../components/AdvancedVisualization'));
 export const LazyFrenlyAI = lazy(() => import('../components/FrenlyAI'));
 
 // File processing components - loaded only during file operations
-export const LazyFileUploadInterface = lazy(() => import('../components/FileUploadInterface'));
+// Note: FileUploadInterface may not exist, using FileUpload page component instead
+export const LazyFileUploadInterface = lazy(() => import('../components/pages/FileUpload'));
 
 // Modal components - loaded only when modals are opened
 export const LazyModal = lazy(() => import('../components/ui/Modal'));
@@ -52,7 +52,7 @@ export function createDynamicImport<T extends ComponentType<Record<string, unkno
 }
 
 // Preload function for critical components
-export function preloadComponent(importFn: () => Promise<{ default?: React.ComponentType<unknown> }>) {
+export function preloadComponent(importFn: () => Promise<{ default?: React.ComponentType<unknown> | undefined }>) {
   // Use requestIdleCallback if available, otherwise setTimeout
   const schedulePreload =
     typeof window !== 'undefined' && 'requestIdleCallback' in window
@@ -68,12 +68,35 @@ export function preloadComponent(importFn: () => Promise<{ default?: React.Compo
 
 // Preload analytics components when user hovers over analytics nav
 export function preloadAnalytics() {
-  preloadComponent(() => import('../components/charts'));
-  preloadComponent(() => import('../components/AnalyticsDashboard'));
+  // Charts module doesn't have default export, preload individual charts
+  preloadComponent(() => 
+    import('../components/charts').then(m => ({ 
+      default: m.LineChart as React.ComponentType<unknown> 
+    }))
+  );
+  // AnalyticsDashboard has both named and default exports
+  preloadComponent(() => 
+    import('../components/dashboard/AnalyticsDashboard').then(m => ({ 
+      default: (m.default || m.AnalyticsDashboard) as React.ComponentType<unknown>
+    }))
+  );
 }
 
 // Preload file upload components when user hovers over upload areas
 export function preloadFileUpload() {
-  preloadComponent(() => import('../components/FileUploadInterface'));
-  preloadComponent(() => import('../components/EnhancedDropzone'));
+  // FileUpload is a default export
+  preloadComponent(() => 
+    import('../components/pages/FileUpload').then(m => ({ 
+      default: m.default as React.ComponentType<unknown>
+    }))
+  );
+  // FileUploadDropzone - named export only
+  preloadComponent(() => 
+    import('../components/fileUpload/FileUploadDropzone').then(m => ({ 
+      default: m.FileUploadDropzone as React.ComponentType<unknown>
+    })).catch(() => {
+      // Component may not exist, return empty promise
+      return Promise.resolve({ default: undefined });
+    })
+  );
 }

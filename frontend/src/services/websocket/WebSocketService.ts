@@ -2,44 +2,36 @@
  * WebSocket Service
  * 
  * Core WebSocket service for real-time collaboration
- * Refactored from 921 lines to ~250 lines
+ * Refactored from 921 lines to ~250 lines by extracting handlers and utilities
  */
 
-import React from 'react';
 import { logger } from '@/services/logger';
 import { APP_CONFIG } from '../../config/AppConfig';
-import type {
-  WebSocketMessage,
-  UserPresence,
-  WebSocketConfig,
-} from './types';
-import { MessageType } from './types';
-import { createWebSocketConfig } from './utils/messageFactory';
+import type { WebSocketMessage, WebSocketConfig, ConnectionStatus } from './types';
 import { MessageQueue } from './utils/messageQueue';
-import { ConnectionHandlers } from './handlers/connectionHandlers';
-import { PresenceHandlers } from './handlers/presenceHandlers';
-import { CollaborationHandlers } from './handlers/collaborationHandlers';
-import { MessageHandlers } from './handlers/messageHandlers';
+import { createConnectionHandlers, type ConnectionState } from './handlers/connectionHandlers';
+import { createMessageHandlers } from './handlers/messageHandlers';
+import { handlePresenceMessage } from './handlers/presenceHandlers';
+import { handleCollaborationMessage } from './handlers/collaborationHandlers';
+import { MessageType } from './types';
 
 class WebSocketService {
   static instance: WebSocketService | null = null;
-  config: WebSocketConfig;
-  socket: WebSocket | null = null;
-  isConnected = false;
-  reconnectAttempts = 0;
-  pingTimer: ReturnType<typeof setInterval> | undefined;
-  messageQueue: MessageQueue;
-  listeners = new Map<string, Array<(...args: unknown[]) => void>>();
-  userId = '';
-  sessionId = '';
+
+  private config: WebSocketConfig;
+  private connectionState: ConnectionState;
+  private messageQueue: MessageQueue;
+  private listeners = new Map<string, Array<(...args: unknown[]) => void>>();
+  private presenceState = { presence: new Map(), userId: '' };
+  private collaborationSessions = new Map();
 
   // Handlers
-  private connectionHandlers: ConnectionHandlers;
-  private presenceHandlers: PresenceHandlers;
-  private collaborationHandlers: CollaborationHandlers;
-  private messageHandlers: MessageHandlers;
+  private connectionHandlers: ReturnType<typeof createConnectionHandlers>;
+  private presenceHandlers: ReturnType<typeof handlePresenceMessage>;
+  private collaborationHandlers: ReturnType<typeof handleCollaborationMessage>;
+  private messageHandlers: ReturnType<typeof createMessageHandlers>;
 
-  static getInstance() {
+  static getInstance(): WebSocketService {
     if (!WebSocketService.instance) {
       WebSocketService.instance = new WebSocketService();
     }
@@ -47,178 +39,140 @@ class WebSocketService {
   }
 
   constructor() {
-    this.config = createWebSocketConfig(
-      APP_CONFIG.WS_URL || 'ws://localhost:2000',
-      5000,
-      10,
-      30000,
-      5000,
-      100,
-      true,
-      true,
-      true
-    );
+    // Use unified config from AppConfig (SSOT)
+    this.config = {
+      url: APP_CONFIG.WS_URL || 'ws://localhost:2000',
+      reconnectInterval: 5000,
+      maxReconnectAttempts: 10,
+      pingInterval: 30000,
+      pongTimeout: 5000,
+      messageQueueSize: 100,
+      enablePresence: true,
+      enableCollaboration: true,
+      enableNotifications: true,
+    };
 
     this.messageQueue = new MessageQueue(this.config.messageQueueSize);
-    this.connectionHandlers = new ConnectionHandlers(this.config);
-    this.presenceHandlers = new PresenceHandlers();
-    this.collaborationHandlers = new CollaborationHandlers();
-    this.messageHandlers = new MessageHandlers(
+    this.connectionState = {
+      socket: null,
+      isConnected: false,
+      reconnectAttempts: 0,
+      reconnectTimer: undefined,
+      pingTimer: undefined,
+      pongTimer: undefined,
+      userId: '',
+      sessionId: this.generateSessionId(),
+      config: this.config,
+    };
+
+    // Initialize handlers
+    this.presenceHandlers = handlePresenceMessage(this.presenceState, {
+      emit: this.emit.bind(this),
+      sendMessage: this.sendMessage.bind(this),
+      config: this.config,
+    });
+
+    this.collaborationHandlers = handleCollaborationMessage({
+      emit: this.emit.bind(this),
+      sendMessage: this.sendMessage.bind(this),
+      config: this.config,
+    });
+
+    // Create message handlers first (needed for connection callbacks)
+    this.messageHandlers = createMessageHandlers(
+      {
+        emit: this.emit.bind(this),
+        handlePong: () => {
+          if (this.connectionState.pongTimer) {
+            clearTimeout(this.connectionState.pongTimer);
+            this.connectionState.pongTimer = undefined;
+          }
+        },
+      },
       this.presenceHandlers,
-      this.collaborationHandlers,
-      this.config.pongTimeout
+      this.collaborationHandlers
     );
 
-    this.setupHandlers();
-    this.sessionId = this.generateSessionId();
-    this.init();
-  }
-
-  private setupHandlers() {
-    this.connectionHandlers.setCallbacks(
-      () => {
-        this.isConnected = true;
-        this.startPingTimer();
+    this.connectionHandlers = createConnectionHandlers(this.connectionState, {
+      onConnected: () => {
+        this.connectionHandlers.startPingTimer();
         this.processMessageQueue();
         this.emit('connected');
       },
-      (code, reason) => {
-        this.isConnected = false;
-        this.stopPingTimer();
+      onMessage: (data) => {
+        this.messageHandlers.handleMessage(data);
+      },
+      onDisconnected: (code, reason) => {
         this.emit('disconnected', { code, reason });
       },
-      () => {
+      onError: (error) => {
+        this.emit('error', error);
+      },
+      onMaxReconnectAttemptsReached: () => {
         this.emit('maxReconnectAttemptsReached');
-      }
-    );
+      },
+      sendMessage: this.sendMessage.bind(this),
+    });
 
-    this.presenceHandlers.setCallbacks(
-      (presence) => this.emit('userJoined', presence),
-      (userId) => this.emit('userLeft', userId),
-      (presence) => this.emit('userPresence', presence)
-    );
-
-    this.collaborationHandlers.setCallbacks(
-      (data) => this.emit('cursorMove', data),
-      (data) => this.emit('selectionChange', data),
-      (data) => this.emit('textEdit', data),
-      (data) => this.emit('fieldUpdate', data)
-    );
-
-    this.messageHandlers.setCallbacks(
-      (message) => this.emit('message', message),
-      (data) => this.emit('dataSync', data),
-      (data) => this.emit('conflictResolution', data),
-      (data) => this.emit('notification', data),
-      (error) => this.emit('error', error)
-    );
+    this.init();
   }
 
-  init() {
+  private init(): void {
+    // Get user ID from storage
     try {
       const userData = localStorage.getItem('user');
       if (userData) {
         const user = JSON.parse(userData);
-        this.userId = user.id;
+        this.connectionState.userId = user.id;
+        this.presenceState.userId = user.id;
       }
     } catch (error: unknown) {
       logger.error('Failed to get user ID', { error });
     }
 
+    // Connect when page becomes visible
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && !this.isConnected) {
-        this.connect();
+      if (!document.hidden && !this.connectionState.isConnected) {
+        this.connectionHandlers.connect();
       }
     });
 
+    // Connect on page load
     if (document.visibilityState === 'visible') {
-      this.connect();
+      this.connectionHandlers.connect();
     }
   }
 
-  async connect() {
-    if (this.isConnected || !this.userId) return;
-
-    try {
-      const wsUrl = `${this.config.url}?userId=${this.userId}&sessionId=${this.sessionId}`;
-      this.socket = new WebSocket(wsUrl);
-
-      this.socket.onopen = () => {
-        this.connectionHandlers.handleOpen(this.socket!);
-      };
-
-      this.socket.onmessage = (event) => {
-        this.messageHandlers.handleMessage(event.data);
-      };
-
-      this.socket.onclose = (event) => {
-        this.connectionHandlers.handleClose(event);
-        if (!event.wasClean) {
-          this.connectionHandlers.scheduleReconnect(() => this.connect());
-        }
-      };
-
-      this.socket.onerror = (error) => {
-        this.connectionHandlers.handleError(error);
-        this.emit('error', error);
-      };
-    } catch (error: unknown) {
-      logger.error('Failed to connect WebSocket', { error });
-      this.connectionHandlers.scheduleReconnect(() => this.connect());
-    }
+  // Public connection methods
+  async connect(): Promise<void> {
+    return this.connectionHandlers.connect();
   }
 
-  disconnect() {
-    if (this.socket) {
-      this.socket.close(1000, 'User disconnected');
-      this.socket = null;
-    }
-    this.isConnected = false;
-    this.stopPingTimer();
-    this.connectionHandlers.clearReconnectTimer();
+  disconnect(): void {
+    this.connectionHandlers.disconnect();
   }
 
-  startPingTimer() {
-    this.pingTimer = setInterval(() => {
-      this.sendMessage({
-        type: MessageType.PING,
-        data: { timestamp: Date.now() },
-      });
-
-      this.messageHandlers.setPongTimer(() => {
-        this.disconnect();
-        this.connectionHandlers.scheduleReconnect(() => this.connect());
-      });
-    }, this.config.pingInterval);
-  }
-
-  stopPingTimer() {
-    if (this.pingTimer) {
-      clearInterval(this.pingTimer);
-      this.pingTimer = undefined;
-    }
-    this.messageHandlers.clearPongTimer();
-  }
-
-  sendMessage(message: Partial<WebSocketMessage>) {
+  // Public message methods
+  sendMessage(message: Partial<WebSocketMessage>): void {
     if (!message.type) {
       logger.error('Cannot send message without type', { message });
       return;
     }
+
     const fullMessage: WebSocketMessage = {
       ...message,
       type: message.type,
       id: this.generateMessageId(),
       timestamp: Date.now(),
-      userId: this.userId,
-      sessionId: this.sessionId,
+      userId: this.connectionState.userId,
+      sessionId: this.connectionState.sessionId,
       data: message.data ?? {},
       metadata: message.metadata ?? {},
     };
 
-    if (this.isConnected && this.socket) {
+    if (this.connectionState.isConnected && this.connectionState.socket) {
       try {
-        this.socket.send(JSON.stringify(fullMessage));
+        this.connectionState.socket.send(JSON.stringify(fullMessage));
       } catch (error: unknown) {
         logger.error('Failed to send message', { error });
         this.messageQueue.enqueue(fullMessage);
@@ -228,110 +182,63 @@ class WebSocketService {
     }
   }
 
-  processMessageQueue() {
-    this.messageQueue.process((message) => {
-      this.sendMessage(message);
-    });
+  private processMessageQueue(): void {
+    while (!this.messageQueue.isEmpty() && this.connectionState.isConnected) {
+      const message = this.messageQueue.dequeue();
+      if (message) {
+        this.sendMessage(message);
+      }
+    }
   }
 
   // Presence methods
-  updatePresence(presence: Partial<UserPresence>) {
-    if (!this.config.enablePresence) return;
-
-    this.sendMessage({
-      type: MessageType.USER_PRESENCE,
-      data: {
-        userId: this.userId,
-        ...presence,
-      },
-    });
+  updatePresence(presence: Partial<import('./types').UserPresence>): void {
+    this.presenceHandlers.updatePresence(presence);
   }
 
-  getPresence() {
+  getPresence(): Map<string, import('./types').UserPresence> {
     return this.presenceHandlers.getPresence();
   }
 
-  getUserPresence(userId: string) {
+  getUserPresence(userId: string): import('./types').UserPresence | undefined {
     return this.presenceHandlers.getUserPresence(userId);
   }
 
   // Collaboration methods
-  joinCollaborationSession(projectId: string) {
-    if (!this.config.enableCollaboration) return;
-
-    this.sendMessage({
-      type: MessageType.CONNECT,
-      data: {
-        projectId,
-        action: 'join',
-      },
-    });
+  joinCollaborationSession(projectId: string): void {
+    this.collaborationHandlers.joinCollaborationSession(projectId);
   }
 
-  leaveCollaborationSession(projectId: string) {
-    if (!this.config.enableCollaboration) return;
-
-    this.sendMessage({
-      type: MessageType.DISCONNECT,
-      data: {
-        projectId,
-        action: 'leave',
-      },
-    });
+  leaveCollaborationSession(projectId: string): void {
+    this.collaborationHandlers.leaveCollaborationSession(projectId);
   }
 
-  sendCursorMove(cursor: { x: number; y: number }) {
-    this.sendMessage({
-      type: MessageType.CURSOR_MOVE,
-      data: { cursor },
-    });
+  sendCursorMove(cursor: { x: number; y: number }): void {
+    this.collaborationHandlers.sendCursorMove(cursor);
   }
 
-  sendSelectionChange(selection: { start: number; end: number }) {
-    this.sendMessage({
-      type: MessageType.SELECTION_CHANGE,
-      data: { selection },
-    });
+  sendSelectionChange(selection: { start: number; end: number }): void {
+    this.collaborationHandlers.sendSelectionChange(selection);
   }
 
-  sendTextEdit(fieldId: string, change: unknown) {
-    this.sendMessage({
-      type: MessageType.TEXT_EDIT,
-      data: { fieldId, change },
-    });
+  sendTextEdit(fieldId: string, change: unknown): void {
+    this.collaborationHandlers.sendTextEdit(fieldId, change);
   }
 
-  sendFieldUpdate(fieldId: string, value: unknown) {
-    this.sendMessage({
-      type: MessageType.FIELD_UPDATE,
-      data: { fieldId, value },
-    });
+  sendFieldUpdate(fieldId: string, value: unknown): void {
+    this.collaborationHandlers.sendFieldUpdate(fieldId, value);
   }
 
-  requestDataSync(projectId: string, dataType: string) {
-    this.sendMessage({
-      type: MessageType.DATA_SYNC,
-      data: {
-        projectId,
-        dataType,
-        action: 'request',
-      },
-    });
+  requestDataSync(projectId: string, dataType: string): void {
+    this.collaborationHandlers.requestDataSync(projectId, dataType);
   }
 
-  sendDataSync(projectId: string, dataType: string, data: unknown) {
-    this.sendMessage({
-      type: MessageType.DATA_SYNC,
-      data: {
-        projectId,
-        dataType,
-        action: 'send',
-        data,
-      },
-    });
+  sendDataSync(projectId: string, dataType: string, data: unknown): void {
+    this.collaborationHandlers.sendDataSync(projectId, dataType, data);
   }
 
-  sendNotification(userId: string, notification: Record<string, unknown>) {
+  // Notification methods
+  sendNotification(userId: string, notification: Record<string, unknown>): void {
     if (!this.config.enableNotifications) return;
 
     this.sendMessage({
@@ -344,14 +251,14 @@ class WebSocketService {
   }
 
   // Event system
-  on(event: string, callback: (...args: unknown[]) => void) {
+  on(event: string, callback: (...args: unknown[]) => void): void {
     if (!this.listeners.has(event)) {
       this.listeners.set(event, []);
     }
     this.listeners.get(event)!.push(callback);
   }
 
-  off(event: string, callback: (...args: unknown[]) => void) {
+  off(event: string, callback: (...args: unknown[]) => void): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       const index = callbacks.indexOf(callback);
@@ -361,7 +268,7 @@ class WebSocketService {
     }
   }
 
-  emit(event: string, ...args: unknown[]) {
+  private emit(event: string, ...args: unknown[]): void {
     const callbacks = this.listeners.get(event);
     if (callbacks) {
       callbacks.forEach((callback) => callback(...args));
@@ -369,121 +276,25 @@ class WebSocketService {
   }
 
   // Utility methods
-  generateMessageId() {
+  private generateMessageId(): string {
     return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  generateSessionId() {
+  private generateSessionId(): string {
     return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  isWebSocketConnected() {
-    return this.isConnected;
+  isWebSocketConnected(): boolean {
+    return this.connectionHandlers.isWebSocketConnected();
   }
 
-  getConnectionStatus() {
+  getConnectionStatus(): ConnectionStatus {
+    const status = this.connectionHandlers.getConnectionStatus();
     return {
-      connected: this.isConnected,
-      reconnectAttempts: this.connectionHandlers.getReconnectAttempts(),
-      messageQueueSize: this.messageQueue.size,
+      ...status,
+      messageQueueSize: this.messageQueue.size(),
     };
   }
 }
 
-// React hook for WebSocket functionality
-export const useWebSocket = () => {
-  const [isConnected, setIsConnected] = React.useState(false);
-  const [presence, setPresence] = React.useState(new Map());
-  const [connectionStatus, setConnectionStatus] = React.useState({
-    connected: false,
-    reconnectAttempts: 0,
-    messageQueueSize: 0,
-  });
-
-  React.useEffect(() => {
-    const ws = WebSocketService.getInstance();
-
-    const handleConnected = () => {
-      setIsConnected(true);
-      setConnectionStatus(ws.getConnectionStatus());
-    };
-
-    const handleDisconnected = () => {
-      setIsConnected(false);
-      setConnectionStatus(ws.getConnectionStatus());
-    };
-
-    const handleUserJoined = (...args: unknown[]) => {
-      const userPresence = args[0] as UserPresence;
-      if (userPresence && typeof userPresence === 'object' && 'userId' in userPresence) {
-        setPresence((prev) => new Map(prev.set(userPresence.userId, userPresence)));
-      }
-    };
-
-    const handleUserLeft = (...args: unknown[]) => {
-      const userId = args[0] as string;
-      if (typeof userId === 'string') {
-        setPresence((prev) => {
-          const newPresence = new Map(prev);
-          newPresence.delete(userId);
-          return newPresence;
-        });
-      }
-    };
-
-    const handleUserPresence = (...args: unknown[]) => {
-      const userPresence = args[0] as UserPresence;
-      if (userPresence && typeof userPresence === 'object' && 'userId' in userPresence) {
-        setPresence((prev) => new Map(prev.set(userPresence.userId, userPresence)));
-      }
-    };
-
-    const handleConnectionStatusChange = () => {
-      setConnectionStatus(ws.getConnectionStatus());
-    };
-
-    ws.on('connected', handleConnected);
-    ws.on('disconnected', handleDisconnected);
-    ws.on('userJoined', handleUserJoined);
-    ws.on('userLeft', handleUserLeft);
-    ws.on('userPresence', handleUserPresence);
-    ws.on('maxReconnectAttemptsReached', handleConnectionStatusChange);
-
-    return () => {
-      ws.off('connected', handleConnected);
-      ws.off('disconnected', handleDisconnected);
-      ws.off('userJoined', handleUserJoined);
-      ws.off('userLeft', handleUserLeft);
-      ws.off('userPresence', handleUserPresence);
-      ws.off('maxReconnectAttemptsReached', handleConnectionStatusChange);
-    };
-  }, []);
-
-  const ws = WebSocketService.getInstance();
-
-  return {
-    isConnected,
-    presence,
-    connectionStatus,
-    connect: ws.connect.bind(ws),
-    disconnect: ws.disconnect.bind(ws),
-    sendMessage: ws.sendMessage.bind(ws),
-    updatePresence: ws.updatePresence.bind(ws),
-    joinCollaborationSession: ws.joinCollaborationSession.bind(ws),
-    leaveCollaborationSession: ws.leaveCollaborationSession.bind(ws),
-    sendCursorMove: ws.sendCursorMove.bind(ws),
-    sendSelectionChange: ws.sendSelectionChange.bind(ws),
-    sendTextEdit: ws.sendTextEdit.bind(ws),
-    sendFieldUpdate: ws.sendFieldUpdate.bind(ws),
-    requestDataSync: ws.requestDataSync.bind(ws),
-    sendDataSync: ws.sendDataSync.bind(ws),
-    sendNotification: ws.sendNotification.bind(ws),
-    on: ws.on.bind(ws),
-    off: ws.off.bind(ws),
-  };
-};
-
-// Export singleton instance
-export const webSocketService = WebSocketService.getInstance();
-export default webSocketService;
-
+export default WebSocketService;

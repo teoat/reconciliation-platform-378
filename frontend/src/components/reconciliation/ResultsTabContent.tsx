@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Download } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -12,8 +12,8 @@ interface ResultsTabContentProps {
   matchColumns: Column<BackendReconciliationMatch>[];
 }
 
-export const ResultsTabContent: React.FC<ResultsTabContentProps> = ({ matches, matchColumns }) => {
-  const userProgress = onboardingService.getProgress('initial').completedSteps;
+const ResultsTabContentComponent: React.FC<ResultsTabContentProps> = ({ matches, matchColumns }) => {
+  const userProgress = onboardingService.getProgress('initial')?.completedSteps ?? [];
 
   return (
     <div id="tabpanel-results" role="tabpanel" aria-labelledby="tab-results" className="space-y-6">
@@ -57,3 +57,7 @@ export const ResultsTabContent: React.FC<ResultsTabContentProps> = ({ matches, m
     </div>
   );
 };
+
+ResultsTabContentComponent.displayName = 'ResultsTabContent';
+
+export const ResultsTabContent = memo(ResultsTabContentComponent);

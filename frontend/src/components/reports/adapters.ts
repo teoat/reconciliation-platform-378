@@ -8,6 +8,26 @@ import type { RecordMetadata } from '../types/reconciliation';
 import { extractNumber, extractString, extractDate } from '../types/sourceData';
 
 /**
+ * Map discrepancies from DataManagement record
+ */
+function mapDiscrepancies(record: DataManagementRecord): ReconciliationRecord['discrepancies'] {
+  // Extract discrepancies from record.resolution or other fields
+  if (record.resolution?.discrepancies) {
+    return record.resolution.discrepancies.map((d: unknown) => {
+      if (typeof d === 'object' && d !== null) {
+        return d as ReconciliationRecord['discrepancies'][0];
+      }
+      return { field: 'unknown', expected: '', actual: '', type: 'mismatch' };
+    });
+  }
+  // Check for discrepancies in metadata
+  if (record.metadata?.discrepancies) {
+    return record.metadata.discrepancies as ReconciliationRecord['discrepancies'];
+  }
+  return [];
+}
+
+/**
  * Map DataManagement status to ReconciliationRecord status
  * Both use compatible status types, but we validate for type safety
  */
@@ -55,7 +75,7 @@ export function adaptReconciliationRecord(record: DataManagementRecord): Reconci
     status: mapStatus(record.status), // Type-safe status mapping
     matchType: undefined,
     confidence: record.confidence ?? 0,
-    discrepancies: [], // Would need to map from record.resolution or other fields
+    discrepancies: mapDiscrepancies(record), // Map discrepancies from record
     metadata: (record.metadata as unknown as RecordMetadata) || {
       source: {},
       target: {},

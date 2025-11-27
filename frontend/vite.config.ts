@@ -169,7 +169,8 @@ export default defineConfig(({ mode }) => {
             }
             if (
               id.includes('/src/components/pages/Reconciliation') ||
-              id.includes('/src/pages/ReconciliationPage')
+              id.includes('/src/pages/ReconciliationPage') ||
+              id.includes('/src/components/reconciliation')
             ) {
               return 'reconciliation-feature';
             }

@@ -13,7 +13,7 @@ import { logger } from '@/services/logger';
 import { PageMeta } from '@/components/seo/PageMeta';
 import { isDemoModeEnabled } from '@/config/demoCredentials';
 import type { LoginForm, RegisterForm, DemoRole } from './types';
-import { useOAuth } from './hooks/useOAuth';
+import { useOAuth } from '@/pages/auth/hooks/useOAuth';
 import { LoginForm as LoginFormComponent } from './components/LoginForm';
 import { SignupForm as SignupFormComponent } from './components/SignupForm';
 import { OAuthButtons } from './components/OAuthButtons';

@@ -362,6 +362,55 @@ class HelpContentService {
   getAllHelpContent(): HelpContent[] {
     return Array.from(this.contentStore.values());
   }
+
+  /**
+   * Get all help content (alias for getAllHelpContent)
+   */
+  getAllContent(): HelpContent[] {
+    return this.getAllHelpContent();
+  }
+
+  /**
+   * Add new help content
+   */
+  addContent(content: HelpContent): void {
+    this.contentStore.set(content.id, {
+      ...content,
+      lastUpdated: new Date(),
+    });
+    this.contentCache.delete(content.id);
+    logger.debug('Help content added', { contentId: content.id });
+  }
+
+  /**
+   * Update existing help content
+   */
+  updateContent(contentId: string, content: HelpContent): void {
+    if (this.contentStore.has(contentId)) {
+      this.contentStore.set(contentId, {
+        ...content,
+        id: contentId,
+        lastUpdated: new Date(),
+      });
+      this.contentCache.delete(contentId);
+      logger.debug('Help content updated', { contentId });
+    } else {
+      logger.warn('Help content not found for update', { contentId });
+    }
+  }
+
+  /**
+   * Delete help content
+   */
+  deleteContent(contentId: string): void {
+    if (this.contentStore.has(contentId)) {
+      this.contentStore.delete(contentId);
+      this.contentCache.delete(contentId);
+      logger.debug('Help content deleted', { contentId });
+    } else {
+      logger.warn('Help content not found for deletion', { contentId });
+    }
+  }
 }
 
 // Export singleton instance

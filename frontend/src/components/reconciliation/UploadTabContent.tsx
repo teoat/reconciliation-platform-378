@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { FileText, CheckCircle, Clock, Users, Upload } from 'lucide-react';
 import Card from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
@@ -15,7 +15,7 @@ interface UploadTabContentProps {
   onUploadClick: () => void;
 }
 
-export const UploadTabContent: React.FC<UploadTabContentProps> = ({
+const UploadTabContentComponent: React.FC<UploadTabContentProps> = ({
   dataSources,
   jobs,
   matches,
@@ -100,3 +100,7 @@ export const UploadTabContent: React.FC<UploadTabContentProps> = ({
     </div>
   );
 };
+
+UploadTabContentComponent.displayName = 'UploadTabContent';
+
+export const UploadTabContent = memo(UploadTabContentComponent);

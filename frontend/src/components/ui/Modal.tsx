@@ -13,7 +13,7 @@ export interface ModalProps {
   closeOnEscape?: boolean;
 }
 
-const Modal: React.FC<ModalProps> = memo(({
+const ModalComponent: React.FC<ModalProps> = ({
   isOpen,
   onClose,
   title,
@@ -194,5 +194,9 @@ const Modal: React.FC<ModalProps> = memo(({
   );
 };
 
+ModalComponent.displayName = 'Modal';
+
+const Modal = memo(ModalComponent);
+
 export { Modal };
-export default memo(Modal);
+export default Modal;
