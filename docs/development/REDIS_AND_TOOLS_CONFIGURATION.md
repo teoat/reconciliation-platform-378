@@ -1,7 +1,8 @@
 # Redis and Tools Configuration Guide
 
 **Last Updated**: January 2025  
-**Status**: ✅ Complete Configuration Guide
+**Status**: ✅ Complete Configuration Guide - SSOT  
+**Version**: 2.0.0
 
 ---
 
@@ -13,7 +14,43 @@ This guide covers configuring Redis and MCP tools for the Reconciliation Platfor
 - Session storage
 - Rate limiting
 
+This guide consolidates all Redis configuration and quick start instructions into a single source of truth.
+
 ---
+
+## 🚀 Quick Setup
+
+### 1. Verify Redis is Running
+
+```bash
+# Check if Redis container is running
+docker ps | grep redis
+
+# Test Redis connection (local Redis, no password)
+redis-cli ping
+# Should return: PONG
+
+# Or test Docker Redis (may require password)
+docker exec reconciliation-redis redis-cli ping
+```
+
+### 2. Run Setup Script
+
+```bash
+# Run the automated setup script
+./scripts/setup-redis-and-tools.sh
+```
+
+This script will:
+- ✅ Check Redis connection
+- ✅ Verify MCP configuration
+- ✅ Check if MCP servers are built
+- ✅ Offer to build servers if needed
+- ✅ Start Redis if not running
+
+### 3. Restart Cursor IDE
+
+**IMPORTANT**: After configuration, restart Cursor IDE to activate MCP tools.
 
 ## ✅ Current Status
 
@@ -22,13 +59,24 @@ This guide covers configuring Redis and MCP tools for the Reconciliation Platfor
 - **Container**: `reconciliation-redis` (healthy)
 - **Port**: `6379`
 - **Password**: Managed via SSOT (`.env` file)
-- **Connection URL**: `redis://:${REDIS_PASSWORD}@localhost:6379`
+- **Connection URL**: 
+  - Local: `redis://localhost:6379` (no password)
+  - Docker: `redis://:${REDIS_PASSWORD}@localhost:6379` (with password)
 - **SSOT Management**: Use `scripts/manage-passwords.sh` for password operations
 
 ### MCP Servers
-- **reconciliation-platform**: ✅ Built and configured
-- **agent-coordination**: ✅ Built and configured
+- **reconciliation-platform**: ✅ Built and configured (`mcp-server/dist/index.js`)
+- **agent-coordination**: ✅ Built and configured (`mcp-server/dist/agent-coordination.js`)
+- **Configuration**: `.cursor/mcp.json` ✅
 - **Total Tools**: 74 (under 80 limit)
+
+### MCP Tools Using Redis
+1. **reconciliation-platform** (27 tools)
+   - Redis operations: `redis_get`, `redis_keys`
+   
+2. **agent-coordination** (18 tools)
+   - Task management, file locking, agent coordination
+   - Requires Redis for shared state
 
 ---
 

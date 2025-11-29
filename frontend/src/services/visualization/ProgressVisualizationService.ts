@@ -2,7 +2,6 @@
  * Progress Visualization Service - Core service for workflow progress tracking
  */
 
-import { logger } from '@/services/logger';
 import type {
   WorkflowStage,
   ProgressAnimation,

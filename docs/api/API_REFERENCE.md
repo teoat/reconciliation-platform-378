@@ -37,10 +37,12 @@ The 378 Reconciliation Platform provides a comprehensive REST API for data recon
 
 ## Base URLs
 
-```
+```text
 Production: https://api.378reconciliation.com
-Development: http://localhost:8080
+Development: http://localhost:2000
 ```
+
+**Note**: The backend API runs on port `2000` in development. The frontend runs on port `1000`.
 
 ---
 
@@ -48,7 +50,7 @@ Development: http://localhost:8080
 
 The API uses JWT (JSON Web Token) authentication with refresh tokens. Include the access token in the Authorization header on every request:
 
-```
+```http
 Authorization: Bearer <access_token>
 ```
 
@@ -94,7 +96,7 @@ Authorization: Bearer <access_token>
 
 Rate limit headers are included on every response:
 
-```
+```http
 X-RateLimit-Limit: 100
 X-RateLimit-Remaining: 94
 X-RateLimit-Reset: 1736443200
@@ -1068,6 +1070,156 @@ Current password/session policies.
 
 ---
 
+### SQL Data Synchronization
+
+The SQL sync endpoints allow you to manage table-to-table synchronization operations between databases.
+
+#### GET /api/v1/sync/sql-sync/configurations
+
+List all SQL sync configurations.
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "uuid",
+      "name": "Users Sync",
+      "source_table": "users_source",
+      "target_table": "users_target",
+      "sync_strategy": "incremental",
+      "conflict_resolution": "timestamp",
+      "enabled": true,
+      "last_sync_at": "2025-01-01T10:00:00Z",
+      "next_sync_at": "2025-01-01T11:00:00Z",
+      "sync_status": "completed"
+    }
+  ]
+}
+```
+
+#### POST /api/v1/sync/sql-sync/configurations
+
+Create a new SQL sync configuration.
+
+**Request Body:**
+```json
+{
+  "name": "Users Sync",
+  "source_table": "users_source",
+  "target_table": "users_target",
+  "source_database_url": "postgresql://source:5432/db",
+  "target_database_url": "postgresql://target:5432/db",
+  "sync_strategy": "incremental",
+  "conflict_resolution": "timestamp",
+  "batch_size": 1000,
+  "sync_interval_seconds": 3600,
+  "enabled": true
+}
+```
+
+**Sync Strategies:**
+- `full`: Full table sync (replace all data)
+- `incremental`: Only sync changed records
+- `merge`: Merge source and target data
+
+**Conflict Resolution:**
+- `source_wins`: Source data takes precedence
+- `target_wins`: Target data takes precedence
+- `timestamp`: Use most recent timestamp
+- `manual`: Require manual resolution
+
+#### GET /api/v1/sync/sql-sync/configurations/{id}
+
+Get a specific sync configuration by ID.
+
+#### PUT /api/v1/sync/sql-sync/configurations/{id}
+
+Update a sync configuration.
+
+#### DELETE /api/v1/sync/sql-sync/configurations/{id}
+
+Delete a sync configuration.
+
+#### POST /api/v1/sync/sql-sync/configurations/{id}/execute
+
+Manually trigger a sync execution.
+
+**Request Body:**
+```json
+{
+  "force_full_sync": false
+}
+```
+
+#### GET /api/v1/sync/sql-sync/executions
+
+List all sync executions with status and results.
+
+#### GET /api/v1/sync/sql-sync/executions/{id}
+
+Get details of a specific sync execution.
+
+#### GET /api/v1/sync/sql-sync/conflicts
+
+List all sync conflicts that require resolution.
+
+#### POST /api/v1/sync/sql-sync/conflicts/{id}/resolve
+
+Resolve a sync conflict manually.
+
+#### GET /api/v1/sync/sql-sync/statistics
+
+Get synchronization statistics and metrics.
+
+---
+
+### Logging
+
+#### POST /api/v1/logs
+
+Receive and process client-side log entries from the frontend.
+
+**Request Body:**
+```json
+{
+  "logs": [
+    {
+      "level": "error",
+      "message": "Failed to load user data",
+      "timestamp": "2025-01-01T10:00:00Z",
+      "metadata": {
+        "userId": "123",
+        "component": "UserProfile",
+        "error": "Network timeout"
+      }
+    }
+  ],
+  "timestamp": "2025-01-01T10:00:00Z"
+}
+```
+
+**Log Levels:**
+- `error`: Critical errors requiring attention
+- `warn`: Warning messages
+- `info`: Informational messages
+- `debug`: Debug information
+- `trace`: Detailed trace information
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "received": 1,
+    "processed": 1
+  }
+}
+```
+
+---
+
 ### Webhooks & Integrations
 
 #### GET /api/webhooks
@@ -1120,8 +1272,10 @@ Install/configure integration.
 Connect to WebSocket endpoint:
 
 ```
-ws://localhost:8080/ws?token=<jwt_token>
+ws://localhost:2000/ws?token=<jwt_token>
 ```
+
+**Note**: The WebSocket endpoint is available at the root level (`/ws`), not under `/api/v1/`. Authentication is done via JWT token in the query string.
 
 ### Message Format
 
@@ -1164,7 +1318,7 @@ All WebSocket messages follow this format:
 ### Example WebSocket Usage
 
 ```javascript
-const ws = new WebSocket('ws://localhost:8080/ws?token=your_jwt_token');
+const ws = new WebSocket('ws://localhost:2000/ws?token=your_jwt_token');
 
 ws.onopen = function() {
   console.log('Connected to WebSocket');
@@ -1214,7 +1368,7 @@ npm install @378reconciliation/sdk
 import { ReconciliationClient } from '@378reconciliation/sdk';
 
 const client = new ReconciliationClient({
-  baseUrl: 'http://localhost:8080',
+  baseUrl: 'http://localhost:2000',
   token: process.env.API_TOKEN!
 });
 
@@ -1243,7 +1397,7 @@ pip install reconciliation-sdk
 from reconciliation_sdk import ReconciliationClient
 
 client = ReconciliationClient(
-    base_url='http://localhost:8080',
+    base_url='http://localhost:2000',
     token='your_jwt_token'
 )
 
@@ -1273,26 +1427,26 @@ job = client.reconciliation.create_job(
 
 ```bash
 # 1. Authenticate
-TOKEN=$(curl -s -X POST http://localhost:8080/api/auth/login \
+TOKEN=$(curl -s -X POST http://localhost:2000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"user@example.com","password":"Password123!"}' \
   | jq -r '.access_token')
 
 # 2. Create a project
-PROJECT_ID=$(curl -s -X POST http://localhost:8080/api/projects \
+PROJECT_ID=$(curl -s -X POST http://localhost:2000/api/projects \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"name":"Quarterly Reconciliation","description":"Q4 close"}' \
   | jq -r '.id')
 
 # 3. Upload source data
-FILE_ID=$(curl -s -X POST http://localhost:8080/api/files/upload?project_id=$PROJECT_ID \
+FILE_ID=$(curl -s -X POST http://localhost:2000/api/files/upload?project_id=$PROJECT_ID \
   -H "Authorization: Bearer $TOKEN" \
   -F "file=@./data/source.csv" \
   | jq -r '.data.id')
 
 # 4. Launch reconciliation
-JOB_ID=$(curl -s -X POST http://localhost:8080/api/reconciliation/jobs \
+JOB_ID=$(curl -s -X POST http://localhost:2000/api/reconciliation/jobs \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
   -d "{\"name\":\"Q4 vs ERP\",\"project_id\":\"$PROJECT_ID\",\"source_data_source_id\":\"$FILE_ID\",\"target_data_source_id\":\"$FILE_ID\"}" \

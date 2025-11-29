@@ -55,6 +55,8 @@ pub mod ai;
 // Add missing service modules
 pub mod security;
 pub mod security_monitor;
+pub mod security_event_logging;
+pub mod compliance_reporting;
 pub mod secrets;
 pub mod secret_manager;
 pub mod structured_logging;

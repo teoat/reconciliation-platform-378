@@ -53,8 +53,11 @@ ARG CARGO_BUILD_JOBS
 ARG FEATURES
 
 # Set build environment
+# NOTE: Cargo does not allow CARGO_BUILD_JOBS=0 (it must be a positive integer),
+# so we default to 4 to avoid the "jobs may not be 0" build error when the arg
+# is not explicitly provided by the build system.
 ENV RUSTFLAGS=${RUSTFLAGS:-"-C target-cpu=native"} \
-    CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS:-0}
+    CARGO_BUILD_JOBS=${CARGO_BUILD_JOBS:-4}
 
 # Copy dependency cache from previous stage
 COPY backend/Cargo.toml backend/Cargo.lock ./

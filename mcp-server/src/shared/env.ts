@@ -2,7 +2,14 @@ import path from 'node:path';
 
 export const PROJECT_ROOT = process.env.PROJECT_ROOT || '/Users/Arief/Documents/GitHub/reconciliation-platform-378';
 export const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:2000';
-export const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+
+// Prefer a fully specified REDIS_URL from the environment. If only REDIS_PASSWORD
+// is provided (common in dev when using docker-compose defaults), synthesize a
+// redis:// URL that includes the password so MCP tools align with backend/compose.
+const DEV_REDIS_PASSWORD = process.env.REDIS_PASSWORD;
+export const REDIS_URL =
+  process.env.REDIS_URL ||
+  (DEV_REDIS_PASSWORD ? `redis://:${DEV_REDIS_PASSWORD}@localhost:6379` : 'redis://localhost:6379');
 
 export const DIRS = {
   TEST_RESULTS: path.resolve(PROJECT_ROOT, 'test-results'),

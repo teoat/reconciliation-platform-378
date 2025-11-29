@@ -266,8 +266,8 @@ export function useNetworkMonitoring() {
         });
       };
 
-      connection.addEventListener('change', handleConnectionChange);
-      return () => connection.removeEventListener('change', handleConnectionChange);
+      connection.addEventListener?.('change', handleConnectionChange);
+      return () => connection.removeEventListener?.('change', handleConnectionChange);
     }
     
     return () => {};

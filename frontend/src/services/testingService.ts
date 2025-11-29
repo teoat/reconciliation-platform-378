@@ -420,7 +420,7 @@ export class TestingService extends BaseService<TestResult> {
     super.cleanup();
 
     // Cancel running tests
-    for (const [testId, promise] of this.runningTests.entries()) {
+    for (const [testId] of this.runningTests.entries()) {
       // Note: Promises can't be cancelled, but we can track them
       this.runningTests.delete(testId);
     }

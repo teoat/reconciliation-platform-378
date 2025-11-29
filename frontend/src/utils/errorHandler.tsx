@@ -170,8 +170,11 @@ class ErrorHandler {
     if (error.severity === ErrorSeverity.HIGH || error.severity === ErrorSeverity.CRITICAL) {
       // Send to Sentry, New Relic, or other monitoring service
       if (typeof window !== 'undefined') {
-        const win = window as unknown as Record<string, unknown>;
-        const Sentry = win.Sentry as { captureException?: (error: Error, context?: Record<string, unknown>) => void } | undefined;
+        const win = window as unknown as Record<string, unknown>
+        const Sentry = win.Sentry as
+          | { captureException?: (error: Error, _context?: Record<string, unknown>) => void }
+          | undefined
+
         if (Sentry?.captureException) {
           Sentry.captureException(new Error(error.message), {
           tags: {
@@ -186,6 +189,7 @@ class ErrorHandler {
             projectId: error.projectId
           }
         })
+        }
       }
     }
   }
@@ -208,7 +212,7 @@ class ErrorHandler {
   }
 
   // Log retry attempt
-  private logRetryAttempt(options: { errorId: string; context?: string }): void {
+  private logRetryAttempt(_options: { errorId: string; context?: string }): void {
     // Retry logging is handled by the retry service
     // This method is kept for backward compatibility but does not log directly
   }

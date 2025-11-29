@@ -7,7 +7,6 @@ import type { ApiResponse } from '../apiClient/types';
 import { BaseApiService, type PaginatedResult } from './BaseApiService';
 import type { ReconciliationRecord } from '../../types/index';
 import type { ReconciliationStats } from '../../types/backend-aligned';
-import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
 import type { ErrorHandlingResult } from '../errorHandling';
 
 /**
@@ -49,32 +48,38 @@ export class ReconciliationApiService extends BaseApiService {
       per_page?: number;
       status?: string;
     } = {}
-  ) {
-    try {
-      const { page = 1, per_page = 20, status } = params;
-      const response = await apiClient.get(`/api/projects/${projectId}/reconciliation/jobs`, {
-        params: { page, per_page, status },
-      });
+  ): Promise<ErrorHandlingResult<PaginatedResult<unknown> & { jobs: unknown[] }>> {
+    return this.withErrorHandling(
+      async () => {
+        const { page = 1, per_page = 20, status } = params;
+        const cacheKey = `reconciliation:jobs:${projectId}:${JSON.stringify(params)}`;
 
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+        const result = await this.getCached(
+          cacheKey,
+          async () => {
+            const response = await apiClient.get(`/api/projects/${projectId}/reconciliation/jobs`, {
+              params: { page, per_page, status },
+            });
+
+            const paginated = this.transformPaginatedResponse(response);
+
+            return {
+              jobs: paginated.items,
+              items: paginated.items,
+              pagination: paginated.pagination,
+            };
+          },
+          60000 // 1 minute TTL (frequently updated)
+        );
+
+        return result;
+      },
+      {
+        component: 'ReconciliationApiService',
+        action: 'getReconciliationJobs',
+        projectId,
       }
-
-      const responseData = response.data as { data?: unknown[]; pagination?: unknown } | undefined;
-      return {
-        jobs: responseData?.data || [],
-        pagination: responseData?.pagination || {
-          page,
-          per_page,
-          total: (responseData?.data as unknown[])?.length || 0,
-          total_pages: Math.ceil(((responseData?.data as unknown[])?.length || 0) / per_page),
-        },
-      };
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : 'Failed to fetch reconciliation jobs'
-      );
-    }
+    );
   }
 
   /**

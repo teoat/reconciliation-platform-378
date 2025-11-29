@@ -28,8 +28,8 @@ SCORE_SECURITY=0
 SCORE_CODE_QUALITY=0
 
 # Declare associative arrays for scores and details
-SCORES=()
-DETAILS=()
+declare -A SCORES
+declare -A DETAILS
 
 # Details storage (using a temp file for compatibility - kept for backward compatibility)
 DETAILS_FILE=$(mktemp)
@@ -110,16 +110,19 @@ diagnose_backend() {
     # 3. Code Quality - Clippy (20 points)
     log_info "  Checking code quality (clippy)..."
     if command -v cargo-clippy &> /dev/null || cargo clippy --version &> /dev/null; then
-        local clippy_warnings=$(cargo clippy --message-format=json 2>&1 | grep -c '"level":"warning"' || echo "0")
-        local clippy_errors=$(cargo clippy --message-format=json 2>&1 | grep -c '"level":"error"' || echo "0")
+        local clippy_warnings
+        local clippy_errors
+        clippy_warnings=$(cargo clippy --message-format=json 2>&1 | grep -c '"level":"warning"' || echo "0")
+        clippy_errors=$(cargo clippy --message-format=json 2>&1 | grep -c '"level":"error"' || echo "0")
         clippy_warnings=${clippy_warnings:-0}
         clippy_errors=${clippy_errors:-0}
+        # Ensure we have clean integer values for arithmetic
+        clippy_warnings=$(echo "$clippy_warnings" | tr -cd '0-9')
+        clippy_errors=$(echo "$clippy_errors" | tr -cd '0-9')
         local total_issues=$((clippy_warnings + clippy_errors))
-        set -x
         local quality_pct=$((100 - total_issues * 2))
         if [ $quality_pct -lt 0 ]; then quality_pct=0; fi
         local quality_score=$(calculate_score $quality_pct 20)
-        set +x
         backend_score=$(echo "$backend_score + $quality_score" | bc)
         DETAILS["backend_quality"]="Warnings: $clippy_warnings, Errors: $clippy_errors, Score: $quality_score/20"
     else
@@ -161,6 +164,7 @@ diagnose_backend() {
     fi
 
     SCORE_BACKEND=$backend_score
+    SCORES["backend"]=$backend_score
     log_success "Backend Score: $backend_score/$max_backend_score"
 }
 

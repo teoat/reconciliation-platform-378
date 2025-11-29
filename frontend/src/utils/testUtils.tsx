@@ -75,7 +75,7 @@ export function waitForAsync() {
  * Mock localStorage
  */
 export function createMockLocalStorage() {
-  const store: Record<string, string> = {};
+  const store: { [key: string]: string } = {};
 
   return {
     getItem: (key: string) => store[key] || null,

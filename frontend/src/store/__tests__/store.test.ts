@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore as _configureStore } from '@reduxjs/toolkit';
 import { persistStore } from 'redux-persist';
 import { createMockStore, createMockUser, createMockProject } from '../../test/utils';
 
@@ -24,11 +24,11 @@ import {
 
 describe('Redux Store', () => {
   let store: ReturnType<typeof createMockStore>;
-  let persistor: ReturnType<typeof persistStore>;
+  let _persistor: ReturnType<typeof persistStore>;
 
   beforeEach(() => {
     store = createMockStore();
-    persistor = persistStore(store);
+    _persistor = persistStore(store);
   });
 
   describe('Auth Slice', () => {

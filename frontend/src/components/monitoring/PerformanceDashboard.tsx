@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, memo } from 'react';
 import {
   BarChart,
   TrendingUp,
@@ -39,7 +39,7 @@ interface PerformanceDashboardProps {
   realtime?: boolean;
 }
 
-const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
+const PerformanceDashboardComponent: React.FC<PerformanceDashboardProps> = ({
   metrics: initialMetrics,
   realtime = false,
 }) => {
@@ -504,5 +504,7 @@ const PerformanceDashboard: React.FC<PerformanceDashboardProps> = ({
     </div>
   );
 };
+
+const PerformanceDashboard = memo(PerformanceDashboardComponent);
 
 export default PerformanceDashboard;

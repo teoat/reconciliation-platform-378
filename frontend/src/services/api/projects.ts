@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { apiClient } from '../apiClient';
-import { BaseApiService, type PaginatedResult, type ServiceContext } from './BaseApiService';
+import { BaseApiService, type PaginatedResult } from './BaseApiService';
 import type { Project } from '../../types/backend-aligned';
 import type { ProjectSettings } from '../../types/index';
 import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
@@ -49,39 +49,48 @@ export class ProjectsApiService extends BaseApiService {
       search?: string;
       status?: string;
     } = {}
-  ) {
-    try {
-      const { page = 1, per_page = 20, search, status } = params;
-      let response;
+  ): Promise<ErrorHandlingResult<PaginatedResult<Project> & { projects: Project[] }>> {
+    return this.withErrorHandling(
+      async () => {
+        const { page = 1, per_page = 20, search, status } = params;
+        const cacheKey = `projects:${JSON.stringify(params)}`;
 
-      if (search) {
-        // searchProjects doesn't exist, use getProjects with search params
-        response = await apiClient.get(`/api/projects?search=${encodeURIComponent(search)}&page=${page}&per_page=${per_page}`);
-      } else {
-        response = await apiClient.get(`/api/projects?page=${page}&per_page=${per_page}`);
+        const result = await this.getCached(
+          cacheKey,
+          async () => {
+            let response: ApiResponse<unknown>;
+            if (search) {
+              response = await apiClient.get(`/api/projects?search=${encodeURIComponent(search)}&page=${page}&per_page=${per_page}`);
+            } else {
+              response = await apiClient.get(`/api/projects?page=${page}&per_page=${per_page}`);
+            }
+
+            const paginated = this.transformPaginatedResponse<Project>(
+              response as ApiResponse<{ data?: Project[]; items?: Project[]; pagination?: unknown }>
+            );
+
+            // Filter by status if provided
+            let projects = paginated.items;
+            if (status) {
+              projects = projects.filter((p: Project) => p.status === status);
+            }
+
+            return {
+              projects,
+              items: projects,
+              pagination: paginated.pagination,
+            };
+          },
+          600000 // 10 minutes TTL
+        );
+
+        return result;
+      },
+      {
+        component: 'ProjectsApiService',
+        action: 'getProjects',
       }
-
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
-      }
-
-      let projects = response.data?.data || [];
-      if (status) {
-        projects = projects.filter((p: Project) => p.status === status);
-      }
-
-      return {
-        projects,
-        pagination: response.data?.pagination || {
-          page,
-          per_page,
-          total: projects.length,
-          total_pages: Math.ceil(projects.length / per_page),
-        },
-      };
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch projects');
-    }
+    );
   }
 
   /**

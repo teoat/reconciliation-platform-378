@@ -52,14 +52,13 @@ export const createGetThunk = <TData = unknown>(
     transformResponse?: (data: unknown) => TData;
   } = {}
 ) => {
-  const { requiresAuth = true, cache = true, transformResponse } = options;
+  const { requiresAuth: _requiresAuth = true, cache: _cache = true, transformResponse } = options;
 
   return createAsyncThunk(
     actionType,
     async (params: Record<string, unknown> | undefined, { rejectWithValue }) => {
       try {
         const url = typeof endpoint === 'function' ? endpoint(params) : endpoint;
-        const config = requiresAuth ? {} : { skipAuth: true };
 
         const response = await apiClient.get(url, params);
 
@@ -88,7 +87,7 @@ export const createPostThunk = <TData = unknown>(
     transformResponse?: (data: unknown) => TData;
   } = {}
 ) => {
-  const { requiresAuth = true, transformRequest, transformResponse } = options;
+  const { requiresAuth: _requiresAuth = true, transformRequest, transformResponse } = options;
 
   return createAsyncThunk(actionType, async (data: unknown | undefined, { rejectWithValue }) => {
     try {
@@ -121,7 +120,7 @@ export const createPutThunk = <TData = unknown>(
     transformResponse?: (data: unknown) => TData;
   } = {}
 ) => {
-  const { requiresAuth = true, transformRequest, transformResponse } = options;
+  const { requiresAuth: _requiresAuth = true, transformRequest, transformResponse } = options;
 
   return createAsyncThunk(
     actionType,
@@ -157,7 +156,7 @@ export const createDeleteThunk = <TData = unknown>(
     returnId?: boolean;
   } = {}
 ) => {
-  const { requiresAuth = true, transformResponse, returnId = false } = options;
+  const { requiresAuth: _requiresAuth = true, transformResponse, returnId = false } = options;
 
   return createAsyncThunk(actionType, async (id: string, { rejectWithValue }) => {
     try {
@@ -194,7 +193,7 @@ export const createAuthThunk = <TRequest, TResponse>(
     transformResponse?: (data: unknown) => TResponse;
   } = {}
 ) => {
-  const { skipAuth = true, transformRequest, transformResponse } = options;
+  const { skipAuth: _skipAuth = true, transformRequest, transformResponse } = options;
 
   return createAsyncThunk(actionType, async (data: TRequest, { rejectWithValue }) => {
     try {
@@ -293,9 +292,10 @@ export const createPaginatedListThunk = <TData = unknown>(
         };
 
         const transformedParams = transformParams ? transformParams(queryParams) : queryParams;
-        const url = typeof endpoint === 'function' ? endpoint(transformedParams) : endpoint;
-
-        const response = await apiClient.get(url, transformedParams);
+        const response = await apiClient.get(
+          typeof endpoint === 'function' ? endpoint(transformedParams) : endpoint,
+          transformedParams
+        );
 
         if (response.error) {
           return rejectWithValue(handleApiError(response.error));

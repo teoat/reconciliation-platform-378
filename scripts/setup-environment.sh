@@ -76,10 +76,13 @@ if docker ps --format '{{.Names}}' | grep -q "^reconciliation-redis$"; then
     log_success "Redis container is running"
     
     # Test connection
-    if docker exec reconciliation-redis redis-cli -a redis_pass ping > /dev/null 2>&1; then
+    # Use REDIS_PASSWORD if provided, otherwise fall back to docker-compose
+    # default of 'redis_pass' to keep dev credentials aligned.
+    REDIS_PROBE_PASSWORD="${REDIS_PASSWORD:-redis_pass}"
+    if docker exec reconciliation-redis redis-cli -a "${REDIS_PROBE_PASSWORD}" ping > /dev/null 2>&1; then
         log_success "Redis is ready"
     else
-        log_warning "Redis connection test failed (may need password)"
+        log_warning "Redis connection test failed (verify REDIS_PASSWORD and docker-compose configuration)"
     fi
 else
     log_warning "Redis container is not running (optional for migrations)"

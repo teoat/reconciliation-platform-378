@@ -202,8 +202,13 @@ export class UnifiedStorageTester {
         localStorage.setItem(key, serialized);
       } else if (storageType === 'sessionStorage') {
         sessionStorage.setItem(key, serialized);
+      } else if (storageType === 'indexedDB') {
+        if (!this.isIndexedDBAvailable()) {
+          throw new Error('IndexedDB is not available in this environment');
+        }
+        await this.saveToIndexedDB(key, serialized);
       } else {
-        throw new Error('IndexedDB save not implemented in unified tester');
+        throw new Error(`Unsupported storage type: ${storageType}`);
       }
 
       const duration = Date.now() - startTime;
@@ -249,8 +254,13 @@ export class UnifiedStorageTester {
         data = localStorage.getItem(key);
       } else if (storageType === 'sessionStorage') {
         data = sessionStorage.getItem(key);
+      } else if (storageType === 'indexedDB') {
+        if (!this.isIndexedDBAvailable()) {
+          throw new Error('IndexedDB is not available in this environment');
+        }
+        data = await this.loadFromIndexedDB(key);
       } else {
-        throw new Error('IndexedDB load not implemented in unified tester');
+        throw new Error(`Unsupported storage type: ${storageType}`);
       }
 
       const duration = Date.now() - startTime;
@@ -311,8 +321,13 @@ export class UnifiedStorageTester {
         localStorage.removeItem(key);
       } else if (storageType === 'sessionStorage') {
         sessionStorage.removeItem(key);
+      } else if (storageType === 'indexedDB') {
+        if (!this.isIndexedDBAvailable()) {
+          throw new Error('IndexedDB is not available in this environment');
+        }
+        await this.deleteFromIndexedDB(key);
       } else {
-        throw new Error('IndexedDB delete not implemented in unified tester');
+        throw new Error(`Unsupported storage type: ${storageType}`);
       }
 
       const duration = Date.now() - startTime;
@@ -352,13 +367,97 @@ export class UnifiedStorageTester {
   }
 
   /**
+   * Save data to IndexedDB
+   */
+  private async saveToIndexedDB(key: string, value: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('UnifiedStorageTester', 1);
+
+      request.onerror = () => reject(new Error('Failed to open IndexedDB'));
+      request.onsuccess = () => {
+        const db = request.result;
+        const transaction = db.transaction(['storage'], 'readwrite');
+        const store = transaction.objectStore('storage');
+        const putRequest = store.put({ key, value });
+
+        putRequest.onerror = () => reject(new Error('Failed to save to IndexedDB'));
+        putRequest.onsuccess = () => resolve();
+      };
+
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains('storage')) {
+          db.createObjectStore('storage', { keyPath: 'key' });
+        }
+      };
+    });
+  }
+
+  /**
+   * Load data from IndexedDB
+   */
+  private async loadFromIndexedDB(key: string): Promise<string | null> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('UnifiedStorageTester', 1);
+
+      request.onerror = () => reject(new Error('Failed to open IndexedDB'));
+      request.onsuccess = () => {
+        const db = request.result;
+        const transaction = db.transaction(['storage'], 'readonly');
+        const store = transaction.objectStore('storage');
+        const getRequest = store.get(key);
+
+        getRequest.onerror = () => reject(new Error('Failed to load from IndexedDB'));
+        getRequest.onsuccess = () => {
+          const result = getRequest.result;
+          resolve(result ? result.value : null);
+        };
+      };
+
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains('storage')) {
+          db.createObjectStore('storage', { keyPath: 'key' });
+        }
+      };
+    });
+  }
+
+  /**
+   * Delete data from IndexedDB
+   */
+  private async deleteFromIndexedDB(key: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const request = indexedDB.open('UnifiedStorageTester', 1);
+
+      request.onerror = () => reject(new Error('Failed to open IndexedDB'));
+      request.onsuccess = () => {
+        const db = request.result;
+        const transaction = db.transaction(['storage'], 'readwrite');
+        const store = transaction.objectStore('storage');
+        const deleteRequest = store.delete(key);
+
+        deleteRequest.onerror = () => reject(new Error('Failed to delete from IndexedDB'));
+        deleteRequest.onsuccess = () => resolve();
+      };
+
+      request.onupgradeneeded = (event) => {
+        const db = (event.target as IDBOpenDBRequest).result;
+        if (!db.objectStoreNames.contains('storage')) {
+          db.createObjectStore('storage', { keyPath: 'key' });
+        }
+      };
+    });
+  }
+
+  /**
    * Update metrics
    */
   private updateMetrics(
     successful: number,
     failed: number,
     avgTime: number,
-    totalSize: number
+    _totalSize: number
   ): void {
     const total = this.metrics.totalOperations;
     if (total > 0) {

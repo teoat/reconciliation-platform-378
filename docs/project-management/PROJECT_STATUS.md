@@ -68,6 +68,18 @@ The reconciliation platform has completed Phases 1-6, with Phase 7 (Production D
    - See [OPTIMIZATION_PROPOSAL.md](./OPTIMIZATION_PROPOSAL.md) for detailed recommendations
    - Priority areas: Performance, Code Quality, Security, Monitoring
 
+3. **Security, SSOT, and Quality Enforcement**
+   - Frontend:
+     - Use `@/utils/common/validation` and `@/utils/common/sanitization` as the single source of truth for validation and sanitization in new code.
+     - Use `@/utils/common/errorHandling` for error extraction, correlation IDs, fetch error handling, and error sanitization.
+     - Keep `inputValidation`, `fileValidation`, `errorExtractionAsync`, and `errorSanitization` as thin wrappers only (no new logic).
+   - Backend:
+     - Ensure all password hashing, verification, and strength validation go through `PasswordManager` (`services/auth/password.rs`) and `AuthService`.
+     - Avoid `unwrap`/`expect` in non-test modules; prefer `AppResult` + `AppError` with proper logging.
+   - Env & Docs:
+     - Keep `.env`, `.env.example`, and `config/dev.env.example` as env SSOT; remove or avoid additional env variants.
+     - Continue archiving old diagnostics/status docs under `docs/archive/...`, keeping only core guides and `PROJECT_STATUS.md` active.
+
 ---
 
 ## Related Documentation

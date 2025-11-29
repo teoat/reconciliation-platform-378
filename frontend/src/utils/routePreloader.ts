@@ -57,18 +57,18 @@ class RoutePreloaderImpl implements RoutePreloader {
         presummary: () => import('../pages/PresummaryPage'),
       };
 
-      const importFn = routeMap[route];
+      const importFn = routeMap[route]
       if (!importFn) {
-        logger.warn(`Route preloader: Unknown route "${route}"`);
-        return;
+        logger.warn(`Route preloader: Unknown route "${route}"`)
+        return
       }
 
       // Preload the route
-      await importFn();
-      this.preloadedRoutes.add(route);
-      logger.debug(`Route preloaded: ${route}`);
+      await importFn()
+      this.preloadedRoutes.add(route)
+      logger.debug(`Route preloaded: ${route}`)
     } catch (error) {
-      logger.error(`Failed to preload route "${route}":`, error);
+      logger.error(`Failed to preload route "${route}":`, { error })
     } finally {
       this.preloadingRoutes.delete(route);
     }

@@ -43,6 +43,72 @@ The Reconciliation Platform follows a modern microservices architecture with cle
 - **Real-time**: WebSocket support
 - **Architecture**: CQRS pattern with event-driven architecture (see [CQRS and Event-Driven Architecture](./CQRS_AND_EVENT_DRIVEN_ARCHITECTURE.md))
 
+#### Backend Service Modules
+
+The backend contains **76+ service modules** organized by domain:
+
+**Core Services:**
+- `auth` - Authentication and authorization
+- `user` - User management
+- `project` - Project management (with sub-modules: models, crud, queries, analytics, permissions, aggregations)
+- `reconciliation` - Reconciliation engine (modular structure)
+- `file` - File upload and processing
+- `data_source` - Data source management
+- `analytics` - Analytics and reporting
+
+**Infrastructure Services:**
+- `cache` - Caching layer (with warming and analytics sub-modules)
+- `database_sharding` - Database sharding support
+- `shard_aware_db` - Shard-aware database operations
+- `database_migration` - Database migration management
+- `backup_recovery` - Backup and disaster recovery
+- `realtime` - Real-time notifications and collaboration
+
+**Security & Compliance:**
+- `security` - Security services
+- `security_monitor` - Security monitoring
+- `security_event_logging` - Security event logging
+- `compliance_reporting` - Compliance reporting
+- `secrets` - Secret management
+- `secret_manager` - Secret manager service
+- `password_manager` - Password manager (with utilities sub-module)
+
+**Performance & Monitoring:**
+- `performance` - Performance optimization (with query tuning sub-module)
+- `monitoring` - System monitoring
+- `metrics` - Metrics collection
+- `advanced_metrics` - Advanced metrics and analytics
+- `query_optimizer` - Query optimization
+
+**Error Handling & Resilience:**
+- `error_translation` - Error translation service
+- `error_logging` - Error logging service
+- `error_recovery` - Error recovery mechanisms
+- `resilience` - Resilience patterns (circuit breakers, graceful degradation)
+
+**User Experience:**
+- `internationalization` - i18n support (with models and data sub-modules)
+- `accessibility` - Accessibility services
+- `offline_persistence` - Offline data persistence
+- `optimistic_ui` - Optimistic UI updates
+
+**Advanced Features:**
+- `ai` - AI/ML services
+- `api_versioning` - API versioning management
+- `validation` - Data validation services
+- `structured_logging` - Structured logging
+- `billing` - Billing and subscription management
+- `sync` - Data synchronization services
+- `registry` - Service registry
+- `critical_alerts` - Critical alert management
+- `email` - Email service
+
+**Service Organization:**
+- Services are organized in `backend/src/services/`
+- Each service has a single responsibility
+- Services follow SSOT principles (see [SSOT Guidance](./SSOT_GUIDANCE.md))
+- Services are testable and modular
+
 ### Infrastructure
 - **Containerization**: Docker + Docker Compose
 - **Monitoring**: Prometheus + Grafana

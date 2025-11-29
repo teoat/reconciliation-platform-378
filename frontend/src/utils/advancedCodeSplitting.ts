@@ -86,7 +86,7 @@ interface WindowWithSentry extends Window {
 }
 
 export function handleCodeSplittingError(error: Error, componentName: string): void {
-  // logger.error(`Failed to load component ${componentName}:`, error);
+  logger.error(`Failed to load component ${componentName}:`, { error });
 
   // Send to monitoring service
   if (typeof window !== 'undefined') {

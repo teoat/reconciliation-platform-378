@@ -2,6 +2,7 @@
 //!
 //! Provides security headers, CSRF protection, and rate limiting
 
+pub mod api_key;
 pub mod auth_rate_limit;
 pub mod csrf;
 pub mod headers;
@@ -9,6 +10,7 @@ pub mod metrics;
 pub mod rate_limit;
 
 // Re-exports
+pub use api_key::{ApiKeyConfig, ApiKeyMiddleware};
 pub use auth_rate_limit::{AuthRateLimitConfig, AuthRateLimitMiddleware};
 pub use csrf::CsrfProtectionMiddleware;
 pub use headers::{CspNonce, SecurityHeadersConfig, SecurityHeadersMiddleware};

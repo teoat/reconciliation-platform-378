@@ -107,7 +107,7 @@ const evaluateCriterion = (value: unknown, criterion: MatchingCriteria): boolean
  */
 const getFieldValue = (record: EnhancedReconciliationRecord, field: string): unknown => {
   if (field in record) {
-    return (record as Record<string, unknown>)[field];
+    return (record as unknown as Record<string, unknown>)[field];
   }
   if (field.startsWith('source.')) {
     const sourceField = field.replace('source.', '');

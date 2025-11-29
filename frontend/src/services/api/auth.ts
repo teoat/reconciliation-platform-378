@@ -3,8 +3,8 @@
 // ============================================================================
 
 import { apiClient } from '../apiClient';
-import { logger } from '../logger';
-import { withErrorHandling, handleServiceError, type ErrorHandlingResult } from '../errorHandling';
+import { BaseApiService, type ServiceContext } from './BaseApiService';
+import type { ErrorHandlingResult } from '../errorHandling';
 
 /**
  * Authentication API Service
@@ -20,7 +20,7 @@ import { withErrorHandling, handleServiceError, type ErrorHandlingResult } from 
  * }
  * ```
  */
-export class AuthApiService {
+export class AuthApiService extends BaseApiService {
   /**
    * Authenticates a user with email and password.
    * 
@@ -42,13 +42,10 @@ export class AuthApiService {
     email: string,
     password: string
   ): Promise<ErrorHandlingResult<unknown>> {
-    return withErrorHandling(
+    return this.withErrorHandling(
       async () => {
         const response = await apiClient.login({ email, password });
-        if (response.error) {
-          throw new Error(typeof response.error === 'string' ? response.error : response.error.message || 'Authentication failed');
-        }
-        return response.data;
+        return this.transformResponse(response);
       },
       { component: 'AuthApiService', action: 'authenticate' }
     );
@@ -84,13 +81,10 @@ export class AuthApiService {
     last_name: string;
     role?: string;
   }): Promise<ErrorHandlingResult<unknown>> {
-    return withErrorHandling(
+    return this.withErrorHandling(
       async () => {
         const response = await apiClient.register(userData);
-        if (response.error) {
-          throw new Error(typeof response.error === 'string' ? response.error : response.error.message || 'Authentication failed');
-        }
-        return response.data;
+        return this.transformResponse(response);
       },
       { component: 'AuthApiService', action: 'register' }
     );
@@ -109,11 +103,11 @@ export class AuthApiService {
    * ```
    */
   static async logout(): Promise<ErrorHandlingResult<void>> {
-    return withErrorHandling(
+    return this.withErrorHandling(
       async () => {
         await apiClient.logout();
       },
-      { component: 'AuthApiService', action: 'logout', logError: false }
+      { component: 'AuthApiService', action: 'logout' }
     );
   }
 
@@ -133,13 +127,10 @@ export class AuthApiService {
    * ```
    */
   static async getCurrentUser(): Promise<ErrorHandlingResult<unknown>> {
-    return withErrorHandling(
+    return this.withErrorHandling(
       async () => {
         const response = await apiClient.getCurrentUser();
-        if (response.error) {
-          throw new Error(typeof response.error === 'string' ? response.error : response.error.message || 'Authentication failed');
-        }
-        return response.data;
+        return this.transformResponse(response);
       },
       { component: 'AuthApiService', action: 'getCurrentUser' }
     );
@@ -166,13 +157,10 @@ export class AuthApiService {
     currentPassword: string;
     newPassword: string;
   }): Promise<ErrorHandlingResult<unknown>> {
-    return withErrorHandling(
+    return this.withErrorHandling(
       async () => {
         const response = await apiClient.post('/api/auth/change-password', passwordData);
-        if (response.error) {
-          throw new Error(typeof response.error === 'string' ? response.error : response.error.message || 'Authentication failed');
-        }
-        return response.data;
+        return this.transformResponse(response);
       },
       { component: 'AuthApiService', action: 'changePassword' }
     );
@@ -192,13 +180,10 @@ export class AuthApiService {
    * ```
    */
   static async requestPasswordReset(email: string): Promise<ErrorHandlingResult<unknown>> {
-    return withErrorHandling(
+    return this.withErrorHandling(
       async () => {
         const response = await apiClient.post('/api/auth/password-reset', { email });
-        if (response.error) {
-          throw new Error(typeof response.error === 'string' ? response.error : response.error.message || 'Authentication failed');
-        }
-        return response.data;
+        return this.transformResponse(response);
       },
       { component: 'AuthApiService', action: 'requestPasswordReset' }
     );
@@ -224,16 +209,13 @@ export class AuthApiService {
     token: string,
     newPassword: string
   ): Promise<ErrorHandlingResult<unknown>> {
-    return withErrorHandling(
+    return this.withErrorHandling(
       async () => {
         const response = await apiClient.post('/api/auth/password-reset/confirm', {
           token,
           new_password: newPassword,
         });
-        if (response.error) {
-          throw new Error(typeof response.error === 'string' ? response.error : response.error.message || 'Authentication failed');
-        }
-        return response.data;
+        return this.transformResponse(response);
       },
       { component: 'AuthApiService', action: 'confirmPasswordReset' }
     );

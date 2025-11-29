@@ -3,11 +3,7 @@
  */
 
 import type { CustomReport, ReportFilter, ReportMetric } from '../types';
-
-export interface ValidationError {
-  field: string;
-  message: string;
-}
+import type { ValidationError } from '@/utils/common/types';
 
 /**
  * Validate report data

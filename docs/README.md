@@ -8,9 +8,8 @@
 
 ## 🎯 Master Documents (Start Here)
 
+- **[📚 Documentation Hub](./DOCUMENTATION_HUB.md)** ⭐ **NEW** - Central documentation portal with role-based navigation
 - **[Project Status](./project-management/PROJECT_STATUS.md)** - ⭐ **Single source of truth** - Overall project health and metrics
-- **[Master TODOs](./project-management/MASTER_TODOS.md)** - Complete list of unimplemented tasks (organized by priority)
-- **[Production Deployment Plan](./deployment/PRODUCTION_DEPLOYMENT_PLAN.md)** - Comprehensive deployment guide for all services
 
 ---
 
@@ -45,17 +44,16 @@
 ### 🎯 Features
 - **[Password Manager](./features/password-manager/)** - Password manager documentation
 - **[Onboarding](./features/onboarding/)** - Onboarding feature docs
-  - [Contextual Help Expansion Plan](./features/onboarding/CONTEXTUAL_HELP_EXPANSION_PLAN.md) - ⭐ **NEW** - Help content expansion
-  - [Progressive Feature Disclosure Guide](./features/onboarding/PROGRESSIVE_FEATURE_DISCLOSURE_GUIDE.md) - ⭐ **NEW** - Feature disclosure strategy
-  - [Smart Tip System Guide](./features/onboarding/SMART_TIP_SYSTEM_GUIDE.md) - ⭐ **NEW** - Smart tips implementation
+  - [Progressive Feature Disclosure Guide](./features/onboarding/PROGRESSIVE_FEATURE_DISCLOSURE_GUIDE.md) - Feature disclosure strategy
+  - [Smart Tip System Guide](./features/onboarding/SMART_TIP_SYSTEM_GUIDE.md) - Smart tips implementation
 - **[Meta-Agent](./features/meta-agent/)** - Meta-agent orchestration
 
 ### 🛠️ Development Tools
 - **[MCP Setup Guide](./development/MCP_SETUP_GUIDE.md)** - Complete MCP server setup (includes Playwright)
 - **[Cursor Optimization Guide](./development/CURSOR_OPTIMIZATION_GUIDE.md)** - Cursor IDE optimization
 - **[SSOT Migration Guide](./development/SSOT_MIGRATION_GUIDE.md)** - Guide for migrating to SSOT locations
-- **[Help Content Implementation Guide](./development/HELP_CONTENT_IMPLEMENTATION_GUIDE.md)** - ⭐ **NEW** - Help system UI integration
-- **[Feature Integration Guide](./development/FEATURE_INTEGRATION_GUIDE.md)** - ⭐ **NEW** - Phase 3 feature integration
+- **[Help Content Implementation Guide](./development/HELP_CONTENT_IMPLEMENTATION_GUIDE.md)** - Help system UI integration
+- **[Feature Integration Guide](./development/FEATURE_INTEGRATION_GUIDE.md)** - Feature integration guide
 - **[Error Handling Guide](./architecture/backend/ERROR_HANDLING_GUIDE.md)** - Backend error handling patterns
 
 ### 🔧 Operations
@@ -68,12 +66,10 @@
 - **[Secrets Management](./operations/secrets/)** - Secrets management
 
 ### 🔒 Security
-- **[Security Audit Report](./security/SECURITY_AUDIT_REPORT.md)** - Security analysis
+- **[Security Guides](./security/)** - Security documentation and guides
 
 ### 🧪 Testing
-- **[Phase 4 Testing & Validation Guide](./testing/PHASE_4_TESTING_VALIDATION_GUIDE.md)** - ⭐ **NEW** - Phase 4 testing procedures
-- **[UAT Plan](./testing/UAT_PLAN.md)** - User Acceptance Testing plan
-- **[UAT Summary](./testing/UAT_SUMMARY.md)** - UAT results
+- **[Testing Guides](./testing/)** - Testing documentation and guides
 - **[Test Cases](./testing/test-cases/)** - Test case documentation
 
 ### 💻 Development
@@ -82,22 +78,14 @@
 - **[Quick Reference Commands](./development/QUICK-REFERENCE-COMMANDS.md)** - Common commands
 
 ### 🔧 Refactoring
-- **[Phase 5 Refactoring Guide](./refactoring/PHASE_5_REFACTORING_GUIDE.md)** - ⭐ **NEW** - Phase 5 refactoring guide
-- **[Consolidation & Optimization Plan](./refactoring/CONSOLIDATION_OPTIMIZATION_PLAN.md)** - ⭐ **Code consolidation strategy** - Consolidate small files and refactor large files
-- **[Consolidation Summary](./refactoring/CONSOLIDATION_SUMMARY.md)** - Quick overview of consolidation plan
-- **[Consolidation Quick Reference](./refactoring/CONSOLIDATION_QUICK_REFERENCE.md)** - Quick lookup for import migrations
-- **[Component Organization Plan](./refactoring/COMPONENT_ORGANIZATION_PLAN.md)** - Component organization strategy
+- **[Refactoring Guides](./refactoring/)** - Refactoring documentation and guides
 
 ### 📊 Project Management
 - **[Project Status](./project-management/PROJECT_STATUS.md)** - ⭐ **Single source of truth** - Overall project health and metrics
-- **[Master TODOs](./project-management/MASTER_TODOS.md)** - Master todo list
-- **[Priority Recommendations](./project-management/PRIORITY_RECOMMENDATIONS.md)** - Prioritized improvements
-- **[Remaining Work Implementation Guide](./project-management/REMAINING_WORK_IMPLEMENTATION_GUIDE.md)** - Implementation guide
-- **[Version Roadmaps](./project-management/VERSION_ROADMAPS/)** - Version roadmap documents
+- **[Project Management Guides](./project-management/)** - Project management documentation
 
 ### 📝 Prompts
-- **[Meta-Agent Diagnostic Prompt](./prompts/meta-agent-diagnostic-prompt.md)** - Diagnostic prompt
-- **[Comprehensive Audit Prompt](./prompts/ultimate-comprehensive-audit-prompt-v3.md)** - Audit prompt
+- **[Prompts](./prompts/)** - AI agent prompts and templates
 
 ---
 
@@ -109,7 +97,7 @@ Historical documentation organized by date and category:
 - **[Status Reports](./archive/status-reports/)** - Archived status reports (organized by date)
 - **[Legacy Archives](./archive/)** - Other historical documentation
 
-**Note**: All completion, status, and diagnostic reports older than 30 days are archived. See [Consolidation Summary](./project-management/CONSOLIDATION_SUMMARY.md) for details.
+**Note**: All completion, status, diagnostic, plan, proposal, todo, and checklist files have been archived to `docs/archive/[category]/2025-11/`. Only essential guides and `PROJECT_STATUS.md` remain active.
 
 ---
 
@@ -194,13 +182,13 @@ Brief description
 ## 📊 Documentation Statistics
 
 - **Total Active Docs**: ~20-30 essential guides only
-- **Archived Docs**: ~180+ files (organized by date/category in `docs/archive/`)
+- **Archived Docs**: All STATUS/REPORT/COMPLETE/SUMMARY/DIAGNOSTIC/PLAN/PROPOSAL/TODO/CHECKLIST files (organized by date/category in `docs/archive/`)
 - **Categories**: 10 main categories
-- **Last Consolidation**: January 2025 (Aggressive)
-- **Consolidation Status**: ✅ Complete - See [Aggressive Consolidation Plan](./AGGRESSIVE_CONSOLIDATION_PLAN.md)
+- **Last Consolidation**: November 2025 (Aggressive)
+- **Consolidation Status**: ✅ Complete
 - **Master Documents**: PROJECT_STATUS.md (single source of truth)
 - **Reduction**: ~85-90% reduction in active documentation
-- **Policy**: Archive status/completion/summary reports immediately, keep only essential guides
+- **Policy**: Archive status/completion/summary/plan/proposal/todo/checklist files immediately, keep only essential guides
 
 ---
 

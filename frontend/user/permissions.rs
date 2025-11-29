@@ -3,7 +3,7 @@
 
 use crate::error::Result;
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
 pub enum Role {

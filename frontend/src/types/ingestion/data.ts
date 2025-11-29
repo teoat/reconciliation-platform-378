@@ -1,7 +1,6 @@
 // Ingestion Data Types (Cashflow, Adjudication, Visualization)
 
-import { Metadata } from '../metadata';
-import { Priority, ImpactLevel, EffortLevel } from '../common/index';
+import { Priority, ImpactLevel } from '../common/index';
 import type { ExpenseCategory, ExpenseTransaction, CashflowMetrics } from '@/pages/cashflow/types';
 import type { DiscrepancyRecord } from '@/components/data/types';
 import type { Chart, DashboardData } from '@/types/analytics';

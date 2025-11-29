@@ -122,7 +122,7 @@ pub async fn list_sync_configurations(
 )]
 pub async fn create_sync_configuration(
     req: web::Json<CreateSyncConfigRequest>,
-    db: web::Data<Arc<Database>>,
+    _db: web::Data<Arc<Database>>,
     _http_req: HttpRequest,
 ) -> Result<HttpResponse, AppError> {
     // In production, insert into database

@@ -26,6 +26,11 @@ use crate::errors::AppResult;
 ///
 /// This is the main entry point for authentication operations.
 /// It composes the various authentication modules.
+///
+/// Password handling (hashing, verification, strength validation, and
+/// reset/initial password generation) is delegated exclusively to
+/// `PasswordManager` in `services/auth/password.rs`. No other module
+/// should implement password hashing/verification.
 #[derive(Clone)]
 pub struct AuthService {
     jwt_manager: JwtManager,

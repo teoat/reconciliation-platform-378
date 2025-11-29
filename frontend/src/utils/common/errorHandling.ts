@@ -529,3 +529,282 @@ export function isRetryableError(error: unknown): boolean {
   return false;
 }
 
+/**
+ * Patterns that should be sanitized from error messages.
+ * Used to remove sensitive information from error strings.
+ */
+const SENSITIVE_ERROR_PATTERNS: RegExp[] = [
+  // Password patterns
+  /password\s*[:=]\s*['"]?[^'"]+['"]?/gi,
+  /pwd\s*[:=]\s*['"]?[^'"]+['"]?/gi,
+  /passwd\s*[:=]\s*['"]?[^'"]+['"]?/gi,
+
+  // Token patterns
+  /token\s*[:=]\s*['"]?[a-zA-Z0-9_-]{20,}['"]?/gi,
+  /api[_-]?key\s*[:=]\s*['"]?[a-zA-Z0-9_-]{20,}['"]?/gi,
+  /auth[_-]?token\s*[:=]\s*['"]?[a-zA-Z0-9_-]{20,}['"]?/gi,
+  /bearer\s+[a-zA-Z0-9_-]{20,}/gi,
+
+  // SQL query patterns
+  /SELECT\s+.+\s+FROM/gi,
+  /INSERT\s+INTO/gi,
+  /UPDATE\s+.+\s+SET/gi,
+  /DELETE\s+FROM/gi,
+
+  // File paths (may contain sensitive info)
+  /\/[\w/.-]+\.(key|pem|p12|pfx|crt|cer)/gi,
+  /C:\\[\w\\.-]+\.(key|pem|p12|pfx|crt|cer)/gi,
+
+  // Stack traces
+  /at\s+[^\n]+\([^\n]+\)/g,
+  /Stack\s+Trace:/gi,
+
+  // Internal paths
+  /\/home\/[^/]+\/[^:]+/gi,
+  /\/Users\/[^/]+\/[^:]+/gi,
+];
+
+/**
+ * Sanitize an error message by removing sensitive information.
+ *
+ * @param message - Raw error message
+ * @returns Sanitized message safe for user display/logging
+ */
+export function sanitizeErrorMessage(message: string): string {
+  if (!message || typeof message !== 'string') {
+    return 'An error occurred';
+  }
+
+  let sanitized = message;
+
+  // Remove sensitive patterns
+  for (const pattern of SENSITIVE_ERROR_PATTERNS) {
+    sanitized = sanitized.replace(pattern, '[REDACTED]');
+  }
+
+  // Remove email addresses (may contain sensitive info)
+  sanitized = sanitized.replace(
+    /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+    '[EMAIL_REDACTED]'
+  );
+
+  // Remove IP addresses
+  sanitized = sanitized.replace(
+    /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g,
+    '[IP_REDACTED]'
+  );
+
+  // Remove long hex strings (potential tokens/keys)
+  sanitized = sanitized.replace(/\b[a-fA-F0-9]{32,}\b/g, '[HEX_REDACTED]');
+
+  // Truncate very long messages
+  if (sanitized.length > 500) {
+    sanitized = `${sanitized.substring(0, 500)}... [truncated]`;
+  }
+
+  // If message is empty after sanitization, provide generic message
+  if (sanitized.trim().length === 0) {
+    return 'An error occurred';
+  }
+
+  return sanitized;
+}
+
+/**
+ * Sanitize an error-like value and return a safe string representation.
+ *
+ * @param error - Error value of various types
+ * @returns Sanitized error message
+ */
+export function sanitizeError(error: unknown): string {
+  if (!error) {
+    return 'An error occurred';
+  }
+
+  if (typeof error === 'string') {
+    return sanitizeErrorMessage(error);
+  }
+
+  if (error instanceof Error) {
+    return sanitizeErrorMessage(error.message);
+  }
+
+  if (typeof error === 'object') {
+    const err = error as Record<string, unknown>;
+
+    // Try to get message from common properties
+    const message = err.message || err.error || err.msg || err.toString();
+
+    if (message) {
+      return sanitizeErrorMessage(String(message));
+    }
+  }
+
+  return 'An error occurred';
+}
+
+/**
+ * Check if an error message contains potentially sensitive information.
+ *
+ * @param message - Error message to check
+ * @returns True if sensitive info patterns are detected, false otherwise
+ */
+export function containsSensitiveInfo(message: string): boolean {
+  if (!message || typeof message !== 'string') {
+    return false;
+  }
+
+  for (const pattern of SENSITIVE_ERROR_PATTERNS) {
+    if (pattern.test(message)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
+ * Extract error from fetch Response object asynchronously.
+ * Reads response body to extract error details and correlation IDs.
+ *
+ * @param response - Fetch Response object
+ * @param defaultError - Optional default error if response body cannot be parsed
+ * @returns Promise resolving to extracted error information
+ */
+export async function extractErrorFromFetchResponseAsync(
+  response: Response,
+  defaultError?: Error | string
+): Promise<ExtractedErrorInfo> {
+  // Extract correlation ID from response headers (always available)
+  const correlationId = extractCorrelationIdFromResponse(response);
+
+  // Extract error code from status code
+  const errorCode = response.status ? getErrorCodeFromStatusCode(response.status) : undefined;
+
+  // Try to parse error message from response body
+  let errorMessage =
+    defaultError instanceof Error ? defaultError.message : defaultError || 'Request failed';
+  let bodyErrorCode = errorCode;
+  let bodyCorrelationId = correlationId;
+
+  try {
+    // Prefer correlation ID from headers
+    const headerCorrelationId =
+      response.headers.get('x-correlation-id') ||
+      response.headers.get('X-Correlation-ID') ||
+      correlationId;
+
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      const data = await response.json().catch(() => ({}));
+      const dataRecord = data as Record<string, unknown>;
+      errorMessage =
+        (dataRecord.message as string) ||
+        (dataRecord.error as string) ||
+        (dataRecord.errorMessage as string) ||
+        errorMessage;
+      bodyErrorCode =
+        (dataRecord.code as string) ||
+        (dataRecord.errorCode as string) ||
+        bodyErrorCode;
+      bodyCorrelationId =
+        (dataRecord.correlationId as string) ||
+        (dataRecord.correlation_id as string) ||
+        headerCorrelationId ||
+        bodyCorrelationId;
+    } else {
+      // Try to get text response
+      const text = await response.text().catch(() => '');
+      if (text) {
+        // Try to parse as JSON even if content-type wasn't set correctly
+        try {
+          const data = JSON.parse(text) as Record<string, unknown>;
+          errorMessage =
+            (data.message as string) ||
+            (data.error as string) ||
+            (data.errorMessage as string) ||
+            errorMessage;
+          bodyErrorCode =
+            (data.code as string) ||
+            (data.errorCode as string) ||
+            bodyErrorCode;
+          bodyCorrelationId =
+            bodyCorrelationId ||
+            (data.correlationId as string) ||
+            (data.correlation_id as string) ||
+            bodyCorrelationId;
+        } catch {
+          // Not JSON, use text as error message if it's reasonable length
+          if (text.length < 200) {
+            errorMessage = text;
+          }
+        }
+      }
+    }
+  } catch {
+    // If parsing fails, use status text or default
+    errorMessage = response.statusText || errorMessage;
+  }
+
+  return {
+    error: new Error(errorMessage),
+    errorCode: bodyErrorCode,
+    correlationId: bodyCorrelationId,
+    statusCode: response.status,
+    timestamp: new Date(),
+  };
+}
+
+/**
+ * Extract error from fetch API call result.
+ * Handles both Response objects and errors thrown.
+ *
+ * @param fetchCall - Promise resolving to a fetch Response
+ * @param defaultError - Optional default error if no detailed error is available
+ * @returns Promise resolving to extracted error information
+ */
+export async function extractErrorFromFetchCall(
+  fetchCall: Promise<Response>,
+  defaultError?: Error | string
+): Promise<ExtractedErrorInfo> {
+  try {
+    const response = await fetchCall;
+
+    if (!response.ok) {
+      return await extractErrorFromFetchResponseAsync(response, defaultError);
+    }
+
+    // If response is ok, there's no error
+    return {
+      error:
+        defaultError instanceof Error
+          ? defaultError
+          : new Error(String(defaultError || 'No error')),
+      timestamp: new Date(),
+    };
+  } catch (error) {
+    // Handle network errors and other exceptions
+    if (error instanceof Response) {
+      return await extractErrorFromFetchResponseAsync(error, defaultError);
+    }
+
+    // Fall back to regular error extraction
+    const result = extractErrorFromApiResponse(error, defaultError);
+
+    return result;
+  }
+}
+
+/**
+ * Create a standardized error handler for fetch API calls.
+ * Extracts correlation IDs automatically from responses.
+ *
+ * @param defaultError - Optional default error if response body cannot be parsed
+ * @returns Handler function that extracts error information from Response
+ */
+export function createFetchErrorHandler(defaultError?: Error | string) {
+  return async (response: Response): Promise<ExtractedErrorInfo> => {
+    return await extractErrorFromFetchResponseAsync(response, defaultError);
+  };
+}
+

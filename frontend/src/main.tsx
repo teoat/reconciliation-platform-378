@@ -5,6 +5,14 @@ import App from './App';
 import './index.css';
 import { errorTracking } from './services/monitoring/errorTracking';
 import { performanceMonitoring } from './services/monitoring/performance';
+import { sentryService } from './services/monitoring/sentry';
+
+// Initialize Sentry error tracking (if configured)
+if (typeof window !== 'undefined') {
+  sentryService.init().catch(() => {
+    // Ignore initialization errors - graceful degradation
+  });
+}
 
 // Initialize Elastic APM RUM
 // Vite: Use import.meta.env instead of process.env

@@ -1,6 +1,47 @@
 # Quick Reference Commands
 
-Quick access to common development, testing, and deployment commands for the Reconciliation Platform.
+**Last Updated**: January 2025  
+**Status**: Active - SSOT  
+**Version**: 2.0.0
+
+Quick access to common development, testing, and deployment commands for the Reconciliation Platform. This guide consolidates all command references into a single source of truth.
+
+## 🚀 Quick Start
+
+### 1. Start Frontend Dev Server
+
+```bash
+cd frontend
+npm run dev
+```
+
+**Expected**: Server starts on `http://localhost:5173`
+
+### 2. Open Browser
+
+Navigate to: **http://localhost:5173**
+
+### 3. Login
+
+- **Email**: `admin@example.com`
+- **Password**: `admin123`
+
+### 4. Test Projects Page
+
+Navigate to: **http://localhost:5173/projects**
+
+### System Status Check
+
+```bash
+# Check backend
+curl http://localhost:2000/health
+
+# Check frontend
+curl http://localhost:5173
+
+# Check database
+docker-compose exec postgres psql -U postgres -d reconciliation_app -c "SELECT COUNT(*) FROM projects;"
+```
 
 ## 🚀 Performance & Optimization
 
@@ -284,14 +325,53 @@ npm run test:ci
 npm run performance:ci-check
 ```
 
+## 🧪 Running Tests
+
+### Quick Test Commands
+```bash
+# Run all tests quickly
+./scripts/run-tests-quick.sh all
+
+# Run specific test types
+./scripts/run-tests-quick.sh backend
+./scripts/run-tests-quick.sh frontend
+./scripts/run-tests-quick.sh e2e
+
+# Comprehensive test suite
+./scripts/test.sh
+```
+
+**📖 For detailed test instructions, see:** [RUN_TESTS_GUIDE.md](../testing/RUN_TESTS_GUIDE.md)
+
+## 🔧 Troubleshooting
+
+### Port Already in Use
+```bash
+# Find and kill process on port 5173
+lsof -ti:5173 | xargs kill -9
+```
+
+### Backend Not Running
+```bash
+docker-compose up -d backend
+```
+
+### Check Logs
+```bash
+# Frontend logs (if running in terminal)
+# Backend logs
+docker-compose logs backend --tail=50
+```
+
 ## 🔗 Related Documentation
 
 - **Performance Optimization**: See `PERFORMANCE-OPTIMIZATION-SUMMARY.md`
 - **Database Optimization**: See `backend/README-QUERY-OPTIMIZATION.md`
-- **Deployment Guide**: See `docs/DEPLOYMENT.md` (if exists)
+- **Deployment Guide**: See [Deployment Guide](../deployment/DEPLOYMENT_GUIDE.md)
 - **Agent Coordination**: See `docs/AGENT_COORDINATION.md` (if exists)
 
 ---
 
-**Last Updated**: Quick reference for S-grade performance targets and common workflows.
+**Last Updated**: January 2025  
+**Note**: This guide consolidates the previous Quick Start Commands. All command references are now in this single source of truth.
 

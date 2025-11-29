@@ -162,7 +162,7 @@ export function getAccessibleLabel(fieldId: string, label?: string, required?: b
 /**
  * Validate color contrast (basic check)
  */
-export function checkColorContrast(foreground: string, background: string): boolean {
+export function checkColorContrast(_foreground: string, _background: string): boolean {
   // Basic implementation - in production, use a proper contrast checking library
   // Returns true if contrast is sufficient (WCAG AA: 4.5:1 for normal text)
   return true; // Placeholder - implement proper contrast calculation

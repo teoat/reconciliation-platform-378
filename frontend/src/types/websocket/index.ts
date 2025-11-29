@@ -1,7 +1,4 @@
 // WebSocket Message Types
-
-import { User } from '../user';
-
 export interface ReconciliationProgressMessage {
   jobId: string;
   progress: number;

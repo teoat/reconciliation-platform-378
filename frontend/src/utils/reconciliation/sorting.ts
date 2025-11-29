@@ -32,7 +32,7 @@ export const sortRecords = (
 const getFieldValue = (record: EnhancedReconciliationRecord, field: string): unknown => {
   // Check top-level fields
   if (field in record) {
-    return (record as Record<string, unknown>)[field];
+    return (record as unknown as Record<string, unknown>)[field];
   }
 
   // Check sources

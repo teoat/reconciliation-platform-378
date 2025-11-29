@@ -2,7 +2,7 @@
 // PROGRESS SYNCHRONIZATION TESTS
 // ============================================================================
 
-import type { WorkflowSyncTestResult, ProgressIndicator, DataState } from '../types';
+import type { WorkflowSyncTestResult, ProgressIndicator } from '../types';
 import { WorkflowSyncSimulation } from '../utils/simulation';
 import { WorkflowSyncComparison } from '../utils/comparison';
 

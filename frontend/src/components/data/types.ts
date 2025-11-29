@@ -29,9 +29,13 @@ export interface ValidationResult {
   suggestions: CorrectionSuggestion[];
 }
 
-export interface ValidationError {
-  field: string;
-  message: string;
+import type { ValidationError as BaseValidationError } from '@/utils/common/types';
+
+/**
+ * Extended validation error for workflow stages
+ * Extends base ValidationError with workflow-specific fields
+ */
+export interface ValidationError extends BaseValidationError {
   severity: 'error' | 'warning' | 'info';
   page: string;
 }

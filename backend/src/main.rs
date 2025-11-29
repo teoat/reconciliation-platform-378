@@ -114,6 +114,27 @@ async fn async_main() -> std::io::Result<()> {
     
     log::info!("Logging initialized - backend starting up");
 
+    // Initialize Sentry for error tracking (if configured)
+    let sentry_dsn = std::env::var("SENTRY_DSN").ok();
+    if let Some(dsn) = sentry_dsn {
+        let _guard = sentry::init((
+            dsn,
+            sentry::ClientOptions {
+                release: sentry::release_name!(),
+                environment: Some(
+                    std::env::var("ENVIRONMENT")
+                        .unwrap_or_else(|_| "development".to_string())
+                        .into(),
+                ),
+                traces_sample_rate: 0.1, // 10% of transactions
+                ..Default::default()
+            },
+        ));
+        log::info!("Sentry error tracking initialized");
+    } else {
+        log::info!("Sentry not configured - error tracking disabled");
+    }
+
     // Validate environment variables before loading configuration
     // Use tier-based error handling with fallbacks
     log::info!("Validating environment variables...");
@@ -415,6 +436,24 @@ async fn async_main() -> std::io::Result<()> {
             for origin in &cors_origins {
                 cors_builder = cors_builder.allowed_origin(origin);
             }
+
+            // In containerized/local deployments we also want localhost frontends to work
+            // out-of-the-box, even if CORS_ORIGINS is misconfigured.
+            //
+            // This can be disabled in hardened environments by setting:
+            //   ALLOW_LOCALHOST_ORIGINS=false
+            let allow_localhost_origins = std::env::var("ALLOW_LOCALHOST_ORIGINS")
+                .unwrap_or_else(|_| "true".to_string())
+                .to_lowercase()
+                == "true";
+
+            if allow_localhost_origins {
+                cors_builder = cors_builder
+                    .allowed_origin("http://localhost:1000")
+                    .allowed_origin("http://localhost:3000")
+                    .allowed_origin("http://localhost:5173");
+            }
+
             cors_builder
                 .allowed_methods(vec!["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
                 .allowed_headers(vec![
@@ -459,6 +498,16 @@ async fn async_main() -> std::io::Result<()> {
             // Add authentication and user services (required by auth handlers)
             .app_data(web::Data::new(auth_service.clone()))
             .app_data(web::Data::new(user_service.clone()))
+            // Initialize security event logging service
+            .app_data(web::Data::new(
+                reconciliation_backend::services::security_event_logging::SecurityEventLoggingService::new()
+            ))
+            // Initialize compliance reporting service
+            .app_data(web::Data::new(
+                reconciliation_backend::services::compliance_reporting::ComplianceReportingService::new(
+                    reconciliation_backend::services::security_event_logging::SecurityEventLoggingService::new()
+                )
+            ))
             // Add metrics service (required by metrics handlers)
             .app_data(web::Data::new(metrics_service.clone()))
             // Add WebSocket server (required by WebSocket handlers)

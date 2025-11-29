@@ -33,7 +33,7 @@ export function createLazyComponentWithLoader<T extends ComponentType<Record<str
   importFn: () => Promise<{ default: T }>,
   LoadingComponent: ComponentType
 ) {
-  const LazyComponent = lazy(importFn);
+  const LazyComponent = lazy(importFn as () => Promise<{ default: ComponentType<unknown> }>);
 
   return function LazyWrapper(props: React.ComponentProps<T>) {
     return (
@@ -51,7 +51,7 @@ export function createLazyComponentWithErrorBoundary<T extends ComponentType<Rec
   importFn: () => Promise<{ default: T }>,
   ErrorComponent: ComponentType<{ error: Error; retry: () => void }>
 ) {
-  const LazyComponent = lazy(importFn);
+  const LazyComponent = lazy(importFn as () => Promise<{ default: ComponentType<unknown> }>);
 
   return function LazyWrapper(props: React.ComponentProps<T>) {
     return (
@@ -169,18 +169,21 @@ export function createPreloadableComponent<T extends ComponentType<Record<string
 
 /**
  * Creates lazy-loaded routes for React Router
+ *
+ * Note: We intentionally avoid exposing full generic props typing here to keep
+ * compatibility with React's internal ReactManagedAttributes typing used by TS.
  */
-export function createLazyRoute<T extends ComponentType<Record<string, unknown>>>(
-  importFn: () => Promise<{ default: T }>,
+export function createLazyRoute(
+  importFn: () => Promise<{ default: ComponentType<Record<string, unknown>> }>,
   fallback?: ComponentType
 ) {
   const LazyComponent = lazy(importFn);
 
-  return function LazyRoute(props: React.ComponentProps<T>) {
+  return function LazyRoute(props: Record<string, unknown>) {
     const FallbackComponent = fallback;
     return (
       <Suspense fallback={FallbackComponent ? <FallbackComponent /> : <LoadingSpinner />}>
-        <LazyComponent {...(props as React.ComponentProps<typeof LazyComponent>)} />
+        <LazyComponent {...props} />
       </Suspense>
     );
   };
@@ -250,7 +253,8 @@ export function createMeasuredLazyComponent<T extends ComponentType<Record<strin
   componentName: string
 ) {
   const measuredImport = measureComponentLoadTime(importFn, componentName);
-  return createLazyComponent(measuredImport);
+  // Cast through ComponentType<unknown> to satisfy React.lazy typing
+  return createLazyComponent(measuredImport as () => Promise<{ default: ComponentType<unknown> }>);
 }
 
 // ============================================================================

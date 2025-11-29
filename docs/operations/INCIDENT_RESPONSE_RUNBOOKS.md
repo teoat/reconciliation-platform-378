@@ -1,5 +1,12 @@
 # Incident Response Procedures and Runbooks
+
+**Last Updated**: January 2025  
+**Status**: Active - SSOT  
+**Version**: 2.0.0
+
 # Reconciliation Platform - Production Operations
+
+This guide consolidates all incident response procedures and runbooks into a single source of truth.
 
 ## 🚨 INCIDENT RESPONSE PROCEDURES
 
@@ -623,4 +630,326 @@ curl http://alertmanager:9093/api/v1/alerts
 
 ---
 
+## 📋 INCIDENT CLASSIFICATION DETAILS
+
+### Critical (P1)
+- Complete service outage
+- Data breach or security incident
+- Data loss or corruption
+- Payment processing failure
+
+### High (P2)
+- Partial service outage
+- Performance degradation affecting >50% users
+- Security vulnerability exposure
+- Authentication system failure
+
+### Medium (P3)
+- Performance degradation affecting <50% users
+- Non-critical feature failure
+- Minor security issues
+- Monitoring system failure
+
+### Low (P4)
+- Cosmetic issues
+- Non-user-facing problems
+- Documentation issues
+- Minor performance issues
+
+## 🔄 DETAILED INCIDENT RESPONSE PROCESS
+
+### 1. Detection
+
+**Sources**:
+- Monitoring alerts
+- User reports
+- Security event logs
+- Error tracking (Sentry)
+- Health check failures
+
+**Initial Assessment**:
+1. Confirm incident is real
+2. Classify severity
+3. Identify affected systems
+4. Notify incident response team
+
+### 2. Response
+
+#### Immediate Actions (First 5 Minutes)
+
+1. **Acknowledge Incident**
+   - Create incident ticket
+   - Notify on-call engineer
+   - Set up incident communication channel
+
+2. **Assess Impact**
+   - Identify affected users
+   - Determine scope of impact
+   - Check monitoring dashboards
+
+3. **Contain Incident**
+   - Isolate affected systems if needed
+   - Block malicious traffic if security incident
+   - Rollback recent changes if applicable
+
+#### Short-term Actions (5-30 Minutes)
+
+1. **Investigate Root Cause**
+   - Review logs
+   - Check recent deployments
+   - Analyze error patterns
+   - Review security events
+
+2. **Implement Temporary Fix**
+   - Apply quick workaround if available
+   - Scale resources if needed
+   - Restart services if appropriate
+
+3. **Communicate Status**
+   - Update incident ticket
+   - Notify stakeholders
+   - Post status update (if public-facing)
+
+#### Medium-term Actions (30 Minutes - 2 Hours)
+
+1. **Implement Permanent Fix**
+   - Fix root cause
+   - Test fix in staging
+   - Deploy fix to production
+   - Verify fix works
+
+2. **Monitor Recovery**
+   - Watch metrics
+   - Verify user reports
+   - Check error rates
+   - Confirm service stability
+
+### 3. Resolution
+
+#### Post-Incident Actions
+
+1. **Verify Resolution**
+   - Confirm all systems operational
+   - Verify no residual issues
+   - Check user feedback
+
+2. **Document Incident**
+   - Record timeline
+   - Document root cause
+   - Document resolution steps
+   - Update runbooks if needed
+
+3. **Post-Mortem**
+   - Schedule post-mortem meeting
+   - Review incident timeline
+   - Identify improvements
+   - Create action items
+
+## 🔒 SECURITY INCIDENT RESPONSE DETAILS
+
+### Data Breach
+
+**Immediate Actions**:
+1. Contain breach (isolate affected systems)
+2. Assess scope of data exposure
+3. Notify security team
+4. Preserve evidence
+5. Notify legal/compliance if required
+
+**Investigation**:
+1. Review security event logs
+2. Check access logs
+3. Identify attack vector
+4. Determine data accessed
+
+**Remediation**:
+1. Patch vulnerability
+2. Reset compromised credentials
+3. Notify affected users (if required)
+4. Report to authorities (if required)
+
+### DDoS Attack
+
+**Immediate Actions**:
+1. Enable DDoS protection
+2. Block malicious IPs
+3. Scale resources if needed
+4. Notify hosting provider
+
+**Investigation**:
+1. Analyze attack patterns
+2. Identify attack source
+3. Review traffic patterns
+
+**Remediation**:
+1. Configure rate limiting
+2. Update firewall rules
+3. Enhance DDoS protection
+4. Monitor for continued attacks
+
+### Unauthorized Access
+
+**Immediate Actions**:
+1. Revoke compromised credentials
+2. Block suspicious IPs
+3. Review access logs
+4. Notify security team
+
+**Investigation**:
+1. Review authentication logs
+2. Check security event logs
+3. Identify access method
+4. Determine data accessed
+
+**Remediation**:
+1. Fix authentication vulnerability
+2. Reset affected user passwords
+3. Enhance access controls
+4. Review security policies
+
+## 📊 OPERATIONAL INCIDENT RESPONSE DETAILS
+
+### Service Outage
+
+**Immediate Actions**:
+1. Check service status
+2. Review recent deployments
+3. Check infrastructure status
+4. Notify on-call engineer
+
+**Investigation**:
+1. Review application logs
+2. Check infrastructure logs
+3. Review monitoring dashboards
+4. Check for recent changes
+
+**Remediation**:
+1. Rollback if deployment issue
+2. Restart services if needed
+3. Scale resources if needed
+4. Fix root cause
+
+### Performance Degradation
+
+**Immediate Actions**:
+1. Check resource usage
+2. Review error rates
+3. Check database performance
+4. Scale resources if needed
+
+**Investigation**:
+1. Review slow queries
+2. Check for N+1 queries
+3. Review API response times
+4. Check for resource leaks
+
+**Remediation**:
+1. Optimize slow queries
+2. Add database indexes
+3. Fix resource leaks
+4. Scale resources
+
+## 📞 COMMUNICATION PROCEDURES
+
+### Internal Communication
+
+**Channels**:
+- Incident Slack channel
+- Email to team
+- On-call notifications
+
+**Updates**:
+- Every 15 minutes during active incident
+- Status updates in incident ticket
+- Post-resolution summary
+
+### External Communication
+
+**For Public Incidents**:
+- Status page updates
+- User notifications (if applicable)
+- Public post-mortem (if applicable)
+
+**For Security Incidents**:
+- User notifications (if data breach)
+- Regulatory notifications (if required)
+- Public disclosure (if required)
+
+## 👥 INCIDENT RESPONSE TEAM
+
+### Roles
+
+**Incident Commander**:
+- Coordinates response
+- Makes decisions
+- Communicates status
+
+**Technical Lead**:
+- Investigates root cause
+- Implements fixes
+- Verifies resolution
+
+**Communications Lead**:
+- Manages communications
+- Updates stakeholders
+- Handles external communication
+
+**Documentation Lead**:
+- Documents incident
+- Creates post-mortem
+- Updates runbooks
+
+## 📝 POST-INCIDENT REVIEW
+
+### Post-Mortem Process
+
+1. **Schedule Meeting** (within 48 hours)
+2. **Review Timeline**
+   - What happened?
+   - When did it happen?
+   - How was it detected?
+   - How was it resolved?
+
+3. **Root Cause Analysis**
+   - What was the root cause?
+   - Why did it happen?
+   - What could have prevented it?
+
+4. **Action Items**
+   - What needs to be fixed?
+   - What processes need improvement?
+   - What monitoring needs to be added?
+
+5. **Documentation**
+   - Update runbooks
+   - Update procedures
+   - Share lessons learned
+
+## 🛡️ PREVENTION
+
+### Monitoring
+
+- Set up comprehensive monitoring
+- Configure alerts for critical metrics
+- Regular review of monitoring dashboards
+- Test alerting systems regularly
+
+### Testing
+
+- Regular disaster recovery drills
+- Load testing before major releases
+- Security testing
+- Chaos engineering (if applicable)
+
+### Documentation
+
+- Keep runbooks up to date
+- Document common issues
+- Share knowledge across team
+- Regular training sessions
+
+---
+
 This comprehensive incident response guide provides the framework for handling any production incident effectively and efficiently. Regular updates and practice drills ensure the team is prepared for any situation.
+
+**Note**: This guide consolidates the previous Incident Response Procedures. All incident response procedures and runbooks are now in this single source of truth.

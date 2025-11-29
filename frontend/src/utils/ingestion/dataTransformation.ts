@@ -144,8 +144,12 @@ export const sortFiles = (
         return 0;
     }
 
-    if (aValue < bValue) return direction === 'asc' ? -1 : 1;
-    if (aValue > bValue) return direction === 'asc' ? 1 : -1;
+    // Normalize values to strings or numbers for safe comparison
+    const aComparable = typeof aValue === 'number' || typeof aValue === 'string' ? aValue : String(aValue ?? '');
+    const bComparable = typeof bValue === 'number' || typeof bValue === 'string' ? bValue : String(bValue ?? '');
+
+    if (aComparable < bComparable) return direction === 'asc' ? -1 : 1;
+    if (aComparable > bComparable) return direction === 'asc' ? 1 : -1;
     return 0;
   });
 };

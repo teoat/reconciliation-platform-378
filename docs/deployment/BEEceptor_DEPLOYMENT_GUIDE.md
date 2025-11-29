@@ -1,14 +1,15 @@
 # Beeceptor Deployment Guide
 
-**Last Updated**: November 27, 2025  
-**Status**: Ready for Deployment  
-**Beeceptor URL**: https://378to492.free.beeceptor.com
+**Last Updated**: January 2025  
+**Status**: Ready for Deployment - SSOT  
+**Beeceptor URL**: https://378to492.free.beeceptor.com  
+**Version**: 2.0.0
 
 ---
 
 ## Overview
 
-This guide walks you through deploying the Reconciliation Platform with Beeceptor webhook integration. All webhook notifications will be sent to your Beeceptor endpoint for testing and monitoring.
+This guide walks you through deploying the Reconciliation Platform with Beeceptor webhook integration. All webhook notifications will be sent to your Beeceptor endpoint for testing and monitoring. This guide consolidates setup and deployment instructions into a single source of truth.
 
 ---
 

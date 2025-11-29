@@ -1,7 +1,7 @@
 // Timestamp-based Test Definitions
 // Extracted from testDefinitions.ts
 
-import { StaleDataTest, StaleDataInfo, FreshnessCheck, RefreshAction } from '../types';
+import type { StaleDataTest, StaleDataInfo, FreshnessCheck, RefreshAction } from '../types';
 import { DataFreshness } from '../dataFreshness';
 
 export const timestampBasedTests: StaleDataTest[] = [

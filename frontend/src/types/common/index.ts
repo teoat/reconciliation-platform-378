@@ -1,7 +1,4 @@
 // Common utility types and shared types
-
-import { Metadata } from '../metadata';
-
 export interface BaseMetadata {
   createdAt?: string | Date;
   updatedAt?: string | Date;
@@ -127,5 +124,5 @@ export interface ActionConfig {
   loading?: boolean;
 }
 
-// Re-export Metadata for convenience
+// Re-export Metadata for convenience (opt-in from consumers)
 export type { Metadata } from '../metadata';

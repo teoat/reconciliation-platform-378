@@ -29,12 +29,7 @@ COPY frontend/package*.json ./
 # Install dependencies with BuildKit cache mount
 # Use cache-to for persistent caching across builds
 RUN --mount=type=cache,target=/root/.npm \
-    --mount=type=cache,target=/app/frontend/node_modules/.cache \
-    if [ -f package-lock.json ]; then \
-        npm ci --no-audit --no-fund --prefer-offline; \
-    else \
-        npm install --no-audit --no-fund --prefer-offline; \
-    fi
+    npm install --no-audit --no-fund --prefer-offline
 
 # Stage 2: Build Application
 # Rebuilds when source code changes
@@ -64,9 +59,14 @@ COPY frontend/package*.json ./
 # Copy source code
 COPY frontend/ .
 
+# Copy agents directory to project root for imports
+# The import path ../../../agents/ goes from src/services/ up to project root
+WORKDIR /app
+COPY agents/ ./agents/
+WORKDIR /app/frontend
+
 # Build production bundle with cache mount and optimizations
 RUN --mount=type=cache,target=/root/.npm \
-    --mount=type=cache,target=/app/frontend/node_modules/.cache \
     --mount=type=cache,target=/app/frontend/.vite \
     npm run build && \
     # Conditionally remove source maps based on GENERATE_SOURCEMAP

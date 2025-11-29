@@ -246,6 +246,36 @@ class ErrorTrackingService {
   setEnabled(enabled: boolean): void {
     this.isEnabled = enabled;
   }
+
+  /**
+   * Send error to API endpoint
+   */
+  private sendToAPI(error: ErrorEvent): void {
+    // Only send critical errors to API to avoid spam
+    if (error.severity !== 'critical') {
+      return;
+    }
+
+    try {
+      fetch('/api/v1/analytics/errors', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: error.message,
+          stack: error.stack,
+          context: error.context,
+          severity: error.severity,
+          category: error.category,
+        }),
+      }).catch(() => {
+        // API not available - ignore
+      });
+    } catch (e) {
+      // Ignore errors in error tracking
+    }
+  }
 }
 
 // Singleton instance

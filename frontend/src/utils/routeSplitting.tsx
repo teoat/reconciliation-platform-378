@@ -211,7 +211,7 @@ export async function analyzeRouteBundles() {
       const endTime = performance.now();
       results[name] = endTime - startTime;
     } catch (error) {
-      logger.error(`Failed to load ${name}:`, error);
+      logger.error(`Failed to load ${name}:`, { error });
       results[name] = -1;
     }
   }
@@ -262,7 +262,7 @@ export function createSmartRouteLoader() {
 
       loadedRoutes.add(routeName);
     } catch (error) {
-      logger.error(`Failed to preload ${routeName}:`, error);
+      logger.error(`Failed to preload ${routeName}:`, { error });
     } finally {
       preloadQueue.delete(routeName);
     }

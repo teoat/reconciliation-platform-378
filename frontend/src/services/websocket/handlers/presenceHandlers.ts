@@ -4,7 +4,6 @@
  * Handles user presence management (join, leave, presence updates)
  */
 
-import { logger } from '@/services/logger';
 import type { WebSocketMessage, UserPresence } from '../types';
 import { MessageType } from '../types';
 

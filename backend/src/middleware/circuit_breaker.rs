@@ -246,10 +246,18 @@ impl CircuitBreaker {
     }
 
     /// Get fallback response (placeholder)
+    ///
+    /// Note: This method cannot return a generic default value for type T.
+    /// For a proper fallback implementation, consider:
+    /// 1. Using a trait bound with Default: `where T: Default`
+    /// 2. Returning cached responses from a previous successful call
+    /// 3. Using a fallback service or default data source
+    /// 4. Implementing type-specific fallback methods for each service
     async fn get_fallback_response<T>(&self) -> AppResult<T> {
         // In a real implementation, this would return a cached or default response
+        // However, we cannot return a generic default without trait bounds
         Err(AppError::ServiceUnavailable(
-            "Service unavailable. Fallback not implemented.".to_string(),
+            "Service unavailable. Circuit breaker is open and fallback is not configured for this service type.".to_string(),
         ))
     }
 

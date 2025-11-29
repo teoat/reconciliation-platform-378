@@ -110,6 +110,11 @@ export interface EnhancedReconciliationRecord {
   matchScore: number;
   difference?: number;
   riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  /**
+   * Index signature for dynamic fields accessed via string keys.
+   * This supports utilities that treat reconciliation records as generic key/value maps.
+   */
+  [key: string]: unknown;
 }
 
 export interface ReconciliationMetrics {

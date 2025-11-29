@@ -306,45 +306,72 @@ sources_of_truth:
   # DOCKER COMPOSE CONFIGURATION
   # -------------------------------------------------------------------------
   docker_compose:
-    description: "Docker Compose configuration files"
+    description: "Docker Compose configuration files - CONSOLIDATED SSOT"
     ssot_location: "docker-compose.yml"
-    management_script: "scripts/manage-ssot.sh"
+    management_script: "scripts/sync-docker-ssot.sh"
+    validation_script: "scripts/validate-docker-ssot.sh"
     files:
       - path: "docker-compose.yml"
-        description: "Production configuration (SSOT)"
+        description: "Consolidated production configuration (SSOT) - All services"
         locking_required: true
-      - path: "docker-compose.base.yml"
-        description: "Base services configuration"
-        locking_required: true
-      - path: "docker-compose.staging.yml"
-        description: "Staging environment"
-        locking_required: true
-      - path: "docker-compose.dev.yml"
-        description: "Development environment"
-        locking_required: false
-      - path: "docker-compose.test.yml"
-        description: "Testing environment"
-        locking_required: false
-      - path: "docker-compose.monitoring.yml"
-        description: "Monitoring stack"
-        locking_required: false
-      - path: "docker-compose.optimized.yml"
-        description: "Optimized build"
-        locking_required: false
-      - path: "docker-compose.fast.yml"
-        description: "Fast development"
-        locking_required: false
-      - path: "docker-compose.simple.yml"
-        description: "Minimal setup"
-        locking_required: false
-      - path: "docker-compose.backend.yml"
-        description: "Backend only"
-        locking_required: false
+        status: "active"
+    archived_files:
+      - path: "archive/docker-compose/docker-compose.base.yml"
+        description: "Base services configuration (archived)"
+        status: "archived"
+        archive_date: "2025-01-15"
+      - path: "archive/docker-compose/docker-compose.staging.yml"
+        description: "Staging environment (archived)"
+        status: "archived"
+        archive_date: "2025-01-15"
+      - path: "archive/docker-compose/docker-compose.dev.yml"
+        description: "Development environment (archived)"
+        status: "archived"
+        archive_date: "2025-01-15"
+      - path: "archive/docker-compose/docker-compose.test.yml"
+        description: "Testing environment (archived)"
+        status: "archived"
+        archive_date: "2025-01-15"
+      - path: "archive/docker-compose/docker-compose.monitoring.yml"
+        description: "Monitoring stack (archived)"
+        status: "archived"
+        archive_date: "2025-01-15"
+      - path: "archive/docker-compose/docker-compose.optimized.yml"
+        description: "Optimized build (archived - merged into SSOT)"
+        status: "archived"
+        archive_date: "2025-01-15"
+      - path: "archive/docker-compose/docker-compose.fast.yml"
+        description: "Fast development (archived)"
+        status: "archived"
+        archive_date: "2025-01-15"
+      - path: "archive/docker-compose/docker-compose.simple.yml"
+        description: "Minimal setup (archived)"
+        status: "archived"
+        archive_date: "2025-01-15"
+      - path: "archive/docker-compose/docker-compose.backend.yml"
+        description: "Backend only (archived)"
+        status: "archived"
+        archive_date: "2025-01-15"
     rules:
-      - "docker-compose.yml is SSOT for production"
-      - "All variants inherit from base"
-      - "Environment-specific overrides only"
-      - "Lock before editing production configs"
+      - "docker-compose.yml is SSOT for ALL environments"
+      - "All services consolidated into single file"
+      - "Environment-specific config via .env file (SSOT)"
+      - "Lock before editing docker-compose.yml"
+      - "Use scripts/sync-docker-ssot.sh to sync with .env"
+      - "Use scripts/validate-docker-ssot.sh to validate SSOT compliance"
+    environment_config:
+      ssot_location: ".env"
+      template: "config/dev.env.example"
+      production_template: "config/production.env.example"
+      rules:
+        - ".env is SSOT for all environment variables"
+        - "docker-compose.yml reads from .env automatically"
+        - "Never commit .env to version control"
+        - "Use config/*.env.example as templates"
+    deployment:
+      ssot_script: "scripts/deploy-docker.sh"
+      sync_script: "scripts/sync-docker-ssot.sh"
+      validation_script: "scripts/validate-docker-ssot.sh"
 
   # -------------------------------------------------------------------------
   # TYPE DEFINITIONS
@@ -394,6 +421,22 @@ sources_of_truth:
   # -------------------------------------------------------------------------
   documentation:
     description: "Project documentation - SSOT"
+    hub:
+      path: "docs/DOCUMENTATION_HUB.md"
+      description: "Central documentation portal (SSOT) - Role-based navigation"
+      locking_required: true
+    index:
+      path: "docs/README.md"
+      description: "Documentation index (SSOT)"
+      locking_required: true
+    standards:
+      path: "docs/DOCUMENTATION_STANDARDS.md"
+      description: "Documentation standards (SSOT)"
+      locking_required: true
+    quick_reference:
+      path: "docs/QUICK_REFERENCE.md"
+      description: "Quick reference guide (SSOT)"
+      locking_required: true
     architecture:
       - path: "docs/architecture/SSOT_GUIDANCE.md"
         description: "SSOT principles"
@@ -401,6 +444,74 @@ sources_of_truth:
       - path: "docs/architecture/SSOT_AREAS_AND_LOCKING.md"
         description: "SSOT areas and locking system"
         locking_required: true
+    deployment:
+      path: "docs/deployment/DEPLOYMENT_GUIDE.md"
+      description: "Deployment guide (SSOT)"
+      locking_required: true
+      deprecated_paths:
+        - "docs/deployment/DOCKER_DEPLOYMENT_GUIDE.md"  # To be merged
+        - "docs/deployment/DEPLOYMENT_RUNBOOK.md"  # Operational procedures only
+    docker_ssot:
+      path: "docs/deployment/DOCKER_SSOT_ENFORCEMENT.md"
+      description: "Docker SSOT enforcement (SSOT)"
+      locking_required: true
+      deprecated_paths:
+        - "docs/deployment/DOCKER_SSOT_SUMMARY.md"  # To be merged
+    troubleshooting:
+      path: "docs/operations/TROUBLESHOOTING.md"
+      description: "Troubleshooting guide (SSOT)"
+      locking_required: true
+    incident_response:
+      path: "docs/operations/INCIDENT_RESPONSE_RUNBOOKS.md"
+      description: "Incident response runbooks (SSOT)"
+      locking_required: true
+      deprecated_paths:
+        - "docs/operations/INCIDENT_RESPONSE_PROCEDURES.md"  # To be merged
+    monitoring:
+      path: "docs/operations/MONITORING_GUIDE.md"
+      description: "Monitoring guide (SSOT)"
+      locking_required: true
+      deprecated_paths:
+        - "docs/operations/MONITORING_SETUP.md"  # To be merged
+    mcp_setup:
+      path: "docs/development/MCP_SETUP_GUIDE.md"
+      description: "MCP setup guide (SSOT)"
+      locking_required: true
+      deprecated_paths:
+        - "docs/deployment/MCP_SERVER_DEPLOYMENT_GUIDE.md"  # To be merged
+        - "docs/development/MCP_SERVER_TROUBLESHOOTING.md"  # To be merged
+    commands_reference:
+      path: "docs/development/QUICK-REFERENCE-COMMANDS.md"
+      description: "Quick reference commands (SSOT)"
+      locking_required: true
+      deprecated_paths:
+        - "docs/operations/QUICK_START_COMMANDS.md"  # To be merged
+    redis_config:
+      path: "docs/development/REDIS_AND_TOOLS_CONFIGURATION.md"
+      description: "Redis configuration (SSOT)"
+      locking_required: true
+      deprecated_paths:
+        - "docs/getting-started/REDIS_TOOLS_QUICK_START.md"  # To be merged
+    frenly_integration:
+      path: "docs/development/FRENLY_INTEGRATION.md"
+      description: "Frenly integration guide (SSOT)"
+      locking_required: true
+      deprecated_paths:
+        - "docs/development/FRENLY_MAINTENANCE_GUIDE.md"  # To be merged
+    password_setup:
+      path: "docs/development/INITIAL_PASSWORD_SETUP_GUIDE.md"
+      description: "Password setup guide (SSOT)"
+      locking_required: true
+      deprecated_paths:
+        - "docs/development/INITIAL_PASSWORD_IMPLEMENTATION.md"  # To be merged
+    google_oauth:
+      path: "docs/features/GOOGLE_OAUTH_SETUP.md"
+      description: "Google OAuth setup (SSOT)"
+      locking_required: true
+      deprecated_paths:
+        - "docs/features/GOOGLE_OAUTH_QUICK_START.md"  # To be merged
+        - "docs/features/GOOGLE_OAUTH_NEXT_STEPS.md"  # To be merged
+        - "docs/features/GOOGLE_OAUTH_ORIGIN_ERROR_FIX.md"  # To be merged
     registry:
       - path: "SSOT_LOCK.yml"
         description: "SSOT registry (this file)"
@@ -410,22 +521,43 @@ sources_of_truth:
       - "Archive outdated docs to docs/archive/"
       - "Cross-reference related docs"
       - "Lock before editing documentation"
+      - "Use DOCUMENTATION_HUB.md as central navigation"
+      - "Follow DOCUMENTATION_STANDARDS.md for all new docs"
 
   # -------------------------------------------------------------------------
   # DEPLOYMENT OPERATIONS
   # -------------------------------------------------------------------------
   deployment_operations:
     description: "Deployment scripts and utilities - SSOT for shell script functions"
-    path: "scripts/lib/common-functions.sh"
-    exports:
-      - "verify_deployment"
-      - "check_prerequisites"
-      - "check_command"
-      - "validate_file_exists"
-      - "validate_directory_exists"
-      - "check_docker"
-      - "check_docker_compose"
-    note: "SSOT for all deployment-related shell script functions. All deployment scripts should source this library."
+    shared_functions:
+      path: "scripts/lib/common-functions.sh"
+      exports:
+        - "verify_deployment"
+        - "check_prerequisites"
+        - "check_command"
+        - "validate_file_exists"
+        - "validate_directory_exists"
+        - "check_docker"
+        - "check_docker_compose"
+        - "log_info"
+        - "log_success"
+        - "log_warning"
+        - "log_error"
+      note: "SSOT for all deployment-related shell script functions. All deployment scripts should source this library."
+    docker_deployment:
+      ssot_script: "scripts/deploy-docker.sh"
+      description: "Main Docker deployment script (SSOT)"
+      uses:
+        - "docker-compose.yml (SSOT)"
+        - ".env (SSOT for environment variables)"
+        - "scripts/lib/common-functions.sh (SSOT for functions)"
+      validation: "scripts/validate-docker-ssot.sh"
+      synchronization: "scripts/sync-docker-ssot.sh"
+    rules:
+      - "All deployment scripts MUST source scripts/lib/common-functions.sh"
+      - "Docker deployment uses scripts/deploy-docker.sh (SSOT)"
+      - "Validate SSOT before deployment: ./scripts/validate-docker-ssot.sh"
+      - "Sync environment before deployment: ./scripts/sync-docker-ssot.sh"
 
   # -------------------------------------------------------------------------
   # MONITORING OPERATIONS

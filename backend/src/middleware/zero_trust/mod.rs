@@ -131,6 +131,8 @@ where
             let path = req.path();
             let should_skip = path == "/health"
                 || path.starts_with("/health/")
+                || path == "/api/health"
+                || path.starts_with("/api/health/")
                 || path == "/api/auth/login"
                 || path.starts_with("/api/auth/login")
                 || path == "/api/auth/register"

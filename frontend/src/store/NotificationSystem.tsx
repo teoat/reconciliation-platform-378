@@ -5,7 +5,7 @@ import { AlertCircle } from 'lucide-react';
 import { AlertTriangle } from 'lucide-react';
 import { Info } from 'lucide-react';
 import { Bell } from 'lucide-react';
-import { useNotifications, useNotificationHelpers } from './hooks';
+import { useNotifications } from './hooks';
 import Button from '../components/ui/Button';
 
 interface NotificationItemProps {
@@ -179,7 +179,6 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({ className = '' 
     markAllAsRead();
   };
 
-  const unreadNotifications = items.filter((n) => !n.read);
   const recentNotifications = items.slice(0, 10); // Show only recent 10
 
   return (

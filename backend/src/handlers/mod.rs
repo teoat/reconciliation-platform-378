@@ -43,6 +43,8 @@ pub mod logs;
 
 // Security handlers
 pub mod security;
+pub mod security_events;
+pub mod compliance;
 
 // Metrics handlers
 pub mod metrics;
@@ -101,6 +103,10 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
             .route("/logs", web::post().to(logs::post_logs))
             // Security routes
             .service(web::scope("/security").configure(security::configure_routes))
+            // Security events routes
+            .service(web::scope("/security").configure(security_events::configure_routes))
+            // Compliance routes
+            .service(web::scope("/compliance").configure(compliance::configure_routes))
             // Health check routes
             .service(web::scope("/health").configure(health::configure_health_routes))
             // Metrics routes
@@ -141,7 +147,12 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         // Logging routes
         .service(web::scope("/api").route("/logs", web::post().to(logs::post_logs)))
         // Security routes
-        .service(web::scope("/api/security").configure(security::configure_routes))
+        .service(web::scope("/api/security")
+            .configure(security::configure_routes)
+            .configure(security_events::configure_routes)
+        )
+        // Compliance routes
+        .service(web::scope("/api/compliance").configure(compliance::configure_routes))
         // Health check routes (from existing health.rs)
         // Register at both /health and /api/health for compatibility
         .configure(health::configure_health_routes)

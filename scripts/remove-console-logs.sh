@@ -51,7 +51,9 @@ if [ "$REPLACE_WITH_LOGGER" = true ]; then
   if [ ! -f "$LOGGER_FILE" ]; then
     echo "📝 Creating logger service..."
     cat > "$LOGGER_FILE" << 'EOF'
-// Production-safe logger service
+// Production-safe logger service with Sentry integration
+import { reportMessage, addBreadcrumb, reportError } from '@/sentry.client.config'
+
 const isDevelopment = process.env.NODE_ENV === 'development'
 
 export const logger = {
@@ -65,7 +67,11 @@ export const logger = {
       console.warn(...args)
     } else {
       // In production, send to error tracking service
-      // TODO: Integrate with error tracking (e.g., Sentry)
+      const message = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' ')
+      reportMessage(message, 'warning')
+      addBreadcrumb(message, 'warning', 'warning')
     }
   },
   error: (...args: any[]) => {
@@ -74,8 +80,20 @@ export const logger = {
       console.error(...args)
     } else {
       // In production, send to error tracking service
-      console.error('[Error]', ...args)
-      // TODO: Integrate with error tracking (e.g., Sentry)
+      const message = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' ')
+      
+      // Create Error object if first arg is not already an Error
+      const error = args[0] instanceof Error 
+        ? args[0] 
+        : new Error(message)
+      
+      reportError(error, {
+        additionalArgs: args.slice(1),
+        source: 'logger',
+      })
+      addBreadcrumb(message, 'error', 'error')
     }
   },
   debug: (...args: any[]) => {
@@ -86,6 +104,12 @@ export const logger = {
   info: (...args: any[]) => {
     if (isDevelopment) {
       console.info(...args)
+    } else {
+      // In production, add as breadcrumb for context
+      const message = args.map(arg => 
+        typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+      ).join(' ')
+      addBreadcrumb(message, 'info', 'info')
     }
   }
 }

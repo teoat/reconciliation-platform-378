@@ -43,65 +43,93 @@ export class FilesApiService extends BaseApiService {
       per_page?: number;
       type?: string;
     } = {}
-  ) {
-    try {
-      const { page = 1, per_page = 20, type } = params;
-      const response = await apiClient.get(`/api/projects/${projectId}/files`, {
-        params: { page, per_page, type },
-      });
+  ): Promise<ErrorHandlingResult<{ files: unknown[]; pagination: unknown }>> {
+    return this.withErrorHandling(
+      async () => {
+        const { page = 1, per_page = 20, type } = params;
+        const cacheKey = `files:${projectId}:${JSON.stringify(params)}`;
 
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+        return this.getCached(
+          cacheKey,
+          async () => {
+            const response = await apiClient.get(`/api/projects/${projectId}/files`, {
+              params: { page, per_page, type },
+            });
+
+            const paginated = this.transformPaginatedResponse(response);
+
+            return {
+              files: paginated.items,
+              pagination: paginated.pagination,
+            };
+          },
+          300000 // 5 minutes TTL
+        );
+      },
+      {
+        component: 'FilesApiService',
+        action: 'getFiles',
+        projectId
       }
-
-      return {
-        files: (response.data as { data?: unknown[] })?.data || [],
-        pagination: (response.data as { pagination?: unknown })?.pagination || {
-          page,
-          per_page,
-          total: (response.data as { data?: unknown[] })?.data?.length || 0,
-          total_pages: Math.ceil(((response.data as { data?: unknown[] })?.data?.length || 0) / per_page),
-        },
-      };
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch files');
-    }
+    );
   }
 
-  static async getFileById(fileId: string) {
-    try {
-      const response = await apiClient.get(`/api/files/${fileId}`);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async getFileById(fileId: string): Promise<ErrorHandlingResult<unknown>> {
+    return this.withErrorHandling(
+      async () => {
+        const cacheKey = `file:${fileId}`;
+        return this.getCached(
+          cacheKey,
+          async () => {
+            const response = await apiClient.get(`/api/files/${fileId}`);
+            return this.transformResponse(response);
+          },
+          300000 // 5 minutes TTL
+        );
+      },
+      {
+        component: 'FilesApiService',
+        action: 'getFileById'
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch file');
-    }
+    );
   }
 
-  static async deleteFile(fileId: string) {
-    try {
-      const response = await apiClient.delete(`/api/files/${fileId}`);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async deleteFile(fileId: string): Promise<ErrorHandlingResult<boolean>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.delete(`/api/files/${fileId}`);
+        this.transformResponse(response);
+
+        // Invalidate file cache
+        await this.invalidateCache(`file:${fileId}`);
+        await this.invalidateCache(`files:*`);
+
+        return true;
+      },
+      {
+        component: 'FilesApiService',
+        action: 'deleteFile'
       }
-      return true;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to delete file');
-    }
+    );
   }
 
-  static async processFile(projectId: string, dataSourceId: string) {
-    try {
-      const response = await apiClient.processFile(projectId, dataSourceId);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async processFile(projectId: string, dataSourceId: string): Promise<ErrorHandlingResult<unknown>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.processFile(projectId, dataSourceId);
+        const result = this.transformResponse(response);
+
+        // Invalidate files cache after processing
+        await this.invalidateCache(`files:${projectId}:*`);
+
+        return result;
+      },
+      {
+        component: 'FilesApiService',
+        action: 'processFile',
+        projectId
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to process file');
-    }
+    );
   }
 
   static async getFilePreview(fileId: string): Promise<ErrorHandlingResult<unknown>> {

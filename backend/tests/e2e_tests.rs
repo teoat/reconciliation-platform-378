@@ -978,50 +978,114 @@ mod system_integration_tests {
             .await
             .unwrap();
 
-        // Run performance test scenarios
-        // Note: PerformanceTestUtils doesn't exist - commenting out for now
-        // TODO: Implement PerformanceTestUtils or use alternative performance testing approach
-        /*
-        let performance_utils = PerformanceTestUtils::new();
+        // Run performance test scenarios using inline implementation
+        // Performance test scenarios with different load levels
+        struct PerformanceScenario {
+            name: String,
+            total_requests: u32,
+            max_response_time_ms: f64,
+            max_error_rate: f64,
+        }
 
-        for scenario in &performance_utils.test_scenarios {
-            let results = performance_utils.run_scenario(scenario, &test_client).await;
+        let scenarios = vec![
+            PerformanceScenario {
+                name: "Light Load".to_string(),
+                total_requests: 20,
+                max_response_time_ms: 500.0,
+                max_error_rate: 1.0,
+            },
+            PerformanceScenario {
+                name: "Medium Load".to_string(),
+                total_requests: 50,
+                max_response_time_ms: 1000.0,
+                max_error_rate: 3.0,
+            },
+            PerformanceScenario {
+                name: "Heavy Load".to_string(),
+                total_requests: 100,
+                max_response_time_ms: 2000.0,
+                max_error_rate: 5.0,
+            },
+        ];
 
-            // Assert performance requirements
-            match scenario.name.as_str() {
-                "Light Load" => {
-                    assert!(results.average_response_time_ms < 500.0);
-                    assert!(results.error_rate < 1.0);
+        for scenario in scenarios {
+            let start_time = std::time::Instant::now();
+            let mut response_times = Vec::new();
+            let mut successful_requests = 0u32;
+            let mut failed_requests = 0u32;
+
+            // Run requests sequentially (can be parallelized later if needed)
+            for _i in 0..scenario.total_requests {
+                let req_start = std::time::Instant::now();
+                let req = test_client
+                    .authenticated_request("GET", "/api/system/status")
+                    .to_request();
+                let (db, config) = get_test_config_and_db().await;
+                let app = test::init_service(
+                    App::new()
+                        .app_data(web::Data::new(db))
+                        .app_data(web::Data::new(config))
+                        .configure(configure_routes),
+                )
+                .await;
+                let resp = test::call_service(&app, req).await;
+                let duration = req_start.elapsed().as_millis() as f64;
+
+                if resp.status().is_success() {
+                    successful_requests += 1;
+                } else {
+                    failed_requests += 1;
                 }
-                "Medium Load" => {
-                    assert!(results.average_response_time_ms < 1000.0);
-                    assert!(results.error_rate < 3.0);
-                }
-                "Heavy Load" => {
-                    assert!(results.average_response_time_ms < 2000.0);
-                    assert!(results.error_rate < 5.0);
-                }
-                _ => {}
+                response_times.push(duration);
             }
 
+            let duration_seconds = start_time.elapsed().as_secs();
+            let total_requests = successful_requests + failed_requests;
+            let average_response_time_ms = if response_times.is_empty() {
+                0.0
+            } else {
+                response_times.iter().sum::<f64>() / response_times.len() as f64
+            };
+            let min_response_time_ms = response_times.iter().copied().fold(f64::INFINITY, f64::min) as u64;
+            let max_response_time_ms = response_times.iter().copied().fold(0.0, f64::max) as u64;
+            let requests_per_second = if duration_seconds > 0 {
+                total_requests as f64 / duration_seconds as f64
+            } else {
+                0.0
+            };
+            let error_rate = if total_requests > 0 {
+                (failed_requests as f64 / total_requests as f64) * 100.0
+            } else {
+                0.0
+            };
+
+            // Assert performance requirements
+            assert!(
+                average_response_time_ms < scenario.max_response_time_ms,
+                "Average response time {}ms exceeds maximum {}ms for scenario '{}'",
+                average_response_time_ms,
+                scenario.max_response_time_ms,
+                scenario.name
+            );
+            assert!(
+                error_rate < scenario.max_error_rate,
+                "Error rate {}% exceeds maximum {}% for scenario '{}'",
+                error_rate,
+                scenario.max_error_rate,
+                scenario.name
+            );
+
             println!("Performance test '{}' completed:", scenario.name);
-            println!("  - Duration: {}s", results.duration_seconds);
-            println!("  - Total requests: {}", results.total_requests);
-            println!("  - Successful requests: {}", results.successful_requests);
-            println!("  - Failed requests: {}", results.failed_requests);
-            println!(
-                "  - Requests per second: {:.2}",
-                results.requests_per_second
-            );
-            println!(
-                "  - Average response time: {:.2}ms",
-                results.average_response_time_ms
-            );
-            println!("  - Error rate: {:.2}%", results.error_rate);
+            println!("  - Duration: {}s", duration_seconds);
+            println!("  - Total requests: {}", total_requests);
+            println!("  - Successful requests: {}", successful_requests);
+            println!("  - Failed requests: {}", failed_requests);
+            println!("  - Requests per second: {:.2}", requests_per_second);
+            println!("  - Average response time: {:.2}ms", average_response_time_ms);
+            println!("  - Min response time: {}ms", min_response_time_ms);
+            println!("  - Max response time: {}ms", max_response_time_ms);
+            println!("  - Error rate: {:.2}%", error_rate);
         }
-        */
-        // Placeholder assertion until PerformanceTestUtils is implemented
-        assert!(true);
     }
 }
 

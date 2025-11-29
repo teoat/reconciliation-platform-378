@@ -96,7 +96,7 @@ impl SyncService {
         source_pool: &Pool<ConnectionManager<PgConnection>>,
         target_pool: &Pool<ConnectionManager<PgConnection>>,
         config: &SyncConfiguration,
-        execution: &mut SyncExecution,
+        _execution: &mut SyncExecution,
     ) -> AppResult<SyncStatistics> {
         let mut stats = SyncStatistics {
             total_records: 0,
@@ -125,11 +125,8 @@ impl SyncService {
         // Step 2: Clear target table (optional - can be configured)
         // For safety, we'll truncate only if explicitly configured
         if config.metadata.get("truncate_target").and_then(|v| v.as_bool()).unwrap_or(false) {
-            let _conn = target_pool.get()
-                .map_err(|e| AppError::Internal(format!("Failed to get target connection: {}", e)))?;
-            
-            // TODO: Implement safe TRUNCATE/DELETE using Diesel or SQLx
-            info!("Requested truncate for target table: {} (not yet implemented)", config.target_table);
+            self.safe_truncate_table(&target_pool, &config.target_table).await?;
+            info!("Successfully truncated target table: {}", config.target_table);
         }
 
         // Step 3: Batch copy data
@@ -261,9 +258,9 @@ impl SyncService {
         &self,
         source_pool: &Pool<ConnectionManager<PgConnection>>,
         target_pool: &Pool<ConnectionManager<PgConnection>>,
-        config: &SyncConfiguration,
-        offset: usize,
-        limit: usize,
+        _config: &SyncConfiguration,
+        _offset: usize,
+        _limit: usize,
     ) -> AppResult<SyncStatistics> {
         // Get batch from source
         // In production, use proper Diesel query or SQLx to fetch rows
@@ -275,7 +272,7 @@ impl SyncService {
         let _rows: Vec<serde_json::Value> = vec![];
 
         // Insert/update in target
-        let mut target_conn = target_pool.get()
+        let _target_conn = target_pool.get()
             .map_err(|e| AppError::Internal(format!("Failed to get target connection: {}", e)))?;
 
         let mut stats = SyncStatistics {
@@ -384,6 +381,68 @@ impl SyncService {
     ) -> AppResult<()> {
         // In production, update database record
         Ok(())
+    }
+
+    /// Safely truncate a table using parameterized SQL to prevent SQL injection
+    /// 
+    /// This function validates the table name and uses Diesel's sql_query with
+    /// proper escaping to safely execute TRUNCATE operations.
+    /// 
+    /// # Arguments
+    /// 
+    /// * `pool` - Connection pool for the target database
+    /// * `table_name` - Name of the table to truncate (must be a valid identifier)
+    /// 
+    /// # Errors
+    /// 
+    /// Returns `AppError` if:
+    /// - Table name contains invalid characters (SQL injection attempt)
+    /// - Connection to database fails
+    /// - TRUNCATE operation fails
+    async fn safe_truncate_table(
+        &self,
+        pool: &Pool<ConnectionManager<PgConnection>>,
+        table_name: &str,
+    ) -> AppResult<()> {
+        // Validate table name to prevent SQL injection
+        // Only allow alphanumeric characters, underscores, and dots (for schema.table)
+        if !table_name.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '.') {
+            return Err(AppError::Validation(format!(
+                "Invalid table name: '{}'. Only alphanumeric characters, underscores, and dots are allowed.",
+                table_name
+            )));
+        }
+
+        // Additional safety: ensure table name doesn't contain SQL keywords
+        let upper_name = table_name.to_uppercase();
+        let dangerous_keywords = ["DROP", "DELETE", "INSERT", "UPDATE", "ALTER", "CREATE", "TRUNCATE"];
+        for keyword in dangerous_keywords {
+            if upper_name.contains(keyword) {
+                return Err(AppError::Validation(format!(
+                    "Table name '{}' contains potentially dangerous keyword: {}",
+                    table_name, keyword
+                )));
+            }
+        }
+
+        // Get connection from pool
+        let mut conn = pool.get()
+            .map_err(|e| AppError::Internal(format!("Failed to get target connection: {}", e)))?;
+
+        // Use Diesel's sql_query with proper identifier quoting
+        // PostgreSQL uses double quotes for identifiers
+        let quoted_table = format!("\"{}\"", table_name.replace("\"", "\"\""));
+        let sql = format!("TRUNCATE TABLE {} RESTART IDENTITY CASCADE", quoted_table);
+
+        // Execute TRUNCATE in a blocking task since Diesel operations are synchronous
+        tokio::task::spawn_blocking(move || {
+            diesel::sql_query(&sql)
+                .execute(&mut conn)
+                .map(|_| ())
+                .map_err(|e| AppError::Database(e))
+        })
+        .await
+        .map_err(|e| AppError::Internal(format!("Task join error: {}", e)))?
     }
 }
 

@@ -66,7 +66,9 @@ export const createLazyComponent = <T extends ComponentType<Record<string, unkno
 ): React.LazyExoticComponent<T> => {
   const finalConfig = { ...defaultCodeSplittingConfig, ...config };
 
-  return lazy(() => retryImport<T>(importFunc, finalConfig.retryAttempts, finalConfig.retryDelay)) as React.LazyExoticComponent<T>;
+  return lazy(
+    () => retryImport<T>(importFunc, finalConfig.retryAttempts, finalConfig.retryDelay)
+  ) as React.LazyExoticComponent<T>;
 };
 
 // Retry import with exponential backoff
@@ -130,11 +132,12 @@ export const LazyComponent: React.FC<LazyComponentProps & { children: React.Reac
   fallback,
   onError,
   retryAttempts = 3,
-  retryDelay = 1000,
+  retryDelay: _retryDelay = 1000,
 }) => {
   const [error, setError] = React.useState<Error | null>(null);
   const [retryCount, setRetryCount] = React.useState(0);
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const handleError = React.useCallback(
     (error: Error) => {
       setError(error);

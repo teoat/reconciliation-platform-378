@@ -7,7 +7,12 @@ export interface RetryConfig {
   baseDelay?: number;
   maxDelay?: number;
   backoffMultiplier?: number;
-  retryCondition?: (error: Error) => boolean;
+  /**
+   * Returns a truthy value when the operation should be retried.
+   * Historically some callers returned an empty string to indicate no retry,
+   * so we support boolean | '' for backward compatibility.
+   */
+  retryCondition?: (error: Error) => boolean | '';
   onRetry?: (attempt: number, error: Error) => void;
   onMaxRetriesReached?: (error: Error) => void;
 }
@@ -114,19 +119,25 @@ export class RetryUtility {
     let attempts = 0;
 
     try {
-      const data = await this.withRetry(operation, config);
+      const data = await this.withRetry(
+        async () => {
+          attempts += 1;
+          return operation();
+        },
+        config
+      );
 
       return {
         success: true,
         data,
-        attempts: config.maxRetries + 1,
+        attempts,
         totalTime: Date.now() - startTime,
       };
     } catch (error) {
       return {
         success: false,
         error: error as Error,
-        attempts: attempts,
+        attempts,
         totalTime: Date.now() - startTime,
       };
     }

@@ -74,7 +74,7 @@ export function useVirtualScroll<T>(
   )
 
   const visibleItems = useMemo(() => {
-    return items.slice(startIndex, endIndex + 1).map((item, index) => ({
+    return items.slice(startIndex, endIndex + 1).map((_, index) => ({
       index: startIndex + index,
       top: (startIndex + index) * itemHeight,
       height: itemHeight,
@@ -172,7 +172,7 @@ export function useDynamicVirtualScroll<T>(
   }, [scrollTop, containerHeight, cumulativeHeights, itemHeights, overscan, items.length])
 
   const visibleItems = useMemo(() => {
-    return items.slice(visibleRange.startIndex, visibleRange.endIndex + 1).map((item, index) => {
+    return items.slice(visibleRange.startIndex, visibleRange.endIndex + 1).map((_, index) => {
       const actualIndex = visibleRange.startIndex + index
       return {
         index: actualIndex,

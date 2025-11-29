@@ -47,7 +47,7 @@ impl ChangeTracker {
     /// Track a change to a record
     pub async fn track_change(
         &self,
-        config_id: Uuid,
+        _config_id: Uuid,
         table_name: &str,
         record_id: &str,
         change_type: ChangeType,

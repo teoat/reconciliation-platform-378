@@ -182,7 +182,7 @@ impl SyncOrchestrator {
     /// Get sync configuration from database
     async fn get_sync_configuration(
         &self,
-        config_id: Uuid,
+        _config_id: Uuid,
     ) -> AppResult<SyncConfiguration> {
         // In production, query database
         // For now, return a mock configuration
