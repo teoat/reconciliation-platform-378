@@ -45,6 +45,7 @@ export type {
   RealtimeUpdate,
   FormFieldValue,
 } from './backend-aligned';
+export * from './security';
 
 // Export backend-aligned interfaces that don't conflict (using type aliases)
 export type {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   BarChart3,
   CheckCircle,
@@ -23,163 +23,7 @@ import {
   registerVisualizationGuidanceHandlers,
   getVisualizationGuidanceContent,
 } from '@/orchestration/pages/VisualizationPageOrchestration';
-
-// Interfaces (shared with main index.tsx)
-export interface PageConfig {
-  title: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
-  path: string;
-  showStats?: boolean;
-  showFilters?: boolean;
-  showActions?: boolean;
-}
-
-export interface StatsCard {
-  title: string;
-  value: string | number;
-  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
-  color: string;
-  trend?: {
-    direction: 'up' | 'down' | 'neutral';
-    value: string;
-  };
-  progress?: number;
-}
-
-export interface ActionConfig {
-  label: string;
-  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
-  onClick: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
-  loading?: boolean;
-}
-
-// BasePage component (simplified for this extraction)
-interface BasePageProps {
-  config: PageConfig;
-  stats?: StatsCard[];
-  actions?: ActionConfig[];
-  children: React.ReactNode;
-  loading?: boolean;
-  error?: string | null;
-}
-
-const BasePage: React.FC<BasePageProps> = ({
-  config,
-  stats = [],
-  actions = [],
-  children,
-  loading = false,
-  error = null,
-}) => {
-  if (loading) {
-    return (
-      <div className="p-6">
-        <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-6"></div>
-          {stats.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {stats.map((_, i) => (
-                <div key={i} className="animate-pulse bg-gray-200 h-32 rounded-lg"></div>
-              ))}
-            </div>
-          )}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="animate-pulse bg-gray-200 h-32 rounded-lg"></div>
-            <div className="animate-pulse bg-gray-200 h-32 rounded-lg"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
-          <div className="w-5 h-5 text-red-500 mr-2">⚠️</div>
-          <span className="text-red-700">{error}</span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <config.icon className="w-6 h-6 text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{config.title}</h1>
-            <p className="text-gray-600 mt-1">{config.description}</p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-          <span className="text-sm text-gray-600">Live Data</span>
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
-      {stats.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                </div>
-                <div className={`p-3 rounded-full ${stat.color}`}>
-                  <stat.icon className="w-6 h-6" />
-                </div>
-              </div>
-              {stat.progress !== undefined && (
-                <div className="mt-4">
-                  <div className="w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-500 h-2 rounded-full"
-                      style={{ width: `${stat.progress}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Actions */}
-      {actions.length > 0 && (
-        <div className="flex items-center justify-end space-x-3">
-          {actions.map((action, index) => (
-            <button
-              key={index}
-              onClick={action.onClick}
-              className={`${
-                action.variant === 'primary'
-                  ? 'bg-blue-600 text-white hover:bg-blue-700'
-                  : action.variant === 'danger'
-                    ? 'bg-red-600 text-white hover:bg-red-700'
-                    : 'bg-gray-600 text-white hover:bg-gray-700'
-              } px-4 py-2 rounded-lg flex items-center`}
-            >
-              <action.icon className="w-4 h-4 mr-2" />
-              {action.label}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* Page Content */}
-      {children}
-    </div>
-  );
-};
+import { BasePage, PageConfig, StatsCard, ActionConfig } from '@/components/BasePage';
 
 const VisualizationPageContent: React.FC = () => {
   const { currentProject } = useData();
@@ -209,8 +53,8 @@ const VisualizationPageContent: React.FC = () => {
     getWorkflowState: () => getVisualizationWorkflowState(),
     registerGuidanceHandlers: () =>
       registerVisualizationGuidanceHandlers(
-        () => {},
-        () => {}
+        () => { },
+        () => { }
       ),
     getGuidanceContent: (topic) => getVisualizationGuidanceContent(topic),
   });
@@ -293,116 +137,112 @@ const VisualizationPageContent: React.FC = () => {
 
   const handleChartSelection = (chartType: 'overview' | 'systems' | 'trends') => {
     setSelectedChart(chartType);
-    // Chart switching is handled by state change, which re-renders the component
-    // Additional logic can be added here if needed (e.g., filtering data)
   };
 
-  const config: PageConfig = {
+  const config: PageConfig = useMemo(() => ({
     title: 'Visualization',
     description: 'Analytics and insights for reconciliation data',
-    icon: BarChart3 as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
+    icon: BarChart3,
     path: '/visualization',
     showStats: true,
     showActions: true,
-  };
+  }), []);
 
   // Calculate reconciliation stats from analytics
-  const reconciliationStats = analytics
+  const reconciliationStats = useMemo(() => analytics
     ? {
-        totalRecords: analytics.total_matched_records + analytics.total_unmatched_records,
-        matchedRecords: analytics.total_matched_records,
-        unmatchedRecords: analytics.total_unmatched_records,
-        discrepancyRecords: analytics.total_unmatched_records,
-      }
-    : null;
+      totalRecords: analytics.total_matched_records + analytics.total_unmatched_records,
+      matchedRecords: analytics.total_matched_records,
+      unmatchedRecords: analytics.total_unmatched_records,
+      discrepancyRecords: analytics.total_unmatched_records,
+    }
+    : null, [analytics]);
 
-  const stats: StatsCard[] = reconciliationStats
+  const stats: StatsCard[] = useMemo(() => reconciliationStats
     ? [
-        {
-          title: 'Total Records',
-          value: reconciliationStats.totalRecords || 0,
-          icon: BarChart3 as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
-          color: 'bg-blue-100 text-blue-600',
-        },
-        {
-          title: 'Matched',
-          value: reconciliationStats.matchedRecords || 0,
-          icon: CheckCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
-          color: 'bg-green-100 text-green-600',
-        },
-        {
-          title: 'Unmatched',
-          value: reconciliationStats.unmatchedRecords || 0,
-          icon: AlertCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
-          color: 'bg-red-100 text-red-600',
-        },
-        {
-          title: 'Reconciliation Runs',
-          value: analytics.total_reconciliation_runs || 0,
-          icon: TrendingUp as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
-          color: 'bg-yellow-100 text-yellow-600',
-        },
-      ]
-    : [];
+      {
+        title: 'Total Records',
+        value: reconciliationStats.totalRecords || 0,
+        icon: BarChart3,
+        color: 'bg-blue-100 text-blue-600',
+      },
+      {
+        title: 'Matched',
+        value: reconciliationStats.matchedRecords || 0,
+        icon: CheckCircle,
+        color: 'bg-green-100 text-green-600',
+      },
+      {
+        title: 'Unmatched',
+        value: reconciliationStats.unmatchedRecords || 0,
+        icon: AlertCircle,
+        color: 'bg-red-100 text-red-600',
+      },
+      {
+        title: 'Reconciliation Runs',
+        value: analytics?.total_reconciliation_runs || 0,
+        icon: TrendingUp,
+        color: 'bg-yellow-100 text-yellow-600',
+      },
+    ]
+    : [], [reconciliationStats, analytics]);
 
-  const actions: ActionConfig[] = [
+  const actions: ActionConfig[] = useMemo(() => [
     {
       label: isRefreshing ? 'Refreshing...' : 'Refresh',
-      icon: RefreshCw as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
+      icon: RefreshCw,
       onClick: handleRefresh,
       variant: 'secondary',
       loading: isRefreshing,
     },
     {
       label: isExporting ? 'Exporting...' : 'Export',
-      icon: Download as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
+      icon: Download,
       onClick: handleExport,
       variant: 'secondary',
       loading: isExporting,
     },
-  ];
+  ], [isRefreshing, isExporting, handleRefresh, handleExport]);
 
-  // Priority distribution and confidence levels would come from reconciliation results
-  // For now, we'll use sample data structure
-  const priorityDistribution = analytics
+  const priorityDistribution = useMemo(() => analytics
     ? [
-        {
-          name: 'High Priority',
-          value: Math.floor(analytics.total_unmatched_records * 0.3),
-          color: '#EF4444',
-        },
-        {
-          name: 'Medium Priority',
-          value: Math.floor(analytics.total_unmatched_records * 0.5),
-          color: '#F59E0B',
-        },
-        {
-          name: 'Low Priority',
-          value: Math.floor(analytics.total_unmatched_records * 0.2),
-          color: '#10B981',
-        },
-      ]
-    : [];
+      {
+        name: 'High Priority',
+        value: Math.floor(analytics.total_unmatched_records * 0.3),
+        color: '#EF4444',
+      },
+      {
+        name: 'Medium Priority',
+        value: Math.floor(analytics.total_unmatched_records * 0.5),
+        color: '#F59E0B',
+      },
+      {
+        name: 'Low Priority',
+        value: Math.floor(analytics.total_unmatched_records * 0.2),
+        color: '#10B981',
+      },
+    ]
+    : [], [analytics]);
 
-  const confidenceLevels = analytics
+  const confidenceLevels = useMemo(() => analytics
     ? [
-        {
-          name: 'High Confidence (>90%)',
-          value: Math.floor(analytics.total_matched_records * 0.7),
-          color: '#10B981',
-        },
-        {
-          name: 'Medium Confidence (70-90%)',
-          value: Math.floor(analytics.total_matched_records * 0.25),
-          color: '#F59E0B',
-        },
-        {
-          name: 'Low Confidence (<70%)',
-          value: Math.floor(analytics.total_matched_records * 0.05),
-          color: '#EF4444',
-        },
-      ]
-    : [];
+      {
+        name: 'High Confidence (>90%)',
+        value: Math.floor(analytics.total_matched_records * 0.7),
+        color: '#10B981',
+      },
+      {
+        name: 'Medium Confidence (70-90%)',
+        value: Math.floor(analytics.total_matched_records * 0.25),
+        color: '#F59E0B',
+      },
+      {
+        name: 'Low Confidence (<70%)',
+        value: Math.floor(analytics.total_matched_records * 0.05),
+        color: '#EF4444',
+      },
+    ]
+    : [], [analytics]);
 
   return (
     <BasePage
@@ -495,9 +335,9 @@ const VisualizationPageContent: React.FC = () => {
                   <span className="text-sm font-medium text-gray-900">
                     {reconciliationStats && reconciliationStats.totalRecords > 0
                       ? (
-                          (reconciliationStats.matchedRecords / reconciliationStats.totalRecords) *
-                          100
-                        ).toFixed(1)
+                        (reconciliationStats.matchedRecords / reconciliationStats.totalRecords) *
+                        100
+                      ).toFixed(1)
                       : 0}
                     %
                   </span>

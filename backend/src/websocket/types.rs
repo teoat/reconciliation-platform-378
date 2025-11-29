@@ -142,3 +142,11 @@ pub struct MetricsUpdate {
     pub metrics: serde_json::Value,
     pub timestamp: DateTime<Utc>,
 }
+
+/// Authentication result message
+#[derive(Message)]
+#[rtype(result = "()")]
+pub struct AuthResult {
+    pub user_id: String,
+    pub success: bool,
+}

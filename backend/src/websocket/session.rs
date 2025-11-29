@@ -73,7 +73,10 @@ impl WsSession {
     }
 
     /// Validate JWT token (supports both Better Auth and legacy tokens)
-    pub async fn validate_token_async(&self, token: &str) -> AppResult<crate::services::auth::Claims> {
+    pub async fn validate_token_async(
+        &self,
+        token: &str,
+    ) -> AppResult<crate::services::auth::Claims> {
         // Try dual auth middleware if available (supports both Better Auth and legacy)
         if let Some(dual_auth) = &self.dual_auth {
             return dual_auth.validate_token(token).await;
@@ -123,7 +126,7 @@ impl Handler<WsMessage> for WsSession {
                 let dual_auth = self.dual_auth.clone();
                 let jwt_secret = self.jwt_secret.clone();
                 let token_clone = token.clone();
-                
+
                 let fut = async move {
                     if let Some(dual_auth) = dual_auth {
                         // Use dual auth (supports Better Auth + legacy)
@@ -153,7 +156,7 @@ impl Handler<WsMessage> for WsSession {
                         }
                     }
                 });
-            },
+            }
             WsMessage::JoinProject { project_id } => {
                 self.handle_join_project(project_id, ctx);
             }
@@ -201,6 +204,35 @@ impl Handler<WsMessage> for WsSession {
                 // Handle these message types
                 // Note: These are acknowledged but not broadcast (client-specific messages)
             }
+        }
+    }
+}
+
+impl Handler<AuthResult> for WsSession {
+    type Result = ();
+
+    fn handle(&mut self, msg: AuthResult, ctx: &mut Self::Context) {
+        if msg.success {
+            self.user_id = Some(msg.user_id.clone());
+            self.authenticated = true;
+
+            self.server.do_send(RegisterSession {
+                user_id: msg.user_id,
+                session: ctx.address(),
+            });
+
+            let response = WsMessage::Notification {
+                title: "Authentication".to_string(),
+                message: "Authenticated successfully".to_string(),
+                level: "success".to_string(),
+            };
+            ctx.text(serde_json::to_string(&response).unwrap_or_default());
+        } else {
+            let response = WsMessage::Error {
+                code: "AUTH_ERROR".to_string(),
+                message: "Invalid token".to_string(),
+            };
+            ctx.text(serde_json::to_string(&response).unwrap_or_default());
         }
     }
 }

@@ -39,13 +39,13 @@ if psql "$DATABASE_URL" < "$MIGRATION_FILE" 2>&1; then
     psql "$DATABASE_URL" <<EOF
 SELECT 
     schemaname,
-    tablename,
-    indexname,
+    relname as tablename,
+    indexrelname as indexname,
     pg_size_pretty(pg_relation_size(indexrelid)) as index_size
 FROM pg_stat_user_indexes 
 WHERE schemaname = 'public' 
-AND indexname LIKE 'idx_%'
-ORDER BY tablename, indexname
+AND indexrelname LIKE 'idx_%'
+ORDER BY relname, indexrelname
 LIMIT 20;
 EOF
     

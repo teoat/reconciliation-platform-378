@@ -26,6 +26,7 @@ pub struct LogEntry {
 }
 
 /// Structured logging service
+#[derive(Clone)]
 pub struct StructuredLogging {
     service_name: String,
 }
@@ -50,7 +51,10 @@ impl StructuredLogging {
     ) {
         // Add correlation ID to fields if provided
         if let Some(corr_id) = &correlation_id {
-            fields.insert("correlation_id".to_string(), serde_json::Value::String(corr_id.clone()));
+            fields.insert(
+                "correlation_id".to_string(),
+                serde_json::Value::String(corr_id.clone()),
+            );
         }
 
         let entry = LogEntry {
@@ -65,10 +69,10 @@ impl StructuredLogging {
         // In production, send to ELK/Loki
         // Format: JSON with structured fields for easy parsing
         let json = serde_json::to_string(&entry).unwrap_or_default();
-        
+
         // Output to stdout (can be captured by log aggregation systems)
         println!("{}", json);
-        
+
         // In production, also send to log aggregation service
         // Example: send_to_elk(&entry).await;
     }

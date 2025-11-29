@@ -6,10 +6,14 @@
         "/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/index.js"
       ],
       "env": {
+        "NODE_ENV": "development",
         "DATABASE_URL": "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app",
         "REDIS_URL": "redis://:redis_pass@localhost:6379",
         "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378",
-        "ENABLE_DOCKER_TOOLS": "true"
+        "BACKEND_URL": "http://localhost:2000",
+        "ENABLE_DOCKER_TOOLS": "true",
+        "DEFAULT_TIMEOUT": "30000",
+        "HEALTH_CHECK_CACHE_TTL": "5000"
       }
     },
     "antigravity-coordination": {
@@ -18,8 +22,10 @@
         "/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/agent-coordination.js"
       ],
       "env": {
+        "NODE_ENV": "development",
         "REDIS_URL": "redis://:redis_pass@localhost:6379",
-        "COORDINATION_TTL": "3600"
+        "COORDINATION_TTL": "3600",
+        "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378"
       }
     },
     "antigravity-playwright": {
@@ -44,21 +50,23 @@
         "FRONTEND_BASE_URL": "http://localhost:3000"
       }
     },
-    "postgres": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-postgres",
-        "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app"
-      ]
-    },
     "filesystem": {
       "command": "npx",
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
         "/Users/Arief/Documents/GitHub/reconciliation-platform-378"
-      ]
+      ],
+      "env": {}
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app"
+      ],
+      "env": {}
     },
     "redis": {
       "command": "npx",
@@ -66,7 +74,8 @@
         "-y",
         "@modelcontextprotocol/server-redis",
         "redis://:redis_pass@localhost:6379"
-      ]
+      ],
+      "env": {}
     },
     "prometheus": {
       "command": "npx",
@@ -75,7 +84,9 @@
         "prometheus-mcp"
       ],
       "env": {
-        "PROMETHEUS_URL": "http://localhost:9090"
+        "PROMETHEUS_URL": "http://localhost:9090",
+        "PROMETHEUS_TIMEOUT": "10000",
+        "PROMETHEUS_RETRIES": "3"
       }
     },
     "chrome-devtools": {
@@ -83,7 +94,32 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-puppeteer"
-      ]
+      ],
+      "env": {}
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "env": {}
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "env": {}
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {}
     }
   }
 }

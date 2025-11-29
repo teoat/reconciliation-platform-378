@@ -12,8 +12,9 @@ use std::pin::Pin;
 use std::rc::Rc;
 use std::sync::Arc;
 
+use crate::config::better_auth::BetterAuthConfig;
 use crate::errors::{AppError, AppResult};
-use crate::middleware::better_auth::{BetterAuthConfig, BetterAuthMiddleware};
+use crate::middleware::better_auth::BetterAuthValidator;
 use crate::monitoring::SecurityMetrics;
 use crate::services::auth::{AuthService, Claims};
 use crate::services::structured_logging::{LogLevel, StructuredLogging};
@@ -47,7 +48,7 @@ impl Default for DualAuthConfig {
 #[derive(Clone)]
 pub struct DualAuthMiddlewareState {
     pub config: DualAuthConfig,
-    pub better_auth_middleware: Arc<BetterAuthMiddleware>,
+    pub better_auth_validator: Arc<BetterAuthValidator>,
     pub legacy_auth_service: Arc<AuthService>,
     pub security_metrics: Arc<SecurityMetrics>,
     pub logger: StructuredLogging,
@@ -64,9 +65,8 @@ impl DualAuthMiddleware {
         legacy_auth_service: Arc<AuthService>,
         security_metrics: Arc<SecurityMetrics>,
     ) -> Self {
-        let better_auth_middleware = Arc::new(BetterAuthMiddleware::new(
-            config.better_auth_config.clone(),
-            security_metrics.clone(),
+        let better_auth_validator = Arc::new(BetterAuthValidator::new(
+            config.better_auth_config.auth_server_url.clone(),
         ));
 
         let logger = StructuredLogging::new("dual_auth".to_string());
@@ -74,7 +74,7 @@ impl DualAuthMiddleware {
         Self {
             state: DualAuthMiddlewareState {
                 config,
-                better_auth_middleware,
+                better_auth_validator,
                 legacy_auth_service,
                 security_metrics,
                 logger,
@@ -84,21 +84,14 @@ impl DualAuthMiddleware {
 
     /// Try Better Auth validation
     async fn try_better_auth(&self, token: &str) -> Option<Claims> {
-        match self
-            .state
-            .better_auth_middleware
-            .validate_token(token)
-            .await
-        {
+        match self.state.better_auth_validator.validate_token(token).await {
             Ok(ba_claims) => {
                 let mut fields = std::collections::HashMap::new();
                 fields.insert("auth_type".to_string(), serde_json::json!("better_auth"));
                 fields.insert("user_id".to_string(), serde_json::json!(ba_claims.sub));
-                self.state.logger.log(
-                    LogLevel::Debug,
-                    "Token validated with Better Auth",
-                    fields,
-                );
+                self.state
+                    .logger
+                    .log(LogLevel::Debug, "Token validated with Better Auth", fields);
 
                 Some(ba_claims.into())
             }
@@ -287,16 +280,12 @@ fn extract_token(req: &ServiceRequest) -> AppResult<String> {
         ))?;
 
     if !auth_header.starts_with("Bearer ") {
-        return Err(AppError::Unauthorized(
-            "Invalid token format".to_string(),
-        ));
+        return Err(AppError::Unauthorized("Invalid token format".to_string()));
     }
 
     let token = auth_header
         .strip_prefix("Bearer ")
-        .ok_or(AppError::Unauthorized(
-            "Invalid token format".to_string(),
-        ))?;
+        .ok_or(AppError::Unauthorized("Invalid token format".to_string()))?;
 
     Ok(token.to_string())
 }
@@ -312,4 +301,3 @@ mod tests {
         assert!(!config.skip_paths.is_empty());
     }
 }
-

@@ -198,39 +198,60 @@ export function validatePasswordStrength(password: string): {
 } {
   const feedback: string[] = [];
   let score = 0;
-
   if (password.length < 8) {
     feedback.push('Password must be at least 8 characters long');
   } else {
     score += 1;
   }
-
+  if (password.length > 128) {
+    feedback.push('Password must be no more than 128 characters');
+  }
   if (!/[a-z]/.test(password)) {
     feedback.push('Password must contain at least one lowercase letter');
   } else {
     score += 1;
   }
-
   if (!/[A-Z]/.test(password)) {
     feedback.push('Password must contain at least one uppercase letter');
   } else {
     score += 1;
   }
-
   if (!/\d/.test(password)) {
     feedback.push('Password must contain at least one number');
   } else {
     score += 1;
   }
-
-  if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) {
+  if (!/[^A-Za-z0-9]/.test(password)) {
     feedback.push('Password must contain at least one special character');
   } else {
     score += 1;
   }
-
+  // Unified banned password list
+  const bannedPasswords = [
+    'password', 'password123', '123456', '12345678', 'admin123', 'qwerty123',
+    'welcome123', 'letmein', 'monkey', 'dragon', 'master', 'abc123', 'qwerty'
+  ];
+  if (bannedPasswords.some((banned) => password.toLowerCase().includes(banned))) {
+    feedback.push('Password is too common');
+  }
+  // Sequential character check (max 3)
+  let sequentialCount = 1;
+  const chars = password.split('');
+  for (let i = 1; i < chars.length; i++) {
+    if (chars[i].charCodeAt(0) === chars[i-1].charCodeAt(0) + 1) {
+      sequentialCount++;
+      if (sequentialCount > 3) {
+        feedback.push('Password contains more than 3 sequential characters');
+        break;
+      }
+    } else {
+      sequentialCount = 1;
+    }
+  }
+  // Stub: Password history and expiration checks (to be implemented)
+  // feedback.push('Password reuse/history/expiration checks not yet implemented');
   return {
-    isValid: score >= 4,
+    isValid: score >= 4 && feedback.length === 0,
     score,
     feedback,
   };

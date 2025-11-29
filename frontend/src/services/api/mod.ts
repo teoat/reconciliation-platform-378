@@ -10,6 +10,7 @@ import { UsersApiService } from './users';
 import { ProjectsApiService } from './projects';
 import { ReconciliationApiService } from './reconciliation';
 import { FilesApiService } from './files';
+import { SecurityApiService } from './security';
 import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
 
 /**
@@ -18,6 +19,32 @@ import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
  * to modular service classes
  */
 export class ApiService {
+  // ... (existing methods)
+
+  // ============================================================================
+  // SECURITY SERVICE
+  // ============================================================================
+
+  static async getSecurityPolicies(projectId: string) {
+    return SecurityApiService.getSecurityPolicies(projectId);
+  }
+
+  static async getComplianceFrameworks(projectId: string) {
+    return SecurityApiService.getComplianceFrameworks(projectId);
+  }
+
+  static async getAuditLogs(projectId: string) {
+    return SecurityApiService.getAuditLogs(projectId);
+  }
+
+  static async getEncryptionConfigs(projectId: string) {
+    return SecurityApiService.getEncryptionConfigs(projectId);
+  }
+
+  static async getSecurityStats(projectId: string) {
+    return SecurityApiService.getSecurityStats(projectId);
+  }
+
   // ============================================================================
   // AUTHENTICATION SERVICE
   // ============================================================================

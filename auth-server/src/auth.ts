@@ -12,38 +12,45 @@ function validatePasswordStrength(password: string): { isValid: boolean; feedbac
   if (password.length < config.passwordMinLength) {
     feedback.push(`Password must be at least ${config.passwordMinLength} characters`);
   }
-
+  if (password.length > 128) {
+    feedback.push('Password must be no more than 128 characters');
+  }
   if (!/[A-Z]/.test(password)) {
     feedback.push('Password must contain at least one uppercase letter');
   }
-
   if (!/[a-z]/.test(password)) {
     feedback.push('Password must contain at least one lowercase letter');
   }
-
   if (!/[0-9]/.test(password)) {
     feedback.push('Password must contain at least one number');
   }
-
   if (!/[^A-Za-z0-9]/.test(password)) {
     feedback.push('Password must contain at least one special character');
   }
-
-  // Common banned passwords
+  // Unified banned password list
   const bannedPasswords = [
-    'password',
-    'password123',
-    '123456',
-    '12345678',
-    'qwerty',
-    'abc123',
-    'letmein',
+    'password', 'password123', '123456', '12345678', 'admin123', 'qwerty123',
+    'welcome123', 'letmein', 'monkey', 'dragon', 'master', 'abc123', 'qwerty'
   ];
-
   if (bannedPasswords.some((banned) => password.toLowerCase().includes(banned))) {
     feedback.push('Password is too common');
   }
-
+  // Sequential character check (max 3)
+  let sequentialCount = 1;
+  const chars = password.split('');
+  for (let i = 1; i < chars.length; i++) {
+    if (chars[i].charCodeAt(0) === chars[i-1].charCodeAt(0) + 1) {
+      sequentialCount++;
+      if (sequentialCount > 3) {
+        feedback.push('Password contains more than 3 sequential characters');
+        break;
+      }
+    } else {
+      sequentialCount = 1;
+    }
+  }
+  // Stub: Password history and expiration checks (to be implemented)
+  // feedback.push('Password reuse/history/expiration checks not yet implemented');
   return {
     isValid: feedback.length === 0,
     feedback,

@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CheckCircle, Clock, AlertCircle, RefreshCw, Download, Eye } from 'lucide-react';
 import { Button, StatusBadge } from '@/components/ui';
 import { Modal } from '@/components/ui/Modal';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { SkeletonText } from '@/components/LoadingComponents';
 import { useData } from '@/components/DataProvider';
 import { ApiService } from '@/services/ApiService';
 import { useToast } from '@/hooks/useToast';
 import { logger } from '@/services/logger';
 import type { ReconciliationRecord } from '@/types/reconciliation';
+import { BasePage, PageConfig, StatsCard, FilterConfig, ActionConfig } from '@/components/BasePage';
 
 // Define ReconciliationStatus locally since it's not exported from types
 type ReconciliationStatus = 'matched' | 'unmatched' | 'discrepancy' | 'pending' | 'reviewed';
@@ -21,7 +21,7 @@ interface ExtendedReconciliationRecord {
   sourceBRecordId?: string;
   sources?: Array<{
     systemName?: string;
-    data?: { amount?: number; [key: string]: unknown };
+    data?: { amount?: number;[key: string]: unknown };
     [key: string]: unknown;
   }>;
   difference?: number;
@@ -35,31 +35,6 @@ interface ExtendedReconciliationRecord {
   priority?: 'low' | 'medium' | 'high' | 'critical';
 }
 
-// Helper component for progress bar with proper ARIA attributes
-const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, title }) => {
-  const progressValue = Math.max(0, Math.min(100, progress ?? 0)); // Clamp between 0-100
-  const ariaLabel = `${title} progress: ${progressValue}%`;
-  return (
-    <div className="mt-4">
-      <div className="w-full bg-gray-200 rounded-full h-2">
-        {/* eslint-disable-next-line jsx-a11y/aria-proptypes */}
-        <div
-          className="bg-blue-500 h-2 rounded-full"
-          // Dynamic width for progress bar - acceptable inline style
-          style={{ width: `${progressValue}%` }}
-          role="progressbar"
-          aria-label={ariaLabel}
-          aria-valuenow={progressValue}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-live="polite"
-          tabIndex={0}
-        ></div>
-      </div>
-    </div>
-  );
-};
-
 import { usePageOrchestration } from '@/hooks/usePageOrchestration';
 import {
   adjudicationPageMetadata,
@@ -69,240 +44,6 @@ import {
   registerAdjudicationGuidanceHandlers,
   getAdjudicationGuidanceContent,
 } from '@/orchestration/pages/AdjudicationPageOrchestration';
-
-// Interfaces (shared with main index.tsx)
-export interface PageConfig {
-  title: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
-  path: string;
-  showStats?: boolean;
-  showFilters?: boolean;
-  showActions?: boolean;
-}
-
-export interface StatsCard {
-  title: string;
-  value: string | number;
-  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
-  color: string;
-  trend?: {
-    direction: 'up' | 'down' | 'neutral';
-    value: string;
-  };
-  progress?: number;
-}
-
-export interface FilterConfig {
-  key: string;
-  label: string;
-  type: 'select' | 'text' | 'date' | 'range';
-  options?: Array<{ value: string; label: string }>;
-  placeholder?: string;
-}
-
-export interface ActionConfig {
-  label: string;
-  icon: React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>;
-  onClick: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
-  loading?: boolean;
-}
-
-// BasePage component (simplified for this extraction)
-interface BasePageProps {
-  config: PageConfig;
-  stats?: StatsCard[];
-  filters?: FilterConfig[];
-  actions?: ActionConfig[];
-  children: React.ReactNode;
-  loading?: boolean;
-  error?: string | null;
-}
-
-const BasePage: React.FC<BasePageProps> = ({
-  config,
-  stats = [],
-  filters = [],
-  actions = [],
-  children,
-  loading = false,
-  error = null,
-}) => {
-  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
-
-  const handleFilterChange = (key: string, value: string) => {
-    setFilterValues((prev) => ({ ...prev, [key]: value }));
-  };
-
-  const clearFilters = () => {
-    setFilterValues({});
-  };
-
-  if (loading) {
-    return (
-      <div className="p-6">
-        <div className="space-y-6">
-          <SkeletonText lines={1} className="w-1/4" />
-          {stats.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {stats.map((_, i) => (
-                <div key={i} className="h-32 bg-gray-200 rounded-lg animate-pulse"></div>
-              ))}
-            </div>
-          )}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="h-32 bg-gray-200 rounded-lg animate-pulse"></div>
-            <div className="h-32 bg-gray-200 rounded-lg animate-pulse"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-6">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
-          <div className="w-5 h-5 text-red-500 mr-2">⚠️</div>
-          <span className="text-red-700">{error}</span>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-blue-100 rounded-lg">
-            <config.icon className="w-6 h-6 text-blue-600" />
-          </div>
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">{config.title}</h1>
-            <p className="text-gray-600 mt-1">{config.description}</p>
-          </div>
-        </div>
-        <div className="flex items-center space-x-2">
-          <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-          <span className="text-sm text-gray-600">Live Data</span>
-        </div>
-      </div>
-
-      {/* Statistics Cards */}
-      {stats.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-lg shadow-sm border p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value ?? 'N/A'}</p>
-                </div>
-                <div className={`p-3 rounded-full ${stat.color}`}>
-                  <stat.icon className="w-6 h-6" />
-                </div>
-              </div>
-              {stat.progress !== undefined && (
-                <ProgressBar progress={stat.progress} title={stat.title} />
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Filters */}
-      {filters.length > 0 && (
-        <div className="bg-white rounded-lg shadow-sm border">
-          <div className="p-6 border-b">
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <div className="w-5 h-5 mr-2 text-blue-600">⚲</div>
-              Filters
-            </h2>
-          </div>
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {filters.map((filter) => (
-                <div key={filter.key}>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    {filter.label}
-                  </label>
-                  {filter.type === 'select' ? (
-                    <select
-                      value={filterValues[filter.key] || ''}
-                      onChange={(e) => handleFilterChange(filter.key, e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
-                      aria-label={filter.label}
-                      title={filter.label}
-                    >
-                      <option value="">All {filter.label}</option>
-                      {filter.options?.map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type={filter.type}
-                      placeholder={filter.placeholder || filter.label}
-                      value={filterValues[filter.key] || ''}
-                      onChange={(e) => handleFilterChange(filter.key, e.target.value)}
-                      className="w-full border border-gray-300 rounded-md px-3 py-2"
-                    />
-                  )}
-                </div>
-              ))}
-            </div>
-            {Object.values(filterValues).some((v) => v !== '') && (
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={clearFilters}
-                  aria-label="Clear all filters"
-                  className="px-3 py-1 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                >
-                  Clear All Filters
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Actions */}
-      {actions.length > 0 && (
-        <div className="flex items-center justify-end space-x-3">
-          {actions.map((action, index) => {
-            return (
-              // eslint-disable-next-line jsx-a11y/aria-proptypes
-              <button
-                key={index}
-                onClick={action.onClick}
-                disabled={action.loading}
-                aria-label={action.label}
-                aria-busy={action.loading}
-                className={`${
-                  action.variant === 'primary'
-                    ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-                    : action.variant === 'danger'
-                      ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-                      : 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'
-                } px-4 py-2 rounded-lg flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
-              >
-                <action.icon className="w-4 h-4 mr-2" aria-hidden={true} />
-                {action.label}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
-      {/* Page Content */}
-      {children}
-    </div>
-  );
-};
 
 const AdjudicationPageContent: React.FC = () => {
   const { currentProject } = useData();
@@ -544,46 +285,46 @@ const AdjudicationPageContent: React.FC = () => {
     }
   };
 
-  const config: PageConfig = {
+  const config: PageConfig = useMemo(() => ({
     title: 'Adjudication',
     description: 'Review and resolve discrepancies',
-    icon: CheckCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
+    icon: CheckCircle,
     path: '/adjudication',
     showStats: true,
     showFilters: true,
     showActions: true,
-  };
+  }), []);
 
-  const stats: StatsCard[] = [
+  const stats: StatsCard[] = useMemo(() => [
     {
       title: 'Total Records',
       value: records.length,
-      icon: CheckCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
+      icon: CheckCircle,
       color: 'bg-blue-100 text-blue-600',
     },
     {
       title: 'Pending',
       value: records.filter((r) => r.status === 'pending').length,
-      icon: Clock as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
+      icon: Clock,
       color: 'bg-yellow-100 text-yellow-600',
     },
     {
       title: 'Approved',
       value: records.filter((r) => (r.status as string) === 'approved' || r.status === 'reviewed')
         .length,
-      icon: CheckCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
+      icon: CheckCircle,
       color: 'bg-green-100 text-green-600',
     },
     {
       title: 'Rejected',
       value: records.filter((r) => (r.status as string) === 'rejected' || r.status === 'unmatched')
         .length,
-      icon: AlertCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
+      icon: AlertCircle,
       color: 'bg-red-100 text-red-600',
     },
-  ];
+  ], [records]);
 
-  const filters: FilterConfig[] = [
+  const filters: FilterConfig[] = useMemo(() => [
     {
       key: 'status',
       label: 'Status',
@@ -605,24 +346,24 @@ const AdjudicationPageContent: React.FC = () => {
         { value: 'low', label: 'Low' },
       ],
     },
-  ];
+  ], []);
 
-  const actions: ActionConfig[] = [
+  const actions: ActionConfig[] = useMemo(() => [
     {
       label: isRefreshing ? 'Refreshing...' : 'Refresh',
-      icon: RefreshCw as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
+      icon: RefreshCw,
       onClick: handleRefresh,
       variant: 'secondary',
       loading: isRefreshing,
     },
     {
       label: isExporting ? 'Exporting...' : 'Export',
-      icon: Download as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
+      icon: Download,
       onClick: handleExport,
       variant: 'secondary',
       loading: isExporting,
     },
-  ];
+  ], [isRefreshing, isExporting, handleRefresh, handleExport]);
 
   return (
     <BasePage config={config} stats={stats} filters={filters} actions={actions}>
@@ -790,19 +531,19 @@ const AdjudicationPageContent: React.FC = () => {
               {(selectedRecord.confidence_score ||
                 selectedRecord.confidence ||
                 selectedRecord.matchScore) && (
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Confidence Score</p>
-                  <p className="text-sm text-gray-900">
-                    {(
-                      (selectedRecord.confidence_score ??
-                        selectedRecord.confidence ??
-                        selectedRecord.matchScore ??
-                        0) * 100
-                    ).toFixed(1)}
-                    %
-                  </p>
-                </div>
-              )}
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Confidence Score</p>
+                    <p className="text-sm text-gray-900">
+                      {(
+                        (selectedRecord.confidence_score ??
+                          selectedRecord.confidence ??
+                          selectedRecord.matchScore ??
+                          0) * 100
+                      ).toFixed(1)}
+                      %
+                    </p>
+                  </div>
+                )}
             </div>
             <div className="pt-4 border-t border-gray-200 flex space-x-2">
               {selectedRecord.status === 'pending' && (

@@ -32,7 +32,7 @@ log_info "Running Playwright diagnostic tests..."
 cd "$PROJECT_ROOT"
 
 # Run the diagnostic test
-npx playwright test e2e/frontend-ui-diagnostic.spec.ts --project=chromium --headed=false
+npx playwright test e2e/frontend-ui-diagnostic.spec.ts --project=chromium
 
 # Check if report was generated
 REPORT_PATH="$PROJECT_ROOT/test-results/frontend-diagnostic-report.json"

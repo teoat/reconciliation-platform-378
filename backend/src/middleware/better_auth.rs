@@ -22,11 +22,23 @@ pub struct TokenValidationResponse {
 /// Token claims from Better Auth
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TokenClaims {
-    pub sub: String,      // User ID
-    pub email: String,    // User email
-    pub role: String,     // User role
-    pub exp: usize,       // Expiration timestamp
-    pub iat: usize,       // Issued at timestamp
+    pub sub: String,   // User ID
+    pub email: String, // User email
+    pub role: String,  // User role
+    pub exp: usize,    // Expiration timestamp
+    pub iat: usize,    // Issued at timestamp
+}
+
+impl From<TokenClaims> for Claims {
+    fn from(claims: TokenClaims) -> Self {
+        Self {
+            sub: claims.sub,
+            email: claims.email,
+            role: claims.role,
+            exp: claims.exp,
+            iat: claims.iat,
+        }
+    }
 }
 
 /// Better Auth validator
@@ -53,19 +65,19 @@ impl BetterAuthValidator {
     pub async fn validate_token(&self, token: &str) -> AppResult<TokenClaims> {
         // Check cache first
         {
-        let cache = self.cache.read().await;
+            let cache = self.cache.read().await;
             if let Some((claims, cached_at)) = cache.get(token) {
                 let now = SystemTime::now();
-                let cache_age = now.duration_since(*cached_at).unwrap_or(Duration::from_secs(0));
-                
+                let cache_age = now
+                    .duration_since(*cached_at)
+                    .unwrap_or(Duration::from_secs(0));
+
                 // Cache for 5 minutes
                 if cache_age < Duration::from_secs(300) {
                     // Check if token is still valid
-                    let now_timestamp = now
-                        .duration_since(UNIX_EPOCH)
-                        .unwrap_or_default()
-                        .as_secs() as usize;
-                    
+                    let now_timestamp =
+                        now.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs() as usize;
+
                     if claims.exp > now_timestamp {
                         return Ok(claims.clone());
                     }
@@ -89,13 +101,10 @@ impl BetterAuthValidator {
             return Err(AppError::Authentication("Invalid token".to_string()));
         }
 
-        let session_data: serde_json::Value = response
-            .json()
-            .await
-            .map_err(|e| {
-                log::error!("Failed to parse Better Auth response: {}", e);
-                AppError::Authentication("Invalid token response".to_string())
-            })?;
+        let session_data: serde_json::Value = response.json().await.map_err(|e| {
+            log::error!("Failed to parse Better Auth response: {}", e);
+            AppError::Authentication("Invalid token response".to_string())
+        })?;
 
         // Extract claims from session data
         let user = session_data["user"]
@@ -111,15 +120,14 @@ impl BetterAuthValidator {
                 .as_str()
                 .ok_or_else(|| AppError::Authentication("Missing email".to_string()))?
                 .to_string(),
-            role: user.get("role")
+            role: user
+                .get("role")
                 .and_then(|r| r.as_str())
                 .unwrap_or("user")
                 .to_string(),
-            exp: session_data["expires"]
-                .as_u64()
-                .unwrap_or(0) as usize,
+            exp: session_data["expires"].as_u64().unwrap_or(0) as usize,
             iat: SystemTime::now()
-            .duration_since(UNIX_EPOCH)
+                .duration_since(UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs() as usize,
         };
@@ -137,14 +145,14 @@ impl BetterAuthValidator {
     pub async fn cleanup_cache(&self) {
         let mut cache = self.cache.write().await;
         let now = SystemTime::now();
-        
+
         cache.retain(|_, (claims, cached_at)| {
-            let cache_age = now.duration_since(*cached_at).unwrap_or(Duration::from_secs(0));
-            let now_timestamp = now
-                .duration_since(UNIX_EPOCH)
-                .unwrap_or_default()
-                .as_secs() as usize;
-            
+            let cache_age = now
+                .duration_since(*cached_at)
+                .unwrap_or(Duration::from_secs(0));
+            let now_timestamp =
+                now.duration_since(UNIX_EPOCH).unwrap_or_default().as_secs() as usize;
+
             // Keep if cache is recent and token not expired
             cache_age < Duration::from_secs(300) && claims.exp > now_timestamp
         });
@@ -195,7 +203,7 @@ pub async fn verify_identity_better_auth(
 
     // Store claims in request extensions for use in handlers
     req.extensions_mut().insert(internal_claims);
-    
+
     // Also store user ID as UUID if possible
     if let Ok(user_id) = uuid::Uuid::parse_str(&claims.sub) {
         req.extensions_mut().insert(user_id);
@@ -240,7 +248,7 @@ pub async fn verify_identity_dual(
             };
 
             req.extensions_mut().insert(internal_claims);
-            
+
             if let Ok(user_id) = uuid::Uuid::parse_str(&claims.sub) {
                 req.extensions_mut().insert(user_id);
             }
@@ -253,7 +261,7 @@ pub async fn verify_identity_dual(
     // Fall back to legacy JWT validation
     if let Some(auth_service) = legacy_validator {
         let claims = auth_service.validate_token(token)?;
-        
+
         // Check expiration
         let now = SystemTime::now()
             .duration_since(UNIX_EPOCH)
@@ -265,7 +273,7 @@ pub async fn verify_identity_dual(
         }
 
         req.extensions_mut().insert(claims.clone());
-        
+
         if let Ok(user_id) = uuid::Uuid::parse_str(&claims.sub) {
             req.extensions_mut().insert(user_id);
         }
@@ -274,7 +282,9 @@ pub async fn verify_identity_dual(
         return Ok(());
     }
 
-    Err(AppError::Unauthorized("Token validation failed".to_string()))
+    Err(AppError::Unauthorized(
+        "Token validation failed".to_string(),
+    ))
 }
 
 #[cfg(test)]
