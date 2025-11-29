@@ -722,3 +722,6 @@ export type {
   BackendReconciliationMatch,
   BackendReconciliationJob,
 };
+
+// Re-export commonly used types from types module
+export type { User, Project, IngestionJob } from '../../types';

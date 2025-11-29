@@ -109,6 +109,9 @@ pub use resilience::{ResilienceManager, graceful_degradation};
 
 // Password management
 pub mod password_manager;
+
+// SQL Data Synchronization
+pub mod sync;
 // Extracted password manager utilities (rotation, audit, encryption)
 // Note: These are separate modules that can be used independently
 // The main password_manager.rs file contains the core implementation

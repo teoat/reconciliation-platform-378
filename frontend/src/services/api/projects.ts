@@ -3,9 +3,11 @@
 // ============================================================================
 
 import { apiClient } from '../apiClient';
+import { BaseApiService, type PaginatedResult, type ServiceContext } from './BaseApiService';
 import type { Project } from '../../types/backend-aligned';
 import type { ProjectSettings } from '../../types/index';
 import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
+import type { ErrorHandlingResult } from '../errorHandling';
 
 /**
  * Project Management API Service
@@ -19,7 +21,7 @@ import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
  * const projects = result.projects;
  * ```
  */
-export class ProjectsApiService {
+export class ProjectsApiService extends BaseApiService {
   /**
    * Fetches a paginated list of projects with optional filtering and search.
    * 
@@ -94,16 +96,25 @@ export class ProjectsApiService {
    * const project = await ProjectsApiService.getProjectById('project-123');
    * ```
    */
-  static async getProjectById(projectId: string) {
-    try {
-      const response = await apiClient.getProjectById(projectId);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async getProjectById(projectId: string): Promise<ErrorHandlingResult<Project>> {
+    return this.withErrorHandling(
+      async () => {
+        const cacheKey = `project:${projectId}`;
+        return this.getCached(
+          cacheKey,
+          async () => {
+            const response = await apiClient.getProjectById(projectId);
+            return this.transformResponse<Project>(response);
+          },
+          600000 // 10 minutes TTL
+        );
+      },
+      {
+        component: 'ProjectsApiService',
+        action: 'getProjectById',
+        projectId
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch project');
-    }
+    );
   }
 
   /**
@@ -129,16 +140,22 @@ export class ProjectsApiService {
     name: string;
     description?: string;
     settings?: ProjectSettings;
-  }) {
-    try {
-      const response = await apiClient.createProject(projectData);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  }): Promise<ErrorHandlingResult<Project>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.createProject(projectData);
+        const result = this.transformResponse<Project>(response);
+
+        // Invalidate projects cache
+        await this.invalidateCache('projects:*');
+
+        return result;
+      },
+      {
+        component: 'ProjectsApiService',
+        action: 'createProject'
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to create project');
-    }
+    );
   }
 
   /**
@@ -169,16 +186,24 @@ export class ProjectsApiService {
       settings?: ProjectSettings;
       status?: string;
     }
-  ) {
-    try {
-      const response = await apiClient.updateProject(projectId, projectData);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  ): Promise<ErrorHandlingResult<Project>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.updateProject(projectId, projectData);
+        const result = this.transformResponse<Project>(response);
+
+        // Invalidate project and projects cache
+        await this.invalidateCache(`project:${projectId}`);
+        await this.invalidateCache('projects:*');
+
+        return result;
+      },
+      {
+        component: 'ProjectsApiService',
+        action: 'updateProject',
+        projectId
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to update project');
-    }
+    );
   }
 
   /**
@@ -193,16 +218,26 @@ export class ProjectsApiService {
    * await ProjectsApiService.deleteProject('project-123');
    * ```
    */
-  static async deleteProject(projectId: string) {
-    try {
-      const response = await apiClient.deleteProject(projectId);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async deleteProject(projectId: string): Promise<ErrorHandlingResult<boolean>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.deleteProject(projectId);
+        if (response.error) {
+          throw new Error(getErrorMessageFromApiError(response.error));
+        }
+
+        // Invalidate project and projects cache
+        await this.invalidateCache(`project:${projectId}`);
+        await this.invalidateCache('projects:*');
+
+        return true;
+      },
+      {
+        component: 'ProjectsApiService',
+        action: 'deleteProject',
+        projectId
       }
-      return true;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to delete project');
-    }
+    );
   }
 
   /**
@@ -217,16 +252,25 @@ export class ProjectsApiService {
    * const settings = await ProjectsApiService.getProjectSettings('project-123');
    * ```
    */
-  static async getProjectSettings(projectId: string) {
-    try {
-      const response = await apiClient.get(`/api/projects/${projectId}/settings`);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async getProjectSettings(projectId: string): Promise<ErrorHandlingResult<ProjectSettings>> {
+    return this.withErrorHandling(
+      async () => {
+        const cacheKey = `project:${projectId}:settings`;
+        return this.getCached(
+          cacheKey,
+          async () => {
+            const response = await apiClient.get(`/api/projects/${projectId}/settings`);
+            return this.transformResponse<ProjectSettings>(response);
+          },
+          300000 // 5 minutes TTL
+        );
+      },
+      {
+        component: 'ProjectsApiService',
+        action: 'getProjectSettings',
+        projectId
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch project settings');
-    }
+    );
   }
 
   /**
@@ -245,16 +289,24 @@ export class ProjectsApiService {
    * });
    * ```
    */
-  static async updateProjectSettings(projectId: string, settings: ProjectSettings) {
-    try {
-      const response = await apiClient.post(`/api/projects/${projectId}/settings`, settings);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async updateProjectSettings(projectId: string, settings: ProjectSettings): Promise<ErrorHandlingResult<ProjectSettings>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.post(`/api/projects/${projectId}/settings`, settings);
+        const result = this.transformResponse<ProjectSettings>(response);
+
+        // Invalidate project settings cache
+        await this.invalidateCache(`project:${projectId}:settings`);
+        await this.invalidateCache(`project:${projectId}`);
+
+        return result;
+      },
+      {
+        component: 'ProjectsApiService',
+        action: 'updateProjectSettings',
+        projectId
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to update project settings');
-    }
+    );
   }
 
   /**
@@ -284,18 +336,23 @@ export class ProjectsApiService {
   /**
    * Creates a new data source for a project.
    * 
+   * **NOTE**: This method is not yet implemented. Use `uploadFile` or `FilesApiService.uploadFile` instead.
+   * 
    * @param projectId - Project ID
    * @param dataSourceData - Data source creation data
    * @param dataSourceData.name - Data source name
    * @param dataSourceData.type - Data source type
    * @param dataSourceData.config - Data source configuration
    * @returns Promise resolving to created data source
-   * @throws {Error} If not implemented (use uploadFile instead) or request fails
+   * @throws {Error} Always throws - method not implemented (use uploadFile instead)
    * 
    * @example
    * ```typescript
-   * // Note: This method is not yet implemented, use uploadFile instead
+   * // This method is not implemented - use uploadFile instead:
+   * await FilesApiService.uploadFile(projectId, file, { name: 'data-source-name' });
    * ```
+   * 
+   * @deprecated This method is not implemented. Use `FilesApiService.uploadFile` instead.
    */
   static async createDataSource(
     projectId: string,
@@ -304,14 +361,12 @@ export class ProjectsApiService {
       type: string;
       config: Record<string, unknown>;
     }
-  ) {
-    try {
-      // createDataSource doesn't exist - use uploadFile or another method
-      // For now, throw an error indicating this needs to be implemented
-      throw new Error('createDataSource is not yet implemented. Use uploadFile instead.');
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to create data source');
-    }
+  ): Promise<never> {
+    // This method is intentionally not implemented
+    // Use FilesApiService.uploadFile instead for file-based data sources
+    throw new Error(
+      'createDataSource is not yet implemented. Use FilesApiService.uploadFile instead.'
+    );
   }
 
   /**

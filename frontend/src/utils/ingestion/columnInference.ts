@@ -1,5 +1,5 @@
 // Column type inference utilities
-import type { DataRow, ColumnInfo } from '../../types/ingestion';
+import type { DataRow, ColumnInfo } from '@/types/ingestion/index';
 
 /**
  * Infers column types from data

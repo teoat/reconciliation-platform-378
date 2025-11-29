@@ -24,6 +24,7 @@ pub mod monitoring;
 
 // Sync handlers
 pub mod sync;
+pub mod sql_sync;
 
 // Health check handlers
 pub mod health;
@@ -88,6 +89,8 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
             .service(web::scope("/monitoring").configure(monitoring::configure_routes))
             // Offline and sync routes
             .service(web::scope("/sync").configure(sync::configure_routes))
+            // SQL data synchronization routes
+            .service(web::scope("/sync").configure(sql_sync::configure_routes))
             // Password manager routes
             .service(web::scope("/passwords").configure(password_manager::configure_routes))
             // Onboarding routes

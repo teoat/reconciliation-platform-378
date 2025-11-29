@@ -37,6 +37,27 @@ export class ResponseHandler {
     let translatedMessage = errorRecord.message || errorRecord.error || 'An error occurred';
     let errorCode = errorRecord.code;
 
+    // Detect network errors and provide user-friendly messages
+    if (errorRecord.message) {
+      const isNetworkError =
+        errorRecord.message.includes('fetch') ||
+        errorRecord.message.includes('network') ||
+        errorRecord.message.includes('Failed to fetch') ||
+        errorRecord.message.includes('NetworkError') ||
+        errorRecord.message.includes('Network request failed') ||
+        errorRecord.message.includes('Unable to connect') ||
+        errorRecord.message.includes('ERR_INTERNET_DISCONNECTED') ||
+        errorRecord.message.includes('ERR_CONNECTION_REFUSED') ||
+        errorRecord.message.includes('ERR_CONNECTION_RESET') ||
+        (errorRecord instanceof Error && errorRecord.name === 'TypeError');
+
+      if (isNetworkError) {
+        translatedMessage =
+          'Unable to connect to server. Please check your connection and try again.';
+        errorCode = 'NETWORK_ERROR';
+      }
+    }
+
     // ✅ CORRELATION ID: Extract from error response (supports multiple formats)
     // Supports: correlationId, correlation_id, and x-correlation-id header
     const correlationId =

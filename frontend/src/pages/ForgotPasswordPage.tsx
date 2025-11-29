@@ -4,9 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Lock, Mail, ArrowLeft, CheckCircle } from 'lucide-react';
-import { AuthApiService } from '../services/api/auth';
-import { useToast } from '../hooks/useToast';
-import { PageMeta } from '../components/seo/PageMeta';
+import { AuthApiService } from '@/services/api/auth';
+import { useToast } from '@/hooks/useToast';
+import { PageMeta } from '@/components/seo/PageMeta';
 
 const requestResetSchema = z.object({
   email: z.string().email('Invalid email address'),

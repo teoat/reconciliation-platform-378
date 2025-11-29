@@ -78,7 +78,8 @@ pub struct CreateProjectRequest {
     pub name: String,
     #[validate(length(max = 1000, message = "Description cannot exceed 1000 characters"))]
     pub description: Option<String>,
-    pub owner_id: Uuid,
+    /// Owner ID - optional, defaults to authenticated user (admin can specify different owner)
+    pub owner_id: Option<Uuid>,
     pub status: Option<String>,
     pub settings: Option<serde_json::Value>,
 }

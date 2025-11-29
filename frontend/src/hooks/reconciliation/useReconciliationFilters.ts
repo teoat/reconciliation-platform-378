@@ -1,7 +1,7 @@
 // Reconciliation filtering hook
 import { useState, useCallback, useMemo } from 'react';
 import { applyFilters } from '../../utils/reconciliation/filtering';
-import type { EnhancedReconciliationRecord, FilterConfig } from '../../types/reconciliation';
+import type { EnhancedReconciliationRecord, FilterConfig } from '../../types/reconciliation/index';
 
 export const useReconciliationFilters = (records: EnhancedReconciliationRecord[]) => {
   const [filters, setFilters] = useState<FilterConfig[]>([]);

@@ -20,13 +20,16 @@ import {
   Zap,
   X,
 } from 'lucide-react';
-import { useData } from '../../components/DataProvider';
-import type { CashflowEvaluationPageProps, ExpenseCategory, ViewMode, FilterConfig } from './types';
-import { useCashflowData } from './hooks/useCashflowData';
+import { useData } from '@/components/DataProvider';
+import type { CashflowEvaluationPageProps, ExpenseCategory, ViewMode, FilterConfig, CashflowMetrics as CashflowMetricsType } from './types';
+import { useCashflowData, type CashflowDataWithCategories } from './hooks/useCashflowData';
 import { useCashflowFilters } from './hooks/useCashflowFilters';
 import { CashflowMetrics } from './components/CashflowMetrics';
 import { CashflowCategoryCard } from './components/CashflowCategoryCard';
 import { CashflowFilters } from './components/CashflowFilters';
+import { CashflowTable } from '@/components/cashflow/CashflowTable';
+import { CashflowCharts } from '@/components/cashflow/CashflowCharts';
+import { CashflowCategoryModal } from '@/components/cashflow/CashflowCategoryModal';
 
 const CashflowEvaluationPage: React.FC<CashflowEvaluationPageProps> = ({
   project,
@@ -44,7 +47,7 @@ const CashflowEvaluationPage: React.FC<CashflowEvaluationPageProps> = ({
     processingProgress,
     runDiscrepancyAnalysis,
   } = useCashflowData({
-    currentProject,
+    currentProject: (currentProject as unknown as import('@/types/backend-aligned').Project) || null,
     getCashflowData,
     onProgressUpdate,
   });
@@ -75,7 +78,29 @@ const CashflowEvaluationPage: React.FC<CashflowEvaluationPageProps> = ({
   };
 
   const handleRunAnalysis = async () => {
-    await runDiscrepancyAnalysis(transformReconciliationToCashflow);
+    await runDiscrepancyAnalysis((id: string) => {
+      const result = transformReconciliationToCashflow(id);
+      if (!result) return null;
+      // Convert ProjectData to CashflowDataWithCategories
+      const defaultMetrics: CashflowMetricsType = {
+        totalReportedExpenses: 0,
+        totalCashflowExpenses: 0,
+        totalDiscrepancy: 0,
+        discrepancyPercentage: 0,
+        balancedCategories: 0,
+        discrepancyCategories: 0,
+        missingTransactions: 0,
+        excessTransactions: 0,
+        averageDiscrepancy: 0,
+        largestDiscrepancy: 0,
+        lastReconciliationDate: new Date().toISOString(),
+        dataQualityScore: 0,
+      };
+      return {
+        categories: [],
+        metrics: defaultMetrics,
+      } as CashflowDataWithCategories;
+    });
   };
 
   return (
@@ -209,89 +234,29 @@ const CashflowEvaluationPage: React.FC<CashflowEvaluationPageProps> = ({
         </div>
       )}
 
-      {/* Table View - TODO: Extract to CashflowTable component */}
+      {/* Table View */}
       {viewMode === 'table' && (
-        <div className="card">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-secondary-200">
-                  <th className="text-left py-3 px-4 font-medium text-secondary-700">Category</th>
-                  <th className="text-left py-3 px-4 font-medium text-secondary-700">Status</th>
-                  <th className="text-left py-3 px-4 font-medium text-secondary-700">Reported</th>
-                  <th className="text-left py-3 px-4 font-medium text-secondary-700">Cashflow</th>
-                  <th className="text-left py-3 px-4 font-medium text-secondary-700">Discrepancy</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCategories.map(category => (
-                  <tr
-                    key={category.id}
-                    className="border-b border-secondary-100 hover:bg-secondary-50"
-                  >
-                    <td className="py-4 px-4">
-                      <div className="font-medium text-secondary-900">{category.name}</div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className="text-sm text-secondary-600">{category.status}</span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className="text-sm font-semibold text-secondary-900">
-                        {category.totalReported.toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className="text-sm font-semibold text-secondary-900">
-                        {category.totalCashflow.toLocaleString()}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span
-                        className={`text-sm font-semibold ${
-                          category.discrepancy < 0 ? 'text-red-600' : 'text-green-600'
-                        }`}
-                      >
-                        {category.discrepancy.toLocaleString()}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <CashflowTable
+          categories={filteredCategories}
+          onCategoryClick={handleCategoryClick}
+        />
       )}
 
-      {/* Chart View - TODO: Extract to CashflowCharts component */}
+      {/* Chart View */}
       {viewMode === 'chart' && (
-        <div className="card">
-          <p className="text-secondary-600">Chart view - Coming soon</p>
-        </div>
+        <CashflowCharts
+          categories={filteredCategories}
+          viewType="bar"
+        />
       )}
 
-      {/* Category Detail Modal - TODO: Extract to CashflowCategoryModal component */}
+      {/* Category Detail Modal */}
       {showCategoryModal && selectedCategory && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-2xl font-semibold text-secondary-900">
-                {selectedCategory.name} - Detailed Analysis
-              </h3>
-              <button
-                onClick={() => setShowCategoryModal(false)}
-                className="text-secondary-400 hover:text-secondary-600"
-                title="Close modal"
-              >
-                <X className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="text-secondary-600">
-              <p>Category details for {selectedCategory.name}</p>
-              <p>Subcategories: {selectedCategory.subcategories.length}</p>
-              <p>Transactions: {selectedCategory.transactionCount}</p>
-            </div>
-          </div>
-        </div>
+        <CashflowCategoryModal
+          category={selectedCategory}
+          isOpen={showCategoryModal}
+          onClose={() => setShowCategoryModal(false)}
+        />
       )}
     </div>
   );

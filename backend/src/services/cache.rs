@@ -2,6 +2,9 @@
 //!
 //! This module provides caching functionality using Redis for improved performance.
 
+pub mod query_cache;
+pub mod query_cache_integration;
+
 use redis::{Client, Commands, Connection};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

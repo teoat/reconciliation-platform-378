@@ -4,11 +4,11 @@
  */
 
 import { useState, useCallback } from 'react';
-import { apiClient } from '../../services/apiClient';
-import { ApiService } from '../../services/ApiService';
-import { useToast } from '../useToast';
-import { logger } from '../../services/logger';
-import { UploadedFile } from '../../types/ingestion';
+import { apiClient } from '@/services/apiClient';
+import { ApiService } from '@/services/ApiService';
+import { useToast } from '@/hooks/useToast';
+import { logger } from '@/services/logger';
+import { UploadedFile } from '@/types/ingestion/index';
 
 export interface UseIngestionFileOperationsOptions {
   projectId: string | null;

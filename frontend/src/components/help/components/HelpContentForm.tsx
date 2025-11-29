@@ -194,9 +194,10 @@ export const HelpContentForm: React.FC<HelpContentFormProps> = ({
 
           {/* Tags */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">Tags</label>
+            <label htmlFor="tags-input" className="block text-sm font-medium text-secondary-700 mb-2">Tags</label>
             <div className="flex gap-2 mb-2">
               <input
+                id="tags-input"
                 type="text"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
@@ -240,9 +241,10 @@ export const HelpContentForm: React.FC<HelpContentFormProps> = ({
 
           {/* Tips */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">Tips</label>
+            <label htmlFor="tips-input" className="block text-sm font-medium text-secondary-700 mb-2">Tips</label>
             <div className="flex gap-2 mb-2">
               <input
+                id="tips-input"
                 type="text"
                 value={tipInput}
                 onChange={(e) => setTipInput(e.target.value)}

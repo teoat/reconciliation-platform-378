@@ -66,15 +66,15 @@ export const createLazyComponent = <T extends ComponentType<Record<string, unkno
 ): React.LazyExoticComponent<T> => {
   const finalConfig = { ...defaultCodeSplittingConfig, ...config };
 
-  return lazy(() => retryImport(importFunc, finalConfig.retryAttempts, finalConfig.retryDelay));
+  return lazy(() => retryImport<T>(importFunc, finalConfig.retryAttempts, finalConfig.retryDelay)) as React.LazyExoticComponent<T>;
 };
 
 // Retry import with exponential backoff
-const retryImport = async (
-  importFunc: () => Promise<{ default: ComponentType<Record<string, unknown>> }>,
+const retryImport = async <T extends ComponentType<Record<string, unknown>>>(
+  importFunc: () => Promise<{ default: T }>,
   attempts: number,
   delay: number
-): Promise<{ default: ComponentType<Record<string, unknown>> }> => {
+): Promise<{ default: T }> => {
   try {
     return await importFunc();
   } catch (error) {
@@ -188,7 +188,7 @@ export const createRouteComponent = <T extends ComponentType<Record<string, unkn
   const LazyComponent = createLazyComponent(importFunc, config);
 
   return (props: Record<string, unknown>) => (
-    <LazyComponent
+    <Suspense
       fallback={
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
@@ -197,8 +197,9 @@ export const createRouteComponent = <T extends ComponentType<Record<string, unkn
           </div>
         </div>
       }
-      {...props}
-    />
+    >
+      <LazyComponent {...(props as Record<string, unknown>)} />
+    </Suspense>
   );
 };
 
@@ -213,7 +214,7 @@ export const createFeatureComponent = <T extends ComponentType<Record<string, un
   const LazyComponent = createLazyComponent(importFunc, config);
 
   return (props: Record<string, unknown>) => (
-    <LazyComponent
+    <Suspense
       fallback={
         <div className="flex items-center justify-center p-8">
           <div className="text-center">
@@ -222,8 +223,9 @@ export const createFeatureComponent = <T extends ComponentType<Record<string, un
           </div>
         </div>
       }
-      {...props}
-    />
+    >
+      <LazyComponent {...(props as Record<string, unknown>)} />
+    </Suspense>
   );
 };
 
@@ -244,14 +246,15 @@ export const createConditionalComponent = <T extends ComponentType<Record<string
     }
 
     return (
-      <LazyComponent
+      <Suspense
         fallback={
           <div className="flex items-center justify-center p-4">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
           </div>
         }
-        {...props}
-      />
+      >
+        <LazyComponent {...(props as Record<string, unknown>)} />
+      </Suspense>
     );
   };
 };

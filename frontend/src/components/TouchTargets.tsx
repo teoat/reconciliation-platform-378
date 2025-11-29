@@ -76,7 +76,6 @@ export interface TouchButtonProps {
   className?: string;
 }
 
-// eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
 export const TouchButton: React.FC<TouchButtonProps> = ({
   children,
   variant = 'primary',
@@ -147,7 +146,6 @@ export interface TouchInputProps {
   className?: string;
 }
 
-// eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
 export const TouchInput: React.FC<TouchInputProps> = ({
   value,
   onChange,
@@ -197,7 +195,6 @@ export interface TouchCardProps {
   className?: string;
 }
 
-// eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions
 export const TouchCard: React.FC<TouchCardProps> = ({
   children,
   size = 'md',

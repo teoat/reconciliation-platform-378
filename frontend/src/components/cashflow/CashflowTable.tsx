@@ -15,14 +15,14 @@
  * <CashflowTable
  *   categories={expenseCategories}
  *   onCategoryClick={(category) => {
- *     console.log('Selected category:', category.name);
+ *     // Handle category selection
  *   }}
  * />
  * ```
  */
 
 import React from 'react';
-import type { ExpenseCategory } from '../../pages/cashflow/types';
+import type { ExpenseCategory } from '@/pages/cashflow/types';
 
 interface CashflowTableProps {
   /** Array of expense categories to display in the table */

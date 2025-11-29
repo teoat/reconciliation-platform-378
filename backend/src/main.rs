@@ -381,19 +381,24 @@ async fn async_main() -> std::io::Result<()> {
     let cors_origins = config.cors_origins.clone();
     
     // Initialize zero-trust and rate limiting middleware configs
+    // In development, disable identity verification for auth endpoints (they're handled by skip logic)
     let zero_trust_config = ZeroTrustConfig {
         require_mtls: is_production_env && std::env::var("ZERO_TRUST_REQUIRE_MTLS")
             .unwrap_or_else(|_| "false".to_string())
             .parse()
             .unwrap_or(false),
-        require_identity_verification: true,
-        enforce_least_privilege: true,
+        require_identity_verification: is_production_env, // Disable in development
+        enforce_least_privilege: is_production_env, // Disable in development
         network_segmentation: is_production_env,
     };
     
     // Clone database for WebSocket server (will be started in HttpServer closure)
     let database_for_ws = Arc::new(database.clone());
     
+    // Configure CORS based on environment
+    // Note: CORS config must be created inside the closure since Cors doesn't implement Clone
+    // We'll recreate it in the HttpServer closure
+
     // Create HTTP server with resilience-protected services
     let server = HttpServer::new(move || {
         // Initialize WebSocket server within Actix runtime context
@@ -402,9 +407,8 @@ async fn async_main() -> std::io::Result<()> {
         use actix::Actor;
         use reconciliation_backend::websocket::server::WsServer;
         let ws_server = WsServer::new(Arc::clone(&database_for_ws)).start();
-        // Configure CORS based on environment
-        // In production, use specific origins from CORS_ORIGINS env var
-        // In development, allow all origins for easier testing
+
+        // Configure CORS based on environment (recreated in closure since Cors doesn't implement Clone)
         let cors = if is_production_env {
             // Production: Use configured origins
             let mut cors_builder = Cors::default();
@@ -430,6 +434,9 @@ async fn async_main() -> std::io::Result<()> {
             .wrap(CorrelationIdMiddleware)
             // Add error handler middleware (ensures correlation IDs in error responses)
             .wrap(ErrorHandlerMiddleware)
+            // Add CORS middleware (MUST be before zero-trust to ensure error responses have CORS headers)
+            // This ensures that when zero-trust or other middleware return errors, CORS headers are present
+            .wrap(cors)
             // Add compression middleware (gzip, deflate, br)
             .wrap(Compress::default())
             // Add security headers middleware (CSP, HSTS, X-Frame-Options, etc.)
@@ -439,11 +446,10 @@ async fn async_main() -> std::io::Result<()> {
             // Add per-endpoint rate limiting middleware
             .wrap(PerEndpointRateLimitMiddleware::new())
             // Add zero-trust security middleware (if enabled)
+            // Note: CORS is applied before this so error responses include CORS headers
             .wrap(ZeroTrustMiddleware::new(zero_trust_config.clone()))
             // Add API versioning middleware (adds version headers and deprecation warnings)
             .wrap(ApiVersioningMiddleware::new(ApiVersioningConfig::default()))
-            // Add CORS middleware (after other middleware)
-            .wrap(cors)
             // Configure app data with resilience-protected services
             .app_data(web::Data::new(database.clone()))
             .app_data(web::Data::new(cache.clone()))

@@ -8,14 +8,9 @@
 
 ## 🎯 Master Documents (Start Here)
 
-- **[Master Status and Checklist](./project-management/MASTER_STATUS_AND_CHECKLIST.md)** - ⭐ **Single source of truth** for project status and implementation checklists
-- **[Project Status](./project-management/PROJECT_STATUS.md)** - ⭐ **Master status document** - Overall project health and metrics
-- **[Master TODOs](./project-management/MASTER_TODOS.md)** - ⭐ **Complete list of unimplemented tasks** (200+ items, organized by priority)
-- **[Comprehensive Diagnostic Report](./project-management/COMPREHENSIVE_DIAGNOSTIC_REPORT.md)** - ⭐ **Master diagnostic** - Gaps, errors, bugs, and improvements analysis
-- **[Phased Implementation Plan](./project-management/PHASED_IMPLEMENTATION_PLAN.md)** - ⭐ **Orchestrated 4-phase plan** for completing all tasks (12+ weeks)
-- **[Five-Agent Coordination Complete](./project-management/FIVE_AGENT_COORDINATION_COMPLETE.md)** - ⭐ **Complete summary** of all coordination phases
-- **[Next Phase Proposal](./project-management/NEXT_PHASE_PROPOSAL.md)** - ⭐ **NEW** - Proposed next steps after coordination
-- **[Production Deployment Plan](./deployment/PRODUCTION_DEPLOYMENT_PLAN.md)** - ⭐ **Comprehensive deployment guide** for all services
+- **[Project Status](./project-management/PROJECT_STATUS.md)** - ⭐ **Single source of truth** - Overall project health and metrics
+- **[Master TODOs](./project-management/MASTER_TODOS.md)** - Complete list of unimplemented tasks (organized by priority)
+- **[Production Deployment Plan](./deployment/PRODUCTION_DEPLOYMENT_PLAN.md)** - Comprehensive deployment guide for all services
 
 ---
 
@@ -94,27 +89,11 @@
 - **[Component Organization Plan](./refactoring/COMPONENT_ORGANIZATION_PLAN.md)** - Component organization strategy
 
 ### 📊 Project Management
-- **[Five Agents Consolidated Summary](./project-management/FIVE_AGENTS_CONSOLIDATED_SUMMARY.md)** - ⭐ **NEW** - Complete consolidated summary of all five agents' work and documentation
-- **[All Phases Completion Plan](./project-management/ALL_PHASES_COMPLETION_PLAN.md)** - ⭐ **NEW** - Comprehensive completion plan for all phase todos
-- **[Todos Completion Summary](./project-management/TODOS_COMPLETION_SUMMARY.md)** - ⭐ **NEW** - Summary of completed todos and remaining work
-- **[Todos Completion Final](./project-management/TODOS_COMPLETION_FINAL.md)** - ⭐ **NEW** - Final completion status report
-- **[Remaining Todos Final Status](./project-management/REMAINING_TODOS_FINAL_STATUS.md)** - ⭐ **NEW** - Accurate remaining work status
-- **[All Phases Complete Summary](./project-management/ALL_PHASES_COMPLETE_SUMMARY.md)** - ⭐ **NEW** - Complete summary of all phases documentation
-- **[Phase 7 Proposal](./project-management/PHASE_7_PROPOSAL.md)** - Phase 7 production deployment & operations proposal
-- **[Phase 7 Implementation Checklist](./project-management/PHASE_7_IMPLEMENTATION_CHECKLIST.md)** - ⭐ **NEW** - Phase 7 task checklist
-- **[Phase 7 Status](./project-management/PHASE_7_STATUS.md)** - ⭐ **NEW** - Phase 7 progress tracking
-- **[Phase 6 Proposal](./project-management/PHASE_6_PROPOSAL.md)** - Phase 6 enhancement & optimization proposal
-- **[Phase 6 Implementation Checklist](./project-management/PHASE_6_IMPLEMENTATION_CHECKLIST.md)** - Phase 6 task checklist
-- **[Phase 5 Implementation Checklist](./project-management/PHASE_5_IMPLEMENTATION_CHECKLIST.md)** - Phase 5 task checklist
-- **[Phase 5 Status](./project-management/PHASE_5_STATUS.md)** - Phase 5 progress tracking
-- **[Production Launch Phased Plan](./project-management/PRODUCTION_LAUNCH_PHASED_PLAN.md)** - ⭐ **NEW** - Multi-agent orchestrated production launch (4-6 weeks)
-- **[Production Launch TODOs](./project-management/PRODUCTION_LAUNCH_TODOS.md)** - ⭐ **NEW** - Actionable todos with agent coordination
-- **[Master Status and Checklist](./project-management/MASTER_STATUS_AND_CHECKLIST.md)** - ⭐ **Master document** - Single source of truth
-- **[Implementation Status Summary](./project-management/IMPLEMENTATION_STATUS_SUMMARY.md)** - Quick implementation reference
-- **[Project Status](./project-management/PROJECT_STATUS.md)** - Overall project health and metrics
+- **[Project Status](./project-management/PROJECT_STATUS.md)** - ⭐ **Single source of truth** - Overall project health and metrics
+- **[Master TODOs](./project-management/MASTER_TODOS.md)** - Master todo list
 - **[Priority Recommendations](./project-management/PRIORITY_RECOMMENDATIONS.md)** - Prioritized improvements
-- **[Roadmap V5](./project-management/ROADMAP_V5.md)** - Feature roadmap
-- **[Unimplemented TODOs](./UNIMPLEMENTED_TODOS_AND_RECOMMENDATIONS.md)** - Future work items
+- **[Remaining Work Implementation Guide](./project-management/REMAINING_WORK_IMPLEMENTATION_GUIDE.md)** - Implementation guide
+- **[Version Roadmaps](./project-management/VERSION_ROADMAPS/)** - Version roadmap documents
 
 ### 📝 Prompts
 - **[Meta-Agent Diagnostic Prompt](./prompts/meta-agent-diagnostic-prompt.md)** - Diagnostic prompt
@@ -214,13 +193,14 @@ Brief description
 
 ## 📊 Documentation Statistics
 
-- **Total Active Docs**: ~35-40 essential files
-- **Archived Docs**: ~160+ files (organized by date/category)
+- **Total Active Docs**: ~20-30 essential guides only
+- **Archived Docs**: ~180+ files (organized by date/category in `docs/archive/`)
 - **Categories**: 10 main categories
 - **Last Consolidation**: January 2025 (Aggressive)
-- **Consolidation Status**: ✅ Complete - See [Aggressive Consolidation](./AGGRESSIVE_CONSOLIDATION_COMPLETE.md)
-- **Master Documents**: 3 consolidated status documents
-- **Reduction**: ~75% reduction in active documentation
+- **Consolidation Status**: ✅ Complete - See [Aggressive Consolidation Plan](./AGGRESSIVE_CONSOLIDATION_PLAN.md)
+- **Master Documents**: PROJECT_STATUS.md (single source of truth)
+- **Reduction**: ~85-90% reduction in active documentation
+- **Policy**: Archive status/completion/summary reports immediately, keep only essential guides
 
 ---
 

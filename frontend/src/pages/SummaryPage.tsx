@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { FileText, CheckCircle, AlertCircle, Printer, Download, TrendingUp } from 'lucide-react';
-import { Modal } from '../components/ui/Modal';
-import { ErrorBoundary } from '../components/ui/ErrorBoundary';
-import { usePageOrchestration } from '../hooks/usePageOrchestration';
+import { Modal } from '@/components/ui/Modal';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { usePageOrchestration } from '@/hooks/usePageOrchestration';
 import {
   summaryPageMetadata,
   getSummaryOnboardingSteps,
@@ -10,7 +10,7 @@ import {
   getSummaryWorkflowState,
   registerSummaryGuidanceHandlers,
   getSummaryGuidanceContent,
-} from '../orchestration/pages/SummaryPageOrchestration';
+} from '@/orchestration/pages/SummaryPageOrchestration';
 
 // Interfaces (shared with main index.tsx)
 export interface PageConfig {

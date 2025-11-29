@@ -4,7 +4,7 @@ import type {
   MatchingRule,
   MatchingCriteria,
   MatchingResult,
-} from '../../types/reconciliation';
+} from '../../types/reconciliation/index';
 
 /**
  * Applies matching rules to records
@@ -81,7 +81,7 @@ const evaluateRule = (
 /**
  * Evaluates a single criterion
  */
-const evaluateCriterion = (value: any, criterion: MatchingCriteria): boolean => {
+const evaluateCriterion = (value: unknown, criterion: MatchingCriteria): boolean => {
   switch (criterion.operator) {
     case 'equals':
       return value === criterion.value;
@@ -92,10 +92,11 @@ const evaluateCriterion = (value: any, criterion: MatchingCriteria): boolean => 
     case 'endsWith':
       return String(value).toLowerCase().endsWith(String(criterion.value).toLowerCase());
     case 'regex':
-      return new RegExp(criterion.value).test(String(value));
-    case 'fuzzy':
+      return new RegExp(String(criterion.value)).test(String(value));
+    case 'fuzzy': {
       const tolerance = criterion.tolerance || 0.1;
       return Math.abs(Number(value) - Number(criterion.value)) <= tolerance;
+    }
     default:
       return false;
   }
@@ -104,9 +105,9 @@ const evaluateCriterion = (value: any, criterion: MatchingCriteria): boolean => 
 /**
  * Gets field value from record
  */
-const getFieldValue = (record: EnhancedReconciliationRecord, field: string): any => {
+const getFieldValue = (record: EnhancedReconciliationRecord, field: string): unknown => {
   if (field in record) {
-    return (record as any)[field];
+    return (record as Record<string, unknown>)[field];
   }
   if (field.startsWith('source.')) {
     const sourceField = field.replace('source.', '');

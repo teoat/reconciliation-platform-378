@@ -12,7 +12,7 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
       const item = window.localStorage.getItem(key);
       return item !== null ? JSON.parse(item) : initialValue;
     } catch (error) {
-      logger.error(`Error reading localStorage key "${key}":`, error as any);
+      logger.error(`Error reading localStorage key "${key}":`, error);
       return initialValue;
     }
   });
@@ -24,7 +24,7 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
         setStoredValue(valueToStore);
         window.localStorage.setItem(key, JSON.stringify(valueToStore));
       } catch (error) {
-        logger.error(`Error setting localStorage key "${key}":`, error as any);
+        logger.error(`Error setting localStorage key "${key}":`, error);
       }
     },
     [key, storedValue]
@@ -35,7 +35,7 @@ export const useLocalStorage = <T>(key: string, initialValue: T) => {
       setStoredValue(initialValue);
       window.localStorage.removeItem(key);
     } catch (error) {
-      logger.error(`Error removing localStorage key "${key}":`, error as any);
+      logger.error(`Error removing localStorage key "${key}":`, error);
     }
   }, [key, initialValue]);
 
@@ -48,7 +48,7 @@ export const useSessionStorage = <T>(key: string, initialValue: T) => {
       const item = window.sessionStorage.getItem(key);
       return item !== null ? JSON.parse(item) : initialValue;
     } catch (error) {
-      logger.error(`Error reading sessionStorage key "${key}":`, error as any);
+      logger.error(`Error reading sessionStorage key "${key}":`, error);
       return initialValue;
     }
   });
@@ -60,7 +60,7 @@ export const useSessionStorage = <T>(key: string, initialValue: T) => {
         setStoredValue(valueToStore);
         window.sessionStorage.setItem(key, JSON.stringify(valueToStore));
       } catch (error) {
-        logger.error(`Error setting sessionStorage key "${key}":`, error as any);
+        logger.error(`Error setting sessionStorage key "${key}":`, error);
       }
     },
     [key, storedValue]
@@ -71,7 +71,7 @@ export const useSessionStorage = <T>(key: string, initialValue: T) => {
       setStoredValue(initialValue);
       window.sessionStorage.removeItem(key);
     } catch (error) {
-      logger.error(`Error removing sessionStorage key "${key}":`, error as any);
+      logger.error(`Error removing sessionStorage key "${key}":`, error);
     }
   }, [key, initialValue]);
 

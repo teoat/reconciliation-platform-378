@@ -1,260 +1,136 @@
 # Large Files Refactoring Plan
 
-**Last Updated**: January 2025  
-**Status**: Active
+**Created**: 2025-01-27  
+**Status**: In Progress
 
 ## Overview
 
-This document outlines the refactoring plan for large files (>1,000 lines) in the Reconciliation Platform codebase. The goal is to reduce file sizes to ~500 lines by extracting components, hooks, and utilities.
+This document tracks the refactoring of files with more than 500 lines to improve maintainability, readability, and code organization.
 
-## Files Identified for Refactoring
+## Files Identified (>500 lines)
 
-**Last Updated**: November 23, 2025  
-**Note**: IngestionPage.tsx and ReconciliationPage.tsx already refactored (701 lines each)
+### MCP Server Files
+1. **mcp-server/src/index.ts** (1854 lines) - Main MCP server
+   - **Plan**: Split into modules:
+     - `lib/config.ts` - Configuration constants
+     - `lib/docker.ts` - Docker operations
+     - `lib/redis.ts` - Redis operations
+     - `lib/health.ts` - Health checks
+     - `lib/git.ts` - Git operations
+     - `lib/diagnostics.ts` - Diagnostic tools
+     - `lib/tools.ts` - Tool definitions and handlers
+     - `lib/metrics.ts` - Metrics tracking
+     - `lib/utils.ts` - Utility functions
+     - `lib/server.ts` - Main server setup
 
-### Frontend Files (>1,000 lines) - **ACTUAL SIZES**
+2. **mcp-server/src/agent-coordination.ts** (1544 lines) - Agent coordination server
+   - **Plan**: Split into modules:
+     - `lib/redis.ts` - Redis connection
+     - `lib/tasks.ts` - Task management
+     - `lib/locks.ts` - File locking
+     - `lib/agents.ts` - Agent status
+     - `lib/conflicts.ts` - Conflict detection
+     - `lib/tools.ts` - Tool definitions
+     - `lib/server.ts` - Main server setup
 
-1. **`frontend/src/services/workflowSyncTester.ts`** (1,307 lines) 🔴
-   - **Action**: Extract test scenarios into separate files
-   - **Target**: ~300 lines per scenario file
-   - **Priority**: 🟠 HIGH
+### Backend Files
+3. **backend/src/middleware/zero_trust.rs** (1524 lines) - Zero-trust middleware
+   - **Plan**: Split into modules:
+     - `config.rs` - Configuration
+     - `identity.rs` - Identity verification
+     - `mtls.rs` - mTLS verification
+     - `privilege.rs` - Least privilege enforcement
+     - `network.rs` - Network segmentation
+     - `mod.rs` - Main middleware
 
-2. **`frontend/src/components/CollaborativeFeatures.tsx`** (1,188 lines) 🔴
-   - **Action**: Extract collaboration features into sub-components
-   - **Target**: ~300 lines per feature component
-   - **Priority**: 🟠 HIGH
+4. **backend/src/handlers/auth.rs** (1015 lines) - Auth handlers
+   - **Plan**: Split by functionality:
+     - `login.rs` - Login handler
+     - `register.rs` - Registration handler
+     - `password.rs` - Password operations
+     - `oauth.rs` - OAuth handlers
+     - `mod.rs` - Route configuration
 
-3. **`frontend/src/store/index.ts`** (1,080 lines) 🟡
-   - **Action**: Extract store slices into separate files
-   - **Target**: ~200 lines per slice file
-   - **Priority**: 🟡 MEDIUM
+5. **backend/src/services/backup_recovery.rs** (896 lines)
+6. **backend/src/services/user/mod.rs** (876 lines)
+7. **backend/src/services/reconciliation/service.rs** (804 lines)
+8. **backend/src/services/auth/mod.rs** (798 lines)
+9. **backend/src/cqrs/handlers.rs** (763 lines)
+10. **backend/src/middleware/logging.rs** (747 lines)
+11. **backend/src/services/internationalization.rs** (729 lines)
+12. **backend/src/middleware/auth.rs** (682 lines)
 
-4. **`frontend/src/store/unifiedStore.ts`** (1,039 lines) 🟡
-   - **Action**: Split into domain-specific stores
-   - **Target**: ~300 lines per domain
-   - **Priority**: 🟡 MEDIUM
+### Frontend Files
+13. **frontend/src/pages/AdjudicationPage.tsx** (785 lines)
+14. **frontend/src/components/EnhancedIngestionPage.tsx** (770 lines)
+15. **frontend/src/components/frenly/FrenlyProvider.tsx** (759 lines)
+16. **frontend/src/pages/ReconciliationPage.tsx** (754 lines)
+17. **frontend/src/components/AdvancedVisualization.tsx** (751 lines)
+18. **frontend/src/services/microInteractionService.ts** (751 lines)
+19. **frontend/src/components/files/FileUploadInterface.tsx** (747 lines)
+20. **frontend/src/pages/SecurityPage.tsx** (727 lines)
+21. **frontend/src/components/onboarding/EnhancedFrenlyOnboarding.tsx** (723 lines)
+22. **frontend/src/components/SkeletonComponents.tsx** (716 lines)
+23. **frontend/src/components/monitoring/MonitoringDashboard.tsx** (713 lines)
+24. **frontend/src/components/TypographyScale.tsx** (701 lines)
+25. **frontend/src/services/i18nService.tsx** (682 lines)
+26. **frontend/src/components/pages/Settings.tsx** (680 lines)
+27. **frontend/src/components/AIDiscrepancyDetection.tsx** (679 lines)
+28. **frontend/src/services/monitoringService.ts** (670 lines)
+29. **frontend/src/hooks/useWebSocketIntegration.ts** (656 lines)
 
-### Frontend Files (800-1,000 lines)
+### Test Files
+30. **backend/tests/e2e_tests.rs** (1401 lines)
+31. **backend/tests/api_endpoint_tests.rs** (1237 lines)
+32. **backend/tests/auth_handler_tests.rs** (1126 lines)
+33. **backend/tests/reconciliation_api_tests.rs** (1115 lines)
+34. **backend/tests/project_service_tests.rs** (1036 lines)
+35. **backend/tests/reconciliation_integration_tests.rs** (1019 lines)
+36. **backend/tests/user_service_tests.rs** (991 lines)
+37. **backend/tests/service_tests.rs** (873 lines)
+38. **backend/tests/security_tests.rs** (722 lines)
 
-5. **`frontend/src/services/stale-data/testDefinitions.ts`** (967 lines) 🟡
-   - **Action**: Split test definitions by category
-   - **Target**: ~200 lines per category
-   - **Priority**: 🟡 MEDIUM
+## Refactoring Strategy
 
-6. **`frontend/src/components/index.tsx`** (940 lines) 🟡
-   - **Action**: Split into feature-specific component exports
-   - **Target**: ~300 lines per feature module
-   - **Priority**: 🟡 MEDIUM
+### Phase 1: MCP Server Files (Priority: High)
+- [ ] Refactor `mcp-server/src/index.ts`
+- [ ] Refactor `mcp-server/src/agent-coordination.ts`
 
-7. **`frontend/src/hooks/useApi.ts`** (939 lines) 🟡
-   - **Action**: Extract API hooks by resource type
-   - **Target**: ~200 lines per resource hook
-   - **Priority**: 🟡 MEDIUM
+### Phase 2: Backend Core Files (Priority: High)
+- [ ] Refactor `backend/src/middleware/zero_trust.rs`
+- [ ] Refactor `backend/src/handlers/auth.rs`
+- [ ] Refactor `backend/src/services/backup_recovery.rs`
+- [ ] Refactor `backend/src/services/user/mod.rs`
+- [ ] Refactor `backend/src/services/reconciliation/service.rs`
+- [ ] Refactor `backend/src/services/auth/mod.rs`
+- [ ] Refactor `backend/src/cqrs/handlers.rs`
+- [ ] Refactor `backend/src/middleware/logging.rs`
+- [ ] Refactor `backend/src/services/internationalization.rs`
+- [ ] Refactor `backend/src/middleware/auth.rs`
 
-8. **`frontend/src/services/error-recovery/testDefinitions.ts`** (931 lines) 🟡
-   - **Action**: Split test definitions by error type
-   - **Target**: ~200 lines per error type
-   - **Priority**: 🟡 MEDIUM
+### Phase 3: Frontend Components (Priority: Medium)
+- [ ] Refactor large page components
+- [ ] Refactor large service files
+- [ ] Extract reusable hooks and utilities
 
-9. **`frontend/src/pages/AuthPage.tsx`** (911 lines) 🟡
-   - **Action**: Extract auth form components
-   - **Target**: ~300 lines main + form components
-   - **Priority**: 🟡 MEDIUM
-
-10. **`frontend/src/hooks/useApiEnhanced.ts`** (898 lines) 🟡
-    - **Action**: Extract enhanced API hooks by resource
-    - **Target**: ~200 lines per resource hook
-    - **Priority**: 🟡 MEDIUM
-
-11. **`frontend/src/services/keyboardNavigationService.ts`** (893 lines) 🟡
-    - **Action**: Split by navigation context (pages, modals, forms)
-    - **Target**: ~300 lines per context
-    - **Priority**: 🟡 MEDIUM
-
-12. **`frontend/src/services/progressVisualizationService.ts`** (891 lines) 🟡
-    - **Action**: Extract visualization components and utilities
-    - **Target**: ~300 lines main file + component files
-    - **Priority**: 🟡 MEDIUM
-
-13. **`frontend/src/components/WorkflowAutomation.tsx`** (887 lines) 🟡
-    - **Action**: Extract workflow steps into separate components
-    - **Target**: ~200 lines per step component
-    - **Priority**: 🟡 MEDIUM
-
-14. **`frontend/src/components/AnalyticsDashboard.tsx`** (880 lines) 🟡
-    - **Action**: Extract dashboard sections into components
-    - **Target**: ~300 lines main + section components
-    - **Priority**: 🟡 MEDIUM
-
-15. **`frontend/src/components/APIDevelopment.tsx`** (871 lines) 🟡
-    - **Action**: Extract API testing components
-    - **Target**: ~300 lines main + component files
-    - **Priority**: 🟡 MEDIUM
-
-16. **`frontend/src/services/network-interruption/testDefinitions.ts`** (867 lines) 🟡
-    - **Action**: Split test definitions by scenario
-    - **Target**: ~200 lines per scenario
-    - **Priority**: 🟡 MEDIUM
-
-17. **`frontend/src/services/webSocketService.ts`** (847 lines) 🟡
-    - **Action**: Extract WebSocket handlers by message type
-    - **Target**: ~300 lines main + handler files
-    - **Priority**: 🟡 MEDIUM
-
-18. **`frontend/src/components/EnterpriseSecurity.tsx`** (844 lines) 🟡
-    - **Action**: Extract security feature components
-    - **Target**: ~300 lines main + feature components
-    - **Priority**: 🟡 MEDIUM
-
-19. **`frontend/src/components/EnhancedIngestionPage.tsx`** (840 lines) 🟡
-    - **Action**: Extract ingestion steps into components
-    - **Target**: ~200 lines per step
-    - **Priority**: 🟡 MEDIUM
-
-### Critical Refactoring Targets
-
-#### ✅ TODO-148: IngestionPage.tsx - **ALREADY REFACTORED**
-
-**Status**: ✅ **COMPLETE** - File already refactored  
-**Current Size**: 701 lines (not 3,137 as originally stated)  
-**Date Completed**: Prior to November 2025
-
-**Current Structure**:
-- ✅ Hooks extracted: `useIngestionUpload.ts`, `useIngestionFileOperations.ts`, `useIngestionWorkflow.ts`
-- ✅ Uses `BasePage` component for structure
-- ✅ Uses orchestration hooks: `usePageOrchestration`
-- ✅ Component is well-organized and modular
-
-**Note**: File is already at acceptable size (701 lines). Further refactoring optional.
-
----
-
-#### ✅ TODO-149: ReconciliationPage.tsx - **ALREADY REFACTORED**
-
-**Status**: ✅ **COMPLETE** - File already refactored  
-**Current Size**: 701 lines (not 2,680 as originally stated)  
-**Date Completed**: Prior to November 2025
-
-**Current Structure**:
-- ✅ Hooks extracted: `useReconciliationJobs.ts`, `useReconciliationEngine.ts`, `useReconciliationOperations.ts`
-- ✅ Components organized in `components/reconciliation/`
-- ✅ Well-structured and modular
-
-**Note**: File is already at acceptable size (701 lines). Further refactoring optional.
-
----
-
-### Actual Large Files Requiring Refactoring
-
-Based on current codebase analysis (November 2025):
-
-1. **`workflowSyncTester.ts`** - 1,307 lines 🔴 **HIGH PRIORITY**
-   - **Action**: Extract test scenarios into separate files
-   - **Target**: ~300 lines per scenario file
-   - **Priority**: 🟠 HIGH
-
-2. **`CollaborativeFeatures.tsx`** - 1,188 lines 🔴 **HIGH PRIORITY**
-   - **Action**: Extract collaboration features into sub-components
-   - **Target**: ~300 lines per feature component
-   - **Priority**: 🟠 HIGH
-
-3. **`store/index.ts`** - 1,080 lines 🟡 **MEDIUM PRIORITY**
-   - **Action**: Extract store slices into separate files
-   - **Target**: ~200 lines per slice file
-   - **Priority**: 🟡 MEDIUM
-
-4. **`store/unifiedStore.ts`** - 1,039 lines 🟡 **MEDIUM PRIORITY**
-   - **Action**: Split into domain-specific stores
-   - **Target**: ~300 lines per domain
-   - **Priority**: 🟡 MEDIUM
-
-5. **`testDefinitions.ts` (stale-data)** - 967 lines 🟡 **MEDIUM PRIORITY**
-   - **Action**: Split test definitions by category
-   - **Target**: ~200 lines per category
-   - **Priority**: 🟡 MEDIUM
-
-6. **`components/index.tsx`** - 940 lines 🟡 **MEDIUM PRIORITY**
-   - **Action**: Split into feature-specific component exports
-   - **Target**: ~300 lines per feature module
-   - **Priority**: 🟡 MEDIUM
-
-7. **`hooks/useApi.ts`** - 939 lines 🟡 **MEDIUM PRIORITY**
-   - **Action**: Extract API hooks by resource type
-   - **Target**: ~200 lines per resource hook
-   - **Priority**: 🟡 MEDIUM
+### Phase 4: Test Files (Priority: Low)
+- [ ] Split large test files into focused test modules
+- [ ] Extract common test utilities
 
 ## Refactoring Principles
 
-1. **Single Responsibility**: Each file should have one clear purpose
-2. **Feature-Based Organization**: Group related code by feature/domain
-3. **Reusability**: Extract common patterns into shared utilities
-4. **Testability**: Smaller files are easier to test
-5. **Maintainability**: Easier to find and modify code
+1. **Single Responsibility**: Each module should have one clear purpose
+2. **Separation of Concerns**: Separate business logic from infrastructure
+3. **DRY**: Eliminate code duplication
+4. **Testability**: Make code easier to test
+5. **Maintainability**: Improve code organization and readability
 
-## Implementation Steps
+## Progress Tracking
 
-### Phase 1: Planning (2 hours)
-- ✅ Identify all large files
-- ✅ Create refactoring plan
-- ✅ Document target structure
-- ⏳ Get approval for refactoring approach
-
-### Phase 2: Extract Utilities (5 hours)
-- Extract helper functions
-- Extract validation functions
-- Extract formatting functions
-- Create shared utilities
-
-### Phase 3: Extract Hooks (8 hours)
-- Extract state management hooks
-- Extract API hooks
-- Extract business logic hooks
-- Test hooks independently
-
-### Phase 4: Extract Components (12 hours)
-- Extract UI components
-- Extract feature components
-- Extract modal components
-- Test components independently
-
-### Phase 5: Refactor Main Files (8 hours)
-- Update main components
-- Integrate extracted pieces
-- Test integration
-- Update imports
-
-### Phase 6: Testing & Cleanup (5 hours)
-- Update tests
-- Fix any issues
-- Update documentation
-- Code review
-
-## Success Criteria
-
-- ✅ All files < 1,000 lines
-- ✅ Main page components < 500 lines
-- ✅ No circular dependencies
-- ✅ All tests passing
-- ✅ No functionality regressions
-- ✅ Improved code maintainability
-
-## Risks & Mitigation
-
-**Risk**: Breaking existing functionality
-- **Mitigation**: Comprehensive testing, incremental refactoring
-
-**Risk**: Import path changes
-- **Mitigation**: Use absolute imports, update all references
-
-**Risk**: Increased file count
-- **Mitigation**: Organize by feature, clear directory structure
-
----
-
-## ✅ Completed Refactoring
-
-- ✅ **IngestionPage.tsx**: Already refactored (701 lines, hooks extracted)
-- ✅ **ReconciliationPage.tsx**: Already refactored (701 lines, hooks extracted)
-
-**Next Steps**: Focus on actual large files (>1,000 lines) - `workflowSyncTester.ts` and `CollaborativeFeatures.tsx`
-
+- [x] Identify all files >500 lines
+- [ ] Refactor MCP server files
+- [ ] Refactor backend core files
+- [ ] Refactor frontend components
+- [ ] Refactor test files
+- [ ] Verify all refactored code compiles
+- [ ] Run test suite to ensure no regressions

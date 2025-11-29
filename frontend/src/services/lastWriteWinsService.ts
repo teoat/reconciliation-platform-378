@@ -106,15 +106,19 @@ class LastWriteWinsService {
       if (stored) {
         const data = JSON.parse(stored);
         data.records.forEach((recordData: unknown) => {
-          const record: TimestampedRecord = {
-            ...recordData,
-            timestamp: new Date(recordData.timestamp),
-            metadata: {
-              ...recordData.metadata,
-              lastModified: new Date(recordData.metadata.lastModified),
-            },
-          };
-          this.records.set(record.id, record);
+        const recordDataTyped = recordData as Record<string, unknown>;
+        const metadataTyped = (recordDataTyped.metadata as Record<string, unknown>) || {};
+        const record: TimestampedRecord = {
+          ...(recordDataTyped as unknown as TimestampedRecord),
+          timestamp: new Date((recordDataTyped.timestamp as string | Date) || new Date()),
+          metadata: {
+            lastModified: new Date((metadataTyped.lastModified as string | Date) || new Date()),
+            modifiedBy: (metadataTyped.modifiedBy as string) || '',
+            modificationType: (metadataTyped.modificationType as 'create' | 'update' | 'delete') || 'update',
+            source: (metadataTyped.source as string) || 'local',
+          },
+        };
+        this.records.set(record.id, record);
         });
       }
     } catch (error) {

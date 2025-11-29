@@ -7,8 +7,8 @@
 import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Eye, EyeOff, Lock, User, Mail, AlertCircle } from 'lucide-react';
-import { registerSchema, type RegisterForm } from '../types';
+import { Eye, EyeOff, Lock, Mail, AlertCircle } from 'lucide-react';
+import { registerSchema, type RegisterForm } from '@/pages/auth/types';
 import { getPasswordFeedback } from '@/utils/common/validation';
 
 interface SignupFormProps {
@@ -20,7 +20,6 @@ interface SignupFormProps {
 export const SignupForm: React.FC<SignupFormProps> = ({ onSubmit, isLoading, error }) => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordValue, setPasswordValue] = useState('');
   const [passwordFeedback, setPasswordFeedback] = useState<ReturnType<
     typeof getPasswordFeedback
   > | null>(null);
@@ -39,7 +38,6 @@ export const SignupForm: React.FC<SignupFormProps> = ({ onSubmit, isLoading, err
 
   const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    setPasswordValue(value);
     if (value) {
       setPasswordFeedback(getPasswordFeedback(value));
     } else {

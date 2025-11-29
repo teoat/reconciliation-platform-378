@@ -84,6 +84,6 @@ export interface ApprovalRequestData {
 export type TabId = 'workflows' | 'instances' | 'rules' | 'approvals';
 
 export interface WorkflowAutomationProps {
-  project: import('../../types').Project | null;
+  project: import('../../../types/index').Project | null;
   onProgressUpdate?: (step: string) => void;
 }

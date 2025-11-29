@@ -8,14 +8,14 @@ import React, {
   useCallback,
 } from 'react';
 import { logger } from '@/services/logger';
-import { toRecord } from '../utils/typeHelpers';
+import { toRecord } from '@/utils/typeHelpers';
 import { Navigate } from 'react-router-dom';
-import { apiClient } from '../services/apiClient';
-import { UserResponse, LoginRequest, RegisterRequest } from '../types/backend-aligned';
-import { rateLimiter } from '../services/authSecurity';
-import { SessionTimeoutManager, TokenRefreshManager } from '../services/authSecurity';
-import { validatePasswordStrength } from '../utils/security';
-import { secureStorage } from '../services/secureStorage';
+import { apiClient } from '@/services/apiClient';
+import { UserResponse, LoginRequest, RegisterRequest } from '@/types/backend-aligned';
+import { rateLimiter } from '@/services/authSecurity';
+import { SessionTimeoutManager, TokenRefreshManager } from '@/services/authSecurity';
+import { validatePasswordStrength } from '@/utils/security';
+import { secureStorage } from '@/services/secureStorage';
 import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
 
 interface AuthContextType {
@@ -33,6 +33,7 @@ interface AuthContextType {
   googleOAuth: (idToken: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  resetRateLimit: (email?: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -292,6 +293,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     last_name: string;
     role?: string;
   }) => {
+    // Input validation - check for empty strings and whitespace
+    const trimmedEmail = userData.email?.trim();
+    const trimmedFirstName = userData.first_name?.trim();
+    const trimmedLastName = userData.last_name?.trim();
+    
+    if (!trimmedEmail || !userData.password || !trimmedFirstName || !trimmedLastName) {
+      return { success: false, error: 'All required fields must be filled' };
+    }
+
     // Password strength validation
     const passwordValidation = validatePasswordStrength(userData.password);
     if (!passwordValidation.isValid) {
@@ -301,14 +311,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
     }
 
-    // Input validation
-    if (!userData.email || !userData.password || !userData.first_name || !userData.last_name) {
-      return { success: false, error: 'All required fields must be filled' };
-    }
-
     try {
       setIsLoading(true);
-      const response = await apiClient.register(userData);
+      // Ensure apiClient is available
+      if (!apiClient) {
+        throw new Error('API client is not initialized');
+      }
+      
+      const response = await apiClient.register({
+        email: trimmedEmail,
+        password: userData.password,
+        first_name: trimmedFirstName,
+        last_name: trimmedLastName,
+        role: userData.role,
+      });
 
       if (response.error) {
         return { success: false, error: getErrorMessageFromApiError(response.error) };
@@ -365,9 +381,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       return { success: false, error: 'Google authentication failed' };
     } catch (error) {
+      logger.error('Google OAuth failed', { error, idToken: idToken ? 'present' : 'missing' });
+
+      // Handle network errors specifically
+      let errorMessage = 'Google authentication failed';
+      if (error instanceof Error) {
+        if (
+          error.message.includes('fetch') ||
+          error.message.includes('network') ||
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('NetworkError') ||
+          error.name === 'TypeError'
+        ) {
+          errorMessage =
+            'Unable to connect to server. Please check your connection and try again.';
+        } else {
+          errorMessage = error.message || 'Google authentication failed';
+        }
+      }
+
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Google authentication failed',
+        error: errorMessage,
       };
     } finally {
       setIsLoading(false);
@@ -387,6 +422,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const resetRateLimit = useCallback((email?: string) => {
+    if (email) {
+      rateLimiter.resetForEmail(email);
+      logger.logSecurity('Rate limit reset for email', { email });
+    } else {
+      rateLimiter.clearAll();
+      logger.logSecurity('All rate limits cleared');
+    }
+  }, []);
+
   const value: AuthContextType = {
     user,
     isAuthenticated,
@@ -396,6 +441,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     googleOAuth,
     logout,
     refreshUser,
+    resetRateLimit,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

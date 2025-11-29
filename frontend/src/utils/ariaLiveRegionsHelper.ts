@@ -3,7 +3,7 @@
  * Used across multiple components to avoid `any` types
  */
 
-import ariaLiveRegionsServiceModule from '../services/ariaLiveRegionsService';
+import ariaLiveRegionsServiceModule from '@/services/ariaLiveRegionsService';
 
 // Type-safe access to ariaLiveRegionsService
 export const getAriaLiveRegionsService = () => {

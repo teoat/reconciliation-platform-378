@@ -328,20 +328,46 @@ class CacheService {
   }
 
   // Redis operations (simulated)
-  async getRedis(key) {
-    // This would typically use a Redis client
-    // For now, return null
+  /**
+   * Get value from Redis cache.
+   * 
+   * NOTE: Redis integration is not yet implemented. This method is a placeholder.
+   * 
+   * @param key - Cache key
+   * @returns Promise resolving to cached value or null
+   */
+  async getRedis(key: string): Promise<unknown> {
+    // NOTE: Redis integration pending
+    // When implemented, this will use a Redis client to retrieve cached values
+    // For now, returns null to indicate no cached value
     return null;
   }
 
-  async setRedis(key, entry) {
-    // This would typically use a Redis client
-    // For now, do nothing
+  /**
+   * Set value in Redis cache.
+   * 
+   * NOTE: Redis integration is not yet implemented. This method is a placeholder.
+   * 
+   * @param key - Cache key
+   * @param entry - Value to cache
+   */
+  async setRedis(key: string, entry: unknown): Promise<void> {
+    // NOTE: Redis integration pending
+    // When implemented, this will use a Redis client to store cached values
+    // For now, this is a no-op
   }
 
-  async deleteRedis(key) {
-    // This would typically use a Redis client
-    // For now, do nothing
+  /**
+   * Delete value from Redis cache.
+   * 
+   * NOTE: Redis integration is not yet implemented. This method is a placeholder.
+   * 
+   * @param key - Cache key to delete
+   */
+  async deleteRedis(key: string): Promise<void> {
+    // NOTE: Redis integration pending
+    // When implemented, this will use a Redis client to delete cached values
+    // For now, this is a no-op
   }
 
   // Utility methods

@@ -172,12 +172,14 @@ class ServiceIntegrationService {
       let translation: ErrorTranslation | undefined;
       if (this.config.enableErrorTranslation) {
         translation = errorTranslationService.translateError(errorCode, {
-          projectId: options.projectId,
-          userId: options.userId,
-          workflowStage: options.workflowStage,
           component: options.component,
           action: options.action,
-          data: options.data,
+          data: {
+            projectId: options.projectId,
+            userId: options.userId,
+            workflowStage: options.workflowStage,
+            ...((options.data || {}) as Record<string, unknown>),
+          } as Record<string, unknown>,
         });
       }
 
@@ -187,9 +189,9 @@ class ServiceIntegrationService {
         code: errorCode,
         message: errorMessage,
         userMessage: translation?.userMessage || errorMessage,
-        technicalMessage: translation?.technicalMessage || errorMessage,
-        severity: translation?.severity || 'medium',
-        retryable: translation?.retryable || options.retryable || false,
+        technicalMessage: (translation as { technicalMessage?: string })?.technicalMessage || errorMessage,
+        severity: ((translation as { severity?: 'low' | 'medium' | 'high' | 'critical' })?.severity || 'medium') as 'low' | 'medium' | 'high' | 'critical',
+        retryable: (translation as { retryable?: boolean })?.retryable || options.retryable || false,
         context: errorContextService.getCurrentContext() || {
           id: 'unknown',
           timestamp: new Date(),
@@ -197,15 +199,15 @@ class ServiceIntegrationService {
         timestamp: new Date(),
         retryCount: 0,
         maxRetries: options.maxRetries || 3,
-        actionRequired: translation?.actionRequired || 'Please try again or contact support',
+        actionRequired: (translation as { actionRequired?: string })?.actionRequired || 'Please try again or contact support',
       };
 
       // Track error in context service
       if (this.config.enableErrorContext) {
-        errorContextService.trackError(error, {
+        errorContextService.trackError(error as Error, {
           component: options.component,
           action: options.action,
-          data: options.data,
+          data: (options.data || {}) as Record<string, unknown>,
         });
       }
 
@@ -241,6 +243,8 @@ class ServiceIntegrationService {
         severity: 'high',
         retryable: false,
         context: {
+          id: `error-${Date.now()}`,
+          timestamp: new Date(),
           component: 'serviceIntegration',
         },
         timestamp: new Date(),
@@ -275,7 +279,7 @@ class ServiceIntegrationService {
       if (this.config.enableOptimisticUI && options.enableOptimisticUI && options.optimisticData) {
         optimisticUpdate = optimisticUIService.createOptimisticUpdate(
           'update',
-          options.entityType || 'data',
+          (options.entityType || 'data') as 'user' | 'project' | 'file' | 'workflow' | 'record',
           options.entityId || 'unknown',
           null, // original data
           options.optimisticData,

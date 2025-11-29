@@ -79,6 +79,12 @@ export interface Resolution {
   resolution: string;
   comments: string[];
   attachments: string[];
+  discrepancies?: Array<{
+    field: string;
+    expected: string | number;
+    actual: string | number;
+    type: string;
+  }>;
 }
 
 export interface EnhancedReconciliationRecord {
@@ -116,12 +122,16 @@ export interface ReconciliationMetrics {
   escalatedRecords: number;
   averageConfidence: number;
   averageProcessingTime: number;
+  processingTime?: number; // Alias for averageProcessingTime
   matchRate: number;
   accuracy: number;
   throughput: number;
   errorRate: number;
   slaCompliance: number;
 }
+
+// Re-export ReconciliationRecord from reconciliation.ts
+export type { ReconciliationRecord } from '../reconciliation';
 
 export interface FilterConfig {
   field: string;
@@ -156,5 +166,21 @@ export interface BulkAction {
 export interface ReconciliationPageProps {
   project: Record<string, unknown>;
   onProgressUpdate?: (step: string) => void;
+}
+
+export interface RecordMetadata {
+  source: Record<string, unknown>;
+  target: Record<string, unknown>;
+  computed: Record<string, unknown>;
+  tags: string[];
+  notes: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  discrepancies?: Array<{
+    field: string;
+    expected: string | number;
+    actual: string | number;
+    type: string;
+  }>;
 }
 

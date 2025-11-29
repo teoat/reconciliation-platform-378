@@ -31,6 +31,24 @@ class RateLimiter {
     this.failedAttempts.delete(key);
   }
 
+  /**
+   * Reset rate limit for a specific email address
+   */
+  resetForEmail(email: string): void {
+    const key = `login:${email}`;
+    this.reset(key);
+    logger.logSecurity('Rate limit reset for email', { email });
+  }
+
+  /**
+   * Clear all rate limits (use with caution)
+   */
+  clearAll(): void {
+    this.attempts.clear();
+    this.failedAttempts.clear();
+    logger.logSecurity('All rate limits cleared');
+  }
+
   recordFailedAttempt(key: string): number {
     const current = this.failedAttempts.get(key) || 0;
     const newCount = current + 1;

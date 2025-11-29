@@ -10,12 +10,12 @@ alwaysApply: true
   - Organize by category: `api/`, `architecture/`, `deployment/`, `features/`, `operations/`
   - Archive outdated docs to `docs/archive/`
 
-- **Document Types (Simplified):**
-  - **PLAN**: Future work to be done - `[FEATURE]_PLAN.md`
-  - **STATUS**: Current state of active work - `[FEATURE]_STATUS.md` or use `docs/project-management/PROJECT_STATUS.md`
-  - **ARCHIVE**: Historical/completed work - move to `docs/archive/[category]/`
-  - **GUIDE**: Permanent reference documentation - `[TOPIC]_GUIDE.md` or `[topic]-guide.md`
-  - **NO MORE**: COMPLETE, SUMMARY, REPORT, PROPOSAL (consolidate into above types)
+- **Document Types (Aggressively Simplified):**
+  - **GUIDE**: Permanent reference documentation only - `[TOPIC]_GUIDE.md` or `[topic]-guide.md`
+  - **STATUS**: Single master status file - `docs/project-management/PROJECT_STATUS.md` (ONE file only)
+  - **ARCHIVE**: Everything else - move to `docs/archive/[category]/` immediately
+  - **FORBIDDEN**: COMPLETE, SUMMARY, REPORT, PROPOSAL, PROGRESS, CHECKLIST, TODO, DIAGNOSTIC (archive immediately)
+  - **EXCEPTION**: Only keep essential guides (API, Deployment, Architecture, Getting Started)
 
 - **File Naming:**
   - Guides: `UPPER_SNAKE_CASE.md` for major guides: `API_REFERENCE.md`, `DEPLOYMENT_GUIDE.md`
@@ -24,6 +24,7 @@ alwaysApply: true
   - Use descriptive names that indicate content
 
 - **Document Structure:**
+
   ```markdown
   # Title
   
@@ -49,11 +50,14 @@ alwaysApply: true
   - Keep it concise - remove redundancy
   - Update "Last Updated" when modifying
 
-- **Consolidation Rules:**
-  - **Before creating new doc**: Check if topic exists
-  - **If duplicate found**: Merge into existing doc
-  - **If outdated**: Archive to `docs/archive/`
-  - **If similar topics**: Combine into single comprehensive guide
+- **Aggressive Consolidation Rules (MANDATORY):**
+  - **BEFORE creating new doc**: Check if topic exists, if yes → update existing, don't create new
+  - **Status/Completion/Summary files**: Archive immediately (keep only PROJECT_STATUS.md)
+  - **Diagnostic reports**: Archive after 7 days (keep only comprehensive audits if needed)
+  - **Multiple similar files**: Merge into ONE comprehensive guide, archive rest
+  - **Plans/Proposals**: Convert to tasks in PROJECT_STATUS.md, then archive
+  - **Checklists**: Integrate into guides or PROJECT_STATUS.md, then archive
+  - **Maximum active docs**: ~20-30 essential guides only
 
 - **Documentation Categories:**
   - `docs/api/` - API references and guides
@@ -64,13 +68,17 @@ alwaysApply: true
   - `docs/operations/` - Operations and troubleshooting
   - `docs/getting-started/` - Quick start and onboarding
 
-- **When to Consolidate:**
-  - Multiple files covering same topic → Merge into one
-  - Status/completion reports → Archive after 30 days
-  - Duplicate information → Keep most comprehensive version
-  - Outdated guides → Archive or update
+- **When to Archive (Aggressive):**
+  - **Status/completion/summary reports** → Archive immediately (keep only PROJECT_STATUS.md)
+  - **Diagnostic reports** → Archive after 7 days (unless comprehensive audit)
+  - **Multiple files covering same topic** → Merge into one guide, archive rest immediately
+  - **Plans/Proposals** → Convert to tasks in PROJECT_STATUS.md, archive original
+  - **Checklists** → Integrate into guides, archive standalone checklists
+  - **Progress reports** → Archive immediately (track in PROJECT_STATUS.md)
+  - **Outdated guides** → Archive or update (no outdated docs in active folders)
 
 - **Code Examples in Docs:**
+
   ```markdown
   ```bash
   # Clear command examples
@@ -88,32 +96,39 @@ alwaysApply: true
   - Update `docs/README.md` when adding new docs
   - Link related sections within same doc
 
-- **Maintenance:**
-  - Review quarterly for outdated content
-  - Archive completion/status reports monthly
-  - Update "Last Updated" dates
-  - Remove broken links
+- **Aggressive Maintenance (MANDATORY):**
+  - **Weekly**: Archive any new status/completion/summary reports
+  - **Monthly**: Review and archive diagnostic reports older than 7 days
+  - **Quarterly**: Audit all docs, archive anything not essential guide
+  - **Always**: Update "Last Updated" dates when modifying
+  - **Always**: Remove broken links immediately
+  - **Target**: Maximum 20-30 active documentation files total
 
-- **Document Type Lifecycle:**
-  - **PLAN** → Created when work is planned
-  - **PLAN** → **STATUS** when work starts
-  - **STATUS** → **ARCHIVE** when work completes (after 30 days)
-  - **GUIDE** → Permanent, update in place
+- **Aggressive Document Lifecycle (MANDATORY):**
+  - **PLAN/PROPOSAL** → Convert to tasks in PROJECT_STATUS.md → Archive immediately
+  - **STATUS/COMPLETE/SUMMARY** → Archive immediately (keep only PROJECT_STATUS.md)
+  - **REPORT/DIAGNOSTIC** → Archive after 7 days (unless comprehensive audit)
+  - **CHECKLIST** → Integrate into guides → Archive standalone checklists
+  - **GUIDE** → Only permanent reference docs stay active
 
-- **Consolidation Rules:**
-  - **PLAN + STATUS + COMPLETE** → Merge into single STATUS file
-  - **SUMMARY + COMPLETE** → Move to ARCHIVE after 30 days
-  - **REPORT** → Move to ARCHIVE (keep comprehensive audits, archive routine reports)
-  - **PROPOSAL** → Convert to PLAN if approved, ARCHIVE if rejected
-  - **Multiple status files** → Consolidate into `docs/project-management/PROJECT_STATUS.md`
+- **Mandatory Consolidation Rules:**
+  - **ALL status files** → Consolidate into `docs/project-management/PROJECT_STATUS.md`, archive rest
+  - **ALL completion/summary files** → Archive immediately
+  - **ALL diagnostic reports** → Archive after 7 days (unless comprehensive audit)
+  - **ALL plans/proposals** → Convert to tasks in PROJECT_STATUS.md, archive originals
+  - **ALL checklists** → Integrate into guides, archive standalone
+  - **Maximum active docs**: 20-30 essential guides + PROJECT_STATUS.md only
 
-- **Consolidation Best Practices:**
-  - **Before Creating New Doc**: Check `docs/README.md` and search for existing documentation
-  - **Status Files**: Use single `docs/project-management/PROJECT_STATUS.md` for overall status
-  - **Feature Status**: Use `docs/features/[feature]/STATUS.md` only if needed
-  - **Archive Organization**: `docs/archive/[category]/[date]/` - organize by category and date
-  - **Archive Categories**: `completion-reports/`, `diagnostics/`, `plans/`, `reports/`, `feature-status/`
-  - **Regular Cleanup**: Archive completion/status reports after 30 days, diagnostics after 90 days
-  - **Reference**: See [Documentation Types Proposal](mdc:docs/DOCUMENTATION_TYPES_PROPOSAL.md) for details
+- **Archive Organization (MANDATORY):**
+  - **Structure**: `docs/archive/[category]/[YYYY-MM]/` - organize by category and month
+  - **Categories**: `completion-reports/`, `diagnostics/`, `plans/`, `reports/`, `status/`, `checklists/`
+  - **Naming**: Keep original filename, add archive date prefix if needed
+  - **Cleanup**: Delete archived files older than 1 year (unless historical significance)
+
+- **Active Documentation Limits:**
+  - **Maximum**: 20-30 essential guide files total
+  - **Allowed**: API guides, Deployment guides, Architecture guides, Getting Started guides
+  - **Forbidden**: Status, completion, summary, diagnostic, plan, proposal, checklist files in active folders
+  - **Exception**: PROJECT_STATUS.md (single master status file only)
 
 Follow [SSOT Guidance](mdc:docs/architecture/SSOT_GUIDANCE.md) for single source of truth principles.

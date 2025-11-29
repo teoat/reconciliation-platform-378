@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { X } from 'lucide-react';
-import { ProjectFilters } from '../../types/project';
+import { ProjectFilters } from '@/types/project/index';
 
 interface FiltersModalProps {
   filters: ProjectFilters;
@@ -32,7 +32,13 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
       <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-secondary-200">
           <h2 className="text-xl font-semibold text-secondary-900">Advanced Filters</h2>
-          <button onClick={onClose} className="text-secondary-400 hover:text-secondary-600">
+          <button 
+            onClick={onClose} 
+            aria-label="Close filters modal"
+            title="Close filters modal"
+            className="text-secondary-400 hover:text-secondary-600"
+            type="button"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -49,7 +55,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
                     <input
                       id={checkboxId}
                       type="checkbox"
-                      checked={filters.status.includes(status)}
+                      checked={(filters.status || []).includes(status)}
                       onChange={() => toggleArrayFilter('status', status)}
                       className="rounded border-secondary-300"
                     />
@@ -71,7 +77,7 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
                     <input
                       id={checkboxId}
                       type="checkbox"
-                      checked={filters.category.includes(category)}
+                      checked={(filters.category || []).includes(category)}
                       onChange={() => toggleArrayFilter('category', category)}
                       className="rounded border-secondary-300"
                     />
@@ -93,8 +99,14 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
                     <input
                       id={checkboxId}
                       type="checkbox"
-                      checked={filters.priority.includes(priority)}
-                      onChange={() => toggleArrayFilter('priority', priority)}
+                      checked={filters.priority?.includes(priority as 'low' | 'medium' | 'high' | 'critical') || false}
+                      onChange={() => {
+                        const currentPriority = filters.priority || [];
+                        const newPriority = currentPriority.includes(priority as 'low' | 'medium' | 'high' | 'critical')
+                          ? currentPriority.filter((p) => p !== priority)
+                          : [...currentPriority, priority as 'low' | 'medium' | 'high' | 'critical'];
+                        updateFilter('priority', newPriority);
+                      }}
                       className="rounded border-secondary-300"
                     />
                     <span className="text-sm text-secondary-700 capitalize">{priority}</span>
@@ -114,13 +126,13 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
                   id="start-date-input"
                   type="date"
                   value={
-                    filters.dateRange.start
+                    filters.dateRange?.start
                       ? filters.dateRange.start.toISOString().split('T')[0]
                       : ''
                   }
                   onChange={(e) =>
                     updateFilter('dateRange', {
-                      ...filters.dateRange,
+                      ...(filters.dateRange || {}),
                       start: e.target.value ? new Date(e.target.value) : undefined,
                     })
                   }
@@ -133,11 +145,11 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
                   id="end-date-input"
                   type="date"
                   value={
-                    filters.dateRange.end ? filters.dateRange.end.toISOString().split('T')[0] : ''
+                    filters.dateRange?.end ? filters.dateRange.end.toISOString().split('T')[0] : ''
                   }
                   onChange={(e) =>
                     updateFilter('dateRange', {
-                      ...filters.dateRange,
+                      ...(filters.dateRange || {}),
                       end: e.target.value ? new Date(e.target.value) : undefined,
                     })
                   }
@@ -152,14 +164,10 @@ export const FiltersModal: React.FC<FiltersModalProps> = ({
           <button
             onClick={() =>
               onFiltersChange({
-                searchQuery: '',
+                search: '',
                 status: [],
                 category: [],
                 tags: [],
-                department: [],
-                dateRange: { start: undefined, end: undefined },
-                budgetRange: { min: undefined, max: undefined },
-                matchRateRange: { min: undefined, max: undefined },
                 priority: [],
               })
             }

@@ -1,13 +1,22 @@
-import React from 'react';
-import { ProgressBar } from './ui/ProgressBar';
-import type { PageConfig, StatsCard, ActionConfig } from '../pages/index';
+import React, { useState } from 'react';
+import { ProgressBar } from '@/components/ui/ProgressBar';
+import type { PageConfig, StatsCard, ActionConfig } from '@/pages/index';
 
 // Re-export types for backward compatibility
 export type { PageConfig, StatsCard, ActionConfig };
 
+export interface FilterConfig {
+  key: string;
+  label: string;
+  type: 'select' | 'text' | 'date' | 'range';
+  options?: Array<{ value: string; label: string }>;
+  placeholder?: string;
+}
+
 interface BasePageProps {
   config: PageConfig;
   stats?: StatsCard[];
+  filters?: FilterConfig[];
   actions?: ActionConfig[];
   children: React.ReactNode;
   loading?: boolean;
@@ -17,11 +26,21 @@ interface BasePageProps {
 export const BasePage: React.FC<BasePageProps> = ({
   config,
   stats = [],
+  filters = [],
   actions = [],
   children,
   loading = false,
   error = null,
 }) => {
+  const [filterValues, setFilterValues] = useState<Record<string, string>>({});
+
+  const handleFilterChange = (key: string, value: string) => {
+    setFilterValues((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const clearFilters = () => {
+    setFilterValues({});
+  };
   if (loading) {
     return (
       <div className="p-6">
@@ -99,6 +118,64 @@ export const BasePage: React.FC<BasePageProps> = ({
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Filters */}
+      {filters.length > 0 && (
+        <div className="bg-white rounded-lg shadow-sm border">
+          <div className="p-6 border-b">
+            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
+              <div className="w-5 h-5 mr-2 text-blue-600">⚲</div>
+              Filters
+            </h2>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {filters.map((filter) => (
+                <div key={filter.key}>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {filter.label}
+                  </label>
+                  {filter.type === 'select' ? (
+                    <select
+                      value={filterValues[filter.key] || ''}
+                      onChange={(e) => handleFilterChange(filter.key, e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                      aria-label={filter.label}
+                      title={filter.label}
+                    >
+                      <option value="">All {filter.label}</option>
+                      {filter.options?.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type={filter.type}
+                      placeholder={filter.placeholder || filter.label}
+                      value={filterValues[filter.key] || ''}
+                      onChange={(e) => handleFilterChange(filter.key, e.target.value)}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2"
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+            {Object.values(filterValues).some((v) => v !== '') && (
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={clearFilters}
+                  aria-label="Clear all filters"
+                  className="px-3 py-1 text-sm text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                >
+                  Clear All Filters
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
 

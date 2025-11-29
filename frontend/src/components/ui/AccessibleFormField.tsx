@@ -4,7 +4,6 @@
  */
 
 import React from 'react';
-import { getAccessibleLabel } from '../../utils/accessibility';
 
 export interface AccessibleFormFieldProps {
   id: string;

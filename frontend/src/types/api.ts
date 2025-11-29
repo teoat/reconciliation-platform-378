@@ -2,7 +2,7 @@
 // API TYPES
 // ============================================================================
 
-import type { Timestamp } from './backend-aligned';
+import type { Timestamp } from './backend';
 
 export interface ApiResponse<T = unknown> {
   data: T;

@@ -18,7 +18,7 @@ pub trait Event: Send + Sync + Debug + Clone + 'static {
 /// Event handler trait
 pub trait EventHandler<E: Event>: Send + Sync {
     /// Handle an event
-    async fn handle(&self, event: E) -> AppResult<()>;
+    fn handle(&self, event: E) -> impl std::future::Future<Output = AppResult<()>> + Send;
 }
 
 /// Type-erased event handler trait

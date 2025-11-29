@@ -18,6 +18,7 @@ use reconciliation_backend::services::user::UserService;
 use reconciliation_backend::test_utils_export::database::setup_test_database;
 
 /// Helper function to create test config
+#[allow(dead_code)]
 fn create_test_config() -> reconciliation_backend::config::Config {
     reconciliation_backend::config::Config {
         host: "0.0.0.0".to_string(),

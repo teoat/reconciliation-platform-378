@@ -6,6 +6,7 @@
 /**
  * Parse and evaluate a calculation expression
  * Supports: +, -, *, /, parentheses, and metric variable substitution
+ * Uses a safe recursive descent parser instead of eval() to comply with CSP
  */
 export function evaluateCalculation(
   expression: string,
@@ -25,10 +26,9 @@ export function evaluateCalculation(
       throw new Error('Invalid characters in expression');
     }
 
-    // Evaluate the expression safely
-    // Note: In production, use a proper expression parser library
-    // For now, we'll use Function constructor with validation
-    const result = Function(`"use strict"; return (${processedExpression})`)();
+    // Evaluate the expression safely using a recursive descent parser
+    // This avoids using eval() or Function() constructor for CSP compliance
+    const result = parseExpression(processedExpression.trim());
     
     if (typeof result !== 'number' || !isFinite(result)) {
       throw new Error('Invalid calculation result');
@@ -40,6 +40,134 @@ export function evaluateCalculation(
     // For production, consider integrating with error tracking service
     return 0;
   }
+}
+
+/**
+ * Safe expression parser using recursive descent
+ * Supports: numbers, +, -, *, /, parentheses
+ */
+function parseExpression(expr: string): number {
+  let index = 0;
+  
+  function skipWhitespace(): void {
+    while (index < expr.length && /\s/.test(expr[index])) {
+      index++;
+    }
+  }
+  
+  function parseNumber(): number {
+    skipWhitespace();
+    let numStr = '';
+    let hasDecimal = false;
+    
+    // Handle negative sign
+    if (index < expr.length && expr[index] === '-') {
+      numStr += '-';
+      index++;
+      skipWhitespace();
+    }
+    
+    // Parse digits
+    while (index < expr.length && /[0-9.]/.test(expr[index])) {
+      if (expr[index] === '.') {
+        if (hasDecimal) break;
+        hasDecimal = true;
+      }
+      numStr += expr[index];
+      index++;
+    }
+    
+    const num = parseFloat(numStr);
+    if (isNaN(num)) {
+      throw new Error(`Invalid number at position ${index}`);
+    }
+    return num;
+  }
+  
+  function parseExpr(): number {
+    let result = parseTerm();
+    
+    skipWhitespace();
+    while (index < expr.length && (expr[index] === '+' || expr[index] === '-')) {
+      const op = expr[index];
+      index++;
+      skipWhitespace();
+      
+      const right = parseTerm();
+      if (op === '+') {
+        result += right;
+      } else {
+        result -= right;
+      }
+      skipWhitespace();
+    }
+    
+    return result;
+  }
+  
+  function parseTerm(): number {
+    let result = parseFactor();
+    
+    skipWhitespace();
+    while (index < expr.length && (expr[index] === '*' || expr[index] === '/')) {
+      const op = expr[index];
+      index++;
+      skipWhitespace();
+      
+      const right = parseFactor();
+      if (op === '*') {
+        result *= right;
+      } else {
+        if (right === 0) {
+          throw new Error('Division by zero');
+        }
+        result /= right;
+      }
+      skipWhitespace();
+    }
+    
+    return result;
+  }
+  
+  function parseFactor(): number {
+    skipWhitespace();
+    
+    if (index >= expr.length) {
+      throw new Error('Unexpected end of expression');
+    }
+    
+    if (expr[index] === '(') {
+      index++; // consume '('
+      const result = parseExpr();
+      skipWhitespace();
+      if (index >= expr.length || expr[index] !== ')') {
+        throw new Error('Missing closing parenthesis');
+      }
+      index++; // consume ')'
+      return result;
+    }
+    
+    if (expr[index] === '-') {
+      index++;
+      return -parseFactor();
+    }
+    
+    if (expr[index] === '+') {
+      index++;
+      return parseFactor();
+    }
+    
+    return parseNumber();
+  }
+  
+  const result = parseExpr();
+  skipWhitespace();
+  
+  if (index < expr.length) {
+    throw new Error(`Unexpected character '${expr[index]}' at position ${index}`);
+  }
+  
+  return result;
 }
 
 /**

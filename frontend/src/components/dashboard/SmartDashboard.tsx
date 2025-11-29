@@ -1,7 +1,17 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo, memo } from 'react';
-import { TrendingUp, TrendingDown, Clock, Users, Target, AlertCircle, CheckCircle, BarChart3, PieChart } from 'lucide-react';
+import { useState, useEffect, useCallback, memo } from 'react';
+import {
+  TrendingUp,
+  TrendingDown,
+  Clock,
+  Users,
+  Target,
+  AlertCircle,
+  CheckCircle,
+  BarChart3,
+  PieChart,
+} from 'lucide-react';
 import { apiClient } from '@/services/apiClient';
 import type { BackendProject } from '@/services/apiClient/types';
 import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
@@ -131,15 +141,15 @@ const SmartDashboard = memo(({ project: _project }: SmartDashboardProps) => {
           iconColor="text-blue-600"
           trend={
             <div className="flex items-center">
-            {userMetrics.productivity_trend === 'increasing' ? (
-              <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
-            ) : (
-              <TrendingDown className="w-4 h-4 text-gray-400 mr-1" />
-            )}
-            <span className="text-sm text-gray-600 capitalize">
-              {userMetrics.productivity_trend ?? 'stable'}
-            </span>
-          </div>
+              {userMetrics.productivity_trend === 'increasing' ? (
+                <TrendingUp className="w-4 h-4 text-green-500 mr-1" />
+              ) : (
+                <TrendingDown className="w-4 h-4 text-gray-400 mr-1" />
+              )}
+              <span className="text-sm text-gray-600 capitalize">
+                {userMetrics.productivity_trend ?? 'stable'}
+              </span>
+            </div>
           }
         />
         <SmartDashboardMetricCard

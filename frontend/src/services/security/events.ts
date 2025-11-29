@@ -31,7 +31,7 @@ export class SecurityEventLogger {
     }
 
     if (import.meta.env.DEV) {
-      logger.warn('Security Event:', fullEvent);
+      logger.warn('Security Event:', fullEvent as unknown as Record<string, unknown>);
     }
 
     try {

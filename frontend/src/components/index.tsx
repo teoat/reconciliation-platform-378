@@ -117,7 +117,7 @@ export { default as UnifiedNavigation } from './layout/UnifiedNavigation';
 export { default as AppShell } from './layout/AppShell';
 export { default as AppLayout } from './layout/AppLayout';
 export { default as AuthLayout } from './layout/AuthLayout';
-export { default as ResponsiveGrid } from './layout/ResponsiveGrid';
+export { ResponsiveGrid } from './layout/ResponsiveGrid';
 
 // ============================================================================
 // FEATURE COMPONENTS

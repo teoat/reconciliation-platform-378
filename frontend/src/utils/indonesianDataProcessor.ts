@@ -21,7 +21,7 @@ export interface ProcessedExpenseRecord {
   normalizedRecipient: string
   amountHash: string
   dateHash: string
-  originalRecord: any
+  originalRecord: Record<string, unknown>
 }
 
 export interface ProcessedBankRecord {
@@ -46,7 +46,7 @@ export interface ProcessedBankRecord {
   normalizedRecipient: string
   amountHash: string
   dateHash: string
-  originalRecord: any
+  originalRecord: Record<string, unknown>
 }
 
 export interface IndonesianMatchingResult {
@@ -96,7 +96,7 @@ export class IndonesianDataProcessor {
       
       return `${year}-${month}-${day}`
     } catch (error) {
-      console.error('Error parsing Indonesian date:', dateStr, error)
+      logger.error('Error parsing Indonesian date', { category: 'data-processing', component: 'indonesianDataProcessor', dateStr, error });
       return ''
     }
   }
@@ -180,7 +180,7 @@ export class IndonesianDataProcessor {
   }
 
   // Process expenses data
-  static processExpensesData(rawData: any[]): ProcessedExpenseRecord[] {
+  static processExpensesData(rawData: Record<string, unknown>[]): ProcessedExpenseRecord[] {
     return rawData.map((record, index) => {
       const amount = this.parseIndonesianAmount(record['Aldi Awal Transaksi'] || record['Aldi Awal Debit'] || '0')
       const debitAmount = this.parseIndonesianAmount(record['Aldi Awal Debit'] || '0')
@@ -213,7 +213,7 @@ export class IndonesianDataProcessor {
   }
 
   // Process bank statements data
-  static processBankData(rawData: any[]): ProcessedBankRecord[] {
+  static processBankData(rawData: Record<string, unknown>[]): ProcessedBankRecord[] {
     return rawData.map((record, index) => {
       const amount = this.parseIndonesianAmount(record.Transaksi || record.Debit || record.Kredit || '0')
       const debitAmount = this.parseIndonesianAmount(record.Debit || '0')

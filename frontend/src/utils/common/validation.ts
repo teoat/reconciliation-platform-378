@@ -36,7 +36,7 @@ export function validateEmail(email: string): boolean {
  * ```typescript
  * const result = emailSchema.safeParse('user@example.com');
  * if (result.success) {
- *   console.log('Valid email:', result.data);
+ *   // Email is valid, use result.data
  * }
  * ```
  */
@@ -58,7 +58,7 @@ export const emailSchema = z
  * ```typescript
  * const result = passwordSchema.safeParse('MyP@ssw0rd');
  * if (result.success) {
- *   console.log('Valid password');
+ *   // Password is valid
  * }
  * ```
  */
@@ -394,9 +394,9 @@ export const textSchema = z.string().max(5000, { message: 'Text too long' });
  * ```typescript
  * const result = validateFormInput(emailSchema, 'user@example.com');
  * if (result.success) {
- *   console.log('Valid:', result.data);
+ *   // Input is valid, use result.data
  * } else {
- *   console.log('Errors:', result.errors);
+ *   // Input is invalid, handle result.errors
  * }
  * ```
  */

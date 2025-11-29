@@ -5,9 +5,8 @@
  */
 
 import React from 'react';
-import { Eye, Edit } from 'lucide-react';
-import type { ExpenseCategory } from '../types';
-import { formatCurrency, formatPercentage, getStatusIcon, getStatusColor, getCategoryColor } from '../utils/formatting';
+import type { ExpenseCategory } from '@/pages/cashflow/types';
+import { formatCurrency, formatPercentage, getStatusIcon, getStatusColor, getCategoryColor } from '@/pages/cashflow/utils/formatting';
 
 interface CashflowCategoryCardProps {
   category: ExpenseCategory;
@@ -22,6 +21,14 @@ export const CashflowCategoryCard: React.FC<CashflowCategoryCardProps> = ({
     <div
       className="card cursor-pointer hover:shadow-lg transition-shadow"
       onClick={() => onCategoryClick(category)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onCategoryClick(category);
+        }
+      }}
+      role="button"
+      tabIndex={0}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center space-x-3">

@@ -1,7 +1,7 @@
 // Data validation hook
 import { useState, useCallback } from 'react';
-import { validateData, validateField } from '../../utils/ingestion/validation';
-import type { DataRow, DataValidation, UploadedFile } from '../../types/ingestion';
+import { validateData, validateField } from '@/utils/ingestion/validation';
+import type { DataRow, DataValidation, UploadedFile } from '@/types/ingestion/index';
 
 export const useDataValidation = () => {
   const [validations, setValidations] = useState<DataValidation[]>([]);
@@ -16,7 +16,7 @@ export const useDataValidation = () => {
   );
 
   const validateSingleField = useCallback(
-    (field: string, value: any, rules: string[]) => {
+    (field: string, value: unknown, rules: string[]) => {
       const result = validateField(field, value, rules);
       if (result) {
         setValidations((prev) => [...prev, result]);

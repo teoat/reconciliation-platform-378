@@ -3,11 +3,11 @@
 // ============================================================================
 
 import { useCallback, useEffect } from 'react';
-import { useAppDispatch, useAppSelector } from '../../store/unifiedStore';
-import { reconciliationRecordsActions } from '../../store/unifiedStore';
-import ApiService from '../../services/ApiService';
-import { useNotificationHelpers } from '../../store/hooks';
-import type { ReconciliationRecord } from '../../types/reconciliation';
+import { useAppDispatch, useAppSelector } from '@/store/unifiedStore';
+import { reconciliationRecordsActions } from '@/store/unifiedStore';
+import ApiService from '@/services/ApiService';
+import { useNotificationHelpers } from '@/store/hooks';
+import type { ReconciliationRecord } from '@/types/reconciliation/index';
 
 export const useReconciliationRecordsAPI = (projectId?: string) => {
   const dispatch = useAppDispatch();
@@ -68,15 +68,21 @@ export const useReconciliationRecordsAPI = (projectId?: string) => {
       if (!projectId) return { success: false, error: 'No project ID' };
 
       try {
-        // This would need to be implemented in the API service
-        return { success: true };
+        // Update reconciliation record via API
+        // Endpoint: /api/v1/reconciliation/records/{id} (PUT)
+        const updatedRecord = await ApiService.updateReconciliationRecord(recordId, recordData);
+        
+        // Update Redux store with the updated record
+        dispatch(reconciliationRecordsActions.updateRecord(updatedRecord));
+        return { success: true, record: updatedRecord };
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Failed to update record';
-        showError('Update Failed', errorMessage);
+        const errorMessage =
+          error instanceof Error ? error.message : 'Failed to update reconciliation record';
+        showError('Failed to Update Record', errorMessage);
         return { success: false, error: errorMessage };
       }
     },
-    [projectId, showError]
+    [projectId, dispatch, showError]
   );
 
   useEffect(() => {

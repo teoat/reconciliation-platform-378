@@ -15,7 +15,7 @@ pub trait Command: Send + Sync + Debug {
 /// Command handler trait
 pub trait CommandHandler<C: Command>: Send + Sync {
     /// Handle a command
-    async fn handle(&self, command: C) -> CommandResult;
+    fn handle(&self, command: C) -> impl std::future::Future<Output = CommandResult> + Send;
 }
 
 /// Command result

@@ -99,10 +99,16 @@ class OptimisticLockingService {
       if (stored) {
         const data = JSON.parse(stored);
         data.locks.forEach((lockData: unknown) => {
+          const lockDataTyped = lockData as Partial<OptimisticLock> & { timestamp: string | Date; expiresAt: string | Date };
           const lock: OptimisticLock = {
-            ...lockData,
-            timestamp: new Date(lockData.timestamp),
-            expiresAt: new Date(lockData.expiresAt),
+            id: lockDataTyped.id || '',
+            entityType: lockDataTyped.entityType || '',
+            entityId: lockDataTyped.entityId || '',
+            userId: lockDataTyped.userId || '',
+            version: lockDataTyped.version || 0,
+            timestamp: new Date(lockDataTyped.timestamp),
+            expiresAt: new Date(lockDataTyped.expiresAt),
+            metadata: lockDataTyped.metadata || { userAgent: '', sessionId: '' },
           };
           this.locks.set(lock.id, lock);
         });
@@ -149,7 +155,7 @@ class OptimisticLockingService {
           userId,
           'user_conflict'
         );
-        this.emit('lockConflict', conflict);
+        this.emit('lockConflict', conflict as unknown as Record<string, unknown>);
         return null;
       } else {
         // Expired lock, remove it
@@ -176,7 +182,7 @@ class OptimisticLockingService {
     this.locks.set(lock.id, lock);
     this.savePersistedLocks();
 
-    this.emit('lockAcquired', lock);
+    this.emit('lockAcquired', lock as unknown as Record<string, unknown>);
     return lock;
   }
 
@@ -187,7 +193,7 @@ class OptimisticLockingService {
     this.locks.delete(lockId);
     this.savePersistedLocks();
 
-    this.emit('lockReleased', lock);
+    this.emit('lockReleased', lock as unknown as Record<string, unknown>);
     return true;
   }
 
@@ -209,7 +215,7 @@ class OptimisticLockingService {
     this.locks.set(lockId, lock);
     this.savePersistedLocks();
 
-    this.emit('lockRenewed', lock);
+    this.emit('lockRenewed', lock as unknown as Record<string, unknown>);
     return lock;
   }
 
@@ -257,7 +263,7 @@ class OptimisticLockingService {
     this.locks.set(existingLock.id, existingLock);
     this.savePersistedLocks();
 
-    this.emit('entityUpdated', { entityType, entityId, data, lock: existingLock });
+    this.emit('entityUpdated', { entityType, entityId, data, lock: existingLock } as Record<string, unknown>);
     return { success: true, data };
   }
 
@@ -273,17 +279,17 @@ class OptimisticLockingService {
       id: this.generateConflictId(),
       lockId: existingLock?.id || '',
       conflictType,
-      localData: additionalData,
+      localData: additionalData || {},
       remoteData: existingLock
         ? { userId: existingLock.userId, version: existingLock.version }
-        : null,
+        : {},
       resolution: 'manual',
       resolvedBy: undefined,
       resolvedAt: undefined,
     };
 
     this.conflicts.set(conflict.id, conflict);
-    this.emit('conflictCreated', conflict);
+    this.emit('conflictCreated', conflict as unknown as Record<string, unknown>);
 
     return conflict;
   }
@@ -303,7 +309,7 @@ class OptimisticLockingService {
     if (mergeStrategy) conflict.mergeStrategy = mergeStrategy;
 
     this.conflicts.set(conflictId, conflict);
-    this.emit('conflictResolved', conflict);
+    this.emit('conflictResolved', conflict as unknown as Record<string, unknown>);
 
     return true;
   }
@@ -335,11 +341,14 @@ class OptimisticLockingService {
           case 'remote':
             mergedValue = remoteValue;
             break;
-          case 'latest':
-            mergedValue = localValue.timestamp > remoteValue.timestamp ? localValue : remoteValue;
+          case 'latest': {
+            const localTimestamp = (localValue as { timestamp?: string | Date }).timestamp;
+            const remoteTimestamp = (remoteValue as { timestamp?: string | Date }).timestamp;
+            mergedValue = (localTimestamp && remoteTimestamp && new Date(localTimestamp) > new Date(remoteTimestamp)) ? localValue : remoteValue;
             break;
+          }
           case 'custom': {
-            const handler = mergeStrategy.conflictHandlers.find((h) => h.field === rule.field);                                                                           
+            const handler = mergeStrategy.conflictHandlers.find((h) => h.field === rule.field);
             if (handler) {
               mergedValue = handler.handler(localValue, remoteValue);
             } else {
@@ -360,15 +369,22 @@ class OptimisticLockingService {
   private getNestedValue(obj: Record<string, unknown>, path: string): unknown {
     return path
       .split('.')
-      .reduce((current, key) => (current as Record<string, unknown>)?.[key], obj);
+      .reduce((current: unknown, key: string) => {
+        if (current && typeof current === 'object' && !Array.isArray(current)) {
+          return (current as Record<string, unknown>)[key];
+        }
+        return undefined;
+      }, obj as unknown);
   }
 
   private setNestedValue(obj: Record<string, unknown>, path: string, value: unknown): void {
     const keys = path.split('.');
     const lastKey = keys.pop()!;
-    const target = keys.reduce((current, key) => {
-      if (!current[key]) current[key] = {};
-      return current[key];
+    const target = keys.reduce((current: Record<string, unknown>, key: string) => {
+      if (!current[key] || typeof current[key] !== 'object' || Array.isArray(current[key])) {
+        current[key] = {};
+      }
+      return current[key] as Record<string, unknown>;
     }, obj);
     target[lastKey] = value;
   }
@@ -391,7 +407,7 @@ class OptimisticLockingService {
 
     expiredLocks.forEach((lock) => {
       this.releaseLock(lock.id);
-      this.emit('lockExpired', lock);
+      this.emit('lockExpired', lock as unknown as Record<string, unknown>);
     });
   }
 
@@ -450,7 +466,7 @@ class OptimisticLockingService {
 
   public updateConfig(newConfig: Partial<LockConfig>): void {
     this.config = { ...this.config, ...newConfig };
-    this.emit('configUpdated', this.config);
+    this.emit('configUpdated', this.config as unknown as Record<string, unknown>);
   }
 
   public getConfig(): LockConfig {

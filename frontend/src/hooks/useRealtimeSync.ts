@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWebSocket } from './api';
+import { logger } from '@/services/logger';
 
 interface SyncStatus {
   isConnected: boolean;
@@ -16,7 +17,7 @@ interface DataSyncOptions {
   page: string;
   autoSync?: boolean;
   syncInterval?: number;
-  onDataUpdate?: (data: any) => void;
+  onDataUpdate?: (data: Record<string, unknown>) => void;
   onSyncError?: (error: string) => void;
 }
 
@@ -42,7 +43,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Sync data with backend
-  const syncData = useCallback(async (data: any, targetPage?: string) => {
+  const syncData = useCallback(async (data: Record<string, unknown>, targetPage?: string) => {
     if (!isConnected) {
       const error = 'WebSocket not connected';
       setSyncStatus(prev => ({
@@ -88,7 +89,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
   }, [isConnected, sendMessage, page, onSyncError]);
 
   // Request data from backend
-  const requestData = useCallback(async (dataType: string, filters?: any) => {
+  const requestData = useCallback(async (dataType: string, filters?: Record<string, unknown>) => {
     if (!isConnected) {
       const error = 'WebSocket not connected';
       onSyncError?.(error);
@@ -111,7 +112,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
   }, [isConnected, sendMessage, page, onSyncError]);
 
   // Handle incoming data updates
-  const handleDataUpdate = useCallback((data: any) => {
+  const handleDataUpdate = useCallback((data: Record<string, unknown> & { page?: string; data?: Record<string, unknown> }) => {
     if (data.page === page) {
       onDataUpdate?.(data.data);
       setSyncStatus(prev => ({
@@ -123,7 +124,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
   }, [page, onDataUpdate]);
 
   // Handle sync responses
-  const handleSyncResponse = useCallback((data: any) => {
+  const handleSyncResponse = useCallback((data: Record<string, unknown>) => {
     setSyncStatus(prev => ({
       ...prev,
       isSyncing: false,
@@ -133,7 +134,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
   }, []);
 
   // Handle sync errors
-  const handleSyncError = useCallback((data: any) => {
+  const handleSyncError = useCallback((data: Record<string, unknown> & { message?: string }) => {
     const error = data.message || 'Sync error';
     setSyncStatus(prev => ({
       ...prev,
@@ -160,7 +161,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
       // Schedule reconnect attempt
       reconnectTimeoutRef.current = setTimeout(() => {
         // This would trigger a reconnection in the WebSocket hook
-        console.log('Attempting to reconnect...');
+        // Reconnection is handled by the WebSocket hook
       }, 5000);
     }
   }, []);
@@ -216,7 +217,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
   }, []);
 
   // Manual sync trigger
-  const triggerSync = useCallback(async (data?: any) => {
+  const triggerSync = useCallback(async (data?: Record<string, unknown>) => {
     if (data) {
       return await syncData(data);
     } else {
@@ -259,7 +260,7 @@ export const useRealtimeDataSync = (options: DataSyncOptions) => {
 
 // Real-time metrics hook
 export const useRealtimeMetrics = (page: string) => {
-  const [metrics, setMetrics] = useState<any>(null);
+  const [metrics, setMetrics] = useState<Record<string, unknown> | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const { syncData, requestData, syncStatus } = useRealtimeDataSync({
@@ -271,12 +272,16 @@ export const useRealtimeMetrics = (page: string) => {
       setIsLoading(false);
     },
     onSyncError: (error) => {
-      console.error('Metrics sync error:', error);
+      logger.error('Metrics sync error', { 
+        error, 
+        category: 'realtime-sync',
+        component: 'useRealtimeSync'
+      });
       setIsLoading(false);
     }
   });
 
-  const updateMetrics = useCallback(async (newMetrics: any) => {
+  const updateMetrics = useCallback(async (newMetrics: Record<string, unknown>) => {
     setIsLoading(true);
     await syncData(newMetrics);
   }, [syncData]);
@@ -295,9 +300,17 @@ export const useRealtimeMetrics = (page: string) => {
   };
 };
 
+// Notification data structure
+interface NotificationData {
+  id: string;
+  type: string;
+  isRead?: boolean;
+  [key: string]: unknown;
+}
+
 // Real-time notifications hook
 export const useRealtimeNotifications = (page: string) => {
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<NotificationData[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
   const { syncData, requestData } = useRealtimeDataSync({

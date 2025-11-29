@@ -128,8 +128,9 @@ export function PolicyDetailModal({
                 fullWidth
               />
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label htmlFor="policy-description" className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                 <textarea
+                  id="policy-description"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"

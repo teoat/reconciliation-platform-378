@@ -48,8 +48,8 @@ export const useAuth = () => {
         dispatch(registerUser(userData)),
       [dispatch]
     ),
-    logout: useCallback(() => dispatch(logoutUser()), [dispatch]),
-    getCurrentUser: useCallback(() => dispatch(getCurrentUser()), [dispatch]),
+    logout: useCallback(() => dispatch(logoutUser(undefined)), [dispatch]),
+    getCurrentUser: useCallback(() => dispatch(getCurrentUser(undefined)), [dispatch]),
     setUser: useCallback((user: User | null) => dispatch(authActions.setUser(user)), [dispatch]),
     clearError: useCallback(() => dispatch(authActions.clearError()), [dispatch]),
   };
@@ -127,7 +127,7 @@ export const useDataIngestion = () => {
       [dispatch]
     ),
     fetchUploadedFiles: useCallback(
-      (projectId: string) => dispatch(fetchUploadedFiles(projectId)),
+      (projectId: string) => dispatch(fetchUploadedFiles({ projectId })),
       [dispatch]
     ),
     setUploadProgress: useCallback(
@@ -148,7 +148,7 @@ export const useReconciliation = () => {
   return {
     ...reconciliation,
     fetchRecords: useCallback(
-      (projectId: string) => dispatch(fetchReconciliationRecords(projectId)),
+      (projectId: string) => dispatch(fetchReconciliationRecords({ projectId })),
       [dispatch]
     ),
     runMatching: useCallback(
@@ -188,7 +188,7 @@ export const useAnalytics = () => {
 
   return {
     ...analytics,
-    fetchDashboardData: useCallback(() => dispatch(fetchDashboardData()), [dispatch]),
+    fetchDashboardData: useCallback(() => dispatch(fetchDashboardData(undefined)), [dispatch]),
   };
 };
 
@@ -330,7 +330,7 @@ export const useNotificationHelpers = () => {
         notificationsActions.addNotification({
           ...notification,
           id,
-          timestamp: new Date(),
+          timestamp: new Date().toISOString(),
           read: false,
         })
       );

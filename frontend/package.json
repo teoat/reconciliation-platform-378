@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5173",
+    "dev": "vite",
     "build": "vite build --mode production",
     "build:cache": "vite build --mode production --cache-dir .vite-cache",
     "build:clean": "rm -rf dist .vite-cache node_modules/.tmp && npm run build:cache",
@@ -12,6 +12,8 @@
     "build:analyze": "tsc && vite build --mode production && npx vite-bundle-visualizer",
     "preview": "vite preview --port 4173",
     "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix",
+    "type-check": "tsc --noEmit",
     "test": "vitest",
     "test:ui": "vitest --ui",
     "test:coverage": "vitest --coverage",

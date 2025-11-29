@@ -15,11 +15,11 @@ import {
   TrendingDown,
   TrendingUp,
 } from 'lucide-react';
-import type { CashflowMetrics } from '../types';
-import { formatCurrency, formatPercentage } from '../utils/formatting';
+import type { CashflowMetrics as CashflowMetricsType } from '@/pages/cashflow/types';
+import { formatCurrency, formatPercentage } from '@/pages/cashflow/utils/formatting';
 
 interface CashflowMetricsProps {
-  metrics: CashflowMetrics;
+  metrics: CashflowMetricsType;
 }
 
 export const CashflowMetrics: React.FC<CashflowMetricsProps> = ({ metrics }) => {

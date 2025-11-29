@@ -1,16 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Upload, FileText, Eye, Trash2 } from 'lucide-react';
-
-// Simple logger stub
-const logger = {
-  info: console.info,
-  warn: console.warn,
-  error: console.error,
-  debug: console.debug,
-};
+import { logger } from '@/services/logger';
 import { useData } from '@/components/DataProvider';
 import { useToast } from '@/hooks/useToast';
-import { UploadedFile } from '@/types/ingestion';
+import { UploadedFile } from '@/types/ingestion/index';
 import type { PageConfig, StatsCard, ActionConfig as PageActionConfig } from './index';
 
 import { Modal } from '@/components/ui/Modal';

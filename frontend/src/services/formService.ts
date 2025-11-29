@@ -57,7 +57,7 @@ export interface FormConfig {
   };
 }
 
-export class FormService extends PersistenceService {
+export class FormService extends PersistenceService<FormData> {
   private validations: Map<string, FormValidation> = new Map();
   private buttonStates: Map<string, ButtonState> = new Map();
   private formConfig: FormConfig;
@@ -94,7 +94,7 @@ export class FormService extends PersistenceService {
     return `form_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  private getAll(): FormData[] {
+  getAll(): FormData[] {
     return Array.from(this.data.values()) as FormData[];
   }
 

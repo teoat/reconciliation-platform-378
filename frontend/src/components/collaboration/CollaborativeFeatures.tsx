@@ -9,7 +9,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, memo } from 'react';
 import { Users, Building, Activity, UserCheck, Bell, Plus, UserPlus } from 'lucide-react';
 import { useData } from '../DataProvider';
 import type { BackendProject } from '../../services/apiClient/types';
@@ -41,14 +41,14 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
   const { currentProject } = useData();
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
-  const [comments, setComments] = useState<Comment[]>([]);
+  const [_comments, _setComments] = useState<Comment[]>([]);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
+  const [_selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
   const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
   const [showMemberModal, setShowMemberModal] = useState(false);
-  const [showWorkspaceModal, setShowWorkspaceModal] = useState(false);
+  const [_showWorkspaceModal, _setShowWorkspaceModal] = useState(false);
   const [activeTab, setActiveTab] = useState<
     'members' | 'workspaces' | 'activities' | 'assignments' | 'notifications'
   >('members');
@@ -244,7 +244,7 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
     );
   };
 
-  const userProgress = onboardingService.getProgress('initial').completedSteps;
+  const userProgress = onboardingService.getProgress('initial')?.completedSteps ?? [];
 
   return (
     <ProgressiveFeatureDisclosure
@@ -378,4 +378,4 @@ const CollaborativeFeatures = ({ project, onProgressUpdate }: CollaborativeFeatu
   );
 };
 
-export default CollaborativeFeatures;
+export default memo(CollaborativeFeatures);

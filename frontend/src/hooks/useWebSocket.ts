@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
+import { logger } from '@/services/logger'
 
 interface WebSocketMessage {
   type: string
-  data: any
+  data: unknown
   timestamp: string
   page?: string
 }
@@ -29,7 +30,7 @@ export const useWebSocket = (url: string): WebSocketHook => {
       ws.current = new WebSocket(url)
 
       ws.current.onopen = () => {
-        console.log('WebSocket connected')
+        logger.info('WebSocket connected', { category: 'websocket', component: 'useWebSocket' })
         setIsConnected(true)
         setConnectionStatus('connected')
         reconnectAttempts.current = 0
@@ -37,16 +38,16 @@ export const useWebSocket = (url: string): WebSocketHook => {
 
       ws.current.onmessage = (event) => {
         try {
-          const message: WebSocketMessage = JSON.parse(event.data)
+          const message: WebSocketMessage = JSON.parse(event.data as string)
           setLastMessage(message)
-          console.log('WebSocket message received:', message)
+          logger.debug('WebSocket message received', { category: 'websocket', component: 'useWebSocket', messageType: message.type })
         } catch (error) {
-          console.error('Failed to parse WebSocket message:', error)
+          logger.error('Failed to parse WebSocket message', { category: 'websocket', component: 'useWebSocket', error })
         }
       }
 
       ws.current.onclose = (event) => {
-        console.log('WebSocket disconnected:', event.code, event.reason)
+        logger.info('WebSocket disconnected', { category: 'websocket', component: 'useWebSocket', code: event.code, reason: event.reason })
         setIsConnected(false)
         setConnectionStatus('disconnected')
         
@@ -54,7 +55,7 @@ export const useWebSocket = (url: string): WebSocketHook => {
         if (event.code !== 1000 && reconnectAttempts.current < maxReconnectAttempts) {
           reconnectAttempts.current++
           const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000)
-          console.log(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttempts.current})`)
+          logger.info(`Attempting to reconnect in ${delay}ms (attempt ${reconnectAttempts.current})`, { category: 'websocket', component: 'useWebSocket', attempt: reconnectAttempts.current, delay })
           
           reconnectTimeout.current = setTimeout(() => {
             connect()
@@ -63,11 +64,11 @@ export const useWebSocket = (url: string): WebSocketHook => {
       }
 
       ws.current.onerror = (error) => {
-        console.error('WebSocket error:', error)
+        logger.error('WebSocket error', { category: 'websocket', component: 'useWebSocket', error })
         setConnectionStatus('error')
       }
     } catch (error) {
-      console.error('Failed to create WebSocket connection:', error)
+      logger.error('Failed to create WebSocket connection', { category: 'websocket', component: 'useWebSocket', error })
       setConnectionStatus('error')
     }
   }, [url])
@@ -79,12 +80,12 @@ export const useWebSocket = (url: string): WebSocketHook => {
           ...message,
           timestamp: new Date().toISOString()
         }))
-        console.log('WebSocket message sent:', message)
+        logger.debug('WebSocket message sent', { category: 'websocket', component: 'useWebSocket', messageType: message.type })
       } catch (error) {
-        console.error('Failed to send WebSocket message:', error)
+        logger.error('Failed to send WebSocket message', { category: 'websocket', component: 'useWebSocket', error })
       }
     } else {
-      console.warn('WebSocket is not connected. Cannot send message:', message)
+      logger.warn('WebSocket is not connected. Cannot send message', { category: 'websocket', component: 'useWebSocket', messageType: message.type })
     }
   }, [])
 
@@ -219,7 +220,7 @@ export const useRealtimeDataSync = () => {
   const { isConnected, sendMessage, lastMessage } = useWebSocket('ws://localhost:2000/data-sync')
   const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'synced' | 'error'>('idle')
 
-  const syncData = useCallback((fromPage: string, toPage: string, data: any) => {
+  const syncData = useCallback((fromPage: string, toPage: string, data: unknown) => {
     if (isConnected) {
       setSyncStatus('syncing')
       sendMessage({

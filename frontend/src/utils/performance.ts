@@ -1,5 +1,4 @@
 // Performance Monitoring Utilities
-import { toRecord } from './typeHelpers';
 // Provides comprehensive performance monitoring for the Reconciliation Platform
 
 // Import common performance utilities (SSOT)
@@ -366,7 +365,7 @@ class PerformanceMonitor {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(data),
-    }).catch((error) => {
+    }).catch(() => {
       // Failed to send performance metrics
     });
   }

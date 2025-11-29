@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { logger } from '../services/logger';
+import { logger } from '@/services/logger';
 
 // ============================================================================
 // TYPES AND INTERFACES

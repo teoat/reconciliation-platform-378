@@ -1,6 +1,6 @@
 // Generic data types for data handling, mapping, and transfer
 
-import { BaseMetadata, DataSourceMetadata } from '../common';
+import { BaseMetadata, DataSourceMetadata } from '../common/index';
 
 // Data source types
 export interface DataSource {
@@ -173,5 +173,5 @@ export interface DataTransformation {
 }
 
 // Re-export common types for convenience
-export type { BaseMetadata, DataSourceMetadata } from '../common';
+export type { BaseMetadata, DataSourceMetadata } from '../common/index';
 

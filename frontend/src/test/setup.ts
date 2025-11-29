@@ -10,11 +10,15 @@ afterEach(() => {
 // Mock IntersectionObserver
 beforeAll(() => {
   global.IntersectionObserver = class IntersectionObserver {
-    constructor() {}
+    constructor(_callback: IntersectionObserverCallback, _options?: IntersectionObserverInit) {}
     disconnect() {}
     observe() {}
     unobserve() {}
-  };
+    takeRecords() { return []; }
+    root = null;
+    rootMargin = '';
+    thresholds = [];
+  } as typeof IntersectionObserver;
 });
 
 // Mock ResizeObserver
@@ -97,7 +101,7 @@ beforeAll(() => {
     OPEN = 1;
     CLOSING = 2;
     CLOSED = 3;
-    readyState = WebSocket.CONNECTING;
+    readyState = 0; // CONNECTING
     url = '';
     protocol = '';
     extensions = '';

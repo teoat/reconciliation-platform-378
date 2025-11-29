@@ -4,8 +4,8 @@ import {
   passwordSchema,
   nameSchema,
   textSchema,
-  sanitizeInput,
 } from './common/validation';
+import { sanitizeInput } from './common/sanitization';
 
 // Re-export validation schemas from common module
 export {

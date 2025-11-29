@@ -5,13 +5,7 @@
  * Prevents API key exposure in frontend.
  */
 
-// Logger stub
-const logger = {
-  info: console.info,
-  warn: console.warn,
-  error: console.error,
-  debug: console.debug,
-};
+import { logger } from './logger';
 import { apiClient } from './apiClient';
 
 export type AIProvider = 'openai' | 'anthropic' | 'gemini';
@@ -85,13 +79,21 @@ class AIService {
       }
 
       // Make request to secure backend endpoint
-      const response = (await apiClient.post('/ai/chat', {
+      const response = await apiClient.post<{
+        success: boolean;
+        data?: {
+          content: string;
+          model?: string;
+          usage?: Record<string, unknown>;
+        };
+        error?: string;
+      }>('/ai/chat', {
         message: prompt.user,
         provider: prompt.provider,
         model: prompt.model,
         temperature: prompt.temperature,
         max_tokens: prompt.maxTokens,
-      })) as any;
+      });
 
       if (!response.success || !response.data) {
         throw new Error(
@@ -118,8 +120,8 @@ class AIService {
    */
   async checkHealth(): Promise<{ status: string; providers: Record<string, boolean> }> {
     try {
-      const response = await apiClient.get('/ai/health');
-      return response as any;
+      const response = await apiClient.get<{ status: string; providers: Record<string, boolean> }>('/ai/health');
+      return response.data || { status: 'unknown', providers: {} };
     } catch (error) {
       logger.error('AI Service: Health check failed', error);
       return {

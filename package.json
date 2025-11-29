@@ -51,8 +51,17 @@
     "bundle:monitor:baseline": "bash scripts/bundle-monitor.sh --baseline",
     "baselines:establish": "bash scripts/establish-baselines.sh",
     "reports:review": "bash scripts/review-reports.sh",
+    "maintenance:frenly": "bash scripts/frenly-meta-maintenance.sh",
+    "maintenance:frenly:fast": "FRENLY_MODE=fast bash scripts/frenly-meta-maintenance.sh",
+    "maintenance:frenly:full": "FRENLY_MODE=full bash scripts/frenly-meta-maintenance.sh",
     "execution:checklist": "bash scripts/execution-checklist.sh",
     "mcp:setup": "bash scripts/setup-mcp.sh",
+    "deps:circular": "bash scripts/detect-circular-deps.sh",
+    "deps:validate": "bash scripts/validate-dependencies.sh",
+    "deps:graph": "npx madge --image docs/diagnostics/dependency-graphs/dependency-graph.svg --extensions ts,tsx,js,jsx frontend/src",
+    "deps:monitor": "bash scripts/monitor-dependencies.sh",
+    "deps:report": "bash scripts/generate-dependency-report.sh",
+    "deps:coupling": "bash scripts/analyze-dependency-coupling.sh",
     "prepare": "husky install || true"
   },
   "dependencies": {
@@ -98,6 +107,8 @@
     "tailwindcss": "^4.1.17",
     "ts-jest": "^29.4.5",
     "typescript": "^5.2.2",
-    "webpack-bundle-analyzer": "^5.0.1"
+    "webpack-bundle-analyzer": "^5.0.1",
+    "madge": "^7.0.0",
+    "eslint-plugin-import": "^2.29.1"
   }
 }

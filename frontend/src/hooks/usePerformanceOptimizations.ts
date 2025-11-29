@@ -1,20 +1,13 @@
 /**
-// Simple logger stub until proper import is fixed
-const logger = {
-  info: console.info,
-  warn: console.warn,
-  error: console.error,
-  debug: console.debug
-};
-
-/**
  * Performance Optimization Hooks
  * 
  * Reusable hooks for optimizing React component performance
  * Use these to prevent unnecessary re-renders and improve app responsiveness
  */
 
-import { useCallback, useMemo, useRef, useEffect } from 'react';
+import { useCallback, useMemo, useRef, useEffect, useState } from 'react';
+
+import { logger } from '@/services/logger';
 
 /**
  * Stable callback hook - creates a callback that never changes reference
@@ -173,9 +166,6 @@ export function useLazyState<T>(initialValue: T): [T, (value: T) => void] {
   return [state, setLazyState];
 }
 
-// Import useState for hooks that need it
-import { useState } from 'react';
-
 /**
  * Performance measurement hook - measures component render time
  *
@@ -197,8 +187,9 @@ export function usePerformanceMeasure(componentName: string): void {
 
     if (renderTime > 16) {
       // Slower than 60fps
-      console.warn(
-        `[Performance] ${componentName} render #${renderCount.current} took ${renderTime.toFixed(2)}ms`
+      logger.warn(
+        `[Performance] ${componentName} render #${renderCount.current} took ${renderTime.toFixed(2)}ms`,
+        { category: 'performance', component: 'usePerformanceOptimizations', componentName, renderTime, renderCount: renderCount.current }
       );
     }
 

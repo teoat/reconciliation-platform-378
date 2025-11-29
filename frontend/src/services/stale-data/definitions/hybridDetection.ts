@@ -222,7 +222,7 @@ export const hybridDetectionTests: StaleDataTest[] = [
           timestamp: new Date(),
         };
         if (fallbackDetection.detected) {
-          staleDataDetected.push(fallbackDetection);
+          staleDataDetected.push(fallbackDetection as StaleDataInfo);
         }
 
         // Test fallback refresh

@@ -1,5 +1,4 @@
 import React from 'react';
-import { sanitizeHtml } from '@/utils/common/sanitization';
 
 /**
  * StructuredData Component

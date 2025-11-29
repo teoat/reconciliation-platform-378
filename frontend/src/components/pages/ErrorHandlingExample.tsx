@@ -13,8 +13,8 @@ import {
   ServiceDegradedBanner,
   FallbackContent,
   CircuitBreakerStatus,
-} from '../ui';
-import { useErrorManagement } from '../../hooks/useErrorManagement';
+} from '@/components/ui';
+import { useErrorManagement } from '@/hooks/useErrorManagement';
 import { extractErrorFromApiResponse } from '@/utils/common/errorHandling';
 
 /**
@@ -103,7 +103,7 @@ export const ErrorHandlingExample: React.FC = () => {
               label: 'Use Cached Data',
               action: () => {
                 // Use cached data
-                logger.info('Using cached data:', cachedData as any);
+                logger.info('Using cached data:', cachedData);
               },
               variant: 'primary',
             },
@@ -164,7 +164,7 @@ export const ErrorHandlingExample: React.FC = () => {
             errors={state.errorHistory}
             onErrorSelect={(error) => {
               // Could show error details in a modal
-              logger.info('Selected error:', error as any);
+              logger.info('Selected error:', error);
             }}
             onErrorDismiss={actions.removeFromHistory}
             maxItems={10}

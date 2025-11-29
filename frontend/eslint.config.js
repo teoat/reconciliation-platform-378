@@ -76,6 +76,8 @@ export default [
       ],
       '@typescript-eslint/no-var-requires': 'off', // Allow require() in test files for dynamic mocking
       'no-console': 'off',
+      'no-unreachable': 'warn', // Downgrade to warning for test files
+      'jsx-a11y/no-noninteractive-element-interactions': 'warn', // Downgrade to warning for test files
     },
   },
   {

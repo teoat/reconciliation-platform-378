@@ -64,6 +64,10 @@ export class BaseService<T = unknown> {
     }
   }
 
+  getAll(): T[] {
+    return Array.from(this.data.values());
+  }
+
   cleanup() {
     this.data.clear();
     this.listeners.clear();

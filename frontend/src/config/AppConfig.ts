@@ -20,13 +20,7 @@ const getEnvVar = (key: string, fallback: string): string => {
     // import.meta not available (shouldn't happen in ES modules, but handle gracefully)
   }
 
-  // Priority 2: Try NEXT_PUBLIC_ prefix (for backward compatibility during migration)
-  const nextPublicKey = `NEXT_PUBLIC_${key.replace('VITE_', '')}`;
-  if (typeof process !== 'undefined' && process.env?.[nextPublicKey]) {
-    return process.env[nextPublicKey];
-  }
-
-  // Priority 3: Try process.env with original key (legacy support)
+  // Priority 2: Try process.env with original key (legacy support)
   if (typeof process !== 'undefined' && process.env?.[key]) {
     return process.env[key];
   }
@@ -40,10 +34,16 @@ const getEnvVar = (key: string, fallback: string): string => {
 
 export const APP_CONFIG = {
   // Unified API Configuration (SSOT)
-  API_URL: getEnvVar('VITE_API_URL', 'http://localhost:2000/api'),
+  API_URL: getEnvVar('VITE_API_URL', 'http://localhost:2000/api/v1'),
   WS_URL: getEnvVar('VITE_WS_URL', 'ws://localhost:2000'),
-  API_BASE_URL: getEnvVar('VITE_API_URL', 'http://localhost:2000/api'), // Legacy alias
-  WS_BASE_URL: getEnvVar('VITE_WS_URL', 'ws://localhost:2000'), // Legacy alias
+  /**
+   * @deprecated Use API_URL instead. This alias will be removed in the next major version.
+   */
+  API_BASE_URL: getEnvVar('VITE_API_URL', 'http://localhost:2000/api/v1'), // Legacy alias - deprecated
+  /**
+   * @deprecated Use WS_URL instead. This alias will be removed in the next major version.
+   */
+  WS_BASE_URL: getEnvVar('VITE_WS_URL', 'ws://localhost:2000'), // Legacy alias - deprecated
 
   // Application Configuration
   APP_NAME: getEnvVar('VITE_APP_NAME', 'Reconciliation Platform'),
@@ -70,34 +70,34 @@ export const APP_CONFIG = {
 
 export const API_ENDPOINTS = {
   AUTH: {
-    LOGIN: '/auth/login',
-    LOGOUT: '/auth/logout',
-    REFRESH: '/auth/refresh',
-    PROFILE: '/auth/profile',
+    LOGIN: '/api/v1/auth/login',
+    LOGOUT: '/api/v1/auth/logout',
+    REFRESH: '/api/v1/auth/refresh',
+    PROFILE: '/api/v1/auth/profile',
   },
   PROJECTS: {
-    LIST: '/projects',
-    CREATE: '/projects',
-    GET: '/projects/:id',
-    UPDATE: '/projects/:id',
-    DELETE: '/projects/:id',
-    ARCHIVE: '/projects/:id/archive',
+    LIST: '/api/v1/projects',
+    CREATE: '/api/v1/projects',
+    GET: '/api/v1/projects/:id',
+    UPDATE: '/api/v1/projects/:id',
+    DELETE: '/api/v1/projects/:id',
+    ARCHIVE: '/api/v1/projects/:id/archive',
   },
   RECONCILIATION: {
-    RECORDS: '/reconciliation/records',
-    START: '/reconciliation/start',
-    MATCH: '/reconciliation/match',
-    RESOLVE: '/reconciliation/resolve',
+    RECORDS: '/api/v1/reconciliation/records',
+    START: '/api/v1/reconciliation/start',
+    MATCH: '/api/v1/reconciliation/match',
+    RESOLVE: '/api/v1/reconciliation/resolve',
   },
   FILES: {
-    UPLOAD: '/projects/:projectId/files/upload',
-    DOWNLOAD: '/files/:id',
-    DELETE: '/files/:id',
+    UPLOAD: '/api/v1/projects/:projectId/files/upload',
+    DOWNLOAD: '/api/v1/files/:id',
+    DELETE: '/api/v1/files/:id',
   },
   ANALYTICS: {
-    DASHBOARD: '/analytics/dashboard',
-    REPORTS: '/analytics/reports',
-    METRICS: '/analytics/metrics',
+    DASHBOARD: '/api/v1/analytics/dashboard',
+    REPORTS: '/api/v1/analytics/reports',
+    METRICS: '/api/v1/analytics/metrics',
   },
 };
 

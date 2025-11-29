@@ -13,9 +13,9 @@ import { TrendingUp } from 'lucide-react';
 import { TrendingDown } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
 import { Filter } from 'lucide-react';
-import { useFrenly } from '../components/frenly/FrenlyProvider';
-import { LoadingButton } from '../components/ui/LoadingSpinner';
-import { Button, Input } from '../components/ui';
+import { useFrenly } from '@/components/frenly/FrenlyProvider';
+import { LoadingButton } from '@/components/ui/LoadingSpinner';
+import { Button, Input } from '@/components/ui';
 
 // ============================================================================
 // COMMON INTERFACES

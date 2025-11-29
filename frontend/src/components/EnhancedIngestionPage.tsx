@@ -1,7 +1,7 @@
 'use client';
 import { logger } from '@/services/logger';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, memo } from 'react';
 import {
   FileText,
   CheckCircle,
@@ -767,4 +767,4 @@ const expenses = IndonesianDataProcessor.processExpensesData(rawData)
   );
 };
 
-export default EnhancedIngestionPage;
+export default memo(EnhancedIngestionPage);

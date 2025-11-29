@@ -235,25 +235,42 @@ export function useNetworkMonitoring() {
     if (!('connection' in navigator)) return;
 
     // TypeScript doesn't have connection in Navigator type, but it exists in Chrome
-    const connection = (
-      navigator as unknown as { connection?: { effectiveType?: string; downlink?: number } }
-    ).connection;
-    setNetworkInfo({
-      effectiveType: connection?.effectiveType || 'unknown',
-      downlink: connection?.downlink || 0,
-      rtt: (connection as { rtt?: number })?.rtt || 0,
-    });
-
-    const handleConnectionChange = () => {
-      setNetworkInfo({
-        effectiveType: connection.effectiveType,
-        downlink: connection.downlink,
-        rtt: connection.rtt,
-      });
+    interface NetworkInfo {
+      effectiveType?: string;
+      downlink?: number;
+      rtt?: number;
+      addEventListener?: (event: string, handler: () => void) => void;
+      removeEventListener?: (event: string, handler: () => void) => void;
+    }
+    
+    const nav = navigator as unknown as { 
+      connection?: NetworkInfo;
+      mozConnection?: NetworkInfo;
+      webkitConnection?: NetworkInfo;
     };
+    
+    const connection = nav.connection || nav.mozConnection || nav.webkitConnection;
+    
+    if (connection) {
+      setNetworkInfo({
+        effectiveType: connection.effectiveType || 'unknown',
+        downlink: connection.downlink || 0,
+        rtt: connection.rtt || 0,
+      });
 
-    connection.addEventListener('change', handleConnectionChange);
-    return () => connection.removeEventListener('change', handleConnectionChange);
+      const handleConnectionChange = () => {
+        setNetworkInfo({
+          effectiveType: connection.effectiveType || 'unknown',
+          downlink: connection.downlink || 0,
+          rtt: connection.rtt || 0,
+        });
+      };
+
+      connection.addEventListener('change', handleConnectionChange);
+      return () => connection.removeEventListener('change', handleConnectionChange);
+    }
+    
+    return () => {};
   }, []);
 
   return networkInfo;
@@ -412,7 +429,7 @@ export async function measureComponentBundleSize(componentName: string) {
 
   try {
     // This would be implemented based on your bundler
-    const bundleSize = await import(`../components/${componentName}`);
+    await import(`../components/${componentName}`);
     const endTime = performance.now();
 
     return {

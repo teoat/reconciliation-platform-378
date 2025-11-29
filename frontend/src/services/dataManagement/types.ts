@@ -1,12 +1,14 @@
 // Centralized Data Management Types
-import {
-  ProcessedRecordData,
-  ReconciliationSourceData,
-  MatchingResultDetails,
-  AuditEntryDetails,
-  UploadedFileData,
-  ExtractedContentMetadata,
-} from '../../types/data';
+// Note: These types are defined locally as they may not exist in @/types/data
+// If they exist in @/types/data, import them instead
+
+// Type aliases for data structures
+export type ProcessedRecordData = Record<string, unknown>;
+export type ReconciliationSourceData = Record<string, unknown>;
+export type MatchingResultDetails = Record<string, unknown>;
+export type AuditEntryDetails = Record<string, unknown>;
+export type UploadedFileData = Record<string, unknown>;
+export type ExtractedContentMetadata = Record<string, unknown>;
 
 export interface ProjectData {
   id: string;

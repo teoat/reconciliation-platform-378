@@ -4,10 +4,10 @@
  */
 
 import { useState, useCallback } from 'react';
-import { ApiService } from '../../services/ApiService';
-import { useToast } from '../useToast';
+import { ApiService } from '@/services/ApiService';
+import { useToast } from '@/hooks/useToast';
 import { logger } from '@/services/logger';
-import { UploadedFile } from '@/types/ingestion';
+import { UploadedFile } from '@/types/ingestion/index';
 import { getErrorMessage, toError } from '@/utils/common/errorHandling';
 
 export interface UseIngestionUploadOptions {
@@ -57,6 +57,7 @@ export function useIngestionUpload({
           type: file.type,
           status: (result.status as UploadedFile['status']) || 'processing',
           progress: 0,
+          fileType: 'other', // Default file type, can be determined from file.type or result
         };
 
         toast.success('File uploaded successfully');

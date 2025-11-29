@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
-import { useFocusTrap } from '@/hooks/useFocusTrap';
 
 /**
  * Tooltip Component
@@ -64,24 +63,27 @@ export const Tooltip: React.FC<TooltipProps> = memo(
       right: 'right-full top-1/2 transform -translate-y-1/2 border-r-gray-900',
     };
 
-return (
-    <div className="relative inline-block">
-      {React.cloneElement(children as React.ReactElement<React.HTMLAttributes<HTMLElement>>, {
-        id: triggerId,
-        'aria-describedby': tooltipId,
-        'aria-label': typeof content === 'string' ? content : undefined,
-        onMouseEnter: () => setIsHovered(true),
-        onMouseLeave: () => setIsHovered(false),
-        onFocus: () => setIsFocused(true),
-        onBlur: () => setIsFocused(false),
-        onKeyDown: (e: React.KeyboardEvent) => {
-          if (e.key === 'Escape') {
-            setIsVisible(false)
-            setIsHovered(false)
-            setIsFocused(false)
-          }
-        },
-      } as React.HTMLAttributes<HTMLElement>)}
+    return (
+      <div className="relative inline-block">
+        {React.cloneElement(
+          children as React.ReactElement<React.HTMLAttributes<HTMLElement>>,
+          {
+            id: triggerId,
+            'aria-describedby': tooltipId,
+            'aria-label': typeof content === 'string' ? content : undefined,
+            onMouseEnter: () => setIsHovered(true),
+            onMouseLeave: () => setIsHovered(false),
+            onFocus: () => setIsFocused(true),
+            onBlur: () => setIsFocused(false),
+            onKeyDown: (e: React.KeyboardEvent) => {
+              if (e.key === 'Escape') {
+                setIsVisible(false);
+                setIsHovered(false);
+                setIsFocused(false);
+              }
+            },
+          } as React.HTMLAttributes<HTMLElement>
+        )}
 
         {isVisible && (
           <div

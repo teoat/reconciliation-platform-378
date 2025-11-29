@@ -76,16 +76,16 @@ export interface CollaborationCommentMessage {
 }
 
 export type WebSocketMessage =
-  | { type: 'reconciliation:progress'; data: ReconciliationProgressMessage }
-  | { type: 'reconciliation:completed'; data: ReconciliationCompletedMessage }
-  | { type: 'reconciliation:error'; data: ReconciliationErrorMessage }
-  | { type: 'user:presence'; data: UserPresenceMessage }
-  | { type: 'project:updated'; data: ProjectUpdateMessage }
-  | { type: 'notification:new'; data: NotificationMessage }
-  | { type: 'connection:status'; data: ConnectionStatusMessage }
-  | { type: 'collaboration:users'; data: CollaborationUsersMessage }
-  | { type: 'collaboration:comment'; data: CollaborationCommentMessage }
-  | { type: 'collaboration:cursor'; data: UserPresenceMessage }
-  | { type: 'collaboration:selection'; data: UserPresenceMessage }
-  | { type: 'system:alert'; data: NotificationMessage };
+  | { type: 'reconciliation:progress'; data: ReconciliationProgressMessage; id?: string; timestamp?: string; payload?: unknown }
+  | { type: 'reconciliation:completed'; data: ReconciliationCompletedMessage; id?: string; timestamp?: string; payload?: unknown }
+  | { type: 'reconciliation:error'; data: ReconciliationErrorMessage; id?: string; timestamp?: string; payload?: unknown }
+  | { type: 'user:presence'; data: UserPresenceMessage; id?: string; timestamp?: string; payload?: unknown }
+  | { type: 'project:updated'; data: ProjectUpdateMessage; id?: string; timestamp?: string; payload?: unknown }
+  | { type: 'notification:new'; data: NotificationMessage; id?: string; timestamp?: string; payload?: unknown }
+  | { type: 'connection:status'; data: ConnectionStatusMessage; id?: string; timestamp?: string; payload?: unknown }
+  | { type: 'collaboration:users'; data: CollaborationUsersMessage; id?: string; timestamp?: string; payload?: unknown }
+  | { type: 'collaboration:comment'; data: CollaborationCommentMessage; id?: string; timestamp?: string; payload?: unknown }
+  | { type: 'collaboration:cursor'; data: UserPresenceMessage; id?: string; timestamp?: string; payload?: unknown }
+  | { type: 'collaboration:selection'; data: UserPresenceMessage; id?: string; timestamp?: string; payload?: unknown }
+  | { type: 'system:alert'; data: NotificationMessage; id?: string; timestamp?: string; payload?: unknown };
 

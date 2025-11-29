@@ -63,8 +63,6 @@ class ConsoleDestination implements LogDestination {
         return console.warn;
       case 'error':
         return console.error;
-      case 'trace':
-        return console.trace;
       default:
         return console.log;
     }
@@ -144,8 +142,8 @@ class ApiDestination implements LogDestination {
   name = 'api';
   enabled = true;
   private endpoint = '/api/logs';
-  private batchSize = 10;
-  private batchTimeout = 5000;
+  private batchSize = 50; // Increased from 10 to reduce request frequency
+  private batchTimeout = 30000; // Increased from 5000ms to 30s to batch more logs
   private batch: LogEntry[] = [];
   private batchTimer?: NodeJS.Timeout;
 
@@ -427,10 +425,10 @@ class Logger {
       level,
       message,
       category,
-      context: this.sanitizeContext(context),
+      context: this.sanitizeContext(context) as Metadata,
       userId: this.getCurrentUserId(),
       sessionId: this.sessionId,
-      metadata: this.sanitizeContext(metadata),
+      metadata: this.sanitizeContext(metadata) as Metadata,
     };
 
     // Write to all enabled destinations

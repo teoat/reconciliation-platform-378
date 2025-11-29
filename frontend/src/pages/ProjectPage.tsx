@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { FolderOpen, Plus, Eye, Trash2, Search, Calendar, Users } from 'lucide-react';
-import { Button, Card, StatusBadge, Modal } from '../components/ui';
-import { ProjectInfo } from '../types/backend-aligned';
-import { ApiService } from '../services/ApiService';
-import { useToast } from '../hooks/useToast';
-import { useForm } from '../hooks/useForm';
-import { logger } from '../services/logger';
+import { Button, Card, StatusBadge, Modal } from '@/components/ui';
+import { ProjectInfo } from '@/types/backend-aligned';
+import { ApiService } from '@/services/ApiService';
+import { useToast } from '@/hooks/useToast';
+import { useForm } from '@/hooks/useForm';
+import { logger } from '@/services/logger';
 
 // Interfaces (shared with main index.tsx)
 export interface PageConfig {
@@ -357,7 +357,7 @@ export const ProjectPage: React.FC = () => {
   const config: PageConfig = {
     title: 'Project Management',
     description: 'Manage your reconciliation projects',
-    icon: FolderOpen,
+    icon: FolderOpen as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
     path: '/projects',
     showStats: true,
     showFilters: true,
@@ -368,7 +368,7 @@ export const ProjectPage: React.FC = () => {
     {
       title: 'Total Projects',
       value: projects.length,
-      icon: FolderOpen,
+      icon: FolderOpen as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       color: 'bg-blue-100 text-blue-600',
     },
     {
@@ -422,7 +422,7 @@ export const ProjectPage: React.FC = () => {
   const actions: ActionConfig[] = [
     {
       label: 'Create Project',
-      icon: Plus,
+      icon: Plus as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       onClick: () => setShowCreateModal(true),
       variant: 'primary',
     },

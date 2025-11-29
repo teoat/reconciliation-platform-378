@@ -18,11 +18,17 @@ export interface ApiError {
 export const handleApiError = (
   error: Error | unknown | { response?: { data?: { message?: string } }; message?: string }
 ): string => {
-  if (error?.response?.data?.message) {
-    return error.response.data.message;
+  if (typeof error === 'object' && error !== null && 'response' in error) {
+    const err = error as { response?: { data?: { message?: string } } };
+    if (err.response?.data?.message) {
+      return err.response.data.message;
+    }
   }
-  if (error?.message) {
-    return error.message;
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    const err = error as { message?: string };
+    if (err.message) {
+      return err.message;
+    }
   }
   if (typeof error === 'string') {
     return error;
@@ -241,8 +247,9 @@ export const createFileUploadThunk = (
               source_type: 'file',
               ...metadata,
             };
-
-        const response = await apiClient.uploadFile(projectId, file, uploadMetadata);
+        
+        const uploadRequest: import('../services/apiClient/types').FileUploadRequest = uploadMetadata as unknown as import('../services/apiClient/types').FileUploadRequest;
+        const response = await apiClient.uploadFile(projectId, file, uploadRequest);
 
         if (response.error) {
           return rejectWithValue(handleApiError(response.error));
@@ -339,13 +346,21 @@ export const uploadFile = createFileUploadThunk(
 );
 export const fetchUploadedFiles = createGetThunk(
   'dataIngestion/fetchFiles',
-  (projectId: string) => `/projects/${projectId}/files`
+  (params?: Record<string, unknown>) => {
+    const projectId = params?.projectId as string | undefined;
+    if (!projectId) throw new Error('projectId is required');
+    return `/projects/${projectId}/files`;
+  }
 );
 
 // Reconciliation thunks
 export const fetchReconciliationRecords = createPaginatedListThunk(
   'reconciliation/fetchRecords',
-  (projectId: string) => `/projects/${projectId}/records`
+  (params: Record<string, unknown>) => {
+    const projectId = params.projectId as string | undefined;
+    if (!projectId) throw new Error('projectId is required');
+    return `/projects/${projectId}/records`;
+  }
 );
 export const runMatching = createPostThunk(
   'reconciliation/runMatching',

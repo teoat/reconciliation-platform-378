@@ -19,16 +19,16 @@ import {
   Hash,
   Zap,
 } from 'lucide-react';
-import { useData } from '../../components/DataProvider';
+import { useData } from '@/components/DataProvider';
 import type { ExpenseCategory } from './cashflow/types';
 import { useCashflowData } from './cashflow/hooks/useCashflowData';
 import { useCashflowFilters } from './cashflow/hooks/useCashflowFilters';
 import { CashflowMetrics } from './cashflow/components/CashflowMetrics';
 import { CashflowCategoryCard } from './cashflow/components/CashflowCategoryCard';
 import { CashflowFilters } from './cashflow/components/CashflowFilters';
-import { CashflowTable } from '../../components/cashflow/CashflowTable';
-import { CashflowCharts } from '../../components/cashflow/CashflowCharts';
-import { CashflowCategoryModal } from '../components/cashflow/CashflowCategoryModal';
+import { CashflowTable } from '@/components/cashflow/CashflowTable';
+import { CashflowCharts } from '@/components/cashflow/CashflowCharts';
+import { CashflowCategoryModal } from '@/components/cashflow/CashflowCategoryModal';
 import type { Project } from '@/types/backend-aligned';
 
 // Types
@@ -62,7 +62,7 @@ const CashflowEvaluationPage: React.FC<CashflowEvaluationPageProps> = ({
     processingProgress,
     runDiscrepancyAnalysis,
   } = useCashflowData({
-    currentProject,
+    currentProject: (currentProject as unknown as import('@/types/backend-aligned').Project) || null,
     getCashflowData,
     onProgressUpdate,
   });
@@ -93,7 +93,32 @@ const CashflowEvaluationPage: React.FC<CashflowEvaluationPageProps> = ({
   };
 
   const handleRunAnalysis = async () => {
-    await runDiscrepancyAnalysis(transformReconciliationToCashflow);
+    await runDiscrepancyAnalysis((id: string) => {
+      const result = transformReconciliationToCashflow(id);
+      if (!result) return null;
+      // Convert ProjectData to CashflowDataWithCategories
+      const cashflowData = result.cashflowData;
+      if (cashflowData && 'categories' in cashflowData) {
+        return cashflowData as import('./cashflow/hooks/useCashflowData').CashflowDataWithCategories;
+      }
+      return {
+        categories: [],
+        metrics: {
+          totalReportedExpenses: 0,
+          totalCashflowExpenses: 0,
+          totalDiscrepancy: 0,
+          discrepancyPercentage: 0,
+          balancedCategories: 0,
+          discrepancyCategories: 0,
+          missingTransactions: 0,
+          excessTransactions: 0,
+          averageDiscrepancy: 0,
+          largestDiscrepancy: 0,
+          lastReconciliationDate: new Date().toISOString(),
+          dataQualityScore: 0,
+        },
+      } as import('./cashflow/hooks/useCashflowData').CashflowDataWithCategories;
+    });
   };
 
   return (

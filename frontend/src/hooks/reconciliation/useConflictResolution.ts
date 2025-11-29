@@ -1,6 +1,6 @@
 // Conflict resolution hook
 import { useState, useCallback } from 'react';
-import type { EnhancedReconciliationRecord, Resolution } from '../../types/reconciliation';
+import type { EnhancedReconciliationRecord, Resolution } from '../../types/reconciliation/index';
 
 export const useConflictResolution = () => {
   const [resolutions, setResolutions] = useState<Map<string, Resolution>>(new Map());

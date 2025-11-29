@@ -1,7 +1,7 @@
 // Reconciliation sorting hook
 import { useState, useCallback, useMemo } from 'react';
 import { sortRecords } from '../../utils/reconciliation/sorting';
-import type { EnhancedReconciliationRecord, SortConfig } from '../../types/reconciliation';
+import type { EnhancedReconciliationRecord, SortConfig } from '../../types/reconciliation/index';
 
 export const useReconciliationSort = (records: EnhancedReconciliationRecord[]) => {
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);

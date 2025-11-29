@@ -2,8 +2,8 @@
  * WebSocket Handlers Exports
  */
 
-export { ConnectionHandlers } from './connectionHandlers';
-export { PresenceHandlers } from './presenceHandlers';
-export { CollaborationHandlers } from './collaborationHandlers';
-export { MessageHandlers } from './messageHandlers';
+export type { ConnectionHandlers } from './connectionHandlers';
+export type { PresenceHandlers } from './presenceHandlers';
+export type { CollaborationHandlers } from './collaborationHandlers';
+export type { MessageHandlers } from './messageHandlers';
 

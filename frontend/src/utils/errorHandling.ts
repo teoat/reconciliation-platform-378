@@ -2,7 +2,7 @@
 // Provides consistent error handling patterns across the application
 
 import React from 'react';
-import { logger } from '../services/logger';
+import { logger } from '@/services/logger';
 
 // ============================================================================
 // ERROR CLASSIFICATION

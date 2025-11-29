@@ -6,6 +6,11 @@ type StorageOperation = {
   key?: string;
   value?: unknown;
   timestamp: number;
+  success?: boolean;
+  error?: string;
+  data?: unknown;
+  duration?: number;
+  size?: number;
 };
 
 type DataIntegrityCheck = {
@@ -55,8 +60,7 @@ export class IndexedDBTester {
       db.close();
 
       return {
-        type: 'save',
-        storage: 'indexedDB',
+        operation: 'write',
         key: storeName,
         success: true,
         timestamp: Date.now(),
@@ -65,8 +69,7 @@ export class IndexedDBTester {
       };
     } catch (error) {
       return {
-        type: 'save',
-        storage: 'indexedDB',
+        operation: 'write',
         key: storeName,
         success: false,
         timestamp: Date.now(),
@@ -94,8 +97,7 @@ export class IndexedDBTester {
       db.close();
 
       return {
-        type: 'load',
-        storage: 'indexedDB',
+        operation: 'read',
         key: `${storeName}:${id}`,
         success: data !== undefined,
         timestamp: Date.now(),
@@ -105,8 +107,7 @@ export class IndexedDBTester {
       };
     } catch (error) {
       return {
-        type: 'load',
-        storage: 'indexedDB',
+        operation: 'read',
         key: `${storeName}:${id}`,
         success: false,
         timestamp: Date.now(),
@@ -132,8 +133,7 @@ export class IndexedDBTester {
       db.close();
 
       return {
-        type: 'update',
-        storage: 'indexedDB',
+        operation: 'write',
         key: storeName,
         success: true,
         timestamp: Date.now(),
@@ -142,8 +142,7 @@ export class IndexedDBTester {
       };
     } catch (error) {
       return {
-        type: 'update',
-        storage: 'indexedDB',
+        operation: 'write',
         key: storeName,
         success: false,
         timestamp: Date.now(),
@@ -168,8 +167,7 @@ export class IndexedDBTester {
       db.close();
 
       return {
-        type: 'delete',
-        storage: 'indexedDB',
+        operation: 'delete',
         key: `${storeName}:${id}`,
         success: true,
         timestamp: Date.now(),
@@ -177,8 +175,7 @@ export class IndexedDBTester {
       };
     } catch (error) {
       return {
-        type: 'delete',
-        storage: 'indexedDB',
+        operation: 'delete',
         key: `${storeName}:${id}`,
         success: false,
         timestamp: Date.now(),
@@ -215,18 +212,18 @@ export class IndexedDBTester {
       const passed = originalStr === retrievedStr;
 
       return {
-        type: 'checksum',
+        key: 'checksum',
+        expectedValue: originalStr,
+        actualValue: retrievedStr,
         passed,
-        details: passed
-          ? 'Data integrity verified'
-          : `Data mismatch: original ${originalStr.length} chars, retrieved ${retrievedStr.length} chars`,
         timestamp: Date.now(),
       };
     } catch (error) {
       return {
-        type: 'checksum',
+        key: 'checksum',
+        expectedValue: null,
+        actualValue: null,
         passed: false,
-        details: `Integrity check failed: ${error}`,
         timestamp: Date.now(),
       };
     }
@@ -239,9 +236,10 @@ export class IndexedDBTester {
     try {
       if (originalData.length !== retrievedData.length) {
         return {
-          type: 'consistency',
+          key: 'consistency',
+          expectedValue: originalData.length,
+          actualValue: retrievedData.length,
           passed: false,
-          details: `Length mismatch: original ${originalData.length}, retrieved ${retrievedData.length}`,
           timestamp: Date.now(),
         };
       }
@@ -257,16 +255,18 @@ export class IndexedDBTester {
       }
 
       return {
-        type: 'consistency',
+        key: 'consistency',
+        expectedValue: originalData,
+        actualValue: retrievedData,
         passed,
-        details: passed ? 'Transaction integrity verified' : 'Transaction data mismatch detected',
         timestamp: Date.now(),
       };
     } catch (error) {
       return {
-        type: 'consistency',
+        key: 'consistency',
+        expectedValue: null,
+        actualValue: null,
         passed: false,
-        details: `Transaction integrity check failed: ${error}`,
         timestamp: Date.now(),
       };
     }
@@ -285,11 +285,11 @@ export class IndexedDBTester {
     const saveOp = await this.saveToIndexedDB('testStore', testData);
     operations.push(saveOp);
 
-    if (saveOp.success) {
+    if ((saveOp as { success?: boolean }).success) {
       const loadOp = await this.loadFromIndexedDB('testStore', 1);
       operations.push(loadOp);
 
-      if (loadOp.success && loadOp.data) {
+      if ((loadOp as { success?: boolean; data?: unknown }).success && (loadOp as { data?: unknown }).data) {
         const integrityCheck = await this.checkDataIntegrity(testData, loadOp.data);
         integrityChecks.push(integrityCheck);
       }
@@ -329,7 +329,7 @@ export class IndexedDBTester {
     for (const data of transactionData) {
       const saveOp = await this.saveToIndexedDB('testStore', data);
       operations.push(saveOp);
-      if (!saveOp.success) break;
+      if (!(saveOp as { success?: boolean }).success) break;
     }
 
     if (operations.every((op) => op.success)) {
@@ -338,7 +338,7 @@ export class IndexedDBTester {
       for (let i = 1; i <= transactionData.length; i++) {
         const loadOp = await this.loadFromIndexedDB('testStore', i);
         operations.push(loadOp);
-        if (loadOp.success && loadOp.data) {
+        if ((loadOp as { success?: boolean; data?: unknown }).success && (loadOp as { data?: unknown }).data) {
           retrievedData.push(loadOp.data);
         }
       }
@@ -372,7 +372,7 @@ export class IndexedDBTester {
     for (const data of largeDataset) {
       const saveOp = await this.saveToIndexedDB('largeStore', data);
       operations.push(saveOp);
-      if (!saveOp.success) break;
+      if (!(saveOp as { success?: boolean }).success) break;
     }
 
     if (operations.every((op) => op.success)) {
@@ -381,7 +381,7 @@ export class IndexedDBTester {
       for (let i = 1; i <= largeDataset.length; i++) {
         const loadOp = await this.loadFromIndexedDB('largeStore', i);
         operations.push(loadOp);
-        if (loadOp.success && loadOp.data) {
+        if ((loadOp as { success?: boolean; data?: unknown }).success && (loadOp as { data?: unknown }).data) {
           retrievedData.push(loadOp.data);
         }
       }

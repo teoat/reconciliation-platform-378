@@ -8,22 +8,18 @@ import {
   User, 
   ArrowRight, 
   Trash2, 
-  Edit, 
   Search,
-  Filter,
   Grid,
   List,
-  BarChart3,
   Clock,
   AlertTriangle,
   CheckCircle,
   Archive,
-  Users,
   Loader2,
   RefreshCw,
   X
 } from 'lucide-react'
-import { apiClient, Project } from '../services/apiClient'
+import { apiClient, Project } from '@/services/apiClient'
 
 interface ProjectSelectionPageProps {
   onProjectSelect: (project: Project) => void
@@ -48,9 +44,17 @@ const ProjectSelectionPage = ({ onProjectSelect }: ProjectSelectionPageProps) =>
       const response = await apiClient.getProjects()
       
       if (response.error) {
-        setError(response.error.message)
+        const errorMessage = typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to load projects';
+        setError(errorMessage);
       } else if (response.data) {
-        setProjects(response.data.projects)
+        const projectsData = response.data as unknown as { items?: Project[]; projects?: Project[]; [key: string]: unknown };
+        const projects = projectsData.items || projectsData.projects || [];
+        // Map ProjectResponse to Project if needed
+        setProjects(projects.map(p => ({
+          ...p,
+          status: (p as { status?: string }).status || 'active',
+          updated_at: (p as { updated_at?: string | Date }).updated_at || p.created_at,
+        })) as Project[]);
       }
     } catch (err) {
       setError('Failed to load projects')
@@ -65,9 +69,13 @@ const ProjectSelectionPage = ({ onProjectSelect }: ProjectSelectionPageProps) =>
       const response = await apiClient.createProject(projectData)
       
       if (response.error) {
-        setError(response.error.message)
-      } else if (response.data && response.data.project) {
-        setProjects(prev => [response.data!.project, ...prev])
+        const errorMessage = typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to create project';
+        setError(errorMessage);
+      } else if (response.data) {
+        const project = 'project' in response.data ? response.data.project : response.data;
+        if (project) {
+          setProjects(prev => [project as Project, ...prev]);
+        }
         setShowCreateModal(false)
       }
     } catch (err) {
@@ -84,7 +92,8 @@ const ProjectSelectionPage = ({ onProjectSelect }: ProjectSelectionPageProps) =>
       const response = await apiClient.deleteProject(projectId)
       
       if (response.error) {
-        setError(response.error.message)
+        const errorMessage = typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to delete project';
+        setError(errorMessage);
       } else {
         setProjects(prev => prev.filter(p => p.id !== projectId))
       }
@@ -153,6 +162,8 @@ const ProjectSelectionPage = ({ onProjectSelect }: ProjectSelectionPageProps) =>
           </button>
           <button
             onClick={() => setShowCreateModal(true)}
+            aria-label="Create new project"
+            title="Create new project"
             className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
           >
             <Plus className="w-4 h-4 mr-2" />
@@ -187,12 +198,16 @@ const ProjectSelectionPage = ({ onProjectSelect }: ProjectSelectionPageProps) =>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setViewMode('grid')}
+              aria-label="Switch to grid view"
+              title="Switch to grid view"
               className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <Grid className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('list')}
+              aria-label="Switch to list view"
+              title="Switch to list view"
               className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
             >
               <List className="w-4 h-4" />
@@ -215,6 +230,8 @@ const ProjectSelectionPage = ({ onProjectSelect }: ProjectSelectionPageProps) =>
           {!searchTerm && (
             <button
               onClick={() => setShowCreateModal(true)}
+              aria-label="Create new project"
+              title="Create new project"
               className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
             >
               Create Project
@@ -230,6 +247,15 @@ const ProjectSelectionPage = ({ onProjectSelect }: ProjectSelectionPageProps) =>
                 viewMode === 'list' ? 'p-4 flex items-center justify-between' : 'p-6'
               }`}
               onClick={() => onProjectSelect(project)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onProjectSelect(project);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={`Select project ${project.name}`}
             >
               {viewMode === 'grid' ? (
                 <>
@@ -254,6 +280,8 @@ const ProjectSelectionPage = ({ onProjectSelect }: ProjectSelectionPageProps) =>
                           e.stopPropagation()
                           handleDeleteProject(project.id)
                         }}
+                        aria-label={`Delete project ${project.name}`}
+                        title={`Delete project ${project.name}`}
                         className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -269,11 +297,11 @@ const ProjectSelectionPage = ({ onProjectSelect }: ProjectSelectionPageProps) =>
                     <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-1">
                         <User className="w-4 h-4" />
-                        <span>{project.createdByFirstName} {project.createdByLastName}</span>
+                        <span>{(project as { createdByFirstName?: string; createdByLastName?: string; createdBy?: string }).createdByFirstName || (project as { createdBy?: string }).createdBy || 'Unknown'}{(project as { createdByLastName?: string }).createdByLastName ? ` ${(project as { createdByLastName?: string }).createdByLastName}` : ''}</span>
                       </div>
                       <div className="flex items-center space-x-1">
                         <Calendar className="w-4 h-4" />
-                        <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+                        <span>{new Date(project.created_at).toLocaleDateString()}</span>
                       </div>
                     </div>
                     <ArrowRight className="w-4 h-4" />
@@ -302,17 +330,20 @@ const ProjectSelectionPage = ({ onProjectSelect }: ProjectSelectionPageProps) =>
                     </div>
                     <div className="flex items-center space-x-1 text-sm text-gray-500">
                       <User className="w-4 h-4" />
-                      <span>{project.createdByFirstName} {project.createdByLastName}</span>
+                      <span>{(project as { createdByFirstName?: string; createdByLastName?: string; createdBy?: string }).createdByFirstName || (project as { createdBy?: string }).createdBy || 'Unknown'}{(project as { createdByLastName?: string }).createdByLastName ? ` ${(project as { createdByLastName?: string }).createdByLastName}` : ''}</span>
                     </div>
                     <div className="flex items-center space-x-1 text-sm text-gray-500">
                       <Calendar className="w-4 h-4" />
-                      <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+                      <span>{new Date(project.created_at).toLocaleDateString()}</span>
                     </div>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
                         handleDeleteProject(project.id)
                       }}
+                      aria-label={`Delete project ${project.name}`}
+                      title={`Delete project ${project.name}`}
+                      type="button"
                       className="p-1 text-gray-400 hover:text-red-500 transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -362,6 +393,8 @@ const CreateProjectModal = ({ onClose, onCreate, loading }: CreateProjectModalPr
           <h2 className="text-xl font-semibold text-gray-900">Create New Project</h2>
           <button
             onClick={onClose}
+            aria-label="Close modal"
+            title="Close modal"
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <X className="w-5 h-5" />
@@ -370,10 +403,11 @@ const CreateProjectModal = ({ onClose, onCreate, loading }: CreateProjectModalPr
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="project-name" className="block text-sm font-medium text-gray-700 mb-2">
               Project Name *
             </label>
             <input
+              id="project-name"
               type="text"
               value={formData.name}
               onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
@@ -384,10 +418,11 @@ const CreateProjectModal = ({ onClose, onCreate, loading }: CreateProjectModalPr
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="project-description" className="block text-sm font-medium text-gray-700 mb-2">
               Description
             </label>
             <textarea
+              id="project-description"
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"

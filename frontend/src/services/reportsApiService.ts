@@ -4,6 +4,7 @@
  */
 
 import { apiClient, type ApiResponse } from './apiClient';
+import type { RequestConfig } from './apiClient/types';
 import type { CustomReport, ReportFilter, ReportMetric, ReportVisualization } from '../components/reports/types';
 
 export interface CreateReportRequest {
@@ -120,8 +121,7 @@ class ReportsApiService {
       headers: {
         'Content-Type': 'application/json',
       },
-      responseType: 'blob',
-    });
+    } as RequestConfig & { responseType?: 'blob' });
 
     return response;
   }

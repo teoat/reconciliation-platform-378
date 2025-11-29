@@ -1,6 +1,6 @@
 // Filtering and sorting utilities
-import { UploadedFile } from '@/types/ingestion';
-import { EnhancedReconciliationRecord } from '@/types/reconciliation';
+import type { UploadedFile } from '@/types/ingestion/index';
+import { EnhancedReconciliationRecord } from '@/types/reconciliation/index';
 
 /**
  * Generic filter function for arrays
@@ -55,8 +55,8 @@ export const sortByProperty = <T>(
   transform?: (value: unknown) => unknown
 ): T[] => {
   return [...items].sort((a, b) => {
-    let aValue = a[property];
-    let bValue = b[property];
+    let aValue: unknown = a[property];
+    let bValue: unknown = b[property];
 
     if (transform) {
       aValue = transform(aValue);
@@ -234,11 +234,11 @@ export const sortReconciliationRecords = (
   sortBy: 'confidence' | 'status' | 'createdAt' | 'riskLevel',
   direction: 'asc' | 'desc' = 'asc'
 ): EnhancedReconciliationRecord[] => {
-  const transforms: Record<string, (value: unknown) => unknown> = {
-    createdAt: (value) => new Date(value).getTime(),
+  const transforms: Partial<Record<'confidence' | 'status' | 'createdAt' | 'riskLevel', (value: unknown) => unknown>> = {
+    createdAt: (value) => new Date(value as string | number).getTime(),
   };
 
-  return sortByProperty(records, sortBy, direction, transforms[sortBy]);
+  return sortByProperty(records, sortBy as keyof EnhancedReconciliationRecord, direction, transforms[sortBy]);
 };
 
 /**

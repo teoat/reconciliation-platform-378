@@ -1,5 +1,5 @@
 // Data transformation utilities for ingestion
-import { UploadedFile } from '@/types/ingestion';
+import type { UploadedFile } from '@/types/ingestion/index';
 
 /**
  * API file response type (partial, matches what the API returns)
@@ -47,32 +47,40 @@ export const formatFileSize = (bytes: number): string => {
  * Transforms API response to UploadedFile format
  */
 export const transformApiFileToUploadedFile = (apiFile: ApiFileResponse): UploadedFile => {
+  const status = (apiFile.status || 'processing') as UploadedFile['status'];
+  const fileType = (apiFile.fileType || 'other') as UploadedFile['fileType'];
+  const progress = typeof apiFile.progress === 'number' ? apiFile.progress : 0;
+  
   return {
     id: apiFile.id,
-    name: apiFile.name || apiFile.filename,
+    name: apiFile.name || apiFile.filename || '',
     size: apiFile.size || 0,
     type: apiFile.type || apiFile.content_type || 'Unknown',
-    status: apiFile.status || 'processing',
-    progress: apiFile.progress || 0,
-    records: apiFile.records,
-    data: apiFile.data,
-    columns: apiFile.columns || [],
-    fileType: apiFile.fileType || 'other',
-    qualityMetrics: apiFile.qualityMetrics || {
-      completeness: 0,
-      accuracy: 0,
-      consistency: 0,
-      validity: 0,
-      duplicates: 0,
-      errors: 0,
-    },
-    validations: apiFile.validations || [],
-    mappings: apiFile.mappings || {},
-    cleanedData: apiFile.cleanedData || [],
-    originalData: apiFile.originalData,
+    status,
+    progress,
+    records: typeof apiFile.records === 'number' ? apiFile.records : undefined,
+    data: Array.isArray(apiFile.data) ? apiFile.data as UploadedFile['data'] : undefined,
+    columns: Array.isArray(apiFile.columns) ? apiFile.columns as UploadedFile['columns'] : [],
+    fileType,
+    qualityMetrics: apiFile.qualityMetrics && typeof apiFile.qualityMetrics === 'object' && 'completeness' in apiFile.qualityMetrics
+      ? apiFile.qualityMetrics as UploadedFile['qualityMetrics']
+      : {
+          completeness: 0,
+          accuracy: 0,
+          consistency: 0,
+          validity: 0,
+          duplicates: 0,
+          errors: 0,
+        },
+    validations: Array.isArray(apiFile.validations) ? apiFile.validations as UploadedFile['validations'] : [],
+    mappings: Array.isArray(apiFile.mappings) ? apiFile.mappings as UploadedFile['mappings'] : [],
+    cleanedData: Array.isArray(apiFile.cleanedData) ? apiFile.cleanedData as UploadedFile['cleanedData'] : [],
+    originalData: Array.isArray(apiFile.originalData) ? apiFile.originalData : undefined,
     extractedContent: apiFile.extractedContent,
-    chatMessages: apiFile.chatMessages,
-    contractAnalysis: apiFile.contractAnalysis,
+    chatMessages: Array.isArray(apiFile.chatMessages) ? apiFile.chatMessages as UploadedFile['chatMessages'] : undefined,
+    contractAnalysis: apiFile.contractAnalysis && typeof apiFile.contractAnalysis === 'object' && 'parties' in apiFile.contractAnalysis
+      ? apiFile.contractAnalysis as UploadedFile['contractAnalysis']
+      : undefined,
     previewUrl: apiFile.previewUrl,
     thumbnailUrl: apiFile.thumbnailUrl,
     file: apiFile.file,

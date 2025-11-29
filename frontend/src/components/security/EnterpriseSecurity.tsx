@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Shield, User, Activity, CheckCircle, Plus as PlusIcon } from 'lucide-react';
+import { logger } from '@/services/logger';
 import type { EnterpriseSecurityProps, SecurityTab } from './types';
 import { useEnterpriseSecurity } from './hooks/useEnterpriseSecurity';
 import {

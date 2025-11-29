@@ -1,4 +1,3 @@
-import { lazy } from 'react';
 import { logger } from '@/services/logger';
 import { createLazyRoute } from './lazyLoading';
 

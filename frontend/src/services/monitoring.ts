@@ -89,7 +89,8 @@ class MonitoringService {
       new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach((entry) => {
-          this.recordMetric('fid', entry.processingStart - entry.startTime);
+          const firstInputEntry = entry as { processingStart?: number; startTime: number };
+          this.recordMetric('fid', (firstInputEntry.processingStart || firstInputEntry.startTime) - firstInputEntry.startTime);
         });
       }).observe({ entryTypes: ['first-input'] });
 
@@ -98,8 +99,9 @@ class MonitoringService {
       new PerformanceObserver((list) => {
         const entries = list.getEntries();
         entries.forEach((entry) => {
-          if (!entry.hadRecentInput) {
-            clsValue += entry.value;
+          const layoutShiftEntry = entry as { hadRecentInput?: boolean; value?: number };
+          if (!layoutShiftEntry.hadRecentInput) {
+            clsValue += layoutShiftEntry.value || 0;
           }
         });
         this.recordMetric('cls', clsValue);

@@ -70,10 +70,10 @@ export const HelpFeedbackForm: React.FC<HelpFeedbackFormProps> = ({
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Helpful/Not Helpful */}
           <div>
-            <label className="block text-sm font-medium text-secondary-700 mb-2">
+            <label htmlFor="helpful-buttons" className="block text-sm font-medium text-secondary-700 mb-2">
               Was this helpful? *
             </label>
-            <div className="flex space-x-4">
+            <div id="helpful-buttons" className="flex space-x-4" role="group" aria-labelledby="helpful-label">
               <button
                 type="button"
                 onClick={() => setHelpful(true)}
@@ -82,6 +82,7 @@ export const HelpFeedbackForm: React.FC<HelpFeedbackFormProps> = ({
                     ? 'border-green-500 bg-green-50 text-green-700'
                     : 'border-secondary-300 text-secondary-700 hover:border-green-300'
                 }`}
+                aria-pressed={helpful === true}
               >
                 <ThumbsUp className="w-5 h-5" />
                 <span>Yes</span>
@@ -94,6 +95,7 @@ export const HelpFeedbackForm: React.FC<HelpFeedbackFormProps> = ({
                     ? 'border-red-500 bg-red-50 text-red-700'
                     : 'border-secondary-300 text-secondary-700 hover:border-red-300'
                 }`}
+                aria-pressed={helpful === false}
               >
                 <ThumbsDown className="w-5 h-5" />
                 <span>No</span>
@@ -104,10 +106,10 @@ export const HelpFeedbackForm: React.FC<HelpFeedbackFormProps> = ({
           {/* Rating */}
           {helpful !== null && (
             <div>
-              <label className="block text-sm font-medium text-secondary-700 mb-2">
+              <label htmlFor="rating-buttons" className="block text-sm font-medium text-secondary-700 mb-2">
                 Rating (optional)
               </label>
-              <div className="flex space-x-1">
+              <div id="rating-buttons" className="flex space-x-1" role="group" aria-labelledby="rating-label">
                 {[1, 2, 3, 4, 5].map((value) => (
                   <button
                     key={value}
@@ -119,6 +121,7 @@ export const HelpFeedbackForm: React.FC<HelpFeedbackFormProps> = ({
                         : 'text-secondary-300 hover:text-yellow-400'
                     }`}
                     aria-label={`Rate ${value} stars`}
+                    aria-pressed={rating >= value}
                   >
                     <Star className="w-6 h-6 fill-current" />
                   </button>

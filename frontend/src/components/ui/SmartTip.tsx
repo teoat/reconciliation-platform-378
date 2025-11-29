@@ -10,14 +10,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, Lightbulb, ChevronRight, Sparkles } from 'lucide-react';
-import { useFeatureGate } from './FeatureGate';
 import { onboardingService } from '@/services/onboardingService';
-import { logger } from '@/services/logger';
 
 export type TipPriority = 'low' | 'medium' | 'high' | 'critical';
 export type TipCategory = 'feature' | 'shortcut' | 'optimization' | 'best-practice' | 'new-feature';
 
-export interface SmartTip {
+export interface SmartTipData {
   id: string;
   title: string;
   content: string;
@@ -35,7 +33,7 @@ export interface SmartTip {
 }
 
 export interface SmartTipProps {
-  tip: SmartTip;
+  tip: SmartTipData;
   onDismiss?: (tipId: string) => void;
   onAction?: (tipId: string) => void;
   className?: string;
@@ -146,9 +144,7 @@ export const SmartTip: React.FC<SmartTipProps> = ({
           <div className="flex items-start justify-between gap-2">
             <div className="flex-1">
               <h4 className="text-sm font-semibold mb-1">{tip.title}</h4>
-              {isExpanded && (
-                <p className="text-sm text-gray-700 mb-2">{tip.content}</p>
-              )}
+              {isExpanded && <p className="text-sm text-gray-700 mb-2">{tip.content}</p>}
               {tip.category === 'new-feature' && (
                 <span className="inline-flex items-center gap-1 text-xs text-purple-700 mb-2">
                   <Sparkles className="w-3 h-3" />
@@ -202,12 +198,12 @@ export interface UseSmartTipsOptions {
 
 export const useSmartTips = (options: UseSmartTipsOptions = {}) => {
   const { page, featureId, userProgress, maxTips = 3 } = options;
-  const [tips, setTips] = useState<SmartTip[]>([]);
+  const [tips, setTips] = useState<SmartTipData[]>([]);
   const [dismissedTips, setDismissedTips] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const loadTips = () => {
-      const allTips: SmartTip[] = [];
+      const allTips: SmartTipData[] = [];
 
       // Page-specific tips
       if (page === 'dashboard' && userProgress?.includes('welcome')) {
@@ -227,7 +223,8 @@ export const useSmartTips = (options: UseSmartTipsOptions = {}) => {
         allTips.push({
           id: 'reconciliation-bulk-actions',
           title: 'Bulk Actions',
-          content: 'Select multiple records to perform bulk actions like approve, reject, or export.',
+          content:
+            'Select multiple records to perform bulk actions like approve, reject, or export.',
           category: 'feature',
           priority: 'high',
           targetPage: 'reconciliation',
@@ -301,4 +298,3 @@ export const useSmartTips = (options: UseSmartTipsOptions = {}) => {
 };
 
 export default SmartTip;
-

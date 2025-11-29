@@ -1,5 +1,5 @@
 // Quick Reconciliation Wizard - Single-page streamlined workflow
-import { toRecord } from '../utils/typeHelpers';
+import { toRecord } from '@/utils/typeHelpers';
 import { logger } from '@/services/logger';
 // Reduces workflow steps by 22% (9 steps → 7 steps)
 // Combines: Upload + Configure + Start in one flow
@@ -16,14 +16,14 @@ import { FileText } from 'lucide-react';
 import { Target } from 'lucide-react';
 import { TrendingUp } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
-import { FileDropzone } from '../components/files/EnhancedDropzone';
-import Button from '../components/ui/Button';
-import Card from '../components/ui/Card';
-import StatusBadge from '../components/ui/StatusBadge';
-import { apiClient } from '../services/apiClient';
-import type { Project } from '../types/backend-aligned';
-import ProgressBar from '../components/ui/ProgressBar';
-import { PageMeta } from '../components/seo/PageMeta';
+import { FileDropzone } from '@/components/files/EnhancedDropzone';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import StatusBadge from '@/components/ui/StatusBadge';
+import { apiClient } from '@/services/apiClient';
+import type { Project } from '@/types/backend-aligned';
+import ProgressBar from '@/components/ui/ProgressBar';
+import { PageMeta } from '@/components/seo/PageMeta';
 
 interface WizardStep {
   id: number;

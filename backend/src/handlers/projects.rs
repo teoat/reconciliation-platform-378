@@ -129,7 +129,7 @@ pub async fn create_project(
         description: req.description.clone(),
         // Enforce server-side owner assignment: caller unless admin provides explicit owner_id
         owner_id: if is_admin {
-            req.owner_id
+            req.owner_id.unwrap_or(caller_user_id)
         } else {
             caller_user_id
         },

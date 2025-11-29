@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { BarChart3, Target, CheckCircle, Clock, Users, PieChart } from 'lucide-react';
-import { apiClient } from '../services/apiClient';
+import { apiClient } from '@/services/apiClient';
 import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
-import { usePageOrchestration } from '../hooks/usePageOrchestration';
-import { logger } from '../services/logger';
+import { usePageOrchestration } from '@/hooks/usePageOrchestration';
+import { logger } from '@/services/logger';
 import {
   dashboardPageMetadata,
   getDashboardOnboardingSteps,
   getDashboardPageContext,
   registerDashboardGuidanceHandlers,
   getDashboardGuidanceContent,
-} from '../orchestration/pages/DashboardPageOrchestration';
+} from '@/orchestration/pages/DashboardPageOrchestration';
 
 // Interfaces (shared with main index.tsx)
 export interface PageConfig {

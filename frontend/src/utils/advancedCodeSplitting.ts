@@ -1,5 +1,5 @@
 import { lazy } from 'react';
-import { logger } from '../services/logger';
+import { logger } from '@/services/logger';
 /**
  * Advanced Code Splitting Strategies
  * Implements intelligent lazy loading for large components and features
@@ -55,7 +55,7 @@ export const LazyReconciliationInterface = lazy(
 // ============================================================================
 
 // Heavy features - loaded on demand
-export const LazyAnalyticsDashboard = lazy(() => import('../components/AnalyticsDashboard'));
+export const LazyAnalyticsDashboard = lazy(() => import('../components/dashboard/AnalyticsDashboard'));
 
 export const LazyAdvancedVisualization = lazy(() => import('../components/AdvancedVisualization'));
 

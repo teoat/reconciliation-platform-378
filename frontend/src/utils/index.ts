@@ -38,7 +38,9 @@ export {
 // Explicit exports to avoid duplicates
 export { analyzeBundleSize } from './bundleOptimization';
 export { createLazyComponent, preloadComponent } from './codeSplitting';
-export { LazyAdvancedVisualization, preloadComponent as preloadAdvancedComponent } from './advancedCodeSplitting';
+export {
+  LazyAdvancedVisualization,
+} from './advancedCodeSplitting';
 export { ErrorBoundary } from './lazyLoading';
 export * from './routeSplitting';
 export * from './dynamicImports';
@@ -67,12 +69,7 @@ export * from './retryUtility';
 // DATE FORMATTING UTILITIES
 // ============================================================================
 // Common date formatting utilities - single source of truth
-export {
-  formatTimeAgo,
-  formatTimestamp,
-  formatTime,
-  formatDate,
-} from './common/dateFormatting';
+export { formatTimeAgo, formatTimestamp, formatTime, formatDate } from './common/dateFormatting';
 
 // ============================================================================
 // SECURITY UTILITIES
@@ -85,22 +82,22 @@ export {
   sanitizeInput,
   escapeHtml,
 } from './common/sanitization';
-  // Common validation utilities - single source of truth
-  export {
-    validateEmail,
-    emailSchema,
-    passwordSchema,
-    validatePassword,
-    getPasswordStrength,
-    getPasswordFeedback,
-    validatePasswordStrength,
-    validateFile,
-    validateFileType,
-    validateFileSize,
-    nameSchema,
-    textSchema,
-    validateFormInput,
-  } from './common/validation';
+// Common validation utilities - single source of truth
+export {
+  validateEmail,
+  emailSchema,
+  passwordSchema,
+  validatePassword,
+  getPasswordStrength,
+  getPasswordFeedback,
+  validatePasswordStrength,
+  validateFile,
+  validateFileType,
+  validateFileSize,
+  nameSchema,
+  textSchema,
+  validateFormInput,
+} from './common/validation';
 // Common error handling utilities - single source of truth
 export {
   getErrorMessage,
@@ -127,10 +124,7 @@ export * from './cspNonce';
 // ============================================================================
 // ACCESSIBILITY UTILITIES
 // ============================================================================
-export * from './accessibility';
-export * from './accessibilityColors';
-export * from './colorContrast';
-export * from './ariaLiveRegionsHelper';
+export * from './accessibility/index';
 
 // ============================================================================
 // INGESTION UTILITIES

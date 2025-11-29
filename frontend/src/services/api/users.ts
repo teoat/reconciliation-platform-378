@@ -3,7 +3,9 @@
 // ============================================================================
 
 import { apiClient } from '../apiClient';
+import { BaseApiService, type PaginatedResult, type ServiceContext } from './BaseApiService';
 import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
+import type { ErrorHandlingResult } from '../errorHandling';
 
 /**
  * User Management API Service
@@ -17,7 +19,7 @@ import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
  * const users = result.users;
  * ```
  */
-export class UsersApiService {
+export class UsersApiService extends BaseApiService {
   /**
    * Fetches a paginated list of users with optional filtering and search.
    * 
@@ -47,54 +49,54 @@ export class UsersApiService {
       search?: string;
       role?: string;
       status?: string;
+      projectId?: string;
     } = {}
-  ) {
-    try {
-      const { page = 1, per_page = 20, search, role, status } = params;
+  ): Promise<ErrorHandlingResult<PaginatedResult<unknown> & { users: unknown[] }>> {
+    return this.withErrorHandling(
+      async () => {
+        const { page = 1, per_page = 20, search, role, status } = params;
+        const cacheKey = `users:${JSON.stringify(params)}`;
 
-      let response;
-      if (search) {
-        response = await apiClient.searchUsers(search, page, per_page);
-      } else {
-        response = await apiClient.getUsers(page, per_page);
-      }
+        const result = await this.getCached(
+          cacheKey,
+          async () => {
+            let response;
+            if (search) {
+              response = await apiClient.searchUsers(search, page, per_page);
+            } else {
+              response = await apiClient.getUsers(page, per_page);
+            }
 
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
-      }
+            const paginated = this.transformPaginatedResponse(response);
 
-      // Filter by role and status if provided
-      let users = response.data?.items || [];
-      if (role) {
-        users = users.filter((user: { role?: string }) => user.role === role);
-      }
-      if (status) {
-        users = users.filter(
-          (user: { is_active?: boolean }) => user.is_active === (status === 'active')
+            // Filter by role and status if provided
+            let users = paginated.items;
+            if (role) {
+              users = users.filter((user: { role?: string }) => user.role === role);
+            }
+            if (status) {
+              users = users.filter(
+                (user: { is_active?: boolean }) => user.is_active === (status === 'active')
+              );
+            }
+
+            return {
+              users,
+              items: users,
+              pagination: paginated.pagination
+            };
+          },
+          300000 // 5 minutes TTL
         );
+
+        return result;
+      },
+      {
+        component: 'UsersApiService',
+        action: 'getUsers',
+        projectId: params.projectId
       }
-
-      const pagination = response.data
-        ? {
-            page: response.data.page,
-            per_page: response.data.per_page,
-            total: response.data.total,
-            total_pages: response.data.total_pages,
-          }
-        : {
-            page,
-            per_page,
-            total: users.length,
-            total_pages: Math.ceil(users.length / per_page),
-          };
-
-      return {
-        users,
-        pagination,
-      };
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch users');
-    }
+    );
   }
 
   /**
@@ -109,16 +111,25 @@ export class UsersApiService {
    * const user = await UsersApiService.getUserById('user-123');
    * ```
    */
-  static async getUserById(userId: string) {
-    try {
-      const response = await apiClient.getUserById(userId);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async getUserById(userId: string): Promise<ErrorHandlingResult<unknown>> {
+    return this.withErrorHandling(
+      async () => {
+        const cacheKey = `user:${userId}`;
+        return this.getCached(
+          cacheKey,
+          async () => {
+            const response = await apiClient.getUserById(userId);
+            return this.transformResponse(response);
+          },
+          600000 // 10 minutes TTL
+        );
+      },
+      {
+        component: 'UsersApiService',
+        action: 'getUserById',
+        userId
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch user');
-    }
+    );
   }
 
   /**
@@ -150,16 +161,22 @@ export class UsersApiService {
     first_name: string;
     last_name: string;
     role?: string;
-  }) {
-    try {
-      const response = await apiClient.createUser(userData);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  }): Promise<ErrorHandlingResult<unknown>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.createUser(userData);
+        const result = this.transformResponse(response);
+
+        // Invalidate users cache
+        await this.invalidateCache('users:*');
+
+        return result;
+      },
+      {
+        component: 'UsersApiService',
+        action: 'createUser'
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to create user');
-    }
+    );
   }
 
   /**
@@ -192,16 +209,24 @@ export class UsersApiService {
       role?: string;
       is_active?: boolean;
     }
-  ) {
-    try {
-      const response = await apiClient.updateUser(userId, userData);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  ): Promise<ErrorHandlingResult<unknown>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.updateUser(userId, userData);
+        const result = this.transformResponse(response);
+
+        // Invalidate user and users cache
+        await this.invalidateCache(`user:${userId}`);
+        await this.invalidateCache('users:*');
+
+        return result;
+      },
+      {
+        component: 'UsersApiService',
+        action: 'updateUser',
+        userId
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to update user');
-    }
+    );
   }
 
   /**
@@ -216,15 +241,25 @@ export class UsersApiService {
    * await UsersApiService.deleteUser('user-123');
    * ```
    */
-  static async deleteUser(userId: string) {
-    try {
-      const response = await apiClient.deleteUser(userId);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async deleteUser(userId: string): Promise<ErrorHandlingResult<boolean>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.deleteUser(userId);
+        if (response.error) {
+          throw new Error(getErrorMessageFromApiError(response.error));
+        }
+
+        // Invalidate user and users cache
+        await this.invalidateCache(`user:${userId}`);
+        await this.invalidateCache('users:*');
+
+        return true;
+      },
+      {
+        component: 'UsersApiService',
+        action: 'deleteUser',
+        userId
       }
-      return true;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to delete user');
-    }
+    );
   }
 }

@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal } from '../ui/Modal';
 import { LoadingSpinnerComponent } from '../LoadingComponents';
-import { UploadedFile } from '../../types/ingestion';
+import { UploadedFile } from '../../types/ingestion/index';
 
 interface FilePreviewModalProps {
   isOpen: boolean;

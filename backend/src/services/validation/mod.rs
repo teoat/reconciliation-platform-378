@@ -223,7 +223,7 @@ mod tests {
 
     #[test]
     fn test_validation_service_delegate_default() {
-        let service = ValidationServiceDelegate::default();
+        let _service = ValidationServiceDelegate::default();
         // Should not panic
         assert!(true);
     }

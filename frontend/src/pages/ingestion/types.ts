@@ -29,7 +29,7 @@ export interface ColumnInfo {
   type: 'string' | 'number' | 'date' | 'currency' | 'boolean';
   nullable: boolean;
   unique: boolean;
-  sampleValues: any[];
+  sampleValues: unknown[];
   statistics?: {
     min?: number;
     max?: number;
@@ -76,9 +76,9 @@ export interface VideoMetadata {
 
 export interface ExtractedContent {
   text?: string;
-  tables?: any[][];
+  tables?: unknown[][];
   images?: string[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   confidence?: number;
 }
 
@@ -116,7 +116,7 @@ export interface UploadedFile {
 
 export interface TableData {
   columns: ColumnInfo[];
-  rows: any[][];
+  rows: unknown[][];
   totalRows: number;
 }
 
@@ -128,7 +128,7 @@ export interface SortConfig {
 export interface FilterConfig {
   column: string;
   operator: 'equals' | 'contains' | 'greater' | 'less' | 'between';
-  value: any;
+  value: unknown;
 }
 
 export interface PaginationConfig {
@@ -138,5 +138,5 @@ export interface PaginationConfig {
 }
 
 export interface IngestionPageProps {
-  project?: any;
+  project?: Record<string, unknown>;
 }

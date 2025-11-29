@@ -16,6 +16,7 @@ export interface OnboardingProgress {
   completedOnboarding: boolean;
   completedSteps: string[];
   currentStep?: string;
+  totalSteps?: number;
   startedAt?: Date;
   completedAt?: Date;
   skippedAt?: Date;

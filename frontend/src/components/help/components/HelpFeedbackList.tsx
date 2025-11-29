@@ -5,7 +5,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { ThumbsUp, ThumbsDown, Star, Filter, CheckCircle } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Star, Filter, CheckCircle, MessageSquare } from 'lucide-react';
 import type { HelpFeedback } from '../types';
 
 interface HelpFeedbackListProps {

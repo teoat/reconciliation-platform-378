@@ -1,0 +1,135 @@
+name: Frenly Meta Maintenance
+
+on:
+  schedule:
+    # Run every Monday at 03:00 UTC
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+jobs:
+  frenly-meta-maintenance:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Frenly Meta Maintenance
+        id: maintenance
+        run: npm run maintenance:frenly
+        continue-on-error: true
+
+      - name: Commit maintenance status
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/diagnostics/frenly-meta-status.json docs/diagnostics/frenly-meta-maintenance-log.csv docs/diagnostics/FRENLY_META_MAINTENANCE_REPORT.md || true
+          git diff --cached --quiet || git commit -m "chore: update frenly maintenance status [skip ci]"
+          git push || true
+
+      - name: Upload Frenly maintenance report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frenly-meta-maintenance-report
+          path: |
+            docs/diagnostics/FRENLY_META_MAINTENANCE_REPORT.md
+            docs/diagnostics/frenly-meta-status.json
+
+      - name: Parse maintenance status
+        if: always()
+        id: status
+        run: |
+          if [ -f docs/diagnostics/frenly-meta-status.json ]; then
+            echo "overall=$(jq -r '.overallStatus' docs/diagnostics/frenly-meta-status.json)" >> $GITHUB_OUTPUT
+            echo "hard_failures=$(jq -r '.hardFailures' docs/diagnostics/frenly-meta-status.json)" >> $GITHUB_OUTPUT
+            echo "soft_failures=$(jq -r '.softFailures' docs/diagnostics/frenly-meta-status.json)" >> $GITHUB_OUTPUT
+            echo "duration=$(jq -r '.durationSeconds' docs/diagnostics/frenly-meta-status.json)" >> $GITHUB_OUTPUT
+            echo "failed_checks=$(jq -r '.failedChecks | join(", ")' docs/diagnostics/frenly-meta-status.json)" >> $GITHUB_OUTPUT
+          else
+            echo "overall=unknown" >> $GITHUB_OUTPUT
+            echo "hard_failures=0" >> $GITHUB_OUTPUT
+            echo "soft_failures=0" >> $GITHUB_OUTPUT
+            echo "duration=0" >> $GITHUB_OUTPUT
+            echo "failed_checks=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Notify Slack on failure
+        if: always() && steps.status.outputs.overall != 'healthy' && vars.SLACK_WEBHOOK_URL != ''
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "${{ steps.status.outputs.overall == 'failed' && '🚨' || '⚠️' }} Frenly Maintenance: ${{ steps.status.outputs.overall }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ steps.status.outputs.overall == 'failed' && '🚨 Maintenance Failed' || '⚠️ Maintenance Degraded' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    { "type": "mrkdwn", "text": "*Status:*\n${{ steps.status.outputs.overall }}" },
+                    { "type": "mrkdwn", "text": "*Duration:*\n${{ steps.status.outputs.duration }}s" },
+                    { "type": "mrkdwn", "text": "*Hard Failures:*\n${{ steps.status.outputs.hard_failures }}" },
+                    { "type": "mrkdwn", "text": "*Soft Failures:*\n${{ steps.status.outputs.soft_failures }}" }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Failed Checks:*\n${{ steps.status.outputs.failed_checks || 'None' }}"
+                  }
+                },
+                {
+                  "type": "actions",
+                  "elements": [
+                    {
+                      "type": "button",
+                      "text": { "type": "plain_text", "text": "View Run" },
+                      "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ vars.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Notify Slack on success (optional)
+        if: always() && steps.status.outputs.overall == 'healthy' && vars.SLACK_WEBHOOK_URL != '' && vars.NOTIFY_ON_SUCCESS == 'true'
+        uses: slackapi/slack-github-action@v1.26.0
+        with:
+          payload: |
+            {
+              "text": "✅ Frenly Maintenance: All checks passed",
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "✅ *Frenly Maintenance Passed*\nAll system checks completed successfully in ${{ steps.status.outputs.duration }}s"
+                  }
+                }
+              ]
+            }
+        env:
+          SLACK_WEBHOOK_URL: ${{ vars.SLACK_WEBHOOK_URL }}
+          SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
+
+      - name: Fail if maintenance failed
+        if: steps.maintenance.outcome == 'failure'
+        run: exit 1

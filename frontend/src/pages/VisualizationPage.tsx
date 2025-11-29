@@ -8,13 +8,13 @@ import {
   TrendingUp,
   PieChart,
 } from 'lucide-react';
-import { Button } from '../components/ui';
-import { ErrorBoundary } from '../components/ui/ErrorBoundary';
-import { useData } from '../components/DataProvider';
-import { useProjectAnalytics } from '../hooks/useFileReconciliation';
-import { useToast } from '../hooks/useToast';
-import { logger } from '../services/logger';
-import { usePageOrchestration } from '../hooks/usePageOrchestration';
+import { Button } from '@/components/ui';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { useData } from '@/components/DataProvider';
+import { useProjectAnalytics } from '@/hooks/useFileReconciliation';
+import { useToast } from '@/hooks/useToast';
+import { logger } from '@/services/logger';
+import { usePageOrchestration } from '@/hooks/usePageOrchestration';
 import {
   visualizationPageMetadata,
   getVisualizationOnboardingSteps,
@@ -22,7 +22,7 @@ import {
   getVisualizationWorkflowState,
   registerVisualizationGuidanceHandlers,
   getVisualizationGuidanceContent,
-} from '../orchestration/pages/VisualizationPageOrchestration';
+} from '@/orchestration/pages/VisualizationPageOrchestration';
 
 // Interfaces (shared with main index.tsx)
 export interface PageConfig {
@@ -300,7 +300,7 @@ const VisualizationPageContent: React.FC = () => {
   const config: PageConfig = {
     title: 'Visualization',
     description: 'Analytics and insights for reconciliation data',
-    icon: BarChart3,
+    icon: BarChart3 as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
     path: '/visualization',
     showStats: true,
     showActions: true,
@@ -321,25 +321,25 @@ const VisualizationPageContent: React.FC = () => {
         {
           title: 'Total Records',
           value: reconciliationStats.totalRecords || 0,
-          icon: BarChart3,
+          icon: BarChart3 as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
           color: 'bg-blue-100 text-blue-600',
         },
         {
           title: 'Matched',
           value: reconciliationStats.matchedRecords || 0,
-          icon: CheckCircle,
+          icon: CheckCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
           color: 'bg-green-100 text-green-600',
         },
         {
           title: 'Unmatched',
           value: reconciliationStats.unmatchedRecords || 0,
-          icon: AlertCircle,
+          icon: AlertCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
           color: 'bg-red-100 text-red-600',
         },
         {
           title: 'Reconciliation Runs',
           value: analytics.total_reconciliation_runs || 0,
-          icon: TrendingUp,
+          icon: TrendingUp as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
           color: 'bg-yellow-100 text-yellow-600',
         },
       ]
@@ -348,14 +348,14 @@ const VisualizationPageContent: React.FC = () => {
   const actions: ActionConfig[] = [
     {
       label: isRefreshing ? 'Refreshing...' : 'Refresh',
-      icon: RefreshCw,
+      icon: RefreshCw as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       onClick: handleRefresh,
       variant: 'secondary',
       loading: isRefreshing,
     },
     {
       label: isExporting ? 'Exporting...' : 'Export',
-      icon: Download,
+      icon: Download as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       onClick: handleExport,
       variant: 'secondary',
       loading: isExporting,

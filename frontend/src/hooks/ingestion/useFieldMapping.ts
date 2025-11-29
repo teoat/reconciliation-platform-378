@@ -1,6 +1,6 @@
 // Field mapping hook
 import { useState, useCallback } from 'react';
-import type { FieldMapping, ColumnInfo } from '../../types/ingestion';
+import type { FieldMapping, ColumnInfo } from '@/types/ingestion/index';
 
 export const useFieldMapping = (columns: ColumnInfo[] = []) => {
   const [mappings, setMappings] = useState<FieldMapping[]>([]);

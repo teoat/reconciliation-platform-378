@@ -70,7 +70,7 @@ export class StepSynchronizationTests {
       await Promise.all(browsers.map((browser) => this.simulation.simulateBrowserConnect(browser)));
 
       const validationResult: StepValidation = { valid: true, errors: [], warnings: [] };
-      await this.simulation.simulateStepValidation(validationResult);
+      await this.simulation.simulateStepValidation(validationResult as unknown as Record<string, unknown>);
 
       const validationChecks = await Promise.all(
         browsers.map(async (browser) => {
@@ -115,7 +115,7 @@ export class StepSynchronizationTests {
       await Promise.all(browsers.map((browser) => this.simulation.simulateBrowserConnect(browser)));
 
       const permissions: StepPermissions = { canEdit: true, canDelete: false, canAdvance: true };
-      await this.simulation.simulateStepPermissionsChange(permissions);
+      await this.simulation.simulateStepPermissionsChange(permissions as unknown as Record<string, unknown>);
 
       const permissionChecks = await Promise.all(
         browsers.map(async (browser) => {

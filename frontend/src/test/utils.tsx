@@ -20,10 +20,10 @@ export const render = (
     initialState = {},
     store = createMockStore(initialState),
     ...renderOptions
-  }: Record<string, unknown> = {}
+  }: { initialState?: Record<string, unknown>; store?: unknown; [key: string]: unknown } = {}
 ) => {
   const Wrapper = ({ children }: { children: ReactNode }) => (
-    <Provider store={store}>
+    <Provider store={store as import('@reduxjs/toolkit').Store<unknown, import('@reduxjs/toolkit').UnknownAction, unknown>}>
       <BrowserRouter>{children}</BrowserRouter>
     </Provider>
   );

@@ -1,0 +1,80 @@
+Configure Beeceptor webhook endpoint to sync with Reconciliation Platform application.
+
+ENDPOINT DETAILS:
+- Endpoint ID: 378to492
+- URL: https://378to492.free.beeceptor.com
+- Dashboard: https://beeceptor.com/dashboard
+
+CONFIGURE THESE 4 WEBHOOK RULES:
+
+1. HEALTH CHECK (/health)
+   - Methods: GET, POST
+   - Response: 200 OK
+   - Response Body:
+     {
+       "status": "ok",
+       "timestamp": "{{timestamp}}",
+       "service": "reconciliation-platform",
+       "version": "2.0.0"
+     }
+
+2. ALERT WEBHOOK (/alerts)
+   - Method: POST
+   - Response: 200 OK
+   - Expected Payload: Prometheus AlertManager format with "alerts" array
+   - Response Body:
+     {
+       "received": true,
+       "timestamp": "{{timestamp}}",
+       "alert_count": "{{alerts.length}}"
+     }
+
+3. MONITORING WEBHOOK (/monitoring)
+   - Method: POST
+   - Response: 200 OK
+   - Expected Payload: JSON with "event", "service", "timestamp", "data" fields
+   - Response Body:
+     {
+       "received": true,
+       "timestamp": "{{timestamp}}",
+       "event_type": "{{event}}"
+     }
+
+4. CATCH-ALL WEBHOOK (/*)
+   - Methods: POST, GET, PUT, DELETE
+   - Response: 200 OK
+   - Response Body:
+     {
+       "received": true,
+       "timestamp": "{{timestamp}}",
+       "method": "{{method}}",
+       "path": "{{path}}",
+       "headers": "{{headers}}",
+       "body": "{{body}}"
+     }
+
+ADDITIONAL SETTINGS:
+- Enable request logging for all endpoints
+- Set retention period to 7-30 days
+- Enable request storage
+- Configure filters by path, method, and timestamp
+
+TESTING:
+Test each endpoint with curl:
+- GET https://378to492.free.beeceptor.com/health
+- POST https://378to492.free.beeceptor.com/alerts (with Prometheus alert JSON)
+- POST https://378to492.free.beeceptor.com/monitoring (with metric JSON)
+- POST https://378to492.free.beeceptor.com/test (any JSON payload)
+
+VERIFICATION:
+- All 4 rules active in dashboard
+- Requests visible in "Requests" tab
+- All test commands return 200 OK
+- Response formats match expected JSON
+
+APPLICATION CONTEXT:
+- Application: Reconciliation Platform (Rust backend, TypeScript frontend)
+- Webhook URL configured in env: WEBHOOK_URL=https://378to492.free.beeceptor.com
+- AlertManager sends Prometheus alerts to /alerts
+- Application sends metrics to /monitoring
+

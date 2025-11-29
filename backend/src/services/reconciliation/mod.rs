@@ -204,17 +204,26 @@ impl ReconciliationService {
     }
 }
 
-// Forward all service methods to service module
-pub use service::*;
+// Forward specific service methods to service module (avoiding duplicates)
+// Note: get_active_jobs and get_queued_jobs are defined as methods on ReconciliationService,
+// not as standalone functions, so they're not re-exported here
+pub use service::{
+    batch_approve_matches,
+    cancel_reconciliation_job,
+    export_job_results,
+    get_reconciliation_results,
+    stop_reconciliation_job,
+    update_match,
+};
 
 // Include all service methods from service.rs as methods on ReconciliationService
 impl ReconciliationService {
     pub async fn get_active_jobs(&self) -> AppResult<Vec<Uuid>> {
-        service::get_active_jobs(self).await
+        crate::services::reconciliation::service::get_active_jobs(self).await
     }
 
     pub async fn get_queued_jobs(&self) -> AppResult<Vec<Uuid>> {
-        service::get_queued_jobs(self).await
+        crate::services::reconciliation::service::get_queued_jobs(self).await
     }
 
     pub async fn get_reconciliation_progress(
@@ -222,7 +231,7 @@ impl ReconciliationService {
         job_id: Uuid,
         user_id: Uuid,
     ) -> AppResult<JobProgress> {
-        service::get_reconciliation_progress(self, job_id, user_id).await
+        crate::services::reconciliation::service::jobs::get_reconciliation_progress(self, job_id, user_id).await
     }
 
     pub async fn cancel_reconciliation_job(&self, job_id: Uuid, user_id: Uuid) -> AppResult<()> {
@@ -233,14 +242,14 @@ impl ReconciliationService {
         &self,
         project_id: Uuid,
     ) -> AppResult<Vec<ReconciliationJob>> {
-        service::get_project_reconciliation_jobs(self, project_id).await
+        crate::services::reconciliation::service::jobs::get_project_reconciliation_jobs(self, project_id).await
     }
 
     pub async fn get_reconciliation_job_status(
         &self,
         job_id: Uuid,
     ) -> AppResult<ReconciliationJobStatus> {
-        service::get_reconciliation_job_status(self, job_id).await
+        crate::services::reconciliation::service::jobs::get_reconciliation_job_status(self, job_id).await
     }
 
     pub async fn update_reconciliation_job(
@@ -251,7 +260,7 @@ impl ReconciliationService {
         confidence_threshold: Option<f64>,
         _settings: Option<serde_json::Value>,
     ) -> AppResult<ReconciliationJob> {
-        service::update_reconciliation_job(
+        crate::services::reconciliation::service::jobs::update_reconciliation_job(
             self,
             job_id,
             name,
@@ -263,11 +272,11 @@ impl ReconciliationService {
     }
 
     pub async fn delete_reconciliation_job(&self, job_id: Uuid) -> AppResult<()> {
-        service::delete_reconciliation_job(self, job_id).await
+        crate::services::reconciliation::service::jobs::delete_reconciliation_job(self, job_id).await
     }
 
     pub async fn start_reconciliation_job(&self, job_id: Uuid) -> AppResult<()> {
-        service::start_reconciliation_job(self, job_id).await
+        crate::services::reconciliation::service::jobs::start_reconciliation_job(self, job_id).await
     }
 
     pub async fn stop_reconciliation_job(&self, job_id: Uuid) -> AppResult<()> {

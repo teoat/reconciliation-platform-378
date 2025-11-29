@@ -5,11 +5,9 @@
  * Features are unlocked as users complete onboarding steps and gain experience.
  */
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Lock, Unlock, Sparkles, CheckCircle } from 'lucide-react';
-import { FeatureGate, useFeatureGate } from './FeatureGate';
 import { onboardingService } from '@/services/onboardingService';
-import { SmartTip } from './SmartTip';
 import { logger } from '@/services/logger';
 
 export type FeatureUnlockLevel = 'locked' | 'preview' | 'unlocked' | 'mastered';
@@ -84,8 +82,7 @@ export const ProgressiveFeatureDisclosure: React.FC<ProgressiveFeatureDisclosure
       // Check progress percentage
       if (requirements.minProgress !== undefined) {
         const progress = onboardingService.getProgress('initial');
-        const progressPercentage =
-          (progress.completedSteps.length / progress.totalSteps) * 100;
+        const progressPercentage = (progress.completedSteps.length / progress.totalSteps) * 100;
         if (progressPercentage < requirements.minProgress) {
           return progressPercentage >= requirements.minProgress * 0.5 ? 'preview' : 'locked';
         }
@@ -152,8 +149,7 @@ export const ProgressiveFeatureDisclosure: React.FC<ProgressiveFeatureDisclosure
         <div>
           <h3 className="text-lg font-semibold text-gray-700 mb-1">{feature.name}</h3>
           <p className="text-sm text-gray-500 mb-3">
-            {feature.lockedMessage ||
-              'Complete onboarding steps to unlock this feature'}
+            {feature.lockedMessage || 'Complete onboarding steps to unlock this feature'}
           </p>
         </div>
         {feature.unlockRequirements.onboardingSteps && (
@@ -161,14 +157,9 @@ export const ProgressiveFeatureDisclosure: React.FC<ProgressiveFeatureDisclosure
             <p className="mb-1">Required steps:</p>
             <ul className="list-disc list-inside space-y-1">
               {feature.unlockRequirements.onboardingSteps.map((step) => (
-                <li
-                  key={step}
-                  className={userProgress.includes(step) ? 'text-green-600' : ''}
-                >
+                <li key={step} className={userProgress.includes(step) ? 'text-green-600' : ''}>
                   {step}
-                  {userProgress.includes(step) && (
-                    <CheckCircle className="inline w-3 h-3 ml-1" />
-                  )}
+                  {userProgress.includes(step) && <CheckCircle className="inline w-3 h-3 ml-1" />}
                 </li>
               ))}
             </ul>
@@ -259,12 +250,9 @@ export const useProgressiveFeature = (
 
       // Check progress
       if (unlockRequirements.minProgress !== undefined) {
-        const progressPercentage =
-          (progress.completedSteps.length / progress.totalSteps) * 100;
+        const progressPercentage = (progress.completedSteps.length / progress.totalSteps) * 100;
         if (progressPercentage < unlockRequirements.minProgress) {
-          return progressPercentage >= unlockRequirements.minProgress * 0.5
-            ? 'preview'
-            : 'locked';
+          return progressPercentage >= unlockRequirements.minProgress * 0.5 ? 'preview' : 'locked';
         }
       }
 
@@ -283,4 +271,3 @@ export const useProgressiveFeature = (
 };
 
 export default ProgressiveFeatureDisclosure;
-

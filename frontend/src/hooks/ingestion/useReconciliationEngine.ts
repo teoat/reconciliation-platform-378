@@ -1,11 +1,12 @@
 // Reconciliation engine hook
 import { useState, useCallback, useMemo } from 'react';
+import { logger } from '@/services/logger';
 import type {
   EnhancedReconciliationRecord,
   MatchingRule,
   ReconciliationMetrics,
-} from '../../types/reconciliation';
-import { applyMatchingRules } from '../../utils/reconciliation/matching';
+} from '@/types/reconciliation/index';
+import { applyMatchingRules } from '@/utils/reconciliation/matching';
 
 export const useReconciliationEngine = (initialRecords: EnhancedReconciliationRecord[] = []) => {
   const [records, setRecords] = useState<EnhancedReconciliationRecord[]>(initialRecords);
@@ -60,7 +61,10 @@ export const useReconciliationEngine = (initialRecords: EnhancedReconciliationRe
             ...record,
             confidence: result.confidence,
             matchScore: result.confidence,
-            matchingRules: rules.filter((r) => r.applied && result.details.matchedRules?.includes(r.id)),
+            matchingRules: rules.filter((r) => {
+              const matchedRules = result.details.matchedRules;
+              return r.applied && (Array.isArray(matchedRules) ? matchedRules.includes(r.id) : false);
+            }),
           };
 
           // Update status based on confidence
@@ -80,7 +84,7 @@ export const useReconciliationEngine = (initialRecords: EnhancedReconciliationRe
       setRecords(processed);
       return processed;
     } catch (error) {
-      console.error('Error processing records:', error);
+      logger.error('Error processing records', { category: 'reconciliation', component: 'useReconciliationEngine', error });
       throw error;
     } finally {
       setIsProcessing(false);

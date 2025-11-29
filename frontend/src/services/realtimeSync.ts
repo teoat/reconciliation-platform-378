@@ -188,22 +188,35 @@ export const useReconciliationSync = () => {
 
     // Subscribe to reconciliation updates
     const updateSubscriptionId = subscribe('reconciliation-update', (data) => {
-      if (data.type === 'record-updated') {
-        setRecords((prev) =>
-          prev.map((record) =>
-            record.id === data.recordId ? { ...record, ...data.changes } : record
-          )
-        );
-      } else if (data.type === 'record-added') {
-        setRecords((prev) => [...prev, data.record]);
-      } else if (data.type === 'record-removed') {
-        setRecords((prev) => prev.filter((record) => record.id !== data.recordId));
+      const updateData = data as { type?: string; recordId?: string; changes?: unknown; record?: unknown; records?: unknown[]; collaborators?: unknown };
+      if (updateData.type === 'record-updated') {
+        const recordUpdate = updateData as { recordId?: string; changes?: unknown };
+        if (recordUpdate.recordId) {
+          setRecords((prev) =>
+            prev.map((record) =>
+              record.id === recordUpdate.recordId ? { ...record, ...(recordUpdate.changes as Record<string, unknown>) } : record
+            )
+          );
+        }
+      } else if (updateData.type === 'record-added') {
+        const recordAdd = updateData as { record?: unknown };
+        if (recordAdd.record) {
+          setRecords((prev) => [...prev, recordAdd.record as Record<string, unknown>]);
+        }
+      } else if (updateData.type === 'record-removed') {
+        const recordRemove = updateData as { recordId?: string };
+        if (recordRemove.recordId) {
+          setRecords((prev) => prev.filter((record) => record.id !== recordRemove.recordId));
+        }
       }
     });
 
     // Subscribe to batch updates
-    const batchSubscriptionId = subscribe('reconciliation-batch-update', (data) => {
-      setRecords(data.records);
+    const batchSubscriptionId = subscribe('reconciliation-batch-update', (data: unknown) => {
+      const batchData = data as { records?: unknown[] };
+      if (batchData.records) {
+        setRecords(batchData.records as Record<string, unknown>[]);
+      }
     });
 
     return () => {
@@ -229,8 +242,11 @@ export const useReconciliationSync = () => {
     emit('refresh-records');
 
     // Listen for refresh response
-    const refreshSubscriptionId = subscribe('records-refreshed', (data) => {
-      setRecords(data.records);
+    const refreshSubscriptionId = subscribe('records-refreshed', (data: unknown) => {
+      const refreshData = data as { records?: unknown[] };
+      if (refreshData.records) {
+        setRecords(refreshData.records as Record<string, unknown>[]);
+      }
       setIsLoading(false);
     });
 
@@ -260,7 +276,8 @@ export const useRealtimeNotifications = () => {
     if (!isConnected()) return;
 
     const subscriptionId = subscribe('notification', (data) => {
-      setNotifications((prev) => [...prev, { ...data, timestamp: new Date() }]);
+      const dataObj = data as Record<string, unknown>;
+      setNotifications((prev) => [...prev, { ...dataObj, timestamp: new Date() }]);
     });
 
     return () => {
@@ -305,17 +322,20 @@ export const useRealtimeCollaboration = (roomId: string) => {
     joinRoom(roomId);
 
     // Subscribe to collaboration events
-    const collaboratorsSubscriptionId = subscribe('collaborators-update', (data) => {
-      setCollaborators(data.collaborators || []);
+    const collaboratorsSubscriptionId = subscribe('collaborators-update', (data: unknown) => {
+      const collabData = data as { collaborators?: unknown[] };
+      const collaborators = (collabData.collaborators || []) as Record<string, unknown>[];
+      setCollaborators(collaborators);
     });
 
     const activitiesSubscriptionId = subscribe('activity-update', (data) => {
-      setActivities((prev) => [...prev, { ...data, timestamp: new Date() }]);
+      const dataObj = data as Record<string, unknown>;
+      setActivities((prev) => [...prev, { ...dataObj, timestamp: new Date() }]);
     });
 
     const cursorSubscriptionId = subscribe('cursor-update', (data) => {
       // Handle cursor updates
-      logger.info('Cursor update:', data);
+      logger.info('Cursor update:', data as Record<string, unknown>);
     });
 
     return () => {

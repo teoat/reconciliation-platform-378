@@ -2,7 +2,7 @@
 // FILE TYPES
 // ============================================================================
 
-import type { ID, Timestamp } from './backend-aligned';
+import type { ID, Timestamp } from './backend';
 
 export interface FileUpload {
   id: ID;

@@ -17,7 +17,6 @@ mod security_service_tests {
         SecurityConfig {
             jwt_secret: "test_secret".to_string(),
             jwt_expiration: Duration::from_secs(3600),
-            bcrypt_cost: 10,
             max_login_attempts: 5,
             lockout_duration: Duration::from_secs(900),
             session_timeout: Duration::from_secs(3600),

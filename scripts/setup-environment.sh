@@ -152,7 +152,6 @@ PASSWORD_MASTER_KEY=${PASSWORD_MASTER_KEY}
 
 # Application Configuration
 HOST=0.0.0.0
-PORT=2000
 BACKEND_PORT=2000
 FRONTEND_PORT=1000
 NODE_ENV=${ENV}
@@ -161,7 +160,7 @@ RUST_LOG=info
 RUST_BACKTRACE=1
 
 # Frontend Configuration (Vite)
-VITE_API_URL=http://localhost:2000/api
+VITE_API_URL=http://localhost:2000/api/v1
 VITE_WS_URL=ws://localhost:2000
 VITE_APP_NAME=Reconciliation Platform
 VITE_APP_VERSION=1.0.0

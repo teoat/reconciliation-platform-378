@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowRight, Plus, Trash2 } from 'lucide-react';
-import { FieldMapping, ColumnInfo } from '../../types/ingestion';
+import { FieldMapping, ColumnInfo } from '../../types/ingestion/index';
 
 interface FieldMappingEditorProps {
   sourceColumns: ColumnInfo[];
@@ -27,6 +27,7 @@ export const FieldMappingEditor: React.FC<FieldMappingEditorProps> = ({
       sourceField: selectedSource,
       targetField: selectedTarget,
       transformation: 'none' as const,
+      isRequired: false,
     };
 
     onMappingsChange([...mappings, newMapping]);

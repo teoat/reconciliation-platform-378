@@ -5,7 +5,7 @@ import { ComparisonOperator } from './common';
 export interface FilterConfig {
   field: string;
   operator: ComparisonOperator;
-  value: any;
+  value: unknown;
 }
 
 export interface PaginationConfig {

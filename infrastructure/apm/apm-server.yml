@@ -8,8 +8,13 @@ setup.kibana:
   host: "kibana:5601"
 
 logging.level: info
-logging.to_files: true
-logging.files:
-  path: /var/log/apm-server
-  name: apm-server.log
-  keepfiles: 7
+
+# Disable file logging inside the container to avoid permissions issues on /var/log/apm-server.
+# Logs will still go to stdout/stderr and be captured by Docker.
+logging.to_files: false
+
+# If you want file logging, mount a writable volume and re-enable this block:
+#logging.files:
+#  path: /var/log/apm-server
+#  name: apm-server.log
+#  keepfiles: 7

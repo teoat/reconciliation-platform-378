@@ -1,5 +1,5 @@
 // Data quality metrics utilities
-import type { DataRow, DataQualityMetrics } from '../../types/ingestion';
+import type { DataRow, DataQualityMetrics } from '@/types/ingestion/index';
 
 /**
  * Analyzes data quality and returns metrics

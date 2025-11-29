@@ -6,6 +6,8 @@
  * metadata that enables intelligent agent behavior.
  */
 
+import { logger } from '@/services/logger';
+
 export interface FeatureMetadata {
   /** Unique identifier for the feature */
   id: string;
@@ -152,7 +154,11 @@ class FeatureRegistry {
    */
   register(feature: FeatureMetadata): void {
     if (this.features.has(feature.id)) {
-      console.warn(`Feature ${feature.id} is already registered. Overwriting.`);
+      logger.warn(`Feature ${feature.id} is already registered. Overwriting.`, {
+        category: 'features',
+        component: 'FeatureRegistry',
+        featureId: feature.id
+      });
     }
     this.features.set(feature.id, feature);
   }

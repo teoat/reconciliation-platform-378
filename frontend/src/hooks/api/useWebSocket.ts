@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { wsClient } from '../../services/apiClient';
+import { wsClient } from '@/services/apiClient';
 
 // WebSocket Hook
 export const useWebSocket = () => {
@@ -32,19 +32,19 @@ export const useWebSocket = () => {
     wsRef.current = null;
   }, []);
 
-  const sendMessage = useCallback((type: string, data: any) => {
+  const sendMessage = useCallback((type: string, data: Record<string, unknown>) => {
     if (wsRef.current) {
       wsRef.current.send(type, data);
     }
   }, []);
 
-  const onMessage = useCallback((eventType: string, handler: Function) => {
+  const onMessage = useCallback((eventType: string, handler: (...args: unknown[]) => void) => {
     if (wsRef.current) {
       wsRef.current.on(eventType, handler);
     }
   }, []);
 
-  const offMessage = useCallback((eventType: string, handler: Function) => {
+  const offMessage = useCallback((eventType: string, handler?: (...args: unknown[]) => void) => {
     if (wsRef.current) {
       wsRef.current.off(eventType, handler);
     }
@@ -107,7 +107,7 @@ export const useRealtimeCollaboration = (page: string) => {
 
   // Handle incoming messages
   useEffect(() => {
-    const handlePresenceUpdate = (data: any) => {
+    const handlePresenceUpdate = (data: Record<string, unknown> & { userId?: string; userName?: string; page?: string; timestamp?: string }) => {
       setActiveUsers(prev => {
         const existing = prev.find(u => u.id === data.userId);
         if (existing) {
@@ -127,7 +127,7 @@ export const useRealtimeCollaboration = (page: string) => {
       });
     };
 
-    const handleCommentAdded = (data: any) => {
+    const handleCommentAdded = (data: Record<string, unknown> & { page?: string; id?: string }) => {
       if (data.page === page) {
         setLiveComments(prev => {
           const exists = prev.find(c => c.id === data.id);
@@ -139,7 +139,7 @@ export const useRealtimeCollaboration = (page: string) => {
       }
     };
 
-    const handleUserLeft = (data: any) => {
+    const handleUserLeft = (data: Record<string, unknown> & { userId?: string }) => {
       setActiveUsers(prev => prev.filter(u => u.id !== data.userId));
     };
 

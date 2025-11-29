@@ -97,6 +97,10 @@ services:
         - BUILDKIT_INLINE_CACHE=1
         - BUILD_MODE=release
         - RUSTFLAGS=-C target-cpu=native
+        - CARGO_BUILD_JOBS=0
+        - FEATURES=
+      cache_from:
+        - reconciliation-backend-dev:latest
     container_name: reconciliation-backend-dev
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
@@ -162,6 +166,11 @@ services:
         BUILDKIT_INLINE_CACHE: 1
         VITE_API_URL: ${VITE_API_URL:-http://localhost:2000}/api/v1
         VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:2000}
+        GENERATE_SOURCEMAP: ${GENERATE_SOURCEMAP:-true}
+        BUILD_ANALYZE: ${BUILD_ANALYZE:-false}
+        NODE_ENV: development
+      cache_from:
+        - reconciliation-frontend-dev:latest
     container_name: reconciliation-frontend-dev
     environment:
       - NODE_ENV=${NODE_ENV:-development}

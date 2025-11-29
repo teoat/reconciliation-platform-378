@@ -7,7 +7,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { HelpCircle, X, ChevronRight, Lightbulb, BookOpen } from 'lucide-react';
 // Import ariaLiveRegionsService with type-safe access
-import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
+import { ariaLiveRegionsService } from '@/utils/ariaLiveRegionsHelper';
 
 export interface HelpTip {
   id: string;
@@ -70,8 +70,9 @@ export const ContextualHelp: React.FC<ContextualHelpProps> = ({
   );
 
   useEffect(() => {
-    if (isOpen && helpContent && (ariaLiveRegionsService as any)?.announceStatus) {
-      (ariaLiveRegionsService as any).announceStatus(`Help: ${helpContent.title}`, {
+    if (isOpen && helpContent && ariaLiveRegionsService && typeof ariaLiveRegionsService === 'object' && 'announceStatus' in ariaLiveRegionsService) {
+      const ariaService = ariaLiveRegionsService as { announceStatus?: (message: string, options?: Record<string, unknown>) => void };
+      ariaService.announceStatus?.(`Help: ${helpContent.title}`, {
         componentId: helpContent.id,
         action: 'help-opened',
       });

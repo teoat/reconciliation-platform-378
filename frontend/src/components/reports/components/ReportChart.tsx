@@ -2,9 +2,9 @@
  * Report Chart Component - Renders charts for report visualizations
  */
 
-import { BarChart, LineChart, PieChart } from '../../charts/Charts';
-import type { ReportVisualization, ReportMetric } from '../types';
-import type { ReportData } from '../types';
+import { BarChart, LineChart, PieChart } from '@/components/charts/Charts';
+import type { ReportVisualization, ReportMetric } from '@/components/reports/types';
+import type { ReportData } from '@/components/reports/types';
 
 interface ReportChartProps {
   visualization: ReportVisualization;
@@ -30,22 +30,42 @@ export function ReportChart({ visualization, metrics, data }: ReportChartProps) 
     const grouped = (data.data as Record<string, unknown>[]).reduce(
       (acc, record) => {
         const groupKey = String(record[visualization.groupBy!] || 'Other');
-        if (!acc[groupKey]) {
+        if (!(groupKey in acc)) {
           acc[groupKey] = { label: groupKey, value: 0, color: getColorForMetric(groupKey) };
         }
         // Sum values for grouped metrics
         visualization.metrics.forEach((metricId) => {
           const metric = metrics.find((m) => m.id === metricId);
-          if (metric?.field) {
-            const fieldValue = Number(record[metric.field]) || 0;
-            acc[groupKey].value += fieldValue;
+          if (metric?.field && acc[groupKey]) {
+            const fieldValue = Number((record as Record<string, unknown>)[metric.field]) || 0;
+            const currentAcc = acc[groupKey]!;
+            if (
+              currentAcc &&
+              typeof currentAcc === 'object' &&
+              'value' in currentAcc &&
+              typeof currentAcc.value === 'number' &&
+              'label' in currentAcc &&
+              'color' in currentAcc
+            ) {
+              acc[groupKey] = {
+                label: currentAcc.label as string,
+                value: currentAcc.value + fieldValue,
+                color: currentAcc.color as string,
+              };
+            }
           }
         });
         return acc;
       },
       {} as Record<string, { label: string; value: number; color: string }>
     );
-    return renderChart(Object.values(grouped));
+    const chartData = Object.values(grouped).map((item) => {
+      if (typeof item === 'object' && item !== null && 'value' in item) {
+        return item as { label: string; value: number; color?: string };
+      }
+      return { label: String(item), value: 0, color: '' };
+    });
+    return renderChart(chartData);
   }
 
   return renderChart(chartData);
@@ -90,19 +110,27 @@ export function ReportChart({ visualization, metrics, data }: ReportChartProps) 
         })
       : chartData;
 
-    const limitedData = visualization.limit
-      ? sortedData.slice(0, visualization.limit)
-      : sortedData;
+    const limitedData = visualization.limit ? sortedData.slice(0, visualization.limit) : sortedData;
 
     return (
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200" role="table" aria-label="Report data table">
+        <table
+          className="min-w-full divide-y divide-gray-200"
+          role="table"
+          aria-label="Report data table"
+        >
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" scope="col">
+              <th
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                scope="col"
+              >
                 Label
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" scope="col">
+              <th
+                className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                scope="col"
+              >
                 Value
               </th>
             </tr>
@@ -135,4 +163,3 @@ function getColorForMetric(metricId: string): string {
   const hash = metricId.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return colors[Math.abs(hash) % colors.length];
 }
-

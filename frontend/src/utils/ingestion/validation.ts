@@ -1,5 +1,5 @@
 // Data validation utilities for ingestion
-import type { DataRow, DataValidation, UploadedFile } from '../../types/ingestion';
+import type { DataRow, DataValidation, UploadedFile } from '@/types/ingestion/index';
 
 /**
  * Validates data based on file type and rules
@@ -84,7 +84,7 @@ export const validateData = (
  */
 export const validateField = (
   field: string,
-  value: any,
+  value: unknown,
   rules: string[]
 ): DataValidation | null => {
   for (const rule of rules) {

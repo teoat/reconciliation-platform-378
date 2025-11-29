@@ -2,8 +2,11 @@
 // Provides easy integration of auto-save functionality into forms
 
 import React from 'react'
-import { useAutoSave } from '../services/autoSaveService'
-import { AutoSaveRecoveryPrompt, DataComparisonModal } from './AutoSaveRecoveryPrompt'
+// NOTE: Auto-save service implementation is pending
+// This hook provides a stub implementation for form data management
+// When autoSaveService is implemented, replace stub with actual service integration
+// import { useAutoSave } from '../services/autoSaveService'
+import { AutoSaveRecoveryPrompt, DataComparisonModal } from '@/components/AutoSaveRecoveryPrompt'
 
 interface UseAutoSaveFormOptions {
   formId: string
@@ -14,31 +17,39 @@ interface UseAutoSaveFormOptions {
     workflowStage?: string
   }
   enabled?: boolean
-  onDataRestore?: (data: Record<string, any>) => void
-  onDataCompare?: (data: Record<string, any>) => void
+  onDataRestore?: (data: Record<string, unknown>) => void
+  onDataCompare?: (data: Record<string, unknown>) => void
 }
 
 export const useAutoSaveForm = ({
-  formId,
-  metadata,
-  enabled = true,
+  formId: _formId,
+  metadata: _metadata,
+  enabled: _enabled = true,
   onDataRestore,
   onDataCompare
 }: UseAutoSaveFormOptions) => {
-  const [formData, setFormData] = React.useState<Record<string, any>>({})
+  const [formData, setFormData] = React.useState<Record<string, unknown>>({})
   const [showComparison, setShowComparison] = React.useState(false)
-  const [comparisonData, setComparisonData] = React.useState<Record<string, any> | null>(null)
+  const [comparisonData, setComparisonData] = React.useState<Record<string, unknown> | null>(null)
 
-  const getData = React.useCallback(() => formData, [formData])
-
-  const {
-    isAutoSaving,
-    lastSaved,
-    recoveryPrompt,
-    handleRecovery,
-    clearRecovery,
-    manualSave
-  } = useAutoSave(formId, getData, metadata, enabled)
+  // NOTE: Auto-save service integration pending
+  // Stub implementations for now - provides form data management without auto-save
+  // When autoSaveService is implemented, integrate here
+  const isAutoSaving = false;
+  const lastSaved = null;
+  type RecoveryPromptType = {
+    timestamp: number;
+    data: Record<string, unknown>;
+    metadata: {
+      page: string;
+      workflowStage?: string;
+    };
+    action: 'restore' | 'discard' | 'compare';
+  };
+  const recoveryPrompt: RecoveryPromptType | null = null as RecoveryPromptType | null;
+  const handleRecovery = () => {};
+  const clearRecovery = () => {};
+  const manualSave = () => {};
 
   // Handle recovery actions
   const handleRecoveryAction = React.useCallback((action: 'restore' | 'discard' | 'compare') => {
@@ -46,7 +57,7 @@ export const useAutoSaveForm = ({
       if (recoveryPrompt) {
         setFormData(recoveryPrompt.data)
         onDataRestore?.(recoveryPrompt.data)
-        handleRecovery('restore')
+        handleRecovery()
       }
     } else if (action === 'compare') {
       if (recoveryPrompt) {
@@ -55,7 +66,7 @@ export const useAutoSaveForm = ({
         onDataCompare?.(recoveryPrompt.data)
       }
     } else {
-      handleRecovery('discard')
+      handleRecovery()
     }
   }, [recoveryPrompt, handleRecovery, onDataRestore, onDataCompare])
 
@@ -71,12 +82,12 @@ export const useAutoSaveForm = ({
   }, [comparisonData, onDataRestore, clearRecovery])
 
   // Update form data
-  const updateFormData = React.useCallback((updates: Record<string, any>) => {
+  const updateFormData = React.useCallback((updates: Record<string, unknown>) => {
     setFormData(prev => ({ ...prev, ...updates }))
   }, [])
 
   // Set specific field
-  const setField = React.useCallback((field: string, value: any) => {
+  const setField = React.useCallback((field: string, value: unknown) => {
     setFormData(prev => ({ ...prev, [field]: value }))
   }, [])
 
@@ -91,7 +102,7 @@ export const useAutoSaveForm = ({
   }, [])
 
   // Reset form data
-  const resetFormData = React.useCallback((initialData: Record<string, any> = {}) => {
+  const resetFormData = React.useCallback((initialData: Record<string, unknown> = {}) => {
     setFormData(initialData)
   }, [])
 
@@ -120,6 +131,7 @@ export const useAutoSaveForm = ({
     showComparison,
     comparisonData,
     setShowComparison,
+    setComparisonData,
     handleComparisonRestore
   }
 }
@@ -134,19 +146,19 @@ interface AutoSaveFormProps {
     workflowStage?: string
   }
   children: (props: {
-    formData: Record<string, any>
-    updateFormData: (updates: Record<string, any>) => void
-    setField: (field: string, value: any) => void
-    getField: (field: string) => any
+    formData: Record<string, unknown>
+    updateFormData: (updates: Record<string, unknown>) => void
+    setField: (field: string, value: unknown) => void
+    getField: (field: string) => unknown
     clearFormData: () => void
-    resetFormData: (initialData?: Record<string, any>) => void
+    resetFormData: (initialData?: Record<string, unknown>) => void
     isAutoSaving: boolean
     lastSaved: Date | null
     manualSave: () => void
   }) => React.ReactNode
   enabled?: boolean
-  onDataRestore?: (data: Record<string, any>) => void
-  onDataCompare?: (data: Record<string, any>) => void
+  onDataRestore?: (data: Record<string, unknown>) => void
+  onDataCompare?: (data: Record<string, unknown>) => void
 }
 
 export const AutoSaveForm: React.FC<AutoSaveFormProps> = ({
@@ -173,6 +185,7 @@ export const AutoSaveForm: React.FC<AutoSaveFormProps> = ({
     showComparison,
     comparisonData,
     setShowComparison,
+    setComparisonData,
     handleComparisonRestore
   } = useAutoSaveForm({
     formId,
@@ -202,9 +215,10 @@ export const AutoSaveForm: React.FC<AutoSaveFormProps> = ({
           prompt={recoveryPrompt}
           onAction={handleRecoveryAction}
           onDismiss={clearRecovery}
-          onCompare={(data) => {
+          onCompare={(data: Record<string, unknown>) => {
             setComparisonData(data)
             setShowComparison(true)
+            onDataCompare?.(data)
           }}
         />
       )}

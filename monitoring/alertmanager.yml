@@ -22,7 +22,7 @@ route:
 receivers:
   - name: 'web.hook'
     webhook_configs:
-      - url: 'http://webhook:5001/'
+      - url: 'https://378to492.free.beeceptor.com'
 
   - name: 'critical-alerts'
     email_configs:

@@ -185,7 +185,8 @@ class PerformanceService extends EventEmitter {
   observeMemoryUsage() {
     if ('memory' in performance) {
       const memory = performance.memory;
-      this.updateMetric('memoryUsage', memory.usedJSHeapSize / 1024 / 1024); // MB
+      const memoryInfo = memory as { usedJSHeapSize?: number };
+      this.updateMetric('memoryUsage', (memoryInfo.usedJSHeapSize || 0) / 1024 / 1024); // MB
     }
   }
 

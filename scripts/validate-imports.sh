@@ -116,7 +116,7 @@ validate_file_imports() {
   # Extract import statements
   while IFS= read -r import_line; do
     # Extract import path
-    if [[ "$import_line" =~ from\ ['\"]([^'\"]+)['\"] ]]; then
+    if [[ "$import_line" =~ from\ ['"]([^'"]+)['"] ]]; then
       local import_path="${BASH_REMATCH[1]}"
       
       # Skip node_modules and external packages
@@ -143,9 +143,20 @@ validate_file_imports() {
 
 # Main validation
 echo -e "${GREEN}Validating imports...${NC}"
+
+# Count total files
+TOTAL_FILES=$(find "$PROJECT_ROOT/frontend/src" -type f \( -name "*.ts" -o -name "*.tsx" \) 2>/dev/null | wc -l | tr -d ' ')
+echo "Found $TOTAL_FILES TypeScript files to validate"
+
+# Validate imports
+VALIDATED=0
 while IFS= read -r file; do
   validate_file_imports "$file" || true
-done < <(find "$PROJECT_ROOT/frontend/src" -type f \( -name "*.ts" -o -name "*.tsx" \) 2>/dev/null | head -200)
+  ((VALIDATED++)) || true
+  if [ $((VALIDATED % 50)) -eq 0 ]; then
+    echo -e "${GREEN}Progress: $VALIDATED/$TOTAL_FILES files validated${NC}"
+  fi
+done < <(find "$PROJECT_ROOT/frontend/src" -type f \( -name "*.ts" -o -name "*.tsx" \) 2>/dev/null)
 
 echo ""
 

@@ -46,7 +46,8 @@ export interface DataConsistencyTestData {
 }
 
 export class TestingService extends BaseService<TestResult> {
-  private config: TestConfig;
+  private testConfig: TestConfig;
+  declare config: ReturnType<typeof import('./BaseService').createServiceConfig>;
   private runningTests: Map<string, Promise<TestResult>> = new Map();
   private testQueue: Array<() => Promise<TestResult>> = [];
 
@@ -56,9 +57,11 @@ export class TestingService extends BaseService<TestResult> {
       persistence: true,
       events: true,
       caching: true,
+      retries: 3,
+      timeout: 30000,
     });
 
-    this.config = {
+    this.testConfig = {
       timeout: 30000,
       retryAttempts: 3,
       retryDelay: 1000,
@@ -257,9 +260,9 @@ export class TestingService extends BaseService<TestResult> {
         return {
           id: `performance_${testName}`,
           name: `Performance Test: ${testName}`,
-          success: duration < this.config.timeout,
+          success: duration < this.testConfig.timeout,
           message: `Performance test completed in ${duration}ms`,
-          details: { duration, threshold: this.config.timeout },
+          details: { duration, threshold: this.testConfig.timeout },
           timestamp: new Date(),
           duration,
           category: 'performance',
@@ -286,18 +289,22 @@ export class TestingService extends BaseService<TestResult> {
     testName: string,
     testFunction: () => Promise<unknown>
   ): Promise<TestResult> {
-    return this.runTest(`integration_${testName}`, async () => {
+    return this.runTest(`integration_${testName}`, async (): Promise<TestResult> => {
       const startTime = Date.now();
 
       try {
         const result = await testFunction();
-
+        // Ensure result matches TestResult interface
+        if (result && typeof result === 'object' && 'id' in result && 'success' in result) {
+          return result as TestResult;
+        }
+        // Fallback: create a TestResult from the result
         return {
-          id: `integration_${testName}`,
+          id: `integration_${testName}_${Date.now()}`,
           name: `Integration Test: ${testName}`,
           success: true,
           message: 'Integration test passed',
-          details: result,
+          details: result as Record<string, unknown>,
           timestamp: new Date(),
           duration: Date.now() - startTime,
           category: 'integration',
@@ -325,7 +332,7 @@ export class TestingService extends BaseService<TestResult> {
       const result = this.get(testId);
       return result ? [result] : [];
     }
-    return this.getAll();
+    return Array.from(this.getAll?.() || []);
   }
 
   public getTestResultsByCategory(category: TestResult['category']): TestResult[] {
@@ -376,20 +383,20 @@ export class TestingService extends BaseService<TestResult> {
 
   // Configuration Management
   public updateConfig(newConfig: Partial<TestConfig>): void {
-    this.config = { ...this.config, ...newConfig };
-    this.emit('configUpdated', { config: this.config });
+    this.testConfig = { ...this.testConfig, ...newConfig };
+    this.emit('configUpdated', { config: this.testConfig });
   }
 
   public getConfig(): TestConfig {
-    return { ...this.config };
+    return { ...this.testConfig };
   }
 
   // Utility Methods
   private createTimeoutPromise(testId: string): Promise<never> {
     return new Promise((_, reject) => {
       setTimeout(() => {
-        reject(new Error(`Test ${testId} timed out after ${this.config.timeout}ms`));
-      }, this.config.timeout);
+        reject(new Error(`Test ${testId} timed out after ${this.testConfig.timeout}ms`));
+      }, this.testConfig.timeout);
     });
   }
 

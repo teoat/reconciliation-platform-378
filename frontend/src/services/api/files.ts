@@ -3,32 +3,37 @@
 // ============================================================================
 
 import { apiClient } from '../apiClient';
+import { BaseApiService } from './BaseApiService';
 import { FileUploadResponse } from '../apiClient/types';
 import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
+import type { ErrorHandlingResult } from '../errorHandling';
 
-export class FilesApiService {
+export class FilesApiService extends BaseApiService {
   static async uploadFile(
     projectId: string,
     file: File,
-    onProgress?: (progress: number) => void
-  ): Promise<FileUploadResponse> {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('project_id', projectId);
+    _onProgress?: (progress: number) => void
+  ): Promise<ErrorHandlingResult<FileUploadResponse>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.uploadFile(
+          projectId,
+          file,
+          { project_id: projectId, name: file.name, source_type: 'file' }
+        );
+        const result = this.transformResponse<FileUploadResponse>(response);
 
-      const response = await apiClient.uploadFile(
-        projectId,
-        file,
-        { project_id: projectId, name: file.name, source_type: 'file' }
-      );
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+        // Invalidate files cache
+        await this.invalidateCache(`files:${projectId}:*`);
+
+        return result;
+      },
+      {
+        component: 'FilesApiService',
+        action: 'uploadFile',
+        projectId
       }
-      return response.data as FileUploadResponse;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to upload file');
-    }
+    );
   }
 
   static async getFiles(
@@ -99,29 +104,41 @@ export class FilesApiService {
     }
   }
 
-  static async getFilePreview(fileId: string) {
-    try {
-      const response = await apiClient.get(`/api/files/${fileId}/preview`);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async getFilePreview(fileId: string): Promise<ErrorHandlingResult<unknown>> {
+    return this.withErrorHandling(
+      async () => {
+        const cacheKey = `file:${fileId}:preview`;
+        return this.getCached(
+          cacheKey,
+          async () => {
+            const response = await apiClient.get(`/api/files/${fileId}/preview`);
+            return this.transformResponse(response);
+          },
+          300000 // 5 minutes TTL
+        );
+      },
+      {
+        component: 'FilesApiService',
+        action: 'getFilePreview'
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch file preview');
-    }
+    );
   }
 
-  static async downloadFile(fileId: string) {
-    try {
-      const response = await apiClient.get(`/api/files/${fileId}/download`, {
-        responseType: 'blob',
-      });
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async downloadFile(fileId: string): Promise<ErrorHandlingResult<Blob>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.get(`/api/files/${fileId}/download`, {
+          responseType: 'blob',
+        });
+        if (response.error) {
+          throw new Error(getErrorMessageFromApiError(response.error));
+        }
+        return response.data as Blob;
+      },
+      {
+        component: 'FilesApiService',
+        action: 'downloadFile'
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to download file');
-    }
+    );
   }
 }

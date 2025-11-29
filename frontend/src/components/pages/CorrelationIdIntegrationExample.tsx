@@ -6,9 +6,9 @@
 
 import React, { useState } from 'react';
 import { logger } from '@/services/logger';
-import { UserFriendlyError, ErrorCodeDisplay, ErrorHistory } from '../ui';
-import { useApiErrorHandler } from '../../hooks/useApiErrorHandler';
-import { extractErrorFromFetchResponseAsync } from '../../utils/errorExtractionAsync';
+import { UserFriendlyError, ErrorCodeDisplay, ErrorHistory } from '@/components/ui';
+import { useApiErrorHandler } from '@/hooks/useApiErrorHandler';
+import { extractErrorFromFetchResponseAsync } from '@/utils/errorExtractionAsync';
 
 /**
  * Correlation ID Integration Example
@@ -32,10 +32,10 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
       const result = await handleApiCall(fetch('/api/data'), {
         onSuccess: (data) => {
           setData(data as Record<string, unknown>);
-          logger.info('Success:', data as any);
+          logger.info('Success:', data);
         },
         onError: (extracted) => {
-          logger.info('Error with correlation ID:', String(extracted.correlationId || '') as any);
+          logger.info('Error with correlation ID:', String(extracted.correlationId || ''));
         },
       });
 
@@ -67,8 +67,8 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
           extracted.correlationId ? String(extracted.correlationId) : undefined
         );
 
-        logger.info('Correlation ID:', String(extracted.correlationId || '') as any);
-        logger.info('Error Code:', String(extracted.errorCode || '') as any);
+        logger.info('Correlation ID:', String(extracted.correlationId || ''));
+        logger.info('Error Code:', String(extracted.errorCode || ''));
 
         return;
       }
@@ -96,7 +96,7 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
         response.headers.get('X-Correlation-ID') ||
         undefined;
 
-      logger.info('Correlation ID from headers:', String(correlationId || '') as any);
+      logger.info('Correlation ID from headers:', String(correlationId || ''));
 
       if (!response.ok) {
         const extracted = await extractErrorFromFetchResponseAsync(response);
@@ -169,7 +169,7 @@ export const CorrelationIdIntegrationExample: React.FC = () => {
           <ErrorHistory
             errors={state.errorHistory}
             onErrorSelect={(error) => {
-              logger.info('Selected error with correlation ID:', String(error.correlationId || '') as any);
+              logger.info('Selected error with correlation ID:', String(error.correlationId || ''));
             }}
             onErrorDismiss={actions.removeFromHistory}
             maxItems={10}

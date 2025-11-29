@@ -2,7 +2,7 @@
 // Implements advanced memoization, debouncing, and performance monitoring
 
 import { useCallback, useMemo, useRef, useEffect, useState } from 'react';
-import { logger } from '../services/logger';
+import { logger } from '@/services/logger';
 
 // ============================================================================
 // ADVANCED MEMOIZATION UTILITIES
@@ -92,18 +92,18 @@ export function useDebounce<T extends (...args: unknown[]) => unknown>(
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
       if (immediate && !lastCallRef.current) {
-        lastResultRef.current = callback(...args);
+        lastResultRef.current = callback(...args) as ReturnType<T>;
         lastCallRef.current = now;
       }
 
       if (maxWait && (!lastCallRef.current || now - lastCallRef.current >= maxWait)) {
-        lastResultRef.current = callback(...args);
+        lastResultRef.current = callback(...args) as ReturnType<T>;
         lastCallRef.current = now;
         if (maxTimeoutRef.current) clearTimeout(maxTimeoutRef.current);
       } else {
         timeoutRef.current = setTimeout(() => {
           if (!immediate || now - (lastCallRef.current || 0) >= delay) {
-            lastResultRef.current = callback(...args);
+            lastResultRef.current = callback(...args) as ReturnType<T>;
           }
           lastCallRef.current = now;
         }, delay);
@@ -111,7 +111,7 @@ export function useDebounce<T extends (...args: unknown[]) => unknown>(
         if (maxWait && !maxTimeoutRef.current) {
           maxTimeoutRef.current = setTimeout(() => {
             if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            lastResultRef.current = callback(...args);
+            lastResultRef.current = callback(...args) as ReturnType<T>;
             lastCallRef.current = now;
           }, maxWait);
         }
@@ -148,18 +148,18 @@ export function useThrottle<T extends (...args: unknown[]) => unknown>(
 
       if (!lastCallRef.current || now - lastCallRef.current >= delay) {
         if (leading) {
-          lastResultRef.current = callback(...args);
+          lastResultRef.current = callback(...args) as ReturnType<T>;
           lastCallRef.current = now;
         } else if (trailing) {
           lastCallRef.current = now;
           timeoutRef.current = setTimeout(() => {
-            lastResultRef.current = callback(...args);
+            lastResultRef.current = callback(...args) as ReturnType<T>;
           }, delay);
         }
       } else if (trailing && !timeoutRef.current) {
         timeoutRef.current = setTimeout(
           () => {
-            lastResultRef.current = callback(...args);
+            lastResultRef.current = callback(...args) as ReturnType<T>;
             lastCallRef.current = now;
           },
           delay - (now - lastCallRef.current)
@@ -412,11 +412,14 @@ export const performanceUtils = {
   useThrottle,
   useVirtualization,
   usePerformanceMeasure,
-  useRenderPerformance,
+  useRenderPerformance: useRenderPerformanceOptimized,
   useBatchedState,
   useEventHandlers,
   useLazyLoad,
   useResourcePreloader,
 };
+
+// Export with alias for backward compatibility
+export { useRenderPerformanceOptimized as useRenderPerformance };
 
 export default performanceUtils;

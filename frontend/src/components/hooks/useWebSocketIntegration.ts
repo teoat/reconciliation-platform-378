@@ -103,8 +103,8 @@ const { isConnected, sendMessage: wsSendMessage, on, off } = useWebSocket()
       if (isConnected) {
         wsSendMessage({
           type: 'subscribe_job_progress',
-          job_id: jobId,
-        });
+          data: { job_id: jobId },
+        } as Partial<import('@/services/websocket/types').WebSocketMessage>);
         setSubscribedJobs((prev) => new Set([...prev, jobId]));
       }
     },
@@ -116,8 +116,8 @@ const { isConnected, sendMessage: wsSendMessage, on, off } = useWebSocket()
       if (isConnected) {
         wsSendMessage({
           type: 'unsubscribe_job_progress',
-          job_id: jobId,
-        });
+          data: { job_id: jobId },
+        } as Partial<import('@/services/websocket/types').WebSocketMessage>);
         setSubscribedJobs((prev) => {
           const newSet = new Set(prev);
           newSet.delete(jobId);

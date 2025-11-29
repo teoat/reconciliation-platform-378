@@ -3,10 +3,12 @@
 // ============================================================================
 
 import { apiClient } from '../apiClient';
+import type { ApiResponse } from '../apiClient/types';
+import { BaseApiService, type PaginatedResult } from './BaseApiService';
 import type { ReconciliationRecord } from '../../types/index';
 import type { ReconciliationStats } from '../../types/backend-aligned';
-import type { ReconciliationMatch } from '../../store/unifiedStore';
 import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
+import type { ErrorHandlingResult } from '../errorHandling';
 
 /**
  * Reconciliation API Service
@@ -19,7 +21,7 @@ import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
  * const jobs = await ReconciliationApiService.getReconciliationJobs('project-123');
  * ```
  */
-export class ReconciliationApiService {
+export class ReconciliationApiService extends BaseApiService {
   /**
    * Fetches reconciliation jobs for a project.
    * 
@@ -87,18 +89,25 @@ export class ReconciliationApiService {
    * const job = await ReconciliationApiService.getReconciliationJob('job-123');
    * ```
    */
-  static async getReconciliationJob(jobId: string) {
-    try {
-      const response = await apiClient.get(`/api/reconciliation/jobs/${jobId}`);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async getReconciliationJob(jobId: string): Promise<ErrorHandlingResult<unknown>> {
+    return this.withErrorHandling(
+      async () => {
+        const cacheKey = `reconciliation:job:${jobId}`;
+        return this.getCached(
+          cacheKey,
+          async () => {
+            const response = await apiClient.get(`/api/reconciliation/jobs/${jobId}`);
+            return this.transformResponse(response);
+          },
+          60000 // 1 minute TTL (frequently updated)
+        );
+      },
+      {
+        component: 'ReconciliationApiService',
+        action: 'getReconciliationJob',
+        workflowStage: 'fetch'
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : 'Failed to fetch reconciliation job'
-      );
-    }
+    );
   }
 
   /**
@@ -140,21 +149,27 @@ export class ReconciliationApiService {
         weight?: number;
       }>;
     }
-  ) {
-    try {
-      const response = await apiClient.post(
-        `/api/projects/${projectId}/reconciliation/jobs`,
-        jobData
-      );
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  ): Promise<ErrorHandlingResult<unknown>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.post(
+          `/api/projects/${projectId}/reconciliation/jobs`,
+          jobData
+        );
+        const result = this.transformResponse(response);
+
+        // Invalidate reconciliation jobs cache
+        await this.invalidateCache(`reconciliation:jobs:${projectId}:*`);
+
+        return result;
+      },
+      {
+        component: 'ReconciliationApiService',
+        action: 'startReconciliationJob',
+        projectId,
+        workflowStage: 'start'
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : 'Failed to start reconciliation job'
-      );
-    }
+    );
   }
 
   /**
@@ -169,16 +184,23 @@ export class ReconciliationApiService {
    * const job = await ReconciliationApiService.stopReconciliationJob('job-123');
    * ```
    */
-  static async stopReconciliationJob(jobId: string) {
-    try {
-      const response = await apiClient.post(`/api/reconciliation/jobs/${jobId}/stop`);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async stopReconciliationJob(jobId: string): Promise<ErrorHandlingResult<unknown>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.post(`/api/reconciliation/jobs/${jobId}/stop`);
+        const result = this.transformResponse(response);
+
+        // Invalidate job cache
+        await this.invalidateCache(`reconciliation:job:${jobId}`);
+
+        return result;
+      },
+      {
+        component: 'ReconciliationApiService',
+        action: 'stopReconciliationJob',
+        workflowStage: 'stop'
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to stop reconciliation job');
-    }
+    );
   }
 
   /**
@@ -207,32 +229,38 @@ export class ReconciliationApiService {
       per_page?: number;
       status?: string;
     } = {}
-  ) {
-    try {
-      const { page = 1, per_page = 20, status } = params;
-      const response = await apiClient.get(`/api/reconciliation/jobs/${jobId}/results`, {
-        params: { page, per_page, status },
-      });
+  ): Promise<ErrorHandlingResult<PaginatedResult<unknown> & { results: unknown[] }>> {
+    return this.withErrorHandling(
+      async () => {
+        const { page = 1, per_page = 20, status } = params;
+        const cacheKey = `reconciliation:results:${jobId}:${JSON.stringify(params)}`;
 
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+        const result = await this.getCached(
+          cacheKey,
+          async () => {
+            const response = await apiClient.get(`/api/reconciliation/jobs/${jobId}/results`, {
+              params: { page, per_page, status },
+            });
+
+            const paginated = this.transformPaginatedResponse<unknown>(response as unknown as ApiResponse<{ data?: unknown[]; items?: unknown[]; pagination?: unknown }>);
+
+            return {
+              results: paginated.items,
+              items: paginated.items,
+              pagination: paginated.pagination
+            };
+          },
+          60000 // 1 minute TTL (frequently updated)
+        );
+
+        return result;
+      },
+      {
+        component: 'ReconciliationApiService',
+        action: 'getReconciliationResults',
+        workflowStage: 'fetch'
       }
-
-      const responseData = response.data as { data?: unknown[]; pagination?: unknown } | undefined;
-      return {
-        results: responseData?.data || [],
-        pagination: responseData?.pagination || {
-          page,
-          per_page,
-          total: (responseData?.data as unknown[])?.length || 0,
-          total_pages: Math.ceil(((responseData?.data as unknown[])?.length || 0) / per_page),
-        },
-      };
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : 'Failed to fetch reconciliation results'
-      );
-    }
+    );
   }
 
   /**
@@ -248,18 +276,26 @@ export class ReconciliationApiService {
    * // Returns: { totalRecords, matchedRecords, unmatchedRecords, confidenceScore }
    * ```
    */
-  static async getReconciliationStats(projectId: string) {
-    try {
-      const response = await apiClient.get(`/api/projects/${projectId}/reconciliation/stats`);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async getReconciliationStats(projectId: string): Promise<ErrorHandlingResult<ReconciliationStats>> {
+    return this.withErrorHandling(
+      async () => {
+        const cacheKey = `reconciliation:stats:${projectId}`;
+        return this.getCached(
+          cacheKey,
+          async () => {
+            const response = await apiClient.get(`/api/projects/${projectId}/reconciliation/stats`);
+            const data = this.transformResponse<{ data?: ReconciliationStats }>(response as unknown as ApiResponse<{ data?: ReconciliationStats }>);
+            return (data as { data?: ReconciliationStats })?.data || data as ReconciliationStats;
+          },
+          60000 // 1 minute TTL (frequently updated)
+        );
+      },
+      {
+        component: 'ReconciliationApiService',
+        action: 'getReconciliationStats',
+        projectId
       }
-      return response.data as ReconciliationStats;
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : 'Failed to fetch reconciliation stats'
-      );
-    }
+    );
   }
 
   /**
@@ -274,18 +310,23 @@ export class ReconciliationApiService {
    * const record = await ReconciliationApiService.approveReconciliationRecord('record-123');
    * ```
    */
-  static async approveReconciliationRecord(recordId: string) {
-    try {
-      const response = await apiClient.post(`/api/reconciliation/records/${recordId}/approve`);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async approveReconciliationRecord(recordId: string): Promise<ErrorHandlingResult<unknown>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.post(`/api/reconciliation/records/${recordId}/approve`);
+        const result = this.transformResponse(response);
+
+        // Invalidate records cache
+        await this.invalidateCache(`reconciliation:records:*`);
+
+        return result;
+      },
+      {
+        component: 'ReconciliationApiService',
+        action: 'approveReconciliationRecord',
+        workflowStage: 'approve'
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : 'Failed to approve reconciliation record'
-      );
-    }
+    );
   }
 
   /**
@@ -304,20 +345,25 @@ export class ReconciliationApiService {
    * );
    * ```
    */
-  static async rejectReconciliationRecord(recordId: string, reason?: string) {
-    try {
-      const response = await apiClient.post(`/api/reconciliation/records/${recordId}/reject`, {
-        reason,
-      });
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  static async rejectReconciliationRecord(recordId: string, reason?: string): Promise<ErrorHandlingResult<unknown>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.post(`/api/reconciliation/records/${recordId}/reject`, {
+          reason,
+        });
+        const result = this.transformResponse(response);
+
+        // Invalidate records cache
+        await this.invalidateCache(`reconciliation:records:*`);
+
+        return result;
+      },
+      {
+        component: 'ReconciliationApiService',
+        action: 'rejectReconciliationRecord',
+        workflowStage: 'reject'
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(
-        error instanceof Error ? error.message : 'Failed to reject reconciliation record'
-      );
-    }
+    );
   }
 
   /**
@@ -350,32 +396,74 @@ export class ReconciliationApiService {
       status?: string;
       match_type?: string;
     } = {}
-  ) {
-    try {
-      const { page = 1, per_page = 20 } = params;
-      const response = await apiClient.getReconciliationRecords(projectId, page, per_page);
+  ): Promise<ErrorHandlingResult<PaginatedResult<unknown> & { records: unknown[] }>> {
+    return this.withErrorHandling(
+      async () => {
+        const { page = 1, per_page = 20 } = params;
+        const cacheKey = `reconciliation:records:${projectId}:${JSON.stringify(params)}`;
 
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+        const result = await this.getCached(
+          cacheKey,
+          async () => {
+            const response = await apiClient.getReconciliationRecords(projectId, page, per_page);
+            const paginated = this.transformPaginatedResponse(response);
+
+            return {
+              records: paginated.items,
+              items: paginated.items,
+              pagination: paginated.pagination
+            };
+          },
+          60000 // 1 minute TTL (frequently updated)
+        );
+
+        return result;
+      },
+      {
+        component: 'ReconciliationApiService',
+        action: 'getReconciliationRecords',
+        projectId
       }
+    );
+  }
 
-      return {
-        records: response.data?.items || [],
-        pagination: response.data ? {
-          page: response.data.page,
-          per_page: response.data.per_page,
-          total: response.data.total,
-          total_pages: response.data.total_pages,
-        } : {
-          page,
-          per_page,
-          total: 0,
-          total_pages: 0,
-        }
-      };
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch reconciliation records');
-    }
+  /**
+   * Updates a reconciliation record.
+   * 
+   * @param recordId - Record ID to update
+   * @param recordData - Record data to update
+   * @returns Promise resolving to updated record data
+   * @throws {Error} If record not found or request fails
+   * 
+   * @example
+   * ```typescript
+   * const record = await ReconciliationApiService.updateReconciliationRecord('record-123', {
+   *   status: 'resolved',
+   *   notes: 'Updated notes'
+   * });
+   * ```
+   */
+  static async updateReconciliationRecord(
+    recordId: string,
+    recordData: Record<string, unknown>
+  ): Promise<ErrorHandlingResult<ReconciliationRecord>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.put(`/api/v1/reconciliation/records/${recordId}`, recordData);
+        const data = this.transformResponse<ReconciliationRecord>(response as unknown as ApiResponse<ReconciliationRecord>);
+        const result = data as ReconciliationRecord;
+
+        // Invalidate records cache
+        await this.invalidateCache(`reconciliation:records:*`);
+
+        return result;
+      },
+      {
+        component: 'ReconciliationApiService',
+        action: 'updateReconciliationRecord',
+        workflowStage: 'update'
+      }
+    );
   }
 
   /**
@@ -405,32 +493,35 @@ export class ReconciliationApiService {
       match_type?: string;
       status?: string;
     } = {}
-  ) {
-    try {
-      const { page = 1, per_page = 20 } = params;
-      const response = await apiClient.getReconciliationMatches(projectId, page, per_page);
+  ): Promise<ErrorHandlingResult<PaginatedResult<unknown> & { matches: unknown[] }>> {
+    return this.withErrorHandling(
+      async () => {
+        const { page = 1, per_page = 20 } = params;
+        const cacheKey = `reconciliation:matches:${projectId}:${JSON.stringify(params)}`;
 
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+        const result = await this.getCached(
+          cacheKey,
+          async () => {
+            const response = await apiClient.getReconciliationMatches(projectId, page, per_page);
+            const paginated = this.transformPaginatedResponse(response);
+
+            return {
+              matches: paginated.items,
+              items: paginated.items,
+              pagination: paginated.pagination
+            };
+          },
+          60000 // 1 minute TTL (frequently updated)
+        );
+
+        return result;
+      },
+      {
+        component: 'ReconciliationApiService',
+        action: 'getReconciliationMatches',
+        projectId
       }
-
-      return {
-        matches: response.data?.items || [],
-        pagination: response.data ? {
-          page: response.data.page,
-          per_page: response.data.per_page,
-          total: response.data.total,
-          total_pages: response.data.total_pages,
-        } : {
-          page,
-          per_page,
-          total: 0,
-          total_pages: 0,
-        }
-      };
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to fetch reconciliation matches');
-    }
+    );
   }
 
   /**
@@ -463,21 +554,29 @@ export class ReconciliationApiService {
       match_type: 'exact' | 'fuzzy' | 'manual';
       confidence_score?: number;
     }
-  ) {
-    try {
-      const response = await apiClient.createReconciliationMatch(projectId, {
-        record_a_id: matchData.source_record_id,
-        record_b_id: matchData.target_record_id,
-        confidence_score: matchData.confidence_score || 1.0,
-        status: 'matched'
-      });
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  ): Promise<ErrorHandlingResult<unknown>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.createReconciliationMatch(projectId, {
+          record_a_id: matchData.source_record_id,
+          record_b_id: matchData.target_record_id,
+          confidence_score: matchData.confidence_score || 1.0,
+          status: 'matched'
+        });
+        const result = this.transformResponse(response);
+
+        // Invalidate matches cache
+        await this.invalidateCache(`reconciliation:matches:${projectId}:*`);
+
+        return result;
+      },
+      {
+        component: 'ReconciliationApiService',
+        action: 'createReconciliationMatch',
+        projectId,
+        workflowStage: 'create'
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to create reconciliation match');
-    }
+    );
   }
 
   /**
@@ -509,16 +608,24 @@ export class ReconciliationApiService {
       confidence_score?: number;
       status?: 'matched' | 'unmatched' | 'discrepancy' | 'resolved';
     }
-  ) {
-    try {
-      const response = await apiClient.updateReconciliationMatch(projectId, matchId, matchData);
-      if (response.error) {
-        throw new Error(getErrorMessageFromApiError(response.error));
+  ): Promise<ErrorHandlingResult<unknown>> {
+    return this.withErrorHandling(
+      async () => {
+        const response = await apiClient.updateReconciliationMatch(projectId, matchId, matchData);
+        const result = this.transformResponse(response);
+
+        // Invalidate matches cache
+        await this.invalidateCache(`reconciliation:matches:${projectId}:*`);
+
+        return result;
+      },
+      {
+        component: 'ReconciliationApiService',
+        action: 'updateReconciliationMatch',
+        projectId,
+        workflowStage: 'update'
       }
-      return response.data;
-    } catch (error) {
-      throw new Error(error instanceof Error ? error.message : 'Failed to update reconciliation match');
-    }
+    );
   }
 
   /**
@@ -534,7 +641,7 @@ export class ReconciliationApiService {
    * const match = await ReconciliationApiService.approveMatch('project-123', 'match-456');
    * ```
    */
-  static async approveMatch(projectId: string, matchId: string) {
+  static async approveMatch(projectId: string, matchId: string): Promise<ErrorHandlingResult<unknown>> {
     return this.updateReconciliationMatch(projectId, matchId, { status: 'matched' });
   }
 
@@ -551,7 +658,7 @@ export class ReconciliationApiService {
    * const match = await ReconciliationApiService.rejectMatch('project-123', 'match-456');
    * ```
    */
-  static async rejectMatch(projectId: string, matchId: string) {
+  static async rejectMatch(projectId: string, matchId: string): Promise<ErrorHandlingResult<unknown>> {
     return this.updateReconciliationMatch(projectId, matchId, { status: 'unmatched' });
   }
 }

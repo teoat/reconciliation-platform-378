@@ -46,7 +46,7 @@ export interface CustomReport {
 }
 
 export interface CustomReportsProps {
-  project: import('../services/apiClient/types').BackendProject;
+  project: import('../../services/apiClient/types').BackendProject;
   onProgressUpdate?: (step: string) => void;
 }
 

@@ -275,6 +275,29 @@ export class ApiService {
     return ReconciliationApiService.getReconciliationRecords(projectId, params);
   }
 
+  /**
+   * Updates a reconciliation record.
+   *
+   * @param recordId - Record ID to update
+   * @param recordData - Record data to update
+   * @returns Promise resolving to updated record data
+   * @throws {ApiError} If record not found or request fails
+   *
+   * @example
+   * ```typescript
+   * const record = await ApiService.updateReconciliationRecord('record-123', {
+   *   status: 'resolved',
+   *   notes: 'Updated notes'
+   * });
+   * ```
+   */
+  static async updateReconciliationRecord(
+    recordId: string,
+    recordData: Record<string, unknown>
+  ) {
+    return ReconciliationApiService.updateReconciliationRecord(recordId, recordData);
+  }
+
   static async getReconciliationMatches(
     projectId: string,
     params: {

@@ -16,6 +16,19 @@ type ConnectionStatusMessage = WebSocketMessage;
 type CollaborationUsersMessage = WebSocketMessage;
 type CollaborationCommentMessage = WebSocketMessage;
 
+// Helper function to safely extract data from WebSocketMessage union type
+function getMessageData(message: WebSocketMessage): Record<string, unknown> {
+  return 'data' in message ? (message.data as Record<string, unknown>) : {};
+}
+
+function getMessageId(message: WebSocketMessage): string | undefined {
+  return 'id' in message ? (message.id as string | undefined) : undefined;
+}
+
+function getMessageTimestamp(message: WebSocketMessage): string | undefined {
+  return 'timestamp' in message ? (message.timestamp as string | undefined) : undefined;
+}
+
 // WebSocket integration hook for real-time updates
 export const useWebSocketIntegration = () => {
   const {
@@ -63,15 +76,16 @@ export const useWebSocketIntegration = () => {
         logger.info('Reconciliation progress:', { data });
 
         // Show progress notification
-        const jobId = data.payload.jobId as string | undefined;
-        const progress = data.payload.progress as number | undefined;
+        const messageData = getMessageData(data);
+        const jobId = messageData.jobId as string | undefined;
+        const progress = messageData.progress as number | undefined;
         dispatch(
           addNotification({
-            id: data.id || `notification-${Date.now()}-${Math.random()}`,
+            id: getMessageId(data) || `notification-${Date.now()}-${Math.random()}`,
             type: 'info',
             title: 'Reconciliation Progress',
             message: `Job ${jobId || 'unknown'} is ${progress || 0}% complete`,
-            timestamp: typeof data.timestamp === 'string' ? data.timestamp : new Date().toISOString(),
+            timestamp: getMessageTimestamp(data) || new Date().toISOString(),
             read: false,
           })
         );
@@ -84,7 +98,8 @@ export const useWebSocketIntegration = () => {
       (data: ReconciliationCompletedMessage) => {
         logger.info('Reconciliation completed:', { data });
         // Complete job in unified store
-        const jobId = data.payload.jobId as string | undefined;
+        const messageData = getMessageData(data);
+        const jobId = messageData.jobId as string | undefined;
         if (jobId) {
           dispatch(reconciliationJobsActions.completeJob(jobId));
         }
@@ -92,11 +107,11 @@ export const useWebSocketIntegration = () => {
         // Show completion notification
         dispatch(
           addNotification({
-            id: data.id || `notification-${Date.now()}-${Math.random()}`,
+            id: getMessageId(data) || `notification-${Date.now()}-${Math.random()}`,
             type: 'success',
             title: 'Reconciliation Completed',
             message: `Job ${jobId || 'unknown'} has been completed successfully`,
-            timestamp: typeof data.timestamp === 'string' ? data.timestamp : new Date().toISOString(),
+            timestamp: getMessageTimestamp(data) || new Date().toISOString(),
             read: false,
           })
         );
@@ -106,8 +121,9 @@ export const useWebSocketIntegration = () => {
 
     const errorSubId = subscribe('reconciliation:error', (data: ReconciliationErrorMessage) => {
       logger.error('Reconciliation error:', data as unknown as Record<string, unknown>);
-      const jobId = data.payload.jobId as string | undefined;
-      const error = data.payload.error as string | Error | undefined;
+      const messageData = getMessageData(data);
+      const jobId = messageData.jobId as string | undefined;
+      const error = messageData.error as string | Error | undefined;
       // Fail job in unified store
       if (jobId) {
         dispatch(
@@ -121,11 +137,11 @@ export const useWebSocketIntegration = () => {
       // Show error notification
       dispatch(
         addNotification({
-          id: data.id || `notification-${Date.now()}-${Math.random()}`,
+          id: getMessageId(data) || `notification-${Date.now()}-${Math.random()}`,
           type: 'error',
           title: 'Reconciliation Error',
           message: `Job ${jobId || 'unknown'} failed: ${error instanceof Error ? error.message : String(error || 'Unknown error')}`,
-          timestamp: typeof data.timestamp === 'string' ? data.timestamp : new Date().toISOString(),
+          timestamp: getMessageTimestamp(data) || new Date().toISOString(),
           read: false,
         })
       );
@@ -135,12 +151,13 @@ export const useWebSocketIntegration = () => {
     // Subscribe to user presence updates
     const presenceSubId = subscribe('user:presence', (data: UserPresenceMessage) => {
       logger.info('User presence update:', { data });
-      const userId = data.payload.userId as string | undefined;
-      const isOnline = data.payload.isOnline as boolean | undefined;
+      const messageData = getMessageData(data);
+      const userId = messageData.userId as string | undefined;
+      const isOnline = messageData.isOnline as boolean | undefined;
       setActiveUsers((prev) => {
         const updated = prev.filter((user) => {
-          const userPayload = (user as WebSocketMessage).payload || {};
-          return (userPayload.userId as string | undefined) !== userId;
+          const userData = getMessageData(user as WebSocketMessage);
+          return (userData.userId as string | undefined) !== userId;
         });
         if (isOnline && userId) {
           updated.push(data);
@@ -161,16 +178,17 @@ export const useWebSocketIntegration = () => {
     // Subscribe to notifications
     const notificationSubId = subscribe('notification:new', (data: NotificationMessage) => {
       logger.info('New notification:', { data });
-      const type = data.payload.type as string | undefined;
-      const title = data.payload.title as string | undefined;
-      const message = data.payload.message as string | undefined;
+      const messageData = getMessageData(data);
+      const type = messageData.type as string | undefined;
+      const title = messageData.title as string | undefined;
+      const message = messageData.message as string | undefined;
       dispatch(
         addNotification({
-          id: data.id || `notification-${Date.now()}-${Math.random()}`,
+          id: getMessageId(data) || `notification-${Date.now()}-${Math.random()}`,
           type: (type as 'info' | 'success' | 'warning' | 'error') || 'info',
           title: title || 'Notification',
           message: message || '',
-          timestamp: typeof data.timestamp === 'string' ? data.timestamp : new Date().toISOString(),
+          timestamp: getMessageTimestamp(data) || new Date().toISOString(),
           read: false,
         })
       );
@@ -180,14 +198,15 @@ export const useWebSocketIntegration = () => {
     // Subscribe to system alerts
     const alertSubId = subscribe('system:alert', (data: NotificationMessage) => {
       logger.info('System alert:', { data });
-      const message = data.payload.message as string | undefined;
+      const messageData = getMessageData(data);
+      const message = messageData.message as string | undefined;
       dispatch(
         addNotification({
-          id: data.id || `notification-${Date.now()}-${Math.random()}`,
+          id: getMessageId(data) || `notification-${Date.now()}-${Math.random()}`,
           type: 'warning',
           title: 'System Alert',
           message: message || '',
-          timestamp: typeof data.timestamp === 'string' ? data.timestamp : new Date().toISOString(),
+          timestamp: getMessageTimestamp(data) || new Date().toISOString(),
           read: false,
         })
       );
@@ -196,7 +215,8 @@ export const useWebSocketIntegration = () => {
 
     // Subscribe to connection status changes
     const statusSubId = subscribe('connection:status', (data: ConnectionStatusMessage) => {
-      const status = data.payload.status as string | undefined;
+      const messageData = getMessageData(data);
+      const status = messageData.status as string | undefined;
       if (status && ['connected', 'connecting', 'disconnected', 'reconnecting', 'error'].includes(status)) {
         setConnectionStatus(status as typeof connectionStatus);
       }
@@ -465,10 +485,11 @@ export const useRealtimeReconciliation = (jobId?: string) => {
     const progressSubId = subscribe(
       'reconciliation:progress',
       (data: ReconciliationProgressMessage) => {
-        const dataJobId = data.payload.jobId as string | undefined;
+        const messageData = getMessageData(data);
+        const dataJobId = messageData.jobId as string | undefined;
         if (dataJobId === jobId) {
-          setProgress(data.payload.progress as number | undefined || 0);
-          setIsRunning((data.payload.status as string | undefined) === 'running');
+          setProgress((messageData.progress as number | undefined) || 0);
+          setIsRunning((messageData.status as string | undefined) === 'running');
           setJobStatus(data as unknown as Record<string, unknown>);
         }
       }
@@ -477,7 +498,8 @@ export const useRealtimeReconciliation = (jobId?: string) => {
     const completionSubId = subscribe(
       'reconciliation:completed',
       (data: ReconciliationCompletedMessage) => {
-        const dataJobId = data.payload.jobId as string | undefined;
+        const messageData = getMessageData(data);
+        const dataJobId = messageData.jobId as string | undefined;
         if (dataJobId === jobId) {
           setIsRunning(false);
           setJobStatus(data as unknown as Record<string, unknown>);
@@ -486,10 +508,12 @@ export const useRealtimeReconciliation = (jobId?: string) => {
     );
 
     const errorSubId = subscribe('reconciliation:error', (data: ReconciliationErrorMessage) => {
-      const dataJobId = data.payload.jobId as string | undefined;
+      const messageData = getMessageData(data);
+      const dataJobId = messageData.jobId as string | undefined;
       if (dataJobId === jobId) {
         setIsRunning(false);
-        const errorValue = data.payload.error as string | Error | undefined;
+        const messageData = getMessageData(data);
+        const errorValue = messageData.error as string | Error | undefined;
         setError(errorValue instanceof Error ? errorValue.message : (errorValue as string | undefined));
       }
     });
@@ -523,9 +547,10 @@ export const useRealtimeCollaboration = (projectId?: string) => {
     const collaboratorsSubId = subscribe(
       'collaboration:users',
       (data: CollaborationUsersMessage) => {
-        const dataProjectId = data.payload.projectId as string | undefined;
+        const messageData = getMessageData(data);
+        const dataProjectId = messageData.projectId as string | undefined;
         if (dataProjectId === projectId) {
-          setCollaborators((data.payload.users as UserPresenceMessage[]) || []);
+          setCollaborators((messageData.users as UserPresenceMessage[]) || []);
         }
       }
     );
@@ -533,7 +558,8 @@ export const useRealtimeCollaboration = (projectId?: string) => {
     const commentsSubId = subscribe(
       'collaboration:comment',
       (data: CollaborationCommentMessage) => {
-        const dataProjectId = data.payload.projectId as string | undefined;
+        const messageData = getMessageData(data);
+      const dataProjectId = messageData.projectId as string | undefined;
         if (dataProjectId === projectId) {
           setComments((prev) => [...prev, data]);
         }
@@ -541,8 +567,9 @@ export const useRealtimeCollaboration = (projectId?: string) => {
     );
 
     const cursorSubId = subscribe('collaboration:cursor', (data: UserPresenceMessage) => {
-      const dataProjectId = data.payload.projectId as string | undefined;
-      const userId = data.payload.userId as string | undefined;
+      const messageData = getMessageData(data);
+      const dataProjectId = messageData.projectId as string | undefined;
+      const userId = messageData.userId as string | undefined;
       if (dataProjectId === projectId && userId) {
         setCursors((prev) => {
           const newCursors = new Map(prev);
@@ -553,8 +580,9 @@ export const useRealtimeCollaboration = (projectId?: string) => {
     });
 
     const selectionSubId = subscribe('collaboration:selection', (data: UserPresenceMessage) => {
-      const dataProjectId = data.payload.projectId as string | undefined;
-      const userId = data.payload.userId as string | undefined;
+      const messageData = getMessageData(data);
+      const dataProjectId = messageData.projectId as string | undefined;
+      const userId = messageData.userId as string | undefined;
       if (dataProjectId === projectId && userId) {
         setSelections((prev) => {
           const newSelections = new Map(prev);

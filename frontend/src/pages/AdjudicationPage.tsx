@@ -1,14 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { CheckCircle, Clock, AlertCircle, RefreshCw, Download, Eye } from 'lucide-react';
-import { Button, StatusBadge } from '../components/ui';
-import { Modal } from '../components/ui/Modal';
-import { ErrorBoundary } from '../components/ui/ErrorBoundary';
-import { SkeletonText } from '../components/LoadingComponents';
-import { useData } from '../components/DataProvider';
-import { ApiService } from '../services/ApiService';
-import { useToast } from '../hooks/useToast';
-import { logger } from '../services/logger';
-import type { ReconciliationRecord, ReconciliationStatus } from '../types';
+import { Button, StatusBadge } from '@/components/ui';
+import { Modal } from '@/components/ui/Modal';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { SkeletonText } from '@/components/LoadingComponents';
+import { useData } from '@/components/DataProvider';
+import { ApiService } from '@/services/ApiService';
+import { useToast } from '@/hooks/useToast';
+import { logger } from '@/services/logger';
+import type { ReconciliationRecord } from '@/types/reconciliation';
+
+// Define ReconciliationStatus locally since it's not exported from types
+type ReconciliationStatus = 'matched' | 'unmatched' | 'discrepancy' | 'pending' | 'reviewed';
+
+// Extended type for AdjudicationPage that includes additional properties from API
+interface ExtendedReconciliationRecord {
+  id: string;
+  reconciliationId?: string;
+  sourceARecordId?: string;
+  sourceBRecordId?: string;
+  sources?: Array<{
+    systemName?: string;
+    data?: { amount?: number; [key: string]: unknown };
+    [key: string]: unknown;
+  }>;
+  difference?: number;
+  discrepancyAmount?: number;
+  discrepancy_amount?: number;
+  confidence?: number;
+  confidenceScore?: number;
+  confidence_score?: number;
+  matchScore?: number;
+  status: ReconciliationStatus;
+  priority?: 'low' | 'medium' | 'high' | 'critical';
+}
 
 // Helper component for progress bar with proper ARIA attributes
 const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, title }) => {
@@ -17,6 +42,7 @@ const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, 
   return (
     <div className="mt-4">
       <div className="w-full bg-gray-200 rounded-full h-2">
+        {/* eslint-disable-next-line jsx-a11y/aria-proptypes */}
         <div
           className="bg-blue-500 h-2 rounded-full"
           // Dynamic width for progress bar - acceptable inline style
@@ -34,7 +60,7 @@ const ProgressBar: React.FC<{ progress: number; title: string }> = ({ progress, 
   );
 };
 
-import { usePageOrchestration } from '../hooks/usePageOrchestration';
+import { usePageOrchestration } from '@/hooks/usePageOrchestration';
 import {
   adjudicationPageMetadata,
   getAdjudicationOnboardingSteps,
@@ -42,7 +68,7 @@ import {
   getAdjudicationWorkflowState,
   registerAdjudicationGuidanceHandlers,
   getAdjudicationGuidanceContent,
-} from '../orchestration/pages/AdjudicationPageOrchestration';
+} from '@/orchestration/pages/AdjudicationPageOrchestration';
 
 // Interfaces (shared with main index.tsx)
 export interface PageConfig {
@@ -247,25 +273,28 @@ const BasePage: React.FC<BasePageProps> = ({
       {/* Actions */}
       {actions.length > 0 && (
         <div className="flex items-center justify-end space-x-3">
-          {actions.map((action, index) => (
-            <button
-              key={index}
-              onClick={action.onClick}
-              disabled={action.loading}
-              aria-label={action.label}
-              aria-busy={action.loading}
-              className={`${
-                action.variant === 'primary'
-                  ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-                  : action.variant === 'danger'
-                    ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-                    : 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'
-              } px-4 py-2 rounded-lg flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              <action.icon className="w-4 h-4 mr-2" aria-hidden="true" />
-              {action.label}
-            </button>
-          ))}
+          {actions.map((action, index) => {
+            return (
+              // eslint-disable-next-line jsx-a11y/aria-proptypes
+              <button
+                key={index}
+                onClick={action.onClick}
+                disabled={action.loading}
+                aria-label={action.label}
+                aria-busy={action.loading}
+                className={`${
+                  action.variant === 'primary'
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+                    : action.variant === 'danger'
+                      ? 'bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
+                      : 'bg-gray-600 text-white hover:bg-gray-700 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2'
+                } px-4 py-2 rounded-lg flex items-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <action.icon className="w-4 h-4 mr-2" aria-hidden={true} />
+                {action.label}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -278,10 +307,10 @@ const BasePage: React.FC<BasePageProps> = ({
 const AdjudicationPageContent: React.FC = () => {
   const { currentProject } = useData();
   const toast = useToast();
-  const [records, setRecords] = useState<ReconciliationRecord[]>([]);
+  const [records, setRecords] = useState<ExtendedReconciliationRecord[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
-  const [selectedRecord, setSelectedRecord] = useState<ReconciliationRecord | null>(null);
+  const [selectedRecord, setSelectedRecord] = useState<ExtendedReconciliationRecord | null>(null);
 
   // Page Orchestration with Frenly AI
   const { updatePageContext } = usePageOrchestration({
@@ -290,20 +319,50 @@ const AdjudicationPageContent: React.FC = () => {
       getAdjudicationPageContext(
         currentProject?.id,
         records.length,
-        records.filter((r) => (r.status as string) === 'approved' || (r.status as string) === 'resolved' || r.status === 'reviewed').length,
-        records.filter((r) => r.status === 'pending').length,
+        records.filter((r) => {
+          const status = r.status as string;
+          return (
+            status === 'approved' ||
+            status === 'resolved' ||
+            status === 'reviewed' ||
+            status === 'matched'
+          );
+        }).length,
+        records.filter((r) => {
+          const status = r.status as string;
+          return status === 'pending' || status === 'unmatched';
+        }).length,
         currentProject?.name
       ),
     getOnboardingSteps: () =>
       getAdjudicationOnboardingSteps(
         records.length > 0,
-        records.filter((r) => (r.status as string) === 'approved' || (r.status as string) === 'resolved' || r.status === 'reviewed').length > 0
+        records.filter((r) => {
+          const status = r.status as string;
+          return (
+            status === 'approved' ||
+            status === 'resolved' ||
+            status === 'reviewed' ||
+            status === 'matched'
+          );
+        }).length > 0
       ),
     getWorkflowState: () =>
       getAdjudicationWorkflowState(
         records.length,
-        records.filter((r) => (r.status as string) === 'approved' || (r.status as string) === 'resolved' || r.status === 'reviewed').length,
-        records.filter((r) => (r.status as string) === 'approved' || r.status === 'reviewed').length
+        records.filter((r) => {
+          const status = r.status as string;
+          return (
+            status === 'approved' ||
+            status === 'resolved' ||
+            status === 'reviewed' ||
+            status === 'matched'
+          );
+        }).length,
+        records.filter((r) => {
+          const status = r.status as string;
+          return status === 'approved' || status === 'reviewed' || status === 'matched';
+        }).length
       ),
     registerGuidanceHandlers: () => registerAdjudicationGuidanceHandlers(),
     getGuidanceContent: (topic) => getAdjudicationGuidanceContent(topic),
@@ -322,9 +381,13 @@ const AdjudicationPageContent: React.FC = () => {
   useEffect(() => {
     updatePageContext({
       matchesCount: records.length,
-      resolvedCount: records.filter((r) => (r.status as string) === 'approved' || (r.status as string) === 'resolved' || r.status === 'reviewed')
-        .length,
-      pendingCount: records.filter((r) => r.status === 'pending').length,
+      resolvedCount: records.filter(
+        (r) =>
+          (r.status as string) === 'approved' ||
+          (r.status as string) === 'resolved' ||
+          (r.status as string) === 'reviewed'
+      ).length,
+      pendingCount: records.filter((r) => (r.status as string) === 'pending').length,
     });
   }, [records, updatePageContext]);
 
@@ -365,7 +428,7 @@ const AdjudicationPageContent: React.FC = () => {
         createdAt: detail.created_at,
         updatedAt: detail.created_at,
       }));
-      setRecords(records);
+      setRecords(records as ExtendedReconciliationRecord[]);
       toast.success('Records refreshed successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to refresh records';
@@ -391,14 +454,18 @@ const AdjudicationPageContent: React.FC = () => {
     setIsExporting(true);
     try {
       logger.info('Exporting records for project', { projectId: currentProject.id });
-      const data = records.map((r) => ({
-        sourceSystem: r.sourceSystem,
-        targetSystem: r.targetSystem,
-        amount: r.amount,
-        discrepancyAmount: r.discrepancyAmount,
-        status: r.status,
-        priority: r.priority,
-      }));
+      const data = records.map((r) => {
+        const enhanced = r as ExtendedReconciliationRecord;
+        return {
+          sourceSystem: enhanced.sources?.[0]?.systemName || 'unknown',
+          targetSystem:
+            enhanced.sources?.[1]?.systemName || enhanced.sources?.[0]?.systemName || 'unknown',
+          amount: (enhanced.sources?.[0]?.data as { amount?: number })?.amount || 0,
+          discrepancyAmount: enhanced.difference || r.discrepancyAmount || 0,
+          status: r.status,
+          priority: r.priority,
+        };
+      });
       const csv = [
         Object.keys(data[0] || {}).join(','),
         ...data.map((row) => Object.values(row).join(',')),
@@ -436,7 +503,11 @@ const AdjudicationPageContent: React.FC = () => {
     }
     try {
       await ApiService.approveMatch(currentProject.id, recordId);
-      setRecords((prev) => prev.map((r) => (r.id === recordId ? { ...r, status: 'reviewed' as ReconciliationStatus } : r)));
+      setRecords((prev) =>
+        prev.map((r) =>
+          r.id === recordId ? { ...r, status: 'reviewed' as ReconciliationStatus } : r
+        )
+      );
       toast.success('Record approved successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to approve record';
@@ -456,7 +527,11 @@ const AdjudicationPageContent: React.FC = () => {
     }
     try {
       await ApiService.rejectMatch(currentProject.id, recordId);
-      setRecords((prev) => prev.map((r) => (r.id === recordId ? { ...r, status: 'unmatched' as ReconciliationStatus } : r)));
+      setRecords((prev) =>
+        prev.map((r) =>
+          r.id === recordId ? { ...r, status: 'unmatched' as ReconciliationStatus } : r
+        )
+      );
       toast.success('Record rejected successfully');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to reject record';
@@ -494,13 +569,15 @@ const AdjudicationPageContent: React.FC = () => {
     },
     {
       title: 'Approved',
-      value: records.filter((r) => (r.status as string) === 'approved' || r.status === 'reviewed').length,
+      value: records.filter((r) => (r.status as string) === 'approved' || r.status === 'reviewed')
+        .length,
       icon: CheckCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       color: 'bg-green-100 text-green-600',
     },
     {
       title: 'Rejected',
-      value: records.filter((r) => (r.status as string) === 'rejected' || r.status === 'unmatched').length,
+      value: records.filter((r) => (r.status as string) === 'rejected' || r.status === 'unmatched')
+        .length,
       icon: AlertCircle as React.ComponentType<{ className?: string; 'aria-hidden'?: boolean }>,
       color: 'bg-red-100 text-red-600',
     },
@@ -584,10 +661,23 @@ const AdjudicationPageContent: React.FC = () => {
               {records.map((record) => (
                 <tr key={record.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    {record.sourceSystem} → {record.targetSystem}
+                    {(record as unknown as ExtendedReconciliationRecord).sources?.[0]?.systemName ||
+                      'unknown'}{' '}
+                    →{' '}
+                    {(record as unknown as ExtendedReconciliationRecord).sources?.[1]?.systemName ||
+                      (record as unknown as ExtendedReconciliationRecord).sources?.[0]
+                        ?.systemName ||
+                      'unknown'}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                    ${record.amount?.toLocaleString()}
+                    $
+                    {(
+                      (
+                        (record as unknown as ExtendedReconciliationRecord).sources?.[0]?.data as {
+                          amount?: number;
+                        }
+                      )?.amount || 0
+                    ).toLocaleString()}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     ${(record.discrepancyAmount ?? 0).toLocaleString()}
@@ -650,19 +740,24 @@ const AdjudicationPageContent: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Source System</p>
                 <p className="text-sm text-gray-900">
-                  {selectedRecord.sourceSystem || 'N/A'}
+                  {selectedRecord.sources?.[0]?.systemName || 'N/A'}
                 </p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Target System</p>
                 <p className="text-sm text-gray-900">
-                  {selectedRecord.targetSystem || 'N/A'}
+                  {selectedRecord.sources?.[1]?.systemName ||
+                    selectedRecord.sources?.[0]?.systemName ||
+                    'N/A'}
                 </p>
               </div>
               <div>
                 <p className="text-sm font-medium text-gray-600">Amount</p>
                 <p className="text-sm text-gray-900">
-                  ${(selectedRecord.amount || 0).toLocaleString()}
+                  $
+                  {(
+                    (selectedRecord.sources?.[0]?.data as { amount?: number })?.amount || 0
+                  ).toLocaleString()}
                 </p>
               </div>
               <div>
@@ -692,13 +787,18 @@ const AdjudicationPageContent: React.FC = () => {
                   </StatusBadge>
                 </p>
               </div>
-              {(selectedRecord.confidence_score || selectedRecord.confidence) && (
+              {(selectedRecord.confidence_score ||
+                selectedRecord.confidence ||
+                selectedRecord.matchScore) && (
                 <div>
                   <p className="text-sm font-medium text-gray-600">Confidence Score</p>
                   <p className="text-sm text-gray-900">
-                    {((selectedRecord.confidence_score ?? selectedRecord.confidence ?? 0) * 100).toFixed(
-                      1
-                    )}
+                    {(
+                      (selectedRecord.confidence_score ??
+                        selectedRecord.confidence ??
+                        selectedRecord.matchScore ??
+                        0) * 100
+                    ).toFixed(1)}
                     %
                   </p>
                 </div>

@@ -425,10 +425,10 @@ export const useWebSocket = (config: WebSocketConfig) => {
       setStatus(newStatus);
     };
 
-    client.subscribe('status-change', handleStatusChange);
+    const subscriptionId = client.subscribe('status-change', handleStatusChange);
 
     return () => {
-      client.unsubscribe('status-change', handleStatusChange);
+      client.unsubscribe('status-change', subscriptionId);
       client.destroy();
     };
   }, [client]);

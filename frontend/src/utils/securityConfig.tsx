@@ -52,6 +52,7 @@ export const cspConfig = {
       'wss://localhost:*',
       'http://localhost:*',
       'https://localhost:*',
+      'http://localhost:3001', // Backend health check
       'http://localhost:8200', // APM monitoring (Elastic APM)
       'https://accounts.google.com', // Google OAuth
       'https://oauth2.googleapis.com', // Google OAuth token exchange
@@ -230,21 +231,33 @@ export const securityHeaders = {
  * Security middleware for Express.js
  */
 export function securityMiddleware(_req: unknown, res: unknown, next: unknown) {
+  interface ExpressResponse {
+    setHeader: (name: string, value: string) => void;
+    locals: { cspNonce?: string };
+  }
+  
+  interface ExpressNext {
+    (): void;
+  }
+  
+  const response = res as ExpressResponse;
+  const nextFn = next as ExpressNext;
+  
   // Set security headers
   Object.entries(securityHeaders).forEach(([header, value]) => {
-    res.setHeader(header, value);
+    response.setHeader(header, value);
   });
 
   // Generate and set CSP nonce
   const nonce = generateCSPNonce();
-  res.locals.cspNonce = nonce;
+  response.locals.cspNonce = nonce;
 
   // Update CSP header with nonce
   const cspPolicy = getCSPPolicy(import.meta.env.DEV ? 'development' : 'production');
   const cspHeader = buildCSPHeader(cspPolicy, nonce);
-  res.setHeader('Content-Security-Policy', cspHeader);
+  response.setHeader('Content-Security-Policy', cspHeader);
 
-  next();
+  nextFn();
 }
 
 // ============================================================================

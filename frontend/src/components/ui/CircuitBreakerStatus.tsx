@@ -11,9 +11,8 @@ import React, { useEffect, useState } from 'react';
 import { AlertTriangle, CheckCircle, Clock, RefreshCw } from 'lucide-react';
 import { Tooltip } from './Tooltip';
 // Import ariaLiveRegionsService with type-safe access
-import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
-import { formatTime, formatTimeAgo } from '../../utils/common/dateFormatting';
-import { logger } from '../../services/logger';
+import { ariaLiveRegionsService } from '@/utils/ariaLiveRegionsHelper';
+import { formatTime } from '@/utils/common/dateFormatting';
 
 export interface CircuitBreakerStatusProps {
   service: string;
@@ -53,11 +52,14 @@ export const CircuitBreakerStatus: React.FC<CircuitBreakerStatusProps> = ({
           ? `${service} circuit breaker is half-open`
           : `${service} circuit breaker is closed`;
 
-    (ariaLiveRegionsService as any)?.announceStatus?.(statusMessage, {
-      componentId: `circuit-breaker-${service}`,
-      action: 'circuit-breaker-status-changed',
-      currentState: { status, service },
-    });
+    if (ariaLiveRegionsService && typeof ariaLiveRegionsService === 'object' && 'announceStatus' in ariaLiveRegionsService) {
+      const liveService = ariaLiveRegionsService as { announceStatus: (message: string, context?: Record<string, unknown>) => void };
+      liveService.announceStatus(statusMessage, {
+        componentId: `circuit-breaker-${service}`,
+        action: 'circuit-breaker-status-changed',
+        currentState: { status, service },
+      });
+    }
   }, [service, status]);
 
   const handleRetry = async () => {

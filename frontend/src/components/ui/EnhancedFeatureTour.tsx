@@ -12,9 +12,9 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronRight, ChevronLeft, CheckCircle, AlertCircle } from 'lucide-react';
-import { onboardingService } from '../../services/onboardingService';
-import { ariaLiveRegionsService } from '../../services/ariaLiveRegionsService';
-import { logger } from '../../services/logger';
+import { onboardingService } from '@/services/onboardingService';
+import { ariaLiveRegionsService } from '@/services/ariaLiveRegionsService';
+import { logger } from '@/services/logger';
 
 export interface TourStep {
   id: string;
@@ -115,7 +115,7 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
         try {
           const data = JSON.parse(persisted);
           return data.completedSteps || [];
-        } catch (error) {
+        } catch (_error) {
           return [];
         }
       }
@@ -231,14 +231,16 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
       }, 300);
 
       // Announce step to screen readers
-      (ariaLiveRegionsService as any)?.announceStatus?.(
-        `Tour step ${currentStep + 1} of ${visibleSteps.length}: ${currentStepData.title}`,
-        {
-          componentId: tourId,
-          action: 'tour-step',
-          currentState: { step: currentStep + 1, total: visibleSteps.length },
-        }
-      );
+      if (ariaLiveRegionsService) {
+        ariaLiveRegionsService.announceStatus(
+          `Tour step ${currentStep + 1} of ${visibleSteps.length}: ${currentStepData.title}`,
+          {
+            componentId: tourId,
+            action: 'tour-step',
+            currentState: { step: currentStep + 1, total: visibleSteps.length },
+          }
+        );
+      }
     } else {
       setHighlightedElement(null);
     }
@@ -377,10 +379,12 @@ export const EnhancedFeatureTour: React.FC<EnhancedFeatureTourProps> = ({
     onClose();
 
     // Announce completion
-    (ariaLiveRegionsService as any)?.announceSuccess?.('Feature tour completed', {
-      componentId: tourId,
-      action: 'tour-completed',
-    });
+    if (ariaLiveRegionsService) {
+      ariaLiveRegionsService.announceSuccess('Feature tour completed', {
+        componentId: tourId,
+        action: 'tour-completed',
+      });
+    }
   };
 
   // Handle skip

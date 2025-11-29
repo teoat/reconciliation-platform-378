@@ -1,5 +1,5 @@
 // Data cleaning and standardization utilities
-import type { DataRow, UploadedFile } from '../../types/ingestion';
+import type { DataRow, UploadedFile } from '@/types/ingestion/index';
 
 /**
  * Standardizes date strings to ISO format
@@ -21,7 +21,7 @@ const standardizeDate = (dateStr: string): string => {
  */
 export const cleanAndStandardizeData = (
   data: DataRow[],
-  fileType: UploadedFile['fileType']
+  _fileType: UploadedFile['fileType']
 ): DataRow[] => {
   return data.map((record, index) => {
     const cleanedRecord = { ...record };

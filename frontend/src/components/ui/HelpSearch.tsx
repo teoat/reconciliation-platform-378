@@ -5,8 +5,8 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { Search, X, BookOpen, Video, ExternalLink, ChevronRight } from 'lucide-react';
-import { helpContentService, HelpContent } from '../../services/helpContentService';
+import { Search, X, Video, ChevronRight } from 'lucide-react';
+import { helpContentService, HelpContent } from '@/services/helpContentService';
 
 export interface HelpSearchProps {
   isOpen: boolean;
@@ -30,7 +30,7 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
   // Load popular content on mount
   useEffect(() => {
     if (isOpen) {
-      setPopular((helpContentService as any).getPopular(5));
+      setPopular(helpContentService.getPopular(5));
       searchInputRef.current?.focus();
     }
   }, [isOpen]);
@@ -45,7 +45,7 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
     setIsSearching(true);
     const timeoutId = setTimeout(() => {
       const searchResults = helpContentService.search(query);
-      setResults(searchResults.slice(0, 10).map(r => r.content)); // Limit to 10 results and extract content
+      setResults(searchResults.slice(0, 10).map((r) => r.content)); // Limit to 10 results and extract content
       setIsSearching(false);
     }, 300);
 
@@ -87,7 +87,7 @@ export const HelpSearch: React.FC<HelpSearchProps> = ({
       {/* Search Modal */}
       {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
       <div
-        className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-lg shadow-xl z-50 ${className}`}                 
+        className={`fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full max-w-2xl bg-white rounded-lg shadow-xl z-50 ${className}`}
         role="dialog"
         aria-modal="true"
         aria-labelledby="help-search-title"

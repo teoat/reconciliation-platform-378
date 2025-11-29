@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { X, FolderOpen, Activity, CheckCircle, TrendingUp } from 'lucide-react';
-import { ProjectAnalytics, EnhancedProject } from '../../types/project';
+import { ProjectAnalytics, EnhancedProject } from '@/types/project/index';
 
 interface AnalyticsModalProps {
   analytics: ProjectAnalytics;
@@ -10,13 +10,19 @@ interface AnalyticsModalProps {
   onClose: () => void;
 }
 
-export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ analytics, projects, onClose }) => {
+export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ analytics, projects: _projects, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-secondary-200">
           <h2 className="text-xl font-semibold text-secondary-900">Project Analytics Dashboard</h2>
-          <button onClick={onClose} className="text-secondary-400 hover:text-secondary-600">
+          <button 
+            onClick={onClose} 
+            aria-label="Close analytics modal"
+            title="Close analytics modal"
+            type="button"
+            className="text-secondary-400 hover:text-secondary-600"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -59,7 +65,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ analytics, proje
                 <div>
                   <p className="text-sm font-medium text-secondary-600">Success Rate</p>
                   <p className="text-2xl font-bold text-purple-600">
-                    {analytics.averageMatchRate.toFixed(1)}%
+                    {(analytics.averageMatchRate ?? 0).toFixed(1)}%
                   </p>
                 </div>
                 <TrendingUp className="w-8 h-8 text-purple-500" />
@@ -71,14 +77,14 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ analytics, proje
           <div className="card">
             <h3 className="text-lg font-semibold text-secondary-900 mb-4">Projects by Category</h3>
             <div className="space-y-3">
-              {analytics.departmentStats.map((stat, index) => (
+              {(analytics.departmentStats ?? []).map((stat, index) => (
                 <div key={index} className="flex items-center justify-between">
                   <span className="text-secondary-700 capitalize">{stat.department}</span>
                   <div className="flex items-center space-x-3">
                     <div className="w-32 bg-secondary-200 rounded-full h-2">
                       <div
                         className="bg-primary-600 h-2 rounded-full"
-                        style={{ width: `${(stat.projectCount / analytics.totalProjects) * 100}%` }}
+                        style={{ width: `${((stat.projectCount ?? 0) / (analytics.totalProjects ?? 1)) * 100}%` }}
                       />
                     </div>
                     <span className="text-sm font-medium text-secondary-900 w-8">
@@ -94,7 +100,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ analytics, proje
           <div className="card">
             <h3 className="text-lg font-semibold text-secondary-900 mb-4">Team Performance</h3>
             <div className="space-y-4">
-              {analytics.departmentStats.map((stat, index) => (
+              {(analytics.departmentStats ?? []).map((stat, index) => (
                 <div
                   key={index}
                   className="flex items-center justify-between p-3 bg-secondary-50 rounded-lg"
@@ -107,7 +113,7 @@ export const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ analytics, proje
                   </div>
                   <div className="text-right">
                     <div className="font-medium text-secondary-900">
-                      {stat.averageMatchRate.toFixed(1)}% avg
+                      {(stat.averageMatchRate ?? 0).toFixed(1)}% avg
                     </div>
                     <div className="text-sm text-secondary-600">match rate</div>
                   </div>

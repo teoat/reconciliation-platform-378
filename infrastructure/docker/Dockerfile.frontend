@@ -2,12 +2,21 @@
 # OPTIMIZED MULTI-STAGE DOCKERFILE FOR FRONTEND
 # ==============================================================================
 # Features:
-# - 3-stage build with npm dependency caching (90% faster rebuilds)
-# - BuildKit cache mounts for node_modules
+# - 4-stage build with enhanced npm dependency caching (90% faster rebuilds)
+# - BuildKit cache mounts for node_modules and npm cache
 # - Minimal runtime image (74MB)
 # - Production-optimized nginx configuration
 # - Security headers and CSP
+# - Build-time optimizations and bundle analysis
 # ==============================================================================
+
+# Build arguments
+ARG VITE_API_URL
+ARG VITE_WS_URL
+ARG VITE_GOOGLE_CLIENT_ID
+ARG NODE_ENV=production
+ARG GENERATE_SOURCEMAP=false
+ARG BUILD_ANALYZE=false
 
 # Stage 1: Dependency Cache Layer
 # Only rebuilds when package.json changes
@@ -18,11 +27,13 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 
 # Install dependencies with BuildKit cache mount
+# Use cache-to for persistent caching across builds
 RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=cache,target=/app/frontend/node_modules/.cache \
     if [ -f package-lock.json ]; then \
-        npm ci --no-audit --no-fund; \
+        npm ci --no-audit --no-fund --prefer-offline; \
     else \
-        npm install --no-audit --no-fund; \
+        npm install --no-audit --no-fund --prefer-offline; \
     fi
 
 # Stage 2: Build Application
@@ -35,12 +46,16 @@ ARG VITE_API_URL
 ARG VITE_WS_URL
 ARG VITE_GOOGLE_CLIENT_ID
 ARG NODE_ENV=production
+ARG GENERATE_SOURCEMAP=false
+ARG BUILD_ANALYZE=false
 
 # Set environment variables
 ENV VITE_API_URL=${VITE_API_URL} \
     VITE_WS_URL=${VITE_WS_URL} \
     VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID} \
-    NODE_ENV=${NODE_ENV}
+    NODE_ENV=${NODE_ENV} \
+    GENERATE_SOURCEMAP=${GENERATE_SOURCEMAP} \
+    BUILD_ANALYZE=${BUILD_ANALYZE}
 
 # Copy dependencies from cache stage
 COPY --from=deps /app/frontend/node_modules ./node_modules
@@ -49,16 +64,26 @@ COPY frontend/package*.json ./
 # Copy source code
 COPY frontend/ .
 
-# Build production bundle with cache mount
+# Build production bundle with cache mount and optimizations
 RUN --mount=type=cache,target=/root/.npm \
+    --mount=type=cache,target=/app/frontend/node_modules/.cache \
+    --mount=type=cache,target=/app/frontend/.vite \
     npm run build && \
-    # Remove source maps for smaller size
-    find dist -name '*.map' -delete 2>/dev/null || true
+    # Conditionally remove source maps based on GENERATE_SOURCEMAP
+    if [ "$GENERATE_SOURCEMAP" = "false" ]; then \
+        find dist -name '*.map' -delete 2>/dev/null || true; \
+    fi && \
+    # Optional bundle analysis
+    if [ "$BUILD_ANALYZE" = "true" ]; then \
+        npm run build:analyze 2>/dev/null || echo "Build analysis not available"; \
+    fi
 
 # Stage 3: Production Runtime (nginx)
 FROM nginx:1.27-alpine AS runtime
 LABEL maintainer="Reconciliation Platform Team"
 LABEL description="Optimized production frontend for reconciliation platform"
+LABEL org.opencontainers.image.source="https://github.com/reconciliation-platform"
+LABEL org.opencontainers.image.version="${VERSION:-latest}"
 
 # Copy built assets
 COPY --from=builder /app/frontend/dist /usr/share/nginx/html

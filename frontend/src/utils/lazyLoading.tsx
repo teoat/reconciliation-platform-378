@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, ComponentType } from 'react';
 import { logger } from '@/services/logger';
 import { toRecord } from './typeHelpers';
-import { LoadingSpinner } from '../components/ui/LoadingSpinner';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 
 // ============================================================================
 // LAZY LOADING UTILITIES
@@ -10,7 +10,7 @@ import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 /**
  * Creates a lazy-loaded component with error boundary and loading fallback
  */
-export function createLazyComponent<T extends ComponentType<any>>(
+export function createLazyComponent<T extends ComponentType<unknown>>(
   importFn: () => Promise<{ default: T }>,
   fallback?: ComponentType
 ) {
@@ -20,7 +20,7 @@ export function createLazyComponent<T extends ComponentType<any>>(
     const FallbackComponent = fallback;
     return (
       <Suspense fallback={FallbackComponent ? <FallbackComponent /> : <LoadingSpinner />}>
-        <LazyComponent {...(props as any)} />
+        <LazyComponent {...(props as React.ComponentProps<typeof LazyComponent>)} />
       </Suspense>
     );
   };
@@ -29,7 +29,7 @@ export function createLazyComponent<T extends ComponentType<any>>(
 /**
  * Creates a lazy-loaded component with custom loading component
  */
-export function createLazyComponentWithLoader<T extends ComponentType<any>>(
+export function createLazyComponentWithLoader<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   LoadingComponent: ComponentType
 ) {
@@ -38,7 +38,7 @@ export function createLazyComponentWithLoader<T extends ComponentType<any>>(
   return function LazyWrapper(props: React.ComponentProps<T>) {
     return (
       <Suspense fallback={<LoadingComponent />}>
-        <LazyComponent {...(props as any)} />
+        <LazyComponent {...(props as React.ComponentProps<typeof LazyComponent>)} />
       </Suspense>
     );
   };
@@ -47,7 +47,7 @@ export function createLazyComponentWithLoader<T extends ComponentType<any>>(
 /**
  * Creates a lazy-loaded component with error boundary
  */
-export function createLazyComponentWithErrorBoundary<T extends ComponentType<any>>(
+export function createLazyComponentWithErrorBoundary<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   ErrorComponent: ComponentType<{ error: Error; retry: () => void }>
 ) {
@@ -57,7 +57,7 @@ export function createLazyComponentWithErrorBoundary<T extends ComponentType<any
     return (
       <ErrorBoundary fallback={ErrorComponent}>
         <Suspense fallback={<LoadingSpinner />}>
-          <LazyComponent {...(props as any)} />
+          <LazyComponent {...(props as React.ComponentProps<typeof LazyComponent>)} />
         </Suspense>
       </ErrorBoundary>
     );
@@ -117,7 +117,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
 /**
  * Preloads a component for faster future loading
  */
-export function preloadComponent<T extends ComponentType<any>>(
+export function preloadComponent<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>
 ) {
   return importFn();
@@ -133,7 +133,7 @@ export function preloadComponents(importFns: Array<() => Promise<{ default?: Com
 /**
  * Creates a preloadable component that can be preloaded on hover/focus
  */
-export function createPreloadableComponent<T extends ComponentType<any>>(
+export function createPreloadableComponent<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   preloadTrigger: 'hover' | 'focus' | 'both' = 'hover'
 ) {
@@ -156,7 +156,7 @@ export function createPreloadableComponent<T extends ComponentType<any>>(
     return (
       <div onMouseEnter={handleMouseEnter} onFocus={handleFocus}>
         <Suspense fallback={<LoadingSpinner />}>
-          <LazyComponent {...(props as any)} />
+          <LazyComponent {...(props as React.ComponentProps<typeof LazyComponent>)} />
         </Suspense>
       </div>
     );
@@ -170,7 +170,7 @@ export function createPreloadableComponent<T extends ComponentType<any>>(
 /**
  * Creates lazy-loaded routes for React Router
  */
-export function createLazyRoute<T extends ComponentType<any>>(
+export function createLazyRoute<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   fallback?: ComponentType
 ) {
@@ -180,7 +180,7 @@ export function createLazyRoute<T extends ComponentType<any>>(
     const FallbackComponent = fallback;
     return (
       <Suspense fallback={FallbackComponent ? <FallbackComponent /> : <LoadingSpinner />}>
-        <LazyComponent {...(props as any)} />
+        <LazyComponent {...(props as React.ComponentProps<typeof LazyComponent>)} />
       </Suspense>
     );
   };
@@ -225,7 +225,7 @@ export function createRetryableImport<T>(
 /**
  * Measures component load time
  */
-export function measureComponentLoadTime<T extends ComponentType<any>>(
+export function measureComponentLoadTime<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   componentName: string
 ) {
@@ -233,7 +233,6 @@ export function measureComponentLoadTime<T extends ComponentType<any>>(
     const startTime = performance.now();
     try {
       const result = await importFn();
-      const endTime = performance.now();
       return result;
     } catch (error) {
       const endTime = performance.now();
@@ -246,7 +245,7 @@ export function measureComponentLoadTime<T extends ComponentType<any>>(
 /**
  * Creates a component with load time measurement
  */
-export function createMeasuredLazyComponent<T extends ComponentType<any>>(
+export function createMeasuredLazyComponent<T extends ComponentType<Record<string, unknown>>>(
   importFn: () => Promise<{ default: T }>,
   componentName: string
 ) {

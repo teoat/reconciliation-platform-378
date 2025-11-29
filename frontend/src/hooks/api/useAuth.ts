@@ -2,7 +2,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { apiClient, User } from '../../services/apiClient';
+import { apiClient, User } from '@/services/apiClient';
+import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
+import { logger } from '@/services/logger';
 
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
@@ -15,11 +17,12 @@ export const useAuth = () => {
       try {
         const response = await apiClient.getCurrentUser();
         if (response.data) {
-          setUser(response.data.user);
+          // LoginResponse has user property, but getCurrentUser might return User directly
+          setUser((response.data as { user?: User }).user || (response.data as User));
           setIsAuthenticated(true);
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
+        logger.error('Auth check failed', { category: 'auth', component: 'useAuth', error });
       } finally {
         setIsLoading(false);
       }
@@ -33,11 +36,12 @@ export const useAuth = () => {
     try {
       const response = await apiClient.login({ email, password });
       if (response.data) {
-        setUser(response.data.user);
+        const loginData = response.data as { user: User };
+        setUser(loginData.user);
         setIsAuthenticated(true);
         return { success: true };
       } else {
-        return { success: false, error: response.error?.message };
+        return { success: false, error: getErrorMessageFromApiError(response.error) };
       }
     } catch (error) {
       return { success: false, error: 'Login failed' };
@@ -56,13 +60,22 @@ export const useAuth = () => {
   }) => {
     setIsLoading(true);
     try {
-      const response = await apiClient.register(userData);
+      // Convert camelCase to snake_case for RegisterRequest
+      const registerData = {
+        email: userData.email,
+        password: userData.password,
+        first_name: userData.firstName,
+        last_name: userData.lastName,
+        role: userData.role,
+      };
+      const response = await apiClient.register(registerData);
       if (response.data) {
-        setUser(response.data.user);
+        const registerResponse = response.data as { user: User };
+        setUser(registerResponse.user);
         setIsAuthenticated(true);
         return { success: true };
       } else {
-        return { success: false, error: response.error?.message };
+        return { success: false, error: getErrorMessageFromApiError(response.error) };
       }
     } catch (error) {
       return { success: false, error: 'Registration failed' };
@@ -76,7 +89,7 @@ export const useAuth = () => {
     try {
       await apiClient.logout();
     } catch (error) {
-      console.error('Logout error:', error);
+      logger.error('Logout error', { category: 'auth', component: 'useAuth', error });
     } finally {
       setUser(null);
       setIsAuthenticated(false);

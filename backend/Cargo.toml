@@ -2,6 +2,7 @@
 name = "reconciliation-backend"
 version = "0.1.0"
 edition = "2021"
+default-run = "reconciliation-backend"
 
 # Optional binary for applying query indexes
 # Uncomment if needed: cargo run --bin apply-query-indexes
@@ -13,6 +14,11 @@ edition = "2021"
 # [[bin]]
 # name = "test-minimal"
 # path = "src/bin/test-minimal.rs"
+
+# Main binary
+[[bin]]
+name = "reconciliation-backend"
+path = "src/main.rs"
 
 # Binary for setting initial passwords
 [[bin]]

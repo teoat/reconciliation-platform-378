@@ -129,7 +129,6 @@ const ModalComponent: React.FC<ModalProps> = ({
       )}
 
       {/* Modal */}
-      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/click-events-have-key-events, jsx-a11y/no-static-element-interactions */}
       <div
         className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:p-0"
         onClick={(e) => {
@@ -142,10 +141,10 @@ const ModalComponent: React.FC<ModalProps> = ({
             onClose();
           }
         }}
-        role="presentation"
-        tabIndex={-1}
+        role="button"
+        tabIndex={0}
+        aria-label="Close modal on click"
       >
-          {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
         <div
           ref={modalRef}
           className={modalClasses}
@@ -153,14 +152,6 @@ const ModalComponent: React.FC<ModalProps> = ({
           aria-modal="true"
           aria-labelledby={title ? 'modal-title' : undefined}
           aria-describedby={children ? 'modal-description' : undefined}
-          onClick={(e) => e.stopPropagation()}
-          onKeyDown={(e) => {
-            // Enhanced keyboard navigation
-            if (e.key === 'Escape' && closeOnEscape) {
-              onClose();
-            }
-            // Tab trapping is handled in useEffect above
-          }}
           tabIndex={-1}
         >
           {/* Header */}

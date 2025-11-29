@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Settings, Plus, Trash2, Edit } from 'lucide-react';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
-import { MatchingRule, MatchingCriteria } from '../../types/reconciliation';
+import { MatchingRule, MatchingCriteria } from '../../types/reconciliation/index';
 
 interface MatchingRulesProps {
   rules: MatchingRule[];

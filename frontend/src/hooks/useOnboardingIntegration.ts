@@ -5,7 +5,8 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { onboardingService, UserRole } from '../services/onboardingService';
+import { onboardingService, UserRole } from '@/services/onboardingService';
+import type { BackendUser } from '@/services/apiClient/types';
 
 interface UserProfile {
   id: string;
@@ -48,7 +49,7 @@ export const useOnboardingIntegration = (): {
   const detectUserRole = useCallback(async (): Promise<UserRole | null> => {
     try {
       // Use actual API call to get current user
-      const { apiClient } = await import('../services/apiClient');
+      const { apiClient } = await import('@/services/apiClient');
       const response = await apiClient.getCurrentUser();
 
       if (response.error || !response.data) {
@@ -75,14 +76,17 @@ export const useOnboardingIntegration = (): {
         user: 'analyst', // Default user to analyst
       };
 
-      return roleMap[(user as any).role?.toLowerCase() || 'analyst'] || 'analyst';
+      const userRole = (user as Record<string, unknown>).role;
+      const roleString = typeof userRole === 'string' ? userRole.toLowerCase() : 'analyst';
+      return roleMap[roleString] || 'analyst';
     } catch (error) {
       // Fallback to localStorage on error
       const userStr = localStorage.getItem('user');
       if (userStr) {
         try {
-          const user = JSON.parse(userStr) as any;
-          return (user.role || 'analyst') as UserRole;
+          const user = JSON.parse(userStr) as Record<string, unknown>;
+          const role = typeof user.role === 'string' ? user.role : 'analyst';
+          return role as UserRole;
         } catch {
           return 'analyst';
         }
@@ -99,7 +103,7 @@ export const useOnboardingIntegration = (): {
       setState((prev) => ({ ...prev, isLoading: true, error: null }));
 
       // Use actual API call to get current user
-      const { apiClient } = await import('../services/apiClient');
+      const { apiClient } = await import('@/services/apiClient');
       const response = await apiClient.getCurrentUser();
 
       if (response.error || !response.data) {
@@ -160,12 +164,18 @@ export const useOnboardingIntegration = (): {
         user: 'analyst',
       };
 
+      const userRecord = user as Record<string, unknown>;
+      const userRole = userRecord.role;
+      const roleString = typeof userRole === 'string' ? userRole.toLowerCase() : 'analyst';
+      const hasLastLogin = userRecord.last_login !== undefined && userRecord.last_login !== null;
+      const userPermissions = Array.isArray(userRecord.permissions) ? userRecord.permissions : [];
+      
       const profile: UserProfile = {
-        id: user.id,
-        email: user.email,
-        role: roleMap[(user as any).role?.toLowerCase() || 'analyst'] || 'analyst',
-        experience: (user as any).last_login ? 'experienced' : 'new',
-        permissions: (user as any).permissions || [], // Permissions from backend user object (if available)
+        id: typeof userRecord.id === 'string' ? userRecord.id : '',
+        email: typeof userRecord.email === 'string' ? userRecord.email : '',
+        role: roleMap[roleString] || 'analyst',
+        experience: hasLastLogin ? 'experienced' : 'new',
+        permissions: userPermissions as string[], // Permissions from backend user object (if available)
         // Note: Full permissions API endpoint may be added in future if granular permission management is needed
       };
 

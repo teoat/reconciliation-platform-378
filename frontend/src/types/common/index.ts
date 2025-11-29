@@ -1,6 +1,6 @@
 // Common utility types and shared types
 
-import { Metadata } from '../../frontend/src/types/metadata';
+import { Metadata } from '../metadata';
 
 export interface BaseMetadata {
   createdAt?: string | Date;
@@ -47,7 +47,7 @@ export interface SortParams {
 export interface FilterParams {
   field: string;
   operator: ComparisonOperator;
-  value: any;
+  value: unknown;
 }
 
 export interface SearchParams {
@@ -100,7 +100,7 @@ export interface Color {
 export interface PageConfig {
   title: string;
   description: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType;
   path: string;
   showStats?: boolean;
   showFilters?: boolean;
@@ -110,7 +110,7 @@ export interface PageConfig {
 export interface StatsCard {
   title: string;
   value: string | number;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType;
   color: string;
   trend?: {
     direction: 'up' | 'down' | 'neutral';
@@ -121,11 +121,11 @@ export interface StatsCard {
 
 export interface ActionConfig {
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType;
   onClick: () => void;
   variant?: 'primary' | 'secondary' | 'danger';
   loading?: boolean;
 }
 
 // Re-export Metadata for convenience
-export type { Metadata } from '../../frontend/src/types/metadata';
+export type { Metadata } from '../metadata';

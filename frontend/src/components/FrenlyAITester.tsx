@@ -188,7 +188,7 @@ const FrenlyAITester: React.FC = () => {
       autoHide: 3000,
     };
 
-    showMessage(testMessage as any);
+    showMessage(testMessage);
 
     setTimeout(() => {
       hideMessage();

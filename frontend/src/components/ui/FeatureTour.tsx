@@ -7,7 +7,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, ChevronRight, ChevronLeft, CheckCircle } from 'lucide-react';
 // Import ariaLiveRegionsService with type-safe access
-import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
+import { ariaLiveRegionsService } from '@/utils/ariaLiveRegionsHelper';
 
 export interface TourStep {
   id: string;
@@ -65,14 +65,14 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({
       }, 300);
 
       // Announce step to screen readers
-      (ariaLiveRegionsService as any).announceStatus(
-        `Tour step ${currentStep + 1} of ${steps.length}: ${currentStepData.title}`,
-        {
+      if (ariaLiveRegionsService && typeof ariaLiveRegionsService === 'object' && 'announceStatus' in ariaLiveRegionsService) {
+        const service = ariaLiveRegionsService as { announceStatus?: (message: string, options?: Record<string, unknown>) => void };
+        service.announceStatus?.(`Tour step ${currentStep + 1} of ${steps.length}: ${currentStepData.title}`, {
           componentId: tourId,
           action: 'tour-step',
           currentState: { step: currentStep + 1, total: steps.length },
-        }
-      );
+        });
+      }
     }
 
     return () => {
@@ -127,10 +127,13 @@ export const FeatureTour: React.FC<FeatureTourProps> = ({
       onComplete();
     }
     onClose();
-    (ariaLiveRegionsService as any).announceSuccess('Feature tour completed', {
-      componentId: tourId,
-      action: 'tour-completed',
-    });
+    if (ariaLiveRegionsService && typeof ariaLiveRegionsService === 'object' && 'announceSuccess' in ariaLiveRegionsService) {
+      const service = ariaLiveRegionsService as { announceSuccess?: (message: string, options?: Record<string, unknown>) => void };
+      service.announceSuccess?.('Feature tour completed', {
+        componentId: tourId,
+        action: 'tour-completed',
+      });
+    }
   };
 
   // Removed unused handleKeyDown function

@@ -4,7 +4,7 @@
  * Handles persistence of conversation history using IndexedDB with localStorage fallback
  */
 
-import { logger } from '../services/logger';
+import { logger } from '@/services/logger';
 
 export interface ConversationMessage {
   id: string;
@@ -140,7 +140,7 @@ class ConversationStorage {
       text += `Updated: ${conversation.updatedAt.toISOString()}\n`;
       text += `\n--- Messages ---\n\n`;
 
-      conversation.messages.forEach((message, index) => {
+      conversation.messages.forEach((message) => {
         text += `[${message.timestamp.toISOString()}] ${message.role.toUpperCase()}:\n`;
         text += `${message.content}\n\n`;
       });
@@ -225,7 +225,7 @@ class ConversationStorage {
    */
   private dateReviver(key: string, value: unknown): unknown {
     if (key === 'timestamp' || key === 'createdAt' || key === 'updatedAt') {
-      return value ? new Date(value) : value;
+      return value ? new Date(value as string | number) : value;
     }
     return value;
   }

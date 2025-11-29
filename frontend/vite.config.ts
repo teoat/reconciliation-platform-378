@@ -18,16 +18,14 @@ export default defineConfig(({ mode }) => {
         ? [
             viteCompression({
               algorithm: 'gzip',
-              ext: '.gz',
               threshold: 1024, // Only compress files > 1KB
               deleteOriginFile: false,
-            }),
+            } as { algorithm: 'gzip'; threshold: number; deleteOriginFile: boolean }),
             viteCompression({
-              algorithm: 'brotliCompress',
-              ext: '.br',
+              algorithm: 'brotli',
               threshold: 1024,
               deleteOriginFile: false,
-            }),
+            } as { algorithm: 'brotli'; threshold: number; deleteOriginFile: boolean }),
           ]
         : []),
     ],

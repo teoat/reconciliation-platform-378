@@ -206,17 +206,26 @@ export const componentVariants = {
 // Utility Functions
 export const getColor = (color: string, shade: number = 500): string => {
   const colorPath = color.split('.');
-  let colorValue: any = designSystem.colors;
+  let colorValue: unknown = designSystem.colors;
 
   for (const part of colorPath) {
-    colorValue = colorValue[part];
+    if (colorValue && typeof colorValue === 'object' && part in colorValue) {
+      colorValue = (colorValue as Record<string, unknown>)[part];
+    } else {
+      return '';
+    }
   }
 
   if (typeof colorValue === 'string') {
     return colorValue;
   }
 
-  return colorValue?.[shade.toString()] || colorValue?.[shade] || colorValue;
+  if (colorValue && typeof colorValue === 'object') {
+    const valueObj = colorValue as Record<string | number, unknown>;
+    return (valueObj[shade.toString()] || valueObj[shade] || '') as string;
+  }
+
+  return '';
 };
 
 export const getSpacing = (size: number) => {

@@ -4,8 +4,9 @@
  */
 
 import { useState, useCallback } from 'react';
-import { logger } from '../../services/logger';
+import { logger } from '@/services/logger';
 import { useReconciliationJobs } from '@/components/reconciliation/hooks/useReconciliationJobs';
+import type { ReconciliationJob } from '@/types';
 
 export interface UseReconciliationOperationsOptions {
   projectId: string | null;
@@ -35,7 +36,7 @@ export function useReconciliationOperations({
   const [isCreatingJob, setIsCreatingJob] = useState(false);
   const [isStartingJob, setIsStartingJob] = useState(false);
   const [error, setError] = useState<Error | null>(null);
-  const { createJob, startJob } = useReconciliationJobs(projectId);
+  const { createJob, startJob } = useReconciliationJobs({ projectId });
 
   const startReconciliation = useCallback(async () => {
     if (!projectId) {
@@ -50,19 +51,23 @@ export function useReconciliationOperations({
 
     try {
       const result = await createJob({
-        project_id: projectId,
         name: `Reconciliation Job ${new Date().toISOString()}`,
         description: 'Automated reconciliation job',
-        status: 'pending',
+        source_data_source_id: 'source-a-id', // Placeholder - should be provided by caller
+        target_data_source_id: 'source-b-id', // Placeholder - should be provided by caller
+        confidence_threshold: 0.8,
+        settings: {},
       });
 
-      if (result.success && result.job) {
-        onJobCreated?.(result.job.id);
+      // createJob returns Promise<ReconciliationJob> directly
+      const job = result as unknown as import('../../types/backend-aligned').ReconciliationJob;
+      if (job && job.id) {
+        onJobCreated?.(job.id);
         setIsCreatingJob(false);
         setIsStartingJob(true);
 
-        await startJob(result.job.id);
-        onJobStarted?.(result.job.id);
+        await startJob(job.id);
+        onJobStarted?.(job.id);
       } else {
         const err = new Error('Failed to create reconciliation job');
         setError(err);

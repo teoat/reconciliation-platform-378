@@ -2,38 +2,70 @@
  * Adapter functions for converting between different data types
  */
 
-import type { ReconciliationRecord } from '@/types/index';
-import type { ReconciliationRecord as DataManagementRecord } from '../services/dataManagement/types';
-import type { RecordMetadata } from '../types/reconciliation';
-import { extractNumber, extractString, extractDate } from '../types/sourceData';
+import type { ReconciliationRecord as BaseReconciliationRecord } from '@/types/index';
+import type { ReconciliationRecord as DataManagementRecord } from '../../services/dataManagement/types';
+import type { RecordMetadata } from '../../types/reconciliation/index';
+import { extractNumber, extractString, extractDate } from '../../types/sourceData';
+
+// Extended ReconciliationRecord for reports with additional properties
+interface ReportReconciliationRecord extends Omit<BaseReconciliationRecord, 'status'> {
+  projectId?: string;
+  sourceId?: string;
+  targetId?: string;
+  sourceSystem?: string;
+  targetSystem?: string;
+  amount?: number;
+  currency?: string;
+  transactionDate?: string;
+  description?: string;
+  status: 'matched' | 'unmatched' | 'discrepancy' | 'pending' | 'reviewed';
+  matchType?: string;
+  confidence?: number;
+  discrepancies?: Array<{
+    field: string;
+    expected: string | number;
+    actual: string | number;
+    type: string;
+  }>;
+  metadata?: RecordMetadata;
+  createdAt?: string;
+  updatedAt?: string;
+}
 
 /**
  * Map discrepancies from DataManagement record
  */
-function mapDiscrepancies(record: DataManagementRecord): ReconciliationRecord['discrepancies'] {
+function mapDiscrepancies(record: DataManagementRecord): ReportReconciliationRecord['discrepancies'] {
   // Extract discrepancies from record.resolution or other fields
-  if (record.resolution?.discrepancies) {
-    return record.resolution.discrepancies.map((d: unknown) => {
-      if (typeof d === 'object' && d !== null) {
-        return d as ReconciliationRecord['discrepancies'][0];
-      }
-      return { field: 'unknown', expected: '', actual: '', type: 'mismatch' };
-    });
+  const resolution = record.resolution as { discrepancies?: Array<{ field: string; expected: string | number; actual: string | number; type: string }> } | undefined;
+  if (resolution?.discrepancies) {
+    return resolution.discrepancies.map((d) => ({
+      field: d.field || 'unknown',
+      expected: d.expected || '',
+      actual: d.actual || '',
+      type: d.type || 'mismatch',
+    }));
   }
   // Check for discrepancies in metadata
-  if (record.metadata?.discrepancies) {
-    return record.metadata.discrepancies as ReconciliationRecord['discrepancies'];
+  const metadata = record.metadata as { discrepancies?: Array<{ field: string; expected: string | number; actual: string | number; type: string }> } | undefined;
+  if (metadata?.discrepancies) {
+    return metadata.discrepancies.map((d) => ({
+      field: d.field || 'unknown',
+      expected: d.expected || '',
+      actual: d.actual || '',
+      type: d.type || 'mismatch',
+    }));
   }
   return [];
 }
 
 /**
- * Map DataManagement status to ReconciliationRecord status
+ * Map DataManagement status to ReportReconciliationRecord status
  * Both use compatible status types, but we validate for type safety
  */
-export function mapStatus(status: DataManagementRecord['status']): ReconciliationRecord['status'] {
+export function mapStatus(status: DataManagementRecord['status']): ReportReconciliationRecord['status'] {
   // Type-safe mapping - both types have compatible values
-  const statusMap: Record<string, ReconciliationRecord['status']> = {
+  const statusMap: Record<string, ReportReconciliationRecord['status']> = {
     matched: 'matched',
     unmatched: 'unmatched',
     discrepancy: 'discrepancy',
@@ -50,7 +82,7 @@ export function mapStatus(status: DataManagementRecord['status']): Reconciliatio
  *
  * **Type-Safe**: Uses type guards and safe extraction functions instead of `as any`
  */
-export function adaptReconciliationRecord(record: DataManagementRecord): ReconciliationRecord {
+export function adaptReconciliationRecord(record: DataManagementRecord): ReportReconciliationRecord {
   // Extract first source if available for mapping
   const firstSource = record.sources?.[0];
   const sourceData = firstSource?.data;
@@ -61,30 +93,37 @@ export function adaptReconciliationRecord(record: DataManagementRecord): Reconci
   const transactionDate = extractDate(sourceData, 'date', new Date().toISOString());
   const description = extractString(sourceData, 'description', '');
 
+  // Build metadata with discrepancies if available
+  const metadata: RecordMetadata = (record.metadata as unknown as RecordMetadata) || {
+    source: {},
+    target: {},
+    computed: {},
+    tags: [],
+    notes: [],
+  };
+  
+  // Store discrepancies in metadata if they exist
+  const resolution = record.resolution as { discrepancies?: Array<{ field: string; expected: string | number; actual: string | number; type: string }> } | undefined;
+  if (resolution?.discrepancies) {
+    metadata.computed = {
+      ...metadata.computed,
+      discrepancies: resolution.discrepancies,
+    };
+  } else if (record.metadata && typeof record.metadata === 'object' && 'discrepancies' in record.metadata) {
+    metadata.computed = {
+      ...metadata.computed,
+      discrepancies: (record.metadata as { discrepancies?: unknown }).discrepancies,
+    };
+  }
+
   return {
     id: record.id,
-    projectId: record.reconciliationId, // Map reconciliationId to projectId
-    sourceId: firstSource?.id || record.id,
-    targetId: record.batchId,
-    sourceSystem: firstSource?.systemName || 'unknown',
-    targetSystem: 'reconciliation',
-    amount,
-    currency,
-    transactionDate,
-    description,
+    reconciliationId: record.reconciliationId,
+    sourceARecordId: firstSource?.id || record.id,
+    sourceBRecordId: record.batchId,
     status: mapStatus(record.status), // Type-safe status mapping
-    matchType: undefined,
-    confidence: record.confidence ?? 0,
-    discrepancies: mapDiscrepancies(record), // Map discrepancies from record
-    metadata: (record.metadata as unknown as RecordMetadata) || {
-      source: {},
-      target: {},
-      computed: {},
-      tags: [],
-      notes: [],
-    },
-    createdAt: record.metadata?.createdAt || new Date().toISOString(),
-    updatedAt: record.metadata?.updatedAt || new Date().toISOString(),
+    discrepancyAmount: extractNumber(sourceData, 'amount', undefined),
+    confidenceScore: record.confidence ?? undefined,
   };
 }
 

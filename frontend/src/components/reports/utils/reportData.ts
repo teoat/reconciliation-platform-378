@@ -100,10 +100,11 @@ export function calculateMetrics(
         if (metric.calculation) {
           // Use enhanced calculation parser
           try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
             const { evaluateCalculation } = require('./calculationParser');
             const result = evaluateCalculation(metric.calculation, metricsData);
             metricsData[metric.id] = result;
-          } catch (error) {
+          } catch {
             // Fallback to simple division for backward compatibility
             const [numerator, denominator] = metric.calculation.split('/');
             const num = metricsData[numerator] || 0;

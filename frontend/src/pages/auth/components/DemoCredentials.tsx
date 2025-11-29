@@ -5,8 +5,8 @@
  */
 
 import React from 'react';
-import type { DemoRole } from '../types';
-import { getPrimaryDemoCredentials, DEMO_CREDENTIALS } from '@/config/demoCredentials';
+import type { DemoRole } from '@/pages/auth/types';
+import { getDemoCredentials, DEMO_CREDENTIALS } from '@/config/demoCredentials';
 
 interface DemoCredentialsProps {
   selectedRole: DemoRole;
@@ -19,7 +19,7 @@ export const DemoCredentials: React.FC<DemoCredentialsProps> = ({
   onRoleChange,
   onUseCredentials,
 }) => {
-  const credentials = getPrimaryDemoCredentials(selectedRole);
+  const credentials = getDemoCredentials(selectedRole);
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
@@ -30,8 +30,9 @@ export const DemoCredentials: React.FC<DemoCredentialsProps> = ({
 
       <div className="space-y-2">
         <div>
-          <label className="block text-xs font-medium text-blue-900 mb-1">Select Role</label>
+          <label htmlFor="demo-role-select" className="block text-xs font-medium text-blue-900 mb-1">Select Role</label>
           <select
+            id="demo-role-select"
             value={selectedRole}
             onChange={(e) => onRoleChange(e.target.value as DemoRole)}
             className="w-full text-sm border border-blue-300 rounded-md px-2 py-1 bg-white text-blue-900"

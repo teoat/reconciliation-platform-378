@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Play, CheckCircle, AlertCircle } from 'lucide-react';
-import { ColumnInfo, FieldMapping } from '../../types/ingestion';
+import { ColumnInfo, FieldMapping } from '../../types/ingestion/index';
 
 interface DataRow {
   [key: string]: string | number | boolean | Date | null;

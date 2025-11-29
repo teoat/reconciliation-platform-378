@@ -6,11 +6,11 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { logger } from '../../services/logger';
+import { logger } from '@/services/logger';
 import { AlertTriangle, X, RefreshCw, Clock, CheckCircle } from 'lucide-react';
 import { Button } from './Button';
 // Import ariaLiveRegionsService with type-safe access
-import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
+import { ariaLiveRegionsService } from '@/utils/ariaLiveRegionsHelper';
 
 export interface AlternativeAction {
   label: string;
@@ -44,7 +44,6 @@ export const ServiceDegradedBanner: React.FC<ServiceDegradedBannerProps> = ({
 }) => {
   const [isRetrying, setIsRetrying] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const ariaExpandedValue = isExpanded ? 'true' : 'false';
 
   // Announce service status to screen readers
   useEffect(() => {
@@ -55,11 +54,14 @@ export const ServiceDegradedBanner: React.FC<ServiceDegradedBannerProps> = ({
           ? `${service} is partially available`
           : `${service} is available`;
 
-    (ariaLiveRegionsService as any)?.announceError?.(statusMessage, {
-      componentId: `service-${service}`,
-      action: 'service-status-changed',
-      currentState: { status, service },
-    });
+    if (ariaLiveRegionsService && typeof ariaLiveRegionsService === 'object' && 'announceError' in ariaLiveRegionsService) {
+      const ariaService = ariaLiveRegionsService as { announceError?: (message: string, options?: Record<string, unknown>) => void };
+      ariaService.announceError?.(statusMessage, {
+        componentId: `service-${service}`,
+        action: 'service-status-changed',
+        currentState: { status, service },
+      });
+    }
   }, [service, status]);
 
   const handleRetry = async () => {
@@ -134,7 +136,7 @@ export const ServiceDegradedBanner: React.FC<ServiceDegradedBannerProps> = ({
                   type="button"
                   onClick={() => setIsExpanded(!isExpanded)}
                   className="text-sm font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded"
-                  aria-expanded={ariaExpandedValue}
+                  aria-expanded={isExpanded}
                   aria-controls={`service-actions-${service}`}
                   aria-label={isExpanded ? 'Hide actions' : 'Show actions'}
                 >

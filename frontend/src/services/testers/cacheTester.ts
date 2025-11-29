@@ -9,6 +9,7 @@ type StorageOperation = {
   duration: number;
   success: boolean;
   error?: string;
+  size?: number;
 };
 
 type DataIntegrityCheck = {
@@ -38,8 +39,7 @@ export class CacheTester {
       });
 
       return {
-        type: 'save',
-        storage: 'cache',
+        operation: 'write',
         key,
         success: true,
         timestamp: Date.now(),
@@ -48,8 +48,7 @@ export class CacheTester {
       };
     } catch (error) {
       return {
-        type: 'save',
-        storage: 'cache',
+        operation: 'write',
         key,
         success: false,
         timestamp: Date.now(),
@@ -65,8 +64,7 @@ export class CacheTester {
 
       if (!entry) {
         return {
-          type: 'load',
-          storage: 'cache',
+          operation: 'read',
           key,
           success: false,
           timestamp: Date.now(),
@@ -79,8 +77,7 @@ export class CacheTester {
       if (entry.expiration && Date.now() > entry.expiration) {
         this.cache.delete(key);
         return {
-          type: 'load',
-          storage: 'cache',
+          operation: 'read',
           key,
           success: false,
           timestamp: Date.now(),
@@ -90,8 +87,7 @@ export class CacheTester {
       }
 
       return {
-        type: 'load',
-        storage: 'cache',
+        operation: 'read',
         key,
         success: true,
         timestamp: Date.now(),
@@ -101,8 +97,7 @@ export class CacheTester {
       };
     } catch (error) {
       return {
-        type: 'load',
-        storage: 'cache',
+        operation: 'read',
         key,
         success: false,
         timestamp: Date.now(),
@@ -118,8 +113,7 @@ export class CacheTester {
       const existingEntry = this.cache.get(key);
       if (!existingEntry) {
         return {
-          type: 'update',
-          storage: 'cache',
+          operation: 'write',
           key,
           success: false,
           timestamp: Date.now(),
@@ -134,8 +128,7 @@ export class CacheTester {
       });
 
       return {
-        type: 'update',
-        storage: 'cache',
+        operation: 'write',
         key,
         success: true,
         timestamp: Date.now(),
@@ -144,8 +137,7 @@ export class CacheTester {
       };
     } catch (error) {
       return {
-        type: 'update',
-        storage: 'cache',
+        operation: 'write',
         key,
         success: false,
         timestamp: Date.now(),
@@ -160,8 +152,7 @@ export class CacheTester {
       const deleted = this.cache.delete(key);
 
       return {
-        type: 'delete',
-        storage: 'cache',
+        operation: 'delete',
         key,
         success: deleted,
         timestamp: Date.now(),
@@ -169,8 +160,7 @@ export class CacheTester {
       };
     } catch (error) {
       return {
-        type: 'delete',
-        storage: 'cache',
+        operation: 'delete',
         key,
         success: false,
         timestamp: Date.now(),
@@ -207,8 +197,7 @@ export class CacheTester {
       this.cache.set(key, entry);
 
       return {
-        type: 'save',
-        storage: 'cache',
+        operation: 'write',
         key,
         success: true,
         timestamp: Date.now(),
@@ -217,8 +206,7 @@ export class CacheTester {
       };
     } catch (error) {
       return {
-        type: 'save',
-        storage: 'cache',
+        operation: 'write',
         key,
         success: false,
         timestamp: Date.now(),
@@ -237,8 +225,7 @@ export class CacheTester {
 
       if (!entry) {
         return {
-          type: 'load',
-          storage: 'cache',
+          operation: 'read',
           key,
           success: false,
           timestamp: Date.now(),
@@ -256,8 +243,7 @@ export class CacheTester {
       }
 
       return {
-        type: 'load',
-        storage: 'cache',
+        operation: 'read',
         key,
         success: true,
         timestamp: Date.now(),
@@ -267,8 +253,7 @@ export class CacheTester {
       };
     } catch (error) {
       return {
-        type: 'load',
-        storage: 'cache',
+        operation: 'read',
         key,
         success: false,
         timestamp: Date.now(),
@@ -292,8 +277,7 @@ export class CacheTester {
       });
 
       return {
-        type: 'save',
-        storage: 'cache',
+        operation: 'write',
         key,
         success: true,
         timestamp: Date.now(),
@@ -302,8 +286,7 @@ export class CacheTester {
       };
     } catch (error) {
       return {
-        type: 'save',
-        storage: 'cache',
+        operation: 'write',
         key,
         success: false,
         timestamp: Date.now(),
@@ -323,17 +306,19 @@ export class CacheTester {
 
       return {
         type: 'checksum',
+        dataKey: 'integrity',
         passed,
-        details: passed
+        details: (passed
           ? 'Data integrity verified'
-          : `Data mismatch: original ${originalStr.length} chars, retrieved ${retrievedStr.length} chars`,
+          : `Data mismatch: original ${originalStr.length} chars, retrieved ${retrievedStr.length} chars`) as unknown as Record<string, unknown>,
         timestamp: Date.now(),
       };
     } catch (error) {
       return {
         type: 'checksum',
+        dataKey: 'integrity',
         passed: false,
-        details: `Integrity check failed: ${error}`,
+        details: (`Integrity check failed: ${error}`) as unknown as Record<string, unknown>,
         timestamp: Date.now(),
       };
     }
@@ -349,15 +334,17 @@ export class CacheTester {
 
       return {
         type: 'validation',
+        dataKey: 'expiration',
         passed: expired,
-        details: expired ? 'Cache expiration working correctly' : 'Cache expiration failed',
+        details: (expired ? 'Cache expiration working correctly' : 'Cache expiration failed') as unknown as Record<string, unknown>,
         timestamp: Date.now(),
       };
     } catch (error) {
       return {
         type: 'validation',
+        dataKey: 'expiration',
         passed: false,
-        details: `Expiration check failed: ${error}`,
+        details: (`Expiration check failed: ${error}`) as unknown as Record<string, unknown>,
         timestamp: Date.now(),
       };
     }
@@ -482,7 +469,7 @@ export class CacheTester {
 
     const success =
       operations
-        .filter((op) => op.type !== 'load' || op.key !== 'cache_expires')
+        .filter((op) => (op as { type?: string; key?: string }).type !== 'load' || (op as { key?: string }).key !== 'cache_expires')
         .every((op) => op.success) && integrityChecks.every((check) => check.passed);
 
     return { success, operations, integrityChecks };

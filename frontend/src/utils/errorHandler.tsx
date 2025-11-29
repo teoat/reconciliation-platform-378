@@ -32,7 +32,7 @@ export interface AppError {
   type: ErrorType
   severity: ErrorSeverity
   message: string
-  details?: any
+  details?: Record<string, unknown>
   timestamp: Date
   userId?: string
   projectId?: string
@@ -59,7 +59,7 @@ class ErrorHandler {
     message: string,
     options: {
       severity?: ErrorSeverity
-      details?: any
+      details?: Record<string, unknown>
       userId?: string
       projectId?: string
       component?: string
@@ -169,8 +169,11 @@ class ErrorHandler {
     // Only send high and critical errors to monitoring
     if (error.severity === ErrorSeverity.HIGH || error.severity === ErrorSeverity.CRITICAL) {
       // Send to Sentry, New Relic, or other monitoring service
-      if (typeof window !== 'undefined' && (window as any).Sentry) {
-        (window as any).Sentry.captureException(new Error(error.message), {
+      if (typeof window !== 'undefined') {
+        const win = window as unknown as Record<string, unknown>;
+        const Sentry = win.Sentry as { captureException?: (error: Error, context?: Record<string, unknown>) => void } | undefined;
+        if (Sentry?.captureException) {
+          Sentry.captureException(new Error(error.message), {
           tags: {
             errorType: error.type,
             severity: error.severity,
@@ -202,6 +205,12 @@ class ErrorHandler {
     }).catch(() => {
       // Silently fail if logging service is unavailable
     })
+  }
+
+  // Log retry attempt
+  private logRetryAttempt(options: { errorId: string; context?: string }): void {
+    // Retry logging is handled by the retry service
+    // This method is kept for backward compatibility but does not log directly
   }
 
   // Show user notification
@@ -287,6 +296,7 @@ class ErrorHandler {
     const retryCount = (error.retryCount || 0) + 1
     const delay = this.retryDelays[Math.min(retryCount - 1, this.retryDelays.length - 1)]
 
+    this.logRetryAttempt({
       errorId: error.id,
       context
     })
@@ -531,7 +541,7 @@ export function createNetworkError(error: Error, context?: string): AppError {
 }
 
 // Create validation error
-export function createValidationError(message: string, details?: any, context?: string): AppError {
+export function createValidationError(message: string, details?: Record<string, unknown>, context?: string): AppError {
   const errorHandler = new ErrorHandler()
   
   return errorHandler.createError(

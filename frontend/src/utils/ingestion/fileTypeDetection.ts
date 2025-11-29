@@ -1,5 +1,5 @@
 // File type detection utilities
-import type { UploadedFile } from '../../types/ingestion';
+import type { UploadedFile } from '@/types/ingestion/index';
 
 /**
  * Detects file type based on filename and MIME type

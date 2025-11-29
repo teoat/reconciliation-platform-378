@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { X } from 'lucide-react';
-import { EnhancedProject, ProjectTemplate } from '../../types/project';
+import { EnhancedProject, ProjectTemplate } from '@/types/project/index';
 
 interface ProjectFormModalProps {
   project?: EnhancedProject | null;
@@ -58,7 +58,13 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
           <h2 className="text-xl font-semibold text-secondary-900">
             {project ? 'Edit Project' : 'Create New Project'}
           </h2>
-          <button onClick={onClose} className="text-secondary-400 hover:text-secondary-600">
+          <button 
+            onClick={onClose} 
+            className="text-secondary-400 hover:text-secondary-600"
+            aria-label="Close project form modal"
+            title="Close project form modal"
+            type="button"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>
@@ -144,7 +150,7 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                 onChange={(e) =>
                   setFormData((prev) => ({
                     ...prev,
-                    priority: e.target.value as EnhancedProject['priority'],
+                    priority: (e.target.value || 'medium') as EnhancedProject['priority'],
                   }))
                 }
                 className="input-field"
@@ -201,6 +207,9 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
                   <button
                     onClick={() => removeTag(tag)}
                     className="text-primary-600 hover:text-primary-800"
+                    aria-label={`Remove tag ${tag}`}
+                    title={`Remove tag ${tag}`}
+                    type="button"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -229,10 +238,23 @@ export const ProjectFormModal: React.FC<ProjectFormModalProps> = ({
             </label>
             <select
               id="project-template-select"
-              value={formData.template?.id || ''}
+              value={(() => {
+                const template = formData.template;
+                if (template === null || template === undefined) return '';
+                if (typeof template === 'string') {
+                  return template;
+                }
+                if (typeof template === 'object' && template !== null && 'id' in template) {
+                  const templateWithId = template as { id: string | null | undefined };
+                  if (templateWithId.id !== null && templateWithId.id !== undefined) {
+                    return String(templateWithId.id);
+                  }
+                }
+                return '';
+              })()}
               onChange={(e) => {
                 const template = templates.find((t) => t.id === e.target.value);
-                setFormData((prev) => ({ ...prev, template: template || null }));
+                setFormData((prev) => ({ ...prev, template: template ? template.id : null } as typeof prev));
               }}
               className="input-field"
             >

@@ -30,7 +30,7 @@ export function useTimerCleanup() {
     return () => {
       // Clear all timers on unmount
       // Note: This is best effort - maintain timer references explicitly
-      const highestId = setTimeout(() => {}, 0) as any;
+      const highestId = setTimeout(() => {}, 0) as unknown as number;
       for (let i = 0; i < highestId; i++) {
         clearTimeout(i);
       }

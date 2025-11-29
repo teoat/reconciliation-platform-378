@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { X, Clock, Layers } from 'lucide-react';
-import { ProjectTemplate } from '../../types/project';
+import { ProjectTemplate } from '@/types/project/index';
 
 interface TemplateModalProps {
   templates: ProjectTemplate[];
@@ -16,7 +16,13 @@ export const TemplateModal: React.FC<TemplateModalProps> = ({ templates, onSelec
       <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-6 border-b border-secondary-200">
           <h2 className="text-xl font-semibold text-secondary-900">Choose Project Template</h2>
-          <button onClick={onClose} className="text-secondary-400 hover:text-secondary-600">
+          <button 
+            onClick={onClose} 
+            className="text-secondary-400 hover:text-secondary-600"
+            aria-label="Close template selection modal"
+            title="Close template selection modal"
+            type="button"
+          >
             <X className="w-6 h-6" />
           </button>
         </div>

@@ -1,7 +1,7 @@
 // Consolidated UI Service
 // Combines accessibility, contrast, themes, and UI management functionality
 
-import { BaseService, PersistenceService } from './BaseService';
+import { PersistenceService } from './BaseService';
 
 export interface ThemeData {
   id: string;
@@ -110,7 +110,7 @@ export interface UIConfig {
 
 export class UIService extends PersistenceService<ThemeData> {
   private currentState: UIState;
-  private config: UIConfig;
+  private uiConfig: UIConfig;
   private contrastCache: Map<string, ColorContrastResult> = new Map();
   private focusHistory: HTMLElement[] = [];
   private currentFocus: HTMLElement | null = null;
@@ -123,7 +123,7 @@ export class UIService extends PersistenceService<ThemeData> {
       caching: true,
     });
 
-    this.config = {
+    this.uiConfig = {
       themes: {
         enabled: true,
         defaultTheme: 'light',
@@ -159,10 +159,10 @@ export class UIService extends PersistenceService<ThemeData> {
     };
 
     this.currentState = {
-      currentTheme: this.config.themes.defaultTheme,
+      currentTheme: this.uiConfig.themes.defaultTheme,
       highContrastEnabled: false,
       reducedMotionEnabled: false,
-      fontSize: this.config.accessibility.fontSize,
+      fontSize: this.uiConfig.accessibility.fontSize,
       focusVisible: false,
       keyboardNavigation: false,
     };
@@ -173,7 +173,7 @@ export class UIService extends PersistenceService<ThemeData> {
 
   // Theme Management
   public createTheme(themeData: Omit<ThemeData, 'id'>): string {
-    const id = this.generateId();
+    const id = `theme_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const theme: ThemeData = {
       id,
       ...themeData,
@@ -189,7 +189,7 @@ export class UIService extends PersistenceService<ThemeData> {
   }
 
   public getAllThemes(): ThemeData[] {
-    return this.getAll();
+    return Array.from(this.data.values());
   }
 
   public applyTheme(themeId: string): boolean {
@@ -199,7 +199,7 @@ export class UIService extends PersistenceService<ThemeData> {
     this.currentState.currentTheme = themeId;
     this.applyThemeToDOM(theme);
 
-    if (this.config.themes.persistTheme) {
+    if (this.uiConfig.themes.persistTheme) {
       localStorage.setItem('selectedTheme', themeId);
     }
 
@@ -282,7 +282,7 @@ export class UIService extends PersistenceService<ThemeData> {
   }
 
   public resetFontSize(): void {
-    this.setFontSize(this.config.accessibility.fontSize);
+    this.setFontSize(this.uiConfig.accessibility.fontSize);
   }
 
   // Focus Management
@@ -321,8 +321,8 @@ export class UIService extends PersistenceService<ThemeData> {
     const result: ColorContrastResult = {
       ratio,
       level: this.getContrastLevel(ratio),
-      largeText: ratio >= this.config.contrast.largeTextThreshold,
-      normalText: ratio >= this.config.contrast.threshold,
+      largeText: ratio >= this.uiConfig.contrast.largeTextThreshold,
+      normalText: ratio >= this.uiConfig.contrast.threshold,
       description: this.getContrastDescription(ratio),
     };
 
@@ -348,7 +348,7 @@ export class UIService extends PersistenceService<ThemeData> {
     message: string,
     priority: 'polite' | 'assertive' = 'polite'
   ): void {
-    if (!this.config.accessibility.enableScreenReader) return;
+    if (!this.uiConfig.accessibility.enableScreenReader) return;
 
     const announcement = document.createElement('div');
     announcement.setAttribute('aria-live', priority);
@@ -390,7 +390,7 @@ export class UIService extends PersistenceService<ThemeData> {
   }
 
   public getConfig(): UIConfig {
-    return { ...this.config };
+    return { ...this.uiConfig };
   }
 
   public getCurrentState(): UIState {
@@ -526,7 +526,7 @@ export class UIService extends PersistenceService<ThemeData> {
     });
 
     // Load saved theme
-    if (this.config.themes.persistTheme) {
+    if (this.uiConfig.themes.persistTheme) {
       const savedTheme = localStorage.getItem('selectedTheme');
       if (savedTheme && this.get(savedTheme)) {
         this.applyTheme(savedTheme);

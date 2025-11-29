@@ -5,7 +5,7 @@
  */
 
 import { useMemo } from 'react';
-import type { ExpenseCategory, FilterConfig } from '../types';
+import type { ExpenseCategory, FilterConfig } from '@/pages/cashflow/types';
 
 interface UseCashflowFiltersProps {
   expenseCategories: ExpenseCategory[];
@@ -18,8 +18,14 @@ export const useCashflowFilters = ({
   searchTerm,
   filters,
 }: UseCashflowFiltersProps) => {
-  const getNestedValue = (obj: any, path: string) => {
-    return path.split('.').reduce((current, key) => current?.[key], obj);
+  const getNestedValue = (obj: unknown, path: string): unknown => {
+    if (typeof obj !== 'object' || obj === null) return undefined;
+    return path.split('.').reduce<unknown>((current, key) => {
+      if (current && typeof current === 'object' && key in current) {
+        return (current as Record<string, unknown>)[key];
+      }
+      return undefined;
+    }, obj);
   };
 
   const filteredCategories = useMemo(() => {

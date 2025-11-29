@@ -5,12 +5,12 @@
  * Essential for Agent 5 Enhancement 2: Enhanced Error Display
  */
 
-import { logger } from '../../services/logger';
+import { logger } from '@/services/logger';
 
 import React, { useState } from 'react';
 import { Copy, Check, Code } from 'lucide-react';
 // Import ariaLiveRegionsService with type-safe access
-import { ariaLiveRegionsService } from '../../utils/ariaLiveRegionsHelper';
+import { ariaLiveRegionsService } from '@/utils/ariaLiveRegionsHelper';
 
 export interface ErrorCodeDisplayProps {
   errorCode?: string;
@@ -40,10 +40,13 @@ export const ErrorCodeDisplay: React.FC<ErrorCodeDisplayProps> = ({
       setCopiedItem(item);
 
       // Announce to screen readers
-      (ariaLiveRegionsService as any)?.announceStatus?.(`${item} copied to clipboard`, {
-        componentId: 'error-code-display',
-        action: 'code-copied',
-      });
+      if (ariaLiveRegionsService && typeof ariaLiveRegionsService === 'object' && 'announceStatus' in ariaLiveRegionsService) {
+        const service = ariaLiveRegionsService as { announceStatus?: (message: string, options?: Record<string, unknown>) => void };
+        service.announceStatus?.(`${item} copied to clipboard`, {
+          componentId: 'error-code-display',
+          action: 'code-copied',
+        });
+      }
 
       setTimeout(() => {
         setCopied(false);

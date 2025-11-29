@@ -111,7 +111,6 @@ export class RetryUtility {
     config: Partial<RetryConfig> = {}
   ): Promise<RetryResult<T>> {
     const startTime = Date.now();
-    let lastError: Error;
     let attempts = 0;
 
     try {

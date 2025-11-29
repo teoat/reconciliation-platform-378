@@ -1,6 +1,6 @@
 // Ingestion workflow hook
 import { useState, useCallback } from 'react';
-import type { UploadedFile } from '../../types/ingestion';
+import type { UploadedFile } from '@/types/ingestion/index';
 
 export type WorkflowStep = 'upload' | 'validate' | 'map' | 'transform' | 'review' | 'complete';
 

@@ -29,7 +29,7 @@ const AuthPage: React.FC = () => {
   const demoModeEnabled = isDemoModeEnabled();
 
   // OAuth
-  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const { googleButtonRef, isGoogleButtonLoading, googleButtonError, setGoogleButtonRetryKey } =
     useOAuth({ googleClientId });
 

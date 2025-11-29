@@ -24,10 +24,20 @@ import {
   PartyPopper,
   Star,
   Smile,
+  CheckCircle2,
+  XCircle,
+  Clock,
+  Activity,
+  RefreshCw,
 } from 'lucide-react';
+import { Tooltip } from '@/components/ui/Tooltip';
 import { frenlyAgentService } from '@/services/frenlyAgentService';
 import { FrenlyGuidance, FrenlyTips } from './FrenlyGuidance';
 import { setFrenlyMessageHandler } from '@/orchestration/PageFrenlyIntegration';
+import { useFrenlyMaintenanceStatus } from '@/hooks/useFrenlyMaintenanceStatus';
+import { useFrenlyMaintenanceHistory, getHealthTrend } from '@/hooks/useFrenlyMaintenanceHistory';
+import type { MaintenanceRun } from '@/hooks/useFrenlyMaintenanceHistory';
+import { useToast } from '@/hooks/useToast';
 
 // ============================================================================
 // TYPES
@@ -255,6 +265,52 @@ export const FrenlyProvider: React.FC<FrenlyProviderProps> = ({
     return defaultState;
   });
 
+  const { status: maintenanceStatus, loading: maintenanceLoading } = useFrenlyMaintenanceStatus();
+  const { runs: maintenanceHistory } = useFrenlyMaintenanceHistory(7);
+  const healthTrend = getHealthTrend(maintenanceHistory);
+  const toast = useToast();
+  
+  // Track previous maintenance status for change detection
+  const prevMaintenanceStatusRef = useRef<typeof maintenanceStatus>(null);
+  
+  // Show toast notification when maintenance status degrades
+  useEffect(() => {
+    if (maintenanceLoading || !maintenanceStatus) return;
+    
+    const prevStatus = prevMaintenanceStatusRef.current;
+    const currentStatus = maintenanceStatus.overallStatus;
+    
+    // Only show toast on status change (not on initial load)
+    if (prevStatus) {
+      const prevOverall = prevStatus.overallStatus;
+      
+      // Status degraded from healthy
+      if (prevOverall === 'healthy' && currentStatus === 'degraded') {
+        toast.warning(
+          `⚠️ System health degraded: ${maintenanceStatus.softFailures} non-critical issue${maintenanceStatus.softFailures > 1 ? 's' : ''} detected`,
+          { duration: 6000 }
+        );
+      } else if (prevOverall === 'healthy' && currentStatus === 'failed') {
+        toast.error(
+          `🚨 System health critical: ${maintenanceStatus.hardFailures} critical issue${maintenanceStatus.hardFailures > 1 ? 's' : ''} require attention`,
+          { duration: 8000 }
+        );
+      } else if (prevOverall === 'degraded' && currentStatus === 'failed') {
+        toast.error(
+          `🚨 Status worsened: ${maintenanceStatus.hardFailures} critical issue${maintenanceStatus.hardFailures > 1 ? 's' : ''} now detected`,
+          { duration: 8000 }
+        );
+      } else if (currentStatus === 'healthy' && prevOverall !== 'healthy') {
+        toast.success(
+          '✅ System health restored! All checks passing.',
+          { duration: 4000 }
+        );
+      }
+    }
+    
+    prevMaintenanceStatusRef.current = maintenanceStatus;
+  }, [maintenanceStatus, maintenanceLoading, toast]);
+
   // Save state to storage whenever it changes
   useEffect(() => {
     if (enablePersistence) {
@@ -481,7 +537,16 @@ const FrenlyAI: React.FC = () => {
     useFrenly();
   const messageGenerationRef = useRef<Promise<FrenlyMessage | null> | null>(null);
 
-  // Generate contextual messages using FrenlyAgentService
+  // Helper to check if maintenance status is stale (older than 7 days)
+  const isMaintenanceStale = useCallback((): boolean => {
+    if (!maintenanceStatus?.lastRun) return true;
+    const lastRunDate = new Date(maintenanceStatus.lastRun);
+    const now = new Date();
+    const daysSinceRun = (now.getTime() - lastRunDate.getTime()) / (1000 * 60 * 60 * 24);
+    return daysSinceRun > 7;
+  }, [maintenanceStatus]);
+
+  // Generate maintenance-aware contextual messages
   const generateContextualMessage = useCallback(async (): Promise<FrenlyMessage | null> => {
     // Prevent duplicate requests
     if (messageGenerationRef.current) {
@@ -490,6 +555,62 @@ const FrenlyAI: React.FC = () => {
 
     const promise = (async () => {
       try {
+        // Check for maintenance issues first (priority messages)
+        if (maintenanceStatus) {
+          // Show maintenance warning if system is degraded or failed
+          if (maintenanceStatus.overallStatus === 'failed') {
+            return {
+              id: `maintenance-alert-${Date.now()}`,
+              type: 'warning' as const,
+              content: `⚠️ System health check found ${maintenanceStatus.hardFailures} critical issue${maintenanceStatus.hardFailures > 1 ? 's' : ''}. ${maintenanceStatus.failedChecks.slice(0, 2).join(', ')}${maintenanceStatus.failedChecks.length > 2 ? ` and ${maintenanceStatus.failedChecks.length - 2} more` : ''} need attention.`,
+              timestamp: new Date(),
+              page: state.currentPage,
+              priority: 'high' as const,
+              dismissible: true,
+              action: {
+                text: 'View Report',
+                onClick: () => window.open(`/${maintenanceStatus.reportPath}`, '_blank'),
+              },
+            } as FrenlyMessage;
+          }
+          
+          if (maintenanceStatus.overallStatus === 'degraded') {
+            return {
+              id: `maintenance-degraded-${Date.now()}`,
+              type: 'tip' as const,
+              content: `🔧 Some non-critical checks are failing (${maintenanceStatus.softFailures} issue${maintenanceStatus.softFailures > 1 ? 's' : ''}). The system is working, but you might want to address: ${maintenanceStatus.failedChecks.slice(0, 2).join(', ')}.`,
+              timestamp: new Date(),
+              page: state.currentPage,
+              priority: 'medium' as const,
+              dismissible: true,
+              action: {
+                text: 'See Details',
+                onClick: () => window.open(`/${maintenanceStatus.reportPath}`, '_blank'),
+              },
+            } as FrenlyMessage;
+          }
+        }
+        
+        // Check if maintenance is stale
+        if (isMaintenanceStale()) {
+          const daysSince = maintenanceStatus?.lastRun 
+            ? Math.floor((Date.now() - new Date(maintenanceStatus.lastRun).getTime()) / (1000 * 60 * 60 * 24))
+            : null;
+          
+          return {
+            id: `maintenance-stale-${Date.now()}`,
+            type: 'tip' as const,
+            content: daysSince 
+              ? `📋 It's been ${daysSince} days since the last maintenance check. Want me to suggest running a quick health check?`
+              : `📋 No recent maintenance runs found. Running periodic health checks helps catch issues early!`,
+            timestamp: new Date(),
+            page: state.currentPage,
+            priority: 'low' as const,
+            dismissible: true,
+            autoHide: 8000,
+          } as FrenlyMessage;
+        }
+
         // Get user ID from localStorage or generate one
         const userId =
           localStorage.getItem('userId') ||
@@ -559,7 +680,7 @@ const FrenlyAI: React.FC = () => {
 
     messageGenerationRef.current = promise;
     return promise;
-  }, [state.currentPage, state.userProgress]);
+  }, [state.currentPage, state.userProgress, maintenanceStatus, isMaintenanceStale]);
 
   // Track session start
   useEffect(() => {
@@ -720,6 +841,228 @@ const FrenlyAI: React.FC = () => {
                 }}
               />
             </div>
+          </div>
+
+          {/* System Health Badge (Frenly-aware) with Enhanced Tooltip */}
+          <div className="mb-3">
+            <div className="flex items-center justify-between text-xs mb-1">
+              <div className="flex items-center space-x-2">
+                <Activity className="w-3 h-3 text-gray-500" />
+                <span className="font-medium text-gray-700">System Health</span>
+              </div>
+              {maintenanceStatus && (
+                <a
+                  href={`/${maintenanceStatus.reportPath}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[0.65rem] text-purple-600 hover:text-purple-700 hover:underline flex items-center gap-1"
+                >
+                  <span>View report</span>
+                </a>
+              )}
+            </div>
+            
+            {/* Health Status Badge with Tooltip */}
+            <div className="flex items-center gap-2">
+              {maintenanceLoading && (
+                <div className="flex-1 flex items-center justify-center py-2 rounded-lg bg-gray-50 border border-gray-200">
+                  <RefreshCw className="w-3 h-3 mr-1.5 text-gray-400 animate-spin" />
+                  <span className="text-[0.7rem] text-gray-500">Checking status...</span>
+                </div>
+              )}
+              
+              {!maintenanceLoading && maintenanceStatus && (
+                <Tooltip
+                  content={
+                    <div className="min-w-[200px] max-w-[280px]">
+                      <div className="font-semibold mb-2 pb-1 border-b border-gray-700">
+                        Maintenance Details
+                      </div>
+                      
+                      {/* Last Run */}
+                      <div className="flex items-center gap-2 mb-1.5 text-gray-300">
+                        <Clock className="w-3 h-3" />
+                        <span className="text-[0.7rem]">
+                          {new Date(maintenanceStatus.lastRun).toLocaleString()}
+                        </span>
+                      </div>
+                      
+                      {/* Mode & Duration */}
+                      <div className="flex items-center justify-between mb-2 text-[0.7rem] text-gray-300">
+                        <span>Mode: <span className="text-white">{maintenanceStatus.mode}</span></span>
+                        <span>{maintenanceStatus.durationSeconds}s</span>
+                      </div>
+                      
+                      {/* Checks Summary */}
+                      <div className="flex items-center gap-3 mb-2 text-[0.7rem]">
+                        {maintenanceStatus.hardFailures === 0 && maintenanceStatus.softFailures === 0 ? (
+                          <span className="flex items-center text-green-400">
+                            <CheckCircle2 className="w-3 h-3 mr-1" />
+                            All checks passed
+                          </span>
+                        ) : (
+                          <>
+                            {maintenanceStatus.hardFailures > 0 && (
+                              <span className="flex items-center text-red-400">
+                                <XCircle className="w-3 h-3 mr-1" />
+                                {maintenanceStatus.hardFailures} hard
+                              </span>
+                            )}
+                            {maintenanceStatus.softFailures > 0 && (
+                              <span className="flex items-center text-yellow-400">
+                                <AlertTriangle className="w-3 h-3 mr-1" />
+                                {maintenanceStatus.softFailures} soft
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* Failed Checks List */}
+                      {maintenanceStatus.failedChecks.length > 0 && (
+                        <div className="mt-2 pt-2 border-t border-gray-700">
+                          <div className="text-[0.65rem] text-gray-400 mb-1">Failed checks:</div>
+                          <ul className="space-y-0.5">
+                            {maintenanceStatus.failedChecks.slice(0, 5).map((check, i) => (
+                              <li key={i} className="text-[0.65rem] text-red-300 flex items-start gap-1">
+                                <span className="text-red-400 mt-0.5">•</span>
+                                <span>{check}</span>
+                              </li>
+                            ))}
+                            {maintenanceStatus.failedChecks.length > 5 && (
+                              <li className="text-[0.65rem] text-gray-400 italic">
+                                +{maintenanceStatus.failedChecks.length - 5} more...
+                              </li>
+                            )}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  }
+                  position="top"
+                  delay={200}
+                >
+                  <button
+                    type="button"
+                    className={`flex-1 flex items-center justify-between py-2 px-3 rounded-lg border transition-all duration-200 cursor-default ${
+                      maintenanceStatus.overallStatus === 'healthy'
+                        ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                        : maintenanceStatus.overallStatus === 'degraded'
+                        ? 'bg-yellow-50 border-yellow-200 hover:bg-yellow-100'
+                        : 'bg-red-50 border-red-200 hover:bg-red-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`h-2.5 w-2.5 rounded-full ${
+                          maintenanceStatus.overallStatus === 'healthy'
+                            ? 'bg-green-500'
+                            : maintenanceStatus.overallStatus === 'degraded'
+                            ? 'bg-yellow-500 animate-pulse'
+                            : 'bg-red-500 animate-pulse'
+                        }`}
+                      />
+                      <span
+                        className={`text-[0.75rem] font-medium ${
+                          maintenanceStatus.overallStatus === 'healthy'
+                            ? 'text-green-700'
+                            : maintenanceStatus.overallStatus === 'degraded'
+                            ? 'text-yellow-700'
+                            : 'text-red-700'
+                        }`}
+                      >
+                        {maintenanceStatus.overallStatus === 'healthy'
+                          ? 'All Systems Healthy'
+                          : maintenanceStatus.overallStatus === 'degraded'
+                          ? 'Partially Degraded'
+                          : 'Attention Required'}
+                      </span>
+                    </div>
+                    
+                    {/* Mini stats */}
+                    <div className="flex items-center gap-1.5 text-[0.65rem]">
+                      {maintenanceStatus.hardFailures > 0 && (
+                        <span className="px-1.5 py-0.5 rounded bg-red-100 text-red-600 font-medium">
+                          {maintenanceStatus.hardFailures}
+                        </span>
+                      )}
+                      {maintenanceStatus.softFailures > 0 && (
+                        <span className="px-1.5 py-0.5 rounded bg-yellow-100 text-yellow-600 font-medium">
+                          {maintenanceStatus.softFailures}
+                        </span>
+                      )}
+                      {maintenanceStatus.hardFailures === 0 && maintenanceStatus.softFailures === 0 && (
+                        <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
+                      )}
+                    </div>
+                  </button>
+                </Tooltip>
+              )}
+              
+              {!maintenanceLoading && !maintenanceStatus && (
+                <div className="flex-1 flex items-center justify-center py-2 rounded-lg bg-gray-50 border border-dashed border-gray-300">
+                  <Clock className="w-3 h-3 mr-1.5 text-gray-400" />
+                  <span className="text-[0.7rem] text-gray-500">No recent maintenance run</span>
+                </div>
+              )}
+            </div>
+            
+            {/* History Sparkline */}
+            {maintenanceHistory.length > 1 && (
+              <div className="mt-2 flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  {maintenanceHistory.slice(0, 7).reverse().map((run: MaintenanceRun, i: number) => (
+                    <Tooltip
+                      key={i}
+                      content={
+                        <div className="text-[0.7rem]">
+                          <div className="font-medium">{new Date(run.timestamp).toLocaleDateString()}</div>
+                          <div className="capitalize">{run.overallStatus}</div>
+                        </div>
+                      }
+                      position="top"
+                      delay={100}
+                    >
+                      <span
+                        className={`block w-2.5 h-2.5 rounded-sm transition-all hover:scale-125 ${
+                          run.overallStatus === 'healthy'
+                            ? 'bg-green-400'
+                            : run.overallStatus === 'degraded'
+                            ? 'bg-yellow-400'
+                            : 'bg-red-400'
+                        }`}
+                      />
+                    </Tooltip>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1 text-[0.65rem]">
+                  {healthTrend === 'improving' && (
+                    <span className="text-green-600 flex items-center">
+                      <svg className="w-3 h-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+                      </svg>
+                      Improving
+                    </span>
+                  )}
+                  {healthTrend === 'declining' && (
+                    <span className="text-red-600 flex items-center">
+                      <svg className="w-3 h-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                      Declining
+                    </span>
+                  )}
+                  {healthTrend === 'stable' && (
+                    <span className="text-gray-500 flex items-center">
+                      <svg className="w-3 h-3 mr-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h14" />
+                      </svg>
+                      Stable
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Quick Actions */}

@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/useToast';
 import { logger } from '@/services/logger';
 import { PageMeta } from '@/components/seo/PageMeta';
 import { isDemoModeEnabled } from '@/config/demoCredentials';
+import { getUserFriendlyError } from '@/utils/errorMessages';
 import type { LoginForm, RegisterForm, DemoRole } from './types';
 import { useOAuth } from './hooks/useOAuth';
 import { LoginForm as LoginFormComponent } from './components/LoginForm';
@@ -29,7 +30,7 @@ const AuthPage: React.FC = () => {
   const demoModeEnabled = isDemoModeEnabled();
 
   // OAuth
-  const googleClientId = process.env.REACT_APP_GOOGLE_CLIENT_ID;
+  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
   const { googleButtonRef, isGoogleButtonLoading, googleButtonError, setGoogleButtonRetryKey } =
     useOAuth({ googleClientId });
 
@@ -55,7 +56,10 @@ const AuthPage: React.FC = () => {
       }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An error occurred during login';
-      setError(errorMessage);
+      // Use user-friendly error messages for network/connectivity issues
+      const friendlyError = getUserFriendlyError(errorMessage);
+      const displayMessage = friendlyError.message || errorMessage;
+      setError(displayMessage);
       logger.error('Login error', { component: 'AuthPage', error: errorMessage });
     }
   };
@@ -80,7 +84,10 @@ const AuthPage: React.FC = () => {
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'An error occurred during registration';
-      setError(errorMessage);
+      // Use user-friendly error messages for network/connectivity issues
+      const friendlyError = getUserFriendlyError(errorMessage);
+      const displayMessage = friendlyError.message || errorMessage;
+      setError(displayMessage);
       logger.error('Registration error', { component: 'AuthPage', error: errorMessage });
     }
   };

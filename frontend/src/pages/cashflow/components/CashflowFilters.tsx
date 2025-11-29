@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { Filter, Trash2 } from 'lucide-react';
-import type { FilterConfig } from '../types';
+import type { FilterConfig } from '@/pages/cashflow/types';
 
 interface CashflowFiltersProps {
   filters: FilterConfig[];

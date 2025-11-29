@@ -99,7 +99,7 @@ export class PresetManager {
             }
             return obj;
           };
-          this.presets.set(id, recursivelyParseDates(preset));
+          this.presets.set(id, recursivelyParseDates(preset) as FilterPreset);
         });
         this.usageHistory = new Map(Object.entries(data.usageHistory || {}));
       }

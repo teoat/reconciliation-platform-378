@@ -21,7 +21,7 @@ export class StatePropagationTests {
       await Promise.all(browsers.map((browser) => this.simulation.simulateBrowserConnect(browser)));
 
       const newState: WorkflowState = { step: 'reconciliation', progress: 50, data: { records: 1000 } };
-      await this.simulation.simulateWorkflowStateChange(newState);
+      await this.simulation.simulateWorkflowStateChange(newState as unknown as Record<string, unknown>);
 
       const propagationChecks = await Promise.all(
         browsers.map(async (browser) => {

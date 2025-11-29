@@ -227,8 +227,8 @@ impl QueryTuningService {
 
         // Execute index creation queries
         if let Some(db) = &self.db {
-            for index_sql in recommended_indexes {
-                log::info!("Creating index: {}", index_sql);
+        for index_sql in recommended_indexes {
+            log::info!("Creating index: {}", index_sql);
                 
                 // Execute the index creation query
                 let result = self.execute_index_creation(db, &index_sql).await;
@@ -247,7 +247,7 @@ impl QueryTuningService {
             // If no database connection, just log the indexes that would be created
             for index_sql in recommended_indexes {
                 log::info!("Would create index: {}", index_sql);
-                created_indexes.push(index_sql.to_string());
+            created_indexes.push(index_sql.to_string());
             }
         }
 
@@ -337,9 +337,10 @@ mod tests {
         Database {}
         impl Clone for Database {
             fn clone(&self) -> Self;
-            fn get_connection(&self) -> Result<diesel::PgConnection, crate::errors::AppError>;
         }
     }
+    
+    // Note: get_connection would need to be in a separate trait if needed
 
     #[tokio::test]
     async fn test_query_tuning_service_creation() {

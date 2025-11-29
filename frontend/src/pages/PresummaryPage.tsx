@@ -30,7 +30,7 @@ interface ReconciliationSummary {
 }
 
 interface PresummaryPageProps {
-  project?: any
+  project?: Record<string, unknown>
 }
 
 const PresummaryPage = ({ project }: PresummaryPageProps = {}) => {
@@ -227,6 +227,14 @@ const PresummaryPage = ({ project }: PresummaryPageProps = {}) => {
                       : 'border-secondary-200 hover:border-secondary-300'
                   }`}
                   onClick={() => setSelectedSummary(summary)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedSummary(summary);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center space-x-3">

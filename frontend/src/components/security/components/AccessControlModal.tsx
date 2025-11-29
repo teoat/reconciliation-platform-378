@@ -150,9 +150,10 @@ export function AccessControlModal({
             <>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Permissions</label>
+                  <label htmlFor="permissions-input" className="block text-sm font-medium text-gray-700 mb-1">Permissions</label>
                   <div className="flex items-center space-x-2 mb-2">
                     <Input
+                      id="permissions-input"
                       value={newPermission}
                       onChange={(e) => setNewPermission(e.target.value)}
                       onKeyPress={(e) => {
@@ -187,9 +188,10 @@ export function AccessControlModal({
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Resources</label>
+                  <label htmlFor="resources-input" className="block text-sm font-medium text-gray-700 mb-1">Resources</label>
                   <div className="flex items-center space-x-2 mb-2">
                     <Input
+                      id="resources-input"
                       value={newResource}
                       onChange={(e) => setNewResource(e.target.value)}
                       onKeyPress={(e) => {

@@ -17,7 +17,8 @@ import { FileText } from 'lucide-react';
 import { X } from 'lucide-react';
 import { useData } from '../components/DataProvider';
 import type { BackendProject } from '../services/apiClient/types';
-import type { ReconciliationData } from './data/types';
+import type { ReconciliationData as ComponentReconciliationData } from './data/types';
+import type { ReconciliationData as ServiceReconciliationData } from '../services/dataManagement/types';
 
 // AI Discrepancy Detection Interfaces
 interface AIDiscrepancyDetectionData {
@@ -95,11 +96,15 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
   const [filterType, setFilterType] = useState<string>('all');
 
   const generateAIDetections = useCallback(
-    (reconciliationData: ReconciliationData): AIDiscrepancyDetectionData[] => {
+    (reconciliationData: ComponentReconciliationData | ServiceReconciliationData): AIDiscrepancyDetectionData[] => {
       const detections: AIDiscrepancyDetectionData[] = [];
 
       // Analyze reconciliation records for discrepancies
-      reconciliationData.records.forEach((record, index: number) => {
+      // Handle both component and service types
+      const records = 'records' in reconciliationData 
+        ? reconciliationData.records 
+        : (reconciliationData as ServiceReconciliationData).records || [];
+      records.forEach((record, index: number) => {
         if (record.status === 'discrepancy' && record.difference) {
           const detection: AIDiscrepancyDetectionData = {
             id: `ai-detection-${index}`,
@@ -178,7 +183,7 @@ const AIDiscrepancyDetection = ({ project, onProgressUpdate }: AIDiscrepancyDete
   );
 
   const generateAIPredictions = useCallback(
-    (reconciliationData: ReconciliationData): AIPrediction[] => {
+    (reconciliationData: ComponentReconciliationData | ServiceReconciliationData): AIPrediction[] => {
       // Generate predictions for next week
       const nextWeekPredictions = [
         {

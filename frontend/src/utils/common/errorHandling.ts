@@ -383,7 +383,7 @@ export function extractErrorFromApiResponse(
 
       const errorMessage = (data.message || errorObj.message || 'API request failed') as string;
       return {
-        error: errorMessage instanceof Error ? errorMessage : new Error(errorMessage),
+        error: typeof errorMessage === 'string' ? new Error(errorMessage) : (errorMessage as Error),
         errorCode: (data.code || data.errorCode || extractErrorCodeFromError(errorObj)) as
           | string
           | undefined,

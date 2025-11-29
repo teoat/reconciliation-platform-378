@@ -116,10 +116,11 @@ export function ShareReportModal({ report, onClose }: ShareReportModalProps) {
           {shareType === 'users' && (
             <>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="share-user-ids" className="block text-sm font-medium text-gray-700 mb-1">
                   User IDs (comma-separated)
                 </label>
                 <Input
+                  id="share-user-ids"
                   placeholder="user-1, user-2, user-3"
                   onChange={(e) => {
                     const ids = e.target.value.split(',').map((id) => id.trim()).filter(Boolean);
@@ -145,9 +146,9 @@ export function ShareReportModal({ report, onClose }: ShareReportModalProps) {
 
           {shareLink && (
             <div className="p-4 bg-primary-50 rounded-lg">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Share Link</label>
+              <label htmlFor="share-link-input" className="block text-sm font-medium text-gray-700 mb-2">Share Link</label>
               <div className="flex items-center space-x-2">
-                <Input value={shareLink} readOnly fullWidth />
+                <Input id="share-link-input" value={shareLink} readOnly fullWidth />
                 <button
                   onClick={copyToClipboard}
                   className="btn-secondary flex items-center space-x-2"

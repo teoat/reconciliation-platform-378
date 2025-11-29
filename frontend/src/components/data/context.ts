@@ -106,15 +106,15 @@ export interface DataContextType {
   // Legacy compatibility methods
   createProject: (project: Partial<ProjectData>) => ProjectData;
   updateProject: (projectId: string, updates: Partial<ProjectData>) => ProjectData | null;
-  addIngestionData: (projectId: string, ingestionData: IngestionData) => ProjectData | null;
+  addIngestionData: (projectId: string, ingestionData: IngestionData) => ProjectData;
   getIngestionData: () => IngestionData | null;
   addReconciliationData: (
     projectId: string,
     reconciliationData: ReconciliationData
   ) => ProjectData | null;
   getReconciliationData: () => ReconciliationData | null;
-  addCashflowData: (projectId: string, cashflowData: CashflowData) => ProjectData | null;
-  getCashflowData: () => CashflowData | null;
+  addCashflowData: (projectId: string, cashflowData: CashflowData) => ProjectData;
+  getCashflowData: () => CashflowData;
   transformIngestionToReconciliation: (projectId: string) => ProjectData | null;
   transformReconciliationToCashflow: (projectId: string) => ProjectData | null;
   subscribeToProject: (projectId: string, callback: (data: ProjectData) => void) => () => void;

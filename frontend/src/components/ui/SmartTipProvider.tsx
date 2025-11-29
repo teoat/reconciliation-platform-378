@@ -7,7 +7,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
-import { SmartTip, useSmartTips, type SmartTip as SmartTipType } from './SmartTip';
+import { SmartTip, useSmartTips } from './SmartTip';
 import { onboardingService } from '@/services/onboardingService';
 import { logger } from '@/services/logger';
 
@@ -19,7 +19,7 @@ export interface SmartTipProviderProps {
 
 /**
  * Smart Tip Provider
- * 
+ *
  * Automatically displays contextual tips based on current route and user progress
  */
 export const SmartTipProvider: React.FC<SmartTipProviderProps> = ({
@@ -76,4 +76,3 @@ export const SmartTipProvider: React.FC<SmartTipProviderProps> = ({
 };
 
 export default SmartTipProvider;
-

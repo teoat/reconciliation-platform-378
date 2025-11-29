@@ -5,11 +5,9 @@
  * This service handles communication between React components and the agent backend.
  */
 
-import {
-  FrenlyGuidanceAgent,
-  MessageContext,
-  GeneratedMessage,
-} from '../../../agents/guidance/FrenlyGuidanceAgent';
+import { FrenlyGuidanceAgent } from '../../../agents/guidance/FrenlyGuidanceAgent';
+import { MessageContext, GeneratedMessage } from '../../../agents/guidance/frenly-interfaces';
+import { ExecutionContext } from '../../../agents/core/types';
 import { logger } from './logger';
 
 // NLU Service Types (matching nluService.ts)
@@ -255,7 +253,7 @@ class FrenlyAgentService {
         try {
           // Try with retry mechanism
           const result = await this.retryWithBackoff(async () => {
-            const execResult = await this.agent.execute(context as unknown as import('../../../agents/guidance/FrenlyGuidanceAgent').ExecutionContext);
+            const execResult = await this.agent.execute(context as unknown as ExecutionContext);
             if (!execResult.success) {
               throw new Error('Agent execution failed');
             }
@@ -330,7 +328,9 @@ class FrenlyAgentService {
       try {
         const nlu = await getNLUService();
         const understanding = await nlu.understand(query, context);
-        const responseText = understanding.response || await nlu.generateResponse(understanding.intent, query, context);
+        const responseText =
+          understanding.response ||
+          (await nlu.generateResponse(understanding.intent, query, context));
 
         return {
           id: `query_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

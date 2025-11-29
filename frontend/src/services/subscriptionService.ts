@@ -156,7 +156,7 @@ export class SubscriptionService {
     });
 
     if (response.success && response.data) {
-      return response.data.url;
+      return (response.data as { url?: string })?.url || '';
     }
 
     throw new Error('Failed to create checkout session');

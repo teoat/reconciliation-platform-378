@@ -40,7 +40,7 @@ class LazyErrorBoundary extends React.Component<
   }
 }
 
-export const withLazyLoading = <P extends Record<string, any>>(
+export const withLazyLoading = <P extends Record<string, unknown>>(
   Component: ComponentType<P>,
   fallback?: ReactNode
 ) => {

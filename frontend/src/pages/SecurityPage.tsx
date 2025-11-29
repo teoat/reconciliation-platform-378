@@ -28,7 +28,7 @@ import {
 } from 'lucide-react'
 
 interface SecurityPageProps {
-  project?: any
+  project?: Record<string, unknown>
 }
 
 // Security Interfaces
@@ -79,7 +79,7 @@ interface AuditLog {
   result: 'success' | 'failure' | 'denied'
   ipAddress: string
   userAgent: string
-  details: any
+  details: Record<string, unknown>
 }
 
 interface EncryptionConfig {

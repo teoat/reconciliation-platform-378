@@ -1,6 +1,6 @@
 // Comprehensive Monitoring Dashboard
 import { logger } from '@/services/logger';
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, memo } from 'react';
 import { Activity } from 'lucide-react';
 import { AlertCircle } from 'lucide-react';
 import { AlertTriangle } from 'lucide-react';
@@ -57,7 +57,7 @@ export interface LogEntry {
 }
 
 // Main Monitoring Dashboard
-export const MonitoringDashboard: React.FC = () => {
+export const MonitoringDashboard: React.FC = memo(() => {
   const [metrics, setMetrics] = useState<SystemMetrics | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -450,7 +450,7 @@ export const MonitoringDashboard: React.FC = () => {
       )}
     </div>
   );
-};
+});
 
 // Metric Card Component
 const MetricCard: React.FC<{
@@ -473,7 +473,7 @@ const MetricCard: React.FC<{
 };
 
 // Alert Management Component
-export const AlertManagement: React.FC = () => {
+export const AlertManagement: React.FC = memo(() => {
   const [alerts, setAlerts] = useState<Alert[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -595,10 +595,10 @@ export const AlertManagement: React.FC = () => {
       </div>
     </div>
   );
-};
+});
 
 // Log Viewer Component
-export const LogViewer: React.FC = () => {
+export const LogViewer: React.FC = memo(() => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<string>('all');
@@ -710,4 +710,4 @@ export const LogViewer: React.FC = () => {
       </div>
     </div>
   );
-};
+});

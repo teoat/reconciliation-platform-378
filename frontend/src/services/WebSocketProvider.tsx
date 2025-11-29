@@ -49,26 +49,23 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
     setClient(wsClient);
 
     // Subscribe to status changes
-    const statusSubscriptionId = wsClient.subscribe(
-      'status-change',
-      (newStatus: WebSocketStatus) => {
-        setStatus(newStatus);
-      }
-    );
+    const statusSubscriptionId = wsClient.subscribe('status-change', (newStatus: unknown) => {
+      setStatus(newStatus as WebSocketStatus);
+    });
 
     // Subscribe to common events
-    const messageSubscriptionId = wsClient.subscribe('message', (data: unknown) => {
+    const messageSubscriptionId = wsClient.subscribe('message', (_data: unknown) => {
       // Handle incoming messages
     });
 
     // Subscribe to errors
     const errorSubscriptionId = wsClient.subscribe('error', (error: Error | unknown) => {
-      logger.error('WebSocket error:', error);
+      logger.error('WebSocket error:', error as Record<string, unknown>);
     });
 
     // Subscribe to auth errors
     const authErrorSubscriptionId = wsClient.subscribe('auth-error', (error: Error | unknown) => {
-      logger.error('WebSocket auth error:', error);
+      logger.error('WebSocket auth error:', error as Record<string, unknown>);
       // Handle authentication errors (e.g., redirect to login)
     });
 
@@ -125,7 +122,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children, 
 
   const sendMessage = (message: WebSocketMessage) => {
     if (client) {
-      client.send(message);
+      client.send(message.event, message.data);
     }
   };
 
@@ -175,7 +172,10 @@ export const useReconciliationUpdates = () => {
     if (!isConnected()) return;
 
     const subscriptionId = subscribe('reconciliation-update', (data) => {
-      setUpdates((prev) => [...prev, { ...data, timestamp: new Date() }]);
+      setUpdates((prev) => [
+        ...prev,
+        { ...(data as Record<string, unknown>), timestamp: new Date() },
+      ]);
     });
 
     return () => {
@@ -197,7 +197,10 @@ export const useRealtimeNotifications = () => {
     if (!isConnected()) return;
 
     const subscriptionId = subscribe('notification', (data) => {
-      setNotifications((prev) => [...prev, { ...data, timestamp: new Date() }]);
+      setNotifications((prev) => [
+        ...prev,
+        { ...(data as Record<string, unknown>), timestamp: new Date() },
+      ]);
     });
 
     return () => {
@@ -224,11 +227,15 @@ export const useCollaboration = (roomId: string) => {
 
     // Subscribe to room events
     const collaboratorsSubscriptionId = subscribe('collaborators-update', (data) => {
-      setCollaborators(data.collaborators || []);
+      const collabData = data as { collaborators?: unknown[] };
+      setCollaborators((collabData.collaborators || []) as unknown as Record<string, unknown>[]);
     });
 
     const activitiesSubscriptionId = subscribe('activity-update', (data) => {
-      setActivities((prev) => [...prev, { ...data, timestamp: new Date() }]);
+      setActivities((prev) => [
+        ...prev,
+        { ...(data as Record<string, unknown>), timestamp: new Date() },
+      ]);
     });
 
     return () => {

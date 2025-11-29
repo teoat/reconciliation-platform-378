@@ -1,5 +1,5 @@
 import React, { useState, memo, lazy, Suspense, useEffect } from 'react';
-import { toRecord } from '../utils/typeHelpers';
+import { toRecord } from '@/utils/typeHelpers';
 import { logger } from '@/services/logger';
 import { useParams, useNavigate } from 'react-router-dom';
 import { SkipLink } from '@/components/ui/SkipLink';
@@ -49,8 +49,21 @@ const useDataSources = (projectId: string | null) => {
 
 const useReconciliationMatches = (projectId: string | null) => {
   const result = useReconciliationMatchesAPI(projectId || undefined);
+  // Convert ReconciliationMatch[] to BackendReconciliationMatch[]
+  const convertedMatches: BackendReconciliationMatch[] = (result.matches || []).map((match) => ({
+    id: match.id,
+    project_id: match.projectId || projectId || '',
+    source_record_id: match.recordAId || '',
+    target_record_id: match.recordBId || '',
+    confidence_score: match.confidenceScore || 0,
+    match_type: match.matchType || 'automatic',
+    status: match.status || 'pending',
+    created_at: match.createdAt || new Date().toISOString(),
+    updated_at: match.updatedAt || new Date().toISOString(),
+  } as unknown as BackendReconciliationMatch));
+  
   return {
-    matches: result.matches || [],
+    matches: convertedMatches,
     updateMatch: result.updateMatch,
     isLoading: result.isLoading,
     error: result.error,
@@ -92,7 +105,7 @@ import { ResultsTabContent } from '@/components/reconciliation/ResultsTabContent
 
 // Lazy load heavy components
 const FileDropzone = lazy(() =>
-  import('@/components/files').then((module) => ({ default: module.FileDropzone }))
+  import('@/components/files').then((module) => ({ default: module.FileDropzone || module.EnhancedDropzone }))
 );
 
 const ReconciliationPage: React.FC = () => {
@@ -198,7 +211,10 @@ const ReconciliationPage: React.FC = () => {
     try {
       for (const file of files) {
         try {
-          const result = await uploadFile(file, projectId!, file.name, 'reconciliation_data');
+          const result = await uploadFile(file, {
+            name: file.name,
+            source_type: 'reconciliation_data',
+          });
 
           if (result.success && result.dataSource) {
             // Process the file after upload
@@ -442,7 +458,7 @@ const ReconciliationPage: React.FC = () => {
       key: 'created_at' as keyof BackendReconciliationMatch,
       header: 'Created',
       sortable: true,
-      render: (value) => (value ? new Date(value).toLocaleDateString() : 'N/A'),
+      render: (value) => (value ? new Date(String(value)).toLocaleDateString() : 'N/A'),
     },
     {
       key: 'id' as keyof BackendReconciliationMatch,

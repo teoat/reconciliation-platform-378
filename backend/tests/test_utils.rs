@@ -185,6 +185,7 @@ impl TestClient {
     }
 
     /// Create a reconciliation job
+    #[allow(dead_code)]
     pub async fn create_reconciliation_job(
         &self,
         project_id: &str,
@@ -229,6 +230,7 @@ impl TestClient {
 // ============================================================================
 
 /// Test user data
+#[allow(dead_code)]
 pub struct TestUser {
     pub email: String,
     pub password: String,
@@ -251,8 +253,11 @@ impl Default for TestUser {
 
 /// Test configuration
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub struct TestConfig {
+    #[allow(dead_code)]
     pub database_url: String,
+    #[allow(dead_code)]
     pub jwt_secret: String,
 }
 

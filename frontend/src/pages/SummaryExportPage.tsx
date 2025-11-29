@@ -32,7 +32,7 @@ interface ReportSection {
 }
 
 interface SummaryExportPageProps {
-  project: any
+  project: Record<string, unknown>
 }
 
 const SummaryExportPage = ({ project }: SummaryExportPageProps) => {
@@ -233,6 +233,14 @@ const SummaryExportPage = ({ project }: SummaryExportPageProps) => {
                       : 'border-secondary-200 hover:border-secondary-300'
                   }`}
                   onClick={() => setSelectedFormat(format.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setSelectedFormat(format.id);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
                   <div className="flex items-center space-x-3 mb-2">
                     {format.icon}
@@ -280,10 +288,11 @@ const SummaryExportPage = ({ project }: SummaryExportPageProps) => {
             </h2>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-secondary-700 mb-2">
+                <label htmlFor="email-recipients" className="block text-sm font-medium text-secondary-700 mb-2">
                   Recipients
                 </label>
                 <input
+                  id="email-recipients"
                   type="text"
                   value={emailRecipients}
                   onChange={(e) => setEmailRecipients(e.target.value)}

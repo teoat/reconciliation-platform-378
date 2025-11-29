@@ -24,7 +24,7 @@ export const createRequestInterceptor = (): RequestInterceptor => {
       logger.info(`[API Request] ${config.method || 'GET'} ${config.url || ''}`, {
         requestId,
         headers: config.headers,
-        body: config.body,
+        body: (config as { body?: unknown }).body,
       });
     }
 
@@ -100,7 +100,7 @@ export const createOfflineInterceptor = (): RequestInterceptor => {
   return async (config: RequestConfig): Promise<RequestConfig> => {
     if (!navigator.onLine) {
       const offlineError = new Error('You are currently offline. Please check your internet connection and try again.') as ApiError;
-      offlineError.status = 0;
+      (offlineError as { status?: number }).status = 0;
 
       // Show offline notification
       const event = new CustomEvent('offline-detected', {

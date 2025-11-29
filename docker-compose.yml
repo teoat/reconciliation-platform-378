@@ -89,10 +89,16 @@ services:
       - "${PGBOUNCER_PORT:-6432}:5432"  # Host:Container - PgBouncer connection pooler (recommended for production)
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
     networks:
       - reconciliation-network
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U ${POSTGRES_USER:-postgres} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   # ==========================================================================
   # REDIS CACHE
@@ -141,13 +147,17 @@ services:
       dockerfile: infrastructure/docker/Dockerfile.backend
       args:
         - BUILD_MODE=release
-        - RUSTFLAGS="-C target-cpu=native"
+        - RUSTFLAGS=-C target-cpu=native
+        - CARGO_BUILD_JOBS=0  # Use all available cores
+        - FEATURES=
+      cache_from:
+        - reconciliation-backend:latest
     container_name: reconciliation-backend
     environment:
+      # For local/dev use Postgres directly; PgBouncer can be re-enabled once auth is aligned
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
       REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
       HOST: 0.0.0.0
-      PORT: 2000
       BACKEND_PORT: 2000
       LOG_FORMAT: json
       JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
@@ -180,8 +190,8 @@ services:
       BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      # Database/Redis Pool Configuration
-      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-20}
+      # Database/Redis Pool Configuration (optimized for PgBouncer)
+      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-50}
       DATABASE_TIMEOUT: ${DATABASE_TIMEOUT:-30}
       REDIS_POOL_SIZE: ${REDIS_POOL_SIZE:-10}
       REDIS_TIMEOUT: ${REDIS_TIMEOUT:-5}
@@ -204,10 +214,12 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      pgbouncer:
+        condition: service_healthy
       redis:
         condition: service_healthy
       logstash:
-        condition: service_started
+        condition: service_healthy
       apm-server:
         condition: service_started
     healthcheck:
@@ -244,6 +256,11 @@ services:
         VITE_API_URL: ${VITE_API_URL:-http://localhost:2000}/api/v1
         VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:2000}
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
+        GENERATE_SOURCEMAP: ${GENERATE_SOURCEMAP:-false}
+        BUILD_ANALYZE: ${BUILD_ANALYZE:-false}
+        NODE_ENV: production
+      cache_from:
+        - reconciliation-frontend:latest
     container_name: reconciliation-frontend
     environment:
       - NODE_ENV=${NODE_ENV:-production}
@@ -259,9 +276,9 @@ services:
       - reconciliation-network
     depends_on:
       backend:
-        condition: service_started
+        condition: service_healthy
       logstash:
-        condition: service_started
+        condition: service_healthy
       apm-server:
         condition: service_started
     healthcheck:
@@ -312,6 +329,11 @@ services:
         limits:
           cpus: '1.0'
           memory: 2G
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:9090/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # ==========================================================================
   # MONITORING: GRAFANA
@@ -329,8 +351,14 @@ services:
     networks:
       - reconciliation-network
     depends_on:
-      - prometheus
+      prometheus:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # ==========================================================================
   # MONITORING: LOGSTASH EXPORTER (OPTIONAL - COMMENTED OUT)
@@ -433,6 +461,11 @@ services:
       elasticsearch:
         condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   # ==========================================================================
   # APPLICATION PERFORMANCE MONITORING: ELASTIC APM
@@ -450,8 +483,13 @@ services:
       elasticsearch:
         condition: service_healthy
       kibana:
-        condition: service_started
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8200/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
 # ============================================================================
 # NETWORKS

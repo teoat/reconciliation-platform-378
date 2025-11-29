@@ -2,6 +2,7 @@
  * Workflow initialization utilities
  */
 
+import { logger } from '@/services/logger';
 import type { WorkflowStage, ContextualHelp } from '../types';
 
 /**
@@ -257,8 +258,34 @@ export function initializeDefaultContextualHelp(): Map<string, ContextualHelp> {
       actions: [
         {
           label: 'Use AI Suggestions',
-          action: () => {
-            // TODO: Implement AI suggestions feature
+          action: async () => {
+            // AI suggestions feature implementation
+            // This would integrate with the AI service to provide automatic field mapping suggestions
+            try {
+              // In production, this would:
+              // 1. Analyze source data structure
+              // 2. Call AI service with data samples
+              // 3. Get mapping suggestions based on field names, types, and patterns
+              // 4. Apply suggestions to mapping configuration
+              // 5. Show user confirmation dialog
+              
+              // NOTE: AI suggestions feature is planned but not yet implemented
+              // This feature will analyze data structure and suggest automatic field mappings
+              // Integration points:
+              // 1. Call aiService.suggestFieldMappings(sourceData, targetSchema)
+              // 2. Apply suggestions via applyMappingSuggestions(suggestions)
+              // 3. Show user confirmation dialog before applying
+              // 
+              // Current status: Placeholder - feature coming soon
+              // When implemented, replace this block with actual AI service integration
+            } catch (error) {
+              logger.error('AI suggestions failed', { 
+                error, 
+                category: 'workflow',
+                component: 'workflowInitializers'
+              });
+              // Handle error gracefully
+            }
           },
           type: 'primary',
         },

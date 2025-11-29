@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 
 interface ApiPageProps {
-  project: any
+  project: Record<string, unknown>
 }
 
 // API Interfaces
@@ -46,14 +46,14 @@ interface ApiParameter {
   type: string
   required: boolean
   description: string
-  example?: any
+  example?: unknown
 }
 
 interface ApiResponse {
   status: number
   description: string
-  schema: any
-  example?: any
+  schema: Record<string, unknown>
+  example?: unknown
 }
 
 interface WebhookEvent {
@@ -61,7 +61,7 @@ interface WebhookEvent {
   name: string
   description: string
   eventType: string
-  payload: any
+  payload: Record<string, unknown>
   isActive: boolean
   subscribers: number
 }

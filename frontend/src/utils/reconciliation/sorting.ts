@@ -1,5 +1,5 @@
 // Sorting utilities for reconciliation
-import type { EnhancedReconciliationRecord, SortConfig } from '../../types/reconciliation';
+import type { EnhancedReconciliationRecord, SortConfig } from '@/types/reconciliation/index';
 
 /**
  * Sorts reconciliation records
@@ -29,10 +29,10 @@ export const sortRecords = (
 /**
  * Gets field value from record (supports nested paths)
  */
-const getFieldValue = (record: EnhancedReconciliationRecord, field: string): any => {
+const getFieldValue = (record: EnhancedReconciliationRecord, field: string): unknown => {
   // Check top-level fields
   if (field in record) {
-    return (record as any)[field];
+    return (record as Record<string, unknown>)[field];
   }
 
   // Check sources

@@ -1,10 +1,10 @@
 import React, { ReactElement } from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import { Provider } from 'react-redux';
 import { BrowserRouter } from 'react-router-dom';
 import { configureStore } from '@reduxjs/toolkit';
 import { vi } from 'vitest';
-import { rootReducer } from '../store/unifiedStore';
+import { rootReducer } from '@/store/unifiedStore';
 
 // Custom render function with router and common providers
 interface CustomRenderOptions {

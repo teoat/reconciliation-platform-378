@@ -243,8 +243,8 @@ mod tests {
     use super::*;
     use crate::test_utils::TestUser;
     use crate::database::Database;
-    use crate::cqrs::command::{CreateProjectCommand, UpdateProjectCommand, DeleteProjectCommand};
-    use crate::cqrs::query::{GetProjectQuery, ListProjectsQuery, GetProjectAnalyticsQuery};
+    use crate::cqrs::command::{Command, CreateProjectCommand, UpdateProjectCommand, DeleteProjectCommand};
+    use crate::cqrs::query::{Query, GetProjectQuery, ListProjectsQuery, GetProjectAnalyticsQuery};
     use uuid::Uuid;
     use mockall::mock;
 
@@ -266,7 +266,7 @@ mod tests {
     #[tokio::test]
     async fn test_project_command_handler_creation() {
         let db = create_test_db().await;
-        let handler = ProjectCommandHandler::new(db);
+        let _handler = ProjectCommandHandler::new(db);
         // Handler should be created successfully
         assert!(true); // Just verify it doesn't panic
     }
@@ -274,7 +274,7 @@ mod tests {
     #[tokio::test]
     async fn test_project_query_handler_creation() {
         let db = create_test_db().await;
-        let handler = ProjectQueryHandler::new(db);
+        let _handler = ProjectQueryHandler::new(db);
         // Handler should be created successfully
         assert!(true); // Just verify it doesn't panic
     }
@@ -643,9 +643,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_concurrent_handler_usage() {
-        let db = create_test_db().await;
-        let handler = ProjectQueryHandler::new(db);
-
         // Test that handlers can be used concurrently
         let query1 = ListProjectsQuery {
             owner_id: None,
@@ -659,15 +656,20 @@ mod tests {
             per_page: Some(10),
         };
 
-        let handler_clone = handler; // Clone for concurrent use
+        // Create two separate handlers for concurrent use
+        // Create separate database connections for each handler
+        let db1 = create_test_db().await;
+        let db2 = create_test_db().await;
+        let handler1 = ProjectQueryHandler::new(db1);
+        let handler2 = ProjectQueryHandler::new(db2);
 
         // Spawn concurrent tasks
         let task1 = tokio::spawn(async move {
-            handler.handle(query1).await
+            handler1.handle(query1).await
         });
 
         let task2 = tokio::spawn(async move {
-            handler_clone.handle(query2).await
+            handler2.handle(query2).await
         });
 
         // Wait for both to complete
@@ -747,14 +749,14 @@ mod tests {
         let db = create_test_db().await;
 
         // Test that handlers properly inject services
-        let cmd_handler = ProjectCommandHandler::new(db.clone());
-        let query_handler = ProjectQueryHandler::new(db);
+        let _cmd_handler = ProjectCommandHandler::new(db.clone());
+        let _query_handler = ProjectQueryHandler::new(db);
 
         // Verify handlers have access to services
         assert!(true); // If construction succeeded, services are injected
 
         // Test that different handler instances work independently
-        let cmd_handler2 = ProjectCommandHandler::new(create_test_db().await);
+        let _cmd_handler2 = ProjectCommandHandler::new(create_test_db().await);
         assert!(true); // Should create successfully
     }
 }

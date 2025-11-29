@@ -2,9 +2,9 @@
 
 import { useState } from 'react';
 import { Zap, Plus } from 'lucide-react';
-import { useData } from '../DataProvider';
-import { ProgressiveFeatureDisclosure } from '../ui/ProgressiveFeatureDisclosure';
-import { onboardingService } from '../../services/onboardingService';
+import { useData } from '@/components/DataProvider';
+import { ProgressiveFeatureDisclosure } from '@/components/ui/ProgressiveFeatureDisclosure';
+import { onboardingService } from '@/services/onboardingService';
 import { useAPIData } from './hooks/useAPIData';
 import { APITabs } from './components/APITabs';
 import { EndpointList } from './components/EndpointList';
@@ -12,15 +12,21 @@ import type { APIDevelopmentProps, APIEndpoint, APITab } from './types';
 
 const APIDevelopment = ({ project, onProgressUpdate }: APIDevelopmentProps) => {
   const { currentProject: _currentProject } = useData();
-  const { endpoints, webhooks, logs, setEndpoints, setWebhooks } = useAPIData({
+  const {
+    endpoints,
+    webhooks: _webhooks,
+    logs: _logs,
+    setEndpoints,
+    setWebhooks,
+  } = useAPIData({
     project,
     onProgressUpdate,
   });
 
   const [selectedEndpoint, setSelectedEndpoint] = useState<APIEndpoint | null>(null);
-  const [_selectedWebhook, setSelectedWebhook] = useState(null);
+  const [selectedWebhook, setSelectedWebhook] = useState(null);
   const [showEndpointModal, setShowEndpointModal] = useState(false);
-  const [_showWebhookModal, setShowWebhookModal] = useState(false);
+  const [showWebhookModal, setShowWebhookModal] = useState(false);
   const [activeTab, setActiveTab] = useState<APITab>('endpoints');
   const [isCreating, setIsCreating] = useState(false);
 

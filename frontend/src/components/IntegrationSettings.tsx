@@ -21,7 +21,8 @@ import {
   IntegrationService,
   ProjectExportService,
   ExportOptions,
-} from '../services/integration';
+} from '@/services/integration';
+import type { Project } from '@/types/backend-aligned';
 
 interface IntegrationSettingsProps {
   isVisible: boolean;
@@ -53,6 +54,7 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
     fileName?: string;
   }
   const [exportResult, setExportResult] = useState<ExportResult | null>(null);
+  const [selectedIntegration, setSelectedIntegration] = useState<IntegrationConfig | null>(null);
 
   const handleToggleIntegration = (id: string) => {
     const success = IntegrationService.toggleIntegration(id);
@@ -66,7 +68,7 @@ const IntegrationSettings: React.FC<IntegrationSettingsProps> = ({
     setIsExporting(true);
     try {
       const result = await ProjectExportService.exportProjects(
-        projects as any,
+        projects as unknown as Project[],
         exportOptions
       );
       setExportResult(result);

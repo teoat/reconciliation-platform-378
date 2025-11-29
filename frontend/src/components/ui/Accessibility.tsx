@@ -134,7 +134,6 @@ export const ARIALiveRegion: React.FC<ARIALiveRegionProps> = memo(
       <div
         id={finalId}
         role="status"
-        // eslint-disable-next-line jsx-a11y/aria-props
         aria-live={priority === 'assertive' ? 'assertive' : 'polite'}
         aria-atomic="true"
         className="sr-only"

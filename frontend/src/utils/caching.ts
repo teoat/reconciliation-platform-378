@@ -312,6 +312,42 @@ export class LocalStorageCache<T = unknown> {
       logger.warn('Failed to clean expired cache entries:', error);
     }
   }
+
+  // Get cache statistics
+  getStats(): CacheStats {
+    try {
+      const keys = Object.keys(localStorage).filter(key => key.startsWith(this.prefix));
+      const validEntries = keys.filter(key => {
+        const stored = localStorage.getItem(key);
+        if (!stored) return false;
+        try {
+          const entry: CacheEntry<T> = JSON.parse(stored);
+          return Date.now() <= entry.expiresAt;
+        } catch {
+          return false;
+        }
+      });
+      
+      return {
+        hits: 0,
+        misses: 0,
+        size: validEntries.length,
+        maxSize: this.config.maxSize,
+        hitRate: 0,
+        missRate: 0,
+      };
+    } catch (error) {
+      logger.warn('Failed to get cache stats:', error);
+      return {
+        hits: 0,
+        misses: 0,
+        size: 0,
+        maxSize: this.config.maxSize,
+        hitRate: 0,
+        missRate: 0,
+      };
+    }
+  }
 }
 
 // ============================================================================
@@ -458,6 +494,42 @@ export class SessionStorageCache<T = unknown> {
       logger.warn('Failed to clean expired session cache entries:', error);
     }
   }
+
+  // Get cache statistics
+  getStats(): CacheStats {
+    try {
+      const keys = Object.keys(sessionStorage).filter(key => key.startsWith(this.prefix));
+      const validEntries = keys.filter(key => {
+        const stored = sessionStorage.getItem(key);
+        if (!stored) return false;
+        try {
+          const entry: CacheEntry<T> = JSON.parse(stored);
+          return Date.now() <= entry.expiresAt;
+        } catch {
+          return false;
+        }
+      });
+      
+      return {
+        hits: 0,
+        misses: 0,
+        size: validEntries.length,
+        maxSize: this.config.maxSize,
+        hitRate: 0,
+        missRate: 0,
+      };
+    } catch (error) {
+      logger.warn('Failed to get session cache stats:', error);
+      return {
+        hits: 0,
+        misses: 0,
+        size: 0,
+        maxSize: this.config.maxSize,
+        hitRate: 0,
+        missRate: 0,
+      };
+    }
+  }
 }
 
 // ============================================================================
@@ -600,9 +672,9 @@ export const cacheable = <T extends (...args: unknown[]) => unknown>(
   return ((...args: Parameters<T>) => {
     const key = keyGenerator ? keyGenerator(...args) : JSON.stringify(args);
 
-    let result = cache.get(key);
+    let result = cache.get(key) as ReturnType<T> | null;
     if (result === null) {
-      result = fn(...args);
+      result = fn(...args) as ReturnType<T>;
       cache.set(key, result);
     }
 

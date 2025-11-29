@@ -98,5 +98,17 @@ if [ -f "package.json" ] && npm run audit:debt >/dev/null 2>&1; then
   npm run audit:debt || echo "⚠️ Technical debt audit failed, continuing..."
 fi
 
+# 8. Run dependency validation (fail on circular deps, warn on other violations)
+echo "🔗 Running dependency validation..."
+if [ -f "package.json" ] && npm run deps:validate >/dev/null 2>&1; then
+  npm run deps:validate || {
+    echo "⚠️ Dependency validation found issues (non-blocking in local)"
+    if [ -n "$CI" ]; then
+      echo "❌ Dependency validation failed in CI. Fix issues before merging."
+      exit 1
+    fi
+  }
+fi
+
 echo "✅ Pre-commit checks passed!"
 

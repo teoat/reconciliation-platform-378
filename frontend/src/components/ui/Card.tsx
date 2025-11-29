@@ -74,6 +74,14 @@ const Card: React.FC<CardProps> = memo(
       <div
         className={`${classes} ${onClick ? 'cursor-pointer' : ''}`}
         onClick={onClick}
+        onKeyDown={onClick ? (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick();
+          }
+        } : undefined}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
         {...interactiveProps}
       >
         {showHeader && (

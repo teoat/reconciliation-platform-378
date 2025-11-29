@@ -8,7 +8,7 @@ import { logger } from '@/services/logger';
  * Imports icons only when needed, improving tree-shaking and bundle size
  */
 
-import { lazy, ComponentType } from 'react';
+import { ComponentType } from 'react';
 import * as LucideIcons from 'lucide-react';
 
 // Icon registry with lazy loading support
@@ -149,7 +149,7 @@ export const IconRegistry: Record<string, IconConfig> = {
   FileJson: { name: 'FileJson', component: LucideIcons.FileJson, category: 'file' },
   Play: { name: 'Play', component: LucideIcons.Play, category: 'action' },
   Pause: { name: 'Pause', component: LucideIcons.Pause, category: 'action' },
-}
+};
 
 // Export Square as StopIcon from LucideIcons
 export const StopIcon = LucideIcons.Square;
@@ -172,7 +172,13 @@ export interface IconProps {
   [key: string]: unknown;
 }
 
-export const Icon: React.FC<IconProps> = ({ name, className = '', size: _size = 20, color, ...props }) => {
+export const Icon: React.FC<IconProps> = ({
+  name,
+  className = '',
+  size: _size = 20,
+  color,
+  ...props
+}) => {
   const IconComponent = getIcon(name);
 
   if (!IconComponent) {
@@ -180,13 +186,7 @@ export const Icon: React.FC<IconProps> = ({ name, className = '', size: _size = 
     return null;
   }
 
-  return (
-    <IconComponent
-      className={className}
-      style={color ? { color } : undefined}
-      {...props}
-    />
-  );
+  return <IconComponent className={className} style={color ? { color } : undefined} {...props} />;
 };
 
 /**
@@ -198,4 +198,4 @@ export const useIcon = (name: string) => {
   return IconComponent || (() => null);
 };
 
-export default Icon
+export default Icon;

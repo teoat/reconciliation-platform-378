@@ -2,7 +2,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { apiClient, Project } from '../../services/apiClient';
+import { apiClient, Project } from '@/services/apiClient';
+import { getErrorMessageFromApiError } from '@/utils/common/errorHandling';
 
 // Projects Hook
 export const useProjects = () => {
@@ -26,12 +27,22 @@ export const useProjects = () => {
     setError(null);
     
     try {
-      const response = await apiClient.getProjects(params);
+      // getProjects expects (page, perPage) but we have params object
+      const page = params?.page || 1;
+      const perPage = params?.limit || 10;
+      const response = await apiClient.getProjects(page, perPage);
       if (response.data) {
-        setProjects(response.data.projects);
-        setPagination(response.data.pagination);
+        // PaginatedResponse has items, not projects
+        const paginatedData = response.data as { items: Project[]; total: number; page: number; per_page: number; total_pages: number };
+        setProjects(paginatedData.items);
+        setPagination({
+          page: paginatedData.page,
+          limit: paginatedData.per_page,
+          total: paginatedData.total,
+          pages: paginatedData.total_pages,
+        });
       } else {
-        setError(response.error?.message || 'Failed to fetch projects');
+        setError(getErrorMessageFromApiError(response.error) || 'Failed to fetch projects');
       }
     } catch (err) {
       setError('Failed to fetch projects');
@@ -43,7 +54,7 @@ export const useProjects = () => {
   const createProject = useCallback(async (projectData: {
     name: string;
     description?: string;
-    settings?: any;
+    settings?: Record<string, unknown>;
   }) => {
     setIsLoading(true);
     setError(null);
@@ -51,11 +62,14 @@ export const useProjects = () => {
     try {
       const response = await apiClient.createProject(projectData);
       if (response.data) {
-        setProjects(prev => [response.data!.project, ...prev]);
-        return { success: true, project: response.data.project };
+        // Response is BackendProject directly, not wrapped in project property
+        const project = response.data as Project;
+        setProjects(prev => [project, ...prev]);
+        return { success: true, project };
       } else {
-        setError(response.error?.message || 'Failed to create project');
-        return { success: false, error: response.error?.message };
+        const errorMsg = getErrorMessageFromApiError(response.error) || 'Failed to create project';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
     } catch (err) {
       setError('Failed to create project');
@@ -72,15 +86,18 @@ export const useProjects = () => {
     try {
       const response = await apiClient.updateProject(id, updates);
       if (response.data) {
+        // Response is BackendProject directly
+        const updatedProject = response.data as Project;
         setProjects(prev => 
           prev.map(project => 
-            project.id === id ? response.data!.project : project
+            project.id === id ? updatedProject : project
           )
         );
-        return { success: true, project: response.data.project };
+        return { success: true, project: updatedProject };
       } else {
-        setError(response.error?.message || 'Failed to update project');
-        return { success: false, error: response.error?.message };
+        const errorMsg = getErrorMessageFromApiError(response.error) || 'Failed to update project';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
     } catch (err) {
       setError('Failed to update project');
@@ -100,8 +117,9 @@ export const useProjects = () => {
         setProjects(prev => prev.filter(project => project.id !== id));
         return { success: true };
       } else {
-        setError(response.error.message || 'Failed to delete project');
-        return { success: false, error: response.error.message };
+        const errorMsg = getErrorMessageFromApiError(response.error) || 'Failed to delete project';
+        setError(errorMsg);
+        return { success: false, error: errorMsg };
       }
     } catch (err) {
       setError('Failed to delete project');
@@ -136,11 +154,13 @@ export const useProject = (id: string | null) => {
     setError(null);
     
     try {
-      const response = await apiClient.getProject(id);
+      // Use getProjectById instead of getProject
+      const response = await apiClient.getProjectById(id);
       if (response.data) {
-        setProject(response.data.project);
+        // Response is BackendProject directly
+        setProject(response.data as Project);
       } else {
-        setError(response.error?.message || 'Failed to fetch project');
+        setError(getErrorMessageFromApiError(response.error) || 'Failed to fetch project');
       }
     } catch (err) {
       setError('Failed to fetch project');

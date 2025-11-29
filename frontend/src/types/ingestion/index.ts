@@ -7,6 +7,7 @@ export interface DataQualityMetrics {
   validity: number;
   duplicates: number;
   errors: number;
+  overall?: number; // Optional overall score
 }
 
 export interface FieldMapping {
@@ -99,7 +100,7 @@ export interface VideoMetadata {
 
 export interface ExtractedContent {
   text?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   entities?: Array<{
     type: string;
     value: string;
@@ -127,7 +128,7 @@ export interface ChatMessage {
   sender: string;
   content: string;
   type: 'text' | 'image' | 'file' | 'voice';
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export interface ContractAnalysis {
@@ -195,6 +196,8 @@ export interface UploadedFile {
   previewUrl?: string;
   thumbnailUrl?: string;
   file?: File;
+  uploadedAt?: string;
+  createdAt?: string;
 }
 
 export interface TableData {

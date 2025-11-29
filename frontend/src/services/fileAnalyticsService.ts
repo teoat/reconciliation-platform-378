@@ -67,11 +67,14 @@ export class FileProcessingAnalyticsService {
 
     try {
       // Upload file with progress tracking
-      const result = await apiClient.uploadDataSource(
-        file,
+      const result = await apiClient.uploadFile(
         projectId,
-        file.name,
-        'reconciliation_data'
+        file,
+        {
+          project_id: projectId,
+          name: file.name,
+          source_type: 'reconciliation_data',
+        }
       );
 
       if (result.success) {
@@ -86,7 +89,8 @@ export class FileProcessingAnalyticsService {
 
         return result.data.id;
       } else {
-        throw new Error(result.error?.message || 'Upload failed');
+        const errorMessage = typeof result.error === 'string' ? result.error : result.error?.message || 'Upload failed';
+        throw new Error(errorMessage);
       }
     } catch (error) {
       const metrics = this.metrics.get(fileId);

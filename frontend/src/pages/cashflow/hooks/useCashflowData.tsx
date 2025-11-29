@@ -1,15 +1,12 @@
 /**
  * Cashflow Data Hook
- * 
+ *
  * Handles data fetching, initialization, and sample data generation
  */
 
 import { useState, useEffect } from 'react';
 import { Activity, Building, User } from 'lucide-react';
-import type {
-  ExpenseCategory,
-  CashflowMetrics,
-} from '../types';
+import type { ExpenseCategory, CashflowMetrics } from '@/pages/cashflow/types';
 import type { Project } from '@/types/backend-aligned';
 import type { CashflowData } from '@/components/data/types';
 
@@ -19,7 +16,7 @@ interface UseCashflowDataProps {
   onProgressUpdate?: (step: string) => void;
 }
 
-interface CashflowDataWithCategories {
+export interface CashflowDataWithCategories {
   categories: ExpenseCategory[];
   metrics: CashflowMetrics;
 }
@@ -114,19 +111,20 @@ export const useCashflowData = ({
       totalCashflowExpenses: sampleCategories.reduce((sum, cat) => sum + cat.totalCashflow, 0),
       totalDiscrepancy: sampleCategories.reduce((sum, cat) => sum + cat.discrepancy, 0),
       discrepancyPercentage: 0,
-      balancedCategories: sampleCategories.filter(cat => cat.status === 'balanced').length,
-      discrepancyCategories: sampleCategories.filter(cat => cat.status === 'discrepancy').length,
+      balancedCategories: sampleCategories.filter((cat) => cat.status === 'balanced').length,
+      discrepancyCategories: sampleCategories.filter((cat) => cat.status === 'discrepancy').length,
       missingTransactions: 0,
       excessTransactions: 0,
       averageDiscrepancy: 0,
-      largestDiscrepancy: Math.max(...sampleCategories.map(cat => Math.abs(cat.discrepancy))),
+      largestDiscrepancy: Math.max(...sampleCategories.map((cat) => Math.abs(cat.discrepancy))),
       lastReconciliationDate: '2020-12-31T23:59:59Z',
       dataQualityScore: 95.5,
     };
 
     calculatedMetrics.discrepancyPercentage =
       (calculatedMetrics.totalDiscrepancy / calculatedMetrics.totalReportedExpenses) * 100;
-    calculatedMetrics.averageDiscrepancy = calculatedMetrics.totalDiscrepancy / sampleCategories.length;
+    calculatedMetrics.averageDiscrepancy =
+      calculatedMetrics.totalDiscrepancy / sampleCategories.length;
 
     setMetrics(calculatedMetrics);
   };
@@ -135,8 +133,12 @@ export const useCashflowData = ({
     const cashflowData = getCashflowData();
 
     // Check if cashflowData has the expected structure
-    if (cashflowData && 'categories' in cashflowData && Array.isArray((cashflowData as CashflowDataWithCategories).categories)) {
-      const data = cashflowData as CashflowDataWithCategories;
+    if (
+      cashflowData &&
+      'categories' in cashflowData &&
+      Array.isArray((cashflowData as Record<string, unknown>).categories)
+    ) {
+      const data = cashflowData as unknown as CashflowDataWithCategories;
       if (data.categories.length > 0) {
         setExpenseCategories(data.categories);
         if (data.metrics) {
@@ -150,12 +152,14 @@ export const useCashflowData = ({
     onProgressUpdate?.('cashflow_evaluation_started');
   }, [currentProject, getCashflowData, onProgressUpdate]);
 
-  const runDiscrepancyAnalysis = async (transformReconciliationToCashflow: (id: string) => CashflowDataWithCategories | null) => {
+  const runDiscrepancyAnalysis = async (
+    transformReconciliationToCashflow: (id: string) => CashflowDataWithCategories | null
+  ) => {
     setIsProcessing(true);
     setProcessingProgress(0);
 
     const interval = setInterval(() => {
-      setProcessingProgress(prev => {
+      setProcessingProgress((prev) => {
         const newProgress = Math.min(prev + Math.random() * 15, 100);
         if (newProgress >= 100) {
           clearInterval(interval);
@@ -186,4 +190,3 @@ export const useCashflowData = ({
     runDiscrepancyAnalysis,
   };
 };
-

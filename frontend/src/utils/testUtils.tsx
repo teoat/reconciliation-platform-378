@@ -96,7 +96,11 @@ export function createMockLocalStorage() {
  */
 export function mockLocation(pathname: string) {
   delete (window as Window & { location?: { pathname: string } }).location;
-  (window as Window & { location: { pathname: string } }).location = { pathname };
+  Object.defineProperty(window, 'location', {
+    value: { pathname },
+    writable: true,
+    configurable: true,
+  });
 }
 
 /**

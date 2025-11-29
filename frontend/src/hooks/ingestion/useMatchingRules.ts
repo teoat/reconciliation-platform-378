@@ -1,6 +1,6 @@
 // Matching rules hook
 import { useState, useCallback } from 'react';
-import type { MatchingRule, MatchingCriteria } from '../../types/reconciliation';
+import type { MatchingRule, MatchingCriteria } from '../../types/reconciliation/index';
 
 export const useMatchingRules = () => {
   const [rules, setRules] = useState<MatchingRule[]>([]);

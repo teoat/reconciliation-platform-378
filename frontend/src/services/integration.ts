@@ -80,10 +80,10 @@ export class ProjectExportService {
         if (!filters.status.includes(project.status)) return false;
       }
       if (filters.category && filters.category.length > 0) {
-        if (!filters.category.includes(project.category)) return false;
+        if (!filters.category.includes((project as { category?: string }).category || '')) return false;
       }
       if (filters.department && filters.department.length > 0) {
-        if (!filters.department.includes(project.department)) return false;
+        if (!filters.department.includes((project as { department?: string }).department || '')) return false;
       }
       return true;
     });
@@ -96,21 +96,21 @@ export class ProjectExportService {
         name: project.name,
         description: project.description,
         status: project.status,
-        category: project.category,
-        priority: project.priority,
-        department: project.department,
+        category: (project as { category?: string }).category || '',
+        priority: (project as { priority?: string }).priority || 'medium',
+        department: (project as { department?: string }).department || '',
         createdDate: project.created_at,
-        createdBy: project.createdBy,
-        lastModified: project.lastModified,
+        createdBy: (project as { createdBy?: string }).createdBy || '',
+        lastModified: (project as { lastModified?: string }).lastModified || project.updated_at || '',
       };
 
       if (options.includeMetadata) {
         Object.assign(baseData, {
-          progress: project.progress.completionPercentage,
-          recordCount: project.recordCount,
-          matchRate: project.matchRate,
-          budget: project.budget,
-          actualCost: project.actualCost,
+          progress: (project as { progress?: { completionPercentage?: number } }).progress?.completionPercentage || 0,
+          recordCount: (project as { recordCount?: number }).recordCount || 0,
+          matchRate: (project as { matchRate?: number }).matchRate || 0,
+          budget: (project as { budget?: number }).budget || 0,
+          actualCost: (project as { actualCost?: number }).actualCost || 0,
         });
       }
 

@@ -45,7 +45,7 @@ export class CSPManager {
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "img-src 'self' data: https:",
         "font-src 'self' data: https://fonts.gstatic.com",
-        "connect-src 'self' ws: wss: http://localhost:* https://localhost:* http://localhost:8200 ws://localhost:8200 https://accounts.google.com https://oauth2.googleapis.com",
+        "connect-src 'self' ws: wss: http://localhost:* https://localhost:* http://localhost:3001 http://localhost:8200 ws://localhost:8200 https://accounts.google.com https://oauth2.googleapis.com",
         "frame-ancestors 'none'",
         "base-uri 'self'",
         "form-action 'self'",

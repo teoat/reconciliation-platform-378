@@ -2,7 +2,7 @@ import React from 'react';
 import { BarChart3, TrendingUp, AlertCircle, CheckCircle, Clock, Users } from 'lucide-react';
 import Card from '../ui/Card';
 import MetricCard from '../ui/MetricCard';
-import { ReconciliationMetrics } from '../../types/reconciliation';
+import { ReconciliationMetrics } from '../../types/reconciliation/index';
 
 interface ReconciliationSummaryProps {
   metrics: ReconciliationMetrics;

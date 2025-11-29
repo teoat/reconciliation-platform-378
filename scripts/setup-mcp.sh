@@ -72,6 +72,11 @@ cat > "${MCP_CONFIG_FILE}" << EOF
       "command": "npx",
       "args": ["-y", "@modelcontextprotocol/server-memory"],
       "env": {}
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "env": {}
     }
   }
 }

@@ -8,18 +8,17 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Lock, User, AlertCircle } from 'lucide-react';
-import { loginSchema, type LoginForm } from '../types';
+import { loginSchema, type LoginForm as LoginFormType } from '@/pages/auth/types';
 import { getPasswordFeedback } from '@/utils/common/validation';
 
 interface LoginFormProps {
-  onSubmit: (data: LoginForm) => Promise<void>;
+  onSubmit: (data: LoginFormType) => Promise<void>;
   isLoading: boolean;
   error: string | null;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading, error }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [passwordValue, setPasswordValue] = useState('');
   const [passwordFeedback, setPasswordFeedback] = useState<ReturnType<
     typeof getPasswordFeedback
   > | null>(null);
@@ -28,20 +27,22 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading, error
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<LoginForm>({
+    watch,
+  } = useForm<LoginFormType>({
     resolver: zodResolver(loginSchema),
-    mode: 'onBlur',
+    mode: 'onSubmit', // Changed from 'onBlur' to allow submission without blurring fields
   });
 
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setPasswordValue(value);
-    if (value) {
-      setPasswordFeedback(getPasswordFeedback(value));
+  const passwordValue = watch('password') || '';
+
+  // Update password feedback when password changes
+  React.useEffect(() => {
+    if (passwordValue) {
+      setPasswordFeedback(getPasswordFeedback(passwordValue));
     } else {
       setPasswordFeedback(null);
     }
-  };
+  }, [passwordValue]);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -61,6 +62,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading, error
           <input
             id="email"
             type="email"
+            autoComplete="email"
             {...register('email')}
             className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             placeholder="Enter your email"
@@ -80,8 +82,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSubmit, isLoading, error
           <input
             id="password"
             type={showPassword ? 'text' : 'password'}
+            autoComplete="current-password"
             {...register('password')}
-            onChange={handlePasswordChange}
             className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             placeholder="Enter your password"
           />

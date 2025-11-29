@@ -8,8 +8,8 @@ import React, { useState } from 'react';
 import { AlertCircle, X, RefreshCw, HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { ErrorCodeDisplay } from './ErrorCodeDisplay';
 // Import ariaLiveRegionsService - service exists and provides announcement functionality
-import { ariaLiveRegionsService } from '../../services/ariaLiveRegionsService';
-import { logger } from '../../services/logger';
+import { ariaLiveRegionsService } from '@/services/ariaLiveRegionsService';
+import { logger } from '@/services/logger';
 
 export interface ErrorRecoveryAction {
   label: string;
@@ -153,7 +153,6 @@ export const UserFriendlyError: React.FC<UserFriendlyErrorProps> = ({
                   type="button"
                   onClick={() => setIsExpanded(!isExpanded)}
                   className="text-sm font-medium hover:underline focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 rounded"
-                  // eslint-disable-next-line jsx-a11y/aria-props
                   aria-expanded={isExpanded ? 'true' : 'false'}
                   aria-controls={errorId ? `error-details-${errorId}` : 'error-details'}
                 >

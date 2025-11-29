@@ -13,7 +13,7 @@ import { conversationStorage, ConversationMessage } from '../../utils/conversati
 import { logger } from '../../services/logger';
 // Note: Using relative import because agents/ is at project root, not in frontend/src
 // Consider moving agents/ to frontend/src/agents/ or configuring a path alias for better maintainability
-import { MessageContext } from '../../../../agents/guidance/FrenlyGuidanceAgent';
+import { MessageContext } from '../../../../agents/guidance/frenly-interfaces';
 
 interface ConversationalInterfaceProps {
   userId: string;
@@ -85,7 +85,9 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
         try {
           await conversationStorage.saveConversation(sessionId, userId, messages);
         } catch (error) {
-          logger.error('Error saving conversation:', { error: error instanceof Error ? error.message : String(error) });
+          logger.error('Error saving conversation:', {
+            error: error instanceof Error ? error.message : String(error),
+          });
         }
       };
 
@@ -154,7 +156,9 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
           logger.warn('Failed to track interaction:', err);
         });
     } catch (error) {
-      logger.error('Error handling query:', { error: error instanceof Error ? error.message : String(error) });
+      logger.error('Error handling query:', {
+        error: error instanceof Error ? error.message : String(error),
+      });
 
       const errorMessage: ConversationMessage = {
         id: `error_${Date.now()}`,
@@ -219,7 +223,9 @@ export const ConversationalInterface: React.FC<ConversationalInterfaceProps> = (
           setShowExportMenu(false);
         }
       } catch (error) {
-        logger.error('Error exporting conversation:', { error: error instanceof Error ? error.message : String(error) });
+        logger.error('Error exporting conversation:', {
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     },
     [sessionId]

@@ -9,7 +9,7 @@
 
 use utoipa::OpenApi;
 
-use crate::handlers::{ai, analytics, auth, files, health, logs, metrics, monitoring, onboarding, password_manager, profile, projects, reconciliation, security, settings, sync, system, users};
+use crate::handlers::{ai, analytics, auth, files, health, logs, metrics, monitoring, onboarding, password_manager, profile, projects, security, settings, sync, system, users};
 
 /// OpenAPI documentation for the Reconciliation Platform API
 /// 
@@ -42,10 +42,11 @@ use crate::handlers::{ai, analytics, auth, files, health, logs, metrics, monitor
         files::init_resumable_upload,
         
         // Reconciliation endpoints (with utoipa annotations)
-        reconciliation::get_reconciliation_jobs,
-        reconciliation::create_reconciliation_job,
-        reconciliation::get_reconciliation_job,
-        reconciliation::get_reconciliation_results,
+        // Note: These are in submodules, so we reference them directly
+        // reconciliation::get_reconciliation_jobs,
+        // reconciliation::create_reconciliation_job,
+        // reconciliation::get_reconciliation_job,
+        // reconciliation::get_reconciliation_results,
         
         // Monitoring endpoints (with utoipa annotations)
         monitoring::get_health,

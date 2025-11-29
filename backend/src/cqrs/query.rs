@@ -15,7 +15,7 @@ pub trait Query: Send + Sync + Debug {
 /// Query handler trait
 pub trait QueryHandler<Q: Query, R>: Send + Sync {
     /// Handle a query and return result
-    async fn handle(&self, query: Q) -> QueryResult<R>;
+    fn handle(&self, query: Q) -> impl std::future::Future<Output = QueryResult<R>> + Send;
 }
 
 /// Query result

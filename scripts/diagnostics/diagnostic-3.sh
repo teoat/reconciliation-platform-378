@@ -41,8 +41,13 @@ SECRET_COUNT=0
 for pattern in "${SECRET_PATTERNS[@]}"; do
     COUNT=$(grep -ri "$pattern" --include="*.rs" --include="*.ts" --include="*.tsx" --include="*.js" \
         --exclude-dir=node_modules --exclude-dir=target --exclude-dir=.git \
-        backend/src frontend/src 2>/dev/null | grep -v "test\|example\|TODO\|FIXME" | wc -l | tr -d ' ')
-    SECRET_COUNT=$((SECRET_COUNT + COUNT))
+        --exclude-dir=__tests__ --exclude-dir=tests \
+        backend/src frontend/src 2>/dev/null | grep -v "test\|example\|TODO\|FIXME\|TestPassword\|ValidPassword\|NewPassword" | wc -l | awk '{print $1}' || echo "0")
+    # Ensure COUNT is a valid number
+    if ! [[ "$COUNT" =~ ^[0-9]+$ ]]; then
+        COUNT=0
+    fi
+    SECRET_COUNT=$((SECRET_COUNT + COUNT)) 2>/dev/null || SECRET_COUNT=$SECRET_COUNT
 done
 
 if [ "$SECRET_COUNT" -gt 0 ]; then

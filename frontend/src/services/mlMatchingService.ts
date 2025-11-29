@@ -3,14 +3,14 @@
 
 import { MatchingRule, ReconciliationResult } from '../types/backend-aligned';
 
-export interface Record {
+export interface MLRecord {
   id: string;
   data: Record<string, unknown>;
 }
 
 export interface MatchCandidate {
-  recordA: Record;
-  recordB: Record;
+  recordA: MLRecord;
+  recordB: MLRecord;
   confidence: number;
   matchType: 'exact' | 'fuzzy' | 'ml_predicted';
   features: Record<string, number>;
@@ -191,8 +191,8 @@ class MLMachingService {
 
   // Extract features for ML matching
   private extractFeatures(
-    recordA: Record,
-    recordB: Record,
+    recordA: MLRecord,
+    recordB: MLRecord,
     config: MatchingConfig
   ): Record<string, number> {
     const features: Record<string, number> = {};
@@ -214,9 +214,11 @@ class MLMachingService {
 
     // Date similarity
     if (config.features.includes('date')) {
-      const dateA = recordA.data.date || recordA.data.transaction_date;
-      const dateB = recordB.data.date || recordB.data.transaction_date;
-      features.date_similarity = this.dateSimilarity(dateA, dateB);
+      const dateA = (recordA.data.date || recordA.data.transaction_date) as string | Date | undefined;
+      const dateB = (recordB.data.date || recordB.data.transaction_date) as string | Date | undefined;
+      if (dateA && dateB) {
+        features.date_similarity = this.dateSimilarity(dateA, dateB);
+      }
     }
 
     // Category similarity
@@ -237,7 +239,7 @@ class MLMachingService {
   }
 
   // Ensemble matching using multiple algorithms
-  private ensembleMatch(recordA: Record, recordB: Record, config: MatchingConfig): MatchCandidate {
+  private ensembleMatch(recordA: MLRecord, recordB: MLRecord, config: MatchingConfig): MatchCandidate {
     const features = this.extractFeatures(recordA, recordB, config);
 
     // Calculate weighted score
@@ -276,8 +278,8 @@ class MLMachingService {
 
   // Find matches using ML algorithms
   async findMatches(
-    recordsA: Record[],
-    recordsB: Record[],
+    recordsA: MLRecord[],
+    recordsB: MLRecord[],
     config: MatchingConfig,
     rules?: MatchingRule[]
   ): Promise<MatchCandidate[]> {
@@ -305,12 +307,12 @@ class MLMachingService {
   }
 
   // Create blocks for efficient matching
-  private createBlocks(recordsA: Record[], recordsB: Record[], config: MatchingConfig) {
-    const blocks: Array<{ key: string; recordsA: Record[]; recordsB: Record[] }> = [];
+  private createBlocks(recordsA: MLRecord[], recordsB: MLRecord[], config: MatchingConfig) {
+    const blocks: Array<{ key: string; recordsA: MLRecord[]; recordsB: MLRecord[] }> = [];
 
     // Block by amount ranges
     if (config.features.includes('amount')) {
-      const amountBlocks = new Map<string, { recordsA: Record[]; recordsB: Record[] }>();
+      const amountBlocks = new Map<string, { recordsA: MLRecord[]; recordsB: MLRecord[] }>();
 
       const getAmountBlock = (amount: number) => {
         const rounded = Math.floor(amount / 1000) * 1000; // Block by $1000 ranges
@@ -342,7 +344,7 @@ class MLMachingService {
 
     // Block by date ranges
     if (config.features.includes('date') && blocks.length === 0) {
-      const dateBlocks = new Map<string, { recordsA: Record[]; recordsB: Record[] }>();
+      const dateBlocks = new Map<string, { recordsA: MLRecord[]; recordsB: MLRecord[] }>();
 
       const getDateBlock = (dateStr: string) => {
         const date = new Date(dateStr);
@@ -353,21 +355,25 @@ class MLMachingService {
       };
 
       recordsA.forEach((record) => {
-        const date = record.data.date || record.data.transaction_date;
-        const blockKey = getDateBlock(date);
-        if (!dateBlocks.has(blockKey)) {
-          dateBlocks.set(blockKey, { recordsA: [], recordsB: [] });
+        const date = (record.data.date || record.data.transaction_date) as string | undefined;
+        if (date) {
+          const blockKey = getDateBlock(date);
+          if (!dateBlocks.has(blockKey)) {
+            dateBlocks.set(blockKey, { recordsA: [], recordsB: [] });
+          }
+          dateBlocks.get(blockKey)!.recordsA.push(record);
         }
-        dateBlocks.get(blockKey)!.recordsA.push(record);
       });
 
       recordsB.forEach((record) => {
-        const date = record.data.date || record.data.transaction_date;
-        const blockKey = getDateBlock(date);
-        if (!dateBlocks.has(blockKey)) {
-          dateBlocks.set(blockKey, { recordsA: [], recordsB: [] });
+        const date = (record.data.date || record.data.transaction_date) as string | undefined;
+        if (date) {
+          const blockKey = getDateBlock(date);
+          if (!dateBlocks.has(blockKey)) {
+            dateBlocks.set(blockKey, { recordsA: [], recordsB: [] });
+          }
+          dateBlocks.get(blockKey)!.recordsB.push(record);
         }
-        dateBlocks.get(blockKey)!.recordsB.push(record);
       });
 
       dateBlocks.forEach((block, key) => {

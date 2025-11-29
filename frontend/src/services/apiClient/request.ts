@@ -184,9 +184,30 @@ export class RequestExecutor {
             if (error.name === 'AbortError') {
               throw new Error('Request timeout or aborted');
             }
-            // Don't retry client errors
+            // Network errors (TypeError from fetch) should be retried
+            // These include: "Failed to fetch", CORS errors, connection refused, etc.
             if (error.name === 'TypeError') {
-              throw error;
+              // Check if it's a network error (not a validation error)
+              const isNetworkError = 
+                error.message.includes('fetch') ||
+                error.message.includes('network') ||
+                error.message.includes('Failed to fetch') ||
+                error.message.includes('NetworkError') ||
+                error.message.includes('Network request failed') ||
+                error.message.includes('ERR_INTERNET_DISCONNECTED') ||
+                error.message.includes('ERR_CONNECTION_REFUSED') ||
+                error.message.includes('ERR_CONNECTION_RESET');
+              
+              if (isNetworkError && attempt < (config.retries || 0)) {
+                // Retry network errors
+                const delay = this.calculateDelay(attempt);
+                await this.delay(delay);
+                continue;
+              }
+              // If no more retries, throw with better error message
+              throw new Error(
+                `Network error: Unable to connect to server. Please check your connection and try again.`
+              );
             }
           } else {
             lastError = error instanceof Error ? error : new Error(String(error));

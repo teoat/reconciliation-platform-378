@@ -2,8 +2,8 @@
 // Provides comprehensive error handling with recovery options
 
 import React, { Component, ReactNode } from 'react';
-import { logger } from '../services/logger';
-import { ErrorHandler, ApplicationError, ErrorSeverity } from '../utils/errorHandling';
+import { logger } from '@/services/logger';
+import { ErrorHandler, ApplicationError, ErrorSeverity } from '@/utils/errorHandling';
 
 interface ErrorBoundaryProps {
   children: ReactNode;

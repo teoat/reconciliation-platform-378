@@ -2,7 +2,7 @@
 // UI & COMPONENT TYPES
 // ============================================================================
 
-import type { ID, Timestamp } from './backend-aligned';
+import type { ID, Timestamp } from './backend';
 
 export interface UIState {
   sidebarOpen: boolean;
@@ -55,3 +55,42 @@ export interface Breadcrumb {
   path: string;
   active: boolean;
 }
+
+// ============================================================================
+// PROGRESS TYPES
+// ============================================================================
+
+export interface CheckpointData {
+  stage: string;
+  data: unknown;
+  metadata: Record<string, unknown>;
+}
+
+export interface ResumeData {
+  canResume: boolean;
+  resumePoint: string;
+  dependencies: string[];
+  state: Record<string, unknown>;
+}
+
+// ============================================================================
+// FORM TYPES
+// ============================================================================
+// Note: Form types are exported from './forms' to avoid duplicates
+// Re-export for backward compatibility
+export type {
+  FormField,
+  SelectOption,
+  FieldValidation,
+  FormState,
+} from './forms';
+
+// ============================================================================
+// FILE TYPES
+// ============================================================================
+// Note: File types are exported from './files' to avoid duplicates
+// Re-export for backward compatibility
+export type {
+  FileUpload,
+  FileInfo,
+} from './files';

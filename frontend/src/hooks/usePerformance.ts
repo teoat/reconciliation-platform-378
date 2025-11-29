@@ -1,11 +1,11 @@
 import React, { useCallback, useMemo, useRef, useEffect, useState } from 'react'
 import { debounce, throttle } from '@/utils'
-import { performanceMonitor } from '../services/performanceMonitor'
+import { performanceMonitor } from '@/services/performanceMonitor'
 
 // Performance optimization hooks
 
 // Debounced callback hook
-export const useDebouncedCallback = <T extends (...args: any[]) => any>(
+export const useDebouncedCallback = <T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number = 300
 ): T => {
@@ -16,7 +16,7 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
 
   useEffect(() => {
     return () => {
-      (debouncedCallback as any).cancel?.()
+      (debouncedCallback as { cancel?: () => void }).cancel?.()
     }
   }, [debouncedCallback])
 
@@ -24,7 +24,7 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
 }
 
 // Throttled callback hook
-export const useThrottledCallback = <T extends (...args: any[]) => any>(
+export const useThrottledCallback = <T extends (...args: unknown[]) => unknown>(
   callback: T,
   delay: number = 1000
 ): T => {
@@ -35,7 +35,7 @@ export const useThrottledCallback = <T extends (...args: any[]) => any>(
 
   useEffect(() => {
     return () => {
-      (throttledCallback as any).cancel?.()
+      (throttledCallback as { cancel?: () => void }).cancel?.()
     }
   }, [throttledCallback])
 
@@ -150,7 +150,7 @@ export const useMemoryUsage = () => {
   useEffect(() => {
     const updateMemoryInfo = () => {
       if ('memory' in performance) {
-        const memory = (performance as any).memory
+        const memory = (performance as { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } }).memory
         setMemoryInfo({
           used: memory.usedJSHeapSize,
           total: memory.totalJSHeapSize,
@@ -180,7 +180,7 @@ export const useNetworkInfo = () => {
   useEffect(() => {
     const updateNetworkInfo = () => {
       if ('connection' in navigator) {
-        const connection = (navigator as any).connection
+        const connection = (navigator as { connection?: { effectiveType: string; downlink: number; rtt: number; saveData: boolean; addEventListener: (event: string, handler: () => void) => void; removeEventListener: (event: string, handler: () => void) => void } }).connection
         setNetworkInfo({
           effectiveType: connection.effectiveType,
           downlink: connection.downlink,
@@ -193,8 +193,10 @@ export const useNetworkInfo = () => {
     updateNetworkInfo()
     
     if ('connection' in navigator) {
-      const connection = (navigator as any).connection
-      connection.addEventListener('change', updateNetworkInfo)
+      const connection = (navigator as Navigator & { connection?: { addEventListener?: (event: string, handler: () => void) => void; effectiveType?: string; downlink?: number } }).connection;
+      if (connection?.addEventListener) {
+        connection.addEventListener('change', updateNetworkInfo);
+      }
       
       return () => {
         connection.removeEventListener('change', updateNetworkInfo)
@@ -206,8 +208,8 @@ export const useNetworkInfo = () => {
 }
 
 // Virtual scrolling hook
-export const useVirtualScrolling = (
-  items: any[],
+export const useVirtualScrolling = <T,>(
+  items: T[],
   itemHeight: number,
   containerHeight: number,
   overscan: number = 5
@@ -315,12 +317,17 @@ export const useBatchUpdates = () => {
 
     timeoutRef.current = setTimeout(() => {
       const updates = updatesRef.current
-      updatesRef.current = [] as any
+      updatesRef.current = []
 
       // Batch all updates
-      (React as any).unstable_batchedUpdates(() => {
+      const ReactWithBatchedUpdates = React as { unstable_batchedUpdates?: (fn: () => void) => void };
+      if (ReactWithBatchedUpdates.unstable_batchedUpdates) {
+        ReactWithBatchedUpdates.unstable_batchedUpdates(() => {
+          updates.forEach(update => update())
+        });
+      } else {
         updates.forEach(update => update())
-      })
+      }
     }, 0)
   }, [])
 
@@ -395,7 +402,7 @@ export const usePerformanceMonitoring = () => {
 
   useEffect(() => {
     const updateMetrics = () => {
-      setMetrics(performanceMonitor.getMetrics() as any)
+      setMetrics(performanceMonitor.getMetrics() as Record<string, number>)
     }
 
     const interval = setInterval(updateMetrics, 1000)

@@ -42,7 +42,7 @@ class PerformanceMonitor {
           const entries = list.getEntries();
           const lastEntry = entries[entries.length - 1];
           // Store LCP for later retrieval
-          (window as any).__performanceLCP = lastEntry.startTime;
+          (window as Window & { __performanceLCP?: number }).__performanceLCP = lastEntry.startTime;
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
         this.observers.push(lcpObserver);
@@ -55,11 +55,12 @@ class PerformanceMonitor {
         let clsValue = 0;
         const clsObserver = new PerformanceObserver((list) => {
           for (const entry of list.getEntries()) {
-            if (!(entry as any).hadRecentInput) {
-              clsValue += (entry as any).value;
+            const layoutShiftEntry = entry as PerformanceEntry & { hadRecentInput?: boolean; value?: number };
+            if (!layoutShiftEntry.hadRecentInput && layoutShiftEntry.value !== undefined) {
+              clsValue += layoutShiftEntry.value;
             }
           }
-          (window as any).__performanceCLS = clsValue;
+          (window as Window & { __performanceCLS?: number }).__performanceCLS = clsValue;
         });
         clsObserver.observe({ entryTypes: ['layout-shift'] });
         this.observers.push(clsObserver);
@@ -77,8 +78,9 @@ class PerformanceMonitor {
     const paint = performance.getEntriesByType('paint');
     const fcp = paint.find((entry) => entry.name === 'first-contentful-paint');
 
-    const lcp = (window as any).__performanceLCP || 0;
-    const cls = (window as any).__performanceCLS || 0;
+    const windowWithPerformance = window as Window & { __performanceLCP?: number; __performanceCLS?: number };
+    const lcp = windowWithPerformance.__performanceLCP || 0;
+    const cls = windowWithPerformance.__performanceCLS || 0;
 
     // Calculate resource sizes
     const resources = performance.getEntriesByType('resource') as PerformanceResourceTiming[];
@@ -91,7 +93,7 @@ class PerformanceMonitor {
     };
 
     resources.forEach((resource) => {
-      const size = (resource as any).transferSize || 0;
+      const size = (resource as PerformanceResourceTiming & { transferSize?: number }).transferSize || 0;
       resourceSizes.total += size;
       
       if (resource.name.endsWith('.js')) {

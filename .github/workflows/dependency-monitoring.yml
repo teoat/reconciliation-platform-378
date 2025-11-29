@@ -1,0 +1,42 @@
+name: Dependency Monitoring
+
+on:
+  schedule:
+    # Run weekly on Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    # Allow manual triggering
+
+jobs:
+  dependency-health:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Generate dependency health report
+        run: bash scripts/generate-dependency-report.sh
+      
+      - name: Analyze dependency coupling
+        run: bash scripts/analyze-dependency-coupling.sh
+      
+      - name: Upload reports
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: dependency-reports-${{ github.run_number }}
+          path: |
+            docs/diagnostics/dependency-reports/*.md
+            docs/diagnostics/dependency-graphs/*.svg
+          retention-days: 30
+      
+      - name: Check for alerts
+        run: bash scripts/monitor-dependencies.sh || echo "⚠️ Dependency alerts found - check reports"
+        continue-on-error: true
+

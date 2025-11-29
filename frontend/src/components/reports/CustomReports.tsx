@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus, FileText } from 'lucide-react';
-import { useData } from './DataProvider';
+import { useData } from '../DataProvider';
 import type { CustomReportsProps } from './types';
 import { useCustomReports } from './hooks/useCustomReports';
 import { ReportCard, ReportDetailModal, CreateReportModal, ReportsErrorBoundary } from './components';

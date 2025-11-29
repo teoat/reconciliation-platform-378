@@ -128,7 +128,7 @@ export class UnifiedFetchInterceptor {
 
     // Error tracking
     if (this.config.enableErrorTracking && isError) {
-      logger.error('API Error:', metrics, error);
+      logger.error('API Error:', metrics, error as unknown as Record<string, unknown>);
 
       if (typeof window !== 'undefined') {
         const win = window as unknown as Record<string, unknown>;

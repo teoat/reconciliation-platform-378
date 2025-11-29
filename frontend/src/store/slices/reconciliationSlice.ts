@@ -7,6 +7,8 @@ import { fetchReconciliationRecords, runMatching } from '../asyncThunkUtils';
 import type { ReconciliationState, ReconciliationMatch } from '../types';
 import type {
   ReconciliationRecord as BackendReconciliationRecord,
+} from '../../types/reconciliation';
+import type {
   ReconciliationJob as BackendReconciliationJob,
 } from '../../types/backend-aligned';
 

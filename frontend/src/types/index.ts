@@ -2,13 +2,8 @@
 // BACKEND-ALIGNED TYPE DEFINITIONS - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
-// Export base types and backend-aligned types (excluding duplicates)
-export type {
-  ID,
-  Timestamp,
-  Status,
-  Priority,
-} from './backend-aligned';
+// Export base types and backend types (excluding duplicates)
+export type { ID, Timestamp, Status, Priority } from './backend';
 // Re-export Metadata from metadata.ts (only once)
 export type { Metadata } from './metadata';
 export type {
@@ -28,18 +23,18 @@ export type {
   ProjectResponse,
   ReconciliationJob,
   ReconciliationResult,
-  IngestionJob,
-  IngestionStatistics,
   FileUploadRequest,
   ProcessingResult,
   ActivityItem,
   ActivityDetails,
   PerformanceMetrics,
-} from './backend-aligned';
-// Re-export ReconciliationMetrics from reconciliation.ts (only once)
-export type { ReconciliationMetrics } from './reconciliation';
-// Re-export QualityMetrics from ingestion (only once)
-export type { DataQualityMetrics as QualityMetrics } from './ingestion';
+} from './backend';
+// Re-export IngestionJob and IngestionStatistics from ingestion.ts
+export type { IngestionJob, IngestionStatistics } from './ingestion';
+// Re-export ReconciliationMetrics from reconciliation/index.ts (only once)
+export type { ReconciliationMetrics } from './reconciliation/index';
+// Re-export QualityMetrics from ingestion/index.ts (only once)
+export type { DataQualityMetrics as QualityMetrics } from './ingestion/index';
 export type {
   PerformanceMetrics as PerformanceMetricsType,
   ProjectStats,
@@ -79,14 +74,8 @@ export * from './analytics';
 // UI & Component types (frontend-specific Notification)
 export * from './ui';
 
-// Form types (frontend-specific FormField, FormState)
-export * from './forms';
-
 // WebSocket types (frontend-specific WebSocketMessage)
 export * from './websocket';
-
-// File types (frontend-specific FileInfo)
-export * from './files';
 
 // Ingestion types
 export * from './ingestion';
@@ -96,8 +85,25 @@ export * from './data';
 
 // API types (frontend-specific ApiError, ApiResponse, PaginatedResponse)
 export * from './api';
+
+// Form types
+export * from './forms';
+
+// File types
+export * from './files';
 // Define missing types that don't exist yet
-export type ComparisonOperator = 'eq' | 'ne' | 'gt' | 'gte' | 'lt' | 'lte' | 'in' | 'not_in' | 'contains' | 'starts_with' | 'ends_with';
+export type ComparisonOperator =
+  | 'eq'
+  | 'ne'
+  | 'gt'
+  | 'gte'
+  | 'lt'
+  | 'lte'
+  | 'in'
+  | 'not_in'
+  | 'contains'
+  | 'starts_with'
+  | 'ends_with';
 export type Permission = string; // Placeholder - should be defined properly
 export type DataRetentionPolicy = Record<string, unknown>; // Placeholder
 export type AuditAction = string; // Placeholder

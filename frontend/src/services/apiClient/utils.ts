@@ -31,10 +31,20 @@ export class UrlBuilder {
 export class ConfigBuilder {
   static createDefaultConfig(): ApiClientConfig {
     // Use import.meta.env for Vite compatibility, fallback to process.env for tests/Node, or default
-    const apiUrl =
-      import.meta.env?.VITE_API_URL ||
-      process.env?.NEXT_PUBLIC_API_URL ||
-      'http://localhost:2000/api/v1';
+    // In development, use relative URL to leverage Vite proxy
+    // In production, use full URL from environment variable
+    const isDevelopment = import.meta.env?.DEV || import.meta.env?.MODE === 'development';
+    
+    let apiUrl: string;
+    if (import.meta.env?.VITE_API_URL) {
+      apiUrl = import.meta.env.VITE_API_URL;
+    } else if (isDevelopment) {
+      // Use relative URL in development to leverage Vite proxy
+      apiUrl = '/api/v1';
+    } else {
+      // Production fallback with /v1 suffix
+      apiUrl = 'http://localhost:2000/api/v1';
+    }
 
     return {
       baseURL: apiUrl,

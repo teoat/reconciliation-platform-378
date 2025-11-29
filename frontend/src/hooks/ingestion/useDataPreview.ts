@@ -1,6 +1,6 @@
 // Data preview hook
 import { useState, useCallback, useMemo } from 'react';
-import type { DataRow, SortConfig, FilterConfig, PaginationConfig, ColumnValue } from '../../types/ingestion';
+import type { DataRow, SortConfig, FilterConfig, PaginationConfig, ColumnValue } from '@/types/ingestion/index';
 
 export const useDataPreview = (data: DataRow[] = []) => {
   const [sortConfig, setSortConfig] = useState<SortConfig | null>(null);
@@ -9,7 +9,7 @@ export const useDataPreview = (data: DataRow[] = []) => {
     page: 1,
     pageSize: 50,
     totalRecords: data.length,
-  });
+  } as PaginationConfig);
 
   const handleSort = useCallback((field: string) => {
     setSortConfig((prev) => ({
@@ -70,9 +70,9 @@ export const useDataPreview = (data: DataRow[] = []) => {
               Number(value) >= Number(filter.value) &&
               Number(value) <= Number(filter.value2 || 0)
             );
-          default:
-            return true;
         }
+        // eslint-disable-next-line no-unreachable
+        return true; // Fallback (should never reach here due to exhaustive switch)
       });
     });
 
@@ -95,8 +95,9 @@ export const useDataPreview = (data: DataRow[] = []) => {
 
   // Paginate data
   const paginatedData = useMemo(() => {
-    const startIndex = (pagination.page - 1) * pagination.pageSize;
-    const endIndex = startIndex + pagination.pageSize;
+    const pageSize = 'pageSize' in pagination ? (pagination.pageSize as number) : 50;
+    const startIndex = (pagination.page - 1) * pageSize;
+    const endIndex = startIndex + (pageSize as number);
     return processedData.slice(startIndex, endIndex);
   }, [processedData, pagination]);
 

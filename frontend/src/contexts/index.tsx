@@ -1,29 +1,44 @@
 // Centralized context providers for the application
 import React, { createContext, useContext, useReducer, ReactNode } from 'react'
+import type { User } from '@/types/user'
+import type { Project } from '@/types/backend'
+import type { ReconciliationRecord, MatchingRule } from '@/services/dataManagement/types'
+import type { WorkflowState } from '@/services/atomic-workflow/types'
+import type { Chart, DashboardData } from '@/types/analytics'
+import type { ProcessedRecord } from '@/services/dataManagement/types'
 
 // Auth Context
 interface AuthState {
   isAuthenticated: boolean
-  user: any | null
+  user: User | null
   loading: boolean
 }
 
+type AuthAction =
+  | { type: 'LOGIN'; payload: User }
+  | { type: 'LOGOUT' }
+  | { type: 'SET_LOADING'; payload: boolean }
+
 interface AuthContextType extends AuthState {
-  login: (user: any) => void
+  login: (user: User) => void
   logout: () => void
   setLoading: (loading: boolean) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-export const AuthProvider: any = ({ children }: any) => {
+interface AuthProviderProps {
+  children: ReactNode
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, {
     isAuthenticated: false,
     user: null,
     loading: false
   })
 
-  const login = (user: any) => {
+  const login = (user: User) => {
     dispatch({ type: 'LOGIN', payload: user })
   }
 
@@ -50,7 +65,7 @@ export const useAuth = () => {
   return context
 }
 
-function authReducer(state: AuthState, action: any): AuthState {
+function authReducer(state: AuthState, action: AuthAction): AuthState {
   switch (action.type) {
     case 'LOGIN':
       return { ...state, isAuthenticated: true, user: action.payload, loading: false }
@@ -65,14 +80,19 @@ function authReducer(state: AuthState, action: any): AuthState {
 
 // Project Context
 interface ProjectState {
-  currentProject: any | null
-  projects: any[]
+  currentProject: Project | null
+  projects: Project[]
   loading: boolean
 }
 
+type ProjectAction =
+  | { type: 'SET_CURRENT_PROJECT'; payload: Project | null }
+  | { type: 'SET_PROJECTS'; payload: Project[] }
+  | { type: 'SET_LOADING'; payload: boolean }
+
 interface ProjectContextType extends ProjectState {
-  setCurrentProject: (project: any) => void
-  setProjects: (projects: any[]) => void
+  setCurrentProject: (project: Project | null) => void
+  setProjects: (projects: Project[]) => void
   setLoading: (loading: boolean) => void
 }
 
@@ -85,11 +105,11 @@ export const ProjectProvider: React.FC<{ children: ReactNode }> = ({ children })
     loading: false
   })
 
-  const setCurrentProject = (project: any) => {
+  const setCurrentProject = (project: Project | null) => {
     dispatch({ type: 'SET_CURRENT_PROJECT', payload: project })
   }
 
-  const setProjects = (projects: any[]) => {
+  const setProjects = (projects: Project[]) => {
     dispatch({ type: 'SET_PROJECTS', payload: projects })
   }
 
@@ -112,7 +132,7 @@ export const useProject = () => {
   return context
 }
 
-function projectReducer(state: ProjectState, action: any): ProjectState {
+function projectReducer(state: ProjectState, action: ProjectAction): ProjectState {
   switch (action.type) {
     case 'SET_CURRENT_PROJECT':
       return { ...state, currentProject: action.payload }
@@ -127,14 +147,19 @@ function projectReducer(state: ProjectState, action: any): ProjectState {
 
 // Data Ingestion Context
 interface DataIngestionState {
-  files: any[]
-  processedData: any[]
+  files: File[]
+  processedData: ProcessedRecord[]
   loading: boolean
 }
 
+type DataIngestionAction =
+  | { type: 'SET_FILES'; payload: File[] }
+  | { type: 'SET_PROCESSED_DATA'; payload: ProcessedRecord[] }
+  | { type: 'SET_LOADING'; payload: boolean }
+
 interface DataIngestionContextType extends DataIngestionState {
-  setFiles: (files: any[]) => void
-  setProcessedData: (data: any[]) => void
+  setFiles: (files: File[]) => void
+  setProcessedData: (data: ProcessedRecord[]) => void
   setLoading: (loading: boolean) => void
 }
 
@@ -147,11 +172,11 @@ export const DataIngestionProvider: React.FC<{ children: ReactNode }> = ({ child
     loading: false
   })
 
-  const setFiles = (files: any[]) => {
+  const setFiles = (files: File[]) => {
     dispatch({ type: 'SET_FILES', payload: files })
   }
 
-  const setProcessedData = (data: any[]) => {
+  const setProcessedData = (data: ProcessedRecord[]) => {
     dispatch({ type: 'SET_PROCESSED_DATA', payload: data })
   }
 
@@ -174,7 +199,7 @@ export const useDataIngestion = () => {
   return context
 }
 
-function dataIngestionReducer(state: DataIngestionState, action: any): DataIngestionState {
+function dataIngestionReducer(state: DataIngestionState, action: DataIngestionAction): DataIngestionState {
   switch (action.type) {
     case 'SET_FILES':
       return { ...state, files: action.payload }
@@ -189,14 +214,19 @@ function dataIngestionReducer(state: DataIngestionState, action: any): DataInges
 
 // Reconciliation Context
 interface ReconciliationState {
-  records: any[]
-  matchingRules: any[]
+  records: ReconciliationRecord[]
+  matchingRules: MatchingRule[]
   loading: boolean
 }
 
+type ReconciliationAction =
+  | { type: 'SET_RECORDS'; payload: ReconciliationRecord[] }
+  | { type: 'SET_MATCHING_RULES'; payload: MatchingRule[] }
+  | { type: 'SET_LOADING'; payload: boolean }
+
 interface ReconciliationContextType extends ReconciliationState {
-  setRecords: (records: any[]) => void
-  setMatchingRules: (rules: any[]) => void
+  setRecords: (records: ReconciliationRecord[]) => void
+  setMatchingRules: (rules: MatchingRule[]) => void
   setLoading: (loading: boolean) => void
 }
 
@@ -209,11 +239,11 @@ export const ReconciliationProvider: React.FC<{ children: ReactNode }> = ({ chil
     loading: false
   })
 
-  const setRecords = (records: any[]) => {
+  const setRecords = (records: ReconciliationRecord[]) => {
     dispatch({ type: 'SET_RECORDS', payload: records })
   }
 
-  const setMatchingRules = (rules: any[]) => {
+  const setMatchingRules = (rules: MatchingRule[]) => {
     dispatch({ type: 'SET_MATCHING_RULES', payload: rules })
   }
 
@@ -236,7 +266,7 @@ export const useReconciliation = () => {
   return context
 }
 
-function reconciliationReducer(state: ReconciliationState, action: any): ReconciliationState {
+function reconciliationReducer(state: ReconciliationState, action: ReconciliationAction): ReconciliationState {
   switch (action.type) {
     case 'SET_RECORDS':
       return { ...state, records: action.payload }
@@ -250,15 +280,29 @@ function reconciliationReducer(state: ReconciliationState, action: any): Reconci
 }
 
 // Adjudication Context
+interface AdjudicationDecision {
+  id: string
+  caseId: string
+  decision: string
+  rationale: string
+  decidedBy: string
+  decidedAt: string
+}
+
 interface AdjudicationState {
-  workflows: any[]
-  decisions: any[]
+  workflows: WorkflowState[]
+  decisions: AdjudicationDecision[]
   loading: boolean
 }
 
+type AdjudicationAction =
+  | { type: 'SET_WORKFLOWS'; payload: WorkflowState[] }
+  | { type: 'SET_DECISIONS'; payload: AdjudicationDecision[] }
+  | { type: 'SET_LOADING'; payload: boolean }
+
 interface AdjudicationContextType extends AdjudicationState {
-  setWorkflows: (workflows: any[]) => void
-  setDecisions: (decisions: any[]) => void
+  setWorkflows: (workflows: WorkflowState[]) => void
+  setDecisions: (decisions: AdjudicationDecision[]) => void
   setLoading: (loading: boolean) => void
 }
 
@@ -271,11 +315,11 @@ export const AdjudicationProvider: React.FC<{ children: ReactNode }> = ({ childr
     loading: false
   })
 
-  const setWorkflows = (workflows: any[]) => {
+  const setWorkflows = (workflows: WorkflowState[]) => {
     dispatch({ type: 'SET_WORKFLOWS', payload: workflows })
   }
 
-  const setDecisions = (decisions: any[]) => {
+  const setDecisions = (decisions: AdjudicationDecision[]) => {
     dispatch({ type: 'SET_DECISIONS', payload: decisions })
   }
 
@@ -298,7 +342,7 @@ export const useAdjudication = () => {
   return context
 }
 
-function adjudicationReducer(state: AdjudicationState, action: any): AdjudicationState {
+function adjudicationReducer(state: AdjudicationState, action: AdjudicationAction): AdjudicationState {
   switch (action.type) {
     case 'SET_WORKFLOWS':
       return { ...state, workflows: action.payload }
@@ -313,14 +357,19 @@ function adjudicationReducer(state: AdjudicationState, action: any): Adjudicatio
 
 // Visualization Context
 interface VisualizationState {
-  charts: any[]
-  dashboards: any[]
+  charts: Chart[]
+  dashboards: DashboardData[]
   loading: boolean
 }
 
+type VisualizationAction =
+  | { type: 'SET_CHARTS'; payload: Chart[] }
+  | { type: 'SET_DASHBOARDS'; payload: DashboardData[] }
+  | { type: 'SET_LOADING'; payload: boolean }
+
 interface VisualizationContextType extends VisualizationState {
-  setCharts: (charts: any[]) => void
-  setDashboards: (dashboards: any[]) => void
+  setCharts: (charts: Chart[]) => void
+  setDashboards: (dashboards: DashboardData[]) => void
   setLoading: (loading: boolean) => void
 }
 
@@ -333,11 +382,11 @@ export const VisualizationProvider: React.FC<{ children: ReactNode }> = ({ child
     loading: false
   })
 
-  const setCharts = (charts: any[]) => {
+  const setCharts = (charts: Chart[]) => {
     dispatch({ type: 'SET_CHARTS', payload: charts })
   }
 
-  const setDashboards = (dashboards: any[]) => {
+  const setDashboards = (dashboards: DashboardData[]) => {
     dispatch({ type: 'SET_DASHBOARDS', payload: dashboards })
   }
 
@@ -360,7 +409,7 @@ export const useVisualization = () => {
   return context
 }
 
-function visualizationReducer(state: VisualizationState, action: any): VisualizationState {
+function visualizationReducer(state: VisualizationState, action: VisualizationAction): VisualizationState {
   switch (action.type) {
     case 'SET_CHARTS':
       return { ...state, charts: action.payload }
@@ -374,15 +423,36 @@ function visualizationReducer(state: VisualizationState, action: any): Visualiza
 }
 
 // Integration Context
+interface ApiIntegration {
+  id: string
+  name: string
+  url: string
+  method: string
+  enabled: boolean
+}
+
+interface WebhookIntegration {
+  id: string
+  name: string
+  url: string
+  events: string[]
+  enabled: boolean
+}
+
 interface IntegrationState {
-  apis: any[]
-  webhooks: any[]
+  apis: ApiIntegration[]
+  webhooks: WebhookIntegration[]
   loading: boolean
 }
 
+type IntegrationAction =
+  | { type: 'SET_APIS'; payload: ApiIntegration[] }
+  | { type: 'SET_WEBHOOKS'; payload: WebhookIntegration[] }
+  | { type: 'SET_LOADING'; payload: boolean }
+
 interface IntegrationContextType extends IntegrationState {
-  setApis: (apis: any[]) => void
-  setWebhooks: (webhooks: any[]) => void
+  setApis: (apis: ApiIntegration[]) => void
+  setWebhooks: (webhooks: WebhookIntegration[]) => void
   setLoading: (loading: boolean) => void
 }
 
@@ -395,11 +465,11 @@ export const IntegrationProvider: React.FC<{ children: ReactNode }> = ({ childre
     loading: false
   })
 
-  const setApis = (apis: any[]) => {
+  const setApis = (apis: ApiIntegration[]) => {
     dispatch({ type: 'SET_APIS', payload: apis })
   }
 
-  const setWebhooks = (webhooks: any[]) => {
+  const setWebhooks = (webhooks: WebhookIntegration[]) => {
     dispatch({ type: 'SET_WEBHOOKS', payload: webhooks })
   }
 
@@ -422,7 +492,7 @@ export const useIntegration = () => {
   return context
 }
 
-function integrationReducer(state: IntegrationState, action: any): IntegrationState {
+function integrationReducer(state: IntegrationState, action: IntegrationAction): IntegrationState {
   switch (action.type) {
     case 'SET_APIS':
       return { ...state, apis: action.payload }

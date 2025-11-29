@@ -2,8 +2,8 @@
 // ANALYTICS & REPORTING TYPES
 // ============================================================================
 
-import type { ID, Timestamp } from './backend-aligned';
-import type { User } from './backend-aligned';
+import type { ID, Timestamp } from './backend';
+import type { User } from './backend';
 
 export interface DashboardData {
   overview: DashboardOverview;

@@ -77,6 +77,19 @@ export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 // ACTION EXPORTS
 // ============================================================================
 
+import {
+  authActions,
+  projectsActions,
+  dataSourcesActions,
+  reconciliationRecordsActions,
+  reconciliationMatchesActions,
+  reconciliationJobsActions,
+  notificationsActions,
+  uiActions,
+  analyticsActions,
+} from './slices';
+
+// Re-export actions
 export {
   authActions,
   projectsActions,
@@ -86,7 +99,8 @@ export {
   reconciliationJobsActions,
   notificationsActions,
   uiActions,
-} from './slices';
+  analyticsActions,
+};
 
 // Individual action exports for convenience
 export const {
@@ -116,7 +130,6 @@ export const {
   clearError: clearReconciliationError,
 } = reconciliationRecordsActions;
 
-import { analyticsActions } from './slices';
 export const { setLoading: setAnalyticsLoading, setError: setAnalyticsError } = analyticsActions;
 
 export const {

@@ -1,6 +1,6 @@
 'use client';
 import { logger } from '@/services/logger';
-import { toRecord } from '../utils/typeHelpers';
+import { toRecord } from '../../utils/typeHelpers';
 
 import { useState, useCallback, useMemo, memo } from 'react';
 import { Workflow, Zap } from 'lucide-react';

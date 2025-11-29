@@ -435,7 +435,7 @@ export const useOptimisticUI = () => {
       maxRetries?: number;
     }
   ) => {
-    return service.createOptimisticUpdate(
+    return _service.createOptimisticUpdate(
       type,
       entityType,
       entityId,
@@ -446,35 +446,35 @@ export const useOptimisticUI = () => {
   };
 
   const getUpdate = (updateId: string) => {
-    return service.getUpdate(updateId);
+    return _service.getUpdate(updateId);
   };
 
   const getAllUpdates = () => {
-    return service.getAllUpdates();
+    return _service.getAllUpdates();
   };
 
   const getPendingUpdates = () => {
-    return service.getPendingUpdates();
+    return _service.getPendingUpdates();
   };
 
   const getFailedUpdates = () => {
-    return service.getFailedUpdates();
+    return _service.getFailedUpdates();
   };
 
   const getConflicts = () => {
-    return service.getConflicts();
+    return _service.getConflicts();
   };
 
   const resolveConflict = (conflictId: string, resolution: ConflictResolution['resolution']) => {
-    service.resolveConflict(conflictId, resolution);
+    _service.resolveConflict(conflictId, resolution);
   };
 
   const retryFailedUpdate = (updateId: string) => {
-    service.retryFailedUpdate(updateId);
+    _service.retryFailedUpdate(updateId);
   };
 
   const clearCompletedUpdates = () => {
-    service.clearCompletedUpdates();
+    _service.clearCompletedUpdates();
   };
 
   return {

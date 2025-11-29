@@ -188,7 +188,7 @@ export function generateShortcuts(
               stageId: stage.id,
               stageStatus: stage.status,
               timestamp: new Date().toISOString(),
-              data: stage.data || {},
+              data: (stage as { data?: Record<string, unknown> }).data || {},
             };
             
             dataService.saveData(workflowId, progressData);
@@ -240,7 +240,7 @@ export function generateShortcuts(
               target_data_source_id: fileIdB,
             });
             
-            logger.info('Reconciliation started', { jobId: result.job?.id });
+            logger.info('Reconciliation started', { jobId: (result as { job?: { id?: string } })?.job?.id });
             
             window.dispatchEvent(new CustomEvent('notification:show', {
               detail: {

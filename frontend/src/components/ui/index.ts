@@ -104,6 +104,10 @@ export {
   type FeatureUnlockLevel,
 } from './ProgressiveFeatureDisclosure';
 
+// Progress Bar
+export { default as ProgressBar } from './ProgressBar';
+export type { ProgressBarProps } from './ProgressBar';
+
 export {
   SmartTipProvider,
   type SmartTipProviderProps,
