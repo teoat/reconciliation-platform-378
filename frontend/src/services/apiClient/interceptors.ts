@@ -148,7 +148,7 @@ export class AuthInterceptor {
       }
 
       // Backend expects token in Authorization header, not body
-      const response = await fetch('/api/auth/refresh', {
+      const response = await fetch('/api/v1/auth/refresh', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

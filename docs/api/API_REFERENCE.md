@@ -1271,7 +1271,7 @@ Install/configure integration.
 
 Connect to WebSocket endpoint:
 
-```
+```text
 ws://localhost:2000/ws?token=<jwt_token>
 ```
 
@@ -1296,22 +1296,26 @@ All WebSocket messages follow this format:
 ### Message Types
 
 #### Connection Events
+
 - `connect`: User connected
 - `disconnect`: User disconnected
 - `reconnect`: User reconnected
 
 #### Reconciliation Events
+
 - `reconciliation:progress`: Job progress update
 - `reconciliation:completed`: Job completed
 - `reconciliation:error`: Job error
 
 #### Collaboration Events
+
 - `collaboration:user_joined`: User joined project
 - `collaboration:user_left`: User left project
 - `collaboration:cursor_update`: Cursor position update
 - `collaboration:selection_update`: Selection update
 
 #### Notification Events
+
 - `notification:new`: New notification
 - `notification:read`: Notification read
 
@@ -1474,8 +1478,8 @@ curl -X GET http://localhost:8080/api/reconciliation/jobs/$JOB_ID/results \
 For API support and questions:
 
 - **Email**: api-support@378reconciliation.com
-- **Documentation**: https://docs.378reconciliation.com
-- **Status Page**: https://status.378reconciliation.com
+- **Documentation**: <https://docs.378reconciliation.com>
+- **Status Page**: <https://status.378reconciliation.com>
 - **Issue Tracker**: GitHub Issues (`reconciliation-platform-378`)
 
 ---

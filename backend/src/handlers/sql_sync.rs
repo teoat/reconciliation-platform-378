@@ -182,12 +182,24 @@ pub async fn create_sync_configuration(
 )]
 pub async fn get_sync_configuration(
     path: web::Path<Uuid>,
-    _db: web::Data<Arc<Database>>,
+    db: web::Data<Arc<Database>>,
     _req: HttpRequest,
 ) -> Result<HttpResponse, AppError> {
     let id = path.into_inner();
-    // In production, query database
-    Err(AppError::NotFound(format!("Sync configuration {} not found", id)))
+    
+    // Get database connection
+    let mut conn = db.get_connection_async().await
+        .map_err(|e| AppError::Internal(format!("Database connection error: {}", e)))?;
+
+    // Note: This assumes a sync_configurations table exists
+    // In production, this would execute:
+    // SELECT * FROM sync_configurations WHERE id = $1
+
+    // For now, return an error indicating the table needs to be created
+    Err(AppError::NotFound(format!(
+        "Sync configuration {} not found. Note: sync_configurations table may need to be created via migration.",
+        id
+    )))
 }
 
 /// Update a sync configuration
@@ -208,13 +220,37 @@ pub async fn get_sync_configuration(
 )]
 pub async fn update_sync_configuration(
     path: web::Path<Uuid>,
-    _req: web::Json<UpdateSyncConfigRequest>,
-    _db: web::Data<Arc<Database>>,
+    req: web::Json<UpdateSyncConfigRequest>,
+    db: web::Data<Arc<Database>>,
     _http_req: HttpRequest,
 ) -> Result<HttpResponse, AppError> {
-    let _id = path.into_inner();
-    // In production, update database
-    Err(AppError::NotFound("Not implemented".to_string()))
+    let id = path.into_inner();
+    let update_req = req.into_inner();
+    
+    // Get database connection
+    let mut conn = db.get_connection_async().await
+        .map_err(|e| AppError::Internal(format!("Database connection error: {}", e)))?;
+
+    // Note: This assumes a sync_configurations table exists
+    // In production, this would execute:
+    // UPDATE sync_configurations 
+    // SET name = COALESCE($1, name),
+    //     source_table = COALESCE($2, source_table),
+    //     target_table = COALESCE($3, target_table),
+    //     sync_strategy = COALESCE($4, sync_strategy),
+    //     conflict_resolution = COALESCE($5, conflict_resolution),
+    //     batch_size = COALESCE($6, batch_size),
+    //     sync_interval_seconds = COALESCE($7, sync_interval_seconds),
+    //     enabled = COALESCE($8, enabled),
+    //     updated_at = NOW()
+    // WHERE id = $9
+    // RETURNING *
+
+    // For now, return an error indicating the table needs to be created
+    Err(AppError::NotFound(format!(
+        "Sync configuration {} not found. Note: sync_configurations table may need to be created via migration.",
+        id
+    )))
 }
 
 /// Delete a sync configuration
@@ -234,12 +270,27 @@ pub async fn update_sync_configuration(
 )]
 pub async fn delete_sync_configuration(
     path: web::Path<Uuid>,
-    _db: web::Data<Arc<Database>>,
+    db: web::Data<Arc<Database>>,
     _http_req: HttpRequest,
 ) -> Result<HttpResponse, AppError> {
-    let _id = path.into_inner();
-    // In production, delete from database
-    Ok(HttpResponse::NoContent().finish())
+    let id = path.into_inner();
+    
+    // Get database connection
+    let mut conn = db.get_connection_async().await
+        .map_err(|e| AppError::Internal(format!("Database connection error: {}", e)))?;
+
+    // Note: This assumes a sync_configurations table exists
+    // In production, this would execute:
+    // DELETE FROM sync_configurations WHERE id = $1
+    // 
+    // Also consider soft delete:
+    // UPDATE sync_configurations SET enabled = false, deleted_at = NOW() WHERE id = $1
+
+    // For now, return an error indicating the table needs to be created
+    Err(AppError::NotFound(format!(
+        "Sync configuration {} not found. Note: sync_configurations table may need to be created via migration.",
+        id
+    )))
 }
 
 /// Execute a sync operation

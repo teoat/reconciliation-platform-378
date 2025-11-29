@@ -76,7 +76,9 @@ export const transformApiFileToUploadedFile = (apiFile: ApiFileResponse): Upload
     mappings: Array.isArray(apiFile.mappings) ? apiFile.mappings as UploadedFile['mappings'] : [],
     cleanedData: Array.isArray(apiFile.cleanedData) ? apiFile.cleanedData as UploadedFile['cleanedData'] : [],
     originalData: Array.isArray(apiFile.originalData) ? apiFile.originalData : undefined,
-    extractedContent: apiFile.extractedContent,
+    extractedContent: apiFile.extractedContent && typeof apiFile.extractedContent === 'object'
+      ? apiFile.extractedContent as UploadedFile['extractedContent']
+      : undefined,
     chatMessages: Array.isArray(apiFile.chatMessages) ? apiFile.chatMessages as UploadedFile['chatMessages'] : undefined,
     contractAnalysis: apiFile.contractAnalysis && typeof apiFile.contractAnalysis === 'object' && 'parties' in apiFile.contractAnalysis
       ? apiFile.contractAnalysis as UploadedFile['contractAnalysis']

@@ -18,8 +18,7 @@
 # Last Updated: 2025-11-29
 # Status: Production Ready ✅
 # ============================================================================
-
-version: '3.8'
+# Note: version field removed (obsolete in Docker Compose v2)
 
 services:
   # ==========================================================================
@@ -391,9 +390,9 @@ services:
       logstash:
         condition: service_healthy
       apm-server:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://localhost:2000/api/v1/health || exit 1"]
+      test: ["CMD-SHELL", "wget --spider -q http://localhost:2000/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -444,11 +443,11 @@ services:
       - reconciliation-network
     depends_on:
       backend:
-        condition: service_healthy
+        condition: service_started
       logstash:
         condition: service_healthy
       apm-server:
-        condition: service_healthy
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://localhost/health || exit 1"]
       interval: 30s

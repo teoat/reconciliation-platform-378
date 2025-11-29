@@ -15,10 +15,12 @@ pub struct ApiResponse<T> {
 }
 
 /// Paginated response wrapper
+/// 
+/// Uses `items` field name to match frontend expectations and common API patterns.
 #[derive(Serialize, utoipa::ToSchema)]
 #[schema(as = PaginatedResponse)]
 pub struct PaginatedResponse<T> {
-    pub data: Vec<T>,
+    pub items: Vec<T>,
     pub total: i64,
     pub page: i32,
     pub per_page: i32,
@@ -31,6 +33,12 @@ pub struct SearchQueryParams {
     pub q: Option<String>,
     pub page: Option<i32>,
     pub per_page: Option<i32>,
+    /// Comma-separated list of fields to return (field selection)
+    pub fields: Option<String>,
+    /// Return minimal/lean response (only essential fields)
+    pub lean: Option<bool>,
+    /// Optional project ID for filtering
+    pub project_id: Option<String>,
 }
 
 /// User query parameters
@@ -90,6 +98,15 @@ pub struct UpdateProjectRequest {
     pub description: Option<String>,
     pub status: Option<String>,
     pub settings: Option<serde_json::Value>,
+}
+
+// Project member DTOs
+#[derive(Deserialize, Validate)]
+pub struct AddProjectMemberRequest {
+    pub user_id: Uuid,
+    #[validate(length(max = 50))]
+    pub role: String,
+    pub permissions: Option<serde_json::Value>,
 }
 
 // Data source DTOs
@@ -170,3 +187,10 @@ pub use crate::errors::ErrorResponse;
 
 /// Login response type - alias for AuthResponse
 pub use crate::services::auth::AuthResponse as LoginResponse;
+
+// Domain-specific request/response types
+pub mod adjudication;
+pub mod cashflow;
+pub mod ingestion;
+pub mod workflows;
+pub mod visualization;

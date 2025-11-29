@@ -13,10 +13,77 @@ use serde::{Deserialize, Serialize};
 mod correlation_id_tests;
 mod e2e_tests;
 mod integration_tests;
+mod service_integration_tests;
 mod service_tests;
 mod simple_tests;
 pub mod test_utils;
 mod unit_tests;
+
+// Handler tests
+mod health_handler_tests;
+mod logs_handler_tests;
+mod helpers_handler_tests;
+mod system_handler_tests;
+mod compliance_handler_tests;
+mod ai_handler_tests;
+mod metrics_handler_tests;
+mod monitoring_handler_tests;
+mod onboarding_handler_tests;
+mod settings_handler_tests;
+mod profile_handler_tests;
+mod password_manager_handler_tests;
+mod security_handler_tests;
+mod security_events_handler_tests;
+mod files_handler_tests;
+mod analytics_handler_tests;
+mod sync_handler_tests;
+mod sql_sync_handler_tests;
+mod auth_handler_comprehensive_tests;
+mod projects_handler_comprehensive_tests;
+mod reconciliation_handler_comprehensive_tests;
+mod users_handler_comprehensive_tests;
+
+// Service tests - Monitoring and Security
+mod monitoring_alerts_tests;
+mod monitoring_health_tests;
+
+// Service tests - Validation
+mod validation_email_tests;
+mod validation_password_tests;
+mod validation_file_tests;
+mod validation_uuid_tests;
+mod validation_json_schema_tests;
+mod validation_business_rules_tests;
+
+// Service tests - Additional Services
+mod internationalization_service_tests;
+mod accessibility_service_tests;
+mod error_recovery_service_tests;
+mod structured_logging_service_tests;
+
+// Service tests - Auth Service
+mod auth_service_comprehensive_tests;
+
+// Service tests - API Versioning
+mod api_versioning_service_tests;
+
+// Service tests - Advanced Metrics
+mod advanced_metrics_service_tests;
+
+// Service tests - Query Optimizer
+mod query_optimizer_service_tests;
+
+// Service tests - Database Migration
+mod database_migration_service_tests;
+
+// Service tests - Registry
+mod registry_service_tests;
+
+// Utilities tests
+mod utils_tests;
+
+// Models tests
+mod models_tests;
 
 // Re-export test utilities for use in other test modules
 pub use test_utils::*;

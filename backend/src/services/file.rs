@@ -534,6 +534,55 @@ impl FileService {
         })
     }
 
+    /// Get file for download
+    /// 
+    /// Returns the file path and metadata for downloading.
+    pub async fn get_file_for_download(&self, file_id: Uuid) -> AppResult<(PathBuf, UploadedFile)> {
+        use crate::models::schema::uploaded_files::dsl::*;
+
+        let uploaded_file: UploadedFile = {
+            if let Some(ref resilience) = self.resilience {
+                let mut conn = resilience
+                    .execute_database(async { self.db.get_connection_async().await })
+                    .await?;
+
+                uploaded_files
+                    .find(file_id)
+                    .first(&mut conn)
+                    .map_err(|e| {
+                        if e == diesel::NotFound {
+                            AppError::NotFound(format!("File with id {} not found", file_id))
+                        } else {
+                            AppError::Database(e)
+                        }
+                    })?
+            } else {
+                let mut conn = self.db.get_connection()?;
+                uploaded_files
+                    .find(file_id)
+                    .first(&mut conn)
+                    .map_err(|e| {
+                        if e == diesel::NotFound {
+                            AppError::NotFound(format!("File with id {} not found", file_id))
+                        } else {
+                            AppError::Database(e)
+                        }
+                    })?
+            }
+        };
+
+        let file_path = PathBuf::from(&self.upload_path).join(&uploaded_file.file_path);
+        
+        if !file_path.exists() {
+            return Err(AppError::NotFound(format!(
+                "Physical file not found at path: {}",
+                file_path.display()
+            )));
+        }
+
+        Ok((file_path, uploaded_file))
+    }
+
     /// Get file preview (safe content preview)
     pub async fn get_file_preview(&self, file_path: &str) -> AppResult<String> {
         let full_path = PathBuf::from(&self.upload_path).join(file_path);

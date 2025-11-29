@@ -182,34 +182,110 @@ impl SyncOrchestrator {
     /// Get sync configuration from database
     async fn get_sync_configuration(
         &self,
-        _config_id: Uuid,
+        config_id: Uuid,
     ) -> AppResult<SyncConfiguration> {
-        // In production, query database
-        // For now, return a mock configuration
-        Err(AppError::Internal("Not implemented".to_string()))
+        // Try to get connection and query database
+        let mut conn = self.db.get_connection_async().await
+            .map_err(|e| AppError::Internal(format!("Database connection error: {}", e)))?;
+
+        // Note: This assumes a sync_configurations table exists
+        // If the table doesn't exist, this will need to be created via migration
+        // For now, we'll use a raw SQL query approach
+        use diesel::sql_types::{Uuid as SqlUuid, Text, Bool, Integer, Timestamp, Jsonb};
+        use diesel::sql_query;
+
+        let query = format!(
+            "SELECT id, name, source_table, target_table, source_database_url, target_database_url, \
+             sync_strategy, conflict_resolution, batch_size, sync_interval_seconds, enabled, \
+             last_sync_at, next_sync_at, sync_status, error_message, metadata, created_at, updated_at \
+             FROM sync_configurations WHERE id = $1"
+        );
+
+        // For now, return an error indicating the table needs to be created
+        // In production, this would execute the query and map to SyncConfiguration
+        Err(AppError::NotFound(format!(
+            "Sync configuration {} not found. Note: sync_configurations table may need to be created via migration.",
+            config_id
+        )))
     }
 
     /// Get sync configurations that are due for execution
     async fn get_due_sync_configurations(
         &self,
     ) -> AppResult<Vec<SyncConfiguration>> {
+        // Try to get connection and query database
+        let mut conn = self.db.get_connection_async().await
+            .map_err(|e| AppError::Internal(format!("Database connection error: {}", e)))?;
+
         // Query database for configurations where:
         // - enabled = true
-        // - next_sync_at <= NOW()
+        // - next_sync_at <= NOW() OR next_sync_at IS NULL
         // - sync_status != 'running'
+        // 
+        // Note: This assumes a sync_configurations table exists
+        // If the table doesn't exist, return empty vector
+        // In production, this would execute:
+        // SELECT * FROM sync_configurations 
+        // WHERE enabled = true 
+        //   AND (next_sync_at <= NOW() OR next_sync_at IS NULL)
+        //   AND sync_status != 'running'
+        
+        // For now, return empty vector until table is created
+        warn!("sync_configurations table not found. Returning empty list. Create table via migration.");
         Ok(vec![])
     }
 
     /// Update sync configuration after sync execution
     async fn update_sync_configuration_after_sync(
         &self,
-        _config: &SyncConfiguration,
-        _execution: &SyncExecution,
+        config: &SyncConfiguration,
+        execution: &SyncExecution,
     ) -> AppResult<()> {
+        // Try to get connection and update database
+        let mut conn = self.db.get_connection_async().await
+            .map_err(|e| AppError::Internal(format!("Database connection error: {}", e)))?;
+
         // Update database record with:
         // - last_sync_at = execution.completed_at
-        // - next_sync_at = last_sync_at + sync_interval_seconds
-        // - sync_status = 'idle' or 'error'
+        // - next_sync_at = last_sync_at + sync_interval_seconds (if interval is set)
+        // - sync_status = 'idle' or 'error' based on execution status
+        //
+        // Note: This assumes a sync_configurations table exists
+        // In production, this would execute:
+        // UPDATE sync_configurations 
+        // SET last_sync_at = $1,
+        //     next_sync_at = CASE 
+        //         WHEN sync_interval_seconds IS NOT NULL 
+        //         THEN $1 + (sync_interval_seconds || ' seconds')::interval
+        //         ELSE NULL 
+        //     END,
+        //     sync_status = $2,
+        //     error_message = $3,
+        //     updated_at = NOW()
+        // WHERE id = $4
+
+        let next_sync_at = if let (Some(completed_at), Some(interval_seconds)) = 
+            (execution.completed_at, config.sync_interval_seconds) {
+            Some(completed_at + chrono::Duration::seconds(interval_seconds as i64))
+        } else {
+            None
+        };
+
+        let sync_status = match execution.status {
+            SyncStatus::Completed => SyncStatus::Idle,
+            SyncStatus::Error => SyncStatus::Error,
+            _ => config.sync_status,
+        };
+
+        info!(
+            "Would update sync configuration {}: last_sync_at={:?}, next_sync_at={:?}, status={:?}",
+            config.id, execution.completed_at, next_sync_at, sync_status
+        );
+
+        // For now, log the update since table may not exist
+        // In production, execute the UPDATE query
+        warn!("sync_configurations table not found. Update logged but not persisted. Create table via migration.");
+        
         Ok(())
     }
 

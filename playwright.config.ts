@@ -26,22 +26,32 @@ export default defineConfig({
   // Retry strategy (optimized for flaky tests)
   retries: process.env.CI ? 2 : 1, // Retry once locally, twice on CI
   
-  // Worker configuration (optimized for performance)
-  workers: process.env.CI ? 1 : process.env.PLAYWRIGHT_WORKERS 
+  // Worker configuration (optimized for reliability)
+  // Default to sequential execution to avoid database connection pool exhaustion
+  // Can be overridden with PLAYWRIGHT_WORKERS environment variable
+  workers: process.env.PLAYWRIGHT_WORKERS 
     ? parseInt(process.env.PLAYWRIGHT_WORKERS) 
-    : undefined, // Use all available cores locally, single worker on CI
+    : 1, // Default to 1 worker (sequential) to avoid pool exhaustion
   
   // Reporter configuration (optimized)
-  reporter: [
-    ['html', { 
-      outputFolder: 'test-results/html-report',
-      open: process.env.CI ? 'never' : 'on-failure', // Auto-open on local failures
-    }],
-    ['json', { outputFile: 'test-results/results.json' }],
-    ['junit', { outputFile: 'test-results/results.xml' }],
-    // Add list reporter for CI (cleaner output)
-    ...(process.env.CI ? [['list']] : []),
-  ],
+  reporter: process.env.CI
+    ? [
+        ['html', { 
+          outputFolder: 'playwright-report',
+          open: 'never',
+        }],
+        ['json', { outputFile: 'test-results/results.json' }],
+        ['junit', { outputFile: 'test-results/results.xml' }],
+        ['list'],
+      ]
+    : [
+        ['html', { 
+          outputFolder: 'playwright-report',
+          open: 'on-failure', // Auto-open on local failures
+        }],
+        ['json', { outputFile: 'test-results/results.json' }],
+        ['junit', { outputFile: 'test-results/results.xml' }],
+      ],
   
   // Shared settings for all the projects below (optimized)
   use: {
@@ -146,9 +156,6 @@ export default defineConfig({
   // Output directory
   outputDir: 'test-results/',
   
-  // Test results directory
-  testResultsDir: 'test-results/',
-  
   // Update snapshots
   updateSnapshots: process.env.UPDATE_SNAPSHOTS === 'true' ? 'all' : 'none',
   
@@ -157,9 +164,6 @@ export default defineConfig({
   
   // Fully parallel
   fullyParallel: true,
-  
-  // Fail fast
-  failFast: false,
   
   // Max failures
   maxFailures: process.env.CI ? 10 : undefined,

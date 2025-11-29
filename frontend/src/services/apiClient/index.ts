@@ -14,6 +14,7 @@ import {
   ResponseInterceptor,
   ErrorInterceptor,
 } from './interceptors';
+import { Tier4Interceptor } from './tier4Interceptor';
 import { ConfigBuilder, PerformanceMonitor, CacheKeyGenerator } from './utils';
 import { WebSocketClient } from '../websocket';
 import {
@@ -632,7 +633,18 @@ export class ApiClient {
     // Add default interceptors
     const authInterceptor = new AuthInterceptor();
     const loggingInterceptor = new LoggingInterceptor();
+    const tier4Interceptor = new Tier4Interceptor();
 
+    // Tier 4 interceptor (runs first for request deduplication and circuit breaker)
+    this.interceptorManager.addRequestInterceptor((config) => tier4Interceptor.request(config));
+    this.interceptorManager.addResponseInterceptor((response, config) =>
+      tier4Interceptor.response(response, config)
+    );
+    this.interceptorManager.addErrorInterceptor((error, config) =>
+      tier4Interceptor.error(error, config)
+    );
+
+    // Auth interceptor
     this.interceptorManager.addRequestInterceptor((config) => authInterceptor.request(config));
     this.interceptorManager.addResponseInterceptor((response, config) =>
       authInterceptor.response(response, config)
@@ -641,6 +653,7 @@ export class ApiClient {
       authInterceptor.error(error, config)
     );
 
+    // Logging interceptor (dev only)
     if (import.meta.env.DEV) {
       this.interceptorManager.addRequestInterceptor((config) => loggingInterceptor.request(config));
       this.interceptorManager.addResponseInterceptor((response, config) =>

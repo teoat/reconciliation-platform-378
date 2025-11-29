@@ -1,10 +1,11 @@
 //! User management handlers module
 
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, HttpRequest, HttpResponse, Result};
 use std::sync::Arc;
 use std::time::Duration;
 use uuid::Uuid;
 
+use crate::database::Database;
 use crate::errors::AppError;
 use crate::handlers::types::{ApiResponse, SearchQueryParams, UserQueryParams};
 use crate::services::cache::MultiLevelCache;
@@ -26,7 +27,10 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .route(
             "/{user_id}/preferences",
             web::put().to(update_user_preferences),
-        );
+        )
+        .route("/roles", web::get().to(get_roles))
+        .route("/permissions", web::get().to(get_permissions))
+        .route("/{user_id}/activity", web::get().to(get_user_activity));
 }
 
 /// Get users endpoint
@@ -67,13 +71,23 @@ pub async fn get_users(
         .list_users(query.page, query.per_page)
         .await?;
 
+    // Convert UserListResponse to PaginatedResponse format
+    let total_pages = (response.total as f64 / response.per_page as f64).ceil() as i32;
+    let paginated = crate::handlers::types::PaginatedResponse {
+        items: response.users,
+        total: response.total,
+        page: response.page as i32,
+        per_page: response.per_page as i32,
+        total_pages,
+    };
+
     // Cache for 10 minutes
-    let response_json = serde_json::to_value(&response)?;
+    let response_json = serde_json::to_value(&paginated)?;
     let _ = cache
         .set(&cache_key, &response_json, Some(Duration::from_secs(600)))
         .await;
 
-    Ok(HttpResponse::Ok().json(response))
+    Ok(HttpResponse::Ok().json(paginated))
 }
 
 /// Create user endpoint
@@ -232,7 +246,17 @@ pub async fn search_users(
         )
         .await?;
 
-    Ok(HttpResponse::Ok().json(response))
+    // Convert UserListResponse to PaginatedResponse format
+    let total_pages = (response.total as f64 / response.per_page as f64).ceil() as i32;
+    let paginated = crate::handlers::types::PaginatedResponse {
+        items: response.users,
+        total: response.total,
+        page: response.page as i32,
+        per_page: response.per_page as i32,
+        total_pages,
+    };
+
+    Ok(HttpResponse::Ok().json(paginated))
 }
 
 /// Get user statistics endpoint
@@ -332,4 +356,213 @@ pub async fn update_user_preferences(
         message: Some("Preferences updated successfully".to_string()),
         error: None,
     }))
+}
+
+/// Get available roles
+/// 
+/// Returns a list of all available user roles with their permissions.
+#[utoipa::path(
+    get,
+    path = "/api/v1/users/roles",
+    tag = "Users",
+    responses(
+        (status = 200, description = "Roles retrieved successfully", body = ApiResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
+pub async fn get_roles(
+    _http_req: HttpRequest,
+    _data: web::Data<Database>,
+) -> Result<HttpResponse, AppError> {
+    use crate::services::auth::roles::RoleManager;
+    
+    let roles = vec![
+        serde_json::json!({
+            "id": "admin",
+            "name": "Administrator",
+            "description": "Full system access with all permissions",
+            "permissions": RoleManager::get_user_permissions("admin")
+        }),
+        serde_json::json!({
+            "id": "manager",
+            "name": "Manager",
+            "description": "Can manage projects and reconciliation jobs",
+            "permissions": RoleManager::get_user_permissions("manager")
+        }),
+        serde_json::json!({
+            "id": "user",
+            "name": "User",
+            "description": "Standard user with read and create permissions",
+            "permissions": RoleManager::get_user_permissions("user")
+        }),
+        serde_json::json!({
+            "id": "viewer",
+            "name": "Viewer",
+            "description": "Read-only access to projects and reconciliation",
+            "permissions": RoleManager::get_user_permissions("viewer")
+        }),
+    ];
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(roles),
+        message: None,
+        error: None,
+    }))
+}
+
+/// Get available permissions
+/// 
+/// Returns a list of all available permissions organized by resource.
+#[utoipa::path(
+    get,
+    path = "/api/v1/users/permissions",
+    tag = "Users",
+    responses(
+        (status = 200, description = "Permissions retrieved successfully", body = ApiResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
+pub async fn get_permissions(
+    _http_req: HttpRequest,
+    _data: web::Data<Database>,
+) -> Result<HttpResponse, AppError> {
+    let permissions = vec![
+        // Users permissions
+        serde_json::json!({
+            "id": "users:create",
+            "name": "Create Users",
+            "resource": "users",
+            "action": "create",
+            "description": "Create new user accounts"
+        }),
+        serde_json::json!({
+            "id": "users:read",
+            "name": "Read Users",
+            "resource": "users",
+            "action": "read",
+            "description": "View user information"
+        }),
+        serde_json::json!({
+            "id": "users:update",
+            "name": "Update Users",
+            "resource": "users",
+            "action": "update",
+            "description": "Modify user information"
+        }),
+        serde_json::json!({
+            "id": "users:delete",
+            "name": "Delete Users",
+            "resource": "users",
+            "action": "delete",
+            "description": "Remove user accounts"
+        }),
+        // Projects permissions
+        serde_json::json!({
+            "id": "projects:create",
+            "name": "Create Projects",
+            "resource": "projects",
+            "action": "create",
+            "description": "Create new projects"
+        }),
+        serde_json::json!({
+            "id": "projects:read",
+            "name": "Read Projects",
+            "resource": "projects",
+            "action": "read",
+            "description": "View project information"
+        }),
+        serde_json::json!({
+            "id": "projects:update",
+            "name": "Update Projects",
+            "resource": "projects",
+            "action": "update",
+            "description": "Modify project information"
+        }),
+        serde_json::json!({
+            "id": "projects:delete",
+            "name": "Delete Projects",
+            "resource": "projects",
+            "action": "delete",
+            "description": "Remove projects"
+        }),
+        // Reconciliation permissions
+        serde_json::json!({
+            "id": "reconciliation:create",
+            "name": "Create Reconciliation Jobs",
+            "resource": "reconciliation",
+            "action": "create",
+            "description": "Create new reconciliation jobs"
+        }),
+        serde_json::json!({
+            "id": "reconciliation:read",
+            "name": "Read Reconciliation",
+            "resource": "reconciliation",
+            "action": "read",
+            "description": "View reconciliation jobs and results"
+        }),
+        serde_json::json!({
+            "id": "reconciliation:update",
+            "name": "Update Reconciliation",
+            "resource": "reconciliation",
+            "action": "update",
+            "description": "Modify reconciliation jobs"
+        }),
+        serde_json::json!({
+            "id": "reconciliation:delete",
+            "name": "Delete Reconciliation",
+            "resource": "reconciliation",
+            "action": "delete",
+            "description": "Remove reconciliation jobs"
+        }),
+        // Analytics permissions
+        serde_json::json!({
+            "id": "analytics:read",
+            "name": "Read Analytics",
+            "resource": "analytics",
+            "action": "read",
+            "description": "View analytics and reports"
+        }),
+        // System permissions
+        serde_json::json!({
+            "id": "system:admin",
+            "name": "System Administration",
+            "resource": "system",
+            "action": "admin",
+            "description": "Full system administration access"
+        }),
+    ];
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(permissions),
+        message: None,
+        error: None,
+    }))
+}
+
+/// Get user activity
+pub async fn get_user_activity(
+    user_id: web::Path<Uuid>,
+    query: web::Query<SearchQueryParams>,
+    _http_req: actix_web::HttpRequest,
+    _data: web::Data<Database>,
+) -> Result<HttpResponse, AppError> {
+    let _user_id_val = user_id.into_inner();
+    
+    // TODO: Implement activity log retrieval from database
+    let activities: Vec<serde_json::Value> = vec![];
+    let total_pages = 0;
+    
+    let paginated = crate::handlers::types::PaginatedResponse {
+        items: activities,
+        total: 0,
+        page: query.page.unwrap_or(1),
+        per_page: query.per_page.unwrap_or(20),
+        total_pages,
+    };
+    
+    Ok(HttpResponse::Ok().json(paginated))
 }

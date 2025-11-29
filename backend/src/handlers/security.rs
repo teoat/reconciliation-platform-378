@@ -5,8 +5,11 @@
 use actix_web::{web, HttpResponse, Result};
 use serde::Deserialize;
 use utoipa;
+use uuid::Uuid;
 
+use crate::database::Database;
 use crate::errors::AppError;
+use crate::handlers::types::{ApiResponse, PaginatedResponse, SearchQueryParams};
 
 /// CSP violation report from browser
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
@@ -85,8 +88,159 @@ pub async fn post_csp_report(
     Ok(HttpResponse::NoContent().finish())
 }
 
+/// List security policies
+pub async fn list_policies(
+    query: web::Query<SearchQueryParams>,
+    _data: web::Data<Database>,
+) -> Result<HttpResponse, AppError> {
+    let policies: Vec<serde_json::Value> = vec![];
+    let total_pages = 0;
+    
+    let paginated = PaginatedResponse {
+        items: policies,
+        total: 0,
+        page: query.page.unwrap_or(1),
+        per_page: query.per_page.unwrap_or(20),
+        total_pages,
+    };
+    
+    Ok(HttpResponse::Ok().json(paginated))
+}
+
+/// Create security policy
+pub async fn create_policy(
+    req: web::Json<serde_json::Value>,
+    _data: web::Data<Database>,
+) -> Result<HttpResponse, AppError> {
+    Ok(HttpResponse::Created().json(ApiResponse {
+        success: true,
+        data: Some(serde_json::json!({
+            "id": Uuid::new_v4(),
+            "name": req.get("name")
+        })),
+        message: Some("Policy created successfully".to_string()),
+        error: None,
+    }))
+}
+
+/// Get security policy
+pub async fn get_policy(
+    path: web::Path<Uuid>,
+    _data: web::Data<Database>,
+) -> Result<HttpResponse, AppError> {
+    let _policy_id = path.into_inner();
+    return Err(AppError::NotFound("Policy not found".to_string()));
+}
+
+/// Update security policy
+pub async fn update_policy(
+    path: web::Path<Uuid>,
+    _req: web::Json<serde_json::Value>,
+    _data: web::Data<Database>,
+) -> Result<HttpResponse, AppError> {
+    let _policy_id = path.into_inner();
+    return Err(AppError::NotFound("Policy not found".to_string()));
+}
+
+/// Delete security policy
+pub async fn delete_policy(
+    path: web::Path<Uuid>,
+    _data: web::Data<Database>,
+) -> Result<HttpResponse, AppError> {
+    let _policy_id = path.into_inner();
+    Ok(HttpResponse::NoContent().finish())
+}
+
+/// Get audit logs
+pub async fn get_audit_logs(
+    query: web::Query<SearchQueryParams>,
+    _data: web::Data<Database>,
+) -> Result<HttpResponse, AppError> {
+    let logs: Vec<serde_json::Value> = vec![];
+    let total_pages = 0;
+    
+    let paginated = PaginatedResponse {
+        items: logs,
+        total: 0,
+        page: query.page.unwrap_or(1),
+        per_page: query.per_page.unwrap_or(20),
+        total_pages,
+    };
+    
+    Ok(HttpResponse::Ok().json(paginated))
+}
+
+/// Get compliance status
+pub async fn get_compliance(
+    _data: web::Data<Database>,
+) -> Result<HttpResponse, AppError> {
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(serde_json::json!({
+            "status": "compliant",
+            "frameworks": []
+        })),
+        message: None,
+        error: None,
+    }))
+}
+
+/// Get risk assessment
+pub async fn get_risk_assessment(
+    _data: web::Data<Database>,
+) -> Result<HttpResponse, AppError> {
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(serde_json::json!({
+            "risk_level": "low",
+            "risks": []
+        })),
+        message: None,
+        error: None,
+    }))
+}
+
+/// Get access control settings
+pub async fn get_access_control(
+    _data: web::Data<Database>,
+) -> Result<HttpResponse, AppError> {
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(serde_json::json!({
+            "settings": {}
+        })),
+        message: None,
+        error: None,
+    }))
+}
+
+/// Get encryption settings
+pub async fn get_encryption(
+    _data: web::Data<Database>,
+) -> Result<HttpResponse, AppError> {
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(serde_json::json!({
+            "enabled": true,
+            "algorithm": "AES-256"
+        })),
+        message: None,
+        error: None,
+    }))
+}
+
 /// Configure security routes
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
-    cfg.route("/csp-report", web::post().to(post_csp_report));
+    cfg.route("/csp-report", web::post().to(post_csp_report))
+        .route("/policies", web::get().to(list_policies))
+        .route("/policies", web::post().to(create_policy))
+        .route("/policies/{id}", web::get().to(get_policy))
+        .route("/policies/{id}", web::put().to(update_policy))
+        .route("/policies/{id}", web::delete().to(delete_policy))
+        .route("/audit-logs", web::get().to(get_audit_logs))
+        .route("/compliance", web::get().to(get_compliance))
+        .route("/risk-assessment", web::get().to(get_risk_assessment))
+        .route("/access-control", web::get().to(get_access_control))
+        .route("/encryption", web::get().to(get_encryption));
 }
 

@@ -49,6 +49,27 @@ pub mod compliance;
 // Metrics handlers
 pub mod metrics;
 
+// Visualization handlers
+pub mod visualization;
+
+// Notifications handlers
+pub mod notifications;
+
+// Teams handlers
+pub mod teams;
+
+// Workflows handlers
+pub mod workflows;
+
+// Cashflow handlers
+pub mod cashflow;
+
+// Adjudication handlers
+pub mod adjudication;
+
+// Ingestion handlers
+pub mod ingestion;
+
 // WebSocket handlers
 use crate::websocket;
 
@@ -111,6 +132,20 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
             .service(web::scope("/health").configure(health::configure_health_routes))
             // Metrics routes
             .service(web::scope("/metrics").configure(metrics::configure_routes))
+            // Visualization routes
+            .service(web::scope("/visualization").configure(visualization::configure_routes))
+            // Notifications routes
+            .service(web::scope("/notifications").configure(notifications::configure_routes))
+            // Teams routes
+            .service(web::scope("/teams").configure(teams::configure_routes))
+            // Workflows routes
+            .service(web::scope("/workflows").configure(workflows::configure_routes))
+            // Cashflow routes
+            .service(web::scope("/cashflow").configure(cashflow::configure_routes))
+            // Adjudication routes
+            .service(web::scope("/adjudication").configure(adjudication::configure_routes))
+            // Ingestion routes
+            .service(web::scope("/ingestion").configure(ingestion::configure_routes))
     );
     
     // Legacy routes (backward compatibility - will be deprecated)
@@ -159,6 +194,20 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .service(web::scope("/api").configure(health::configure_health_routes))
         // Metrics routes
         .service(web::scope("/api/metrics").configure(metrics::configure_routes))
+        // Visualization routes
+        .service(web::scope("/api/visualization").configure(visualization::configure_routes))
+        // Notifications routes
+        .service(web::scope("/api/notifications").configure(notifications::configure_routes))
+        // Teams routes
+        .service(web::scope("/api/teams").configure(teams::configure_routes))
+        // Workflows routes
+        .service(web::scope("/api/workflows").configure(workflows::configure_routes))
+        // Cashflow routes
+        .service(web::scope("/api/cashflow").configure(cashflow::configure_routes))
+        // Adjudication routes
+        .service(web::scope("/api/adjudication").configure(adjudication::configure_routes))
+        // Ingestion routes
+        .service(web::scope("/api/ingestion").configure(ingestion::configure_routes))
         // WebSocket routes (register at root level, not under /api)
         .configure(websocket::configure_websocket_routes);
 }

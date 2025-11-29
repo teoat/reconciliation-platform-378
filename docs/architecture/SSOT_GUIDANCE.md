@@ -28,7 +28,7 @@
 
 ### **MANDATORY PROJECT STRUCTURE**
 
-```
+```text
 reconciliation-platform/
 ├── frontend/                    # 🎨 SINGLE FRONTEND IMPLEMENTATION
 │   ├── src/

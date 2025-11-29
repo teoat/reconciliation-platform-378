@@ -209,7 +209,7 @@ export function useDynamicVirtualScroll<T>(
  * Hook for infinite scrolling
  */
 export function useInfiniteScroll<T>(
-  items: T[],
+  _items: T[],
   config: {
     threshold: number
     onLoadMore: () => void

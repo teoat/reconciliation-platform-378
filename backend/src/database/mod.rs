@@ -24,11 +24,40 @@ impl Database {
     pub async fn new(database_url: &str) -> AppResult<Self> {
         let manager = ConnectionManager::<PgConnection>::new(database_url);
 
-        // Optimized connection pool configuration for production
+        // Get pool size from environment or use defaults
+        // For tests, use larger pool to handle parallel test execution
+        let is_test = std::env::var("TESTING").is_ok() || cfg!(test);
+        let max_size = if is_test {
+            // Larger pool for tests to handle parallel execution
+            std::env::var("DB_POOL_MAX_SIZE")
+                .ok()
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap_or(50) // Increased from 20 to 50 for tests
+        } else {
+            // Production pool size
+            std::env::var("DB_POOL_MAX_SIZE")
+                .ok()
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap_or(20)
+        };
+        
+        let min_idle = if is_test {
+            std::env::var("DB_POOL_MIN_IDLE")
+                .ok()
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap_or(10) // Higher min_idle for tests
+        } else {
+            std::env::var("DB_POOL_MIN_IDLE")
+                .ok()
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap_or(5)
+        };
+
+        // Optimized connection pool configuration
         // Enhanced error handling for database pool creation (Tier 1: Critical)
         let pool = r2d2::Pool::builder()
-            .max_size(20) // Increased from 10 to handle more concurrent requests
-            .min_idle(Some(5)) // Keep 5 connections ready to reduce connection overhead
+            .max_size(max_size) // Configurable pool size
+            .min_idle(Some(min_idle)) // Keep connections ready to reduce connection overhead
             .connection_timeout(std::time::Duration::from_secs(30)) // 30s timeout for getting a connection
             .test_on_check_out(true) // Test connections before returning them
             .build(manager)
@@ -56,9 +85,35 @@ impl Database {
     ) -> AppResult<Self> {
         let manager = ConnectionManager::<PgConnection>::new(database_url);
 
+        // Use same pool size logic as new()
+        let is_test = std::env::var("TESTING").is_ok() || cfg!(test);
+        let max_size = if is_test {
+            std::env::var("DB_POOL_MAX_SIZE")
+                .ok()
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap_or(50)
+        } else {
+            std::env::var("DB_POOL_MAX_SIZE")
+                .ok()
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap_or(20)
+        };
+        
+        let min_idle = if is_test {
+            std::env::var("DB_POOL_MIN_IDLE")
+                .ok()
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap_or(10)
+        } else {
+            std::env::var("DB_POOL_MIN_IDLE")
+                .ok()
+                .and_then(|s| s.parse::<u32>().ok())
+                .unwrap_or(5)
+        };
+
         let pool = r2d2::Pool::builder()
-            .max_size(20)
-            .min_idle(Some(5))
+            .max_size(max_size)
+            .min_idle(Some(min_idle))
             .connection_timeout(std::time::Duration::from_secs(30))
             .test_on_check_out(true)
             .build(manager)

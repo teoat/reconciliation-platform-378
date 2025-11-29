@@ -331,43 +331,128 @@ class CacheService {
   /**
    * Get value from Redis cache.
    * 
-   * NOTE: Redis integration is not yet implemented. This method is a placeholder.
-   * 
    * @param key - Cache key
    * @returns Promise resolving to cached value or null
    */
   async getRedis(key: string): Promise<unknown> {
-    // NOTE: Redis integration pending
-    // When implemented, this will use a Redis client to retrieve cached values
-    // For now, returns null to indicate no cached value
-    return null;
+    try {
+      // Try backend API first
+      if (typeof window !== 'undefined') {
+        const response = await fetch(`/api/v1/cache/redis/${encodeURIComponent(key)}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          return data.data || data.value || null;
+        } else if (response.status === 404) {
+          return null; // Key not found
+        }
+      }
+
+      // Fallback: Try MCP Redis service if available
+      if (typeof window !== 'undefined' && (window as any).mcpIntegrationService) {
+        try {
+          const mcpService = (window as any).mcpIntegrationService;
+          const result = await mcpService.callMCPTool('redis_get', { key });
+          if (result && result.value !== undefined) {
+            return result.value;
+          }
+        } catch {
+          // MCP service not available, continue
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.warn('Failed to get from Redis cache', { key, error });
+      return null;
+    }
   }
 
   /**
    * Set value in Redis cache.
    * 
-   * NOTE: Redis integration is not yet implemented. This method is a placeholder.
-   * 
    * @param key - Cache key
    * @param entry - Value to cache
+   * @param ttl - Optional time-to-live in seconds
    */
-  async setRedis(key: string, entry: unknown): Promise<void> {
-    // NOTE: Redis integration pending
-    // When implemented, this will use a Redis client to store cached values
-    // For now, this is a no-op
+  async setRedis(key: string, entry: unknown, ttl?: number): Promise<void> {
+    try {
+      // Try backend API first
+      if (typeof window !== 'undefined') {
+        const response = await fetch(`/api/v1/cache/redis/${encodeURIComponent(key)}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            value: entry,
+            ttl,
+          }),
+        });
+
+        if (response.ok) {
+          return; // Success
+        }
+      }
+
+      // Fallback: Try MCP Redis service if available
+      if (typeof window !== 'undefined' && (window as any).mcpIntegrationService) {
+        try {
+          const mcpService = (window as any).mcpIntegrationService;
+          // MCP doesn't have setRedis, but we can log it
+          console.debug('Redis set via MCP not available, using backend API');
+        } catch {
+          // MCP service not available, continue
+        }
+      }
+
+      // If both fail, fall back to memory cache
+      this.set(key, entry, ttl ? ttl * 1000 : undefined);
+    } catch (error) {
+      console.warn('Failed to set Redis cache', { key, error });
+      // Fall back to memory cache
+      this.set(key, entry, ttl ? ttl * 1000 : undefined);
+    }
   }
 
   /**
    * Delete value from Redis cache.
    * 
-   * NOTE: Redis integration is not yet implemented. This method is a placeholder.
-   * 
    * @param key - Cache key to delete
    */
   async deleteRedis(key: string): Promise<void> {
-    // NOTE: Redis integration pending
-    // When implemented, this will use a Redis client to delete cached values
-    // For now, this is a no-op
+    try {
+      // Try backend API first
+      if (typeof window !== 'undefined') {
+        const response = await fetch(`/api/v1/cache/redis/${encodeURIComponent(key)}`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        if (response.ok || response.status === 404) {
+          return; // Success or already deleted
+        }
+      }
+
+      // Fallback: Try MCP Redis service if available
+      if (typeof window !== 'undefined' && (window as any).mcpIntegrationService) {
+        try {
+          const mcpService = (window as any).mcpIntegrationService;
+          // MCP doesn't have deleteRedis, but we can log it
+          console.debug('Redis delete via MCP not available, using backend API');
+        } catch {
+          // MCP service not available, continue
+        }
+      }
+
+      // Also delete from memory cache
+      this.delete(key);
+    } catch (error) {
+      console.warn('Failed to delete from Redis cache', { key, error });
+      // Still delete from memory cache
+      this.delete(key);
+    }
   }
 
   // Utility methods

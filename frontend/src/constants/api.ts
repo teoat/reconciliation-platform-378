@@ -11,11 +11,15 @@ export const API_ENDPOINTS = {
     LOGOUT: '/api/v1/auth/logout',
     REFRESH: '/api/v1/auth/refresh',
     REGISTER: '/api/v1/auth/register',
-    FORGOT_PASSWORD: '/api/v1/auth/forgot-password',
-    RESET_PASSWORD: '/api/v1/auth/reset-password',
+    FORGOT_PASSWORD: '/api/v1/auth/password-reset', // Fixed: matches backend
+    RESET_PASSWORD: '/api/v1/auth/password-reset/confirm', // Fixed: matches backend
     VERIFY_EMAIL: '/api/v1/auth/verify-email',
     CHANGE_PASSWORD: '/api/v1/auth/change-password',
-    PROFILE: '/api/v1/auth/profile',
+    CHANGE_INITIAL_PASSWORD: '/api/v1/auth/change-initial-password',
+    RESEND_VERIFICATION: '/api/v1/auth/resend-verification',
+    GOOGLE_OAUTH: '/api/v1/auth/google',
+    PROFILE: '/api/v1/auth/me', // Fixed: matches backend
+    SETTINGS: '/api/v1/auth/settings', // Added: matches backend
   },
 
   // Projects

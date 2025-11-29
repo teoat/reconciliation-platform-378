@@ -95,11 +95,12 @@ export function createMockLocalStorage() {
  * Mock window.location
  */
 export function mockLocation(pathname: string) {
-  delete (window as Window & { location?: { pathname: string } }).location;
+  // Use Object.defineProperty to replace location instead of delete
   Object.defineProperty(window, 'location', {
     value: { pathname },
     writable: true,
     configurable: true,
+    enumerable: true,
   });
 }
 

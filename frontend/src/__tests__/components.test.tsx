@@ -114,9 +114,14 @@ describe('Modal Component', () => {
         <div>Modal content</div>
       </Modal>
     );
-    // The close button should not be present, but overlay might still be there
-    expect(screen.queryByLabelText(/close modal/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /close/i })).not.toBeInTheDocument();
+    // The close button (X icon) should not be present, but overlay might still be there
+    const closeButtons = screen.queryAllByLabelText(/close/i);
+    // Should only have overlay close button, not the X button
+    expect(closeButtons.length).toBeLessThanOrEqual(1);
+    // Check that there's no close button with X icon specifically
+    const dialog = screen.getByRole('dialog');
+    const xButton = dialog.querySelector('button[aria-label*="Close"]');
+    expect(xButton).not.toBeInTheDocument();
   });
 
   it('does not close on overlay click when closeOnOverlayClick is false', async () => {

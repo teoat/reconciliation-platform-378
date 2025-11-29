@@ -1,0 +1,339 @@
+{
+  "timestamp": "2025-11-29T23:28:09Z",
+  "status": "complete",
+  "overallHealthScore": 62,
+  "summary": {
+    "criticalIssues": 15,
+    "highPriorityIssues": 117,
+    "pagesAnalyzed": 25,
+    "featuresTested": "all",
+    "tier4ImplementationStatus": "not_implemented",
+    "backendSyncStatus": "unhealthy"
+  },
+  "buildStatus": {
+    "status": "incomplete",
+    "path": "frontend/dist",
+    "fileCount": 123,
+    "totalSize": "0.00 MB",
+    "hasIndexHtml": true,
+    "hasAssets": false
+  },
+  "typeChecking": {
+    "status": "failed",
+    "errors": 15,
+    "errorsByFile": {
+      "src/utils/lazyLoading.tsx": 2,
+      "src/utils/reconciliation/__tests__/filtering.test.ts": 3,
+      "src/utils/reconciliation/__tests__/matching.test.ts": 5,
+      "src/utils/reconciliation/__tests__/sorting.test.ts": 3,
+      "src/utils/testUtils.tsx": 1,
+      "src/utils/virtualScrolling.tsx": 1
+    }
+  },
+  "linting": {
+    "status": "failed",
+    "totalProblems": 653,
+    "errors": 117,
+    "warnings": 536,
+    "keyIssues": [
+      "unused_variables",
+      "any_types",
+      "import_export_issues",
+      "missing_error_boundaries"
+    ]
+  },
+  "tests": {
+    "status": "failed",
+    "keyFailures": [
+      "error_boundary_import_issues",
+      "missing_hooks",
+      "react_act_warnings",
+      "redux_serialization_warnings",
+      "csrf_token_mock_issues",
+      "localStorage_errors"
+    ],
+    "missingHooks": [
+      "useDataSources",
+      "useReconciliationRecords",
+      "useReconciliationJobs"
+    ]
+  },
+  "backendHealth": {
+    "status": "unhealthy",
+    "error": "timeout",
+    "timeoutMs": 30000
+  },
+  "securityAudit": {
+    "status": "failed",
+    "error": "npm_audit_endpoint_not_implemented"
+  },
+  "pages": {
+    "total": 25,
+    "withErrorBoundaries": 24,
+    "withoutErrorBoundaries": 1,
+    "pages": [
+      {
+        "path": "/",
+        "name": "Dashboard",
+        "component": "frontend/src/components/dashboard/Dashboard.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/projects",
+        "name": "Projects",
+        "component": "frontend/src/components/pages/ProjectsPage.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/ingestion",
+        "name": "Ingestion",
+        "component": "frontend/src/pages/IngestionPage.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/reconciliation",
+        "name": "Reconciliation",
+        "component": "frontend/src/pages/ReconciliationPage.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/adjudication",
+        "name": "Adjudication",
+        "component": "frontend/src/pages/AdjudicationPage.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/summary",
+        "name": "Summary",
+        "component": "frontend/src/pages/SummaryPage.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/visualization",
+        "name": "Visualization",
+        "component": "frontend/src/pages/VisualizationPage.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/cashflow-evaluation",
+        "name": "Cashflow Evaluation",
+        "component": "frontend/src/pages/CashflowEvaluationPage.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/presummary",
+        "name": "Presummary",
+        "component": "frontend/src/pages/PresummaryPage.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/profile",
+        "name": "Profile",
+        "component": "frontend/src/components/pages/Profile.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/settings",
+        "name": "Settings",
+        "component": "frontend/src/components/pages/Settings.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/security",
+        "name": "Security",
+        "component": "frontend/src/pages/SecurityPage.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/admin",
+        "name": "Admin",
+        "component": "frontend/src/components/UserManagement.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/analytics",
+        "name": "Analytics",
+        "component": "frontend/src/components/dashboard/AnalyticsDashboard.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/login",
+        "name": "Login",
+        "component": "frontend/src/pages/AuthPage.tsx",
+        "errorBoundary": true
+      },
+      {
+        "path": "/forgot-password",
+        "name": "Forgot Password",
+        "component": "frontend/src/pages/ForgotPasswordPage.tsx",
+        "errorBoundary": true
+      }
+    ]
+  },
+  "errorBoundaries": {
+    "totalImplementations": 4,
+    "implementations": [
+      {
+        "path": "frontend/src/components/ui/ErrorBoundary.tsx",
+        "type": "main_ui",
+        "status": "active"
+      },
+      {
+        "path": "frontend/src/components/ErrorBoundary.tsx",
+        "type": "alternative",
+        "status": "active"
+      },
+      {
+        "path": "frontend/src/components/reports/components/ErrorBoundary.tsx",
+        "type": "reports_specific",
+        "status": "active"
+      },
+      {
+        "path": "frontend/src/utils/lazyLoading.tsx",
+        "type": "inline",
+        "status": "active"
+      }
+    ],
+    "issue": "multiple_implementations_inconsistent"
+  },
+  "services": {
+    "total": 49,
+    "categories": {
+      "api": 3,
+      "error": 3,
+      "data": 3,
+      "realtime": 2,
+      "ai": 3,
+      "onboarding": 1,
+      "pwa": 1,
+      "other": 33
+    }
+  },
+  "hooks": {
+    "total": 80,
+    "categories": {
+      "api": 10,
+      "form": 2,
+      "error": 3,
+      "performance": 2,
+      "realtime": 2,
+      "ui": 3,
+      "other": 58
+    }
+  },
+  "tier4ErrorHandling": {
+    "status": "not_implemented",
+    "coverage": 0,
+    "features": {
+      "proactiveErrorPrevention": {
+        "inputValidation": "partial",
+        "requestDeduplication": "not_implemented",
+        "optimisticUI": "partial",
+        "circuitBreaker": "not_implemented",
+        "requestQueuing": "not_implemented"
+      },
+      "advancedRecovery": {
+        "exponentialBackoff": "partial",
+        "fallbackDataSources": "not_implemented",
+        "partialDataRendering": "not_implemented",
+        "gracefulDegradation": "not_implemented",
+        "offlineSyncQueue": "partial"
+      },
+      "predictiveErrorDetection": {
+        "networkQualityMonitoring": "not_implemented",
+        "apiResponseTimeTracking": "partial",
+        "errorPatternRecognition": "not_implemented",
+        "proactiveWarnings": "not_implemented",
+        "preemptivePrevention": "not_implemented"
+      },
+      "userExperienceOptimization": {
+        "contextualMessages": "partial",
+        "actionableRecovery": "not_implemented",
+        "progressIndication": "not_implemented",
+        "nonBlockingNotifications": "partial",
+        "seamlessRecovery": "not_implemented"
+      },
+      "observability": {
+        "errorTracking": "partial",
+        "performanceMetrics": "partial",
+        "userJourneyTracking": "not_implemented",
+        "correlationIds": "partial",
+        "analyticsDashboard": "not_implemented"
+      }
+    }
+  },
+  "criticalIssues": [
+    {
+      "id": "typescript-errors",
+      "severity": "critical",
+      "count": 15,
+      "impact": "prevents_production_build",
+      "fixComplexity": "medium",
+      "priority": "immediate"
+    },
+    {
+      "id": "linting-errors",
+      "severity": "high",
+      "count": 117,
+      "impact": "code_quality",
+      "fixComplexity": "low_medium",
+      "priority": "short_term"
+    },
+    {
+      "id": "multiple-error-boundaries",
+      "severity": "high",
+      "count": 4,
+      "impact": "inconsistent_error_handling",
+      "fixComplexity": "medium",
+      "priority": "short_term"
+    },
+    {
+      "id": "missing-hooks",
+      "severity": "medium",
+      "count": 3,
+      "impact": "test_failures",
+      "fixComplexity": "low",
+      "priority": "immediate"
+    },
+    {
+      "id": "backend-connectivity",
+      "severity": "critical",
+      "count": 1,
+      "impact": "cannot_validate_sync",
+      "fixComplexity": "unknown",
+      "priority": "immediate"
+    },
+    {
+      "id": "build-incomplete",
+      "severity": "high",
+      "count": 1,
+      "impact": "cannot_deploy",
+      "fixComplexity": "low",
+      "priority": "immediate"
+    }
+  ],
+  "recommendations": {
+    "immediate": [
+      "Fix TypeScript compilation errors",
+      "Fix missing hooks",
+      "Rebuild frontend",
+      "Investigate backend health"
+    ],
+    "shortTerm": [
+      "Consolidate ErrorBoundary implementations",
+      "Fix linting errors",
+      "Improve test quality",
+      "Implement basic Tier 4 features"
+    ],
+    "mediumTerm": [
+      "Implement full Tier 4 error handling",
+      "Code quality improvements",
+      "Performance optimization"
+    ],
+    "longTerm": [
+      "Architecture improvements",
+      "Advanced features"
+    ]
+  }
+}
+

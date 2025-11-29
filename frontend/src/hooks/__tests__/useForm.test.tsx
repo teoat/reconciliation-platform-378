@@ -1,230 +1,277 @@
-import { describe, it, expect, vi } from 'vitest';
+// ============================================================================
+// USE FORM HOOK TESTS
+// ============================================================================
+
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useForm } from '../../hooks/useForm';
+import { useForm } from '../useForm';
+import type { ValidationRules } from '../useForm';
 
-describe('useForm Hook', () => {
+vi.mock('@/services/logger', () => ({
+  logger: {
+    error: vi.fn(),
+  },
+}));
+
+describe('useForm', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it('should initialize with default values', () => {
-    const { result } = renderHook(() =>
-      useForm({
-        initialValues: { name: 'John', email: 'john@example.com' },
-      })
-    );
+    const { result } = renderHook(() => useForm());
 
-    expect(result.current.values).toEqual({ name: 'John', email: 'john@example.com' });
+    expect(result.current.values).toEqual({});
     expect(result.current.errors).toEqual({});
     expect(result.current.touched).toEqual({});
     expect(result.current.isSubmitting).toBe(false);
-    expect(result.current.isValid).toBe(true);
   });
 
-  it('should handle field changes', () => {
-    const { result } = renderHook(() => useForm());
+  it('should initialize with provided initial values', () => {
+    const initialValues = { name: 'John', email: 'john@example.com' };
+    const { result } = renderHook(() => useForm({ initialValues }));
 
-    act(() => {
-      result.current.handleChange('name', 'Jane');
+    expect(result.current.values).toEqual(initialValues);
+  });
+
+  describe('setValue', () => {
+    it('should set a value', () => {
+      const { result } = renderHook(() => useForm());
+
+      act(() => {
+        result.current.setValue('name', 'John');
+      });
+
+      expect(result.current.values.name).toBe('John');
     });
 
-    expect(result.current.values.name).toBe('Jane');
+    it('should clear error when setting value', () => {
+      const { result } = renderHook(() => useForm());
+
+      act(() => {
+        result.current.setError('name', 'Required');
+        result.current.setValue('name', 'John');
+      });
+
+      expect(result.current.errors.name).toBeUndefined();
+    });
   });
 
-  it('should validate required fields', () => {
-    const { result } = renderHook(() =>
-      useForm({
-        validationRules: {
-          name: { required: true },
-          email: { required: true, email: true },
-        },
-      })
-    );
+  describe('validation', () => {
+    it('should validate required field', () => {
+      const validationRules: ValidationRules = {
+        name: { required: true },
+      };
+      const { result } = renderHook(() => useForm({ validationRules }));
 
-    act(() => {
-      result.current.handleBlur('name');
+      act(() => {
+        result.current.handleBlur('name');
+      });
+
+      expect(result.current.errors.name).toBe('This field is required');
     });
 
-    expect(result.current.errors.name).toBe('This field is required');
-    expect(result.current.touched.name).toBe(true);
-  });
+    it('should validate minLength', () => {
+      const validationRules: ValidationRules = {
+        password: { minLength: 8 },
+      };
+      const { result } = renderHook(() => useForm({ validationRules }));
 
-  it('should validate email format', () => {
-    const { result } = renderHook(() =>
-      useForm({
-        validationRules: {
-          email: { email: true },
-        },
-      })
-    );
+      act(() => {
+        result.current.setValue('password', 'short');
+        result.current.handleBlur('password');
+      });
 
-    act(() => {
-      result.current.handleChange('email', 'invalid-email');
-      result.current.handleBlur('email');
+      expect(result.current.errors.password).toBe('Minimum length is 8 characters');
     });
 
-    expect(result.current.errors.email).toBe('Invalid email address');
-  });
+    it('should validate maxLength', () => {
+      const validationRules: ValidationRules = {
+        name: { maxLength: 10 },
+      };
+      const { result } = renderHook(() => useForm({ validationRules }));
 
-  it('should validate minimum length', () => {
-    const { result } = renderHook(() =>
-      useForm({
-        validationRules: {
-          password: { minLength: 8 },
-        },
-      })
-    );
+      act(() => {
+        result.current.setValue('name', 'Very Long Name');
+        result.current.handleBlur('name');
+      });
 
-    act(() => {
-      result.current.handleChange('password', '123');
-      result.current.handleBlur('password');
+      expect(result.current.errors.name).toBe('Maximum length is 10 characters');
     });
 
-    expect(result.current.errors.password).toBe('Minimum length is 8 characters');
-  });
+    it('should validate email format', () => {
+      const validationRules: ValidationRules = {
+        email: { email: true },
+      };
+      const { result } = renderHook(() => useForm({ validationRules }));
 
-  it('should validate maximum length', () => {
-    const { result } = renderHook(() =>
-      useForm({
-        validationRules: {
-          description: { maxLength: 100 },
-        },
-      })
-    );
+      act(() => {
+        result.current.setValue('email', 'invalid-email');
+        result.current.handleBlur('email');
+      });
 
-    act(() => {
-      result.current.handleChange('description', 'a'.repeat(101));
-      result.current.handleBlur('description');
+      expect(result.current.errors.email).toBe('Invalid email address');
     });
 
-    expect(result.current.errors.description).toBe('Maximum length is 100 characters');
-  });
+    it('should validate pattern', () => {
+      const validationRules: ValidationRules = {
+        phone: { pattern: /^\d{10}$/ },
+      };
+      const { result } = renderHook(() => useForm({ validationRules }));
 
-  it('should validate custom rules', () => {
-    const { result } = renderHook(() =>
-      useForm({
-        validationRules: {
-          age: {
-            custom: (value) => {
-              if (value < 18) return 'Must be at least 18 years old';
-              return null;
-            },
+      act(() => {
+        result.current.setValue('phone', '123');
+        result.current.handleBlur('phone');
+      });
+
+      expect(result.current.errors.phone).toBe('Invalid format');
+    });
+
+    it('should validate custom validator', () => {
+      const validationRules: ValidationRules = {
+        age: {
+          custom: (value) => {
+            if (typeof value === 'number' && value < 18) {
+              return 'Must be 18 or older';
+            }
+            return null;
           },
         },
-      })
-    );
+      };
+      const { result } = renderHook(() => useForm({ validationRules }));
 
-    act(() => {
-      result.current.handleChange('age', '16');
-      result.current.handleBlur('age');
+      act(() => {
+        result.current.setValue('age', 16);
+        result.current.handleBlur('age');
+      });
+
+      expect(result.current.errors.age).toBe('Must be 18 or older');
     });
-
-    expect(result.current.errors.age).toBe('Must be at least 18 years old');
   });
 
-  it('should clear errors when field value changes', () => {
-    const { result } = renderHook(() =>
-      useForm({
-        validationRules: {
-          name: { required: true },
-        },
-      })
-    );
+  describe('handleBlur', () => {
+    it('should mark field as touched', () => {
+      const { result } = renderHook(() => useForm());
 
-    // First, create an error
-    act(() => {
-      result.current.handleBlur('name');
-    });
-    expect(result.current.errors.name).toBe('This field is required');
+      act(() => {
+        result.current.handleBlur('name');
+      });
 
-    // Then, fix the error by providing a value
-    act(() => {
-      result.current.handleChange('name', 'John');
+      expect(result.current.touched.name).toBe(true);
     });
-    expect(result.current.errors.name).toBeUndefined();
+
+    it('should validate field on blur', () => {
+      const validationRules: ValidationRules = {
+        name: { required: true },
+      };
+      const { result } = renderHook(() => useForm({ validationRules }));
+
+      act(() => {
+        result.current.handleBlur('name');
+      });
+
+      expect(result.current.errors.name).toBe('This field is required');
+    });
   });
 
-  it('should handle form submission', async () => {
-    const onSubmit = vi.fn();
-    const { result } = renderHook(() =>
-      useForm({
-        initialValues: { name: 'John', email: 'john@example.com' },
-        onSubmit,
-      })
-    );
+  describe('handleSubmit', () => {
+    it('should call onSubmit when form is valid', async () => {
+      const onSubmit = vi.fn();
+      const initialValues = { name: 'John', email: 'john@example.com' };
+      const { result } = renderHook(() =>
+        useForm({ initialValues, onSubmit })
+      );
 
-    await act(async () => {
-      await result.current.handleSubmit();
+      await act(async () => {
+        await result.current.handleSubmit();
+      });
+
+      expect(onSubmit).toHaveBeenCalledWith(initialValues);
     });
 
-    expect(onSubmit).toHaveBeenCalledWith({ name: 'John', email: 'john@example.com' });
+    it('should not call onSubmit when form is invalid', async () => {
+      const onSubmit = vi.fn();
+      const validationRules: ValidationRules = {
+        name: { required: true },
+      };
+      const { result } = renderHook(() =>
+        useForm({ validationRules, onSubmit })
+      );
+
+      await act(async () => {
+        await result.current.handleSubmit();
+      });
+
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('should mark all fields as touched on submit', async () => {
+      const validationRules: ValidationRules = {
+        name: { required: true },
+        email: { required: true },
+      };
+      const { result } = renderHook(() => useForm({ validationRules }));
+
+      await act(async () => {
+        await result.current.handleSubmit();
+      });
+
+      expect(result.current.touched.name).toBe(true);
+      expect(result.current.touched.email).toBe(true);
+    });
+
+    it('should set isSubmitting during submission', async () => {
+      const onSubmit = vi.fn(() => new Promise((resolve) => setTimeout(resolve, 100)));
+      const { result } = renderHook(() => useForm({ onSubmit }));
+
+      const submitPromise = act(async () => {
+        await result.current.handleSubmit();
+      });
+
+      expect(result.current.isSubmitting).toBe(true);
+
+      await submitPromise;
+
+      expect(result.current.isSubmitting).toBe(false);
+    });
   });
 
-  it('should not submit if validation fails', async () => {
-    const onSubmit = vi.fn();
-    const { result } = renderHook(() =>
-      useForm({
-        validationRules: {
-          name: { required: true },
-        },
-        onSubmit,
-      })
-    );
+  describe('reset', () => {
+    it('should reset form to initial values', () => {
+      const initialValues = { name: 'John', email: 'john@example.com' };
+      const { result } = renderHook(() => useForm({ initialValues }));
 
-    await act(async () => {
-      await result.current.handleSubmit();
+      act(() => {
+        result.current.setValue('name', 'Jane');
+        result.current.setError('name', 'Error');
+        result.current.handleBlur('name');
+        result.current.reset();
+      });
+
+      expect(result.current.values).toEqual(initialValues);
+      expect(result.current.errors).toEqual({});
+      expect(result.current.touched).toEqual({});
     });
-
-    expect(onSubmit).not.toHaveBeenCalled();
-    expect(result.current.errors.name).toBe('This field is required');
   });
 
-  it('should reset form to initial values', () => {
-    const { result } = renderHook(() =>
-      useForm({
-        initialValues: { name: 'John', email: 'john@example.com' },
-      })
-    );
+  describe('isValid', () => {
+    it('should be true when no errors', () => {
+      const { result } = renderHook(() => useForm());
 
-    // Change values
-    act(() => {
-      result.current.handleChange('name', 'Jane');
-      result.current.handleChange('email', 'jane@example.com');
+      expect(result.current.isValid).toBe(true);
     });
 
-    expect(result.current.values.name).toBe('Jane');
-    expect(result.current.values.email).toBe('jane@example.com');
+    it('should be false when there are errors', () => {
+      const validationRules: ValidationRules = {
+        name: { required: true },
+      };
+      const { result } = renderHook(() => useForm({ validationRules }));
 
-    // Reset form
-    act(() => {
-      result.current.reset();
+      act(() => {
+        result.current.handleBlur('name');
+      });
+
+      expect(result.current.isValid).toBe(false);
     });
-
-    expect(result.current.values.name).toBe('John');
-    expect(result.current.values.email).toBe('john@example.com');
-    expect(result.current.errors).toEqual({});
-    expect(result.current.touched).toEqual({});
-  });
-
-  it('should set individual field errors', () => {
-    const { result } = renderHook(() => useForm());
-
-    act(() => {
-      result.current.setError('name', 'Custom error message');
-    });
-
-    expect(result.current.errors.name).toBe('Custom error message');
-  });
-
-  it('should clear individual field errors', () => {
-    const { result } = renderHook(() => useForm());
-
-    // Set an error
-    act(() => {
-      result.current.setError('name', 'Custom error message');
-    });
-    expect(result.current.errors.name).toBe('Custom error message');
-
-    // Clear the error
-    act(() => {
-      result.current.clearError('name');
-    });
-    expect(result.current.errors.name).toBeUndefined();
   });
 });

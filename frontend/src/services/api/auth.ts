@@ -159,7 +159,7 @@ export class AuthApiService extends BaseApiService {
   }): Promise<ErrorHandlingResult<unknown>> {
     return this.withErrorHandling(
       async () => {
-        const response = await apiClient.post('/api/auth/change-password', passwordData);
+        const response = await apiClient.post('/api/v1/auth/change-password', passwordData);
         return this.transformResponse(response);
       },
       { component: 'AuthApiService', action: 'changePassword' }
@@ -182,7 +182,7 @@ export class AuthApiService extends BaseApiService {
   static async requestPasswordReset(email: string): Promise<ErrorHandlingResult<unknown>> {
     return this.withErrorHandling(
       async () => {
-        const response = await apiClient.post('/api/auth/password-reset', { email });
+        const response = await apiClient.post('/api/v1/auth/password-reset', { email });
         return this.transformResponse(response);
       },
       { component: 'AuthApiService', action: 'requestPasswordReset' }
@@ -211,7 +211,7 @@ export class AuthApiService extends BaseApiService {
   ): Promise<ErrorHandlingResult<unknown>> {
     return this.withErrorHandling(
       async () => {
-        const response = await apiClient.post('/api/auth/password-reset/confirm', {
+        const response = await apiClient.post('/api/v1/auth/password-reset/confirm', {
           token,
           new_password: newPassword,
         });

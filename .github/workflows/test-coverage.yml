@@ -41,7 +41,7 @@ jobs:
           if [ -f "coverage/lcov-report/index.html" ]; then
             COVERAGE=$(grep -oP 'Lines\s*:\s*\K[0-9.]+' coverage/lcov-report/index.html | head -1 || echo "0")
             if [ -n "$COVERAGE" ]; then
-              THRESHOLD=80
+              THRESHOLD=100
               if (( $(echo "$COVERAGE < $THRESHOLD" | bc -l) )); then
                 echo "❌ Frontend coverage ${COVERAGE}% is below ${THRESHOLD}% threshold"
                 echo "::error::Frontend test coverage ${COVERAGE}% is below ${THRESHOLD}% threshold"

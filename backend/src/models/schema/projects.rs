@@ -127,26 +127,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    ingestion_jobs (id) {
-        id -> Uuid,
-        project_id -> Uuid,
-        #[max_length = 255]
-        filename -> Varchar,
-        #[max_length = 50]
-        status -> Varchar,
-        metadata -> Text,
-        quality_metrics -> Text,
-        record_count -> Int4,
-        error_message -> Nullable<Text>,
-        created_by -> Uuid,
-        started_at -> Nullable<Timestamptz>,
-        completed_at -> Nullable<Timestamptz>,
-        created_at -> Timestamptz,
-        updated_at -> Timestamptz,
-    }
-}
-
-diesel::table! {
     reconciliation_jobs (id) {
         id -> Uuid,
         project_id -> Uuid,

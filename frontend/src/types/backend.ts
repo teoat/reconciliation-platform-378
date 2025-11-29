@@ -98,6 +98,10 @@ export interface AuthResponse {
   token: string;
   user: UserResponse;
   expires_at: number;
+  requires_password_change?: boolean;
+  password_expires_soon?: boolean;
+  password_expires_in_days?: number;
+  message?: string;
 }
 
 // ============================================================================
@@ -150,7 +154,7 @@ export interface ProjectResponse {
 export interface CreateProjectRequest {
   name: string;
   description?: string;
-  owner_id: ID;
+  owner_id?: ID; // Optional - backend defaults to authenticated user
   status?: string;
   settings?: ProjectSettings;
 }

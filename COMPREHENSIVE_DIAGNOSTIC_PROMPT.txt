@@ -1,0 +1,84 @@
+Run a comprehensive and deep diagnosis of the entire codebase. Execute the following workflow:
+
+PHASE 1: RUN ALL DIAGNOSTICS
+1. Execute comprehensive diagnostic script: ./scripts/comprehensive-diagnostic.sh
+2. Run SSOT validation: ./scripts/validate-ssot.sh
+3. Run import validation: ./scripts/validate-imports.sh
+4. Check backend compilation: cargo check --verbose (in backend/)
+5. Check frontend type checking: npx tsc --noEmit (in frontend/)
+6. Run linter checks: npm run lint and cargo clippy
+7. Run security audits: npm audit and cargo audit
+8. Run test coverage: ./scripts/test-coverage-audit-enhanced.sh
+9. Run bundle analysis: ./scripts/analyze-bundle-size.sh
+10. Use MCP diagnostic tools: run_diagnostic with scope='full'
+
+PHASE 2: INVESTIGATE ALL FINDINGS
+For each finding discovered:
+- Perform root cause analysis (trace to source, identify contributing factors)
+- Detect patterns (check if part of systemic issue, search for similar problems)
+- Assess impact (severity: Critical/High/Medium/Low, business/user impact, fix complexity)
+- Analyze dependencies (how issues relate, blocking relationships, fix order)
+
+PHASE 3: COMPREHENSIVE ANALYSIS
+Generate complete analysis covering:
+1. Executive Summary: Overall health score, critical issues count, top recommendations
+2. Detailed Findings: For each category (Backend, Frontend, Security, Code Quality, Testing, Documentation):
+   - Current state (scores, metrics, status)
+   - Complete issues list with severity
+   - Root cause analysis
+   - Impact assessment (business, technical, user)
+   - Pattern detection (recurring issues, systemic problems)
+   - Dependency mapping
+3. Deep Investigation: For each critical/high issue:
+   - Code examples showing the problem
+   - Related issues found
+   - Historical context (when/why introduced)
+   - Contributing factors
+4. Recommendations:
+   - Immediate actions (critical fixes)
+   - Short-term (1-2 weeks)
+   - Medium-term (1-3 months)
+   - Long-term (3-6 months)
+   - Best practices to adopt/avoid
+5. Action Plan: Prioritized task list with effort estimates, dependencies, implementation order, risk assessment
+6. Metrics & Trends: Comparison with previous diagnostics, trend analysis, benchmarks
+
+PHASE 4: CODE REVIEW
+- Architecture review (SSOT compliance, code organization, module boundaries)
+- Pattern review (anti-patterns, best practice violations, error handling)
+- Security review (OWASP Top 10, auth patterns, input validation)
+- Performance review (query optimization, API performance, bundle size)
+
+PHASE 5: GENERATE REPORT
+Create comprehensive markdown report at: docs/analysis/COMPREHENSIVE_DIAGNOSTIC_REPORT_[TIMESTAMP].md
+
+Report must include:
+- Executive summary with overall health score
+- Complete findings catalog (all issues with severity, location, description, root cause, impact, recommendations)
+- Deep investigation results (root cause analysis, patterns, related issues, historical context)
+- Detailed recommendations (immediate, short-term, medium-term, long-term)
+- Prioritized action plan (tasks with priority, effort, dependencies, risk)
+- Metrics and trends
+- Code review findings
+- Conclusion with next steps
+
+OUTPUT REQUIREMENTS:
+- All diagnostic scores and metrics
+- Complete list of findings with code examples
+- Root cause analysis for each issue
+- Impact assessment for each finding
+- Detailed, actionable recommendations
+- Prioritized action plan with timeline
+- Risk assessment
+- Both markdown report and JSON summary
+
+VALIDATION:
+- Verify all findings are real (not false positives)
+- Confirm severity classifications are accurate
+- Check for duplicate findings
+- Ensure recommendations are actionable
+- Validate action plan is feasible
+- Cross-reference with known issues
+
+Execute this workflow completely and provide the comprehensive diagnostic report with all findings, investigations, analysis, and recommendations.
+

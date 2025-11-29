@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Diagnostic Report V2</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            border-radius: 10px;
+        }
+        h1 { font-size: 2.5em; margin-bottom: 10px; }
+        .subtitle { font-size: 1.2em; opacity: 0.9; }
+        .health-score {
+            font-size: 4em;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+        .score-critical { color: #ff4444; }
+        .score-warning { color: #ffaa00; }
+        .score-good { color: #00aa00; }
+        .nav {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .nav ul { list-style: none; display: flex; flex-wrap: wrap; gap: 10px; }
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            transition: background 0.3s;
+        }
+        .nav a:hover { background: #f0f0f0; }
+        .section {
+            background: white;
+            padding: 30px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            color: #667eea;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        h3 { color: #764ba2; margin: 20px 0 10px 0; }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        .metric-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .metric-label { font-size: 0.9em; color: #666; margin-bottom: 5px; }
+        .metric-value { font-size: 1.8em; font-weight: bold; color: #333; }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-critical { background: #ff4444; color: white; }
+        .status-warning { background: #ffaa00; color: white; }
+        .status-pass { background: #00aa00; color: white; }
+        .status-pending { background: #666; color: white; }
+        .issue-list { margin: 20px 0; }
+        .issue-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        .issue-title { font-weight: bold; color: #333; margin-bottom: 5px; }
+        .issue-meta { font-size: 0.9em; color: #666; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th { background: #667eea; color: white; }
+        tr:hover { background: #f5f5f5; }
+        .expandable { cursor: pointer; }
+        .expandable:hover { background: #f0f0f0; }
+        .hidden { display: none; }
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            margin-top: 40px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Comprehensive Diagnostic Report V2</h1>
+            <div class="subtitle">Generated: 2025-01-15 | Scope: Full Codebase Analysis</div>
+            <div class="health-score score-critical">42/100</div>
+            <div class="subtitle">Status: CRITICAL - Not Production Ready</div>
+        </header>
+
+        <nav class="nav">
+            <ul>
+                <li><a href="#summary">Executive Summary</a></li>
+                <li><a href="#metrics">Metrics</a></li>
+                <li><a href="#issues">Issues</a></li>
+                <li><a href="#recommendations">Recommendations</a></li>
+                <li><a href="#action-plan">Action Plan</a></li>
+            </ul>
+        </nav>
+
+        <section id="summary" class="section">
+            <h2>Executive Summary</h2>
+            <p><strong>Overall Health Score:</strong> 42/100 (Critical)</p>
+            <p><strong>Critical Issues:</strong> 158 compilation errors, 1 type error, 40+ lint warnings</p>
+            <p><strong>Status:</strong> Codebase is <strong>NOT production-ready</strong>. Critical compilation failures prevent deployment.</p>
+            
+            <h3>Top 5 Critical Issues</h3>
+            <ol>
+                <li><strong>Duplicate ingestion_jobs table definition</strong> - Blocks all backend compilation</li>
+                <li><strong>158 Rust compilation errors</strong> - Prevents backend from building</li>
+                <li><strong>Type mismatches (Date&lt;Utc&gt; vs NaiveDate)</strong> - Affects cashflow transactions</li>
+                <li><strong>Missing validation trait imports</strong> - 15+ handlers affected</li>
+                <li><strong>Diesel query compatibility issues</strong> - Multiple services affected</li>
+            </ol>
+        </section>
+
+        <section id="metrics" class="section">
+            <h2>Key Metrics</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Backend Compilation</div>
+                    <div class="metric-value">0/100 <span class="status-badge status-critical">FAILING</span></div>
+                    <div class="metric-label">158 errors, 42 warnings</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Frontend Type Safety</div>
+                    <div class="metric-value">95/100 <span class="status-badge status-warning">WARNING</span></div>
+                    <div class="metric-label">1 error fixed</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">SSOT Compliance</div>
+                    <div class="metric-value">100/100 <span class="status-badge status-pass">PASS</span></div>
+                    <div class="metric-label">All files validated</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Import Validation</div>
+                    <div class="metric-value">100/100 <span class="status-badge status-pass">PASS</span></div>
+                    <div class="metric-label">1,488 files validated</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Security</div>
+                    <div class="metric-value">100/100 <span class="status-badge status-pass">PASS</span></div>
+                    <div class="metric-label">No vulnerabilities</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Code Quality</div>
+                    <div class="metric-value">60/100 <span class="status-badge status-warning">WARNING</span></div>
+                    <div class="metric-label">82+ warnings</div>
+                </div>
+            </div>
+        </section>
+
+        <section id="issues" class="section">
+            <h2>Critical Issues</h2>
+            <div class="issue-list">
+                <div class="issue-item">
+                    <div class="issue-title">CRIT-001: Duplicate ingestion_jobs table definition</div>
+                    <div class="issue-meta">
+                        <strong>Impact:</strong> Blocks all backend compilation | 
+                        <strong>Effort:</strong> 2-4 hours | 
+                        <strong>Risk:</strong> Medium
+                    </div>
+                    <p>Location: backend/src/models/schema/ingestion.rs and projects.rs</p>
+                </div>
+                <div class="issue-item">
+                    <div class="issue-title">CRIT-002: 158 Rust compilation errors</div>
+                    <div class="issue-meta">
+                        <strong>Impact:</strong> Prevents backend from building | 
+                        <strong>Effort:</strong> 8-16 hours | 
+                        <strong>Risk:</strong> High
+                    </div>
+                    <p>Categories: Schema/model mismatches, type errors, missing imports</p>
+                </div>
+            </div>
+
+            <h3>High Priority Issues</h3>
+            <div class="issue-list">
+                <div class="issue-item">
+                    <div class="issue-title">HIGH-001: Type mismatches (Date&lt;Utc&gt; vs NaiveDate)</div>
+                    <div class="issue-meta">
+                        <strong>Impact:</strong> Affects cashflow transactions | 
+                        <strong>Effort:</strong> 4-8 hours
+                    </div>
+                </div>
+                <div class="issue-item">
+                    <div class="issue-title">HIGH-002: Missing validation trait imports</div>
+                    <div class="issue-meta">
+                        <strong>Impact:</strong> Potential security risk | 
+                        <strong>Effort:</strong> 1 hour
+                    </div>
+                </div>
+                <div class="issue-item">
+                    <div class="issue-title">HIGH-003: Diesel query compatibility issues</div>
+                    <div class="issue-meta">
+                        <strong>Impact:</strong> Prevents data loading | 
+                        <strong>Effort:</strong> 4-6 hours
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="recommendations" class="section">
+            <h2>Recommendations</h2>
+            
+            <h3>Immediate Actions (Critical)</h3>
+            <table>
+                <tr>
+                    <th>Action</th>
+                    <th>Priority</th>
+                    <th>Effort</th>
+                    <th>Risk</th>
+                </tr>
+                <tr>
+                    <td>Remove duplicate ingestion_jobs table definition</td>
+                    <td>CRITICAL</td>
+                    <td>2-4 hours</td>
+                    <td>Medium</td>
+                </tr>
+                <tr>
+                    <td>Fix all compilation errors</td>
+                    <td>CRITICAL</td>
+                    <td>8-16 hours</td>
+                    <td>Medium</td>
+                </tr>
+                <tr>
+                    <td>Fix frontend syntax error</td>
+                    <td>HIGH</td>
+                    <td>5 minutes</td>
+                    <td>None</td>
+                </tr>
+            </table>
+
+            <h3>Short-term (1-2 weeks)</h3>
+            <ul>
+                <li>Add missing validation imports (1 hour)</li>
+                <li>Resolve type mismatches (4-8 hours)</li>
+                <li>Clean up unused code (2-4 hours)</li>
+                <li>Fix borrow checker issues (2-4 hours)</li>
+            </ul>
+
+            <h3>Medium-term (1-3 months)</h3>
+            <ul>
+                <li>Implement schema versioning (1-2 weeks)</li>
+                <li>Add schema/model consistency checks (1 week)</li>
+                <li>Standardize date handling (1 week)</li>
+                <li>Improve error handling patterns (2 weeks)</li>
+            </ul>
+        </section>
+
+        <section id="action-plan" class="section">
+            <h2>Action Plan</h2>
+            
+            <h3>Week 1: Critical Fixes</h3>
+            <table>
+                <tr>
+                    <th>Task</th>
+                    <th>Priority</th>
+                    <th>Effort</th>
+                    <th>Dependencies</th>
+                </tr>
+                <tr>
+                    <td>Remove duplicate ingestion_jobs</td>
+                    <td>CRITICAL</td>
+                    <td>2-4h</td>
+                    <td>None</td>
+                </tr>
+                <tr>
+                    <td>Align models with schema</td>
+                    <td>CRITICAL</td>
+                    <td>4-6h</td>
+                    <td>Remove duplicate</td>
+                </tr>
+                <tr>
+                    <td>Fix type mismatches</td>
+                    <td>HIGH</td>
+                    <td>4-8h</td>
+                    <td>Align models</td>
+                </tr>
+                <tr>
+                    <td>Add validation imports</td>
+                    <td>HIGH</td>
+                    <td>1h</td>
+                    <td>None</td>
+                </tr>
+            </table>
+
+            <h3>Week 2: High Priority Fixes</h3>
+            <table>
+                <tr>
+                    <th>Task</th>
+                    <th>Priority</th>
+                    <th>Effort</th>
+                    <th>Dependencies</th>
+                </tr>
+                <tr>
+                    <td>Fix Diesel query compatibility</td>
+                    <td>HIGH</td>
+                    <td>4-6h</td>
+                    <td>Week 1 tasks</td>
+                </tr>
+                <tr>
+                    <td>Fix struct field mismatches</td>
+                    <td>HIGH</td>
+                    <td>4-6h</td>
+                    <td>Week 1 tasks</td>
+                </tr>
+                <tr>
+                    <td>Fix borrow checker issues</td>
+                    <td>MEDIUM</td>
+                    <td>2-4h</td>
+                    <td>Week 1 tasks</td>
+                </tr>
+            </table>
+        </section>
+
+        <section class="section">
+            <h2>Estimated Time to Production-Ready</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Optimistic</div>
+                    <div class="metric-value">1-2 weeks</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Realistic</div>
+                    <div class="metric-value">2-4 weeks</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Pessimistic</div>
+                    <div class="metric-value">4-6 weeks</div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>Report Generated: 2025-01-15</p>
+            <p>Next Diagnostic: Recommended after critical fixes are applied</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -9,6 +9,8 @@ import {
   ReconciliationResultDetail,
   ReconciliationJob,
   ApiError,
+  ApiResponse as BackendApiResponse,
+  PaginatedResponse as BackendPaginatedResponse,
 } from '../../types/backend-aligned';
 
 // ============================================================================
@@ -132,22 +134,21 @@ export interface FileUploadResponse {
 // Error can be either a string (simple error message) or an object with message property
 export type ApiErrorValue = string | { message: string; code?: string; details?: unknown };
 
-export interface ApiResponse<T = unknown> {
-  success?: boolean;
-  data?: T;
-  message?: string;
-  error?: ApiErrorValue; // Error can be string or object with message property
+/**
+ * API Response type - extends backend type with additional fields for client-side use
+ * 
+ * NOTE: Base type is from '@/types/backend-aligned' for consistency.
+ * This extends it with client-specific fields like correlationId.
+ */
+export interface ApiResponse<T = unknown> extends BackendApiResponse<T> {
   code?: string; // Error code from backend
   correlationId?: string; // Correlation ID from response headers (Agent 1 Task 1.19)
 }
 
-export interface PaginatedResponse<T> {
-  items: T[];
-  total: number;
-  page: number;
-  per_page: number;
-  total_pages: number;
-}
+/**
+ * Paginated Response type - re-exported from backend-aligned for consistency
+ */
+export type PaginatedResponse<T> = BackendPaginatedResponse<T>;
 
 export interface ReconciliationResultsQuery {
   page?: number;

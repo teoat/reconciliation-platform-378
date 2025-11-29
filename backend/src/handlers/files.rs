@@ -28,8 +28,10 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     )
     .route("/{file_id}", web::get().to(get_file))
     .route("/{file_id}", web::delete().to(delete_file))
+    .route("/{file_id}/download", web::get().to(download_file))
     .route("/{file_id}/preview", web::get().to(get_file_preview))
-    .route("/{file_id}/process", web::post().to(process_file));
+    .route("/{file_id}/process", web::post().to(process_file))
+    .route("/{file_id}/metadata", web::get().to(get_file_metadata));
 }
 
 #[derive(serde::Deserialize, utoipa::ToSchema)]
@@ -174,6 +176,72 @@ pub async fn complete_resumable_upload(
         message: Some("Upload completed".to_string()),
         error: None,
     }))
+}
+
+/// Download file
+/// 
+/// Downloads the file content by file ID.
+#[utoipa::path(
+    get,
+    path = "/api/v1/files/{file_id}/download",
+    tag = "Files",
+    params(
+        ("file_id" = Uuid, Path, description = "File ID")
+    ),
+    responses(
+        (status = 200, description = "File downloaded successfully", content_type = "application/octet-stream"),
+        (status = 404, description = "File not found", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Forbidden - no project access", body = ErrorResponse)
+    ),
+    security(("bearer_auth" = []))
+)]
+pub async fn download_file(
+    file_id: web::Path<Uuid>,
+    http_req: HttpRequest,
+    data: web::Data<Database>,
+    config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let file_id_val = file_id.into_inner();
+    let file_service =
+        crate::services::file::FileService::new(data.get_ref().clone(), config.upload_path.clone());
+
+    // Get file info first to check authorization
+    let file_info = file_service.get_file(file_id_val).await?;
+
+    // Check authorization
+    let user_id = extract_user_id(&http_req)?;
+    check_project_permission(data.get_ref(), user_id, file_info.project_id)?;
+
+    // Get file for download
+    let (file_path, uploaded_file) = file_service.get_file_for_download(file_id_val).await?;
+
+    // Read file content
+    let file_content = tokio::fs::read(&file_path)
+        .await
+        .map_err(|e| AppError::Internal(format!("Failed to read file: {}", e)))?;
+
+    // Determine content type
+    let content_type = uploaded_file
+        .content_type
+        .as_deref()
+        .unwrap_or("application/octet-stream");
+
+    // Set appropriate headers for file download
+    Ok(HttpResponse::Ok()
+        .content_type(content_type)
+        .append_header((
+            actix_web::http::header::CONTENT_DISPOSITION,
+            format!(
+                "attachment; filename=\"{}\"",
+                uploaded_file.original_filename
+            ),
+        ))
+        .append_header((
+            actix_web::http::header::CONTENT_LENGTH,
+            uploaded_file.file_size.to_string(),
+        ))
+        .body(file_content))
 }
 
 /// Get file information
@@ -343,6 +411,34 @@ pub async fn process_file(
         success: true,
         data: Some(processing_result),
         message: Some("File processing completed".to_string()),
+        error: None,
+    }))
+}
+
+/// Get file metadata
+pub async fn get_file_metadata(
+    file_id: web::Path<Uuid>,
+    http_req: HttpRequest,
+    data: web::Data<Database>,
+    config: web::Data<Config>,
+) -> Result<HttpResponse, AppError> {
+    let file_id_val = file_id.into_inner();
+    let file_service = crate::services::file::FileService::new(data.get_ref().clone(), config.upload_path.clone());
+    let file_info = file_service.get_file(file_id_val).await?;
+    
+    let user_id = extract_user_id(&http_req)?;
+    check_project_permission(data.get_ref(), user_id, file_info.project_id)?;
+    
+    Ok(HttpResponse::Ok().json(ApiResponse {
+        success: true,
+        data: Some(serde_json::json!({
+            "id": file_info.id,
+            "filename": file_info.filename,
+            "size": file_info.size,
+            "status": file_info.status,
+            "project_id": file_info.project_id
+        })),
+        message: None,
         error: None,
     }))
 }

@@ -62,7 +62,9 @@ export class ErrorRecoveryAgent implements MetaAgent {
 
   private executionHistory: Array<{ timestamp: Date; duration: number; success: boolean }> = [];
   private readonly maxHistorySize = 1000;
-  private errorHistory: Array<{ operationId: string; error: Error; timestamp: Date }> = [];
+  private errorHistory: Array<{ operationId: string; error: Error; timestamp: Date; retryable: boolean; success: boolean }> = [];
+  private errorTypeLearning: Map<string, { retryable: boolean; successRate: number; optimalDelay: number; attempts: number }> = new Map();
+  private retrySuccessRates: Map<number, number> = new Map(); // attempt number -> success rate
 
   constructor(retryConfig?: Partial<RetryConfig>) {
     if (retryConfig) {
@@ -142,9 +144,14 @@ export class ErrorRecoveryAgent implements MetaAgent {
 
           if (attempt > 1) {
             this.agentMetrics.warnings++; // Retry was needed
+            // Update error history to mark as successful
+            if (this.errorHistory.length > 0) {
+              const lastErrorEntry = this.errorHistory[this.errorHistory.length - 1];
+              lastErrorEntry.success = true;
+            }
           }
 
-          return {
+          const agentResult = {
             success: true,
             executionTime: totalDuration,
             data: {
@@ -154,14 +161,22 @@ export class ErrorRecoveryAgent implements MetaAgent {
             },
             metrics: this.agentMetrics,
           };
+
+          // Learn from successful result
+          this.learnFromResult(agentResult);
+
+          return agentResult;
         } catch (error) {
           lastError = error instanceof Error ? error : new Error(String(error));
 
-          // Record error
+          // Record error with learning data
+          const isRetryable = this.isRetryableError(lastError);
           this.errorHistory.push({
             operationId,
             error: lastError,
             timestamp: new Date(),
+            retryable: isRetryable,
+            success: false, // Will be updated if retry succeeds
           });
 
           // Check if we should retry
@@ -175,8 +190,12 @@ export class ErrorRecoveryAgent implements MetaAgent {
           }
 
           // Wait before retry
+          // Use learned optimal delay if available
+          const optimalDelay = this.getOptimalDelay(lastError);
           if (this.retryConfig.exponentialBackoff) {
-            delay = Math.min(delay * 2, this.retryConfig.maxBackoff);
+            delay = Math.min(optimalDelay * Math.pow(2, attempt - 1), this.retryConfig.maxBackoff);
+          } else {
+            delay = optimalDelay;
           }
 
           await this.sleep(delay);
@@ -215,6 +234,14 @@ export class ErrorRecoveryAgent implements MetaAgent {
    * Check if error is retryable
    */
   private isRetryableError(error: Error): boolean {
+    // Check learned retryability first
+    const errorType = this.getErrorType(error);
+    const learning = this.errorTypeLearning.get(errorType);
+    if (learning && learning.attempts >= 3) {
+      return learning.retryable;
+    }
+    
+    // Fallback to static rules
     const retryableErrors = [
       'ECONNREFUSED',
       'ETIMEDOUT',
@@ -288,13 +315,89 @@ export class ErrorRecoveryAgent implements MetaAgent {
   }
 
   learnFromResult(result: AgentResult): void {
-    // TODO: Learn which errors are retryable
-    // TODO: Adjust retry strategies based on error types
+    // Learn from execution results
+    if (result.error && this.errorHistory.length > 0) {
+      const lastError = this.errorHistory[this.errorHistory.length - 1];
+      const errorType = this.getErrorType(lastError.error);
+      
+      // Update learning data for this error type
+      const learning = this.errorTypeLearning.get(errorType) || {
+        retryable: this.isRetryableError(lastError.error),
+        successRate: 0,
+        optimalDelay: this.retryConfig.retryDelay,
+        attempts: 0,
+      };
+      
+      learning.attempts++;
+      if (result.success) {
+        learning.successRate = (learning.successRate * (learning.attempts - 1) + 1) / learning.attempts;
+        learning.retryable = true; // If it succeeded, it was retryable
+      } else {
+        learning.successRate = (learning.successRate * (learning.attempts - 1) + 0) / learning.attempts;
+      }
+      
+      this.errorTypeLearning.set(errorType, learning);
+    }
+    
+    // Learn retry attempt success rates
+    if (result.executionTime && this.executionHistory.length > 0) {
+      const recentExecutions = this.executionHistory.slice(-50);
+      const attemptsBySuccess = new Map<number, { successes: number; total: number }>();
+      
+      // This would need to track attempt numbers, simplified for now
+      // In a full implementation, we'd track which attempt succeeded
+    }
   }
 
   async adaptStrategy(): Promise<void> {
-    // TODO: Adjust retry config based on success rates
-    // TODO: Learn optimal retry delays for different error types
+    // Adjust retry config based on success rates
+    const recentExecutions = this.executionHistory.slice(-100);
+    if (recentExecutions.length < 10) return; // Need enough data
+    
+    const successRate = recentExecutions.filter(e => e.success).length / recentExecutions.length;
+    
+    // If success rate is low, increase retries
+    if (successRate < 0.5 && this.retryConfig.maxRetries < 5) {
+      this.retryConfig.maxRetries++;
+    }
+    
+    // If success rate is high, we might reduce retries (but be conservative)
+    if (successRate > 0.9 && this.retryConfig.maxRetries > 2) {
+      // Keep at least 2 retries
+    }
+    
+    // Learn optimal retry delays for different error types
+    for (const [errorType, learning] of this.errorTypeLearning.entries()) {
+      if (learning.attempts >= 5) {
+        // If this error type has high success rate with current delay, keep it
+        // If low success rate, try increasing delay
+        if (learning.successRate < 0.3 && learning.optimalDelay < this.retryConfig.maxBackoff) {
+          learning.optimalDelay = Math.min(learning.optimalDelay * 1.5, this.retryConfig.maxBackoff);
+        }
+      }
+    }
+  }
+
+  /**
+   * Get error type classification
+   */
+  private getErrorType(error: Error): string {
+    const message = error.message.toLowerCase();
+    if (message.includes('timeout') || message.includes('timed out')) return 'timeout';
+    if (message.includes('network') || message.includes('connection')) return 'network';
+    if (message.includes('permission') || message.includes('unauthorized')) return 'authorization';
+    if (message.includes('not found') || message.includes('404')) return 'not_found';
+    if (message.includes('server error') || message.includes('500')) return 'server_error';
+    return 'unknown';
+  }
+
+  /**
+   * Get optimal delay for error type
+   */
+  private getOptimalDelay(error: Error): number {
+    const errorType = this.getErrorType(error);
+    const learning = this.errorTypeLearning.get(errorType);
+    return learning?.optimalDelay || this.retryConfig.retryDelay;
   }
 
   /**

@@ -1,0 +1,177 @@
+Execute a comprehensive frontend diagnostic, investigate ultimate fixes, and implement Tier 4 error handling across all pages, features, functions, backend synchronization, and meta AI layers (Frenly AI, onboarding, maintenance). Use MCP servers and Chrome DevTools for orchestration.
+
+PHASE 1: FRONTEND ARCHITECTURE DISCOVERY
+1. Map all pages (Dashboard, Projects, Ingestion, Reconciliation, Adjudication, Summary, Visualization, Cashflow, Presummary, Profile, Settings, Teams, Workflows, Analytics, Security, Admin, Help, Docs, API Docs, Status, Health, Error Pages, Maintenance)
+2. For each page, identify:
+   - Main component file
+   - Sub-components
+   - Hooks used
+   - Services integrated
+   - API endpoints called
+   - State management (Redux/local)
+   - Error boundaries
+3. Map all feature functions per page:
+   - Data fetching functions
+   - Form submission handlers
+   - User interaction handlers
+   - Background sync functions
+   - Real-time update handlers
+   - File upload/download handlers
+4. Map backend synchronization:
+   - All API service calls per page
+   - Request/response flows
+   - WebSocket connections
+   - Polling intervals
+   - Error response handling
+5. Analyze meta AI layer:
+   - Frenly AI component and agent
+   - Onboarding system
+   - Maintenance features
+
+PHASE 2: COMPREHENSIVE FRONTEND DIAGNOSTICS
+1. Automated diagnostics via MCP servers:
+   - Frontend build status (checkSize: true)
+   - Type checking (project: "frontend")
+   - Linter check (fix: false)
+   - Frontend tests (coverage: true)
+   - E2E tests (all specs)
+   - Security audit (scope: "frontend")
+   - Backend health check (for sync validation)
+2. Chrome DevTools runtime analysis for each page:
+   - Performance analysis (FCP, LCP, TTI, TBT, CLS)
+   - Network analysis (all API calls, request/response times, failed requests, slow requests, duplicate requests)
+   - Console error analysis (JavaScript errors, React errors, unhandled promise rejections, warnings, network errors)
+   - Memory analysis (memory leaks, large objects, detached DOM nodes, event listener leaks)
+   - Application state (LocalStorage, SessionStorage, IndexedDB, Service Workers, Cache storage)
+3. Feature function testing:
+   - Manual testing checklist (page loads, interactive elements, forms, data display, error states, loading states, navigation, backend sync, offline mode, real-time updates)
+   - Error scenario testing (network failure, API errors 400/401/403/404/422/429/500/502/503/504, timeouts, invalid data, concurrent requests, race conditions)
+   - Edge case testing (empty states, large datasets, slow network, rapid interactions, browser navigation, tab switching, page refresh)
+
+PHASE 3: TIER 4 ERROR HANDLING IMPLEMENTATION
+Tier 4 extends beyond Tier 1-3 with:
+1. Proactive error prevention:
+   - Input validation before API calls
+   - Request deduplication
+   - Optimistic UI updates with rollback
+   - Circuit breaker patterns
+   - Request queuing and throttling
+2. Advanced recovery mechanisms:
+   - Automatic retry with exponential backoff
+   - Fallback data sources
+   - Partial data rendering
+   - Graceful feature degradation
+   - Offline mode with sync queue
+3. Predictive error detection:
+   - Network quality monitoring
+   - API response time tracking
+   - Error pattern recognition
+   - Proactive user warnings
+   - Preemptive error prevention
+4. User experience optimization:
+   - Contextual error messages
+   - Actionable error recovery
+   - Progress indication during recovery
+   - Non-blocking error notifications
+   - Seamless error recovery flows
+5. Complete observability:
+   - Error tracking with context
+   - Performance metrics
+   - User journey tracking
+   - Error correlation IDs
+   - Error analytics dashboard
+
+Implementation steps:
+1. Create Tier4ErrorHandler with all Tier 4 features
+2. Implement page-level error boundaries for all pages
+3. Wrap all API calls with Tier 4 error handling
+4. Wrap all critical functions with Tier 4 error handling
+5. Implement backend synchronization error handling (request/response interceptors, WebSocket error handling, offline/online sync)
+6. Implement meta AI layer error handling (Frenly AI, onboarding, maintenance)
+
+PHASE 4: ULTIMATE FIX INVESTIGATION
+For each issue found:
+1. Root cause analysis:
+   - Trace to source (file, line, call stack)
+   - Identify contributing factors
+   - Check related code
+2. Pattern detection:
+   - Search for similar issues
+   - Identify systemic problems
+   - Check historical context
+   - Document patterns
+3. Impact assessment:
+   - User impact (Critical/High/Medium/Low)
+   - Business impact
+   - Technical impact
+   - Fix complexity
+4. Dependency analysis:
+   - Related issues
+   - Blocking issues
+   - Fix order
+   - Risk assessment
+
+Fix recommendations:
+- Immediate fixes: Quick wins (< 1 hour), critical bugs, security issues
+- Short-term fixes: High priority (1-2 weeks), user-facing issues, performance issues
+- Medium-term fixes: Important improvements (1-3 months), architecture improvements, code quality improvements
+- Long-term fixes: Strategic changes (3-6 months), major refactoring, new patterns adoption
+
+PHASE 5: CHROME DEVTOOLS ORCHESTRATION
+1. Automated testing with DevTools (using MCP cursor-ide-browser):
+   - Page load testing for each page
+   - Interaction testing for all interactive elements
+   - Network monitoring for all requests
+2. Performance profiling:
+   - Lighthouse audit (Performance, Accessibility, Best Practices, SEO scores)
+   - Performance metrics (FCP, LCP, TTI, TBT, CLS, JavaScript execution time, render time, network time)
+   - Bundle analysis (bundle size per page, code splitting effectiveness, unused code detection, dependency optimization)
+3. Error detection:
+   - Console error monitoring (capture all console errors, categorize by type, track frequency, document context)
+   - Network error monitoring (failed API calls, timeout errors, CORS errors, 4xx/5xx responses)
+   - Runtime error monitoring (unhandled exceptions, promise rejections, React errors, memory errors)
+
+PHASE 6: COMPREHENSIVE REPORTING
+Generate reports with:
+1. Executive Summary: Overall health score, critical issues count, pages analyzed, features tested, Tier 4 implementation status
+2. Page-by-Page Analysis: Status, errors found, performance score, Tier 4 coverage, issues, recommendations
+3. Feature Analysis: Data fetching, form submission, user interactions, backend sync, real-time updates, file operations
+4. Backend Synchronization Analysis: API integration, WebSocket integration, error handling, sync issues
+5. Meta AI Layer Analysis: Frenly AI, onboarding, maintenance, error handling
+6. Tier 4 Error Handling Implementation: Current state, implementation plan, coverage metrics
+7. Ultimate Fix Recommendations: Immediate actions, short-term actions, medium-term actions, long-term actions
+8. Performance Analysis: Page load times, bundle sizes, optimization opportunities
+9. Chrome DevTools Findings: Console errors, network issues, performance issues
+10. Action Plan: Week-by-week breakdown with tasks and priorities
+11. Metrics & Tracking: Before/after comparison, success criteria
+
+PHASE 7: VALIDATION & VERIFICATION
+1. Fix verification:
+   - Automated testing (run all tests, check test coverage, verify no regressions)
+   - Manual testing (test all fixed issues, verify error handling, check user experience)
+   - Performance validation (compare before/after metrics, verify improvements, check for regressions)
+2. Tier 4 implementation verification:
+   - Coverage check (verify all pages have Tier 4, verify all features have Tier 4, verify backend sync has Tier 4, verify meta AI has Tier 4)
+   - Functionality check (test error scenarios, verify recovery mechanisms, check user experience, validate observability)
+
+OUTPUT REQUIREMENTS:
+- Diagnostic report: docs/diagnostics/FRONTEND_DIAGNOSTIC_REPORT_[TIMESTAMP].md
+- JSON summary: docs/diagnostics/FRONTEND_DIAGNOSTIC_[TIMESTAMP].json
+- Tier 4 implementation: docs/features/tier4-error-handling-implementation.md
+- Fix recommendations: docs/refactoring/FRONTEND_FIX_RECOMMENDATIONS.md
+- Action plan: docs/project-management/FRONTEND_ACTION_PLAN.md
+
+SUCCESS CRITERIA:
+✅ All pages diagnosed
+✅ All features tested
+✅ All errors documented
+✅ Tier 4 error handling implemented
+✅ Ultimate fixes identified
+✅ Backend sync validated
+✅ Meta AI layer validated
+✅ Performance optimized
+✅ Comprehensive report generated
+✅ Action plan created
+
+Execute this complete workflow and provide comprehensive diagnostic report with all findings, Tier 4 implementation plan, ultimate fixes, and recommendations.
+

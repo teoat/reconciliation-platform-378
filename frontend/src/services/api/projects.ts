@@ -60,9 +60,9 @@ export class ProjectsApiService extends BaseApiService {
           async () => {
             let response: ApiResponse<unknown>;
             if (search) {
-              response = await apiClient.get(`/api/projects?search=${encodeURIComponent(search)}&page=${page}&per_page=${per_page}`);
+              response = await apiClient.get(`/api/v1/projects?search=${encodeURIComponent(search)}&page=${page}&per_page=${per_page}`);
             } else {
-              response = await apiClient.get(`/api/projects?page=${page}&per_page=${per_page}`);
+              response = await apiClient.get(`/api/v1/projects?page=${page}&per_page=${per_page}`);
             }
 
             const paginated = this.transformPaginatedResponse<Project>(
@@ -268,7 +268,7 @@ export class ProjectsApiService extends BaseApiService {
         return this.getCached(
           cacheKey,
           async () => {
-            const response = await apiClient.get(`/api/projects/${projectId}/settings`);
+            const response = await apiClient.get(`/api/v1/projects/${projectId}/settings`);
             return this.transformResponse<ProjectSettings>(response);
           },
           300000 // 5 minutes TTL
@@ -301,7 +301,7 @@ export class ProjectsApiService extends BaseApiService {
   static async updateProjectSettings(projectId: string, settings: ProjectSettings): Promise<ErrorHandlingResult<ProjectSettings>> {
     return this.withErrorHandling(
       async () => {
-        const response = await apiClient.post(`/api/projects/${projectId}/settings`, settings);
+        const response = await apiClient.post(`/api/v1/projects/${projectId}/settings`, settings);
         const result = this.transformResponse<ProjectSettings>(response);
 
         // Invalidate project settings cache

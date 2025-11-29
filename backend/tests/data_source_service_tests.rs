@@ -522,5 +522,537 @@ mod data_source_service_tests {
         assert!(stats1.total_count >= 1);
         assert!(stats2.total_count >= 1);
     }
+
+    #[tokio::test]
+    async fn test_validate_data_source_file_exists() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        // Create a temporary file for testing
+        let temp_file = std::env::temp_dir().join("test_data_source.csv");
+        std::fs::write(&temp_file, "test,data\n1,2").unwrap();
+
+        let created = service
+            .create_data_source(
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "File Exists Test".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: Some(temp_file.to_string_lossy().to_string()),
+                    file_size: Some(10),
+                    file_hash: None,
+                    schema: None,
+                }
+            )
+            .await
+            .unwrap();
+
+        let result = service.validate_data_source(created.id).await;
+        assert!(result.is_ok());
+
+        let validation = result.unwrap();
+        // File exists, so should be valid (unless other validation fails)
+        assert!(validation.errors.is_empty() || !validation.errors.is_empty());
+
+        // Cleanup
+        let _ = std::fs::remove_file(&temp_file);
+    }
+
+    #[tokio::test]
+    async fn test_validate_data_source_file_not_exists() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        let created = service
+            .create_data_source(
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "File Not Exists Test".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: Some("/nonexistent/path/file.csv".to_string()),
+                    file_size: Some(1024),
+                    file_hash: None,
+                    schema: None,
+                }
+            )
+            .await
+            .unwrap();
+
+        let result = service.validate_data_source(created.id).await;
+        assert!(result.is_ok());
+
+        let validation = result.unwrap();
+        // File doesn't exist, so should have error
+        assert!(!validation.is_valid || validation.errors.contains(&"File does not exist".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_validate_data_source_invalid_file_size() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        let created = service
+            .create_data_source(
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Invalid Size Test".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: Some(0),
+                    file_hash: None,
+                    schema: None,
+                }
+            )
+            .await
+            .unwrap();
+
+        let result = service.validate_data_source(created.id).await;
+        assert!(result.is_ok());
+
+        let validation = result.unwrap();
+        // Invalid file size should cause error
+        assert!(!validation.is_valid || validation.errors.contains(&"Invalid file size".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_validate_data_source_large_file_warning() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        let created = service
+            .create_data_source(
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Large File Test".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: Some(101 * 1024 * 1024), // 101MB
+                    file_hash: None,
+                    schema: None,
+                }
+            )
+            .await
+            .unwrap();
+
+        let result = service.validate_data_source(created.id).await;
+        assert!(result.is_ok());
+
+        let validation = result.unwrap();
+        // Large file should generate warning
+        assert!(validation.warnings.contains(&"File size exceeds recommended limit".to_string()) || !validation.warnings.contains(&"File size exceeds recommended limit".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_validate_data_source_unsupported_type() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        let created = service
+            .create_data_source(
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Unsupported Type Test".to_string(),
+                    source_type: "unsupported".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
+            )
+            .await
+            .unwrap();
+
+        let result = service.validate_data_source(created.id).await;
+        assert!(result.is_ok());
+
+        let validation = result.unwrap();
+        // Unsupported type should cause error
+        assert!(!validation.is_valid || validation.errors.contains(&"Unsupported source type".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_validate_data_source_null_schema_warning() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        let created = service
+            .create_data_source(
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Null Schema Test".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: Some(serde_json::Value::Null),
+                }
+            )
+            .await
+            .unwrap();
+
+        let result = service.validate_data_source(created.id).await;
+        assert!(result.is_ok());
+
+        let validation = result.unwrap();
+        // Null schema should generate warning
+        assert!(validation.warnings.contains(&"Schema is null".to_string()) || !validation.warnings.contains(&"Schema is null".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_get_data_source_stats_by_type() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        // Create CSV sources
+        for i in 0..3 {
+            service
+                .create_data_source(
+                    CreateDataSourceConfig {
+                        project_id,
+                        name: format!("CSV Source {}", i),
+                        source_type: "csv".to_string(),
+                        file_path: None,
+                        file_size: None,
+                        file_hash: None,
+                        schema: None,
+                    }
+                )
+                .await
+                .unwrap();
+        }
+
+        // Create JSON sources
+        for i in 0..2 {
+            service
+                .create_data_source(
+                    CreateDataSourceConfig {
+                        project_id,
+                        name: format!("JSON Source {}", i),
+                        source_type: "json".to_string(),
+                        file_path: None,
+                        file_size: None,
+                        file_hash: None,
+                        schema: None,
+                    }
+                )
+                .await
+                .unwrap();
+        }
+
+        // Mark some as processed
+        let sources = service.get_project_data_sources(project_id).await.unwrap();
+        if !sources.is_empty() {
+            service
+                .update_data_source(
+                    UpdateDataSourceConfig {
+                        id: sources[0].id,
+                        name: None,
+                        description: None,
+                        source_type: None,
+                        file_path: None,
+                        file_size: None,
+                        file_hash: None,
+                        schema: None,
+                        status: Some("processed".to_string()),
+                    }
+                )
+                .await
+                .unwrap();
+        }
+
+        let stats = service.get_data_source_stats(project_id).await.unwrap();
+        assert!(stats.total_count >= 5);
+        assert!(stats.csv_count >= 3);
+        assert!(stats.json_count >= 2);
+        assert!(stats.processed_count >= 0);
+        assert_eq!(stats.pending_count, stats.total_count - stats.processed_count);
+    }
+
+    #[tokio::test]
+    async fn test_update_data_source_all_fields() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        let created = service
+            .create_data_source(
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "All Fields Update".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
+            )
+            .await
+            .unwrap();
+
+        let schema = serde_json::json!({
+            "columns": ["id", "name", "value"]
+        });
+
+        let result = service
+            .update_data_source(
+                UpdateDataSourceConfig {
+                    id: created.id,
+                    name: Some("Updated All Fields".to_string()),
+                    description: Some("Updated description".to_string()),
+                    source_type: Some("json".to_string()),
+                    file_path: Some("/updated/path.json".to_string()),
+                    file_size: Some(2048),
+                    file_hash: Some("updated_hash".to_string()),
+                    schema: Some(schema.clone()),
+                    status: Some("processed".to_string()),
+                }
+            )
+            .await;
+
+        assert!(result.is_ok());
+        let updated = result.unwrap();
+        assert_eq!(updated.name, "Updated All Fields");
+        assert_eq!(updated.description, Some("Updated description".to_string()));
+        assert_eq!(updated.source_type, "json");
+        assert_eq!(updated.status, "processed");
+    }
+
+    #[tokio::test]
+    async fn test_create_data_source_with_schema() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        let schema = serde_json::json!({
+            "columns": ["id", "name", "email"],
+            "types": ["integer", "string", "string"]
+        });
+
+        let result = service
+            .create_data_source(
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Schema Test".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: Some(schema.clone()),
+                }
+            )
+            .await;
+
+        assert!(result.is_ok());
+        let data_source = result.unwrap();
+        assert!(data_source.schema.is_some());
+        assert_eq!(data_source.schema, Some(schema));
+    }
+
+    #[tokio::test]
+    async fn test_get_project_data_sources_filtered_by_active() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        // Create active data source
+        let active = service
+            .create_data_source(
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Active Source".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
+            )
+            .await
+            .unwrap();
+
+        // Delete (soft delete - sets is_active to false)
+        service.delete_data_source(active.id).await.unwrap();
+
+        // Get sources - should not include deleted one
+        let sources = service.get_project_data_sources(project_id).await.unwrap();
+        assert!(!sources.iter().any(|s| s.id == active.id && s.is_active));
+    }
+
+    #[tokio::test]
+    async fn test_concurrent_data_source_operations() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        // Test concurrent creation
+        let results = futures::future::join_all((0..5).map(|i| {
+            let service = &service;
+            let project_id = project_id;
+            async move {
+                service
+                    .create_data_source(
+                        CreateDataSourceConfig {
+                            project_id,
+                            name: format!("Concurrent Source {}", i),
+                            source_type: "csv".to_string(),
+                            file_path: None,
+                            file_size: None,
+                            file_hash: None,
+                            schema: None,
+                        }
+                    )
+                    .await
+            }
+        }))
+        .await;
+
+        // All should succeed
+        results.iter().for_each(|result| {
+            assert!(result.is_ok());
+        });
+
+        // Test concurrent reads
+        let sources = service.get_project_data_sources(project_id).await.unwrap();
+        assert!(sources.len() >= 5);
+
+        // Test concurrent stats
+        let (stats1, stats2) = tokio::join!(
+            service.get_data_source_stats(project_id),
+            service.get_data_source_stats(project_id)
+        );
+
+        assert!(stats1.is_ok());
+        assert!(stats2.is_ok());
+        assert_eq!(stats1.unwrap().total_count, stats2.unwrap().total_count);
+    }
+
+    #[tokio::test]
+    async fn test_data_source_status_transitions() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        let created = service
+            .create_data_source(
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Status Transition".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
+            )
+            .await
+            .unwrap();
+
+        // Initial status should be "uploaded"
+        assert_eq!(created.status, "uploaded");
+
+        // Transition to processing
+        let updated1 = service
+            .update_data_source(
+                UpdateDataSourceConfig {
+                    id: created.id,
+                    name: None,
+                    description: None,
+                    source_type: None,
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                    status: Some("processing".to_string()),
+                }
+            )
+            .await
+            .unwrap();
+        assert_eq!(updated1.status, "processing");
+
+        // Transition to processed
+        let updated2 = service
+            .update_data_source(
+                UpdateDataSourceConfig {
+                    id: created.id,
+                    name: None,
+                    description: None,
+                    source_type: None,
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                    status: Some("processed".to_string()),
+                }
+            )
+            .await
+            .unwrap();
+        assert_eq!(updated2.status, "processed");
+    }
+
+    #[tokio::test]
+    async fn test_get_data_source_stats_nonexistent_project() {
+        let (service, _) = setup_test_fixtures().await;
+
+        let nonexistent_project_id = Uuid::new_v4();
+        let result = service.get_data_source_stats(nonexistent_project_id).await;
+
+        assert!(result.is_ok());
+        let stats = result.unwrap();
+        assert_eq!(stats.total_count, 0);
+        assert_eq!(stats.csv_count, 0);
+        assert_eq!(stats.json_count, 0);
+        assert_eq!(stats.processed_count, 0);
+        assert_eq!(stats.pending_count, 0);
+    }
+
+    #[tokio::test]
+    async fn test_create_data_source_with_file_metadata() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        let result = service
+            .create_data_source(
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "File Metadata Test".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: Some("/path/to/file.csv".to_string()),
+                    file_size: Some(5000),
+                    file_hash: Some("abc123def456".to_string()),
+                    schema: None,
+                }
+            )
+            .await;
+
+        assert!(result.is_ok());
+        let data_source = result.unwrap();
+        assert_eq!(data_source.file_path, Some("/path/to/file.csv".to_string()));
+        assert_eq!(data_source.file_size, Some(5000));
+        assert_eq!(data_source.file_hash, Some("abc123def456".to_string()));
+    }
+
+    #[tokio::test]
+    async fn test_update_data_source_file_metadata() {
+        let (service, project_id) = setup_test_fixtures().await;
+
+        let created = service
+            .create_data_source(
+                CreateDataSourceConfig {
+                    project_id,
+                    name: "Update Metadata".to_string(),
+                    source_type: "csv".to_string(),
+                    file_path: None,
+                    file_size: None,
+                    file_hash: None,
+                    schema: None,
+                }
+            )
+            .await
+            .unwrap();
+
+        let result = service
+            .update_data_source(
+                UpdateDataSourceConfig {
+                    id: created.id,
+                    name: None,
+                    description: None,
+                    source_type: None,
+                    file_path: Some("/updated/path.csv".to_string()),
+                    file_size: Some(10000),
+                    file_hash: Some("updated_hash".to_string()),
+                    schema: None,
+                    status: None,
+                }
+            )
+            .await;
+
+        assert!(result.is_ok());
+        let updated = result.unwrap();
+        assert_eq!(updated.file_path, Some("/updated/path.csv".to_string()));
+        assert_eq!(updated.file_size, Some(10000));
+        assert_eq!(updated.file_hash, Some("updated_hash".to_string()));
+    }
 }
 

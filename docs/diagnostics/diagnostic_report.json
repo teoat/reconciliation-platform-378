@@ -1,0 +1,320 @@
+{
+  "metadata": {
+    "generated": "2025-01-15T00:00:00Z",
+    "version": "2.0",
+    "scope": "full",
+    "status": "phase_1_2_3_complete"
+  },
+  "summary": {
+    "overall_health_score": 42,
+    "status": "critical",
+    "critical_issues": 159,
+    "high_priority_issues": 45,
+    "medium_priority_issues": 60,
+    "low_priority_issues": 82,
+    "total_files_analyzed": {
+      "backend": 488,
+      "frontend": 1488
+    }
+  },
+  "metrics": {
+    "backend": {
+      "compilation_errors": 158,
+      "warnings": 42,
+      "status": "failing",
+      "score": 0
+    },
+    "frontend": {
+      "type_errors": 1,
+      "lint_warnings": 40,
+      "status": "warning",
+      "score": 95
+    },
+    "ssot_compliance": {
+      "status": "passed",
+      "score": 100,
+      "files_validated": 1488
+    },
+    "import_validation": {
+      "status": "passed",
+      "score": 100,
+      "files_validated": 1488
+    },
+    "security": {
+      "backend_vulnerabilities": 0,
+      "frontend_vulnerabilities": 0,
+      "status": "passed",
+      "score": 100
+    },
+    "code_quality": {
+      "lint_warnings": 82,
+      "status": "warning",
+      "score": 60
+    }
+  },
+  "critical_issues": [
+    {
+      "id": "CRIT-001",
+      "category": "compilation",
+      "severity": "critical",
+      "title": "Duplicate ingestion_jobs table definition",
+      "description": "The ingestion_jobs table is defined twice in different schema files",
+      "locations": [
+        "backend/src/models/schema/ingestion.rs:3-26",
+        "backend/src/models/schema/projects.rs:129-147"
+      ],
+      "impact": "Blocks all backend compilation",
+      "root_cause": "Schema consolidation issue - two different table definitions for same table name",
+      "fix_effort": "2-4 hours",
+      "risk": "medium",
+      "status": "open"
+    },
+    {
+      "id": "CRIT-002",
+      "category": "compilation",
+      "severity": "critical",
+      "title": "158 Rust compilation errors",
+      "description": "Backend fails to compile due to 158 errors",
+      "impact": "Prevents backend from building",
+      "root_cause": "Schema/model mismatches, type errors, missing imports",
+      "fix_effort": "8-16 hours",
+      "risk": "high",
+      "status": "open"
+    }
+  ],
+  "high_priority_issues": [
+    {
+      "id": "HIGH-001",
+      "category": "type_safety",
+      "severity": "high",
+      "title": "Type mismatches (Date<Utc> vs NaiveDate)",
+      "description": "chrono::Date<Utc> used but not compatible with Diesel/Serde",
+      "locations": [
+        "backend/src/models/cashflow.rs",
+        "backend/src/handlers/cashflow.rs",
+        "backend/src/services/cashflow.rs"
+      ],
+      "impact": "Affects cashflow transaction handling",
+      "fix_effort": "4-8 hours",
+      "risk": "medium",
+      "status": "open"
+    },
+    {
+      "id": "HIGH-002",
+      "category": "validation",
+      "severity": "high",
+      "title": "Missing validation trait imports",
+      "description": "15+ handlers missing use validator::Validate; import",
+      "locations": [
+        "backend/src/handlers/workflows.rs",
+        "backend/src/handlers/cashflow.rs",
+        "backend/src/handlers/ingestion.rs",
+        "backend/src/handlers/adjudication.rs",
+        "backend/src/handlers/visualization.rs"
+      ],
+      "impact": "Potential security risk - inputs may not be validated",
+      "fix_effort": "1 hour",
+      "risk": "low",
+      "status": "open"
+    },
+    {
+      "id": "HIGH-003",
+      "category": "database",
+      "severity": "high",
+      "title": "Diesel query compatibility issues",
+      "description": "Query results don't match struct field types/counts",
+      "locations": [
+        "backend/src/models/ingestion.rs",
+        "backend/src/services/ingestion.rs",
+        "backend/src/services/cashflow.rs"
+      ],
+      "impact": "Prevents data loading from database",
+      "fix_effort": "4-6 hours",
+      "risk": "medium",
+      "status": "open"
+    }
+  ],
+  "medium_priority_issues": [
+    {
+      "id": "MED-001",
+      "category": "async",
+      "severity": "medium",
+      "title": "await used outside async context",
+      "description": "await used in non-async function",
+      "location": "backend/src/services/notification.rs:208",
+      "fix_effort": "30 minutes",
+      "risk": "low",
+      "status": "open"
+    },
+    {
+      "id": "MED-002",
+      "category": "borrow_checker",
+      "severity": "medium",
+      "title": "Value moved before reuse",
+      "description": "query.count() moves query, preventing subsequent use",
+      "locations": [
+        "backend/src/services/notification.rs",
+        "backend/src/services/adjudication.rs",
+        "backend/src/services/visualization.rs",
+        "backend/src/handlers/teams.rs"
+      ],
+      "fix_effort": "2-4 hours",
+      "risk": "low",
+      "status": "open"
+    },
+    {
+      "id": "MED-003",
+      "category": "struct_mismatch",
+      "severity": "medium",
+      "title": "Struct field mismatches",
+      "description": "Handler code references fields that don't exist in structs",
+      "locations": [
+        "backend/src/handlers/visualization.rs",
+        "backend/src/handlers/adjudication.rs"
+      ],
+      "fix_effort": "4-6 hours",
+      "risk": "medium",
+      "status": "open"
+    }
+  ],
+  "low_priority_issues": [
+    {
+      "id": "LOW-001",
+      "category": "code_quality",
+      "severity": "low",
+      "title": "Unused imports/variables",
+      "description": "42 unused imports and 40+ unused variables",
+      "fix_effort": "2-4 hours",
+      "risk": "none",
+      "status": "open"
+    }
+  ],
+  "fixes_applied": [
+    {
+      "id": "FIX-001",
+      "issue_id": "FRONT-001",
+      "category": "syntax",
+      "title": "Fixed frontend TypeScript syntax error",
+      "file": "frontend/src/components/ui/__tests__/Button.optimized.test.tsx",
+      "change": "Changed import from Button.optimized to Button",
+      "status": "completed",
+      "timestamp": "2025-01-15T00:00:00Z"
+    }
+  ],
+  "recommendations": {
+    "immediate": [
+      {
+        "priority": "critical",
+        "title": "Remove duplicate ingestion_jobs table definition",
+        "effort": "2-4 hours",
+        "risk": "medium"
+      },
+      {
+        "priority": "critical",
+        "title": "Fix all compilation errors",
+        "effort": "8-16 hours",
+        "risk": "medium"
+      }
+    ],
+    "short_term": [
+      {
+        "priority": "high",
+        "title": "Add missing validation imports",
+        "effort": "1 hour",
+        "risk": "low"
+      },
+      {
+        "priority": "high",
+        "title": "Resolve type mismatches",
+        "effort": "4-8 hours",
+        "risk": "medium"
+      }
+    ],
+    "medium_term": [
+      {
+        "priority": "medium",
+        "title": "Implement schema versioning",
+        "effort": "1-2 weeks",
+        "risk": "low"
+      },
+      {
+        "priority": "medium",
+        "title": "Add schema/model consistency checks",
+        "effort": "1 week",
+        "risk": "low"
+      }
+    ]
+  },
+  "action_plan": {
+    "week_1": [
+      {
+        "task": "Remove duplicate ingestion_jobs",
+        "priority": "critical",
+        "effort": "2-4h",
+        "dependencies": []
+      },
+      {
+        "task": "Align models with schema",
+        "priority": "critical",
+        "effort": "4-6h",
+        "dependencies": ["Remove duplicate ingestion_jobs"]
+      },
+      {
+        "task": "Fix type mismatches",
+        "priority": "high",
+        "effort": "4-8h",
+        "dependencies": ["Align models with schema"]
+      },
+      {
+        "task": "Add validation imports",
+        "priority": "high",
+        "effort": "1h",
+        "dependencies": []
+      }
+    ],
+    "week_2": [
+      {
+        "task": "Fix Diesel query compatibility",
+        "priority": "high",
+        "effort": "4-6h",
+        "dependencies": ["Week 1 tasks"]
+      },
+      {
+        "task": "Fix struct field mismatches",
+        "priority": "high",
+        "effort": "4-6h",
+        "dependencies": ["Week 1 tasks"]
+      },
+      {
+        "task": "Fix borrow checker issues",
+        "priority": "medium",
+        "effort": "2-4h",
+        "dependencies": ["Week 1 tasks"]
+      }
+    ]
+  },
+  "trends": {
+    "status": "no_historical_data",
+    "note": "First diagnostic run - no previous data for comparison"
+  },
+  "predictions": {
+    "estimated_time_to_production_ready": {
+      "optimistic": "1-2 weeks",
+      "realistic": "2-4 weeks",
+      "pessimistic": "4-6 weeks"
+    },
+    "risk_areas": [
+      {
+        "area": "Schema consolidation",
+        "risk_level": "high",
+        "impact": "May require data migration"
+      },
+      {
+        "area": "Type system changes",
+        "risk_level": "medium",
+        "impact": "May break existing code"
+      }
+    ]
+  }
+}
+

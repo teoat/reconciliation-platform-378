@@ -10,6 +10,13 @@ use uuid::Uuid;
 
 pub mod schema;
 pub mod subscription;
+pub mod notification;
+pub mod team;
+pub mod workflow;
+pub mod cashflow;
+pub mod adjudication;
+pub mod ingestion;
+pub mod visualization;
 
 // Note: We use serde_json::Value directly for JSONB fields
 // Diesel natively supports this without custom wrappers
@@ -223,6 +230,34 @@ pub struct NewProject {
     pub metadata: Option<serde_json::Value>,
 }
 
+/// Project member model
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
+#[diesel(table_name = crate::models::schema::project_members)]
+pub struct ProjectMember {
+    pub id: Uuid,
+    pub project_id: Uuid,
+    pub user_id: Uuid,
+    pub role: String,
+    pub permissions: serde_json::Value,
+    pub joined_at: DateTime<Utc>,
+    pub invited_by: Uuid,
+    pub is_active: bool,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+/// New project member model for inserts
+#[derive(Insertable, Deserialize)]
+#[diesel(table_name = crate::models::schema::project_members)]
+pub struct NewProjectMember {
+    pub project_id: Uuid,
+    pub user_id: Uuid,
+    pub role: String,
+    pub permissions: serde_json::Value,
+    pub invited_by: Uuid,
+    pub is_active: bool,
+}
+
 /// Reconciliation record model
 #[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
 #[diesel(table_name = crate::models::schema::reconciliation_records)]
@@ -240,10 +275,12 @@ pub struct ReconciliationRecord {
     pub confidence: Option<f64>,
     pub audit_trail: serde_json::Value,
     pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
 }
 
 /// New reconciliation record model for inserts
-#[derive(Deserialize)]
+#[derive(Insertable, Deserialize)]
+#[diesel(table_name = crate::models::schema::reconciliation_records)]
 pub struct NewReconciliationRecord {
     pub project_id: Uuid,
     pub ingestion_job_id: Uuid,
@@ -679,6 +716,47 @@ impl From<Project> for ProjectResponse {
         }
     }
 }
+
+// Re-export notification types
+pub use notification::{
+    Notification, NewNotification, NotificationPreferences, NewNotificationPreferences,
+    UpdateNotificationPreferences,
+};
+
+// Re-export team types
+pub use team::{Team, NewTeam, UpdateTeam, TeamMember, NewTeamMember, UpdateTeamMember};
+
+// Re-export workflow types
+pub use workflow::{
+    Workflow, NewWorkflow, UpdateWorkflow, WorkflowInstance, NewWorkflowInstance,
+    UpdateWorkflowInstance, WorkflowRule, NewWorkflowRule, UpdateWorkflowRule,
+};
+
+// Re-export cashflow types
+pub use cashflow::{
+    CashflowCategory, NewCashflowCategory, UpdateCashflowCategory, CashflowTransaction,
+    NewCashflowTransaction, UpdateCashflowTransaction, CashflowDiscrepancy,
+    NewCashflowDiscrepancy, UpdateCashflowDiscrepancy,
+};
+
+// Re-export adjudication types
+pub use adjudication::{
+    AdjudicationCase, NewAdjudicationCase, UpdateAdjudicationCase, AdjudicationDecision,
+    NewAdjudicationDecision, UpdateAdjudicationDecision, AdjudicationWorkflow,
+    NewAdjudicationWorkflow, UpdateAdjudicationWorkflow,
+};
+
+// Re-export ingestion types
+pub use ingestion::{
+    IngestionJob, NewIngestionJob, UpdateIngestionJob, IngestionResult, NewIngestionResult,
+    IngestionError, NewIngestionError,
+};
+
+// Re-export visualization types
+pub use visualization::{
+    Chart, NewChart, UpdateChart, Dashboard, NewDashboard, UpdateDashboard, Report, NewReport,
+    UpdateReport,
+};
 
 // Re-export commonly used types
 // JsonValue is already defined above, no need to re-export

@@ -21,6 +21,8 @@ import {
   HILResponse,
   HILOption,
 } from '../core/types';
+import { HILSystem } from '../core/HILSystem';
+import { logger } from '../../frontend/src/services/logger';
 
 interface SecurityEvent {
   id: string;
@@ -48,6 +50,7 @@ export class SecurityMonitoringAgent implements MetaAgent {
   private alertRules: Map<string, AlertRule> = new Map();
   private securityEvents: Map<string, SecurityEvent> = new Map();
   private blockedIPs: Set<string> = new Set();
+  private adaptiveThresholds: Map<string, number> = new Map();
 
   private status: AgentStatus = 'idle';
   private agentMetrics: AgentMetrics = {
@@ -79,7 +82,8 @@ export class SecurityMonitoringAgent implements MetaAgent {
       id: 'failed_logins',
       name: 'Failed Login Threshold',
       condition: (event, score) => {
-        return event.type === 'failed_login' && score >= 7.0;
+        const threshold = this.adaptiveThresholds.get('failed_logins') || 7.0;
+        return event.type === 'failed_login' && score >= threshold;
       },
       action: 'notify',
       threshold: 7.0,
@@ -90,7 +94,8 @@ export class SecurityMonitoringAgent implements MetaAgent {
       id: 'suspicious_activity',
       name: 'Suspicious Activity Detection',
       condition: (event, score) => {
-        return event.type === 'suspicious_activity' && score >= 8.0;
+        const threshold = this.adaptiveThresholds.get('suspicious_activity') || 8.0;
+        return event.type === 'suspicious_activity' && score >= threshold;
       },
       action: 'escalate',
       threshold: 8.0,
@@ -101,7 +106,8 @@ export class SecurityMonitoringAgent implements MetaAgent {
       id: 'unauthorized_access',
       name: 'Unauthorized Access Attempt',
       condition: (event, score) => {
-        return event.type === 'unauthorized_access';
+        const threshold = this.adaptiveThresholds.get('unauthorized_access') || 9.0;
+        return event.type === 'unauthorized_access' && score >= threshold;
       },
       action: 'block',
       threshold: 9.0,
@@ -225,15 +231,26 @@ export class SecurityMonitoringAgent implements MetaAgent {
    * Calculate anomaly score for event
    */
   private async calculateAnomalyScore(event: SecurityEvent): Promise<number> {
-    // TODO: Implement actual anomaly detection
-    // For now, base score on event type and severity
+    // Base scores on event type and severity
     const baseScores: Record<string, number> = {
       failed_login: 5.0,
       suspicious_activity: 7.0,
       unauthorized_access: 9.0,
     };
 
-    const baseScore = baseScores[event.type] || 3.0;
+    let baseScore = baseScores[event.type] || 3.0;
+    
+    // Adjust base score based on learned patterns
+    const patterns = this.eventPatterns.get(event.type);
+    if (patterns && patterns.length >= 5) {
+      const recentScores = patterns.slice(-10).map(p => p.score);
+      const avgScore = recentScores.reduce((sum, s) => sum + s, 0) / recentScores.length;
+      // If recent events of this type have higher scores, adjust base
+      if (avgScore > baseScore) {
+        baseScore = avgScore * 0.9; // Slightly lower than average to avoid over-alerting
+      }
+    }
+    
     const severityMultiplier: Record<string, number> = {
       low: 1.0,
       medium: 1.2,
@@ -260,13 +277,13 @@ export class SecurityMonitoringAgent implements MetaAgent {
         return { success: true };
 
       case 'notify':
-        // TODO: Send notification
-        console.warn(`Security alert notification: ${rule.name} - ${event.description}`);
+        // Send notification via available services
+        await this.sendSecurityNotification(rule, event, score);
         return { success: true };
 
       case 'block':
         // Require HIL for blocking actions
-        if (this.requiresHIL({ event, rule } as ExecutionContext)) {
+        if (this.requiresHIL({ timestamp: new Date(), event, rule } as ExecutionContext)) {
           this.agentMetrics.hilRequests++;
           return { success: false, requiresHIL: true };
         }
@@ -294,9 +311,130 @@ export class SecurityMonitoringAgent implements MetaAgent {
    * Block IP address
    */
   private async blockIP(ip: string, event: SecurityEvent): Promise<void> {
+    const { logger } = await import('../../frontend/src/services/logger');
+    
+    // Add to in-memory set
     this.blockedIPs.add(ip);
-    console.warn(`🚫 Blocked IP: ${ip} due to ${event.type}`);
-    // TODO: Implement actual IP blocking
+    logger.warn(`🚫 Blocked IP: ${ip} due to ${event.type}`);
+
+    // Persist to backend security service
+    try {
+      // Call backend API to block IP
+      const response = await fetch('/api/v1/security/block-ip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ip_address: ip,
+          reason: event.type,
+          severity: event.severity,
+          duration_seconds: this.getBlockDuration(event.severity),
+          metadata: {
+            event_id: event.id,
+            description: event.description,
+            timestamp: event.timestamp.toISOString(),
+          },
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        logger.info(`IP ${ip} blocked successfully`, { result });
+      } else {
+        logger.warn(`Failed to block IP ${ip} via backend API`, { 
+          status: response.status,
+          statusText: response.statusText,
+        });
+        // Continue with in-memory blocking even if backend fails
+      }
+    } catch (error) {
+      logger.error(`Error blocking IP ${ip} via backend API`, { error });
+      // Continue with in-memory blocking even if backend fails
+    }
+
+    // Store in localStorage as backup persistence
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const blockedIPs = JSON.parse(
+          window.localStorage.getItem('blocked_ips') || '[]'
+        ) as string[];
+        if (!blockedIPs.includes(ip)) {
+          blockedIPs.push(ip);
+          window.localStorage.setItem('blocked_ips', JSON.stringify(blockedIPs));
+        }
+      }
+    } catch (error) {
+      logger.warn('Failed to persist blocked IP to localStorage', { error });
+    }
+
+    // Send notification about IP blocking
+    await this.sendSecurityNotification(
+      {
+        id: 'ip_block_rule',
+        name: 'IP Blocking Rule',
+        condition: () => true,
+        action: 'block',
+      } as AlertRule,
+      event,
+      10.0
+    );
+  }
+
+  /**
+   * Get block duration based on severity
+   */
+  private getBlockDuration(severity: string): number {
+    switch (severity) {
+      case 'critical':
+        return 86400; // 24 hours
+      case 'high':
+        return 3600; // 1 hour
+      case 'medium':
+        return 1800; // 30 minutes
+      case 'low':
+        return 600; // 10 minutes
+      default:
+        return 3600; // Default 1 hour
+    }
+  }
+
+  /**
+   * Check if IP is blocked (checks in-memory, backend, and localStorage)
+   */
+  private async isIPBlocked(ip: string): Promise<boolean> {
+    // Check in-memory set
+    if (this.blockedIPs.has(ip)) {
+      return true;
+    }
+
+    // Check localStorage
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const blockedIPs = JSON.parse(
+          window.localStorage.getItem('blocked_ips') || '[]'
+        ) as string[];
+        if (blockedIPs.includes(ip)) {
+          return true;
+        }
+      }
+    } catch {
+      // localStorage check failed, continue
+    }
+
+    // Check backend
+    try {
+      const response = await fetch(`/api/v1/security/check-ip/${encodeURIComponent(ip)}`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (response.ok) {
+        const result = await response.json();
+        return result.blocked === true;
+      }
+    } catch {
+      // Backend check failed, continue
+    }
+
+    return false;
   }
 
   /**
@@ -364,16 +502,18 @@ export class SecurityMonitoringAgent implements MetaAgent {
       agent: this.name,
       decision: 'ip_blocking',
       confidence: score / 10,
-      context: { event, rule } as ExecutionContext,
+      context: { 
+        timestamp: new Date(),
+        event, 
+        rule 
+      } as ExecutionContext,
       options,
       priority: event.severity === 'critical' ? 'critical' : 'high',
     };
 
-    // TODO: Call actual HIL handler
-    return {
-      decision: 'monitor',
-      timestamp: new Date(),
-    };
+    // Use centralized HIL system
+    const hilSystem = HILSystem.getInstance();
+    return await hilSystem.requestHIL(hilContext);
   }
 
   private recordExecution(duration: number, success: boolean): void {
@@ -427,19 +567,158 @@ export class SecurityMonitoringAgent implements MetaAgent {
     return rule.action === 'block' || rule.action === 'escalate';
   }
 
-  async requestHIL(context: ExecutionContext, hilContext: HILContext): Promise<HILResponse> {
-    // TODO: Implement HIL request
-    return {
-      decision: 'monitor',
-      timestamp: new Date(),
-    };
+  /**
+   * Send security notification via available services
+   */
+  private async sendSecurityNotification(
+    rule: AlertRule,
+    event: SecurityEvent,
+    score: number
+  ): Promise<void> {
+    const { logger } = await import('../../frontend/src/services/logger');
+    
+    try {
+      // Try to send via notification service if available
+      if (typeof window !== 'undefined' && (window as any).notificationService) {
+        const notificationService = (window as any).notificationService;
+        await notificationService.sendNotification({
+          type: 'security',
+          title: `Security Alert: ${rule.name}`,
+          message: `${event.description} (Score: ${score.toFixed(1)})`,
+          severity: event.severity,
+          timestamp: new Date(),
+          details: {
+            eventType: event.type,
+            ruleName: rule.name,
+            score,
+          },
+        });
+        logger.info('Security notification sent via notification service');
+        return;
+      }
+
+      // Try to send via email service if available
+      if (typeof window !== 'undefined' && (window as any).emailService) {
+        const emailService = (window as any).emailService;
+        await emailService.send({
+          to: 'security@example.com', // Should come from config
+          subject: `Security Alert: ${rule.name}`,
+          body: `Security Event: ${event.description}\nScore: ${score.toFixed(1)}\nSeverity: ${event.severity}`,
+        });
+        logger.info('Security notification sent via email service');
+        return;
+      }
+
+      // Fallback: log to console and logger
+      logger.warn(`Security alert notification: ${rule.name} - ${event.description} (Score: ${score.toFixed(1)})`);
+      console.warn(`Security alert notification: ${rule.name} - ${event.description}`);
+    } catch (error) {
+      logger.error('Failed to send security notification', { error, rule: rule.name, event: event.type });
+      // Fallback to console
+      console.error('Failed to send security notification:', error);
+    }
   }
 
+  async requestHIL(_context: ExecutionContext, hilContext: HILContext): Promise<HILResponse> {
+    // Use centralized HIL system
+    const hilSystem = HILSystem.getInstance();
+    return await hilSystem.requestHIL(hilContext);
+  }
+
+  private eventPatterns: Map<string, Array<{ timestamp: Date; score: number; severity: string; action: string }>> = new Map();
+  private ruleEffectiveness: Map<string, { falsePositives: number; truePositives: number; averageScore: number }> = new Map();
+
   learnFromResult(result: AgentResult): void {
-    // TODO: Learn from security event patterns
+    // Learn from security event patterns
+    if (result.data && typeof result.data === 'object' && 'events' in result.data) {
+      const events = (result.data as any).events || [];
+      events.forEach((event: any) => {
+        const patternKey = event.type || 'unknown';
+        if (!this.eventPatterns.has(patternKey)) {
+          this.eventPatterns.set(patternKey, []);
+        }
+        const pattern = this.eventPatterns.get(patternKey)!;
+        pattern.push({
+          timestamp: new Date(),
+          score: event.score || 0,
+          severity: event.severity || 'medium',
+          action: event.action || 'log',
+        });
+        
+        // Keep only last 100 patterns per event type
+        if (pattern.length > 100) {
+          pattern.shift();
+        }
+      });
+    }
+    
+    // Learn rule effectiveness
+    if (result.data && typeof result.data === 'object' && 'ruleResults' in result.data) {
+      const ruleResults = (result.data as any).ruleResults || [];
+      ruleResults.forEach((ruleResult: any) => {
+        const ruleName = ruleResult.ruleName || 'unknown';
+        const learning = this.ruleEffectiveness.get(ruleName) || {
+          falsePositives: 0,
+          truePositives: 0,
+          averageScore: 0,
+        };
+        
+        if (ruleResult.wasFalsePositive) {
+          learning.falsePositives++;
+        } else {
+          learning.truePositives++;
+        }
+        
+        // Update average score
+        const total = learning.falsePositives + learning.truePositives;
+        learning.averageScore = (learning.averageScore * (total - 1) + (ruleResult.score || 0)) / total;
+        
+        this.ruleEffectiveness.set(ruleName, learning);
+      });
+    }
   }
 
   async adaptStrategy(): Promise<void> {
-    // TODO: Adapt alert rules based on false positives
+    // Adapt alert rules based on false positives and effectiveness
+    for (const [ruleName, learning] of this.ruleEffectiveness.entries()) {
+      const total = learning.falsePositives + learning.truePositives;
+      if (total >= 5) {
+        const falsePositiveRate = learning.falsePositives / total;
+        
+        // Get current threshold for this rule
+        const rule = this.alertRules.get(ruleName);
+        if (rule && rule.threshold) {
+          const currentThreshold = this.adaptiveThresholds.get(ruleName) || rule.threshold;
+          
+          if (falsePositiveRate > 0.4) {
+            // High false positive rate - increase threshold (less sensitive)
+            const newThreshold = Math.min(currentThreshold * 1.1, currentThreshold * 1.5);
+            this.adaptiveThresholds.set(ruleName, newThreshold);
+            rule.threshold = newThreshold;
+            logger.warn(`Rule ${ruleName} threshold increased to ${newThreshold.toFixed(1)} due to high false positive rate (${(falsePositiveRate * 100).toFixed(1)}%)`);
+          } else if (falsePositiveRate < 0.1 && learning.truePositives > 0) {
+            // Low false positive rate - can lower threshold slightly (more sensitive)
+            const newThreshold = Math.max(currentThreshold * 0.95, currentThreshold * 0.9);
+            this.adaptiveThresholds.set(ruleName, newThreshold);
+            rule.threshold = newThreshold;
+            logger.info(`Rule ${ruleName} threshold adjusted to ${newThreshold.toFixed(1)} (effective with ${(learning.averageScore).toFixed(1)} avg score)`);
+          }
+        }
+      }
+    }
+    
+    // Learn optimal anomaly score thresholds from patterns
+    for (const [eventType, patterns] of this.eventPatterns.entries()) {
+      if (patterns.length >= 10) {
+        const recentScores = patterns.slice(-20).map(p => p.score);
+        const avgScore = recentScores.reduce((sum, s) => sum + s, 0) / recentScores.length;
+        const maxScore = Math.max(...recentScores);
+        
+        // Store learned threshold for this event type
+        this.adaptiveThresholds.set(`anomaly_${eventType}`, avgScore);
+        
+        logger.debug(`Event type ${eventType}: avg score ${avgScore.toFixed(1)}, max ${maxScore.toFixed(1)}`);
+      }
+    }
   }
 }
