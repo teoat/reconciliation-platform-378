@@ -1,8 +1,7 @@
 // Migrated to use SSOT types from apiClient
 import type { RequestInterceptor, ResponseInterceptor } from './apiClient/interceptors';
-import { ApiErrorLike as ApiError } from './apiClient/types';
+import { ApiErrorLike as ApiError, RequestConfig, ApiResponse } from './apiClient/types';
 import { logger } from '@/services/logger';
-import { RequestConfig, ApiResponse } from '../types/api';
 
 // Request interceptor for adding common headers and logging
 export const createRequestInterceptor = (): RequestInterceptor => {
@@ -35,14 +34,16 @@ export const createRequestInterceptor = (): RequestInterceptor => {
 // Response interceptor for handling common responses
 export const createResponseInterceptor = (): ResponseInterceptor => {
   return async <T = unknown>(
-    response: ApiResponse<T>
-  ): Promise<ApiResponse<T>> => {
+    response: ApiResponse<T> | Response,
+    _config: RequestConfig
+  ): Promise<ApiResponse<T> | Response> => {
     // Log response in development
     if (import.meta.env.DEV) {
+      const resp = response as any;
       logger.info(`[API Response]`, {
-        success: response.success,
-        message: response.message,
-        timestamp: response.timestamp,
+        success: resp.success,
+        message: resp.message,
+        timestamp: resp.timestamp,
       });
     }
 
@@ -82,7 +83,10 @@ export const createRetryInterceptor = (): ResponseInterceptor => {
 
 // Rate limiting interceptor
 export const createRateLimitInterceptor = (): ResponseInterceptor => {
-  return async <T = unknown>(response: ApiResponse<T>): Promise<ApiResponse<T>> => {
+  return async <T = unknown>(
+    response: ApiResponse<T> | Response,
+    _config: RequestConfig
+  ): Promise<ApiResponse<T> | Response> => {
     // Check for rate limit (if response indicates rate limiting)
     if (!response.success && response.message?.toLowerCase().includes('rate limit')) {
       const retryAfter = 60; // Default retry after 60 seconds
@@ -127,13 +131,15 @@ export const createTimingInterceptor = (): RequestInterceptor => {
 
 export const createTimingResponseInterceptor = (): ResponseInterceptor => {
   return async <T = unknown>(
-    response: ApiResponse<T>
-  ): Promise<ApiResponse<T>> => {
+    response: ApiResponse<T> | Response,
+    _config: RequestConfig
+  ): Promise<ApiResponse<T> | Response> => {
     // Log response timing
     if (import.meta.env.DEV) {
+      const resp = response as any;
       logger.info(`[API Response Timing]`, {
-        success: response.success,
-        timestamp: response.timestamp,
+        success: resp.success,
+        timestamp: resp.timestamp,
       });
     }
 

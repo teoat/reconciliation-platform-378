@@ -62,6 +62,14 @@ export const APP_CONFIG = {
   DEBOUNCE_DELAY: 300, // 300ms
   RETRY_ATTEMPTS: 3,
   RETRY_DELAY: 1000, // 1 second
+
+  // Circuit Breaker Configuration
+  CIRCUIT_BREAKER: {
+    FAILURE_THRESHOLD: Number(getEnvVar('VITE_CB_FAILURE_THRESHOLD', '5')),
+    SUCCESS_THRESHOLD: Number(getEnvVar('VITE_CB_SUCCESS_THRESHOLD', '2')),
+    TIMEOUT: Number(getEnvVar('VITE_CB_TIMEOUT', '60000')), // 1 minute
+    RESET_TIMEOUT: Number(getEnvVar('VITE_CB_RESET_TIMEOUT', '30000')), // 30 seconds
+  },
 };
 
 // ============================================================================

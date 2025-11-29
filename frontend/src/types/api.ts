@@ -33,7 +33,7 @@ export interface ApiError {
 
 export interface RequestConfig {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH';
-  url: string;
+  url?: string;
   data?: unknown;
   params?: Record<string, string | number | boolean>;
   headers?: Record<string, string>;

@@ -219,7 +219,6 @@ export const createAuthThunk = <TRequest, TResponse>(
 
 export const createFileUploadThunk = (
   actionType: string,
-  endpoint: string | ((projectId: string) => string),
   options: {
     transformMetadata?: (file: File, projectId: string) => Record<string, unknown>;
   } = {}
@@ -237,16 +236,16 @@ export const createFileUploadThunk = (
       { rejectWithValue }
     ) => {
       try {
-        const url = typeof endpoint === 'function' ? endpoint(projectId) : endpoint;
+        // const url = typeof endpoint === 'function' ? endpoint(projectId) : endpoint;
         const uploadMetadata = transformMetadata
           ? transformMetadata(file, projectId)
           : {
-              project_id: projectId,
-              name: file.name,
-              source_type: 'file',
-              ...metadata,
-            };
-        
+            project_id: projectId,
+            name: file.name,
+            source_type: 'file',
+            ...metadata,
+          };
+
         const uploadRequest: import('../services/apiClient/types').FileUploadRequest = uploadMetadata as unknown as import('../services/apiClient/types').FileUploadRequest;
         const response = await apiClient.uploadFile(projectId, file, uploadRequest);
 
@@ -281,7 +280,7 @@ export const createPaginatedListThunk = <TData = unknown>(
   return createAsyncThunk(
     actionType,
     async (
-      params: { page?: number; limit?: number; [key: string]: unknown } = {},
+      params: { page?: number; limit?: number;[key: string]: unknown } = {},
       { rejectWithValue }
     ) => {
       try {
@@ -315,16 +314,66 @@ export const createPaginatedListThunk = <TData = unknown>(
 // ============================================================================
 
 // Auth thunks
-export const loginUser = createAuthThunk('auth/login', '/auth/login', {
-  transformResponse: (data) => data,
-});
+// Auth thunks
+export const loginUser = createAsyncThunk(
+  'auth/login',
+  async (credentials: import('../services/apiClient/types').LoginRequest, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.login(credentials);
+      if (response.error) {
+        return rejectWithValue(handleApiError(response.error));
+      }
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
 
-export const registerUser = createAuthThunk('auth/register', '/auth/register', {
-  transformResponse: (data) => data,
-});
+export const registerUser = createAsyncThunk(
+  'auth/register',
+  async (userData: import('../services/apiClient/types').RegisterRequest, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.register(userData);
+      if (response.error) {
+        return rejectWithValue(handleApiError(response.error));
+      }
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
 
-export const getCurrentUser = createGetThunk('auth/getCurrentUser', '/auth/me');
-export const logoutUser = createPostThunk('auth/logout', '/auth/logout');
+export const getCurrentUser = createAsyncThunk(
+  'auth/getCurrentUser',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.getCurrentUser();
+      if (response.error) {
+        return rejectWithValue(handleApiError(response.error));
+      }
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+export const logoutUser = createAsyncThunk(
+  'auth/logout',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await apiClient.logout();
+      if (response.error) {
+        return rejectWithValue(handleApiError(response.error));
+      }
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
 
 // Project thunks
 export const fetchProjects = createPaginatedListThunk('projects/fetchProjects', '/projects');
@@ -341,8 +390,7 @@ export const deleteProject = createDeleteThunk(
 
 // Data source thunks
 export const uploadFile = createFileUploadThunk(
-  'dataIngestion/uploadFile',
-  (projectId) => `/projects/${projectId}/files/upload`
+  'dataIngestion/uploadFile'
 );
 export const fetchUploadedFiles = createGetThunk(
   'dataIngestion/fetchFiles',

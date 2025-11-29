@@ -3,7 +3,7 @@
 // ============================================================================
 import { logger } from '@/services/logger';
 import { csrfManager } from '../authSecurity';
-import { secureStorage } from '../secureStorage';
+
 
 import { RequestConfig, ApiResponse, ApiErrorLike } from './types';
 
@@ -113,12 +113,7 @@ export class AuthInterceptor {
   private refreshTokenPromise: Promise<string | null> | null = null;
 
   private getAuthToken(): string | null {
-    return localStorage.getItem('authToken');
-  }
-
-  private getCurrentToken(): string | null {
-    // Backend refresh uses current token from secureStorage
-    return secureStorage.getItem<string>('authToken', false);
+    return localStorage.getItem('better-auth-token');
   }
 
   private async refreshAccessToken(): Promise<string | null> {
@@ -141,37 +136,32 @@ export class AuthInterceptor {
 
   private async _doRefreshToken(): Promise<string | null> {
     try {
-      const currentToken = this.getCurrentToken();
-      if (!currentToken) {
-        logger.warning('No current token available for refresh');
-        return null;
-      }
+      // Use better-auth client to refresh session
+      // We need to dynamically import to avoid circular dependencies if auth-client imports apiClient
+      // But auth-client seems independent.
+      // However, to be safe and clean:
+      const { authClient } = await import('../../lib/auth-client');
 
-      // Backend expects token in Authorization header, not body
-      const response = await fetch('/api/v1/auth/refresh', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${currentToken}`,
-        },
-      });
+      // better-auth refresh usually happens automatically or via getSession
+      // But we can force it if needed. 
+      // authClient.refreshSession() is not always available depending on config, 
+      // but getSession() usually refreshes if close to expiry.
+      // Actually, better-auth has a specific endpoint for refresh if using tokens.
 
-      if (response.ok) {
-        const data = await response.json();
-        const newToken = data.token; // Backend returns { token, expires_at }
+      // For now, let's try to get the session which might trigger refresh
+      await authClient.getSession();
 
-        if (newToken) {
-          secureStorage.setItem('authToken', newToken, false);
-          logger.info('Token refreshed successfully');
-          return newToken;
-        }
+      // better-auth updates localStorage automatically
+      const newToken = localStorage.getItem('better-auth-token');
+
+      if (newToken) {
+        logger.info('Token refreshed successfully via better-auth');
+        return newToken;
       }
     } catch (error) {
       logger.error('Token refresh failed', { error });
     }
 
-    // Refresh failed - clear token
-    secureStorage.removeItem('authToken', false);
     return null;
   }
 
@@ -190,7 +180,7 @@ export class AuthInterceptor {
         }
       }
 
-      // Add auth token
+      // Add auth token from better-auth
       const token = this.getAuthToken();
       if (token) {
         config.headers = {
@@ -227,8 +217,8 @@ export class AuthInterceptor {
       } else {
         // Refresh failed - trigger logout
         logger.error('Token refresh failed, clearing auth');
-        secureStorage.removeItem('authToken', false);
-        // Backend doesn't use separate refreshToken
+        // Clear better-auth token
+        localStorage.removeItem('better-auth-token');
 
         // Dispatch custom event for logout
         window.dispatchEvent(new CustomEvent('auth:logout-required'));

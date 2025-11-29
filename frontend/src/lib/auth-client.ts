@@ -28,34 +28,34 @@ const AUTH_SERVER_URL =
  */
 export const authClient = createAuthClient({
   baseURL: AUTH_SERVER_URL,
-  
+
   // Enable credentials for cookies
   credentials: 'include',
-  
+
   // Session configuration
   sessionToken: {
     // Store token in localStorage for cross-tab sync
     storage: 'localStorage',
     key: 'better-auth-token',
   },
-  
+
   // Error handling
-  onError: (error) => {
+  onError: (error: unknown) => {
     console.error('Auth client error:', error);
   },
-  
+
   // Request interceptor for logging
-  fetch: async (url, options) => {
+  fetch: async (url: string, options?: RequestInit) => {
     if (import.meta.env.DEV) {
       console.log('[Better Auth]', options?.method || 'GET', url);
     }
-    
+
     const response = await fetch(url, options);
-    
+
     if (!response.ok && import.meta.env.DEV) {
       console.error('[Better Auth] Request failed:', response.status, response.statusText);
     }
-    
+
     return response;
   },
 });
@@ -70,10 +70,10 @@ export type AuthUser = NonNullable<AuthSession>['user'];
 /**
  * Helper function to get current session
  */
-export async function getCurrentSession(): Promise<AuthSession | null> {
+export async function getCurrentSession() {
   try {
     const session = await authClient.getSession();
-    return session;
+    return session.data;
   } catch (error) {
     console.error('Failed to get session:', error);
     return null;

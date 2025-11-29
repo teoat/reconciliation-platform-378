@@ -2,7 +2,7 @@
  * Configuration constants for MCP Server
  */
 
-export const SERVER_NAME = 'reconciliation-platform-mcp';
+export const SERVER_NAME = 'antigravity-mcp';
 export const SERVER_VERSION = '2.1.0';
 
 // Configuration

@@ -2,7 +2,7 @@
  * Configuration for Agent Coordination MCP Server
  */
 
-export const SERVER_NAME = 'agent-coordination-mcp';
+export const SERVER_NAME = 'antigravity-coordination-mcp';
 export const SERVER_VERSION = '1.0.0';
 
 // Configuration

@@ -1,6 +1,6 @@
 {
   "mcpServers": {
-    "reconciliation-platform": {
+    "antigravity": {
       "command": "node",
       "args": [
         "/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/index.js"
@@ -12,7 +12,7 @@
         "ENABLE_DOCKER_TOOLS": "true"
       }
     },
-    "agent-coordination": {
+    "antigravity-coordination": {
       "command": "node",
       "args": [
         "/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/agent-coordination.js"

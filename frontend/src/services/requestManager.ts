@@ -6,6 +6,7 @@
  */
 
 import { logger } from './logger';
+import { APP_CONFIG } from '@/config/AppConfig';
 
 // ============================================================================
 // TYPES
@@ -59,10 +60,10 @@ export class RequestManager {
   private readonly cacheTTL = 5000; // 5 seconds
   private readonly maxQueueSize = 100;
   private readonly defaultCircuitConfig: CircuitBreakerConfig = {
-    failureThreshold: 5,
-    successThreshold: 2,
-    timeout: 60000, // 1 minute
-    resetTimeout: 30000, // 30 seconds
+    failureThreshold: APP_CONFIG.CIRCUIT_BREAKER.FAILURE_THRESHOLD,
+    successThreshold: APP_CONFIG.CIRCUIT_BREAKER.SUCCESS_THRESHOLD,
+    timeout: APP_CONFIG.CIRCUIT_BREAKER.TIMEOUT,
+    resetTimeout: APP_CONFIG.CIRCUIT_BREAKER.RESET_TIMEOUT,
   };
   private processingQueue = false;
 

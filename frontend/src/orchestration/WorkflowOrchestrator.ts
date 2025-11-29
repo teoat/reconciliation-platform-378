@@ -27,6 +27,7 @@ export class WorkflowOrchestrator {
   private currentState: WorkflowState | null = null;
   private steps: WorkflowStep[] = [];
   private pageStates: Map<string, PageContext> = new Map();
+  private readonly STORAGE_KEY_PREFIX = 'workflow:';
 
   constructor(config: WorkflowOrchestrationConfig) {
     this.config = config;
@@ -105,12 +106,82 @@ export class WorkflowOrchestrator {
         await this.generateWorkflowGuidance(page);
       }
 
+      this.saveState();
+
       logger.debug('Workflow state updated', {
         workflowId: this.config.workflowId,
         state: this.currentState,
       });
     } catch (error) {
       logger.error('Error updating workflow state', { error });
+    }
+  }
+
+  private saveState(): void {
+    if (!this.currentState) return;
+
+    const STORAGE_KEY = `${this.STORAGE_KEY_PREFIX}${this.config.workflowId}`;
+
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({
+          workflowId: this.config.workflowId,
+          state: this.currentState,
+          pageStates: Object.fromEntries(this.pageStates),
+          timestamp: Date.now(),
+        })
+      );
+    } catch (error) {
+      // Handle quota exceeded or other storage errors
+      if (error instanceof Error && (error.name === 'QuotaExceededError' || error.name === 'NS_ERROR_DOM_QUOTA_REACHED')) {
+        logger.error('LocalStorage quota exceeded while saving workflow state. Attempting to clear old workflows.', { error });
+        this.clearOldWorkflows();
+        // Try saving again
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({
+              workflowId: this.config.workflowId,
+              state: this.currentState,
+              pageStates: Object.fromEntries(this.pageStates),
+              timestamp: Date.now(),
+            })
+          );
+        } catch (retryError) {
+          logger.error('Failed to save workflow state after cleanup', { error: retryError });
+        }
+      } else {
+        logger.error('Error saving workflow state', { error });
+      }
+    }
+  }
+
+  private clearOldWorkflows(): void {
+    try {
+      // Simple cleanup strategy: remove items that look like workflow states and are older than 7 days
+      // In a real app, we might want a more sophisticated strategy or a separate storage key for index
+      const now = Date.now();
+      const sevenDays = 7 * 24 * 60 * 60 * 1000;
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith(this.STORAGE_KEY_PREFIX)) {
+          try {
+            const item = localStorage.getItem(key);
+            if (item) {
+              const data = JSON.parse(item);
+              if (data.timestamp && (now - data.timestamp > sevenDays)) {
+                localStorage.removeItem(key);
+              }
+            }
+          } catch (e) {
+            // Ignore parse errors for items that are not valid JSON or not workflow states
+          }
+        }
+      }
+    } catch (error) {
+      logger.error('Error clearing old workflows', { error });
     }
   }
 
@@ -313,29 +384,14 @@ export class WorkflowOrchestrator {
     return this.pageStates.get(pageId) || null;
   }
 
-  /**
-   * Save workflow state to localStorage
-   */
-  saveState(): void {
-    try {
-      const state = {
-        workflowId: this.config.workflowId,
-        state: this.currentState,
-        pageStates: Object.fromEntries(this.pageStates),
-        timestamp: Date.now(),
-      };
-      localStorage.setItem(`workflow:${this.config.workflowId}`, JSON.stringify(state));
-    } catch (error) {
-      logger.error('Error saving workflow state', { error });
-    }
-  }
+
 
   /**
    * Load workflow state from localStorage
    */
   loadState(): void {
     try {
-      const saved = localStorage.getItem(`workflow:${this.config.workflowId}`);
+      const saved = localStorage.getItem(`${this.STORAGE_KEY_PREFIX}${this.config.workflowId}`);
       if (saved) {
         const parsed = JSON.parse(saved);
         this.currentState = parsed.state;

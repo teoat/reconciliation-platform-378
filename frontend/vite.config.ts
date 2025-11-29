@@ -16,17 +16,17 @@ export default defineConfig(({ mode }) => {
       // Compression plugin for production builds
       ...(isProduction
         ? [
-            viteCompression({
-              algorithm: 'gzip',
-              threshold: 1024, // Only compress files > 1KB
-              deleteOriginFile: false,
-            } as { algorithm: 'gzip'; threshold: number; deleteOriginFile: boolean }),
-            viteCompression({
-              algorithm: 'brotli',
-              threshold: 1024,
-              deleteOriginFile: false,
-            } as { algorithm: 'brotli'; threshold: number; deleteOriginFile: boolean }),
-          ]
+          viteCompression({
+            algorithm: 'gzip',
+            threshold: 1024, // Only compress files > 1KB
+            deleteOriginFile: false,
+          } as { algorithm: 'gzip'; threshold: number; deleteOriginFile: boolean }),
+          viteCompression({
+            algorithm: 'brotli',
+            threshold: 1024,
+            deleteOriginFile: false,
+          } as { algorithm: 'brotli'; threshold: number; deleteOriginFile: boolean }),
+        ]
         : []),
     ],
     server: {
@@ -199,6 +199,12 @@ export default defineConfig(({ mode }) => {
             // Utils and services - split further for better code splitting
             if (id.includes('/src/utils') || id.includes('/src/services')) {
               // Split large services into separate chunks
+              if (id.includes('atomicWorkflowService')) {
+                return 'service-atomic-workflow';
+              }
+              if (id.includes('microInteractionService')) {
+                return 'service-micro-interaction';
+              }
               if (id.includes('/src/services/cache') || id.includes('/src/services/performance')) {
                 return 'services-cache-performance';
               }

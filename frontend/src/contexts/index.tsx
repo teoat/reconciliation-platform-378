@@ -1,82 +1,13 @@
 // Centralized context providers for the application
 import React, { createContext, useContext, useReducer, ReactNode } from 'react'
-import type { User } from '@/types/user'
+
 import type { Project } from '@/types/backend'
 import type { ReconciliationRecord, MatchingRule } from '@/services/dataManagement/types'
 import type { WorkflowState } from '@/services/atomic-workflow/types'
 import type { Chart, DashboardData } from '@/types/analytics'
 import type { ProcessedRecord } from '@/services/dataManagement/types'
 
-// Auth Context
-interface AuthState {
-  isAuthenticated: boolean
-  user: User | null
-  loading: boolean
-}
 
-type AuthAction =
-  | { type: 'LOGIN'; payload: User }
-  | { type: 'LOGOUT' }
-  | { type: 'SET_LOADING'; payload: boolean }
-
-interface AuthContextType extends AuthState {
-  login: (user: User) => void
-  logout: () => void
-  setLoading: (loading: boolean) => void
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-interface AuthProviderProps {
-  children: ReactNode
-}
-
-export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, {
-    isAuthenticated: false,
-    user: null,
-    loading: false
-  })
-
-  const login = (user: User) => {
-    dispatch({ type: 'LOGIN', payload: user })
-  }
-
-  const logout = () => {
-    dispatch({ type: 'LOGOUT' })
-  }
-
-  const setLoading = (loading: boolean) => {
-    dispatch({ type: 'SET_LOADING', payload: loading })
-  }
-
-  return (
-    <AuthContext.Provider value={{ ...state, login, logout, setLoading }}>
-      {children}
-    </AuthContext.Provider>
-  )
-}
-
-export const useAuth = () => {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
-  }
-  return context
-}
-
-function authReducer(state: AuthState, action: AuthAction): AuthState {
-  switch (action.type) {
-    case 'LOGIN':
-      return { ...state, isAuthenticated: true, user: action.payload, loading: false }
-    case 'LOGOUT':
-      return { ...state, isAuthenticated: false, user: null, loading: false }
-    case 'SET_LOADING':
-      return { ...state, loading: action.payload }
-    default:
-      return state
-  }
-}
 
 // Project Context
 interface ProjectState {

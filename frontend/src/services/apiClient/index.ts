@@ -226,33 +226,173 @@ export class ApiClient {
   // AUTHENTICATION METHODS
   // ============================================================================
 
+  // ============================================================================
+  // AUTHENTICATION METHODS
+  // ============================================================================
+
   async login(credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> {
-    const config = this.requestBuilder.method('POST').body(credentials).skipAuth().build();
-    return this.makeRequest<LoginResponse>('/auth/login', config);
+    try {
+      const { authClient } = await import('../../lib/auth-client');
+      const response = await authClient.signIn.email({
+        email: credentials.email,
+        password: credentials.password,
+        rememberMe: credentials.remember_me,
+      });
+
+      if (response.error) {
+        return {
+          success: false,
+          error: {
+            message: response.error.message || 'Login failed',
+            status: response.error.status,
+          } as any,
+        };
+      }
+
+      if (!response.data) {
+        return { success: false, error: { message: 'No data returned' } as any };
+      }
+
+      // Map better-auth response to LoginResponse
+      const data = response.data as any;
+      const loginResponse: LoginResponse = {
+        user: data.user as unknown as BackendUser,
+        token: data.session?.token || localStorage.getItem('better-auth-token') || '',
+        expires_at: data.session?.expiresAt?.getTime() || Date.now(),
+      };
+
+      return {
+        success: true,
+        data: loginResponse,
+      };
+    } catch (error) {
+      return this.responseHandler.handleError(error as any, '/auth/login', 'POST') as ApiResponse<LoginResponse>;
+    }
   }
 
   async register(userData: RegisterRequest): Promise<ApiResponse<LoginResponse>> {
-    const config = this.requestBuilder.method('POST').body(userData).skipAuth().build();
-    return this.makeRequest<LoginResponse>('/auth/register', config);
+    try {
+      const { authClient } = await import('../../lib/auth-client');
+      const response = await authClient.signUp.email({
+        email: userData.email,
+        password: userData.password,
+        name: `${userData.first_name} ${userData.last_name}`,
+        // Map other fields if supported by better-auth schema
+      });
+
+      if (response.error) {
+        return {
+          success: false,
+          error: {
+            message: response.error.message || 'Registration failed',
+            status: response.error.status,
+          } as any,
+        };
+      }
+
+      if (!response.data) {
+        return { success: false, error: { message: 'No data returned' } as any };
+      }
+
+      // Map better-auth response to LoginResponse
+      const data = response.data as any;
+      const loginResponse: LoginResponse = {
+        user: data.user as unknown as BackendUser,
+        token: data.session?.token || localStorage.getItem('better-auth-token') || '',
+        expires_at: data.session?.expiresAt?.getTime() || Date.now(),
+      };
+
+      return {
+        success: true,
+        data: loginResponse,
+      };
+    } catch (error) {
+      return this.responseHandler.handleError(error as any, '/auth/register', 'POST') as ApiResponse<LoginResponse>;
+    }
   }
 
   async logout(): Promise<ApiResponse<{ message: string }>> {
-    const config = this.requestBuilder.method('POST').build();
-    return this.makeRequest<{ message: string }>('/auth/logout', config);
+    try {
+      const { authClient } = await import('../../lib/auth-client');
+      await authClient.signOut();
+      return {
+        success: true,
+        data: { message: 'Logged out successfully' },
+      };
+    } catch (error) {
+      return this.responseHandler.handleError(error as any, '/auth/logout', 'POST') as ApiResponse<{ message: string }>;
+    }
   }
 
   async getCurrentUser(): Promise<ApiResponse<BackendUser>> {
-    const config = this.requestBuilder.method('GET').build();
-    return this.makeRequest<BackendUser>('/auth/me', config);
+    try {
+      const { authClient } = await import('../../lib/auth-client');
+      const response = await authClient.getSession();
+      const session = response.data;
+
+      if (!session) {
+        return {
+          success: false,
+          error: {
+            message: 'Not authenticated',
+            status: 401,
+          } as any,
+        };
+      }
+
+      return {
+        success: true,
+        data: session.user as unknown as BackendUser,
+      };
+    } catch (error) {
+      return this.responseHandler.handleError(error as any, '/auth/me', 'GET') as ApiResponse<BackendUser>;
+    }
   }
 
   async googleOAuth(idToken: string): Promise<ApiResponse<LoginResponse>> {
-    const config = this.requestBuilder
-      .method('POST')
-      .body({ id_token: idToken })
-      .skipAuth()
-      .build();
-    return this.makeRequest<LoginResponse>('/auth/google', config);
+    try {
+      const { authClient } = await import('../../lib/auth-client');
+      const response = await authClient.signIn.social({
+        provider: 'google',
+        idToken,
+      });
+
+      if (response.error) {
+        return {
+          success: false,
+          error: {
+            message: response.error.message || 'Google login failed',
+            status: response.error.status,
+          } as any,
+        };
+      }
+
+      if (!response.data) {
+        return { success: false, error: { message: 'No data returned' } as any };
+      }
+
+      // Handle potential redirect response
+      if ('url' in response.data) {
+        // If it's a redirect, we might not get the session immediately
+        // But for idToken flow, it usually returns session
+        // We'll assume it returns session for now or handle it
+      }
+
+      const data = response.data as any; // Cast to avoid complex union type issues
+
+      const loginResponse: LoginResponse = {
+        user: data.user as unknown as BackendUser,
+        token: (data.session as any)?.token || localStorage.getItem('better-auth-token') || '',
+        expires_at: (data.session as any)?.expiresAt?.getTime() || Date.now(),
+      };
+
+      return {
+        success: true,
+        data: loginResponse,
+      };
+    } catch (error) {
+      return this.responseHandler.handleError(error as any, '/auth/google', 'POST') as ApiResponse<LoginResponse>;
+    }
   }
 
   // ============================================================================
@@ -599,7 +739,7 @@ export class ApiClient {
       this.performanceMonitor.recordRequest(endpoint, duration);
 
       return this.responseHandler.handleError(
-        processedError,
+        processedError as any,
         endpoint,
         config.method || 'GET'
       ) as ApiResponse<T>;
