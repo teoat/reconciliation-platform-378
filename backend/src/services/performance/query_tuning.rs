@@ -66,7 +66,7 @@ impl QueryTuningService {
     ///
     /// ```
     /// use std::sync::Arc;
-    /// let db = Arc::new(Database::new("postgresql://...").await?);
+    /// let db = Arc::new(Database::new("postgresql://...")?);
     /// let service = QueryTuningService::with_db(db);
     /// ```
     pub fn with_db(db: Arc<Database>) -> Self {
@@ -438,7 +438,7 @@ mod tests {
         let service = QueryTuningService::new();
 
         // Test without database connection
-        let result = service.query_slow_query_log(&Database::new("postgresql://test:test@localhost/test").await.unwrap()).await;
+        let result = service.query_slow_query_log(&Database::new("postgresql://test:test@localhost/test").unwrap()).await;
         // Should return empty list gracefully
         assert!(result.is_ok());
         assert!(result.unwrap().is_empty());
@@ -504,7 +504,7 @@ mod tests {
 
         // Test with invalid SQL (would normally fail)
         let invalid_sql = "CREATE INVALID INDEX";
-        let result = service.execute_index_creation(&Database::new("postgresql://test:test@localhost/test").await.unwrap(), invalid_sql).await;
+        let result = service.execute_index_creation(&Database::new("postgresql://test:test@localhost/test").unwrap(), invalid_sql).await;
 
         // Should handle errors gracefully (in real scenario)
         // Note: This test may pass or fail depending on database connection
@@ -525,7 +525,7 @@ mod tests {
         // Test that the threshold is set correctly
         assert_eq!(service.slow_query_threshold, Duration::from_millis(50));
 
-        let service_with_db = QueryTuningService::with_db(Arc::new(Database::new("postgresql://test:test@localhost/test").await.unwrap()));
+        let service_with_db = QueryTuningService::with_db(Arc::new(Database::new("postgresql://test:test@localhost/test").unwrap()));
         assert_eq!(service_with_db.slow_query_threshold, Duration::from_millis(50));
     }
 
@@ -581,7 +581,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_service_with_db_parameter() {
-        let db = Arc::new(Database::new("postgresql://test:test@localhost/test").await.unwrap());
+        let db = Arc::new(Database::new("postgresql://test:test@localhost/test").unwrap());
         let service = QueryTuningService::with_db(db);
 
         assert!(service.db.is_some());
@@ -621,7 +621,7 @@ mod tests {
         let service = QueryTuningService::new();
 
         // Test with mock database that might not exist
-        let db = Database::new("postgresql://nonexistent:test@localhost/test").await;
+        let db = Database::new("postgresql://nonexistent:test@localhost/test");
         if db.is_ok() {
             let db_arc = Arc::new(db.unwrap());
             let result = service.query_slow_query_log(&*db_arc).await;

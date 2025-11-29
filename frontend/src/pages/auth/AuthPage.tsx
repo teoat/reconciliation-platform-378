@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useBetterAuth as useAuth } from '@/hooks/useBetterAuth';
 import { useToast } from '@/hooks/useToast';
 import { logger } from '@/services/logger';
 import { PageMeta } from '@/components/seo/PageMeta';

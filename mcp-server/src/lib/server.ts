@@ -10,7 +10,6 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { SERVER_NAME, SERVER_VERSION, PROJECT_ROOT, BACKEND_URL } from './config.js';
 import { getTools, handleTool } from './tools.js';
-import { cleanupRedis } from './redis.js';
 import { clearHealthCache } from './health.js';
 import { cleanupGit } from './git.js';
 
@@ -100,7 +99,6 @@ export async function startServer(): Promise<void> {
  */
 async function cleanup(): Promise<void> {
   try {
-    await cleanupRedis();
     clearHealthCache();
     cleanupGit();
   } catch (_error) {

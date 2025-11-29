@@ -2,8 +2,6 @@
  * Metrics tracking for MCP Server
  */
 
-import { initRedis } from './redis.js';
-
 // Tool usage monitoring
 export interface ToolUsageMetrics {
   name: string;
@@ -55,32 +53,7 @@ export async function trackToolUsage(toolName: string, duration: number, success
 
   toolUsageMetrics.set(toolName, existing);
 
-  // Persist to Redis (non-blocking)
-  try {
-    const redis = await initRedis().catch(() => null);
-    if (redis?.isOpen) {
-      const key = `mcp:tool_usage:${toolName}`;
-      const data = {
-        name: existing.name,
-        count: existing.count,
-        totalTime: existing.totalTime,
-        avgTime: existing.avgTime,
-        lastUsed: existing.lastUsed.toISOString(),
-        errors: existing.errors,
-        successRate: existing.successRate,
-      };
-      
-      // Store with 24 hour TTL
-      await redis.setEx(key, 86400, JSON.stringify(data));
-      
-      // Also update aggregate stats
-      await redis.zIncrBy('mcp:tool_usage:counts', 1, toolName);
-      await redis.zIncrBy('mcp:tool_usage:total_time', duration, toolName);
-    }
-  } catch (error) {
-    // Silently fail - Redis persistence is optional
-    // Metrics are still tracked in-memory
-  }
+  // Redis persistence removed for IDE stability; metrics remain in-memory only.
 }
 
 /**

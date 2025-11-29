@@ -4,6 +4,8 @@
 //! authentication, logging, and performance monitoring.
 
 pub mod auth;
+pub mod better_auth;
+pub mod dual_auth;
 pub mod cache;
 pub mod logging;
 pub mod logging_config;
@@ -21,6 +23,8 @@ pub mod request_validation;
 
 // Re-export commonly used middleware
 pub use auth::AuthMiddleware;
+pub use better_auth::{BetterAuthMiddleware, BetterAuthConfig, TokenCache};
+pub use dual_auth::{DualAuthMiddleware, DualAuthConfig};
 pub use logging::{LoggingConfig, LoggingMiddleware};
 pub use security::metrics::*;
 pub use security::{

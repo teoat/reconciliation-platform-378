@@ -1,6 +1,6 @@
 //! Adjudication request/response types
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 use validator::Validate;
 
@@ -45,6 +45,7 @@ pub struct CreateAdjudicationWorkflowRequest {
     pub project_id: Option<Uuid>,
     #[validate(length(min = 1, max = 255))]
     pub name: String,
+    pub description: Option<String>,
     pub definition: serde_json::Value,
 }
 
@@ -52,6 +53,7 @@ pub struct CreateAdjudicationWorkflowRequest {
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct UpdateAdjudicationWorkflowRequest {
     pub name: Option<String>,
+    pub description: Option<String>,
     pub definition: Option<serde_json::Value>,
     pub active: Option<bool>,
 }

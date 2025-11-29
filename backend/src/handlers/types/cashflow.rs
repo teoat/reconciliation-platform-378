@@ -1,6 +1,6 @@
 //! Cashflow request/response types
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use uuid::Uuid;
 use validator::Validate;
 

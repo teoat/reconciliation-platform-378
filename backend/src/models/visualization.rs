@@ -122,7 +122,7 @@ pub struct NewReport {
 }
 
 /// Update report
-#[derive(Debug, Clone, AsChangeset)]
+#[derive(Debug, Clone, AsChangeset, Default)]
 #[diesel(table_name = reports)]
 pub struct UpdateReport {
     pub name: Option<String>,
@@ -130,5 +130,6 @@ pub struct UpdateReport {
     pub template: Option<serde_json::Value>,
     pub schedule: Option<Option<serde_json::Value>>,
     pub status: Option<String>,
+    pub last_generated_at: Option<Option<DateTime<Utc>>>,
 }
 

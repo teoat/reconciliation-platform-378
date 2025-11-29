@@ -1,3 +1,4 @@
+pub mod better_auth;
 pub mod billing_config;
 pub mod email_config;
 pub mod monitoring;

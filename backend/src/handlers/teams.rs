@@ -181,12 +181,13 @@ pub async fn list_members(
     let team_id = path.into_inner();
     let team_service = TeamService::new(Arc::new(data.get_ref().clone()));
     let members = team_service.list_members(team_id).await?;
-    
+    let total = members.len() as i64;
+    let per_page = total as i32;
     let paginated = PaginatedResponse {
         items: members,
-        total: members.len() as i64,
+        total,
         page: 1,
-        per_page: members.len() as i32,
+        per_page,
         total_pages: 1,
     };
     

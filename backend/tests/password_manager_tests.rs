@@ -13,7 +13,7 @@ async fn test_password_manager_create_and_retrieve() -> AppResult<()> {
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app".to_string());
     
-    let db = Database::new(&database_url).await?;
+    let db = Database::new(&database_url)?;
     let master_key = "test-master-key".to_string();
     let pm = PasswordManager::new(Arc::new(db), master_key);
     
@@ -37,7 +37,7 @@ async fn test_password_manager_user_specific_encryption() -> AppResult<()> {
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app".to_string());
     
-    let db = Database::new(&database_url).await?;
+    let db = Database::new(&database_url)?;
     let master_key = "test-master-key".to_string();
     let pm = PasswordManager::new(Arc::new(db), master_key);
     
@@ -63,7 +63,7 @@ async fn test_password_manager_rotation() -> AppResult<()> {
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app".to_string());
     
-    let db = Database::new(&database_url).await?;
+    let db = Database::new(&database_url)?;
     let master_key = "test-master-key".to_string();
     let pm = PasswordManager::new(Arc::new(db), master_key);
     

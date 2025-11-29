@@ -351,19 +351,6 @@ class CacheService {
         }
       }
 
-      // Fallback: Try MCP Redis service if available
-      if (typeof window !== 'undefined' && (window as any).mcpIntegrationService) {
-        try {
-          const mcpService = (window as any).mcpIntegrationService;
-          const result = await mcpService.callMCPTool('redis_get', { key });
-          if (result && result.value !== undefined) {
-            return result.value;
-          }
-        } catch {
-          // MCP service not available, continue
-        }
-      }
-
       return null;
     } catch (error) {
       console.warn('Failed to get from Redis cache', { key, error });

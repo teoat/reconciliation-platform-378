@@ -7,7 +7,7 @@ use diesel::prelude::*;
 use std::sync::Arc;
 use uuid::Uuid;
 
-use crate::database::{transaction::with_transaction, Database};
+use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::models::schema::{notification_preferences, notifications};
 use crate::models::{
@@ -37,26 +37,25 @@ impl NotificationService {
         let mut conn = self.db.get_connection()?;
         let offset = (page - 1) * per_page;
 
-        // Build query without moving
-        let mut query = notifications::table
+        // Build base queries
+        let mut items_query = notifications::table
+            .filter(notifications::user_id.eq(user_id))
+            .into_boxed();
+        let mut count_query = notifications::table
             .filter(notifications::user_id.eq(user_id))
             .into_boxed();
 
         if let Some(read) = read_filter {
-            query = query.filter(notifications::read.eq(read));
+            items_query = items_query.filter(notifications::read.eq(read));
+            count_query = count_query.filter(notifications::read.eq(read));
         }
 
-        // Clone query for count
-        let count_query = query.clone();
-
-        // Get total count
         let total: i64 = count_query
             .count()
             .get_result(&mut conn)
             .map_err(AppError::Database)?;
 
-        // Get paginated results
-        let items = query
+        let items = items_query
             .order(notifications::created_at.desc())
             .limit(per_page)
             .offset(offset)
@@ -202,16 +201,16 @@ impl NotificationService {
     pub async fn get_preferences(&self, user_id: Uuid) -> AppResult<NotificationPreferences> {
         let mut conn = self.db.get_connection()?;
 
-        notification_preferences::table
+        match notification_preferences::table
             .filter(notification_preferences::user_id.eq(user_id))
             .first::<NotificationPreferences>(&mut conn)
-            .map_err(|e| match e {
-                diesel::result::Error::NotFound => {
-                    // Create default preferences if not found
+        {
+            Ok(prefs) => Ok(prefs),
+            Err(diesel::result::Error::NotFound) => {
                     self.create_default_preferences(user_id).await
                 }
-                _ => Err(AppError::Database(e)),
-            })
+            Err(e) => Err(AppError::Database(e)),
+        }
     }
 
     /// Create default preferences

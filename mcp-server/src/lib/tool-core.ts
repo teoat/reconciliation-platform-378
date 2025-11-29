@@ -5,15 +5,15 @@
 import { Tool } from '@modelcontextprotocol/sdk/types.js';
 import { trackToolUsage } from './metrics.js';
 import { getDockerTools, handleDockerTool } from './docker-tools.js';
-import { getRedisTools, handleRedisTool } from './redis-tools.js';
 import { getGitTools, handleGitTool } from './git-tools.js';
 import { getDiagnosticTools, handleDiagnosticTool } from './diagnostic-tools.js';
+import { getScriptTools, handleScriptTool } from './script-tools.js';
 
 /**
  * Tool definitions - combines all tool categories
  */
 export function getTools(): Tool[] {
-  return [...getDockerTools(), ...getRedisTools(), ...getGitTools(), ...getDiagnosticTools()];
+  return [...getDockerTools(), ...getGitTools(), ...getDiagnosticTools(), ...getScriptTools()];
 }
 
 /**
@@ -43,11 +43,6 @@ async function executeTool(name: string, args: any): Promise<any> {
     ['docker_container_status', 'docker_container_logs', 'docker_container_restart'].includes(name)
   ) {
     return await handleDockerTool(name, args);
-  }
-
-  // Redis tools
-  if (['redis_get', 'redis_keys'].includes(name)) {
-    return await handleRedisTool(name, args);
   }
 
   // Git tools
@@ -80,6 +75,11 @@ async function executeTool(name: string, args: any): Promise<any> {
     ].includes(name)
   ) {
     return await handleDiagnosticTool(name, args);
+  }
+
+  // Script tools
+  if (['list_scripts', 'run_script'].includes(name)) {
+    return await handleScriptTool(name, args);
   }
 
   throw new Error(`Unknown tool: ${name}`);

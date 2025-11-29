@@ -178,10 +178,8 @@ After configuration changes, restart Cursor/IDE to load new MCP servers.
 - `docker_container_stop` - Stop container
 - `docker_container_restart` - Restart container
 - `backend_health_check` - Check backend health
-- `redis_get` - Get cache value
-- `redis_keys` - List cache keys
-- `redis_delete` - Delete cache key
 - `run_diagnostic` - Run diagnostics
+> ℹ️ Redis cache inspection tools were removed to avoid conflicts with developer-run Redis instances. Use backend diagnostics or Docker CLI instead.
 
 ---
 
@@ -191,7 +189,6 @@ Once configured, you can ask your AI assistant:
 
 - "Check the status of all Docker containers"
 - "Show me the backend health status"
-- "What Redis keys are currently cached?"
 - "Read the backend main.rs file"
 - "Run a diagnostic on the application"
 - "Start the reconciliation-backend container"

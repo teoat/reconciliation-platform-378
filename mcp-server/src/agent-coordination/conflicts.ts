@@ -3,7 +3,7 @@
  */
 
 import { z } from 'zod';
-import { TASK_KEY, TASK_QUEUE_KEY, FILE_LOCK_KEY, ACTIVE_AGENTS_KEY, AGENT_STATUS_KEY } from './config.js';
+import { TASK_KEY, TASK_QUEUE_KEY, FILE_LOCK_KEY, ACTIVE_AGENTS_KEY, AGENT_STATUS_KEY, KEY_PREFIX } from './config.js';
 import { getRedis } from './redis.js';
 import { normalizeFilePath, batchGetFileLocks } from './utils.js';
 

@@ -2,80 +2,39 @@
 //!
 //! This module provides database connection management and utilities.
 
-use diesel::prelude::*;
-use diesel::r2d2::{self, ConnectionManager};
+use diesel::{
+    pg::PgConnection,
+    r2d2::{ConnectionManager, Pool, PooledConnection},
+};
 use std::sync::Arc;
 use std::time::Duration;
 
 use crate::errors::{AppError, AppResult};
 
 /// Database connection pool type
-pub type DbPool = r2d2::Pool<ConnectionManager<PgConnection>>;
+pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 
 /// Database wrapper - now uses Arc for efficient sharing across services
 #[derive(Clone)]
 pub struct Database {
-    pool: Arc<DbPool>,
+    pool: Pool<ConnectionManager<PgConnection>>,
     resilience: Option<Arc<crate::services::resilience::ResilienceManager>>,
 }
 
 impl Database {
     /// Create a new database connection pool with optimized settings
-    pub async fn new(database_url: &str) -> AppResult<Self> {
+    pub fn new(database_url: &str) -> Result<Self, diesel::r2d2::PoolError> {
         let manager = ConnectionManager::<PgConnection>::new(database_url);
-
-        // Get pool size from environment or use defaults
-        // For tests, use larger pool to handle parallel test execution
-        let is_test = std::env::var("TESTING").is_ok() || cfg!(test);
-        let max_size = if is_test {
-            // Larger pool for tests to handle parallel execution
-            std::env::var("DB_POOL_MAX_SIZE")
-                .ok()
-                .and_then(|s| s.parse::<u32>().ok())
-                .unwrap_or(50) // Increased from 20 to 50 for tests
-        } else {
-            // Production pool size
-            std::env::var("DB_POOL_MAX_SIZE")
-                .ok()
-                .and_then(|s| s.parse::<u32>().ok())
-                .unwrap_or(20)
-        };
         
-        let min_idle = if is_test {
-            std::env::var("DB_POOL_MIN_IDLE")
-                .ok()
-                .and_then(|s| s.parse::<u32>().ok())
-                .unwrap_or(10) // Higher min_idle for tests
-        } else {
-            std::env::var("DB_POOL_MIN_IDLE")
-                .ok()
-                .and_then(|s| s.parse::<u32>().ok())
-                .unwrap_or(5)
-        };
-
-        // Optimized connection pool configuration
-        // Enhanced error handling for database pool creation (Tier 1: Critical)
-        let pool = r2d2::Pool::builder()
-            .max_size(max_size) // Configurable pool size
-            .min_idle(Some(min_idle)) // Keep connections ready to reduce connection overhead
-            .connection_timeout(std::time::Duration::from_secs(30)) // 30s timeout for getting a connection
-            .test_on_check_out(true) // Test connections before returning them
-            .build(manager)
-            .map_err(|e| {
-                log::error!(
-                    "Critical: Failed to create database connection pool: {}. This is a system-level error.",
-                    e
-                );
-                AppError::Connection(diesel::ConnectionError::InvalidConnectionUrl(format!(
-                    "Failed to create connection pool: {}. Please check database configuration and connectivity.",
-                    e
-                )))
-            })?;
-
-        Ok(Database {
-            pool: Arc::new(pool),
-            resilience: None,
-        })
+        let pool = Pool::builder()
+            .max_size(30) // Increased from default 10 for better concurrency
+            .min_idle(Some(5)) // Keep some connections warm
+            .connection_timeout(Duration::from_secs(5))
+            .idle_timeout(Some(Duration::from_secs(600))) // 10 minutes idle timeout
+            .max_lifetime(Some(Duration::from_secs(1800))) // 30 minutes max lifetime
+            .build(manager)?;
+            
+        Ok(Database { pool, resilience: None })
     }
 
     /// Create a database with resilience manager (circuit breaker enabled)
@@ -111,7 +70,7 @@ impl Database {
                 .unwrap_or(5)
         };
 
-        let pool = r2d2::Pool::builder()
+        let pool = Pool::builder()
             .max_size(max_size)
             .min_idle(Some(min_idle))
             .connection_timeout(std::time::Duration::from_secs(30))
@@ -125,7 +84,7 @@ impl Database {
             })?;
 
         Ok(Database {
-            pool: Arc::new(pool),
+            pool,
             resilience: Some(resilience),
         })
     }
@@ -138,7 +97,7 @@ impl Database {
     ) -> AppResult<Self> {
         let manager = ConnectionManager::<PgConnection>::new(database_url);
 
-        let pool = r2d2::Pool::builder()
+        let pool = Pool::builder()
             .max_size(max_size)
             .min_idle(Some(min_idle))
             .connection_timeout(std::time::Duration::from_secs(30))
@@ -152,7 +111,7 @@ impl Database {
             })?;
 
         Ok(Database {
-            pool: Arc::new(pool),
+            pool,
             resilience: None,
         })
     }
@@ -179,7 +138,7 @@ impl Database {
     /// This is the synchronous version for backward compatibility
     pub fn get_connection(
         &self,
-    ) -> AppResult<r2d2::PooledConnection<ConnectionManager<PgConnection>>> {
+    ) -> AppResult<PooledConnection<ConnectionManager<PgConnection>>> {
         // Try to get connection with exponential backoff
         let mut retry_count = 0;
         let max_retries = 3;
@@ -253,14 +212,14 @@ impl Database {
     /// Use this method when resilience manager is configured
     pub async fn get_connection_async(
         &self,
-    ) -> AppResult<r2d2::PooledConnection<ConnectionManager<PgConnection>>> {
+    ) -> AppResult<PooledConnection<ConnectionManager<PgConnection>>> {
         // If resilience manager is available, use circuit breaker
         if let Some(resilience) = &self.resilience {
             return resilience
                 .execute_database(async {
                     // Wrap the sync call in async block
                     tokio::task::spawn_blocking({
-                        let pool = Arc::clone(&self.pool);
+                        let pool = self.pool.clone();
                         move || pool.get()
                     })
                     .await

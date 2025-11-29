@@ -62,15 +62,16 @@ pub struct CreateChartRequest {
     pub name: String,
     pub chart_type: String,
     pub config: serde_json::Value,
-    pub data_source: Option<String>,
+    pub data_source: serde_json::Value,
+    pub is_public: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateChartRequest {
     pub name: Option<String>,
-    pub chart_type: Option<String>,
     pub config: Option<serde_json::Value>,
-    pub data_source: Option<String>,
+    pub data_source: Option<serde_json::Value>,
+    pub is_public: Option<bool>,
 }
 
 /// List charts
@@ -159,6 +160,7 @@ pub async fn update_chart(
         name: req.name.clone(),
         configuration: req.config.clone(),
         data_source: req.data_source.clone(),
+        is_public: req.is_public,
     };
     
     let visualization_service = VisualizationService::new(Arc::new(data.get_ref().clone()));
@@ -198,15 +200,19 @@ pub struct Dashboard {
 #[derive(Debug, Deserialize)]
 pub struct CreateDashboardRequest {
     pub name: String,
+    pub description: Option<String>,
     pub layout: serde_json::Value,
-    pub charts: Vec<Uuid>,
+    pub charts: serde_json::Value,
+    pub is_public: Option<bool>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct UpdateDashboardRequest {
     pub name: Option<String>,
+    pub description: Option<String>,
     pub layout: Option<serde_json::Value>,
-    pub charts: Option<Vec<Uuid>>,
+    pub charts: Option<serde_json::Value>,
+    pub is_public: Option<bool>,
 }
 
 /// List dashboards
@@ -247,8 +253,11 @@ pub async fn create_dashboard(
     let new_dashboard = NewDashboard {
         project_id: None, // Could come from request
         name: req.name.clone(),
+        description: req.description.clone(),
         layout: req.layout.clone(),
-        chart_ids: req.charts.clone(),
+        widgets: req.charts.clone(),
+        is_default: false,
+        is_public: req.is_public.unwrap_or(false),
         created_by: user_id,
     };
     
@@ -291,8 +300,11 @@ pub async fn update_dashboard(
     let dashboard_id = path.into_inner();
     let update = UpdateDashboard {
         name: req.name.clone(),
+        description: req.description.clone(),
         layout: req.layout.clone(),
-        chart_ids: req.charts.clone(),
+        widgets: req.charts.clone(),
+        is_default: None,
+        is_public: req.is_public,
     };
     
     let visualization_service = VisualizationService::new(Arc::new(data.get_ref().clone()));
@@ -333,7 +345,8 @@ pub struct Report {
 #[derive(Debug, Deserialize)]
 pub struct CreateReportRequest {
     pub name: String,
-    pub report_type: String,
+    pub description: Option<String>,
+    pub report_type: Option<String>,
     pub config: serde_json::Value,
     pub schedule: Option<serde_json::Value>,
 }
@@ -341,9 +354,10 @@ pub struct CreateReportRequest {
 #[derive(Debug, Deserialize)]
 pub struct UpdateReportRequest {
     pub name: Option<String>,
-    pub report_type: Option<String>,
+    pub description: Option<String>,
     pub config: Option<serde_json::Value>,
     pub schedule: Option<serde_json::Value>,
+    pub status: Option<String>,
 }
 
 /// List reports
@@ -384,7 +398,8 @@ pub async fn create_report(
     let new_report = NewReport {
         project_id: None, // Could come from request
         name: req.name.clone(),
-        description: None,
+        description: req.description.clone(),
+        report_type: req.report_type.clone().unwrap_or_else(|| "standard".to_string()),
         template: req.config.clone(),
         schedule: req.schedule.clone(),
         status: "draft".to_string(),
@@ -430,10 +445,10 @@ pub async fn update_report(
     let report_id = path.into_inner();
     let update = UpdateReport {
         name: req.name.clone(),
-        description: None,
+        description: req.description.clone(),
         template: req.config.clone(),
-        schedule: req.schedule.clone(),
-        status: None,
+        schedule: req.schedule.clone().map(Some),
+        status: req.status.clone(),
         last_generated_at: None,
     };
     
@@ -490,7 +505,7 @@ pub async fn schedule_report(
     
     // Update report with schedule
     let update = UpdateReport {
-        schedule: Some(req.schedule.clone()),
+        schedule: Some(Some(req.schedule.clone())),
         ..Default::default()
     };
     let visualization_service = VisualizationService::new(Arc::new(data.get_ref().clone()));

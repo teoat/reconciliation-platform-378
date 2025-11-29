@@ -60,8 +60,8 @@ This script will:
 - **Port**: `6379`
 - **Password**: Managed via SSOT (`.env` file)
 - **Connection URL**: 
-  - Local: `redis://localhost:6379` (no password)
-  - Docker: `redis://:${REDIS_PASSWORD}@localhost:6379` (with password)
+  - **Docker (recommended for IDE + MCP)**: `redis://:${REDIS_PASSWORD}@localhost:6379`
+  - **Host-only (optional)**: `redis://localhost:6379` (only if you intentionally run a local Redis without auth)
 - **SSOT Management**: Use `scripts/manage-passwords.sh` for password operations
 
 ### MCP Servers
@@ -71,12 +71,11 @@ This script will:
 - **Total Tools**: 74 (under 80 limit)
 
 ### MCP Tools Using Redis
-1. **reconciliation-platform** (27 tools)
-   - Redis operations: `redis_get`, `redis_keys`
-   
-2. **agent-coordination** (18 tools)
-   - Task management, file locking, agent coordination
-   - Requires Redis for shared state
+1. **agent-coordination** (18 tools)
+   - Task management, file locking, coordination
+   - **Depends on Docker Redis** for shared state
+2. **reconciliation-platform**
+   - ❌ Redis toolchain (`redis_get`, `redis_keys`) **removed** to prevent IDEs from binding directly to host Redis instances. Diagnostics continue to run via Docker + backend APIs.
 
 ---
 
@@ -96,7 +95,7 @@ docker-compose up -d redis
 docker-compose up -d
 ```
 
-#### Verify Redis Connection
+#### Verify Redis Connection (Docker)
 
 ```bash
 # Get password from SSOT
@@ -152,26 +151,8 @@ REDIS_URL=redis://:${REDIS_PASSWORD}@localhost:6379
 
 #### MCP Server Environment
 
-MCP servers are configured in `.cursor/mcp.json` and automatically synced from `.env`:
-
-```json
-{
-  "mcpServers": {
-    "reconciliation-platform": {
-      "env": {
-        "REDIS_URL": "redis://:${REDIS_PASSWORD}@localhost:6379"
-      }
-    },
-    "agent-coordination": {
-      "env": {
-        "REDIS_URL": "redis://:${REDIS_PASSWORD}@localhost:6379"
-      }
-    }
-  }
-}
-```
-
-**Auto-sync**: MCP configuration is automatically updated when passwords change via `scripts/manage-passwords.sh sync`
+- `agent-coordination` continues to require Redis and reads `REDIS_URL` from `.env`.
+- `reconciliation-platform` server no longer exposes Redis tools—no Redis credentials are injected into that MCP server to avoid IDE conflicts.
 
 #### Updating Redis Password (SSOT Method)
 
@@ -238,17 +219,37 @@ See [SSOT Areas and Locking](../architecture/SSOT_AREAS_AND_LOCKING.md) for deta
 
 ### 3. MCP Tools Configuration
 
-#### Current MCP Servers (7 servers, 74 tools)
+#### Current MCP Servers (7 servers, 72 tools)
 
 | Server | Tools | Redis Required | Status |
 |--------|-------|----------------|--------|
 | **filesystem** | 8 | ❌ No | ✅ Active |
 | **postgres** | 6 | ❌ No | ✅ Active |
 | **prometheus** | 8 | ❌ No | ✅ Active |
-| **reconciliation-platform** | 27 | ✅ Yes | ✅ Active |
+| **reconciliation-platform** | 25 | ❌ No | ✅ Active |
 | **agent-coordination** | 18 | ✅ Yes | ✅ Active |
 | **sequential-thinking** | 1 | ❌ No | ✅ Active |
 | **memory** | 6 | ❌ No | ✅ Active |
+
+> ℹ️ Tool count dropped by two because `redis_get` / `redis_keys` were intentionally removed from the IDE-facing MCP server.
+
+#### Diagnosing IDE vs Docker Redis Conflicts
+
+If `agent_register` or other MCP workflows report `Redis connection failed after 3 retries`, it usually means another Redis process is already bound to `localhost:6379` without authentication (e.g., `brew services start redis`). This prevents the IDE from reaching the password-protected Docker Redis instance.
+
+```bash
+# Detect host-level Redis
+ps aux | grep redis-server | grep -v grep
+
+# Stop the Homebrew service if it is running
+brew services stop redis
+
+# Verify Docker Redis is reachable and requires auth
+docker exec reconciliation-redis redis-cli -a "$REDIS_PASSWORD" ping
+redis-cli -a "$REDIS_PASSWORD" ping   # should now return PONG without AUTH errors
+```
+
+Always prefer the Docker-managed Redis when running MCP/IDE tooling—this keeps the SSOT passwords enforced and prevents IDE agents from colliding with local services.
 
 #### Build MCP Servers
 

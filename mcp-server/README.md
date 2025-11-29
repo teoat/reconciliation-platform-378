@@ -66,7 +66,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS)
 
 Configure your MCP client to use stdio transport and point to the compiled server.
 
-## Available Tools (28 Essential Tools)
+## Available Tools (26 Essential Tools)
 
 ### Docker Management (3 tools)
 - `docker_container_status` - List containers (running, stopped, all)
@@ -75,10 +75,6 @@ Configure your MCP client to use stdio transport and point to the compiled serve
 
 ### Backend Monitoring (1 tool)
 - `backend_health_check` - Check backend health with 5s caching
-
-### Redis Operations (2 tools)
-- `redis_get` - Get a cache value
-- `redis_keys` - List cache keys with pattern matching (SCAN-based, safe for large datasets)
 
 ### Build & Compilation (2 tools)
 - `backend_compile_check` - Check if backend compiles using cargo check
@@ -118,14 +114,14 @@ Configure your MCP client to use stdio transport and point to the compiled serve
 - `get_system_metrics` - Get system performance metrics (CPU, memory, disk)
 - `get_performance_summary` - Get comprehensive performance summary with recommendations
 
-**Total: 28 essential tools** (35% of 80 limit)
+**Total: 26 essential tools** (32% of 80 limit)
 
 ## Security Notes
 
 - Database queries are read-only (SELECT only)
 - File operations are scoped to PROJECT_ROOT
 - Container operations require Docker access
-- Redis operations require authentication
+- Redis cache inspection tools were removed from this MCP to avoid conflicts with developer-run Redis instances. Use backend diagnostics or Docker CLI if Redis access is required.
 
 ## Development
 

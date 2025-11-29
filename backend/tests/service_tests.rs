@@ -130,7 +130,7 @@ mod file_service_tests {
     async fn create_mock_database() -> Database {
         // In a real test, you'd set up a test database
         // For now, we'll create a mock that panics on actual operations
-        Database::new("mock_connection_string").await.unwrap()
+        Database::new("mock_connection_string").unwrap()
     }
 
     #[tokio::test]

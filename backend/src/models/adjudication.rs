@@ -46,7 +46,7 @@ pub struct NewAdjudicationCase {
 }
 
 /// Update adjudication case
-#[derive(Debug, Clone, AsChangeset)]
+#[derive(Debug, Clone, AsChangeset, Default)]
 #[diesel(table_name = adjudication_cases)]
 pub struct UpdateAdjudicationCase {
     pub title: Option<String>,
@@ -58,6 +58,7 @@ pub struct UpdateAdjudicationCase {
     pub resolved_by: Option<Option<Uuid>>,
     pub resolved_at: Option<Option<DateTime<Utc>>>,
     pub resolution_notes: Option<String>,
+    pub metadata: Option<serde_json::Value>,
 }
 
 /// Adjudication decision model
@@ -92,13 +93,15 @@ pub struct NewAdjudicationDecision {
 }
 
 /// Update adjudication decision
-#[derive(Debug, Clone, AsChangeset)]
+#[derive(Debug, Clone, AsChangeset, Default)]
 #[diesel(table_name = adjudication_decisions)]
 pub struct UpdateAdjudicationDecision {
+    pub decision_text: Option<String>,
     pub status: Option<String>,
     pub appealed: Option<bool>,
     pub appeal_reason: Option<String>,
     pub appealed_at: Option<Option<DateTime<Utc>>>,
+    pub metadata: Option<serde_json::Value>,
 }
 
 /// Adjudication workflow model

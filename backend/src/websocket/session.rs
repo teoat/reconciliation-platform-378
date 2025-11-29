@@ -11,6 +11,7 @@ use uuid::Uuid;
 
 use crate::database::Database;
 use crate::errors::AppResult;
+use crate::middleware::dual_auth::DualAuthMiddleware;
 use crate::websocket::server::WsServer;
 use crate::websocket::types::*;
 
@@ -22,8 +23,10 @@ pub struct WsSession {
     pub server: Addr<WsServer>,
     /// Database connection
     pub db: Arc<Database>,
-    /// JWT secret for token validation
+    /// JWT secret for token validation (legacy)
     pub jwt_secret: String,
+    /// Dual auth middleware (for Better Auth + legacy support)
+    pub dual_auth: Option<Arc<DualAuthMiddleware>>,
     /// Authentication status
     pub authenticated: bool,
     /// Project rooms this session is in
@@ -41,6 +44,7 @@ impl WsSession {
             server,
             db,
             jwt_secret,
+            dual_auth: None,
             authenticated: false,
             project_rooms: HashSet::new(),
             joined_projects: HashSet::new(),
@@ -48,7 +52,40 @@ impl WsSession {
         }
     }
 
-    /// Validate JWT token
+    /// Create new WebSocket session with dual auth support
+    pub fn with_dual_auth(
+        server: Addr<WsServer>,
+        db: Arc<Database>,
+        jwt_secret: String,
+        dual_auth: Arc<DualAuthMiddleware>,
+    ) -> Self {
+        Self {
+            user_id: None,
+            server,
+            db,
+            jwt_secret,
+            dual_auth: Some(dual_auth),
+            authenticated: false,
+            project_rooms: HashSet::new(),
+            joined_projects: HashSet::new(),
+            last_ping: None,
+        }
+    }
+
+    /// Validate JWT token (supports both Better Auth and legacy tokens)
+    pub async fn validate_token_async(&self, token: &str) -> AppResult<crate::services::auth::Claims> {
+        // Try dual auth middleware if available (supports both Better Auth and legacy)
+        if let Some(dual_auth) = &self.dual_auth {
+            return dual_auth.validate_token(token).await;
+        }
+
+        // Fallback to legacy auth
+        use crate::services::auth::AuthService;
+        let auth_service = AuthService::new(self.jwt_secret.clone(), 3600);
+        auth_service.validate_token(token)
+    }
+
+    /// Validate JWT token (synchronous version for compatibility)
     pub fn validate_token(&self, token: &str) -> AppResult<crate::services::auth::Claims> {
         use crate::services::auth::AuthService;
         let auth_service = AuthService::new(self.jwt_secret.clone(), 3600);
@@ -81,25 +118,41 @@ impl Handler<WsMessage> for WsSession {
 
     fn handle(&mut self, msg: WsMessage, ctx: &mut Self::Context) {
         match msg {
-            WsMessage::Auth { token } => match self.validate_token(&token) {
-                Ok(claims) => {
-                    self.user_id = Some(claims.sub.clone());
-                    self.authenticated = true;
+            WsMessage::Auth { token } => {
+                // For async validation, spawn future
+                let dual_auth = self.dual_auth.clone();
+                let jwt_secret = self.jwt_secret.clone();
+                let token_clone = token.clone();
+                
+                let fut = async move {
+                    if let Some(dual_auth) = dual_auth {
+                        // Use dual auth (supports Better Auth + legacy)
+                        dual_auth.validate_token(&token_clone).await
+                    } else {
+                        // Fallback to legacy auth
+                        use crate::services::auth::AuthService;
+                        let auth_service = AuthService::new(jwt_secret, 3600);
+                        auth_service.validate_token(&token_clone)
+                    }
+                };
 
-                    let response = WsMessage::Notification {
-                        title: "Authentication".to_string(),
-                        message: "Authentication successful".to_string(),
-                        level: "success".to_string(),
-                    };
-                    ctx.text(serde_json::to_string(&response).unwrap_or_default());
-                }
-                Err(_) => {
-                    let response = WsMessage::Error {
-                        code: "AUTH_ERROR".to_string(),
-                        message: "Invalid authentication token".to_string(),
-                    };
-                    ctx.text(serde_json::to_string(&response).unwrap_or_default());
-                }
+                let addr = ctx.address();
+                actix::spawn(async move {
+                    match fut.await {
+                        Ok(claims) => {
+                            addr.do_send(AuthResult {
+                                user_id: claims.sub.clone(),
+                                success: true,
+                            });
+                        }
+                        Err(_) => {
+                            addr.do_send(AuthResult {
+                                user_id: String::new(),
+                                success: false,
+                            });
+                        }
+                    }
+                });
             },
             WsMessage::JoinProject { project_id } => {
                 self.handle_join_project(project_id, ctx);

@@ -10,6 +10,7 @@
 
 ## 📋 Table of Contents
 
+- [🔐 Better Auth Migration](#-better-auth-migration)
 - [Quick Start](#-quick-start)
 - [🎯 Health Score & Quality Reports](#-health-score--quality-reports)
 - [Features](#-features)
@@ -22,6 +23,48 @@
 - [Performance](#-performance)
 - [Contributing](#-contributing)
 - [Support](#-support)
+
+---
+
+## 🔐 Better Auth Migration
+
+**Status**: ✅ **COMPLETE - READY FOR DEPLOYMENT**
+
+We've successfully migrated from custom JWT authentication to [Better Auth](https://better-auth.com), a modern TypeScript authentication framework.
+
+### Quick Links
+- 📘 [Better Auth README](BETTER_AUTH_README.md) - Start here
+- 🚀 [Deployment Guide](BETTER_AUTH_DEPLOYMENT_GUIDE.md) - How to deploy
+- 📋 [Migration Runbook](BETTER_AUTH_MIGRATION_RUNBOOK.md) - Production migration
+- 🧪 [Integration Tests](BETTER_AUTH_INTEGRATION_TESTS.md) - Testing guide
+- 📚 [Complete Documentation Index](BETTER_AUTH_INDEX.md) - All docs
+
+### Quick Start with Better Auth
+```bash
+# 1. Start auth server
+cd auth-server
+npm install
+cp env.example .env  # Configure DATABASE_URL, JWT_SECRET, etc.
+npm run db:migrate
+npm run dev          # Runs on http://localhost:4000
+
+# 2. Frontend already configured - just run:
+cd ../frontend
+npm run dev          # Runs on http://localhost:3000
+```
+
+### Features
+- ✅ Email/password authentication (bcrypt cost 12)
+- ✅ Google OAuth integration
+- ✅ JWT tokens (30-minute expiration)
+- ✅ Token refresh mechanism
+- ✅ Session management with timeout warnings
+- ✅ Rate limiting (5 attempts per 15 minutes)
+- ✅ CSRF protection
+- ✅ Zero-downtime migration strategy
+- ✅ Backward compatible with existing system
+
+**All implementation complete! See [BETTER_AUTH_INDEX.md](BETTER_AUTH_INDEX.md) for complete documentation.**
 
 ---
 

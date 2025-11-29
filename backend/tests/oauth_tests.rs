@@ -32,7 +32,7 @@ async fn test_oauth_user_creation() -> AppResult<()> {
     let database_url = std::env::var("DATABASE_URL")
         .unwrap_or_else(|_| "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app".to_string());
     
-    let db = Database::new(&database_url).await?;
+    let db = Database::new(&database_url)?;
     let auth_service = AuthService::new("test-secret".to_string(), 3600);
     let user_service = Arc::new(UserService::new(Arc::new(db), auth_service));
     

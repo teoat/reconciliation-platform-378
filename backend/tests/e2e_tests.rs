@@ -69,7 +69,7 @@ mod user_workflow_tests {
             max_file_size: 10485760,
             upload_path: "./uploads".to_string(),
         });
-        let db = Database::new(&config.database_url).await.unwrap();
+        let db = Database::new(&config.database_url).unwrap();
         let app = test::init_service(
             App::new()
                 .app_data(web::Data::new(db))

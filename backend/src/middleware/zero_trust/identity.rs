@@ -1,7 +1,8 @@
 //! Identity verification for zero-trust middleware
 
 use crate::errors::{AppError, AppResult};
-use crate::services::auth::AuthService;
+use crate::middleware::dual_auth::DualAuthMiddleware;
+use crate::services::auth::{AuthService, Claims};
 use actix_web::dev::ServiceRequest;
 use actix_web::HttpMessage;
 use redis::Client as RedisClient;
@@ -12,10 +13,25 @@ use uuid::Uuid;
 ///
 /// Validates JWT token signature, expiration, and checks revocation list.
 /// Stores claims and user ID in request extensions for downstream use.
+///
+/// Supports both legacy and Better Auth tokens when dual_auth_middleware is provided.
 pub async fn verify_identity(
     req: &ServiceRequest,
     auth_service: Option<&Arc<AuthService>>,
     redis_client: Option<&Arc<RedisClient>>,
+) -> AppResult<()> {
+    verify_identity_with_dual_auth(req, auth_service, redis_client, None).await
+}
+
+/// Verify identity with dual auth support
+///
+/// This function supports both legacy and Better Auth tokens.
+/// If dual_auth_middleware is provided, it will try both auth systems.
+pub async fn verify_identity_with_dual_auth(
+    req: &ServiceRequest,
+    auth_service: Option<&Arc<AuthService>>,
+    redis_client: Option<&Arc<RedisClient>>,
+    dual_auth_middleware: Option<&Arc<DualAuthMiddleware>>,
 ) -> AppResult<()> {
     // Check for authentication token
     let auth_header = req.headers().get("Authorization")
@@ -29,38 +45,56 @@ pub async fn verify_identity(
     let token = auth_header.strip_prefix("Bearer ")
         .ok_or_else(|| AppError::Unauthorized("Invalid token format".to_string()))?;
 
-    // Verify token signature and expiration
-    if let Some(auth) = auth_service {
-        let claims = auth.validate_token(token)?;
-        
-        // Check token expiration (already validated by validate_token, but double-check)
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap_or_default()
-            .as_secs() as usize;
-        
-        if claims.exp < now {
-            return Err(AppError::Unauthorized("Token has expired".to_string()));
-        }
-
-        // Verify user identity from token - extract user ID
-        let user_id = Uuid::parse_str(&claims.sub)
-            .map_err(|e| AppError::Unauthorized(format!("Invalid user ID in token: {}", e)))?;
-
-        // Store claims in request extensions for use in other middleware/handlers
-        req.extensions_mut().insert(claims);
-        req.extensions_mut().insert(user_id);
-
-        // Check token revocation list (Redis or database lookup)
-        if let Err(e) = check_token_revocation(token, redis_client).await {
-            log::warn!("Token revocation check failed (non-fatal): {}", e);
-            // Continue - revocation check is best-effort
-        }
+    // Try dual auth middleware if provided
+    let claims = if let Some(dual_auth) = dual_auth_middleware {
+        // Use dual auth for validation (supports both Better Auth and legacy)
+        dual_auth.validate_token(token).await?
+    } else if let Some(auth) = auth_service {
+        // Fall back to legacy auth validation
+        auth.validate_token(token)?
     } else {
-        // If no auth service, just check token format
+        // No auth service available
         if token.is_empty() {
             return Err(AppError::Unauthorized("Empty token".to_string()));
         }
+        // Create minimal claims for testing/development
+        Claims {
+            sub: "unknown".to_string(),
+            email: "unknown@example.com".to_string(),
+            role: "viewer".to_string(),
+            exp: (std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs() + 3600) as usize,
+            iat: std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_secs() as usize,
+        }
+    };
+    
+    // Check token expiration (already validated by validate_token, but double-check)
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as usize;
+    
+    if claims.exp < now {
+        return Err(AppError::Unauthorized("Token has expired".to_string()));
+    }
+
+    // Verify user identity from token - extract user ID
+    let user_id = Uuid::parse_str(&claims.sub)
+        .map_err(|e| AppError::Unauthorized(format!("Invalid user ID in token: {}", e)))?;
+
+    // Store claims in request extensions for use in other middleware/handlers
+    req.extensions_mut().insert(claims);
+    req.extensions_mut().insert(user_id);
+
+    // Check token revocation list (Redis or database lookup)
+    if let Err(e) = check_token_revocation(token, redis_client).await {
+        log::warn!("Token revocation check failed (non-fatal): {}", e);
+        // Continue - revocation check is best-effort
     }
 
     Ok(())

@@ -2,28 +2,17 @@
   "mcpServers": {
     "filesystem": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-filesystem",
-        "/Users/Arief/Documents/GitHub/reconciliation-platform-378"
-      ],
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "/Users/Arief/Documents/GitHub/reconciliation-platform-378"],
       "env": {}
     },
     "postgres": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@ahmetkca/mcp-server-postgres",
-        "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app"
-      ],
+      "args": ["-y", "@ahmetkca/mcp-server-postgres", "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app"],
       "env": {}
     },
     "prometheus": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@wkronmiller/prometheus-mcp-server"
-      ],
+      "args": ["-y", "@wkronmiller/prometheus-mcp-server"],
       "env": {
         "PROMETHEUS_URL": "http://localhost:9090",
         "PROMETHEUS_TIMEOUT": "10000",
@@ -32,50 +21,37 @@
     },
     "reconciliation-platform": {
       "command": "node",
-      "args": [
-        "/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/index.js"
-      ],
+      "args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/index.js"],
       "env": {
         "NODE_ENV": "development",
         "DATABASE_URL": "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app",
-        "REDIS_URL": "redis://:redis_pass@localhost:6379",
+        "REDIS_URL=redis://:redis_pass@localhost:6379",
         "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378"
       }
     },
     "agent-coordination": {
       "command": "node",
-      "args": [
-        "/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/agent-coordination.js"
-      ],
+      "args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/agent-coordination.js"],
       "env": {
         "NODE_ENV": "development",
-        "REDIS_URL": "redis://:redis_pass@localhost:6379",
+        "REDIS_URL=redis://:redis_pass@localhost:6379",
         "COORDINATION_TTL": "3600",
         "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378"
       }
     },
     "sequential-thinking": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ],
+      "args": ["-y", "@modelcontextprotocol/server-sequential-thinking"],
       "env": {}
     },
     "memory": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-memory"
-      ],
+      "args": ["-y", "@modelcontextprotocol/server-memory"],
       "env": {}
     },
     "context7": {
       "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp"
-      ],
+      "args": ["-y", "@upstash/context7-mcp"],
       "env": {}
     }
   }

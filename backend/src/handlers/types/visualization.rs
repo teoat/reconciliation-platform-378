@@ -1,7 +1,6 @@
 //! Visualization request/response types
 
-use serde::{Deserialize, Serialize};
-use uuid::Uuid;
+use serde::Deserialize;
 use validator::Validate;
 
 /// Schedule report request

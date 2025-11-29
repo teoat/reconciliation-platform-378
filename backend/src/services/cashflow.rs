@@ -1,10 +1,20 @@
 //! Cashflow service module
 
-use bigdecimal::BigDecimal;
-use diesel::prelude::*;
+use bigdecimal::{BigDecimal, Zero};
 use diesel::dsl::sum;
+use diesel::prelude::*;
+use std::collections::HashMap;
 use std::sync::Arc;
 use uuid::Uuid;
+
+// Add caching
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
+use redis::AsyncCommands; // Assuming Redis integration
+
+// Static cache for categories (frequently accessed, changes infrequently)
+static CATEGORY_CACHE: Lazy<Mutex<HashMap<Uuid, Vec<CashflowCategory>>>> = 
+    Lazy::new(|| Mutex::new(HashMap::new()));
 
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
@@ -15,37 +25,90 @@ use crate::models::{
     UpdateCashflowDiscrepancy, UpdateCashflowTransaction,
 };
 
-allow_tables_to_appear_in_same_query!(cashflow_transactions, cashflow_categories);
+diesel::allow_tables_to_appear_in_same_query!(cashflow_transactions, cashflow_categories);
 
 /// Cashflow service
 pub struct CashflowService {
     db: Arc<Database>,
+    redis_client: Option<redis::Client>, // Optional Redis for distributed caching
 }
 
 impl CashflowService {
-    pub fn new(db: Arc<Database>) -> Self {
-        Self { db }
+    pub fn new(db: Arc<Database>, redis_url: Option<&str>) -> Self {
+        let redis_client = redis_url.map(|url| {
+            redis::Client::open(url).expect("Failed to create Redis client")
+        });
+        
+        Self { db, redis_client }
     }
 
     // Categories
     pub async fn list_categories(&self, project_id: Uuid, page: i64, per_page: i64) -> AppResult<(Vec<CashflowCategory>, i64)> {
+        // Check cache first
+        {
+            let cache = CATEGORY_CACHE.lock().unwrap();
+            if let Some(cached) = cache.get(&project_id) {
+                let total = cached.len() as i64;
+                let offset = ((page - 1) * per_page) as usize;
+                let end = (offset + per_page as usize).min(total as usize);
+                let items = cached[offset..end].to_vec();
+                return Ok((items, total));
+            }
+        }
+
+        // Cache miss - query database
         let mut conn = self.db.get_connection()?;
         let offset = (page - 1) * per_page;
 
+        // Get total count efficiently
         let total: i64 = cashflow_categories::table
+            .select(cashflow_categories::id) // Only select ID for count
             .filter(cashflow_categories::project_id.eq(project_id))
             .count()
             .get_result(&mut conn)
             .map_err(AppError::Database)?;
 
+        // Get paginated results with explicit field selection
         let items = cashflow_categories::table
+            .select((
+                cashflow_categories::id,
+                cashflow_categories::project_id,
+                cashflow_categories::name,
+                cashflow_categories::description,
+                cashflow_categories::category_type,
+                cashflow_categories::parent_id,
+                cashflow_categories::is_active,
+                cashflow_categories::created_at,
+                cashflow_categories::updated_at,
+            ))
             .filter(cashflow_categories::project_id.eq(project_id))
             .order(cashflow_categories::name.asc())
             .limit(per_page)
             .offset(offset)
-            .select(CashflowCategory::as_select())
-            .load(&mut conn)
+            .load::<CashflowCategory>(&mut conn)
             .map_err(AppError::Database)?;
+
+        // Cache the full list (without pagination) for next request
+        if page == 1 && per_page >= total { // Cache only if we got all results
+            let mut cache = CATEGORY_CACHE.lock().unwrap();
+            cache.insert(project_id, items.clone());
+        }
+
+        // Optional: Cache in Redis for distributed access
+        if let Some(ref client) = self.redis_client {
+            let mut con = client
+                .get_multiplexed_async_connection()
+                .await
+                .map_err(|e| AppError::Internal(format!("Redis connection error: {}", e)))?;
+            let cache_key = format!("categories:project:{}", project_id);
+            con.set_ex::<_, _, ()>(
+                &cache_key,
+                serde_json::to_string(&items)?,
+                3600 // 1 hour TTL
+            )
+            .await
+            .map_err(|e| AppError::Internal(format!("Redis cache error: {}", e)))?;
+        }
 
         Ok((items, total))
     }
@@ -121,13 +184,8 @@ impl CashflowService {
             })
     }
 
-    pub async fn create_transaction(&self, mut new_transaction: NewCashflowTransaction) -> AppResult<CashflowTransaction> {
+    pub async fn create_transaction(&self, new_transaction: NewCashflowTransaction) -> AppResult<CashflowTransaction> {
         let mut conn = self.db.get_connection()?;
-        
-        // Fix Date<Utc> to NaiveDate
-        if let Some(date_utc) = new_transaction.transaction_date.date() {
-            new_transaction.transaction_date = date_utc;
-        }
         
         diesel::insert_into(cashflow_transactions::table)
             .values(&new_transaction)
@@ -216,35 +274,61 @@ impl CashflowService {
             .map_err(AppError::Database)
     }
 
-    // Fix analysis query
+    // Batch transaction operations
+    pub async fn create_multiple_transactions(
+        &self, 
+        transactions: Vec<NewCashflowTransaction>
+    ) -> AppResult<Vec<CashflowTransaction>> {
+        if transactions.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let mut conn = self.db.get_connection()?;
+        
+        // Extract project_ids for batch filtering
+        let _project_ids: Vec<Uuid> = transactions.iter()
+            .map(|t| t.project_id)
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .collect();
+
+        // Batch insert with explicit selection
+        let result = diesel::insert_into(cashflow_transactions::table)
+            .values(&transactions)
+            .get_results::<CashflowTransaction>(&mut conn)
+            .map_err(AppError::Database)?;
+
+        Ok(result)
+    }
+
+    // Optimized analysis with aggregated queries
     pub async fn get_analysis(&self, project_id: Uuid) -> AppResult<serde_json::Value> {
         let mut conn = self.db.get_connection()?;
         
-        // Calculate total inflow
-        let total_inflow: Option<BigDecimal> = cashflow_transactions::table
-            .inner_join(cashflow_categories::table.on(cashflow_categories::id.eq(cashflow_transactions::category_id)))
+        let inflow: Option<BigDecimal> = cashflow_transactions::table
+            .inner_join(cashflow_categories::table)
             .filter(cashflow_transactions::project_id.eq(project_id))
             .filter(cashflow_categories::category_type.eq("income"))
             .select(sum(cashflow_transactions::amount))
             .first(&mut conn)
             .map_err(AppError::Database)?;
 
-        // Calculate total outflow
-        let total_outflow: Option<BigDecimal> = cashflow_transactions::table
-            .inner_join(cashflow_categories::table.on(cashflow_categories::id.eq(cashflow_transactions::category_id)))
+        let outflow: Option<BigDecimal> = cashflow_transactions::table
+            .inner_join(cashflow_categories::table)
             .filter(cashflow_transactions::project_id.eq(project_id))
             .filter(cashflow_categories::category_type.eq("expense"))
             .select(sum(cashflow_transactions::amount))
             .first(&mut conn)
             .map_err(AppError::Database)?;
 
-        let inflow = total_inflow.unwrap_or_else(BigDecimal::zero);
-        let outflow = total_outflow.unwrap_or_else(BigDecimal::zero);
+        let inflow = inflow.unwrap_or_else(BigDecimal::zero);
+        let outflow = outflow.unwrap_or_else(BigDecimal::zero);
 
         Ok(serde_json::json!({
             "total_inflow": inflow,
             "total_outflow": outflow,
             "net_cashflow": &inflow - &outflow,
+            "cashflow_ratio": if outflow != BigDecimal::zero() { &inflow / &outflow } else { BigDecimal::zero() },
         }))
     }
 }

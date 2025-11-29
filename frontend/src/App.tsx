@@ -1,9 +1,38 @@
 import React, { useEffect, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
-import { AuthProvider, ProtectedRoute } from './hooks/useAuth';
+import { BetterAuthProvider as AuthProvider, useBetterAuth } from './hooks/useBetterAuth';
+import { Navigate } from 'react-router-dom';
+
+// Protected Route Component
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+}
+
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
+  const { isAuthenticated, isLoading } = useBetterAuth();
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Authenticating...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to login if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+};
 import { ReduxProvider } from './store/ReduxProvider';
-import { ErrorBoundary } from './components/ui/ErrorBoundary';
+import { UnifiedErrorBoundary as ErrorBoundary } from './components/ui/UnifiedErrorBoundary';
 import { WebSocketProvider } from './services/WebSocketProvider';
 import UnifiedFetchInterceptor from './services/unifiedFetchInterceptor';
 // Lazy load memory monitoring to reduce initial bundle
@@ -98,7 +127,7 @@ function App() {
 
   return (
     <HelmetProvider>
-      <ErrorBoundary>
+      <ErrorBoundary level="app" componentName="App" showRetry={false}>
         <ReduxProvider>
           <WebSocketProvider config={wsConfig}>
             <AuthProvider>

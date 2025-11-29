@@ -7,7 +7,7 @@ use uuid::Uuid;
 use crate::database::Database;
 use crate::errors::{AppError, AppResult};
 use crate::models::schema::{team_members, teams};
-use crate::models::{NewTeam, NewTeamMember, Team, TeamMember, UpdateTeam, UpdateTeamMember};
+use crate::models::{NewTeam, NewTeamMember, Team, TeamMember, UpdateTeam};
 
 /// Team service
 pub struct TeamService {

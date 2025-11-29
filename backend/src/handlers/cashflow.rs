@@ -21,8 +21,13 @@ use crate::services::cache::MultiLevelCache;
 use crate::services::cashflow::CashflowService;
 use crate::models::{CashflowCategory, NewCashflowCategory, NewCashflowTransaction, NewCashflowDiscrepancy, UpdateCashflowCategory, UpdateCashflowTransaction, UpdateCashflowDiscrepancy};
 use bigdecimal::{BigDecimal, FromPrimitive};
-use std::str::FromStr;
+use std::env;
 use std::sync::Arc;
+
+fn create_cashflow_service(data: &web::Data<Database>) -> CashflowService {
+    let redis_url = env::var("REDIS_URL").ok();
+    CashflowService::new(Arc::new(data.get_ref().clone()), redis_url.as_deref())
+}
 
 /// Configure cashflow routes
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
@@ -85,7 +90,7 @@ pub async fn get_analysis(
         .and_then(|s| Uuid::parse_str(s).ok())
         .ok_or_else(|| AppError::Validation("project_id is required".to_string()))?;
     
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let analysis = cashflow_service.get_analysis(project_id).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -134,7 +139,7 @@ pub async fn create_category(
         is_active: true,
     };
     
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let category = cashflow_service.create_category(new_category).await?;
     
     Ok(HttpResponse::Created().json(ApiResponse {
@@ -152,7 +157,7 @@ pub async fn get_category(
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
     let category_id = path.into_inner();
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let category = cashflow_service.get_category(category_id).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -177,7 +182,7 @@ pub async fn update_category(
         is_active: req.is_active,
     };
     
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let category = cashflow_service.update_category(category_id, update).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -195,7 +200,7 @@ pub async fn delete_category(
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
     let category_id = path.into_inner();
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     cashflow_service.delete_category(category_id).await?;
     Ok(HttpResponse::NoContent().finish())
 }
@@ -213,7 +218,7 @@ pub async fn list_transactions(
     let page = query.page.unwrap_or(1) as i64;
     let per_page = query.per_page.unwrap_or(20).min(100) as i64;
     
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let (transactions, total) = cashflow_service.list_transactions(project_id, page, per_page).await?;
     
     let total_pages = (total as f64 / per_page as f64).ceil() as i32;
@@ -252,7 +257,7 @@ pub async fn create_transaction(
         created_by: None,
     };
     
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let transaction = cashflow_service.create_transaction(new_transaction).await?;
     
     Ok(HttpResponse::Created().json(ApiResponse {
@@ -270,7 +275,7 @@ pub async fn get_transaction(
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
     let transaction_id = path.into_inner();
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let transaction = cashflow_service.get_transaction(transaction_id).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -296,7 +301,7 @@ pub async fn update_transaction(
         metadata: req.metadata.clone(),
     };
     
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let transaction = cashflow_service.update_transaction(transaction_id, update).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -314,7 +319,7 @@ pub async fn delete_transaction(
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
     let transaction_id = path.into_inner();
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     cashflow_service.delete_transaction(transaction_id).await?;
     Ok(HttpResponse::NoContent().finish())
 }
@@ -332,7 +337,7 @@ pub async fn list_discrepancies(
     let page = query.page.unwrap_or(1) as i64;
     let per_page = query.per_page.unwrap_or(20).min(100) as i64;
     
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let (discrepancies, total) = cashflow_service.list_discrepancies(project_id, page, per_page).await?;
     
     let total_pages = (total as f64 / per_page as f64).ceil() as i32;
@@ -370,7 +375,7 @@ pub async fn create_discrepancy(
         status: "open".to_string(),
     };
     
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let discrepancy = cashflow_service.create_discrepancy(new_discrepancy).await?;
     
     Ok(HttpResponse::Created().json(ApiResponse {
@@ -388,7 +393,7 @@ pub async fn get_discrepancy(
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
     let discrepancy_id = path.into_inner();
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let discrepancy = cashflow_service.get_discrepancy(discrepancy_id).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -414,7 +419,7 @@ pub async fn update_discrepancy(
         resolution_notes: req.resolution_notes.clone(),
     };
     
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let discrepancy = cashflow_service.update_discrepancy(discrepancy_id, update).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -436,7 +441,7 @@ pub async fn resolve_discrepancy(
     let user_id = extract_user_id(&http_req)?;
     let notes = req.notes.clone();
     
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let discrepancy = cashflow_service.resolve_discrepancy(discrepancy_id, user_id, notes).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {
@@ -457,7 +462,7 @@ pub async fn get_metrics(
         .and_then(|s| Uuid::parse_str(s).ok())
         .ok_or_else(|| AppError::Validation("project_id is required".to_string()))?;
     
-    let cashflow_service = CashflowService::new(Arc::new(data.get_ref().clone()));
+    let cashflow_service = create_cashflow_service(&data);
     let analysis = cashflow_service.get_analysis(project_id).await?;
     
     Ok(HttpResponse::Ok().json(ApiResponse {

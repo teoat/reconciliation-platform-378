@@ -27,17 +27,19 @@ impl VisualizationService {
         let mut conn = self.db.get_connection()?;
         let offset = (page - 1) * per_page;
 
-        let mut query = charts::table.into_boxed();
+        let mut items_query = charts::table.into_boxed();
+        let mut count_query = charts::table.into_boxed();
         if let Some(pid) = project_id {
-            query = query.filter(charts::project_id.eq(pid));
+            items_query = items_query.filter(charts::project_id.eq(pid));
+            count_query = count_query.filter(charts::project_id.eq(pid));
         }
 
-        let total: i64 = query
+        let total: i64 = count_query
             .count()
             .get_result(&mut conn)
             .map_err(AppError::Database)?;
 
-        let items = query
+        let items = items_query
             .order(charts::created_at.desc())
             .limit(per_page)
             .offset(offset)
@@ -87,17 +89,19 @@ impl VisualizationService {
         let mut conn = self.db.get_connection()?;
         let offset = (page - 1) * per_page;
 
-        let mut query = dashboards::table.into_boxed();
+        let mut items_query = dashboards::table.into_boxed();
+        let mut count_query = dashboards::table.into_boxed();
         if let Some(pid) = project_id {
-            query = query.filter(dashboards::project_id.eq(pid));
+            items_query = items_query.filter(dashboards::project_id.eq(pid));
+            count_query = count_query.filter(dashboards::project_id.eq(pid));
         }
 
-        let total: i64 = query
+        let total: i64 = count_query
             .count()
             .get_result(&mut conn)
             .map_err(AppError::Database)?;
 
-        let items = query
+        let items = items_query
             .order(dashboards::created_at.desc())
             .limit(per_page)
             .offset(offset)
@@ -147,17 +151,19 @@ impl VisualizationService {
         let mut conn = self.db.get_connection()?;
         let offset = (page - 1) * per_page;
 
-        let mut query = reports::table.into_boxed();
+        let mut items_query = reports::table.into_boxed();
+        let mut count_query = reports::table.into_boxed();
         if let Some(pid) = project_id {
-            query = query.filter(reports::project_id.eq(pid));
+            items_query = items_query.filter(reports::project_id.eq(pid));
+            count_query = count_query.filter(reports::project_id.eq(pid));
         }
 
-        let total: i64 = query
+        let total: i64 = count_query
             .count()
             .get_result(&mut conn)
             .map_err(AppError::Database)?;
 
-        let items = query
+        let items = items_query
             .order(reports::created_at.desc())
             .limit(per_page)
             .offset(offset)
@@ -219,19 +225,6 @@ impl VisualizationService {
             "generated_at": Utc::now(),
             "template": report.template,
         }))
-    }
-}
-
-impl Default for UpdateReport {
-    fn default() -> Self {
-        Self {
-            name: None,
-            description: None,
-            template: None,
-            schedule: None,
-            status: None,
-            last_generated_at: None,
-        }
     }
 }
 

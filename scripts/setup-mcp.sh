@@ -49,7 +49,7 @@ cat > "${MCP_CONFIG_FILE}" << EOF
       "env": {
         "NODE_ENV": "development",
         "DATABASE_URL": "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app",
-        "REDIS_URL": "redis://:redis_pass@localhost:6379",
+        "REDIS_URL=redis://:redis_pass@localhost:6379",
         "PROJECT_ROOT": "${PROJECT_ROOT}"
       }
     },
@@ -58,7 +58,7 @@ cat > "${MCP_CONFIG_FILE}" << EOF
       "args": ["${PROJECT_ROOT}/mcp-server/dist/agent-coordination.js"],
       "env": {
         "NODE_ENV": "development",
-        "REDIS_URL": "redis://:redis_pass@localhost:6379",
+        "REDIS_URL=redis://:redis_pass@localhost:6379",
         "COORDINATION_TTL": "3600",
         "PROJECT_ROOT": "${PROJECT_ROOT}"
       }

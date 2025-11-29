@@ -93,3 +93,11 @@ export async function startServer(): Promise<void> {
   });
 }
 
+async function cleanup(): Promise<void> {
+  try {
+    await cleanupRedis();
+  } catch (_error) {
+    // ignore shutdown errors
+  }
+}
+

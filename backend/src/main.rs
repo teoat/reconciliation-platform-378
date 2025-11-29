@@ -451,6 +451,7 @@ async fn async_main() -> std::io::Result<()> {
                 cors_builder = cors_builder
                     .allowed_origin("http://localhost:1000")
                     .allowed_origin("http://localhost:3000")
+                    .allowed_origin("http://localhost:3001") // Better Auth server
                     .allowed_origin("http://localhost:5173");
             }
 

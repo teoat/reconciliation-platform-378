@@ -571,16 +571,16 @@ impl FileService {
             }
         };
 
-        let file_path = PathBuf::from(&self.upload_path).join(&uploaded_file.file_path);
+        let resolved_path = PathBuf::from(&self.upload_path).join(&uploaded_file.file_path);
         
-        if !file_path.exists() {
+        if !resolved_path.exists() {
             return Err(AppError::NotFound(format!(
                 "Physical file not found at path: {}",
-                file_path.display()
+                resolved_path.display()
             )));
         }
 
-        Ok((file_path, uploaded_file))
+        Ok((resolved_path, uploaded_file))
     }
 
     /// Get file preview (safe content preview)

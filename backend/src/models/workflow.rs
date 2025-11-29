@@ -74,7 +74,7 @@ pub struct NewWorkflowInstance {
 }
 
 /// Update workflow instance
-#[derive(Debug, Clone, AsChangeset)]
+#[derive(Debug, Clone, AsChangeset, Default)]
 #[diesel(table_name = workflow_instances)]
 pub struct UpdateWorkflowInstance {
     pub status: Option<String>,

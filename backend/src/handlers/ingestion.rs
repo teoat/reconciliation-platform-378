@@ -17,7 +17,6 @@ use crate::handlers::types::{
 };
 use crate::utils::check_project_permission;
 use crate::services::ingestion::IngestionService;
-use crate::models::{NewIngestionJob, UpdateIngestionJob};
 use std::sync::Arc;
 
 /// Configure ingestion routes

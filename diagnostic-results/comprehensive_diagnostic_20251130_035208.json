@@ -1,0 +1,43 @@
+{
+  "timestamp": "20251130_035208",
+  "overall_score": 80.13,
+  "scores": {
+    "backend": 74.30,
+    "frontend": 96.50,
+    "infrastructure": 100.00,
+    "documentation": 100.00,
+    "security": 70,
+    "code_quality": 40
+  },
+  "details": {
+    "frontend_types": "No type errors, Score: 20/20",
+    "frontend_security": "No vulnerabilities, Score: 10/10",
+    "frontend_bundle": "Bundle size: 2.0M, Score: 10/10",
+    "security_secrets": "Hardcoded secrets: 57, Score: 0/30",
+    "quality_organization": "Modules: 33, Score: 25/25",
+    "infra_cicd": "CI/CD files: 19, Score: 10.00/10",
+    "frontend_build": "Build successful, Score: 25/25",
+    "infra_k8s": "K8s files: 34, Score: 25.00/25",
+    "doc_deploy": "Deploy docs: 10, Score: 15.00/15",
+    "quality_types": "'any' types: 269, Score: 0/20",
+    "infra_docker": "Docker files: 9, Score: 30.00/30",
+    "infra_monitoring": "Monitoring files: 5, Score: 20.00/20",
+    "infra_env": "Env files: 1, Score: 15.00/15",
+    "doc_comments": "Total comments: 16967, Score: 15/15",
+    "backend_docs": "Doc comments: 3322, Functions: 1731, Ratio: 191.91%, Score: 19.19/10",
+    "backend_quality": "Warnings: 220, Errors: 50, Score: 0/20",
+    "security_validation": "Validation files: 93, Score: 20/20",
+    "quality_duplication": "Duplicate patterns: 3446, Score: 0/20",
+    "backend_security": "No vulnerabilities, Score: 15/15",
+    "quality_errors": "unwrap/expect usage: 232, Score: 0/20",
+    "quality_naming": "Naming conventions followed, Score: 15/15",
+    "frontend_tests": "Test files: 667, Source files: 808, Ratio: 82.54%, Score: 16.50/20",
+    "security_errors": "Error handling found, Score: 10/10",
+    "frontend_lint": "No linting issues, Score: 15/15",
+    "security_headers": "Security headers found, Score: 15/15",
+    "security_auth": "Auth files: 2555, Score: 25/25",
+    "doc_api": "API docs: 12, Score: 25.00/25",
+    "doc_readme": "README lines: 624, Score: 25/25",
+    "doc_arch": "Arch docs: 10, Score: 20.00/20"
+  }
+}

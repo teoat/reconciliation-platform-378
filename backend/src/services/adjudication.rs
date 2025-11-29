@@ -29,17 +29,19 @@ impl AdjudicationService {
         let mut conn = self.db.get_connection()?;
         let offset = (page - 1) * per_page;
 
-        let mut query = adjudication_cases::table.into_boxed();
+        let mut items_query = adjudication_cases::table.into_boxed();
+        let mut count_query = adjudication_cases::table.into_boxed();
         if let Some(pid) = project_id {
-            query = query.filter(adjudication_cases::project_id.eq(pid));
+            items_query = items_query.filter(adjudication_cases::project_id.eq(pid));
+            count_query = count_query.filter(adjudication_cases::project_id.eq(pid));
         }
 
-        let total: i64 = query
+        let total: i64 = count_query
             .count()
             .get_result(&mut conn)
             .map_err(AppError::Database)?;
 
-        let items = query
+        let items = items_query
             .order(adjudication_cases::created_at.desc())
             .limit(per_page)
             .offset(offset)
@@ -113,17 +115,19 @@ impl AdjudicationService {
         let mut conn = self.db.get_connection()?;
         let offset = (page - 1) * per_page;
 
-        let mut query = adjudication_decisions::table.into_boxed();
+        let mut items_query = adjudication_decisions::table.into_boxed();
+        let mut count_query = adjudication_decisions::table.into_boxed();
         if let Some(cid) = case_id {
-            query = query.filter(adjudication_decisions::case_id.eq(cid));
+            items_query = items_query.filter(adjudication_decisions::case_id.eq(cid));
+            count_query = count_query.filter(adjudication_decisions::case_id.eq(cid));
         }
 
-        let total: i64 = query
+        let total: i64 = count_query
             .count()
             .get_result(&mut conn)
             .map_err(AppError::Database)?;
 
-        let items = query
+        let items = items_query
             .order(adjudication_decisions::decided_at.desc())
             .limit(per_page)
             .offset(offset)
@@ -177,19 +181,23 @@ impl AdjudicationService {
         let mut conn = self.db.get_connection()?;
         let offset = (page - 1) * per_page;
 
-        let mut query = adjudication_workflows::table
+        let mut items_query = adjudication_workflows::table
+            .filter(adjudication_workflows::is_active.eq(true))
+            .into_boxed();
+        let mut count_query = adjudication_workflows::table
             .filter(adjudication_workflows::is_active.eq(true))
             .into_boxed();
         if let Some(pid) = project_id {
-            query = query.filter(adjudication_workflows::project_id.eq(pid));
+            items_query = items_query.filter(adjudication_workflows::project_id.eq(pid));
+            count_query = count_query.filter(adjudication_workflows::project_id.eq(pid));
         }
 
-        let total: i64 = query
+        let total: i64 = count_query
             .count()
             .get_result(&mut conn)
             .map_err(AppError::Database)?;
 
-        let items = query
+        let items = items_query
             .order(adjudication_workflows::created_at.desc())
             .limit(per_page)
             .offset(offset)

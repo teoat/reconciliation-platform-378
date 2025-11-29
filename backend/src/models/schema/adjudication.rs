@@ -63,7 +63,6 @@ diesel::table! {
 }
 
 diesel::joinable!(adjudication_cases -> projects (project_id));
-diesel::joinable!(adjudication_cases -> users (assigned_to));
 diesel::joinable!(adjudication_cases -> users (created_by));
 diesel::joinable!(adjudication_decisions -> adjudication_cases (case_id));
 diesel::joinable!(adjudication_decisions -> users (decided_by));

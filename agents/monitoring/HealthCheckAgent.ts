@@ -367,36 +367,10 @@ export class HealthCheckAgent implements MetaAgent {
     message: string;
     details: Record<string, unknown>;
   }> {
-    try {
-      // Try to check Redis via MCP service
-      if (typeof window !== 'undefined' && (window as any).mcpIntegrationService) {
-        const mcpService = (window as any).mcpIntegrationService;
-        // Try to get a Redis key as a health check
-        try {
-          const result = await mcpService.callMCPTool('redis_get', { key: '__health_check__' });
-          return {
-            status: 'healthy',
-            message: 'Redis connection successful',
-            details: { mcp: true, accessible: true },
-          };
-        } catch {
-          // Redis might not be accessible, but that's okay for health check
-          return {
-            status: 'degraded',
-            message: 'Redis health check unavailable',
-            details: { mcp: true, accessible: false },
-          };
-        }
-      }
-    } catch (error) {
-      // Fallback
-    }
-
-    // Fallback: assume healthy if we can't check
     return {
-      status: 'healthy',
-      message: 'Redis health check unavailable (assuming healthy)',
-      details: { fallback: true },
+      status: 'degraded',
+      message: 'Redis MCP tools disabled; rely on backend diagnostics or Docker redis-cli',
+      details: { mcp: false },
     };
   }
 

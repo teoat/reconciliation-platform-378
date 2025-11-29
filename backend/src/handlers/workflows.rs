@@ -17,7 +17,16 @@ use crate::handlers::types::{
 };
 use crate::services::cache::MultiLevelCache;
 use crate::services::workflow::WorkflowService;
-use crate::models::{NewWorkflow, NewWorkflowInstance, NewWorkflowRule, UpdateWorkflow, UpdateWorkflowInstance, UpdateWorkflowRule};
+use crate::models::{
+    NewWorkflow,
+    NewWorkflowInstance,
+    NewWorkflowRule,
+    UpdateWorkflow,
+    UpdateWorkflowInstance,
+    UpdateWorkflowRule,
+    WorkflowInstance,
+    WorkflowRule,
+};
 use std::sync::Arc;
 
 /// Configure workflows routes
@@ -66,27 +75,6 @@ pub struct UpdateWorkflowRequest {
     pub name: Option<String>,
     pub description: Option<String>,
     pub definition: Option<serde_json::Value>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct WorkflowInstance {
-    pub id: Uuid,
-    pub workflow_id: Uuid,
-    pub status: String,
-    pub current_step: Option<String>,
-    pub data: serde_json::Value,
-    pub started_at: chrono::DateTime<chrono::Utc>,
-    pub completed_at: Option<chrono::DateTime<chrono::Utc>>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct WorkflowRule {
-    pub id: Uuid,
-    pub name: String,
-    pub condition: serde_json::Value,
-    pub action: serde_json::Value,
-    pub active: bool,
-    pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 /// List workflows
@@ -203,7 +191,7 @@ pub async fn delete_workflow(
 pub async fn list_instances(
     query: web::Query<SearchQueryParams>,
     _http_req: HttpRequest,
-    data: web::Data<Database>,
+    _data: web::Data<Database>,
     _cache: web::Data<MultiLevelCache>,
 ) -> Result<HttpResponse, AppError> {
     let page = query.page.unwrap_or(1) as i64;
@@ -211,7 +199,7 @@ pub async fn list_instances(
     
     // For now, return empty list - instances need workflow_id filter
     // This should be enhanced to filter by workflow_id from query params
-    let paginated = PaginatedResponse {
+    let paginated: PaginatedResponse<WorkflowInstance> = PaginatedResponse {
         items: vec![],
         total: 0,
         page: page as i32,
@@ -305,7 +293,7 @@ pub async fn cancel_instance(
     let instance_id = path.into_inner();
     let update = UpdateWorkflowInstance {
         status: Some("cancelled".to_string()),
-        completed_at: Some(Some(chrono::Utc::now())),
+        completed_at: Some(chrono::Utc::now()),
         ..Default::default()
     };
     
@@ -324,11 +312,11 @@ pub async fn cancel_instance(
 pub async fn list_rules(
     query: web::Query<SearchQueryParams>,
     _http_req: HttpRequest,
-    data: web::Data<Database>,
+    _data: web::Data<Database>,
     _cache: web::Data<MultiLevelCache>,
 ) -> Result<HttpResponse, AppError> {
     // Rules need workflow_id from query - simplified for now
-    let paginated = PaginatedResponse {
+    let paginated: PaginatedResponse<WorkflowRule> = PaginatedResponse {
         items: vec![],
         total: 0,
         page: query.page.unwrap_or(1),

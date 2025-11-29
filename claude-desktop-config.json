@@ -2,7 +2,9 @@
   "mcpServers": {
     "reconciliation-platform": {
       "command": "node",
-      "args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/index.js"],
+      "args": [
+        "/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/index.js"
+      ],
       "env": {
         "DATABASE_URL": "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app",
         "REDIS_URL": "redis://:redis_pass@localhost:6379",
@@ -12,7 +14,9 @@
     },
     "agent-coordination": {
       "command": "node",
-      "args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/agent-coordination.js"],
+      "args": [
+        "/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/agent-coordination.js"
+      ],
       "env": {
         "REDIS_URL": "redis://:redis_pass@localhost:6379",
         "COORDINATION_TTL": "3600"
@@ -20,7 +24,9 @@
     },
     "playwright": {
       "command": "node",
-      "args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/playwright/dist/index.js"],
+      "args": [
+        "/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/playwright/dist/index.js"
+      ],
       "env": {
         "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378",
         "PLAYWRIGHT_CONFIG": "playwright.config.ts",
@@ -30,11 +36,21 @@
     },
     "frontend-diagnostics": {
       "command": "node",
-      "args": ["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/frontend-diagnostics/dist/index.js"],
+      "args": [
+        "/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/frontend-diagnostics/dist/index.js"
+      ],
       "env": {
         "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378",
         "FRONTEND_BASE_URL": "http://localhost:3000"
       }
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app"
+      ]
     }
   }
 }

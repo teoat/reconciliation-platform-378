@@ -145,15 +145,19 @@ pub async fn create_case(
 ) -> Result<HttpResponse, AppError> {
     req.validate().map_err(|e| AppError::Validation(format!("Validation error: {:?}", e)))?;
     let user_id = extract_user_id(&http_req)?;
+    let project_id = req
+        .project_id
+        .ok_or_else(|| AppError::Validation("project_id is required".to_string()))?;
+    let case_number = format!("CASE-{}", Uuid::new_v4());
     
     let new_case = NewAdjudicationCase {
-        project_id: req.project_id,
+        project_id,
+        case_number,
         title: req.title.clone(),
         description: req.description.clone(),
         case_type: req.case_type.clone().unwrap_or_else(|| "general".to_string()),
         priority: req.priority.clone().unwrap_or_else(|| "medium".to_string()),
         status: "open".to_string(),
-        assigned_to: None,
         created_by: user_id,
         metadata: req.metadata.clone().unwrap_or_else(|| serde_json::json!({})),
     };
@@ -217,6 +221,7 @@ pub async fn update_case(
         status: req.status.clone(),
         priority: req.priority.clone(),
         metadata: req.metadata.clone(),
+        ..Default::default()
     };
     
     let adjudication_service = AdjudicationService::new(Arc::new(data.get_ref().clone()));
@@ -316,15 +321,18 @@ pub async fn list_workflows(
 /// Create workflow
 pub async fn create_workflow(
     req: web::Json<CreateAdjudicationWorkflowRequest>,
-    _http_req: HttpRequest,
+    http_req: HttpRequest,
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
     req.validate().map_err(|e| AppError::Validation(format!("Validation error: {:?}", e)))?;
+    let user_id = extract_user_id(&http_req)?;
     let new_workflow = NewAdjudicationWorkflow {
         project_id: req.project_id,
         name: req.name.clone(),
+        description: req.description.clone(),
         definition: req.definition.clone(),
         is_active: true,
+        created_by: user_id,
     };
     
     let adjudication_service = AdjudicationService::new(Arc::new(data.get_ref().clone()));
@@ -366,6 +374,7 @@ pub async fn update_workflow(
     let workflow_id = path.into_inner();
     let update = UpdateAdjudicationWorkflow {
         name: req.name.clone(),
+        description: req.description.clone(),
         definition: req.definition.clone(),
         is_active: req.active,
     };
@@ -429,14 +438,15 @@ pub async fn create_decision(
 ) -> Result<HttpResponse, AppError> {
     req.validate().map_err(|e| AppError::Validation(format!("Validation error: {:?}", e)))?;
     let user_id = extract_user_id(&http_req)?;
+    let metadata = build_metadata_with_rationale(req.metadata.clone(), req.rationale.clone());
     
     let new_decision = NewAdjudicationDecision {
         case_id: req.case_id,
-        decision_type: req.decision.clone(),
-        decision: req.decision.clone(),
-        rationale: req.rationale.clone(),
+        decision_type: "manual".to_string(),
+        decision_text: req.decision.clone(),
+        status: "pending".to_string(),
         decided_by: user_id,
-        metadata: req.metadata.clone().unwrap_or_else(|| serde_json::json!({})),
+        metadata,
     };
     
     let adjudication_service = AdjudicationService::new(Arc::new(data.get_ref().clone()));
@@ -476,10 +486,16 @@ pub async fn update_decision(
     data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
     let decision_id = path.into_inner();
+    let metadata = build_metadata_with_rationale(req.metadata.clone(), req.rationale.clone());
+    let metadata = if metadata == serde_json::json!({}) {
+        None
+    } else {
+        Some(metadata)
+    };
     let update = UpdateAdjudicationDecision {
-        decision: req.decision.clone(),
-        rationale: req.rationale.clone(),
-        metadata: req.metadata.clone(),
+        decision_text: req.decision.clone(),
+        metadata,
+        ..Default::default()
     };
     
     let adjudication_service = AdjudicationService::new(Arc::new(data.get_ref().clone()));
@@ -513,6 +529,25 @@ pub async fn appeal_decision(
         message: Some("Appeal submitted successfully".to_string()),
         error: None,
     }))
+}
+
+fn build_metadata_with_rationale(
+    metadata: Option<serde_json::Value>,
+    rationale: Option<String>,
+) -> serde_json::Value {
+    match (metadata, rationale) {
+        (Some(serde_json::Value::Object(mut map)), Some(rationale)) => {
+            map.insert("rationale".to_string(), serde_json::Value::String(rationale));
+            serde_json::Value::Object(map)
+        }
+        (Some(value), Some(rationale)) => serde_json::json!({
+            "rationale": rationale,
+            "metadata": value
+        }),
+        (Some(value), None) => value,
+        (None, Some(rationale)) => serde_json::json!({ "rationale": rationale }),
+        (None, None) => serde_json::json!({}),
+    }
 }
 
 /// Get adjudication metrics

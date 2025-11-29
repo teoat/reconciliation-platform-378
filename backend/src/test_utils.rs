@@ -299,7 +299,6 @@ pub mod database {
     /// Create a test database connection
     pub async fn create_test_db() -> Database {
         Database::new(TEST_DATABASE_URL)
-            .await
             .expect("Test database connection should succeed")
     }
     
@@ -408,7 +407,6 @@ pub mod http {
             format!("Failed to load test config: {}", e)
         })?;
         let db = Database::new(&config.database_url)
-            .await
             .map_err(|e| format!("Failed to create test database: {}", e))?;
         
         Ok(App::new()
