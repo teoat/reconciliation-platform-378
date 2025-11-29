@@ -1,5 +1,5 @@
 {
-  "name": "mcp-playwright-server",
+  "name": "antigravity-playwright-server",
   "version": "0.1.0",
   "private": true,
   "description": "MCP server to run Playwright tests, collect artifacts, and expose structured results",

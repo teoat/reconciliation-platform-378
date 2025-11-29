@@ -71,6 +71,18 @@ const ALLOWED_SCRIPTS = {
         path: 'scripts/verify-security-headers.sh',
         description: 'Verify security headers',
     },
+    'apply-db-indexes': {
+        path: 'scripts/apply-db-indexes.sh',
+        description: 'Apply database indexes for performance',
+    },
+    'apply-performance-indexes': {
+        path: 'scripts/apply-performance-indexes.sh',
+        description: 'Apply additional performance indexes',
+    },
+    'optimize-console-logs': {
+        path: 'scripts/optimize-console-logs.sh',
+        description: 'Remove or optimize console logs in production',
+    },
 };
 
 /**

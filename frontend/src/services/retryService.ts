@@ -177,7 +177,7 @@ class RetryService {
    *   'api-data-endpoint'
    * );
    * if (result.success) {
-   *   console.log('Data:', result.data);
+   *   logger.info('Data:', result.data);
    * }
    * ```
    */

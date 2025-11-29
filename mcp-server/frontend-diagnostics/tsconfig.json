@@ -3,7 +3,6 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-ning large files
     "module": "NodeNext",
     "target": "ES2020",
     "moduleResolution": "NodeNext",
@@ -13,5 +12,7 @@ ning large files
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ]
 }

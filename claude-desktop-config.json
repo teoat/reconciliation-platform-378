@@ -22,7 +22,7 @@
         "COORDINATION_TTL": "3600"
       }
     },
-    "playwright": {
+    "antigravity-playwright": {
       "command": "node",
       "args": [
         "/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/playwright/dist/index.js"
@@ -34,7 +34,7 @@
         "TEST_RESULTS_DIR": "test-results/playwright"
       }
     },
-    "frontend-diagnostics": {
+    "antigravity-frontend-diagnostics": {
       "command": "node",
       "args": [
         "/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/frontend-diagnostics/dist/index.js"
@@ -50,6 +50,39 @@
         "-y",
         "@modelcontextprotocol/server-postgres",
         "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "/Users/Arief/Documents/GitHub/reconciliation-platform-378"
+      ]
+    },
+    "redis": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-redis",
+        "redis://:redis_pass@localhost:6379"
+      ]
+    },
+    "prometheus": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "prometheus-mcp"
+      ],
+      "env": {
+        "PROMETHEUS_URL": "http://localhost:9090"
+      }
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
       ]
     }
   }

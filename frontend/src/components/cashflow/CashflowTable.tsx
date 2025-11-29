@@ -22,6 +22,7 @@
  */
 
 import React from 'react';
+import { logger } from '@/services/logger';
 import type { ExpenseCategory } from '@/pages/cashflow/types';
 
 interface CashflowTableProps {

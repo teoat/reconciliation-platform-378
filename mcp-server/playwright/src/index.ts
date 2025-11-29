@@ -1,4 +1,4 @@
-!/usr/bin/env node
+#!/usr/bin/env node
 /**
  * Playwright MCP Server
  * - run_playwright: run tests with filters and settings
@@ -15,7 +15,7 @@ import { execa } from 'execa';
 
 dotenv.config();
 
-const SERVER_NAME = 'mcp-playwright';
+const SERVER_NAME = 'antigravity-playwright';
 const SERVER_VERSION = '0.1.0';
 
 const PROJECT_ROOT = process.env.PROJECT_ROOT || process.cwd();
@@ -39,7 +39,7 @@ function updateIndex(runId: string, summaryPath: string, artifactsDir: string) {
   const entry = { runId, summaryPath, artifactsDir, timestamp: new Date().toISOString() };
   let idx: any[] = [];
   if (existsSync(indexPath)) {
-    try { idx = JSON.parse(readFileSync(indexPath, 'utf8')); } catch {}
+    try { idx = JSON.parse(readFileSync(indexPath, 'utf8')); } catch { }
   }
   idx.push(entry);
   if (idx.length > 100) idx = idx.slice(-100);
@@ -186,7 +186,7 @@ async function main() {
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
       if (name === 'get_artifacts') {
-        const result = getArtifacts((args || {}).runId);
+        const result = getArtifacts(((args || {}) as any).runId);
         return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] };
       }
       return { content: [{ type: 'text', text: JSON.stringify({ ok: false, error: { code: 'UNKNOWN_TOOL', message: `Unknown tool ${name}` }, meta: { tool: name, server: SERVER_NAME, durationMs: 0, timestamp: new Date().toISOString() } }, null, 2) }], isError: true } as any;

@@ -206,7 +206,7 @@ class PWAUtils {
    * @example
    * ```typescript
    * const stats = await pwaUtils.getPerformanceStats();
-   * console.log(`Cache hit rate: ${stats.hitRate}`);
+   * logger.info(`Cache hit rate: ${stats.hitRate}`);
    * ```
    */
   async getPerformanceStats(): Promise<PerformanceStats> {
@@ -261,7 +261,7 @@ class PWAUtils {
    * @example
    * ```typescript
    * const size = await pwaUtils.getCacheSize();
-   * console.log(`Cache size: ${(size / 1024 / 1024).toFixed(2)} MB`);
+   * logger.info(`Cache size: ${(size / 1024 / 1024).toFixed(2)} MB`);
    * ```
    */
   async getCacheSize(): Promise<number> {
@@ -370,7 +370,7 @@ class PWAUtils {
    * @example
    * ```typescript
    * if (pwaUtils.isPWA()) {
-   *   console.log('Running as installed PWA');
+   *   logger.info('Running as installed PWA');
    * }
    * ```
    */

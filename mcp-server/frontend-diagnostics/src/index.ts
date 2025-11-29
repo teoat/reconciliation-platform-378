@@ -22,7 +22,7 @@ import { types } from 'util';
 
 dotenv.config();
 
-const SERVER_NAME = 'mcp-frontend-diagnostics';
+const SERVER_NAME = 'antigravity-frontend-diagnostics';
 const SERVER_VERSION = '0.1.0';
 
 const tools: Tool[] = [
@@ -50,7 +50,7 @@ const tools: Tool[] = [
       type: 'object',
       properties: {
         url: { type: 'string' },
-        categories: { type: 'array', items: { type: 'string' }, default: ['performance','accessibility','best-practices','seo'] }
+        categories: { type: 'array', items: { type: 'string' }, default: ['performance', 'accessibility', 'best-practices', 'seo'] }
       },
       required: ['url']
     }
@@ -65,7 +65,7 @@ function findStats(): { path: string; json: any } | null {
   ];
   for (const p of candidates) {
     if (existsSync(p)) {
-      try { return { path: p, json: JSON.parse(readFileSync(p, 'utf8')) }; } catch {}
+      try { return { path: p, json: JSON.parse(readFileSync(p, 'utf8')) }; } catch { }
     }
   }
   return null;
@@ -129,7 +129,7 @@ async function detectBrokenLinks(startUrl: string, maxDepth = 2) {
   };
 }
 
-async function lighthouseAudit(url: string, categories: string[] = ['performance','accessibility','best-practices','seo']) {
+async function lighthouseAudit(url: string, categories: string[] = ['performance', 'accessibility', 'best-practices', 'seo']) {
   const runId = newRunId();
   const outDir = join(DIRS.PERFORMANCE_RESULTS, runId);
   ensureDir(outDir);
@@ -171,7 +171,7 @@ async function main() {
 
   server.setRequestHandler(CallToolRequestSchema, async (request) => {
     const { name, arguments: args } = request.params;
-    cons types = (args as any) || {};
+    const a = (args as any) || {};
     try {
       if (name === 'build_analyze') {
         const res = await buildAnalyze();

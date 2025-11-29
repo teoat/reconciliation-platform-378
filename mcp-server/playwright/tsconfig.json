@@ -3,7 +3,7 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "module": "ESNext",
+    "module": "NodeNext",
     "target": "ES2020",
     "moduleResolution": "NodeNext",
     "resolveJsonModule": true,
@@ -12,5 +12,7 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "include": ["src/**/*"]
+  "include": [
+    "src/**/*"
+  ]
 }

@@ -1,5 +1,5 @@
 {
-  "name": "mcp-frontend-diagnostics-server",
+  "name": "antigravity-frontend-diagnostics-server",
   "version": "0.1.0",
   "private": true,
   "description": "MCP server providing frontend diagnostics: build analysis, broken links, Lighthouse audits",

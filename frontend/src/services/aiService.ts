@@ -6,6 +6,7 @@
  */
 
 import { logger } from './logger';
+import { logger } from '@/services/logger';
 import { apiClient } from './apiClient';
 
 export type AIProvider = 'openai' | 'anthropic' | 'gemini';

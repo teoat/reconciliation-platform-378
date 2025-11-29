@@ -18,7 +18,7 @@ echo "📊 Database: ${DATABASE_URL}"
 echo ""
 
 # Check if migration file exists
-MIGRATION_FILE="backend/migrations/20250102000000_add_performance_indexes.sql"
+MIGRATION_FILE="backend/migrations/add_performance_indexes.sql"
 
 if [ ! -f "$MIGRATION_FILE" ]; then
     echo "❌ ERROR: Migration file not found: $MIGRATION_FILE"
