@@ -1,0 +1,12 @@
+[build]
+# Increase stack size to prevent stack overflow with deep middleware chains
+# 16MB stack size (16777216 bytes) - macOS/Linux compatible
+rustflags = []
+
+[env]
+# Set minimum stack size for Rust threads
+RUST_MIN_STACK = "167772216"  # 16MB in bytes
+
+# Note: On macOS, you may also need to increase the stack size via linker flags:
+# rustflags = ["-C", "link-args=-Wl,-stack_size,10000000"]
+# However, RUST_MIN_STACK is more portable across platforms.

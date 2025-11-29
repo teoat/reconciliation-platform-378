@@ -5,8 +5,8 @@
 
 pub mod auth;
 pub mod better_auth;
-pub mod dual_auth;
 pub mod cache;
+pub mod dual_auth;
 pub mod logging;
 pub mod logging_config;
 pub mod logging_error_config;
@@ -23,13 +23,14 @@ pub mod request_validation;
 
 // Re-export commonly used middleware
 pub use auth::AuthMiddleware;
-pub use better_auth::{BetterAuthMiddleware, BetterAuthConfig, TokenCache};
-pub use dual_auth::{DualAuthMiddleware, DualAuthConfig};
+pub use better_auth::{BetterAuthValidator, TokenClaims, TokenValidationResponse};
+pub use dual_auth::{DualAuthConfig, DualAuthMiddleware};
 pub use logging::{LoggingConfig, LoggingMiddleware};
 pub use security::metrics::*;
 pub use security::{
-    AuthRateLimitMiddleware, AuthRateLimitConfig, configure_security_middleware, CsrfProtectionMiddleware, RateLimitMiddleware, SecurityConfig,
-    SecurityHeadersConfig, SecurityHeadersMiddleware,
+    configure_security_middleware, AuthRateLimitConfig, AuthRateLimitMiddleware,
+    CsrfProtectionMiddleware, RateLimitMiddleware, SecurityConfig, SecurityHeadersConfig,
+    SecurityHeadersMiddleware,
 };
 
 // Export S-Tier middleware
@@ -55,12 +56,14 @@ pub use error_handler::{
 
 // Zero-trust security middleware
 pub mod zero_trust;
-pub use zero_trust::{ZeroTrustMiddleware, ZeroTrustConfig};
+pub use zero_trust::{ZeroTrustConfig, ZeroTrustMiddleware};
 
 // Rate limiting middleware (per-endpoint) - renamed to avoid conflict
 pub mod rate_limit;
-pub use rate_limit::{PerEndpointRateLimitMiddleware, PerEndpointRateLimitConfig, PerEndpointRateLimiter};
+pub use rate_limit::{
+    PerEndpointRateLimitConfig, PerEndpointRateLimitMiddleware, PerEndpointRateLimiter,
+};
 
 // API versioning middleware
 pub mod api_versioning;
-pub use api_versioning::{ApiVersioningMiddleware, ApiVersioningConfig};
+pub use api_versioning::{ApiVersioningConfig, ApiVersioningMiddleware};

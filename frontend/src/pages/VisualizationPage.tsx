@@ -287,7 +287,7 @@ const VisualizationPageContent: React.FC = () => {
                 <div key={index} className="flex items-center space-x-3">
                   <div
                     className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: item.color || '#3B82F6' }}
+                    style={{ backgroundColor: item.color || '#3B82F6' } as React.CSSProperties}
                   />
                   <div className="flex-1 flex items-center justify-between">
                     <span className="text-sm text-gray-700">{item.name}</span>
@@ -307,7 +307,7 @@ const VisualizationPageContent: React.FC = () => {
                 <div key={index} className="flex items-center space-x-3">
                   <div
                     className="w-4 h-4 rounded-full"
-                    style={{ backgroundColor: item.color || '#3B82F6' }}
+                    style={{ backgroundColor: item.color || '#3B82F6' } as React.CSSProperties}
                   />
                   <div className="flex-1 flex items-center justify-between">
                     <span className="text-sm text-gray-700">{item.name}</span>

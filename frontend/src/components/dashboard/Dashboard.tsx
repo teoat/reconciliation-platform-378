@@ -1,121 +1,155 @@
 /**
  * Dashboard Component
- * 
+ *
  * Main dashboard page displaying project overview, health status, and quick actions.
- * 
+ *
  * @component
  * @example
  * ```tsx
  * <Dashboard />
  * ```
- * 
+ *
  * @returns {JSX.Element} The dashboard component
  */
-import React, { useState, useEffect, useMemo, useCallback, memo } from 'react';
-import { FixedSizeList as List } from 'react-window';
-import { useQuery } from '@tanstack/react-query';
-import debounce from 'lodash/debounce';
-import { useNavigate } from 'react-router-dom';
-import { useHealthCheck } from '@/hooks/useFileReconciliation';
-import { useProjects } from '@/hooks/api';
+import React, { useState, useEffect, useMemo, useCallback, memo, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient } from '@/services/apiClient';
-import { logger } from '@/services/logger';
-import Button from '@/components/ui/Button';
-import { PageMeta } from '@/components/seo/PageMeta';
-import { EnhancedContextualHelp } from '@/components/ui/EnhancedContextualHelp';
+import type { DashboardWidget, DashboardLayout } from '@/services/businessIntelligence/types';
 
 interface DashboardProps {
   projectId: string;
-  widgets: Widget[];
+  widgets: DashboardWidget[];
 }
 
-const DashboardWidget = memo(({ widget, onUpdate }: { widget: Widget; onUpdate: (id: string, data: any) => void }) => {
-  const fetchWidgetData = useCallback(async (widgetId: string) => {
-    // Debounced API call
-    const debouncedFetch = debounce(async () => {
-      const { data } = await apiClient.get(`/widgets/${widgetId}/data`);
-      onUpdate(widgetId, data);
-    }, 300);
-    debouncedFetch();
-  }, [onUpdate]);
+interface LayoutRow {
+  widgets: DashboardWidget[];
+}
 
-  useEffect(() => {
-    if (widget.autoRefresh) {
-      fetchWidgetData(widget.id);
-      const interval = setInterval(() => fetchWidgetData(widget.id), widget.refreshInterval * 1000);
-      return () => clearInterval(interval);
-    }
-  }, [widget.autoRefresh, widget.refreshInterval, fetchWidgetData]);
+interface WidgetData {
+  id: string;
+  data: any;
+  error?: any;
+}
 
-  const processedData = useMemo(() => {
-    // Expensive data processing
-    return computeWidgetMetrics(widget.rawData || []);
-  }, [widget.rawData]);
+// Simple widget renderer component
+const WidgetRenderer = ({ data, type }: { data: any; type: string }) => {
+  if (!data) {
+    return <div className="widget-empty">No data available</div>;
+  }
 
-  return (
-    <div className="dashboard-widget">
-      <h3>{widget.title}</h3>
-      <WidgetRenderer data={processedData} type={widget.type} />
-    </div>
-  );
-});
+  switch (type) {
+    case 'kpi':
+      return (
+        <div className="widget-kpi">
+          <div className="kpi-value">{data.total || 0}</div>
+          <div className="kpi-label">Total</div>
+        </div>
+      );
+    case 'chart':
+      return <div className="widget-chart">Chart visualization: {JSON.stringify(data)}</div>;
+    case 'table':
+      return <div className="widget-table">Table data: {data.count || 0} items</div>;
+    default:
+      return <div className="widget-default">{JSON.stringify(data)}</div>;
+  }
+};
+
+const DashboardWidgetComponent = memo(
+  ({ widget, onUpdate }: { widget: DashboardWidget; onUpdate: (id: string, data: any) => void }) => {
+    useEffect(() => {
+      if (widget.refreshInterval) {
+        const interval = setInterval(() => {
+          apiClient
+            .get(`/widgets/${widget.id}/data`)
+            .then((res) => onUpdate(widget.id, res.data))
+            .catch((err) => console.error('Widget fetch error:', err));
+        }, widget.refreshInterval * 1000);
+        return () => clearInterval(interval);
+      }
+    }, [widget.id, widget.refreshInterval, onUpdate]);
+
+    return (
+      <div className="dashboard-widget">
+        <h3>{widget.title}</h3>
+        <WidgetRenderer data={null} type={widget.type} />
+      </div>
+    );
+  }
+);
 
 const Dashboard = memo(({ projectId, widgets }: DashboardProps) => {
-  const [layout, setLayout] = useState<Layout>(defaultLayout);
-  const [selectedWidgets, setSelectedWidgets] = useState<string[]>([]);
-
-  // Memoized widget data fetching
-  const widgetQueries = useMemo(() => 
-    widgets.map(widget => ({
-      queryKey: ['widget', widget.id, projectId],
-      queryFn: () => apiClient.get(`/widgets/${widget.id}/data?project=${projectId}`).then(res => res.data),
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
-    })), 
-    [widgets, projectId]
-  );
+  const queryClient = useQueryClient();
+  const [layout, setLayout] = useState<LayoutRow[]>([{ widgets }]);
 
   const { data: allWidgetData, isLoading } = useQuery({
     queryKey: ['dashboard', projectId],
     queryFn: async () => {
       const results = await Promise.allSettled(
-        widgetQueries.map(q => apiClient.get(q.queryFn.name.replace('queryFn', '')))
+        widgets.map((widget) => apiClient.get(`/widgets/${widget.id}/data?project=${projectId}`))
       );
       return results.map((result, index) => ({
         id: widgets[index].id,
         data: result.status === 'fulfilled' ? result.value.data : null,
         error: result.status === 'rejected' ? result.reason : null,
-      }));
+      })) as WidgetData[];
     },
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   // Memoized layout computation
   const computedLayout = useMemo(() => {
-    return layout.map(row => ({
+    return layout.map((row) => ({
       ...row,
-      widgets: row.widgets.map(w => ({
+      widgets: row.widgets.map((w) => ({
         ...w,
-        data: allWidgetData?.find(d => d.id === w.id)?.data || null,
-      }))
+        data: allWidgetData?.find((d) => d.id === w.id)?.data || null,
+      })),
     }));
   }, [layout, allWidgetData]);
 
-  // Optimized event handlers
-  const handleWidgetUpdate = useCallback((widgetId: string, newData: any) => {
-    setSelectedWidgets(prev => 
-      prev.includes(widgetId) 
-        ? prev.filter(id => id !== widgetId)
-        : [...prev, widgetId]
-    );
-    // Optimistic update
-    // update local cache here
-  }, []);
+  // Optimized event handlers with cache update
+  const handleWidgetUpdate = useCallback(
+    (widgetId: string, newData: any) => {
+      // Update query cache optimistically
+      queryClient.setQueryData(['dashboard', projectId], (old: WidgetData[] | undefined) => {
+        if (!old) return old;
+        return old.map((item) => (item.id === widgetId ? { ...item, data: newData } : item));
+      });
+    },
+    [queryClient, projectId]
+  );
 
-  const handleLayoutChange = useCallback((newLayout: Layout) => {
-    setLayout(newLayout);
-    // Debounce save to backend
-  }, []);
+  const handleLayoutChange = useCallback(
+    (newLayout: LayoutRow[]) => {
+      setLayout(newLayout);
+      // Debounced save to backend
+      const saveLayout = async () => {
+        try {
+          await apiClient.post(`/dashboards/${projectId}/layout`, { layout: newLayout });
+        } catch (error) {
+          console.error('Failed to save layout:', error);
+        }
+      };
+      const timeoutId = setTimeout(saveLayout, 1000);
+      return () => clearTimeout(timeoutId);
+    },
+    [projectId]
+  );
+
+  const refreshAllWidgets = useCallback(() => {
+    // Invalidate all dashboard queries
+    queryClient.invalidateQueries({ queryKey: ['dashboard', projectId] });
+  }, [queryClient, projectId]);
+
+  // Virtualization for large widget lists
+  const parentRef = useRef<HTMLDivElement>(null);
+  const rowVirtualizer = useVirtualizer({
+    count: widgets.length > 20 ? widgets.length : 0,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 200,
+    overscan: 5,
+  });
 
   if (isLoading) {
     return <div className="loading">Loading dashboard...</div>;
@@ -125,37 +159,45 @@ const Dashboard = memo(({ projectId, widgets }: DashboardProps) => {
     <div className="dashboard-container">
       <div className="dashboard-header">
         <h1>Project Dashboard</h1>
-        <button onClick={() => refreshAllWidgets()}>Refresh All</button>
+        <button onClick={refreshAllWidgets}>Refresh All</button>
       </div>
-      
+
       {/* Virtualized widget list for large dashboards */}
       {widgets.length > 20 ? (
-        <List
-          height={600}
-          itemCount={widgets.length}
-          itemSize={200}
-          width="100%"
-        >
-          {({ index, style }) => (
-            <div style={style}>
-              <DashboardWidget 
-                key={widgets[index].id}
-                widget={widgets[index]} 
-                onUpdate={handleWidgetUpdate} 
-              />
-            </div>
-          )}
-        </List>
+        <div ref={parentRef} style={{ height: '600px', overflow: 'auto' }}>
+          <div
+            style={{
+              height: `${rowVirtualizer.getTotalSize()}px`,
+              width: '100%',
+              position: 'relative',
+            }}
+          >
+            {rowVirtualizer.getVirtualItems().map((virtualItem) => (
+              <div
+                key={virtualItem.key}
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: `${virtualItem.size}px`,
+                  transform: `translateY(${virtualItem.start}px)`,
+                }}
+              >
+                <DashboardWidgetComponent
+                  widget={widgets[virtualItem.index]}
+                  onUpdate={handleWidgetUpdate}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
       ) : (
         // Regular rendering for smaller dashboards
-        computedLayout.map((row, rowIndex) => (
+        computedLayout.map((row, rowIndex: number) => (
           <div key={rowIndex} className="dashboard-row">
-            {row.widgets.map(widget => (
-              <DashboardWidget 
-                key={widget.id}
-                widget={widget} 
-                onUpdate={handleWidgetUpdate} 
-              />
+            {row.widgets.map((widget) => (
+              <DashboardWidgetComponent key={widget.id} widget={widget} onUpdate={handleWidgetUpdate} />
             ))}
           </div>
         ))
@@ -164,21 +206,7 @@ const Dashboard = memo(({ projectId, widgets }: DashboardProps) => {
   );
 });
 
-// Memoized utility functions
-const computeWidgetMetrics = useMemo(() => {
-  return (data: any[]) => {
-    // Expensive computation with memoization key
-    return data.reduce((acc, item) => {
-      acc.total += item.value;
-      acc.count += 1;
-      return acc;
-    }, { total: 0, count: 0, average: 0 });
-  };
-}, []);
-
-const refreshAllWidgets = useCallback(() => {
-  // Invalidate all queries
-  // queryClient.invalidateQueries({ queryKey: ['dashboard'] }); // This line was not in the new_code, so I'm not adding it.
-}, []);
+Dashboard.displayName = 'Dashboard';
+DashboardWidgetComponent.displayName = 'DashboardWidgetComponent';
 
 export default Dashboard;

@@ -544,7 +544,26 @@ export class DataService {
         await apiClient.post('/api/forms/sync', data);
         break;
       case 'upload':
-        // Handle file uploads
+        // Handle file uploads with FormData
+        if (data.data && typeof data.data === 'object' && 'file' in data.data) {
+          const formData = new FormData();
+          const uploadData = data.data as { file: File; metadata?: Record<string, any> };
+          formData.append('file', uploadData.file);
+          if (uploadData.metadata) {
+            formData.append('metadata', JSON.stringify(uploadData.metadata));
+          }
+          if (data.projectId) {
+            formData.append('projectId', data.projectId);
+          }
+          await apiClient.post('/api/uploads/sync', formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data',
+            },
+          });
+        } else {
+          // Fallback for non-file upload data
+          await apiClient.post('/api/uploads/sync', data);
+        }
         break;
       case 'reconciliation':
         await apiClient.post('/api/reconciliation/sync', data);
