@@ -1,14 +1,6 @@
 {
+  "_comment": "DEPRECATED: This file is a pointer to the single source of truth for MCP configuration.",
   "mcpServers": {
-    "context7": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@upstash/context7-mcp"
-      ],
-      "env": {
-        "DEFAULT_MINIMUM_TOKENS": ""
-      }
-    }
+    "include": "../../.cursor/mcp.json"
   }
 }

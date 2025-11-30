@@ -34,19 +34,23 @@ pub struct CashflowService {
 }
 
 impl CashflowService {
-    pub fn new(db: Arc<Database>, redis_url: Option<&str>) -> Self {
-        let redis_client = redis_url.map(|url| {
-            redis::Client::open(url).expect("Failed to create Redis client")
-        });
-        
-        Self { db, redis_client }
+    pub fn new(db: Arc<Database>, redis_url: Option<&str>) -> Result<Self, redis::RedisError> {
+        let redis_client = if let Some(url) = redis_url {
+            Some(redis::Client::open(url)?)
+        } else {
+            None
+        };
+
+        Ok(Self { db, redis_client })
     }
 
     // Categories
     pub async fn list_categories(&self, project_id: Uuid, page: i64, per_page: i64) -> AppResult<(Vec<CashflowCategory>, i64)> {
         // Check cache first
         {
-            let cache = CATEGORY_CACHE.lock().unwrap();
+            let cache = CATEGORY_CACHE.lock().map_err(|e| {
+                AppError::InternalServerError(format!("Cache lock poisoned: {}", e))
+            })?;
             if let Some(cached) = cache.get(&project_id) {
                 let total = cached.len() as i64;
                 let offset = ((page - 1) * per_page) as usize;
@@ -90,7 +94,9 @@ impl CashflowService {
 
         // Cache the full list (without pagination) for next request
         if page == 1 && per_page >= total { // Cache only if we got all results
-            let mut cache = CATEGORY_CACHE.lock().unwrap();
+            let mut cache = CATEGORY_CACHE.lock().map_err(|e| {
+                AppError::InternalServerError(format!("Cache lock poisoned: {}", e))
+            })?;
             cache.insert(project_id, items.clone());
         }
 

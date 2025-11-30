@@ -1,180 +1,142 @@
-/**
- * Auth Page
- * 
- * Main orchestrator component for authentication
- * Refactored from 1,110 lines to ~250 lines
- */
+import React, { useState } from 'react';
+import { authAPI, LoginRequest, RegisterRequest } from '../services/authAPI';
 
-import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { useToast } from '@/hooks/useToast';
-import { logger } from '@/services/logger';
-import { PageMeta } from '@/components/seo/PageMeta';
-import { isDemoModeEnabled } from '@/config/demoCredentials';
-import type { LoginForm, RegisterForm, DemoRole } from '@/pages/auth/types';
-import { useOAuth } from '@/pages/auth/hooks/useOAuth';
-import { LoginForm as LoginFormComponent } from '@/pages/auth/components/LoginForm';
-import { SignupForm as SignupFormComponent } from '@/pages/auth/components/SignupForm';
-import { OAuthButtons } from '@/pages/auth/components/OAuthButtons';
-import { DemoCredentials } from '@/pages/auth/components/DemoCredentials';
+interface AuthPageProps {
+  onLogin: (user: any) => void;
+}
 
-const AuthPage: React.FC = () => {
-  const { login, register: registerUser, isLoading, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-  const toast = useToast();
-  const [error, setError] = useState<string | null>(null);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [selectedDemoRole, setSelectedDemoRole] = useState<DemoRole>('admin');
-  const demoModeEnabled = isDemoModeEnabled();
+const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  // OAuth
-  const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-  const { googleButtonRef, isGoogleButtonLoading, googleButtonError, setGoogleButtonRetryKey } =
-    useOAuth({ googleClientId });
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
-
-  // Handlers
-  const handleLogin = async (data: LoginForm) => {
     try {
-      setError(null);
-      logger.logUserAction('login_attempt', 'AuthPage', { email: data.email });
-      const result = await login(data.email, data.password);
-      if (result.success) {
-        toast.success('Successfully signed in');
-        navigate('/', { replace: true });
+      if (isLogin) {
+        const response = await authAPI.login({ email, password });
+        if (response.success && response.user && response.token) {
+          // Store token
+          localStorage.setItem('authToken', response.token);
+          onLogin(response.user);
+        } else {
+          setError('Login failed');
+        }
       } else {
-        setError(result.error || 'Invalid email or password');
-        logger.logUserAction('login_failed', 'AuthPage', { email: data.email });
+        const response = await authAPI.register({
+          email,
+          password,
+          firstName,
+          lastName,
+        });
+        if (response.success && response.user && response.token) {
+          // Store token
+          localStorage.setItem('authToken', response.token);
+          onLogin(response.user);
+        } else {
+          setError('Registration failed');
+        }
       }
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An error occurred during login';
-      setError(errorMessage);
-      logger.error('Login error', { component: 'AuthPage', error: errorMessage });
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleRegister = async (data: RegisterForm) => {
-    try {
-      setError(null);
-      logger.logUserAction('register_attempt', 'AuthPage', { email: data.email });
-      const result = await registerUser({
-        email: data.email,
-        password: data.password,
-        first_name: data.first_name,
-        last_name: data.last_name,
-      });
-      if (result.success) {
-        toast.success('Account created successfully');
-        navigate('/', { replace: true });
-      } else {
-        setError(result.error || 'Failed to create account');
-        logger.logUserAction('register_failed', 'AuthPage', { email: data.email });
-      }
-    } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : 'An error occurred during registration';
-      setError(errorMessage);
-      logger.error('Registration error', { component: 'AuthPage', error: errorMessage });
-    }
-  };
-
-  const handleUseDemoCredentials = async (email: string, password: string) => {
-    await handleLogin({ email, password, rememberMe: false });
   };
 
   return (
-    <>
-      <PageMeta
-        title={isRegistering ? 'Sign Up' : 'Sign In'}
-        description={
-          isRegistering
-            ? 'Create a new account to get started'
-            : 'Sign in to your account to continue'
-        }
-        keywords="authentication, login, signup, oauth"
-      />
-      <main className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div>
-            <h1 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-              {isRegistering ? 'Create your account' : 'Sign in to your account'}
-            </h1>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              {isRegistering ? (
-                <>
-                  Or{' '}
-                  <button
-                    onClick={() => setIsRegistering(false)}
-                    className="font-medium text-blue-600 hover:text-blue-500"
-                  >
-                    sign in to your existing account
-                  </button>
-                </>
-              ) : (
-                <>
-                  Or{' '}
-                  <button
-                    onClick={() => setIsRegistering(true)}
-                    className="font-medium text-blue-600 hover:text-blue-500"
-                  >
-                    create a new account
-                  </button>
-                </>
-              )}
-            </p>
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            {isLogin ? 'Sign in to your account' : 'Create your account'}
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            {isLogin ? "Don't have an account?" : 'Already have an account?'}
+            <button
+              type="button"
+              onClick={() => setIsLogin(!isLogin)}
+              className="ml-1 font-medium text-blue-600 hover:text-blue-500"
+            >
+              {isLogin ? 'Sign up' : 'Sign in'}
+            </button>
+          </p>
+        </div>
 
-          <div className="mt-8 space-y-6">
-            {!isRegistering ? (
-              <LoginFormComponent
-                onSubmit={handleLogin}
-                isLoading={isLoading}
-                error={error}
-              />
-            ) : (
-              <SignupFormComponent
-                onSubmit={handleRegister}
-                isLoading={isLoading}
-                error={error}
-              />
-            )}
-
-            <div className="relative">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-300" />
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {!isLogin && (
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <input
+                  type="text"
+                  required={!isLogin}
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="First name"
+                />
               </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-gray-50 text-gray-500">Or continue with</span>
+              <div>
+                <input
+                  type="text"
+                  required={!isLogin}
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="Last name"
+                />
               </div>
             </div>
+          )}
 
-            <OAuthButtons
-              googleButtonRef={googleButtonRef}
-              isGoogleButtonLoading={isGoogleButtonLoading}
-              googleButtonError={googleButtonError}
-              onRetry={() => setGoogleButtonRetryKey(prev => prev + 1)}
+          <div>
+            <input
+              type="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+              placeholder="Email address"
             />
-
-            {demoModeEnabled && (
-              <DemoCredentials
-                selectedRole={selectedDemoRole}
-                onRoleChange={setSelectedDemoRole}
-                onUseCredentials={handleUseDemoCredentials}
-              />
-            )}
           </div>
+
+          <div>
+            <input
+              type="password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+              placeholder="Password"
+            />
+          </div>
+
+          {error && <div className="text-red-600 text-sm text-center">{error}</div>}
+
+          <div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Please wait...' : isLogin ? 'Sign in' : 'Sign up'}
+            </button>
+          </div>
+        </form>
+
+        <div className="text-center">
+          <p className="text-xs text-gray-500">Test credentials: admin@example.com / password123</p>
         </div>
-      </main>
-    </>
+      </div>
+    </div>
   );
 };
 
 export default AuthPage;
-

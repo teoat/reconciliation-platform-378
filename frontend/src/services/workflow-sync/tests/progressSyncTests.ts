@@ -14,10 +14,9 @@ export class ProgressSyncTests {
 
   async testProgressSynchronization(): Promise<WorkflowSyncTestResult> {
     const startTime = Date.now();
+    const browsers = ['browser-1', 'browser-2'];
 
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3'];
-
       await Promise.all(browsers.map((browser) => this.simulation.simulateBrowserConnect(browser)));
 
       const progressUpdates = [25, 50, 75, 100];

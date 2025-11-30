@@ -7,7 +7,7 @@ use crate::services::auth::{AuthService, ValidationUtils};
 use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
 use uuid::Uuid;
 
-use super::super::traits::{CreateOAuthUserRequest, CreateUserRequest, UserInfo};
+use super::super::traits::{CreateOAuthUserRequest, CreateUserRequest};
 
 /// Create a new user
 pub async fn create_user_logic(

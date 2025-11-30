@@ -228,8 +228,19 @@ export function validatePasswordStrength(password: string): {
   }
   // Unified banned password list
   const bannedPasswords = [
-    'password', 'password123', '123456', '12345678', 'admin123', 'qwerty123',
-    'welcome123', 'letmein', 'monkey', 'dragon', 'master', 'abc123', 'qwerty'
+    'password',
+    'password123',
+    '123456',
+    '12345678',
+    'admin123',
+    'qwerty123',
+    'welcome123',
+    'letmein',
+    'monkey',
+    'dragon',
+    'master',
+    'abc123',
+    'qwerty',
   ];
   if (bannedPasswords.some((banned) => password.toLowerCase().includes(banned))) {
     feedback.push('Password is too common');
@@ -238,7 +249,9 @@ export function validatePasswordStrength(password: string): {
   let sequentialCount = 1;
   const chars = password.split('');
   for (let i = 1; i < chars.length; i++) {
-    if (chars[i].charCodeAt(0) === chars[i-1].charCodeAt(0) + 1) {
+    const current = chars[i];
+    const previous = chars[i - 1];
+    if (current && previous && current.charCodeAt(0) === previous.charCodeAt(0) + 1) {
       sequentialCount++;
       if (sequentialCount > 3) {
         feedback.push('Password contains more than 3 sequential characters');
@@ -343,39 +356,29 @@ export function validateFile(
 
 /**
  * Validates file type against allowed extensions.
+ * @deprecated Use validateFile() with allowedExtensions option instead
  *
  * @param file - File to validate
  * @param allowedTypes - Array of allowed file extensions (e.g., ['.csv', '.xlsx'])
  * @returns True if file type is allowed
- *
- * @example
- * ```typescript
- * validateFileType(file, ['.csv', '.xlsx', '.xls', '.json']); // Returns: true/false
- * ```
  */
 export function validateFileType(
   file: File,
   allowedTypes: string[] = ['.csv', '.xlsx', '.xls', '.json']
 ): boolean {
-  const fileName = file.name.toLowerCase();
-  return allowedTypes.some((type) => fileName.endsWith(type.toLowerCase()));
+  return validateFile(file, { allowedExtensions: allowedTypes }).valid;
 }
 
 /**
  * Validates file size against maximum size.
+ * @deprecated Use validateFile() with maxSize option instead
  *
  * @param file - File to validate
  * @param maxSizeMB - Maximum file size in megabytes (default: 50MB)
  * @returns True if file size is within limit
- *
- * @example
- * ```typescript
- * validateFileSize(file, 50); // Returns: true/false
- * ```
  */
 export function validateFileSize(file: File, maxSizeMB: number = 50): boolean {
-  const maxSizeBytes = maxSizeMB * 1024 * 1024;
-  return file.size <= maxSizeBytes;
+  return validateFile(file, { maxSize: maxSizeMB * 1024 * 1024 }).valid;
 }
 
 /**

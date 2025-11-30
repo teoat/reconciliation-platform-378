@@ -72,6 +72,7 @@ pub mod query_optimizer;
 pub mod reconciliation_engine;
 pub mod registry;
 pub mod metrics;
+pub mod v2; // Declare the new v2 module for services
 
 // Cache enhancements
 #[path = "cache/warming.rs"]

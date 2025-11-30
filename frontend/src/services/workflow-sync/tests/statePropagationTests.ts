@@ -5,6 +5,7 @@
 import type { WorkflowSyncTestResult, WorkflowState, DataState } from '../types';
 import { WorkflowSyncSimulation } from '../utils/simulation';
 import { WorkflowSyncComparison } from '../utils/comparison';
+import { createMockStep, createMockWorkflowState } from '@/test-utils/mock-data';
 
 export class StatePropagationTests {
   constructor(
@@ -14,14 +15,17 @@ export class StatePropagationTests {
 
   async testWorkflowStatePropagation(): Promise<WorkflowSyncTestResult> {
     const startTime = Date.now();
+    const browsers = ['browser-1', 'browser-2'];
+    const initialState = createMockWorkflowState([]);
 
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3'];
-
       await Promise.all(browsers.map((browser) => this.simulation.simulateBrowserConnect(browser)));
 
-      const newState: WorkflowState = { step: 'reconciliation', progress: 50, data: { records: 1000 } };
-      await this.simulation.simulateWorkflowStateChange(newState as unknown as Record<string, unknown>);
+      const newState = createMockWorkflowState([
+        createMockStep('step1', 'complete'),
+        createMockStep('step2', 'active'),
+      ]);
+      await this.simulation.simulateWorkflowStateChange(newState);
 
       const propagationChecks = await Promise.all(
         browsers.map(async (browser) => {
@@ -56,10 +60,9 @@ export class StatePropagationTests {
 
   async testStepTransitionPropagation(): Promise<WorkflowSyncTestResult> {
     const startTime = Date.now();
+    const browsers = ['browser-1', 'browser-2', 'browser-3'];
 
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3'];
-
       await Promise.all(browsers.map((browser) => this.simulation.simulateBrowserConnect(browser)));
 
       const stepTransition = { from: 'ingestion', to: 'reconciliation', timestamp: Date.now() };
@@ -98,10 +101,9 @@ export class StatePropagationTests {
 
   async testDataStatePropagation(): Promise<WorkflowSyncTestResult> {
     const startTime = Date.now();
+    const browsers = ['browser-1', 'browser-2', 'browser-3'];
 
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3'];
-
       await Promise.all(browsers.map((browser) => this.simulation.simulateBrowserConnect(browser)));
 
       const dataChange: DataState = { records: 1500, matches: 1400, discrepancies: 100 };
@@ -138,4 +140,3 @@ export class StatePropagationTests {
     }
   }
 }
-

@@ -37,6 +37,8 @@ impl From<TokenClaims> for Claims {
             role: claims.role,
             exp: claims.exp,
             iat: claims.iat,
+            iss: None,
+            aud: None,
         }
     }
 }
@@ -50,13 +52,15 @@ pub struct BetterAuthValidator {
 
 impl BetterAuthValidator {
     /// Create a new Better Auth validator
-    pub fn new(auth_server_url: String) -> Self {
+    pub fn new(auth_server_url: String) -> Result<Self, String> {
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(5))
+            .build()
+            .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
+
         Self {
             auth_server_url,
-            client: reqwest::Client::builder()
-                .timeout(Duration::from_secs(5))
-                .build()
-                .unwrap(),
+            client,
             cache: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
         }
     }
@@ -297,13 +301,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_better_auth_validator_creation() {
-        let validator = BetterAuthValidator::new("http://localhost:4000".to_string());
+        let validator = BetterAuthValidator::new("http://localhost:4000".to_string())
+            .expect("Should create validator");
         assert_eq!(validator.auth_server_url, "http://localhost:4000");
     }
 
     #[tokio::test]
     async fn test_cache_cleanup() {
-        let validator = BetterAuthValidator::new("http://localhost:4000".to_string());
+        let validator = BetterAuthValidator::new("http://localhost:4000".to_string())
+            .expect("Should create validator");
         validator.cleanup_cache().await;
         // Should not panic
     }

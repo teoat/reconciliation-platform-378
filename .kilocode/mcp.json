@@ -1,1 +1,6 @@
-{"mcpServers":{}}
+{
+  "_comment": "DEPRECATED: This file is a pointer to the single source of truth for MCP configuration.",
+  "mcpServers": {
+    "include": "../../.cursor/mcp.json"
+  }
+}

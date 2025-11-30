@@ -2,10 +2,8 @@
 //!
 //! This module provides caching functionality using Redis for improved performance.
 
-pub mod query_cache;
-pub mod query_cache_integration;
-
-use redis::{Client, Commands, Connection};
+use deadpool_redis::redis::{AsyncCommands, Commands, RedisError};
+use deadpool_redis::{Pool, Runtime};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -146,7 +144,7 @@ impl MultiLevelCache {
         }
 
         // L2 Cache (Redis) - Fast
-        if let Some(value) = self.l2_cache.get::<T>(key)? {
+        if let Some(value) = self.l2_cache.get::<T>(key).await? {
             // Store in L1 for next time
             let json_value = serde_json::to_value(&value).map_err(|e| {
                 AppError::InternalServerError(format!("Failed to serialize for L1 cache: {}", e))
@@ -189,7 +187,7 @@ impl MultiLevelCache {
         let ttl = ttl.unwrap_or(self.l1_default_ttl);
 
         // Set in L2 cache (Redis)
-        self.l2_cache.set(key, value, Some(ttl))?;
+        self.l2_cache.set(key, value, Some(ttl)).await?;
 
         // Set in L1 cache (in-memory)
         let json_value = serde_json::to_value(value).map_err(|e| {
@@ -218,7 +216,7 @@ impl MultiLevelCache {
     /// * `AppResult<()>` - Success or error
     pub async fn delete(&self, key: &str) -> AppResult<()> {
         // Delete from both caches
-        self.l2_cache.delete(key)?;
+        self.l2_cache.delete(key).await?;
         self.l1_cache.write().await.remove(key);
         self.record_cache_delete().await;
         Ok(())
@@ -332,7 +330,7 @@ impl MultiLevelCache {
 
 /// Cache service
 pub struct CacheService {
-    client: Client,
+    pool: Pool,
 }
 
 /// Cache statistics
@@ -358,17 +356,21 @@ impl CacheService {
     /// # Errors
     /// Returns an error if Redis connection fails
     pub fn new(redis_url: &str) -> AppResult<Self> {
-        let client = Client::open(redis_url).map_err(|e| {
-            AppError::InternalServerError(format!("Failed to connect to Redis: {}", e))
+        let cfg = deadpool_redis::Config::from_url(redis_url);
+        let pool = cfg.create_pool(Some(Runtime::Tokio1)).map_err(|e| {
+            AppError::InternalServerError(format!("Failed to create Redis pool: {}", e))
         })?;
 
-        Ok(CacheService { client })
+        Ok(CacheService { pool })
     }
 
     /// Get a connection to Redis
-    fn get_connection(&self) -> AppResult<Connection> {
-        self.client.get_connection().map_err(|e| {
-            AppError::InternalServerError(format!("Failed to get Redis connection: {}", e))
+    async fn get_connection(&self) -> AppResult<deadpool_redis::Connection> {
+        self.pool.get().await.map_err(|e| {
+            AppError::InternalServerError(format!(
+                "Failed to get Redis connection from pool: {}",
+                e
+            ))
         })
     }
 
@@ -379,12 +381,15 @@ impl CacheService {
     ///
     /// # Returns
     /// * `AppResult<Option<T>>` - Cached value if found, None otherwise
-    pub fn get<T>(&self, key: &str) -> AppResult<Option<T>>
+    pub async fn get<T>(&self, key: &str) -> AppResult<Option<T>>
     where
         T: for<'de> Deserialize<'de>,
     {
-        let mut conn = self.get_connection()?;
-        let result: Result<Option<String>, _> = conn.get(key);
+        let mut conn = self.get_connection().await?;
+        let result: Result<Option<String>, RedisError> = deadpool_redis::redis::cmd("GET")
+            .arg(key)
+            .query_async(&mut *conn)
+            .await;
 
         match result {
             Ok(Some(value)) => {
@@ -413,26 +418,36 @@ impl CacheService {
     ///
     /// # Returns
     /// * `AppResult<()>` - Success or error
-    pub fn set<T>(&self, key: &str, value: &T, ttl: Option<Duration>) -> AppResult<()>
+    pub async fn set<T>(&self, key: &str, value: &T, ttl: Option<Duration>) -> AppResult<()>
     where
         T: Serialize,
     {
-        let mut conn = self.get_connection()?;
+        let mut conn = self.get_connection().await?;
         let serialized = serde_json::to_string(value).map_err(|e| {
             AppError::InternalServerError(format!("Failed to serialize cache value: {}", e))
         })?;
 
         match ttl {
             Some(duration) => {
-                conn.set_ex::<_, _, ()>(key, serialized, duration.as_secs())
+                deadpool_redis::redis::cmd("SETEX")
+                    .arg(key)
+                    .arg(duration.as_secs())
+                    .arg(serialized)
+                    .query_async::<_, ()>(&mut *conn)
+                    .await
                     .map_err(|e| {
                         AppError::InternalServerError(format!("Redis set_ex error: {}", e))
                     })?;
             }
             None => {
-                conn.set::<_, _, ()>(key, serialized).map_err(|e| {
-                    AppError::InternalServerError(format!("Redis set error: {}", e))
-                })?;
+                deadpool_redis::redis::cmd("SET")
+                    .arg(key)
+                    .arg(serialized)
+                    .query_async::<_, ()>(&mut *conn)
+                    .await
+                    .map_err(|e| {
+                        AppError::InternalServerError(format!("Redis set error: {}", e))
+                    })?;
             }
         }
 
@@ -446,35 +461,45 @@ impl CacheService {
     ///
     /// # Returns
     /// * `AppResult<()>` - Success or error
-    pub fn delete(&self, key: &str) -> AppResult<()> {
-        let mut conn = self.get_connection()?;
-        conn.del::<_, ()>(key)
+    pub async fn delete(&self, key: &str) -> AppResult<()> {
+        let mut conn = self.get_connection().await?;
+        deadpool_redis::redis::cmd("DEL")
+            .arg(key)
+            .query_async::<_, ()>(&mut *conn)
+            .await
             .map_err(|e| AppError::InternalServerError(format!("Redis delete error: {}", e)))?;
         Ok(())
     }
 
     /// Delete multiple keys
-    pub fn delete_many(&self, keys: &[String]) -> AppResult<()> {
+    pub async fn delete_many(&self, keys: &[String]) -> AppResult<()> {
         if keys.is_empty() {
             return Ok(());
         }
 
-        let mut conn = self.get_connection()?;
-        conn.del::<_, ()>(keys).map_err(|e| {
-            AppError::InternalServerError(format!("Redis delete_many error: {}", e))
-        })?;
+        let mut conn = self.get_connection().await?;
+        deadpool_redis::redis::cmd("DEL")
+            .arg(keys)
+            .query_async::<_, ()>(&mut *conn)
+            .await
+            .map_err(|e| {
+                AppError::InternalServerError(format!("Redis delete_many error: {}", e))
+            })?;
         Ok(())
     }
 
     /// Check if a key exists
-    pub fn exists(&self, key: &str) -> AppResult<bool> {
-        let mut conn = self.get_connection()?;
-        let result: Result<bool, _> = conn.exists(key);
+    pub async fn exists(&self, key: &str) -> AppResult<bool> {
+        let mut conn = self.get_connection().await?;
+        let result: Result<bool, RedisError> = deadpool_redis::redis::cmd("EXISTS")
+            .arg(key)
+            .query_async(&mut *conn)
+            .await;
         result.map_err(|e| AppError::InternalServerError(format!("Redis exists error: {}", e)))
     }
 
     /// Get multiple values
-    pub fn get_many<T>(&self, keys: &[String]) -> AppResult<HashMap<String, T>>
+    pub async fn get_many<T>(&self, keys: &[String]) -> AppResult<HashMap<String, T>>
     where
         T: for<'de> Deserialize<'de>,
     {
@@ -482,8 +507,11 @@ impl CacheService {
             return Ok(HashMap::new());
         }
 
-        let mut conn = self.get_connection()?;
-        let result: Result<Vec<Option<String>>, _> = conn.mget(keys);
+        let mut conn = self.get_connection().await?;
+        let result: Result<Vec<Option<String>>, RedisError> = deadpool_redis::redis::cmd("MGET")
+            .arg(keys)
+            .query_async(&mut *conn)
+            .await;
 
         match result {
             Ok(values) => {
@@ -505,7 +533,11 @@ impl CacheService {
     }
 
     /// Set multiple values
-    pub fn set_many<T>(&self, values: HashMap<String, T>, ttl: Option<Duration>) -> AppResult<()>
+    pub async fn set_many<T>(
+        &self,
+        values: HashMap<String, T>,
+        ttl: Option<Duration>,
+    ) -> AppResult<()>
     where
         T: Serialize,
     {
@@ -513,7 +545,7 @@ impl CacheService {
             return Ok(());
         }
 
-        let mut conn = self.get_connection()?;
+        let mut conn = self.get_connection().await?;
         let mut serialized_values = HashMap::new();
 
         for (key, value) in values {
@@ -524,12 +556,19 @@ impl CacheService {
         }
 
         let serialized_pairs: Vec<(&String, &String)> = serialized_values.iter().collect();
-        conn.mset::<_, _, ()>(&serialized_pairs)
+        deadpool_redis::redis::cmd("MSET")
+            .arg(&serialized_pairs)
+            .query_async::<_, ()>(&mut *conn)
+            .await
             .map_err(|e| AppError::InternalServerError(format!("Redis mset error: {}", e)))?;
 
         if let Some(duration) = ttl {
             for key in serialized_values.keys() {
-                conn.expire::<_, ()>(key, duration.as_secs() as i64)
+                deadpool_redis::redis::cmd("EXPIRE")
+                    .arg(key)
+                    .arg(duration.as_secs())
+                    .query_async(&mut *conn)
+                    .await
                     .map_err(|e| {
                         AppError::InternalServerError(format!("Redis expire error: {}", e))
                     })?;
@@ -540,25 +579,31 @@ impl CacheService {
     }
 
     /// Clear all cache
-    pub fn clear(&self) -> AppResult<()> {
-        let mut conn = self.get_connection()?;
+    pub async fn clear(&self) -> AppResult<()> {
+        let mut conn = self.get_connection().await?;
         // Use FLUSHDB command instead of flushdb method
-        redis::cmd("FLUSHDB").execute(&mut conn);
+        deadpool_redis::redis::cmd("FLUSHDB")
+            .query_async::<_, ()>(&mut *conn)
+            .await
+            .map_err(|e| AppError::InternalServerError(format!("Redis FLUSHDB error: {}", e)))?;
         Ok(())
     }
 
     /// Get cache statistics
-    pub fn get_stats(&self) -> AppResult<CacheStats> {
+    pub async fn get_stats(&self) -> AppResult<CacheStats> {
         // For now, return default stats
         // In a real implementation, you would track these metrics
         Ok(CacheStats::default())
     }
 
     /// Health check
-    pub fn health_check(&self) -> AppResult<()> {
-        let mut conn = self.get_connection()?;
+    pub async fn health_check(&self) -> AppResult<()> {
+        let mut conn = self.get_connection().await?;
         // Use PING command instead of ping method
-        redis::cmd("PING").execute(&mut conn);
+        deadpool_redis::redis::cmd("PING")
+            .query_async::<_, ()>(&mut *conn)
+            .await
+            .map_err(|e| AppError::InternalServerError(format!("Redis PING error: {}", e)))?;
         Ok(())
     }
 }

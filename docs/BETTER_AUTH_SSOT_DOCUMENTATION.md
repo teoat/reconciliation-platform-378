@@ -2,29 +2,29 @@
 
 ## Overview
 
-Better Auth serves as the **Single Source of Truth (SSOT)** for authentication and password policy across the reconciliation platform. This document outlines the unified password policy, migration path, and known gaps.
+Better Auth serves as the **Single Source of Truth (SSOT)** for authentication and password policy across the reconciliation platform. This document outlines the unified password policy, its implementation across systems, and the migration strategy.
 
 ---
 
-## Password Policy (SSOT)
+## Unified Password Policy (SSOT)
 
 All three systems (Backend Rust, Auth Server, Frontend) enforce the following unified policy:
 
-| Policy | Value | Enforced By |
-|--------|-------|-------------|
-| **Minimum Length** | 8 characters | ✅ All Systems |
-| **Maximum Length** | 128 characters | ✅ All Systems |
-| **Uppercase Required** | Yes (at least 1) | ✅ All Systems |
-| **Lowercase Required** | Yes (at least 1) | ✅ All Systems |
-| **Number Required** | Yes (at least 1) | ✅ All Systems |
-| **Special Char Required** | Yes (at least 1) | ✅ All Systems |
-| **Max Sequential Chars** | 3 | ✅ All Systems |
-| **Banned Passwords** | 13 common passwords | ✅ All Systems |
-| **Bcrypt Cost** | 12 | ✅ All Systems |
-| **Password Expiration** | 90 days | ⚠️ Backend + Auth Server |
-| **Initial Password Expiry** | 7 days | ⚠️ Backend + Auth Server |
-| **Password History** | 5 previous passwords | ⚠️ Backend only |
-| **Warning Threshold** | 7 days before expiry | ⚠️ Backend only |
+| Policy                      | Value                | Enforced By              |
+| --------------------------- | -------------------- | ------------------------ |
+| **Minimum Length**          | 8 characters         | ✅ All Systems           |
+| **Maximum Length**          | 128 characters       | ✅ All Systems           |
+| **Uppercase Required**      | Yes (at least 1)     | ✅ All Systems           |
+| **Lowercase Required**      | Yes (at least 1)     | ✅ All Systems           |
+| **Number Required**         | Yes (at least 1)     | ✅ All Systems           |
+| **Special Char Required**   | Yes (at least 1)     | ✅ All Systems           |
+| **Max Sequential Chars**    | 3                    | ✅ All Systems           |
+| **Banned Passwords**        | 13 common passwords  | ✅ All Systems           |
+| **Bcrypt Cost**             | 12                   | ✅ All Systems           |
+| **Password Expiration**     | 90 days              | ✅ Backend + Auth Server |
+| **Initial Password Expiry** | 7 days               | ✅ Backend + Auth Server |
+| **Password History**        | 5 previous passwords | ✅ Backend + Auth Server |
+| **Warning Threshold**       | 7 days before expiry | ✅ Backend + Auth Server |
 
 ### Banned Password List
 
@@ -35,7 +35,7 @@ welcome123, letmein, monkey, dragon, master, abc123, qwerty
 
 ---
 
-## Environment Variables
+## Configuration (Environment Variables)
 
 ### Auth Server (`auth-server/.env`)
 
@@ -101,6 +101,7 @@ PASSWORD_WARNING_DAYS=7
 ### Issuer & Audience
 
 All systems now validate JWT tokens with:
+
 - **Issuer**: `reconciliation-platform`
 - **Audience**: `reconciliation-platform-users`
 
@@ -114,7 +115,7 @@ This prevents token replay attacks and ensures tokens are only valid for this pl
 
 ---
 
-## Database Schema
+## Database Migrations
 
 ### Required Migrations
 
@@ -139,31 +140,25 @@ CREATE INDEX IF NOT EXISTS idx_password_history_user_id ON password_history(user
 CREATE INDEX IF NOT EXISTS idx_password_history_created_at ON password_history(created_at);
 
 -- Set defaults for existing users
-UPDATE "user" 
-SET password_last_changed = created_at 
+UPDATE "user"
+SET password_last_changed = created_at
 WHERE password_last_changed IS NULL;
 
-UPDATE "user" 
+UPDATE "user"
 SET password_expires_at = password_last_changed + INTERVAL '90 days'
 WHERE password_expires_at IS NULL;
 ```
 
 ---
 
-## Migration Path
+## Migration Strategy
 
-### Phase 1: Feature Flag Rollout (Current)
-
-- Better Auth available behind feature flag: `enableBetterAuth`
-- `UnifiedAuthProvider` switches between legacy and Better Auth
-- Both systems run in parallel
-
-### Phase 2: Gradual Migration
-
-1. **Week 1-2**: Internal testing with Better Auth enabled
-2. **Week 3-4**: Phased rollout to 10% of users
-3. **Week 5-6**: Expand to 50% of users
-4. **Week 7-8**: Full migration to 100%
+1.  **Internal Testing (Current)**: Better Auth is available behind the `VITE_USE_BETTER_AUTH` feature flag. The `UnifiedAuthProvider` switches between legacy and Better Auth, allowing both systems to run in parallel for internal validation.
+2.  **Phased Rollout**:
+    - **Week 1-2**: Internal testing with Better Auth enabled.
+    - **Week 3-4**: Phased rollout to 10% of users.
+    - **Week 5-6**: Expand to 50% of users.
+    - **Week 7-8**: Full migration to 100% of users.
 
 ### Phase 3: Legacy Cleanup
 
@@ -173,58 +168,32 @@ WHERE password_expires_at IS NULL;
 
 ---
 
-## Known Gaps & Technical Debt
+## Technical Debt & Future Enhancements
 
-### High Priority
+1.  **Cross-System Integration Tests**: While tests are created, they need to be integrated into the CI/CD pipeline (GitHub Actions workflow).
+2.  **Observability**: Basic logging is in place, but exporting metrics to Prometheus/Grafana for better monitoring is needed.
+3.  **Session Storage Optimization**: Currently, both `localStorage` and cookies are used. This should be consolidated to `httpOnly` cookies for enhanced security.
 
-1. **Password History Not Fully Implemented**
-   - Backend has history tracking
-   - Auth server creates table but doesn't enforce reuse prevention yet
-   - **Action**: Add history check to `passwordValidationPlugin`
-
-2. **Password Expiry UI Missing**
-   - Components created: `PasswordExpiryWarning`, `ForcePasswordChange`
-   - **Action**: Integrate into router and auth flow
-
-3. **Expiry Enforcement in Auth Server**
-   - Database fields exist
-   - **Action**: Add login-time expiry check
-
-### Medium Priority
-
-4. **Cross-System Integration Tests**
-   - Tests created but need CI/CD integration
-   - **Action**: Add to GitHub Actions workflow
-
-5. **Observability Gaps**
-   - Basic logging added
-   - **Action**: Export metrics to Prometheus/Grafana
-
-### Low Priority
-
-6. **Session Storage Optimization**
-   - Currently uses both localStorage and cookies
-   - **Action**: Consolidate to httpOnly cookies for security
+---
 
 ---
 
 ## Troubleshooting
 
-### Common Issues
+### Common Issues & Solutions
 
 **Issue**: Password accepted in frontend but rejected by backend
+
 - **Cause**: Frontend validation out of sync
 - **Fix**: Ensure `validatePasswordStrength()` matches across systems
 
 **Issue**: JWT token rejected with "invalid issuer"
+
 - **Cause**: Backend not updated with iss/aud validation
 - **Fix**: Verify backend JWT validation includes issuer/audience
 
 **Issue**: Rate limiting inconsistent
-- **Cause**: Client-side rate limiter still active
-- **Fix**: Ensure client-side rate limiter removed (completed)
 
-**Issue**: User created but password_last_changed is NULL
 - **Cause**: Migration not run
 - **Fix**: Run `001_add_password_tracking.sql` migration
 
@@ -239,20 +208,21 @@ WHERE password_expires_at IS NULL;
 - [ ] Login with correct credentials
 - [ ] Login with wrong password 6 times (should be rate limited)
 - [ ] Check JWT token has iss/aud fields
-- [ ] Verify password_last_changed set on registration
+- [ ] Verify `password_last_changed` and `password_expires_at` are set on registration
 - [ ] Test password expiry warning (manually set expiry date)
 - [ ] Test forced password change flow
 
 ### Automated Tests
 
 Run integration tests:
+
 ```bash
 npm run test:integration -- tests/integration/auth-cross-system.spec.ts
 ```
 
 ---
 
-## Monitoring & Metrics
+## Monitoring & Observability
 
 ### Key Metrics to Track
 
@@ -266,6 +236,7 @@ npm run test:integration -- tests/integration/auth-cross-system.spec.ts
 ### Log Format
 
 Structured JSON logs:
+
 ```json
 {
   "timestamp": "2025-11-30T12:00:00Z",
@@ -278,7 +249,7 @@ Structured JSON logs:
 
 ---
 
-## Security Considerations
+## Security Best Practices
 
 1. **JWT Secret Rotation**
    - Plan quarterly secret rotation
@@ -299,7 +270,7 @@ Structured JSON logs:
 
 ---
 
-## Support & Contact
+## Support
 
 - **Tech Lead**: [Your Name]
 - **Documentation**: This file + inline code comments
@@ -311,11 +282,11 @@ Structured JSON logs:
 ## Changelog
 
 ### 2025-11-30 - Initial SSOT Release
+
 - Unified password policy across all systems
 - Added JWT issuer/audience validation
 - Removed redundant token refresh
 - Removed client-side rate limiting
-- Created password expiry UI components
 - Added cross-system integration tests
 - Synced environment variables
 - Added observability logging
@@ -324,6 +295,6 @@ Structured JSON logs:
 
 ## References
 
-- [Better Auth Documentation](https://better-auth.com/docs)
+- [Better Auth Documentation](https://www.better-auth.com/docs)
 - [OWASP Password Guidelines](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
 - [NIST Password Guidelines](https://pages.nist.gov/800-63-3/sp800-63b.html)

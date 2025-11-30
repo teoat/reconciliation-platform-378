@@ -1,521 +1,62 @@
-# ============================================================================
-# DOCKER COMPOSE - Reconciliation Platform (CONSOLIDATED & OPTIMIZED)
-# ============================================================================
-# ✅ SINGLE SOURCE OF TRUTH (SSOT) - All services in one optimized file
-# ============================================================================
-# SSOT Compliance:
-#   - This file is the SSOT for all Docker services (see SSOT_LOCK.yml)
-#   - Environment variables read from .env (SSOT for secrets)
-#   - All other docker-compose files archived to archive/docker-compose/
-#   - Validate SSOT: ./scripts/validate-docker-ssot.sh
-#   - Sync SSOT: ./scripts/sync-docker-ssot.sh
-# ============================================================================
-# Features:
-# - Multi-stage optimized builds (80-90% faster rebuilds)
-# - BuildKit cache mounts for dependency caching
-# - Health check dependencies for proper startup order
-# - Resource limits for production stability
-# - All services: Postgres, Redis, Backend, Frontend, Monitoring, Logging
-# ============================================================================
-# Usage:
-#   docker compose up -d                # Start all services
-#   docker compose down                  # Stop all services
-#   docker compose build --parallel      # Build all images in parallel
-#   docker compose logs -f [service]     # View logs
-# ============================================================================
-# Last Updated: January 2025
-# Status: Production Ready ✅
-# ============================================================================
+
 
 services:
-  # ==========================================================================
-  # GROUP 1: Infrastructure Services (Start in parallel)
-  # ==========================================================================
-  
-  postgres:
-    image: postgres:15-alpine
-    container_name: reconciliation-postgres
-    environment:
-      POSTGRES_DB: ${POSTGRES_DB:-reconciliation_app}
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_pass}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF-8 --lc-collate=C --lc-ctype=C"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./infrastructure/database/postgresql.conf:/etc/postgresql/postgresql.conf:ro
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    networks:
-      - reconciliation-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: '4.0'
-          memory: 4G
-        reservations:
-          cpus: '2.0'
-          memory: 2G
-    command:
-      - postgres
-      - -c
-      - max_connections=100
-      - -c
-      - shared_buffers=1GB
-      - -c
-      - effective_cache_size=3GB
-      - -c
-      - maintenance_work_mem=256MB
-      - -c
-      - checkpoint_completion_target=0.9
-      - -c
-      - wal_buffers=16MB
-      - -c
-      - default_statistics_target=100
-      - -c
-      - random_page_cost=1.1
-      - -c
-      - effective_io_concurrency=200
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  redis:
-    image: redis:7-alpine
-    container_name: reconciliation-redis
-    environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_pass}
-    volumes:
-      - redis_data:/data
-      - ./infrastructure/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    networks:
-      - reconciliation-network
-    restart: unless-stopped
-    command:
-      - sh
-      - -c
-      - "redis-server /usr/local/etc/redis/redis.conf --requirepass \"$${REDIS_PASSWORD}\" --maxmemory 512mb --maxmemory-policy allkeys-lru"
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a $${REDIS_PASSWORD} ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 1G
-        reservations:
-          memory: 512M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
-    container_name: reconciliation-elasticsearch
-    environment:
-      - discovery.type=single-node
-      - xpack.security.enabled=false
-      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
-    volumes:
-      - elasticsearch_data:/usr/share/elasticsearch/data
-    ports:
-      - "${ELASTICSEARCH_PORT:-9200}:9200"
-    networks:
-      - reconciliation-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          memory: 1G
-
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: reconciliation-prometheus
-    volumes:
-      - ./infrastructure/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./infrastructure/monitoring/alert_rules.yml:/etc/prometheus/alert_rules.yml:ro
-      - ./infrastructure/monitoring/logstash_alerts.yml:/etc/prometheus/logstash_alerts.yml:ro
-      - prometheus_data:/prometheus
-    ports:
-      - "${PROMETHEUS_PORT:-9090}:9090"
-    networks:
-      - reconciliation-network
-    restart: unless-stopped
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--storage.tsdb.retention.time=30d'
-      - '--storage.tsdb.retention.size=10GB'
-      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
-      - '--web.console.templates=/usr/share/prometheus/consoles'
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://localhost:9090/-/healthy || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 2G
-        reservations:
-          memory: 512M
-
-  # ==========================================================================
-  # GROUP 2: Supporting Services (Start after Group 1, in parallel)
-  # ==========================================================================
-
-  pgbouncer:
-    image: edoburu/pgbouncer
-    container_name: reconciliation-pgbouncer
-    environment:
-      DATABASE_URL: postgres://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
-      PGBOUNCER_LISTEN_ADDR: 0.0.0.0
-      PGBOUNCER_LISTEN_PORT: 5432
-      POOL_MODE: transaction
-      MAX_CLIENT_CONN: 500
-      DEFAULT_POOL_SIZE: 50
-      AUTH_TYPE: md5
-      ADMIN_USERS: ${POSTGRES_USER:-postgres}
-    ports:
-      - "${PGBOUNCER_PORT:-6432}:5432"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - reconciliation-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -h localhost -p 5432 -U ${POSTGRES_USER:-postgres} || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-
-  logstash:
-    image: docker.elastic.co/logstash/logstash:8.11.0
-    container_name: reconciliation-logstash
-    volumes:
-      - ./logging/logstash/pipeline.conf:/usr/share/logstash/pipeline/logstash.conf:ro
-      - ./logging/logstash/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-    ports:
-      - "${LOGSTASH_PORT:-5044}:5044"
-      - "127.0.0.1:${LOGSTASH_HTTP_PORT:-9600}:9600"
-    networks:
-      - reconciliation-network
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-    restart: unless-stopped
-    environment:
-      - "LS_JAVA_OPTS=-Xms256m -Xmx256m"
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 40s
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          cpus: '0.5'
-          memory: 256M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-
-  kibana:
-    image: docker.elastic.co/kibana/kibana:8.11.0
-    container_name: reconciliation-kibana
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - SERVER_HOST=0.0.0.0
-    ports:
-      - "${KIBANA_PORT:-5601}:5601"
-    networks:
-      - reconciliation-network
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-
-  # ==========================================================================
-  # GROUP 3: Application Services (Start after Group 2)
-  # ==========================================================================
-
-  apm-server:
-    image: docker.elastic.co/apm/apm-server:8.11.0
-    container_name: reconciliation-apm-server
-    volumes:
-      - ./infrastructure/apm/apm-server.yml:/usr/share/apm-server/apm-server.yml:ro
-    ports:
-      - "${APM_PORT:-8200}:8200"
-    networks:
-      - reconciliation-network
-    depends_on:
-      elasticsearch:
-        condition: service_healthy
-      kibana:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8200/ || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-
   backend:
     build:
-      context: .
-      dockerfile: infrastructure/docker/Dockerfile.backend
-      args:
-        - BUILD_MODE=release
-        - RUSTFLAGS=-C target-cpu=native
-        - CARGO_BUILD_JOBS=4
-        - FEATURES=
-      cache_from:
-        - reconciliation-backend:latest
-    container_name: reconciliation-backend
-    environment:
-      # Connect directly to Postgres (can switch to PgBouncer if needed)
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_pass}@postgres:5432/${POSTGRES_DB:-reconciliation_app}
-      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_pass}@redis:6379
-      HOST: 0.0.0.0
-      BACKEND_PORT: 2000
-      LOG_FORMAT: json
-      JWT_SECRET: ${JWT_SECRET:-change-this-in-production}
-      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-change-this-refresh-secret-in-production}
-      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400}
-      CSRF_SECRET: ${CSRF_SECRET:-change-this-csrf-secret-in-production}
-      PASSWORD_MASTER_KEY: ${PASSWORD_MASTER_KEY:-change-this-password-master-key-in-production}
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:1000,http://localhost:3000,http://localhost:5173}
-      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-10485760}
-      UPLOAD_PATH: /app/uploads
-      ENV: ${ENVIRONMENT:-production}
-      DISABLE_AUTH: ${DISABLE_AUTH:-false}
-      RUST_LOG: ${RUST_LOG:-warn,reconciliation_backend=info}
-      RUST_BACKTRACE: ${RUST_BACKTRACE:-1}
-      # Google OAuth (Optional)
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
-      # Email/SMTP (Optional)
-      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
-      # Payment Processing (Optional)
-      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
-      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
-      # API Authentication (Optional)
-      API_KEY: ${API_KEY:-}
-      SOFTCODE_API_KEY: ${SOFTCODE_API_KEY:-}
-      # Monitoring (Optional)
-      SENTRY_DSN: ${SENTRY_DSN:-}
-      # Backup & Storage (Optional)
-      BACKUP_ENCRYPTION_KEY: ${BACKUP_ENCRYPTION_KEY:-}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
-      # Database/Redis Pool Configuration
-      DATABASE_POOL_SIZE: ${DATABASE_POOL_SIZE:-50}
-      DATABASE_TIMEOUT: ${DATABASE_TIMEOUT:-30}
-      REDIS_POOL_SIZE: ${REDIS_POOL_SIZE:-10}
-      REDIS_TIMEOUT: ${REDIS_TIMEOUT:-5}
-      WORKER_THREADS: 4
-      CACHE_ENABLED: "true"
-      CACHE_L1_SIZE: 2000
-      METRICS_ENABLED: "true"
-      HEALTH_CHECK_ENABLED: "true"
-      ELASTIC_APM_SERVER_URL: http://apm-server:8200
-      ELASTIC_APM_SERVICE_NAME: reconciliation-backend
-      ELASTIC_APM_ENVIRONMENT: ${ENVIRONMENT:-production}
-    volumes:
-      - uploads_data:/app/uploads
-      - logs_data:/app/logs
-      - filebeat_data:/var/log/filebeat
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
-      - "${BACKEND_PORT:-2000}:2000"
-    networks:
-      - reconciliation-network
+      - "8080:8080"
+    environment:
+      DATABASE_URL: "postgres://user:password@db:5432/reconciliation"
+      # JWT Configuration
+      JWT_SECRET: "your-super-secret-key-change-in-production"
+      JWT_EXPIRATION: 86400 # 24 hours
+      # OAuth2/OIDC Configuration (Google)
+      GOOGLE_OAUTH_CLIENT_ID: ""
+      GOOGLE_OAUTH_CLIENT_SECRET: ""
+      GOOGLE_OAUTH_REDIRECT_URL: "http://localhost:8080/api/v2/auth/oauth/google/callback"
+      # OAuth2/OIDC Configuration (GitHub)
+      GITHUB_OAUTH_CLIENT_ID: ""
+      GITHUB_OAUTH_CLIENT_SECRET: ""
+      GITHUB_OAUTH_REDIRECT_URL: "http://localhost:8080/api/v2/auth/oauth/github/callback"
     depends_on:
-      postgres:
-        condition: service_healthy
-      pgbouncer:
-        condition: service_started
-      redis:
-        condition: service_healthy
-      logstash:
-        condition: service_healthy
-      apm-server:
-        condition: service_started
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://localhost:2000/api/health >/dev/null 2>&1 || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-    deploy:
-      resources:
-        limits:
-          cpus: '2.0'
-          memory: 2G
-        reservations:
-          cpus: '1.0'
-          memory: 1G
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-        labels: "service,environment"
-    restart: always
-
-  # ==========================================================================
-  # GROUP 4: Frontend (Start after Backend)
-  # ==========================================================================
+      - db
 
   frontend:
     build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+    environment:
+      VITE_API_BASE_URL: "http://backend:8080/api/v2"
+      VITE_GOOGLE_OAUTH_REDIRECT_URL: "http://localhost:3000/api/v2/auth/oauth/google/callback"
+      VITE_GITHUB_OAUTH_REDIRECT_URL: "http://localhost:3000/api/v2/auth/oauth/github/callback"
+      VITE_OPTIMIZELY_SDK_KEY: "your-optimizely-sdk-key"
+    depends_on:
+      - backend
+
+  auth-server:
+    build:
       context: .
-      dockerfile: infrastructure/docker/Dockerfile.frontend
-      args:
-        BUILDKIT_INLINE_CACHE: 1
-        VITE_API_URL: ${VITE_API_URL:-http://localhost:2000}/api/v1
-        VITE_WS_URL: ${VITE_WS_URL:-ws://localhost:2000}
-        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID:-}
-        GENERATE_SOURCEMAP: ${GENERATE_SOURCEMAP:-false}
-        BUILD_ANALYZE: ${BUILD_ANALYZE:-false}
-        NODE_ENV: production
-      cache_from:
-        - reconciliation-frontend:latest
-    container_name: reconciliation-frontend
-    environment:
-      - NODE_ENV=${NODE_ENV:-production}
-      - DOCKER_BUILDKIT=1
-      - ELASTIC_APM_SERVER_URL=http://apm-server:8200
-      - ELASTIC_APM_SERVICE_NAME=reconciliation-frontend
-      - ELASTIC_APM_ENVIRONMENT=${ENVIRONMENT:-production}
-    volumes:
-      - filebeat_frontend_data:/var/log/filebeat
+      dockerfile: docker/auth-server.dockerfile
     ports:
-      - "${FRONTEND_PORT:-1000}:80"
-    networks:
-      - reconciliation-network
-    depends_on:
-      backend:
-        condition: service_healthy
-      logstash:
-        condition: service_healthy
-      apm-server:
-        condition: service_started
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q --spider http://localhost/health || exit 1"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          cpus: '1.0'
-          memory: 512M
-        reservations:
-          memory: 256M
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
-    restart: always
-
-  # ==========================================================================
-  # GROUP 5: Visualization (Start after Prometheus)
-  # ==========================================================================
-
-  grafana:
-    image: grafana/grafana:latest
-    container_name: reconciliation-grafana
+      - "4000:4000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
-      - GF_USERS_ALLOW_SIGN_UP=false
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./infrastructure/grafana/dashboards:/etc/grafana/provisioning/dashboards:ro
-    ports:
-      - "${GRAFANA_PORT:-3001}:3000"
-    networks:
-      - reconciliation-network
+      DATABASE_URL: "postgres://user:password@db:5432/reconciliation"
+      JWT_SECRET: "your-auth-server-secret-key-change-in-production"
     depends_on:
-      prometheus:
-        condition: service_healthy
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O- http://localhost:3000/api/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-    deploy:
-      resources:
-        limits:
-          cpus: '0.5'
-          memory: 512M
-        reservations:
-          memory: 256M
+      - db
 
-# ============================================================================
-# NETWORKS
-# ============================================================================
-networks:
-  reconciliation-network:
-    driver: bridge
-    name: reconciliation-network
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: reconciliation
+    volumes:
+      - db_data:/var/lib/postgresql/data
 
-# ============================================================================
-# VOLUMES
-# ============================================================================
 volumes:
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
-  uploads_data:
-    driver: local
-  logs_data:
-    driver: local
-  prometheus_data:
-    driver: local
-  grafana_data:
-    driver: local
-  elasticsearch_data:
-    driver: local
-  filebeat_data:
-    driver: local
-  filebeat_frontend_data:
-    driver: local
+  db_data:

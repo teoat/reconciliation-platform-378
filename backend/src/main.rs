@@ -10,18 +10,15 @@ use reconciliation_backend::{
     config::Config,
     handlers,
     middleware::{
-        api_versioning::{ApiVersioningMiddleware, ApiVersioningConfig},
+        api_versioning::{ApiVersioningConfig, ApiVersioningMiddleware},
         correlation_id::CorrelationIdMiddleware,
         error_handler::ErrorHandlerMiddleware,
-        AuthRateLimitMiddleware,
-        security::{SecurityHeadersMiddleware, SecurityHeadersConfig},
-        zero_trust::{ZeroTrustMiddleware, ZeroTrustConfig},
         rate_limit::PerEndpointRateLimitMiddleware,
+        security::SecurityHeadersConfig,
+        zero_trust::ZeroTrustConfig,
+        AuthRateLimitMiddleware,
     },
-    services::{
-        performance::QueryOptimizer,
-        secrets::SecretsService,
-    },
+    services::{performance::QueryOptimizer, secrets::SecretsService},
     startup::{resilience_config_from_env, AppStartup},
 };
 
@@ -64,7 +61,7 @@ fn main() {
             std::process::exit(1);
         }
     };
-    
+
     if let Err(e) = rt.block_on(async_main()) {
         eprintln!("Application error: {:?}", e);
         std::process::exit(1);
@@ -80,10 +77,11 @@ async fn async_main() -> std::io::Result<()> {
         .unwrap_or_else(|_| "false".to_string())
         .parse::<bool>()
         .unwrap_or(false);
-    
-    let mut builder = env_logger::Builder::from_env(env_logger::Env::new().default_filter_or("info"));
+
+    let mut builder =
+        env_logger::Builder::from_env(env_logger::Env::new().default_filter_or("info"));
     builder.target(env_logger::Target::Stderr);
-    
+
     if use_json_logging {
         // Use JSON format for structured logging (better for log aggregation)
         builder.format(|buf, record| {
@@ -108,10 +106,10 @@ async fn async_main() -> std::io::Result<()> {
             .format_level(true)
             .write_style(env_logger::WriteStyle::Always);
     }
-    
+
     // Initialize logger
     builder.init();
-    
+
     log::info!("Logging initialized - backend starting up");
 
     // Initialize Sentry for error tracking (if configured)
@@ -138,16 +136,20 @@ async fn async_main() -> std::io::Result<()> {
     // Validate environment variables before loading configuration
     // Use tier-based error handling with fallbacks
     log::info!("Validating environment variables...");
-    
+
     // Use startup error handler for validation
-    let startup_handler = reconciliation_backend::startup::error_handler::StartupErrorHandler::new();
-    
+    let startup_handler =
+        reconciliation_backend::startup::error_handler::StartupErrorHandler::new();
+
     // Validate with tier-based error handling
     if let Err(e) = startup_handler.validate_startup_requirements().await {
         log::error!("Startup validation failed: {}", e);
-        return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Startup validation failed: {}", e)));
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Startup validation failed: {}", e),
+        ));
     }
-    
+
     // Also run standard validation for compatibility
     reconciliation_backend::utils::env_validation::validate_and_exit_on_error();
 
@@ -160,7 +162,10 @@ async fn async_main() -> std::io::Result<()> {
         }
         Err(e) => {
             log::error!("Configuration error: {}", e);
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Configuration error: {}", e)));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Configuration error: {}", e),
+            ));
         }
     };
 
@@ -169,12 +174,18 @@ async fn async_main() -> std::io::Result<()> {
     log::info!("Running database migrations...");
     let is_production_env = std::env::var("ENVIRONMENT")
         .unwrap_or_else(|_| "development".to_string())
-        .to_lowercase() == "production";
-    
-    if let Err(e) = reconciliation_backend::database_migrations::run_migrations(&config.database_url) {
+        .to_lowercase()
+        == "production";
+
+    if let Err(e) =
+        reconciliation_backend::database_migrations::run_migrations(&config.database_url)
+    {
         if is_production_env {
             log::error!("Database migrations failed in production: {}", e);
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Database migrations failed in production: {}", e)));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Database migrations failed in production: {}", e),
+            ));
         } else {
             log::warn!("Database migrations encountered issues: {}", e);
         }
@@ -182,20 +193,31 @@ async fn async_main() -> std::io::Result<()> {
 
     // Verify database connection and critical tables
     log::info!("Verifying database connection and schema...");
-    if let Err(e) = reconciliation_backend::utils::schema_verification::verify_database_connection(&config.database_url) {
+    if let Err(e) = reconciliation_backend::utils::schema_verification::verify_database_connection(
+        &config.database_url,
+    ) {
         log::error!("Database connection verification failed: {}", e);
-        return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Database connection verification failed: {}", e)));
+        return Err(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Database connection verification failed: {}", e),
+        ));
     }
 
     // Verify critical tables exist (non-fatal in development, fatal in production)
     let is_production = std::env::var("ENVIRONMENT")
         .unwrap_or_else(|_| "development".to_string())
-        .to_lowercase() == "production";
-    
-    if let Err(e) = reconciliation_backend::utils::schema_verification::verify_critical_tables(&config.database_url) {
+        .to_lowercase()
+        == "production";
+
+    if let Err(e) = reconciliation_backend::utils::schema_verification::verify_critical_tables(
+        &config.database_url,
+    ) {
         if is_production {
             log::error!("Critical database tables missing: {}", e);
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Critical database tables missing: {}", e)));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Critical database tables missing: {}", e),
+            ));
         } else {
             log::warn!("Critical database tables missing: {}", e);
         }
@@ -209,7 +231,10 @@ async fn async_main() -> std::io::Result<()> {
         Ok(startup) => startup,
         Err(e) => {
             log::error!("Failed to initialize application: {}", e);
-            return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to initialize application: {}", e)));
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to initialize application: {}", e),
+            ));
         }
     };
 
@@ -240,35 +265,51 @@ async fn async_main() -> std::io::Result<()> {
     let resilience = app_startup.resilience().clone();
 
     // Initialize authentication and user services
-    use std::sync::Arc;
-    use reconciliation_backend::services::password_manager::PasswordManager;
-    use reconciliation_backend::services::auth::AuthService;
-    use reconciliation_backend::services::user::UserService;
+    use reconciliation_backend::services::auth::{AuthService, EnhancedAuthService, oauth::OAuthService};
     use reconciliation_backend::services::metrics::MetricsService;
-    
+    use reconciliation_backend::services::password_manager::PasswordManager;
+    use reconciliation_backend::services::user::UserService;
+    use std::sync::Arc;
+
     // Create auth service (not wrapped in Arc yet, as UserService needs the value)
-    let auth_service_value = AuthService::new(
-        config.jwt_secret.clone(),
-        config.jwt_expiration,
-    );
+    let auth_service_value = AuthService::new(config.jwt_secret.clone(), config.jwt_expiration);
     log::info!("Auth service initialized");
-    
+
+    let enhanced_auth_service_value = EnhancedAuthService::new(config.jwt_secret.clone(), config.jwt_expiration, Arc::new(database.clone()));
+    log::info!("Enhanced Auth service initialized");
+
     // Create user service (requires database and auth service value)
-    let user_service_value = UserService::new(
-        Arc::new(database.clone()),
-        auth_service_value.clone(),
-    );
+    let user_service_value =
+        UserService::new(Arc::new(database.clone()), auth_service_value.clone());
     log::info!("User service initialized");
-    
+
     // Now wrap both in Arc for app_data
-    let auth_service = Arc::new(auth_service_value);
+    // Now wrap both in Arc for app_data
+    let auth_service = Arc::new(auth_service_value.clone());
     let user_service = Arc::new(user_service_value);
-    
+    let enhanced_auth_service = Arc::new(enhanced_auth_service_value);
+
+    // Initialize OAuth service
+    let oauth_service = Arc::new(OAuthService::new(
+        &config,
+        user_service.clone(),
+        auth_service.clone(),
+        Arc::new(database.clone()),
+    ));
+    log::info!("OAuth service initialized");
+
+    // Initialize V2 User Service
+    use reconciliation_backend::services::v2::user::UserServiceV2;
+    let user_service_v2_value =
+        UserServiceV2::new(Arc::new(database.get_pool().clone()), auth_service.clone());
+    let user_service_v2 = Arc::new(user_service_v2_value);
+
     // Initialize password manager
     let is_production = std::env::var("ENVIRONMENT")
         .unwrap_or_else(|_| "development".to_string())
-        .to_lowercase() == "production";
-    
+        .to_lowercase()
+        == "production";
+
     // Validate CSRF_SECRET (required for CSRF protection)
     let _csrf_secret = match SecretsService::get_csrf_secret() {
         Ok(secret) => {
@@ -279,9 +320,15 @@ async fn async_main() -> std::io::Result<()> {
                     "CHANGE_ME_IN_PRODUCTION",
                     "default-csrf-secret",
                 ];
-                if default_patterns.iter().any(|&pattern| secret.contains(pattern)) {
+                if default_patterns
+                    .iter()
+                    .any(|&pattern| secret.contains(pattern))
+                {
                     log::error!("CSRF_SECRET validation failed: using default value");
-                    return Err(std::io::Error::new(std::io::ErrorKind::Other, "CSRF_SECRET cannot use default value in production"));
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "CSRF_SECRET cannot use default value in production",
+                    ));
                 }
             }
             secret
@@ -289,14 +336,17 @@ async fn async_main() -> std::io::Result<()> {
         Err(_) => {
             if is_production {
                 log::error!("CSRF_SECRET not set in production");
-                return Err(std::io::Error::new(std::io::ErrorKind::Other, "CSRF_SECRET is required in production"));
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "CSRF_SECRET is required in production",
+                ));
             } else {
                 log::warn!("CSRF_SECRET not set, using default (CHANGE IN PRODUCTION!)");
                 "default-csrf-secret-change-in-production".to_string()
             }
         }
     };
-    
+
     // Get password master key using enhanced SecretsService
     let master_key = match SecretsService::get_password_master_key() {
         Ok(key) => {
@@ -307,9 +357,15 @@ async fn async_main() -> std::io::Result<()> {
                     "CHANGE_ME_IN_PRODUCTION",
                     "default-master-key-change-in-production",
                 ];
-                if default_patterns.iter().any(|&pattern| key.contains(pattern)) {
+                if default_patterns
+                    .iter()
+                    .any(|&pattern| key.contains(pattern))
+                {
                     log::error!("PASSWORD_MASTER_KEY validation failed: using default value");
-                    return Err(std::io::Error::new(std::io::ErrorKind::Other, "PASSWORD_MASTER_KEY cannot use default value in production"));
+                    return Err(std::io::Error::new(
+                        std::io::ErrorKind::Other,
+                        "PASSWORD_MASTER_KEY cannot use default value in production",
+                    ));
                 }
             }
             key
@@ -317,14 +373,17 @@ async fn async_main() -> std::io::Result<()> {
         Err(_) => {
             if is_production {
                 log::error!("PASSWORD_MASTER_KEY not set in production");
-                return Err(std::io::Error::new(std::io::ErrorKind::Other, "PASSWORD_MASTER_KEY is required in production"));
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "PASSWORD_MASTER_KEY is required in production",
+                ));
             } else {
                 log::warn!("PASSWORD_MASTER_KEY not set, using default (CHANGE IN PRODUCTION!)");
                 "default-master-key-change-in-production".to_string()
             }
         }
     };
-    
+
     // Validate JWT_SECRET in production (additional check for default values)
     if is_production {
         if let Ok(jwt_secret) = SecretsService::get_jwt_secret() {
@@ -333,18 +392,21 @@ async fn async_main() -> std::io::Result<()> {
                 "CHANGE_ME_IN_PRODUCTION",
                 "your-super-secret-key-change-in-production",
             ];
-            if default_patterns.iter().any(|&pattern| jwt_secret.contains(pattern)) {
+            if default_patterns
+                .iter()
+                .any(|&pattern| jwt_secret.contains(pattern))
+            {
                 log::error!("JWT_SECRET validation failed: using default value");
-                return Err(std::io::Error::new(std::io::ErrorKind::Other, "JWT_SECRET cannot use default value in production"));
+                return Err(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    "JWT_SECRET cannot use default value in production",
+                ));
             }
         }
     }
-    
-    let password_manager = Arc::new(PasswordManager::new(
-        Arc::new(database.clone()),
-        master_key,
-    ));
-    
+
+    let password_manager = Arc::new(PasswordManager::new(Arc::new(database.clone()), master_key));
+
     // Initialize default passwords on startup (only if table exists)
     // This gracefully handles cases where migrations haven't run yet
     if password_manager.verify_table_exists().await.is_ok() {
@@ -356,7 +418,7 @@ async fn async_main() -> std::io::Result<()> {
     } else {
         log::info!("Password manager table not found, skipping password manager initialization");
     }
-    
+
     // Application secrets are now managed via environment variables (.env)
     // No longer using password manager for application secrets
     // See: docs/architecture/PASSWORD_SYSTEM_ORCHESTRATION.md
@@ -368,18 +430,18 @@ async fn async_main() -> std::io::Result<()> {
     // Initialize automatic secret manager
     use reconciliation_backend::services::secret_manager::SecretManager;
     let secret_manager = Arc::new(SecretManager::new(Arc::new(database.clone())));
-    
+
     // Load secrets from database on startup
     if let Err(e) = secret_manager.load_secrets_from_db().await {
         log::warn!("Failed to load secrets from database: {}", e);
     }
-    
+
     // Start automatic rotation scheduler (disabled temporarily to fix spawn_local issue)
     // FUTURE: Re-enable once spawn_local issue is resolved
     // This is a planned enhancement, not a bug
     // secret_manager.start_rotation_scheduler().await;
     log::info!("Automatic secret manager initialized (rotation scheduler disabled)");
-    
+
     // Initialize metrics service
     let metrics_service = Arc::new(MetricsService::new());
     log::info!("Metrics service initialized");
@@ -396,26 +458,28 @@ async fn async_main() -> std::io::Result<()> {
     // Determine if we're in production
     let is_production_env = std::env::var("ENVIRONMENT")
         .unwrap_or_else(|_| "development".to_string())
-        .to_lowercase() == "production";
-    
+        .to_lowercase()
+        == "production";
+
     // Clone CORS origins for use in closure
     let cors_origins = config.cors_origins.clone();
-    
+
     // Initialize zero-trust and rate limiting middleware configs
     // In development, disable identity verification for auth endpoints (they're handled by skip logic)
     let zero_trust_config = ZeroTrustConfig {
-        require_mtls: is_production_env && std::env::var("ZERO_TRUST_REQUIRE_MTLS")
-            .unwrap_or_else(|_| "false".to_string())
-            .parse()
-            .unwrap_or(false),
+        require_mtls: is_production_env
+            && std::env::var("ZERO_TRUST_REQUIRE_MTLS")
+                .unwrap_or_else(|_| "false".to_string())
+                .parse()
+                .unwrap_or(false),
         require_identity_verification: is_production_env, // Disable in development
-        enforce_least_privilege: is_production_env, // Disable in development
+        enforce_least_privilege: is_production_env,       // Disable in development
         network_segmentation: is_production_env,
     };
-    
+
     // Clone database for WebSocket server (will be started in HttpServer closure)
     let database_for_ws = Arc::new(database.clone());
-    
+
     // Configure CORS based on environment
     // Note: CORS config must be created inside the closure since Cors doesn't implement Clone
     // We'll recreate it in the HttpServer closure
@@ -479,10 +543,15 @@ async fn async_main() -> std::io::Result<()> {
             // Add CORS middleware (MUST be before zero-trust to ensure error responses have CORS headers)
             // This ensures that when zero-trust or other middleware return errors, CORS headers are present
             .wrap(cors)
-            // Add security headers middleware (CSP, HSTS, X-Frame-Options, etc.)
-            .wrap(SecurityHeadersMiddleware::new(SecurityHeadersConfig::default()))
-            // Note: CORS is applied before this so error responses include CORS headers
-            .wrap(ZeroTrustMiddleware::new(zero_trust_config.clone()))
+            // Add combined security middleware (Headers + Zero Trust)
+            // This replaces separate middleware to reduce stack depth
+            .wrap(
+                reconciliation_backend::middleware::CombinedSecurityMiddleware::new(
+                    reconciliation_backend::middleware::security::SecurityHeadersConfig::default(),
+                    zero_trust_config.clone(),
+                )
+                .with_auth_service(auth_service.clone())
+            )
             // Add API versioning middleware (adds version headers and deprecation warnings)
             .wrap(ApiVersioningMiddleware::new(ApiVersioningConfig::default()))
             // Add per-endpoint rate limiting middleware
@@ -498,14 +567,18 @@ async fn async_main() -> std::io::Result<()> {
             // Add authentication and user services (required by auth handlers)
             .app_data(web::Data::new(auth_service.clone()))
             .app_data(web::Data::new(user_service.clone()))
+            .app_data(web::Data::new(enhanced_auth_service.clone()))
+            .app_data(web::Data::new(oauth_service.clone()))
+            // Add V2 User Service
+            .app_data(web::Data::new(user_service_v2.clone()))
             // Initialize security event logging service
             .app_data(web::Data::new(
-                reconciliation_backend::services::security_event_logging::SecurityEventLoggingService::new()
+                reconciliation_backend::services::security_event_logging::SecurityEventLoggingService::new(Some(database.clone()))
             ))
             // Initialize compliance reporting service
             .app_data(web::Data::new(
                 reconciliation_backend::services::compliance_reporting::ComplianceReportingService::new(
-                    reconciliation_backend::services::security_event_logging::SecurityEventLoggingService::new()
+                    reconciliation_backend::services::security_event_logging::SecurityEventLoggingService::new(Some(database.clone()))
                 )
             ))
             // Add metrics service (required by metrics handlers)
@@ -519,15 +592,14 @@ async fn async_main() -> std::io::Result<()> {
             // Configure routes
             .configure(handlers::configure_routes)
     })
-    .workers(1);  // Reduce workers to 1 to minimize stack usage
-    
-    let server = server.bind(&bind_addr)
-        .map_err(|e| {
-            let error_msg = format!("Failed to bind to {}: {}", bind_addr, e);
-            log::error!("{}", error_msg);
-            std::io::Error::new(std::io::ErrorKind::AddrInUse, error_msg)
-        })?;
-    
+    .workers(1); // Reduce workers to 1 to minimize stack usage
+
+    let server = server.bind(&bind_addr).map_err(|e| {
+        let error_msg = format!("Failed to bind to {}: {}", bind_addr, e);
+        log::error!("{}", error_msg);
+        std::io::Error::new(std::io::ErrorKind::AddrInUse, error_msg)
+    })?;
+
     log::info!("✅ Server bound successfully to {}", bind_addr);
 
     // Run server - this will block until the server stops

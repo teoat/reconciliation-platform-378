@@ -1,20 +1,7 @@
 // Authentication and Security Tables
 // Extracted from schema.rs for better organization
 
-diesel::table! {
-    account_lockouts (id) {
-        id -> Uuid,
-        user_id -> Uuid,
-        locked_at -> Timestamptz,
-        locked_until -> Timestamptz,
-        #[max_length = 255]
-        reason -> Varchar,
-        unlocked_by -> Nullable<Uuid>,
-        unlocked_at -> Nullable<Timestamptz>,
-        is_active -> Bool,
-        created_at -> Timestamptz,
-    }
-}
+// Removed account_lockouts (moved to security.rs)
 
 diesel::table! {
     api_keys (id) {
@@ -48,38 +35,9 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    failed_login_attempts (id) {
-        id -> Uuid,
-        #[max_length = 255]
-        identifier -> Varchar,
-        ip_address -> Nullable<Inet>,
-        user_agent -> Nullable<Text>,
-        attempted_at -> Timestamptz,
-        #[max_length = 100]
-        failure_reason -> Nullable<Varchar>,
-        created_at -> Timestamptz,
-    }
-}
+// Removed failed_login_attempts (moved to security.rs)
 
-diesel::table! {
-    ip_access_control (id) {
-        id -> Uuid,
-        ip_address -> Inet,
-        #[max_length = 50]
-        ip_type -> Varchar,
-        #[max_length = 20]
-        action -> Varchar,
-        #[max_length = 255]
-        reason -> Nullable<Varchar>,
-        applied_by -> Uuid,
-        applied_at -> Timestamptz,
-        expires_at -> Nullable<Timestamptz>,
-        is_active -> Bool,
-        created_at -> Timestamptz,
-        updated_at -> Timestamptz,
-    }
-}
+// Removed ip_access_control (moved to security.rs)
 
 diesel::table! {
     password_reset_tokens (id) {
@@ -94,22 +52,7 @@ diesel::table! {
     }
 }
 
-diesel::table! {
-    security_events (id) {
-        id -> Uuid,
-        #[max_length = 100]
-        event_type -> Varchar,
-        #[max_length = 100]
-        severity -> Varchar,
-        description -> Text,
-        user_id -> Nullable<Uuid>,
-        ip_address -> Nullable<Inet>,
-        user_agent -> Nullable<Text>,
-        metadata -> Nullable<Jsonb>,
-        timestamp -> Timestamptz,
-        created_at -> Timestamptz,
-    }
-}
+// Removed security_events (moved to security.rs)
 
 diesel::table! {
     two_factor_auth (id) {

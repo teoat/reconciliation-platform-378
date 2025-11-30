@@ -6,6 +6,7 @@ import { AlertTriangle } from 'lucide-react';
 import { Info } from 'lucide-react';
 import { Bell } from 'lucide-react';
 import { useNotifications } from './hooks';
+import { useFadeInAnimation } from '../hooks/useFadeInAnimation';
 import Button from '../components/ui/Button';
 
 interface NotificationItemProps {
@@ -30,13 +31,7 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   onMarkAsRead,
   onRemove,
 }) => {
-  const [isVisible, setIsVisible] = useState(false);
-
-  useEffect(() => {
-    // Animate in
-    const timer = setTimeout(() => setIsVisible(true), 100);
-    return () => clearTimeout(timer);
-  }, []);
+  const [isVisible, setIsVisible] = useFadeInAnimation();
 
   const handleMarkAsRead = () => {
     if (!notification.read) {
@@ -200,8 +195,8 @@ const NotificationSystem: React.FC<NotificationSystemProps> = ({ className = '' 
       {isOpen && (
         <>
           {/* Backdrop */}
-          <div 
-            className="fixed inset-0 z-40" 
+          <div
+            className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
             onKeyDown={(e) => {
               if (e.key === 'Escape') {

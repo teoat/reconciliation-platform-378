@@ -33,17 +33,6 @@ pub fn generate_unique_filename(original_filename: &str) -> String {
     format!("{}{}", uuid, extension)
 }
 
-/// Validate file size
-pub fn validate_file_size(size: usize, max_size: usize) -> Result<(), String> {
-    if size > max_size {
-        Err(format!(
-            "File size {} exceeds maximum allowed size of {}",
-            size, max_size
-        ))
-    } else {
-        Ok(())
-    }
-}
 
 /// Get file size in human readable format
 pub fn format_file_size(bytes: u64) -> String {

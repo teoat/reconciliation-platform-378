@@ -74,18 +74,7 @@ if [ -f "$MCP_CONFIG" ]; then
     # Check for expected servers
     echo -e "${BLUE}🔍 Checking Expected Servers...${NC}"
     EXPECTED_SERVERS=(
-        "antigravity"
-        "antigravity-coordination"
-        "antigravity-playwright"
-        "antigravity-frontend-diagnostics"
-        "filesystem"
-        "postgres"
-        "redis"
-        "prometheus"
-        "chrome-devtools"
-        "sequential-thinking"
-        "memory"
-        "context7"
+        "agent-coordination-mcp"
     )
 
     for server in "${EXPECTED_SERVERS[@]}"; do
@@ -126,9 +115,9 @@ else
 fi
 
 if [ -f "$COORD_SERVER" ]; then
-    echo -e "${GREEN}✅ antigravity-coordination server built${NC}"
+    echo -e "${GREEN}✅ agent-coordination-mcp server built${NC}"
 else
-    echo -e "${RED}❌ antigravity-coordination server not built${NC}"
+    echo -e "${RED}❌ agent-coordination-mcp server not built${NC}"
     echo -e "${YELLOW}   Run: cd mcp-server && npm install && npm run build${NC}"
     ISSUES=$((ISSUES + 1))
 fi
@@ -172,7 +161,7 @@ if command -v redis-cli > /dev/null 2>&1; then
         echo -e "${GREEN}✅ Redis is running${NC}"
     else
         echo -e "${YELLOW}⚠️  Redis is not accessible${NC}"
-        echo -e "${YELLOW}   Note: redis and antigravity-coordination servers require Redis${NC}"
+        echo -e "${YELLOW}   Note: redis and agent-coordination-mcp servers require Redis${NC}"
         ISSUES=$((ISSUES + 1))
     fi
 else

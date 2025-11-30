@@ -23,8 +23,8 @@ pub mod system;
 pub mod monitoring;
 
 // Sync handlers
-pub mod sync;
 pub mod sql_sync;
+pub mod sync;
 
 // Health check handlers
 pub mod health;
@@ -42,9 +42,9 @@ pub mod onboarding;
 pub mod logs;
 
 // Security handlers
+pub mod compliance;
 pub mod security;
 pub mod security_events;
-pub mod compliance;
 
 // Metrics handlers
 pub mod metrics;
@@ -70,6 +70,9 @@ pub mod adjudication;
 // Ingestion handlers
 pub mod ingestion;
 
+// V2 handlers
+pub mod v2;
+
 // WebSocket handlers
 use crate::websocket;
 
@@ -82,10 +85,11 @@ use actix_web::web;
 /// Configure all API routes
 /// This is the main entry point for route configuration
 /// Note: Auth rate limiting middleware is applied at the App level in main.rs
-/// 
+///
 /// API Versioning Strategy:
 /// - Version 1 routes: `/api/v1/{resource}` (primary, documented in OpenAPI)
 /// - Legacy routes: `/api/{resource}` (backward compatibility, will be deprecated)
+/// - Version 2 routes: `/api/v2/{resource}` (new, for user management and future enhancements)
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     // Version 1 API routes (primary, documented in OpenAPI)
     cfg.service(
@@ -145,9 +149,14 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
             // Adjudication routes
             .service(web::scope("/adjudication").configure(adjudication::configure_routes))
             // Ingestion routes
-            .service(web::scope("/ingestion").configure(ingestion::configure_routes))
+            .service(web::scope("/ingestion").configure(ingestion::configure_routes)),
     );
-    
+
+    // Version 2 API routes (new)
+    cfg.service(
+        web::scope("/api/v2").configure(v2::configure_routes), // Configure V2 routes here
+    );
+
     // Legacy routes (backward compatibility - will be deprecated)
     // These routes will be removed in a future version
     cfg
@@ -182,9 +191,10 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         // Logging routes
         .service(web::scope("/api").route("/logs", web::post().to(logs::post_logs)))
         // Security routes
-        .service(web::scope("/api/security")
-            .configure(security::configure_routes)
-            .configure(security_events::configure_routes)
+        .service(
+            web::scope("/api/security")
+                .configure(security::configure_routes)
+                .configure(security_events::configure_routes),
         )
         // Compliance routes
         .service(web::scope("/api/compliance").configure(compliance::configure_routes))

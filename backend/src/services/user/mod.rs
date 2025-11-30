@@ -184,6 +184,50 @@ impl UserService {
         .map_err(|e| AppError::Internal(format!("Task join error: {}", e)))?
     }
 
+    /// Get user by OAuth provider ID
+    pub async fn get_user_by_provider_id(&self, provider_id: &str) -> AppResult<User> {
+        let db = Arc::clone(&self.db);
+        let provider_id = provider_id.to_string();
+
+        tokio::task::spawn_blocking(move || {
+            let mut conn = db.get_connection()?;
+            users::table
+                .filter(users::provider_id.eq(&provider_id))
+                .first::<User>(&mut conn)
+                .map_err(AppError::Database)
+        })
+        .await
+        .map_err(|e| AppError::Internal(format!("Task join error: {}", e)))?
+    }
+
+    /// Link an existing user account to an OAuth provider
+    pub async fn link_oauth_to_user(
+        &self,
+        user_id: Uuid,
+        provider_id: &str,
+        auth_provider_name: &str,
+    ) -> AppResult<UserInfo> {
+        let db = Arc::clone(&self.db);
+        let provider_id = provider_id.to_string();
+        let auth_provider_name = auth_provider_name.to_string();
+        let now = chrono::Utc::now();
+
+        with_transaction(db.get_pool(), |tx| {
+            diesel::update(users::table)
+                .filter(users::id.eq(user_id))
+                .set((
+                    users::provider_id.eq(Some(provider_id)),
+                    users::auth_provider.eq(Some(auth_provider_name)),
+                    users::updated_at.eq(now),
+                ))
+                .execute(tx)
+                .map_err(AppError::Database)?;
+            Ok(())
+        }).await?;
+
+        self.get_user_by_id(user_id).await
+    }
+
     /// Check if user exists by email
     pub async fn user_exists_by_email(&self, email: &str) -> AppResult<bool> {
         let db = Arc::clone(&self.db);
@@ -401,6 +445,10 @@ impl UserService {
     /// Get user statistics
     pub async fn get_user_statistics(&self) -> AppResult<UserStatistics> {
         self.analytics_service.get_user_statistics().await
+    }
+
+    pub async fn verify_password(&self, user: &User, password: &str) -> AppResult<bool> {
+        self.auth_service.verify_password(password, &user.password_hash)
     }
 
     // =========================================================================

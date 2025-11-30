@@ -469,6 +469,8 @@ where
                 role: c.role.clone(),
                 exp: c.exp,
                 iat: c.iat,
+                iss: c.iss.clone(),
+                aud: c.aud.clone(),
             });
 
             let claims: Claims = match claims_opt {

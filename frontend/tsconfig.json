@@ -25,6 +25,10 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
+    /* Added for stricter type checking */
+    "noUncheckedIndexedAccess": true,
+    "noImplicitReturns": true,
+
     /* Path mapping */
     "baseUrl": ".",
     "paths": {

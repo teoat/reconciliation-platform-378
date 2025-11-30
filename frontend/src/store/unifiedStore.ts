@@ -9,7 +9,7 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import {
-  authReducer,
+  authReducer, // Keep this import for the rootReducer
   projectsReducer,
   dataIngestionReducer,
   reconciliationReducer,
@@ -78,7 +78,22 @@ export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;
 // ============================================================================
 
 import {
-  authActions,
+  setAuthTokens,
+  clearAuth,
+  set2FARequired,
+  setUser2FAStatus,
+  loginUser,
+  registerUser,
+  logoutUser,
+  refreshAccessToken,
+  generate2faSecret,
+  verify2faCode,
+  enable2fa,
+  disable2fa,
+  generateRecoveryCodes,
+} from './slices/authSlice'; // Import directly from authSlice
+
+import {
   projectsActions,
   dataSourcesActions,
   reconciliationRecordsActions,
@@ -91,7 +106,19 @@ import {
 
 // Re-export actions
 export {
-  authActions,
+  setAuthTokens,
+  clearAuth,
+  set2FARequired,
+  setUser2FAStatus,
+  loginUser,
+  registerUser,
+  logoutUser,
+  refreshAccessToken,
+  generate2faSecret,
+  verify2faCode,
+  enable2fa,
+  disable2fa,
+  generateRecoveryCodes,
   projectsActions,
   dataSourcesActions,
   reconciliationRecordsActions,
@@ -102,16 +129,17 @@ export {
   analyticsActions,
 };
 
-// Individual action exports for convenience
-export const {
-  setUser,
-  setTokens,
-  setLoading: setAuthLoading,
-  setError: setAuthError,
-  clearError: clearAuthError,
-  logout,
-  setSessionExpiry,
-} = authActions;
+// Remove individual action exports that are now directly imported or not needed
+// For example, this section should be removed as actions are directly imported from slice
+// export const {
+//   setUser,
+//   setTokens,
+//   setLoading: setAuthLoading,
+//   setError: setAuthError,
+//   clearError: clearAuthError,
+//   logout,
+//   setSessionExpiry,
+// } = authActions;
 
 export const {
   setSelectedProject,
@@ -153,21 +181,25 @@ export const {
 // ASYNC THUNK EXPORTS
 // ============================================================================
 
-export {
-  loginUser,
-  registerUser,
-  getCurrentUser,
-  logoutUser,
-  fetchProjects,
-  createProject,
-  updateProject,
-  deleteProject,
-  uploadFile,
-  fetchUploadedFiles,
-  fetchReconciliationRecords,
-  runMatching,
-  fetchDashboardData,
-} from './asyncThunkUtils';
+// These are now imported directly from authSlice, so remove from here if they were previously exported via asyncThunkUtils
+// export {
+//   loginUser,
+//   registerUser,
+//   getCurrentUser,
+//   logoutUser,
+//   fetchProjects,
+//   createProject,
+//   updateProject,
+//   deleteProject,
+//   uploadFile,
+//   fetchUploadedFiles,
+//   fetchReconciliationRecords,
+//   runMatching,
+//   fetchDashboardData,
+// } from './asyncThunkUtils';
+
+// Re-export other async thunks from asyncThunkUtils if they exist and are still needed
+export { getCurrentUser, fetchProjects, createProject, updateProject, deleteProject, uploadFile, fetchUploadedFiles, fetchReconciliationRecords, runMatching, fetchDashboardData } from './asyncThunkUtils';
 
 // ============================================================================
 // TYPE EXPORTS FOR COMPATIBILITY

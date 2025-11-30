@@ -17,3 +17,4 @@ include!("schema/cashflow.rs");
 include!("schema/adjudication.rs");
 include!("schema/ingestion.rs");
 include!("schema/visualization.rs");
+include!("schema/security.rs");

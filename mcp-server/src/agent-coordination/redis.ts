@@ -4,6 +4,7 @@
 
 import { createClient, RedisClientType } from 'redis';
 import { REDIS_URL, REDIS_CONNECT_TIMEOUT } from './config.js';
+import { logger } from '../lib/logger.js';
 
 // Connection instances (singleton pattern)
 let redisClient: RedisClientType | null = null;
@@ -38,7 +39,7 @@ export async function initRedis(): Promise<RedisClientType> {
   redisClientPromise = (async () => {
     try {
       let redisConfig: { url?: string; password?: string; socket: any };
-      
+
       if (REDIS_URL.includes('@') && REDIS_URL.includes(':')) {
         const urlMatch = REDIS_URL.match(/^redis:\/\/(?::([^@]+)@)?([^:]+):(\d+)$/);
         if (urlMatch) {
@@ -84,15 +85,15 @@ export async function initRedis(): Promise<RedisClientType> {
           },
         };
       }
-      
+
       redisClient = createClient(redisConfig);
 
       redisClient.on('error', (err) => {
-        console.error('[Agent Coordination MCP] Redis error:', err);
+        logger.error('Redis connection error', { error: err.message });
       });
 
       redisClient.on('connect', () => {
-        console.error('[Agent Coordination MCP] Redis connected');
+        logger.info('Redis connected successfully');
       });
 
       await Promise.race([
@@ -128,7 +129,7 @@ function startRedisHealthMonitoring(): void {
       try {
         await redisClient.ping();
       } catch (error) {
-        console.warn('[Agent Coordination MCP] Redis health check failed:', error);
+        logger.warn('Redis health check failed', { error: error.message });
         redisClient = null;
         redisClientPromise = null;
       }
@@ -143,7 +144,9 @@ export async function getRedis(): Promise<RedisClientType> {
   try {
     return await initRedis();
   } catch (error) {
-    throw new Error(`Redis not available: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Redis not available: ${error instanceof Error ? error.message : String(error)}`
+    );
   }
 }
 
@@ -156,7 +159,7 @@ export async function cleanupRedis(): Promise<void> {
       clearInterval(redisHealthCheckTimer);
       redisHealthCheckTimer = null;
     }
-    
+
     if (redisClient?.isOpen) {
       await redisClient.quit();
     }
@@ -166,4 +169,3 @@ export async function cleanupRedis(): Promise<void> {
   redisClient = null;
   redisClientPromise = null;
 }
-

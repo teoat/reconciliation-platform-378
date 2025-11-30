@@ -134,15 +134,20 @@ pub async fn google_oauth(
     };
     
     let password_expires_in_days = if password_expires_soon {
-        Some((user.password_expires_at.unwrap() - chrono::Utc::now()).num_days() as u32)
+        user.password_expires_at
+            .map(|expires_at| (expires_at - chrono::Utc::now()).num_days() as u32)
     } else {
         None
     };
-    
+
     let message = if requires_password_change {
         Some("Please change your initial password".to_string())
     } else if password_expires_soon {
-        Some(format!("Your password will expire in {} day(s). Please change it soon.", password_expires_in_days.unwrap()))
+        if let Some(days) = password_expires_in_days {
+            Some(format!("Your password will expire in {} day(s). Please change it soon.", days))
+        } else {
+            None
+        }
     } else {
         None
     };

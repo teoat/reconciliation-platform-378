@@ -11,6 +11,8 @@ pub mod password_reset_rate_limit;
 pub mod roles;
 pub mod types;
 pub mod validation;
+pub mod oauth;
+pub mod two_factor;
 
 pub use enhanced::EnhancedAuthService;
 pub use jwt::JwtManager;
@@ -94,12 +96,12 @@ impl AuthService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::TestUser;
     use crate::database::Database;
+    use crate::test_utils::TestUser;
     use uuid::Uuid;
 
     async fn create_test_db() -> Database {
-        Database::new("postgresql://test:test@localhost/reconciliation_test").await.unwrap()
+        Database::new("postgresql://test:test@localhost/reconciliation_test").unwrap()
     }
 
     #[tokio::test]
@@ -114,16 +116,22 @@ mod tests {
         let password = "TestPassword123!";
 
         // Test password hashing
-        let hash = service.hash_password(password).expect("Should hash password");
+        let hash = service
+            .hash_password(password)
+            .expect("Should hash password");
         assert_ne!(hash, password);
         assert!(hash.len() > 10); // bcrypt hash should be reasonably long
 
         // Test password verification
-        let is_valid = service.verify_password(password, &hash).expect("Should verify password");
+        let is_valid = service
+            .verify_password(password, &hash)
+            .expect("Should verify password");
         assert!(is_valid);
 
         // Test wrong password
-        let is_invalid = service.verify_password("WrongPassword", &hash).expect("Should reject wrong password");
+        let is_invalid = service
+            .verify_password("WrongPassword", &hash)
+            .expect("Should reject wrong password");
         assert!(!is_invalid);
     }
 
@@ -155,17 +163,23 @@ mod tests {
         };
 
         // Test token generation
-        let token = service.generate_token(&user).expect("Should generate token");
+        let token = service
+            .generate_token(&user)
+            .expect("Should generate token");
         assert!(!token.is_empty());
         assert!(token.contains(".")); // JWT format has dots
 
         // Test token validation
-        let claims = service.validate_token(&token).expect("Should validate token");
+        let claims = service
+            .validate_token(&token)
+            .expect("Should validate token");
         assert_eq!(claims.sub, user.id.to_string());
         assert_eq!(claims.email, user.email);
 
         // Test user ID extraction
-        let user_id = service.get_user_id_from_token(&token).expect("Should extract user ID");
+        let user_id = service
+            .get_user_id_from_token(&token)
+            .expect("Should extract user ID");
         assert_eq!(user_id, user.id);
     }
 
@@ -191,8 +205,12 @@ mod tests {
 
         // Invalid passwords
         assert!(service.validate_password_strength("short").is_err());
-        assert!(service.validate_password_strength("nouppercase123!").is_err());
-        assert!(service.validate_password_strength("NOLOWERCASE123!").is_err());
+        assert!(service
+            .validate_password_strength("nouppercase123!")
+            .is_err());
+        assert!(service
+            .validate_password_strength("NOLOWERCASE123!")
+            .is_err());
         assert!(service.validate_password_strength("NoNumbers!").is_err());
         assert!(service.validate_password_strength("NoSpecial123").is_err());
     }
@@ -201,7 +219,9 @@ mod tests {
     async fn test_auth_service_reset_token_generation() {
         let service = AuthService::new("test_secret".to_string(), 3600);
 
-        let token = service.generate_reset_token().expect("Should generate reset token");
+        let token = service
+            .generate_reset_token()
+            .expect("Should generate reset token");
         assert!(!token.is_empty());
         assert!(token.len() >= 32); // Should be reasonably long
     }
@@ -259,7 +279,10 @@ mod tests {
             updated_at: chrono::Utc::now(),
         };
 
-        let session = service.create_session(&user, &db).await.expect("Should create session");
+        let session = service
+            .create_session(&user, &db)
+            .await
+            .expect("Should create session");
 
         assert_eq!(session.user_id, user.id);
         assert_eq!(session.email, user.email);
@@ -296,7 +319,10 @@ mod tests {
             updated_at: chrono::Utc::now(),
         };
 
-        let session = service.create_rotated_session(&user, &db).await.expect("Should create rotated session");
+        let session = service
+            .create_rotated_session(&user, &db)
+            .await
+            .expect("Should create rotated session");
 
         assert_eq!(session.user_id, user.id);
         assert!(session.expires_at > session.created_at);
@@ -309,7 +335,9 @@ mod tests {
 
         // This test would require a real user in the database
         // For now, test that the method exists and handles errors gracefully
-        let result = service.generate_password_reset_token("nonexistent@example.com", &db).await;
+        let result = service
+            .generate_password_reset_token("nonexistent@example.com", &db)
+            .await;
         // Should fail gracefully for non-existent user
         assert!(result.is_err());
     }
@@ -320,11 +348,15 @@ mod tests {
         let db = create_test_db().await;
 
         // Test with invalid token
-        let result = service.confirm_password_reset("invalid_token", "NewPass123!", &db).await;
+        let result = service
+            .confirm_password_reset("invalid_token", "NewPass123!", &db)
+            .await;
         assert!(result.is_err());
 
         // Test with weak password
-        let result = service.confirm_password_reset("some_token", "weak", &db).await;
+        let result = service
+            .confirm_password_reset("some_token", "weak", &db)
+            .await;
         assert!(result.is_err());
     }
 
@@ -352,7 +384,10 @@ mod tests {
         let service = EnhancedAuthService::new("test_secret".to_string(), 3600);
         let db = create_test_db().await;
 
-        let api_key = service.generate_api_key(Uuid::new_v4(), "Test API Key", &db).await.expect("Should generate API key");
+        let api_key = service
+            .generate_api_key(Uuid::new_v4(), "Test API Key", &db)
+            .await
+            .expect("Should generate API key");
         assert!(!api_key.is_empty());
         assert!(api_key.len() >= 32);
     }
@@ -369,7 +404,9 @@ mod tests {
     async fn test_enhanced_auth_service_hash_password() {
         let service = EnhancedAuthService::new("test_secret".to_string(), 3600);
 
-        let hash = service.hash_password("TestPassword123!").expect("Should hash password");
+        let hash = service
+            .hash_password("TestPassword123!")
+            .expect("Should hash password");
         assert!(!hash.is_empty());
         assert_ne!(hash, "TestPassword123!");
     }
@@ -378,7 +415,9 @@ mod tests {
     async fn test_enhanced_auth_service_generate_reset_token() {
         let service = EnhancedAuthService::new("test_secret".to_string(), 3600);
 
-        let token = service.generate_reset_token().expect("Should generate token");
+        let token = service
+            .generate_reset_token()
+            .expect("Should generate token");
         assert!(!token.is_empty());
         assert!(token.len() >= 32);
     }
@@ -389,7 +428,9 @@ mod tests {
         let db = create_test_db().await;
 
         // Test with invalid user ID (would fail in real scenario)
-        let result = service.generate_email_verification_token(Uuid::nil(), "test@example.com", &db).await;
+        let result = service
+            .generate_email_verification_token(Uuid::nil(), "test@example.com", &db)
+            .await;
         // Should either succeed or fail gracefully
         assert!(result.is_ok() || result.is_err());
     }
@@ -468,6 +509,9 @@ mod tests {
         let service2 = service1.clone();
 
         assert_eq!(service1.session_timeout, service2.session_timeout);
-        assert_eq!(service1.password_reset_timeout, service2.password_reset_timeout);
+        assert_eq!(
+            service1.password_reset_timeout,
+            service2.password_reset_timeout
+        );
     }
 }

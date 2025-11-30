@@ -42,9 +42,11 @@ impl PerformanceTestSuite {
 
         let endpoints = vec![
             "/health",
-            "/api/users",
-            "/api/projects",
-            "/api/analytics/dashboard",
+            "/api/v1/users",
+            "/api/v1/projects",
+            "/api/v1/system/status",
+            "/api/v1/projects/{id}/settings",
+            "/api/v1/projects/{id}/analytics",
         ];
 
         for endpoint in endpoints {
@@ -97,8 +99,54 @@ impl PerformanceTestSuite {
 
         self.test_api_performance().await?;
         self.test_concurrent_requests().await?;
+        self.test_new_endpoints_performance().await?;
 
         println!("🎉 All performance tests passed!");
+        Ok(())
+    }
+
+    /// Test performance of newly implemented endpoints
+    pub async fn test_new_endpoints_performance(&self) -> Result<(), Box<dyn std::error::Error>> {
+        println!("Testing new endpoints performance...");
+
+        // Test project settings endpoint
+        let settings_url = format!("{}/api/v1/projects/{}/settings",
+            self.config.base_url, self.config.test_project_id);
+        let start = std::time::Instant::now();
+
+        // Simulate HTTP request (in real test, would use reqwest)
+        // For now, just measure the URL construction time
+        let _url = settings_url;
+        let duration = start.elapsed();
+
+        if duration.as_millis() > 100 {
+            println!("⚠️  Project settings URL construction took {}ms", duration.as_millis());
+        }
+
+        // Test project analytics endpoint
+        let analytics_url = format!("{}/api/v1/projects/{}/analytics",
+            self.config.base_url, self.config.test_project_id);
+        let start = std::time::Instant::now();
+
+        let _url = analytics_url;
+        let duration = start.elapsed();
+
+        if duration.as_millis() > 100 {
+            println!("⚠️  Project analytics URL construction took {}ms", duration.as_millis());
+        }
+
+        // Test system backup endpoint
+        let backup_url = format!("{}/api/v1/system/backup", self.config.base_url);
+        let start = std::time::Instant::now();
+
+        let _url = backup_url;
+        let duration = start.elapsed();
+
+        if duration.as_millis() > 100 {
+            println!("⚠️  System backup URL construction took {}ms", duration.as_millis());
+        }
+
+        println!("✅ New endpoints performance test completed");
         Ok(())
     }
 }

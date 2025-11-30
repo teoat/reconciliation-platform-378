@@ -79,3 +79,18 @@ diesel::table! {
         created_at -> Timestamptz,
     }
 }
+
+diesel::table! {
+    security_policies (id) {
+        id -> Uuid,
+        #[max_length = 255]
+        name -> Varchar,
+        description -> Text,
+        #[max_length = 50]
+        category -> Varchar,
+        is_active -> Bool,
+        rules -> Jsonb,
+        created_at -> Timestamptz,
+        updated_at -> Timestamptz,
+    }
+}

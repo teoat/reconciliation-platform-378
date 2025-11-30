@@ -7,6 +7,10 @@ rustflags = []
 # Set minimum stack size for Rust threads
 RUST_MIN_STACK = "167772216"  # 16MB in bytes
 
+[lints.rust]
+# Fix unknown lint name
+rust_2018_idioms = { level = "warn", priority = -1 }
+
 # Note: On macOS, you may also need to increase the stack size via linker flags:
 # rustflags = ["-C", "link-args=-Wl,-stack_size,10000000"]
 # However, RUST_MIN_STACK is more portable across platforms.

@@ -180,7 +180,7 @@ impl<S> SecurityHeadersService<S> {
 #[derive(Clone)]
 pub struct CspNonce(pub String);
 
-fn add_security_headers_to_response<B>(
+pub fn add_security_headers_to_response<B>(
     res: &mut ServiceResponse<B>,
     config: &SecurityHeadersConfig,
     nonce: Option<&str>,
@@ -268,7 +268,8 @@ fn add_security_headers_to_response<B>(
             form-action 'self'; \
             upgrade-insecure-requests; \
             block-all-mixed-content; \
-            report-uri /api/security/csp-report;".to_string()
+            report-uri /api/security/csp-report;"
+                .to_string()
         };
 
         if let Ok(val) = HeaderValue::from_str(&csp) {

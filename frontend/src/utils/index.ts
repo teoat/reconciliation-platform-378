@@ -38,9 +38,7 @@ export {
 // Explicit exports to avoid duplicates
 export { analyzeBundleSize } from './bundleOptimization';
 export { createLazyComponent, preloadComponent } from './codeSplitting';
-export {
-  LazyAdvancedVisualization,
-} from './advancedCodeSplitting';
+export { LazyAdvancedVisualization } from './advancedCodeSplitting';
 export { ErrorBoundary } from './lazyLoading';
 export * from './routeSplitting';
 export * from './dynamicImports';
@@ -48,8 +46,6 @@ export * from './dynamicImports';
 // NOTE: Both .ts and .tsx exist - .tsx has more features (containerRef, scrollToIndex, etc.)
 // Components import directly, so this export is for convenience
 export * from './virtualScrolling';
-export * from './caching';
-export * from './memoryOptimization';
 
 // ============================================================================
 // ERROR HANDLING UTILITIES
@@ -146,8 +142,6 @@ export * from './common/filteringSorting';
 // ============================================================================
 // UI/UX UTILITIES
 // ============================================================================
-export * from './confetti';
-export * from './conversationStorage';
 // Explicit export to avoid duplicate
 export { registerServiceWorker } from './pwaUtils';
 

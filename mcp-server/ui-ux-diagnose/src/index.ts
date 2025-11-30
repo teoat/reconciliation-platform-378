@@ -8,14 +8,24 @@
  */
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CallToolRequestSchema, ListToolsRequestSchema, Tool } from '@modelcontextprotocol/sdk/types.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+  Tool,
+} from '@modelcontextprotocol/sdk/types.js';
 import * as dotenv from 'dotenv';
 import { join } from 'path';
 import { writeFileSync, existsSync, readFileSync } from 'fs';
 import { execa } from 'execa';
 
 import { DIRS, PROJECT_ROOT } from '../../dist/shared/env.js';
-import { writeJson, appendIndex, newRunId, ensureDir, readJson } from '../../dist/shared/artifacts.js';
+import {
+  writeJson,
+  appendIndex,
+  newRunId,
+  ensureDir,
+  readJson,
+} from '../../dist/shared/artifacts.js';
 import { E, err } from '../../dist/shared/errors.js';
 
 dotenv.config();
@@ -27,18 +37,26 @@ const tools: Tool[] = [
   {
     name: 'run_axe_accessibility',
     description: 'Run axe-core accessibility checks on routes using Playwright',
-    inputSchema: { type: 'object', properties: { routes: { type: 'array', items: { type: 'string' } } }, required: ['routes'] }
+    inputSchema: {
+      type: 'object',
+      properties: { routes: { type: 'array', items: { type: 'string' } } },
+      required: ['routes'],
+    },
   },
   {
     name: 'contrast_scan',
     description: 'Perform a basic contrast scan on routes',
-    inputSchema: { type: 'object', properties: { routes: { type: 'array', items: { type: 'string' } } }, required: ['routes'] }
+    inputSchema: {
+      type: 'object',
+      properties: { routes: { type: 'array', items: { type: 'string' } } },
+      required: ['routes'],
+    },
   },
   {
     name: 'aggregate_ui_report',
     description: 'Aggregate accessibility and contrast reports into a prioritized summary',
-    inputSchema: { type: 'object', properties: {} }
-  }
+    inputSchema: { type: 'object', properties: {} },
+  },
 ];
 
 async function runAxeAccessibility(routes: string[]) {
@@ -54,12 +72,27 @@ async function runAxeAccessibility(routes: string[]) {
     routes,
     violations: [],
     info: 'Placeholder: integrate Playwright + axe-core to populate violations. This file proves the pipeline works.',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
   writeJson(join(outDir, 'axe-summary.json'), summary);
-  appendIndex(join(DIRS.ACCESSIBILITY_REPORTS, 'index.json'), { runId, timestamp: summary.timestamp, artifacts: [join(outDir, 'axe-summary.json')] });
+  appendIndex(join(DIRS.ACCESSIBILITY_REPORTS, 'index.json'), {
+    runId,
+    timestamp: summary.timestamp,
+    artifacts: [join(outDir, 'axe-summary.json')],
+  });
 
-  return { ok: true, data: { runId, outDir }, meta: { tool: 'run_axe_accessibility', server: SERVER_NAME, durationMs: 0, timestamp: new Date().toISOString(), runId, artifacts: [outDir] } };
+  return {
+    ok: true,
+    data: { runId, outDir },
+    meta: {
+      tool: 'run_axe_accessibility',
+      server: SERVER_NAME,
+      durationMs: 0,
+      timestamp: new Date().toISOString(),
+      runId,
+      artifacts: [outDir],
+    },
+  };
 }
 
 async function contrastScan(routes: string[]) {
@@ -69,10 +102,29 @@ async function contrastScan(routes: string[]) {
   ensureDir(outDir);
 
   const results = routes.map((r) => ({ route: r, nonCompliantNodes: 0, examples: [] }));
-  writeJson(join(outDir, 'contrast-summary.json'), { runId, results, timestamp: new Date().toISOString() });
-  appendIndex(join(DIRS.ACCESSIBILITY_REPORTS, 'index.json'), { runId, timestamp: new Date().toISOString(), artifacts: [join(outDir, 'contrast-summary.json')] });
+  writeJson(join(outDir, 'contrast-summary.json'), {
+    runId,
+    results,
+    timestamp: new Date().toISOString(),
+  });
+  appendIndex(join(DIRS.ACCESSIBILITY_REPORTS, 'index.json'), {
+    runId,
+    timestamp: new Date().toISOString(),
+    artifacts: [join(outDir, 'contrast-summary.json')],
+  });
 
-  return { ok: true, data: { runId, outDir }, meta: { tool: 'contrast_scan', server: SERVER_NAME, durationMs: 0, timestamp: new Date().toISOString(), runId, artifacts: [outDir] } };
+  return {
+    ok: true,
+    data: { runId, outDir },
+    meta: {
+      tool: 'contrast_scan',
+      server: SERVER_NAME,
+      durationMs: 0,
+      timestamp: new Date().toISOString(),
+      runId,
+      artifacts: [outDir],
+    },
+  };
 }
 
 async function aggregateUiReport() {
@@ -87,11 +139,23 @@ async function aggregateUiReport() {
   }
 
   const summary = { totals, artifacts, timestamp: new Date().toISOString() };
-  return { ok: true, data: summary, meta: { tool: 'aggregate_ui_report', server: SERVER_NAME, durationMs: 0, timestamp: new Date().toISOString() } };
+  return {
+    ok: true,
+    data: summary,
+    meta: {
+      tool: 'aggregate_ui_report',
+      server: SERVER_NAME,
+      durationMs: 0,
+      timestamp: new Date().toISOString(),
+    },
+  };
 }
 
 async function main() {
-  const server = new Server({ name: SERVER_NAME, version: SERVER_VERSION }, { capabilities: { tools: {} } });
+  const server = new Server(
+    { name: SERVER_NAME, version: SERVER_VERSION },
+    { capabilities: { tools: {} } }
+  );
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools }));
 
@@ -110,19 +174,53 @@ async function main() {
         const res = await aggregateUiReport();
         return { content: [{ type: 'text', text: JSON.stringify(res, null, 2) }] };
       }
-      return { content: [{ type: 'text', text: JSON.stringify({ ok: false, error: err(E.UNKNOWN_TOOL, `Unknown tool ${name}`), meta: { tool: name, server: SERVER_NAME, durationMs: 0, timestamp: new Date().toISOString() } }, null, 2) }], isError: true } as any;
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(
+              {
+                ok: false,
+                error: err(E.UNKNOWN_TOOL, `Unknown tool ${name}`),
+                meta: {
+                  tool: name,
+                  server: SERVER_NAME,
+                  durationMs: 0,
+                  timestamp: new Date().toISOString(),
+                },
+              },
+              null,
+              2
+            ),
+          },
+        ],
+        isError: true,
+      } as any;
     } catch (e: any) {
-      const errBody = { ok: false, error: err(E.UNEXPECTED, e?.message || String(e)), meta: { tool: name, server: SERVER_NAME, durationMs: 0, timestamp: new Date().toISOString() } };
-      return { content: [{ type: 'text', text: JSON.stringify(errBody, null, 2) }], isError: true } as any;
+      const errBody = {
+        ok: false,
+        error: err(E.UNEXPECTED, e?.message || String(e)),
+        meta: {
+          tool: name,
+          server: SERVER_NAME,
+          durationMs: 0,
+          timestamp: new Date().toISOString(),
+        },
+      };
+      return {
+        content: [{ type: 'text', text: JSON.stringify(errBody, null, 2) }],
+        isError: true,
+      } as any;
     }
   });
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error(`[${SERVER_NAME}] v${SERVER_VERSION} running`);
+  console.log(`[${SERVER_NAME}] v${SERVER_VERSION} running`);
 }
 
 main().catch((e) => {
-  console.error(`[${SERVER_NAME}] Fatal:`, e);
+  console.error(`[${SERVER_NAME}] Fatal error:`, e.message);
+  console.error(e.stack);
   process.exit(1);
 });

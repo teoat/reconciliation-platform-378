@@ -58,6 +58,10 @@ pub use error_handler::{
 pub mod zero_trust;
 pub use zero_trust::{ZeroTrustConfig, ZeroTrustMiddleware};
 
+// Combined security middleware (Headers + Zero Trust)
+pub mod combined_security;
+pub use combined_security::CombinedSecurityMiddleware;
+
 // Rate limiting middleware (per-endpoint) - renamed to avoid conflict
 pub mod rate_limit;
 pub use rate_limit::{

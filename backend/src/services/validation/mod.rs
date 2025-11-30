@@ -10,6 +10,9 @@ pub mod password;
 pub mod types;
 pub mod uuid;
 
+#[cfg(test)]
+mod csv_delimiter_tests;
+
 // Re-exports
 pub use types::{
     CustomValidationError, SchemaValidator, ValidationErrorType, ValidationResult, ValidationRule,
@@ -24,7 +27,6 @@ use regex::Regex;
 pub struct ValidationServiceDelegate {
     email_validator: email::EmailValidator,
     password_validator: password::PasswordValidator,
-    #[allow(dead_code)]
     uuid_validator: uuid::UuidValidator,
     file_validator: file::FileValidator,
     json_schema_validator: json_schema::JsonSchemaValidator,

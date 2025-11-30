@@ -8,15 +8,16 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-pub mod schema;
-pub mod subscription;
-pub mod notification;
-pub mod team;
-pub mod workflow;
-pub mod cashflow;
 pub mod adjudication;
+pub mod cashflow;
 pub mod ingestion;
+pub mod notification;
+pub mod schema;
+pub mod security_policy;
+pub mod subscription;
+pub mod team;
 pub mod visualization;
+pub mod workflow;
 
 // Note: We use serde_json::Value directly for JSONB fields
 // Diesel natively supports this without custom wrappers
@@ -125,6 +126,7 @@ pub struct User {
     pub is_initial_password: bool,
     pub initial_password_set_at: Option<DateTime<Utc>>,
     pub auth_provider: Option<String>,
+    pub provider_id: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -146,6 +148,7 @@ pub struct NewUser {
     pub is_initial_password: Option<bool>,
     pub initial_password_set_at: Option<DateTime<Utc>>,
     pub auth_provider: Option<String>,
+    pub provider_id: Option<String>,
 }
 
 /// Update user model
@@ -475,8 +478,40 @@ pub struct NewAuditLog {
     pub resource_id: Option<Uuid>,
     pub old_values: Option<serde_json::Value>,
     pub new_values: Option<serde_json::Value>,
+}
+
+/// Security event model
+#[derive(Queryable, Selectable, Serialize, Deserialize, Debug, Clone)]
+#[diesel(table_name = crate::models::schema::security_events)]
+pub struct SecurityEvent {
+    pub id: Uuid,
+    pub event_type: String,
+    pub severity: String,
+    pub user_id: Option<Uuid>,
     pub ip_address: Option<String>,
     pub user_agent: Option<String>,
+    pub resource_type: Option<String>,
+    pub resource_id: Option<Uuid>,
+    pub action: String,
+    pub details: Option<serde_json::Value>,
+    pub metadata: Option<serde_json::Value>,
+    pub created_at: DateTime<Utc>,
+}
+
+/// New security event model for inserts
+#[derive(Insertable, Deserialize)]
+#[diesel(table_name = crate::models::schema::security_events)]
+pub struct NewSecurityEvent {
+    pub event_type: String,
+    pub severity: String,
+    pub user_id: Option<Uuid>,
+    pub ip_address: Option<String>,
+    pub user_agent: Option<String>,
+    pub resource_type: Option<String>,
+    pub resource_id: Option<Uuid>,
+    pub action: String,
+    pub details: Option<serde_json::Value>,
+    pub metadata: Option<serde_json::Value>,
 }
 
 /// Uploaded file model
@@ -719,42 +754,42 @@ impl From<Project> for ProjectResponse {
 
 // Re-export notification types
 pub use notification::{
-    Notification, NewNotification, NotificationPreferences, NewNotificationPreferences,
+    NewNotification, NewNotificationPreferences, Notification, NotificationPreferences,
     UpdateNotificationPreferences,
 };
 
 // Re-export team types
-pub use team::{Team, NewTeam, UpdateTeam, TeamMember, NewTeamMember, UpdateTeamMember};
+pub use team::{NewTeam, NewTeamMember, Team, TeamMember, UpdateTeam, UpdateTeamMember};
 
 // Re-export workflow types
 pub use workflow::{
-    Workflow, NewWorkflow, UpdateWorkflow, WorkflowInstance, NewWorkflowInstance,
-    UpdateWorkflowInstance, WorkflowRule, NewWorkflowRule, UpdateWorkflowRule,
+    NewWorkflow, NewWorkflowInstance, NewWorkflowRule, UpdateWorkflow, UpdateWorkflowInstance,
+    UpdateWorkflowRule, Workflow, WorkflowInstance, WorkflowRule,
 };
 
 // Re-export cashflow types
 pub use cashflow::{
-    CashflowCategory, NewCashflowCategory, UpdateCashflowCategory, CashflowTransaction,
-    NewCashflowTransaction, UpdateCashflowTransaction, CashflowDiscrepancy,
-    NewCashflowDiscrepancy, UpdateCashflowDiscrepancy,
+    CashflowCategory, CashflowDiscrepancy, CashflowTransaction, NewCashflowCategory,
+    NewCashflowDiscrepancy, NewCashflowTransaction, UpdateCashflowCategory,
+    UpdateCashflowDiscrepancy, UpdateCashflowTransaction,
 };
 
 // Re-export adjudication types
 pub use adjudication::{
-    AdjudicationCase, NewAdjudicationCase, UpdateAdjudicationCase, AdjudicationDecision,
-    NewAdjudicationDecision, UpdateAdjudicationDecision, AdjudicationWorkflow,
-    NewAdjudicationWorkflow, UpdateAdjudicationWorkflow,
+    AdjudicationCase, AdjudicationDecision, AdjudicationWorkflow, NewAdjudicationCase,
+    NewAdjudicationDecision, NewAdjudicationWorkflow, UpdateAdjudicationCase,
+    UpdateAdjudicationDecision, UpdateAdjudicationWorkflow,
 };
 
 // Re-export ingestion types
 pub use ingestion::{
-    IngestionJob, NewIngestionJob, UpdateIngestionJob, IngestionResult, NewIngestionResult,
-    IngestionError, NewIngestionError,
+    IngestionError, IngestionJob, IngestionResult, NewIngestionError, NewIngestionJob,
+    NewIngestionResult, UpdateIngestionJob,
 };
 
 // Re-export visualization types
 pub use visualization::{
-    Chart, NewChart, UpdateChart, Dashboard, NewDashboard, UpdateDashboard, Report, NewReport,
+    Chart, Dashboard, NewChart, NewDashboard, NewReport, Report, UpdateChart, UpdateDashboard,
     UpdateReport,
 };
 

@@ -1,457 +1,142 @@
-'use client'
+import React, { useState, useEffect } from 'react';
 
-import { useState, useEffect } from 'react'
-import { 
-  Plus, 
-  FolderOpen, 
-  Calendar, 
-  User, 
-  ArrowRight, 
-  Trash2, 
-  Search,
-  Grid,
-  List,
-  Clock,
-  AlertTriangle,
-  CheckCircle,
-  Archive,
-  Loader2,
-  RefreshCw,
-  X
-} from 'lucide-react'
-import { apiClient, Project } from '@/services/apiClient'
-
-interface ProjectSelectionPageProps {
-  onProjectSelect: (project: Project) => void
+interface Project {
+  id: number;
+  name: string;
+  description: string;
+  status: 'active' | 'completed' | 'draft';
+  createdAt: string;
+  updatedAt: string;
 }
 
-const ProjectSelectionPage = ({ onProjectSelect }: ProjectSelectionPageProps) => {
-  const [projects, setProjects] = useState<Project[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [searchTerm, setSearchTerm] = useState('')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
-  const [showCreateModal, setShowCreateModal] = useState(false)
-  const [creating, setCreating] = useState(false)
+interface ProjectSelectionPageProps {
+  onProjectSelect: (project: Project) => void;
+}
+
+const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({ onProjectSelect }) => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchProjects()
-  }, [])
+    // Load projects - in a real app, this would come from an API
+    const loadProjects = () => {
+      setTimeout(() => {
+        const mockProjects: Project[] = [
+          {
+            id: 1,
+            name: 'Q4 Financial Reconciliation',
+            description: 'Quarterly financial statement reconciliation for Q4 2024',
+            status: 'active',
+            createdAt: '2024-11-01',
+            updatedAt: '2024-11-15',
+          },
+          {
+            id: 2,
+            name: 'Vendor Payment Matching',
+            description: 'Match vendor invoices with payment records',
+            status: 'draft',
+            createdAt: '2024-11-10',
+            updatedAt: '2024-11-10',
+          },
+          {
+            id: 3,
+            name: 'Inventory Audit',
+            description: 'Reconcile physical inventory with system records',
+            status: 'completed',
+            createdAt: '2024-10-01',
+            updatedAt: '2024-10-30',
+          },
+        ];
+        setProjects(mockProjects);
+        setLoading(false);
+      }, 1000);
+    };
 
-  const fetchProjects = async () => {
-    try {
-      setLoading(true)
-      const response = await apiClient.getProjects()
-      
-      if (response.error) {
-        const errorMessage = typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to load projects';
-        setError(errorMessage);
-      } else if (response.data) {
-        const projectsData = response.data as unknown as { items?: Project[]; projects?: Project[]; [key: string]: unknown };
-        const projects = projectsData.items || projectsData.projects || [];
-        // Map ProjectResponse to Project if needed
-        setProjects(projects.map(p => ({
-          ...p,
-          status: (p as { status?: string }).status || 'active',
-          updated_at: (p as { updated_at?: string | Date }).updated_at || p.created_at,
-        })) as Project[]);
-      }
-    } catch (err) {
-      setError('Failed to load projects')
-    } finally {
-      setLoading(false)
-    }
-  }
+    loadProjects();
+  }, []);
 
-  const handleCreateProject = async (projectData: { name: string; description?: string }) => {
-    try {
-      setCreating(true)
-      const response = await apiClient.createProject(projectData)
-      
-      if (response.error) {
-        const errorMessage = typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to create project';
-        setError(errorMessage);
-      } else if (response.data) {
-        const project = 'project' in response.data ? response.data.project : response.data;
-        if (project) {
-          setProjects(prev => [project as Project, ...prev]);
-        }
-        setShowCreateModal(false)
-      }
-    } catch (err) {
-      setError('Failed to create project')
-    } finally {
-      setCreating(false)
-    }
-  }
-
-  const handleDeleteProject = async (projectId: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return
-    
-    try {
-      const response = await apiClient.deleteProject(projectId)
-      
-      if (response.error) {
-        const errorMessage = typeof response.error === 'string' ? response.error : response.error?.message || 'Failed to delete project';
-        setError(errorMessage);
-      } else {
-        setProjects(prev => prev.filter(p => p.id !== projectId))
-      }
-    } catch (err) {
-      setError('Failed to delete project')
-    }
-  }
-
-  const filteredProjects = projects.filter(project =>
-    project.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    project.description?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const getStatusIcon = (status: string) => {
+  const getStatusColor = (status: Project['status']) => {
     switch (status) {
       case 'active':
-        return <CheckCircle className="w-4 h-4 text-green-500" />
-      case 'inactive':
-        return <Clock className="w-4 h-4 text-yellow-500" />
-      case 'archived':
-        return <Archive className="w-4 h-4 text-gray-500" />
+        return 'bg-green-100 text-green-800';
+      case 'completed':
+        return 'bg-blue-100 text-blue-800';
+      case 'draft':
+        return 'bg-yellow-100 text-yellow-800';
       default:
-        return <AlertTriangle className="w-4 h-4 text-gray-500" />
+        return 'bg-gray-100 text-gray-800';
     }
-  }
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800'
-      case 'inactive':
-        return 'bg-yellow-100 text-yellow-800'
-      case 'archived':
-        return 'bg-gray-100 text-gray-800'
-      default:
-        return 'bg-gray-100 text-gray-800'
-    }
-  }
+  };
 
   if (loading) {
     return (
-      <div className="p-6">
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <span className="ml-2 text-gray-600">Loading projects...</span>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading projects...</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Projects</h1>
-          <p className="text-gray-600">Select a project to start reconciliation</p>
-        </div>
-        <div className="flex items-center space-x-3">
-          <button
-            onClick={fetchProjects}
-            className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-            title="Refresh"
-          >
-            <RefreshCw className="w-5 h-5" />
-          </button>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            aria-label="Create new project"
-            title="Create new project"
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            New Project
-          </button>
-        </div>
-      </div>
-
-      {/* Error Message */}
-      {error && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-          <div className="flex items-center">
-            <AlertTriangle className="w-5 h-5 text-red-500 mr-2" />
-            <span className="text-red-700">{error}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Search and Filters */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search projects..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={() => setViewMode('grid')}
-              aria-label="Switch to grid view"
-              title="Switch to grid view"
-              className={`p-2 rounded-lg ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <Grid className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              aria-label="Switch to list view"
-              title="Switch to list view"
-              className={`p-2 rounded-lg ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              <List className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        <div className="text-sm text-gray-600">
-          {filteredProjects.length} project{filteredProjects.length !== 1 ? 's' : ''}
-        </div>
-      </div>
-
-      {/* Projects Grid/List */}
-      {filteredProjects.length === 0 ? (
-        <div className="text-center py-12">
-          <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
-          <p className="text-gray-600 mb-4">
-            {searchTerm ? 'Try adjusting your search terms' : 'Get started by creating your first project'}
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Select a Project</h1>
+          <p className="mt-2 text-gray-600">
+            Choose an existing project to continue working, or create a new one.
           </p>
-          {!searchTerm && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              aria-label="Create new project"
-              title="Create new project"
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Create Project
-            </button>
-          )}
         </div>
-      ) : (
-        <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' : 'space-y-4'}>
-          {filteredProjects.map((project) => (
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {projects.map((project) => (
             <div
               key={project.id}
-              className={`bg-white rounded-lg shadow-sm border hover:shadow-md transition-shadow cursor-pointer ${
-                viewMode === 'list' ? 'p-4 flex items-center justify-between' : 'p-6'
-              }`}
+              className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
               onClick={() => onProjectSelect(project)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onProjectSelect(project);
-                }
-              }}
-              role="button"
-              tabIndex={0}
-              aria-label={`Select project ${project.name}`}
             >
-              {viewMode === 'grid' ? (
-                <>
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-2">
-                      <div className="p-2 bg-blue-100 rounded-lg">
-                        <FolderOpen className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{project.name}</h3>
-                        <div className="flex items-center space-x-2 mt-1">
-                          {getStatusIcon(project.status)}
-                          <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(project.status)}`}>
-                            {project.status}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDeleteProject(project.id)
-                        }}
-                        aria-label={`Delete project ${project.name}`}
-                        title={`Delete project ${project.name}`}
-                        className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {project.description && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-2">{project.description}</p>
-                  )}
-                  
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-1">
-                        <User className="w-4 h-4" />
-                        <span>{(project as { createdByFirstName?: string; createdByLastName?: string; createdBy?: string }).createdByFirstName || (project as { createdBy?: string }).createdBy || 'Unknown'}{(project as { createdByLastName?: string }).createdByLastName ? ` ${(project as { createdByLastName?: string }).createdByLastName}` : ''}</span>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <Calendar className="w-4 h-4" />
-                        <span>{new Date(project.created_at).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                    <ArrowRight className="w-4 h-4" />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center space-x-4">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <FolderOpen className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{project.name}</h3>
-                      {project.description && (
-                        <p className="text-gray-600 text-sm">{project.description}</p>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-2">
-                      {getStatusIcon(project.status)}
-                      <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(project.status)}`}>
-                        {project.status}
-                      </span>
-                    </div>
-                    <div className="flex items-center space-x-1 text-sm text-gray-500">
-                      <User className="w-4 h-4" />
-                      <span>{(project as { createdByFirstName?: string; createdByLastName?: string; createdBy?: string }).createdByFirstName || (project as { createdBy?: string }).createdBy || 'Unknown'}{(project as { createdByLastName?: string }).createdByLastName ? ` ${(project as { createdByLastName?: string }).createdByLastName}` : ''}</span>
-                    </div>
-                    <div className="flex items-center space-x-1 text-sm text-gray-500">
-                      <Calendar className="w-4 h-4" />
-                      <span>{new Date(project.created_at).toLocaleDateString()}</span>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDeleteProject(project.id)
-                      }}
-                      aria-label={`Delete project ${project.name}`}
-                      title={`Delete project ${project.name}`}
-                      type="button"
-                      className="p-1 text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    <ArrowRight className="w-4 h-4 text-gray-400" />
-                  </div>
-                </>
-              )}
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-4">
+                  <h3 className="text-lg font-semibold text-gray-900">{project.name}</h3>
+                  <span
+                    className={`px-2 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                      project.status
+                    )}`}
+                  >
+                    {project.status}
+                  </span>
+                </div>
+
+                <p className="text-gray-600 mb-4 line-clamp-2">{project.description}</p>
+
+                <div className="text-sm text-gray-500">
+                  <p>Created: {new Date(project.createdAt).toLocaleDateString()}</p>
+                  <p>Last updated: {new Date(project.updatedAt).toLocaleDateString()}</p>
+                </div>
+
+                <button
+                  className="mt-4 w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onProjectSelect(project);
+                  }}
+                >
+                  Open Project
+                </button>
+              </div>
             </div>
           ))}
         </div>
-      )}
 
-      {/* Create Project Modal */}
-      {showCreateModal && (
-        <CreateProjectModal
-          onClose={() => setShowCreateModal(false)}
-          onCreate={handleCreateProject}
-          loading={creating}
-        />
-      )}
-    </div>
-  )
-}
-
-// Create Project Modal Component
-interface CreateProjectModalProps {
-  onClose: () => void
-  onCreate: (data: { name: string; description?: string }) => void
-  loading: boolean
-}
-
-const CreateProjectModal = ({ onClose, onCreate, loading }: CreateProjectModalProps) => {
-  const [formData, setFormData] = useState({ name: '', description: '' })
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (formData.name.trim()) {
-      onCreate(formData)
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-md w-full p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-900">Create New Project</h2>
-          <button
-            onClick={onClose}
-            aria-label="Close modal"
-            title="Close modal"
-            className="text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-5 h-5" />
+        <div className="text-center">
+          <button className="bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 text-lg font-medium">
+            + Create New Project
           </button>
         </div>
-        
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="project-name" className="block text-sm font-medium text-gray-700 mb-2">
-              Project Name *
-            </label>
-            <input
-              id="project-name"
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter project name"
-              required
-            />
-          </div>
-          
-          <div>
-            <label htmlFor="project-description" className="block text-sm font-medium text-gray-700 mb-2">
-              Description
-            </label>
-            <textarea
-              id="project-description"
-              value={formData.description}
-              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Enter project description"
-              rows={3}
-            />
-          </div>
-          
-          <div className="flex items-center justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading || !formData.name.trim()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center"
-            >
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-              Create Project
-            </button>
-          </div>
-        </form>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default ProjectSelectionPage
+export default ProjectSelectionPage;

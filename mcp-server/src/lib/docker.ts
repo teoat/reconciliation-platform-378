@@ -4,6 +4,7 @@
 
 // @ts-ignore
 import Docker from 'dockerode';
+import { logger } from './logger.js';
 
 // Connection instance (singleton pattern)
 let docker: Docker | null = null;
@@ -13,7 +14,7 @@ let docker: Docker | null = null;
  */
 export function initDocker(): Docker | null {
   if (docker) return docker;
-  
+
   try {
     docker = new Docker();
     // Test connection
@@ -22,7 +23,7 @@ export function initDocker(): Docker | null {
     });
     return docker;
   } catch (error) {
-    console.error('Warning: Docker initialization failed:', error);
+    logger.warn('Docker initialization failed', { error: error.message });
     return null;
   }
 }
@@ -39,19 +40,17 @@ export async function getContainerStatus(filter: 'all' | 'running' | 'stopped', 
   try {
     const containers = await dockerInstance.listContainers({ all: filter === 'all' });
     let filtered = containers;
-    
+
     if (name) {
-      filtered = containers.filter((c: any) => 
-        c.Names.some((n: string) => n.includes(name))
-      );
+      filtered = containers.filter((c: any) => c.Names.some((n: string) => n.includes(name)));
     }
-    
+
     if (filter === 'running') {
       filtered = filtered.filter((c: any) => c.State === 'running');
     } else if (filter === 'stopped') {
       filtered = filtered.filter((c: any) => c.State !== 'running');
     }
-    
+
     return {
       containers: filtered.map((c: any) => ({
         id: c.Id.substring(0, 12),
@@ -120,4 +119,3 @@ export async function restartContainer(container: string) {
     throw new Error(`Failed to restart container: ${error.message}`);
   }
 }
-

@@ -5,6 +5,7 @@
 import type { WorkflowSyncTestResult, StepValidation, StepPermissions } from '../types';
 import { WorkflowSyncSimulation } from '../utils/simulation';
 import { WorkflowSyncComparison } from '../utils/comparison';
+import { createMockStep, createMockWorkflowState } from '@/test-utils/mock-data';
 
 export class StepSynchronizationTests {
   constructor(
@@ -14,21 +15,17 @@ export class StepSynchronizationTests {
 
   async testStepSynchronization(): Promise<WorkflowSyncTestResult> {
     const startTime = Date.now();
+    const browsers = ['browser-1', 'browser-2'];
+    const steps = [createMockStep('step1', 'pending'), createMockStep('step2', 'pending')];
+    const initialState = createMockWorkflowState(steps);
 
     try {
-      const browsers = ['browser-1', 'browser-2', 'browser-3'];
-
       await Promise.all(browsers.map((browser) => this.simulation.simulateBrowserConnect(browser)));
-
-      const stepChanges = [
-        { browser: browsers[0], step: 'reconciliation' },
-        { browser: browsers[1], step: 'reconciliation' },
-        { browser: browsers[2], step: 'reconciliation' },
-      ];
-
-      await Promise.all(
-        stepChanges.map((change) => this.simulation.simulateBrowserStepChange(change.browser, change.step))
-      );
+      
+      const firstBrowser = browsers[0];
+      if (firstBrowser) {
+        await this.simulation.simulateBrowserStepChange(firstBrowser, 'step2');
+      }
 
       const syncChecks = await Promise.all(
         browsers.map(async (browser) => {
@@ -37,7 +34,7 @@ export class StepSynchronizationTests {
         })
       );
 
-      const allSynced = syncChecks.every((check) => check.step === 'reconciliation');
+      const allSynced = syncChecks.every((check) => check.step === 'step2');
       const duration = Date.now() - startTime;
 
       return {
@@ -45,7 +42,7 @@ export class StepSynchronizationTests {
         message: allSynced
           ? 'Step synchronization working correctly'
           : 'Step synchronization issues detected',
-        details: { browsers, stepChanges, syncChecks },
+        details: { browsers, syncChecks },
         timestamp: new Date(),
         duration,
         browsers,

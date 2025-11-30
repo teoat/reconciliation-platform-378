@@ -27,6 +27,8 @@ diesel::table! {
         initial_password_set_at -> Nullable<Timestamptz>,
         #[max_length = 50]
         auth_provider -> Nullable<Varchar>,
+        #[max_length = 255]
+        provider_id -> Nullable<Varchar>,
         created_at -> Timestamptz,
         updated_at -> Timestamptz,
     }

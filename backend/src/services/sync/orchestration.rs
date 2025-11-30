@@ -191,8 +191,7 @@ impl SyncOrchestrator {
         // Note: This assumes a sync_configurations table exists
         // If the table doesn't exist, this will need to be created via migration
         // For now, we'll use a raw SQL query approach
-        use diesel::sql_types::{Uuid as SqlUuid, Text, Bool, Integer, Timestamp, Jsonb};
-        use diesel::sql_query;
+
 
         let query = format!(
             "SELECT id, name, source_table, target_table, source_database_url, target_database_url, \

@@ -26,9 +26,19 @@ impl Database {
     pub fn new(database_url: &str) -> Result<Self, diesel::r2d2::PoolError> {
         let manager = ConnectionManager::<PgConnection>::new(database_url);
         
+        let max_size = std::env::var("DB_POOL_MAX_SIZE")
+            .ok()
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap_or(20); // Default to 20 for non-test environments
+
+        let min_idle = std::env::var("DB_POOL_MIN_IDLE")
+            .ok()
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap_or(5); // Default to 5
+
         let pool = Pool::builder()
-            .max_size(30) // Increased from default 10 for better concurrency
-            .min_idle(Some(5)) // Keep some connections warm
+            .max_size(max_size)
+            .min_idle(Some(min_idle))
             .connection_timeout(Duration::from_secs(5))
             .idle_timeout(Some(Duration::from_secs(600))) // 10 minutes idle timeout
             .max_lifetime(Some(Duration::from_secs(1800))) // 30 minutes max lifetime
@@ -92,10 +102,18 @@ impl Database {
     /// Create a database with custom pool configuration
     pub async fn new_with_config(
         database_url: &str,
-        max_size: u32,
-        min_idle: u32,
     ) -> AppResult<Self> {
         let manager = ConnectionManager::<PgConnection>::new(database_url);
+
+        let max_size = std::env::var("DB_POOL_MAX_SIZE")
+            .ok()
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap_or(20); // Default to 20
+
+        let min_idle = std::env::var("DB_POOL_MIN_IDLE")
+            .ok()
+            .and_then(|s| s.parse::<u32>().ok())
+            .unwrap_or(5); // Default to 5
 
         let pool = Pool::builder()
             .max_size(max_size)

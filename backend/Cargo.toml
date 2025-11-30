@@ -55,10 +55,9 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 
 # Database
-diesel = { version = "2.0", features = ["postgres", "chrono", "uuid", "numeric", "r2d2", "serde_json"] }
+diesel = { version = "2.0", features = ["postgres", "chrono", "uuid", "numeric", "r2d2", "serde_json", "network-address"] }
 diesel_migrations = "2.0"
 diesel_derives = "2.0"
-sqlx = { version = "0.8.2", features = ["runtime-tokio", "postgres", "chrono", "uuid", "json", "macros"], default-features = false }
 
 # Additional dependencies
 regex = "1.0"
@@ -87,8 +86,21 @@ chrono = { version = "0.4", features = ["serde"] }
 # HTTP client
 reqwest = { version = "0.11", default-features = false, features = ["json", "rustls-tls"] }
 
+# OAuth2
+oauth2 = "4.4"
+
+# URL parsing
+url = "2.4"
+
+# 2FA/TOTP
+totp-rs = { version = "5.4", features = ["qr"] }
+
+# QR code generation
+qrcode-generator = "4.1"
+
 # Redis
 redis = { version = "0.25", features = ["tokio-comp"] }
+deadpool-redis = { version = "0.14", features = ["serde"] }
 
 # File handling
 csv = "1.2"
@@ -135,6 +147,7 @@ num_cpus = "1.0"
 actix = "0.13"
 strsim = "0.11.1"
 urlencoding = "2.1.3"
+ipnetwork = "0.21.1"
 
 # Stripe integration - temporarily disabled
 # stripe-rust = "0.12"
@@ -148,3 +161,24 @@ criterion = { version = "0.5", features = ["html_reports"] }
 
 # Test coverage (install with: cargo install cargo-tarpaulin)
 # Usage: cargo tarpaulin --out Html --output-dir coverage
+
+[lints.rust]
+rust_2021_idioms = "warn"
+unsafe_code = "forbid"
+
+[lints.clippy]
+all = "warn"
+pedantic = "warn"
+nursery = "warn"
+unwrap_used = "deny"
+expect_used = "deny"
+print_stdout = "warn"
+todo = "warn"
+perf = "warn" # perf_optimizations might not be the right group name, 'perf' is standard
+complexity = "warn"
+redundant_closure_for_method_calls = "warn"
+explicit_deref_methods = "warn"
+map_unwrap_or = "warn"
+missing_docs_in_private_items = "warn"
+semicolon_if_nothing_returned = "warn"
+match_bool = "warn"

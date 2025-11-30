@@ -99,7 +99,26 @@ impl ValidationService {
         validator.validate_size(size, max_size)
     }
 
-    pub fn validate_csv_structure(&self, data: &str) -> AppResult<Vec<String>> {
+    /// Validate CSV structure with configurable delimiter
+    ///
+    /// # Arguments
+    /// * `data` - The CSV data as a string
+    /// * `delimiter` - Optional delimiter character (defaults to comma if None)
+    ///
+    /// # Supported Delimiters
+    /// - `,` (comma) - Default, standard CSV
+    /// - `;` (semicolon) - European Excel format
+    /// - `\t` (tab) - Tab-separated values (TSV)
+    /// - `|` (pipe) - Enterprise data feeds
+    ///
+    /// # Returns
+    /// Vec of header names if valid, or validation error
+    pub fn validate_csv_structure_with_delimiter(
+        &self,
+        data: &str,
+        delimiter: Option<char>,
+    ) -> AppResult<Vec<String>> {
+        let delimiter = delimiter.unwrap_or(',');
         let lines: Vec<&str> = data.lines().collect();
 
         if lines.is_empty() {
@@ -108,7 +127,7 @@ impl ValidationService {
 
         let header_line = lines[0];
         let headers: Vec<String> = header_line
-            .split(',')
+            .split(delimiter)
             .map(|s| s.trim().to_string())
             .collect();
 
@@ -129,18 +148,24 @@ impl ValidationService {
 
         // Validate data rows
         for (line_num, line) in lines.iter().enumerate().skip(1) {
-            let fields: Vec<&str> = line.split(',').collect();
+            let fields: Vec<&str> = line.split(delimiter).collect();
             if fields.len() != headers.len() {
                 return Err(AppError::Validation(format!(
-                    "Row {} has {} fields, expected {}",
+                    "Row {} has {} fields, expected {} (delimiter: '{}')",
                     line_num + 1,
                     fields.len(),
-                    headers.len()
+                    headers.len(),
+                    delimiter
                 )));
             }
         }
 
         Ok(headers)
+    }
+
+    /// Validate CSV structure with default comma delimiter (backward compatibility)
+    pub fn validate_csv_structure(&self, data: &str) -> AppResult<Vec<String>> {
+        self.validate_csv_structure_with_delimiter(data, None)
     }
 
     pub fn validate_json_schema(&self, data: &str, schema: &serde_json::Value) -> AppResult<()> {

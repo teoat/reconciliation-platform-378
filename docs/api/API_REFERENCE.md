@@ -120,14 +120,14 @@ All errors follow a consistent format:
 
 ### Error Codes
 
-| Code                  | Status | Meaning                                |
-|-----------------------|--------|----------------------------------------|
-| `VALIDATION_ERROR`    | 400    | Input failed validation                |
-| `UNAUTHORIZED`        | 401    | Missing or invalid credentials         |
-| `FORBIDDEN`           | 403    | Lacking the required role/permission   |
-| `NOT_FOUND`           | 404    | Referenced resource does not exist     |
-| `RATE_LIMIT_EXCEEDED` | 429    | Slow down; retry after reset           |
-| `INTERNAL_ERROR`      | 500    | Unexpected server-side failure         |
+| Code                  | Status | Meaning                              |
+| --------------------- | ------ | ------------------------------------ |
+| `VALIDATION_ERROR`    | 400    | Input failed validation              |
+| `UNAUTHORIZED`        | 401    | Missing or invalid credentials       |
+| `FORBIDDEN`           | 403    | Lacking the required role/permission |
+| `NOT_FOUND`           | 404    | Referenced resource does not exist   |
+| `RATE_LIMIT_EXCEEDED` | 429    | Slow down; retry after reset         |
+| `INTERNAL_ERROR`      | 500    | Unexpected server-side failure       |
 
 ---
 
@@ -140,6 +140,7 @@ All errors follow a consistent format:
 Register a new user account.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -150,6 +151,7 @@ Register a new user account.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -173,6 +175,7 @@ Register a new user account.
 Authenticate user and get access token.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -181,6 +184,7 @@ Authenticate user and get access token.
 ```
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -203,6 +207,7 @@ Authenticate user and get access token.
 Logout user and invalidate token.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -215,6 +220,7 @@ Logout user and invalidate token.
 Refresh access token.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -234,6 +240,7 @@ Refresh access token.
 Get list of users (Admin only).
 
 **Query Parameters:**
+
 - `page` (optional): Page number (default: 1)
 - `per_page` (optional): Items per page (default: 20)
 - `search` (optional): Search term for email or name
@@ -241,6 +248,7 @@ Get list of users (Admin only).
 - `is_active` (optional): Filter by active status
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -272,6 +280,7 @@ Get list of users (Admin only).
 Get user details by ID.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -300,6 +309,7 @@ Get user details by ID.
 Update user details (Admin only).
 
 **Request Body:**
+
 ```json
 {
   "first_name": "John",
@@ -314,6 +324,7 @@ Update user details (Admin only).
 Delete user account (Admin only).
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -326,6 +337,7 @@ Delete user account (Admin only).
 Search users by name/email.
 
 **Query Parameters:**
+
 - `q`: Search query
 - `page`: Page number
 - `per_page`: Items per page
@@ -343,12 +355,14 @@ Aggregate platform-wide user statistics (Admin/reporting).
 Get list of projects.
 
 **Query Parameters:**
+
 - `page` (optional): Page number
 - `per_page` (optional): Items per page
 - `search` (optional): Search term
 - `owner_id` (optional): Filter by owner
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -383,6 +397,7 @@ Get list of projects.
 Create a new project.
 
 **Request Body:**
+
 ```json
 {
   "name": "New Project",
@@ -399,6 +414,7 @@ Create a new project.
 Get project details.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -439,6 +455,7 @@ Get project details.
 Update project details.
 
 **Request Body:**
+
 ```json
 {
   "name": "Updated Project Name",
@@ -455,6 +472,7 @@ Update project details.
 Delete project.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -487,10 +505,12 @@ Create reconciliation job for project.
 Upload a file to a project.
 
 **Request:** Multipart form data
+
 - `file`: The file to upload
 - `project_id`: Project ID (query parameter)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -512,6 +532,7 @@ Upload a file to a project.
 Get file details.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -538,6 +559,7 @@ Get file details.
 Kick off ingestion pipeline.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -554,6 +576,7 @@ Kick off ingestion pipeline.
 Remove file and associated staging data.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -586,10 +609,12 @@ Stream/download a stored file.
 Get list of data sources.
 
 **Query Parameters:**
+
 - `project_id` (optional): Filter by project
 - `source_type` (optional): Filter by type
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -617,6 +642,7 @@ Get list of data sources.
 Create a new data source.
 
 **Request Body:**
+
 ```json
 {
   "name": "Customer Data",
@@ -635,6 +661,7 @@ Create a new data source.
 Update data source.
 
 **Request Body:**
+
 ```json
 {
   "name": "Updated Customer Data",
@@ -650,6 +677,7 @@ Update data source.
 Delete data source.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -666,11 +694,13 @@ Delete data source.
 Get list of reconciliation jobs.
 
 **Query Parameters:**
+
 - `project_id` (optional): Filter by project
 - `status` (optional): Filter by status
 - `page` (optional): Page number
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -710,6 +740,7 @@ Queued jobs snapshot.
 Create a new reconciliation job (also available through project-scoped path).
 
 **Request Body:**
+
 ```json
 {
   "name": "Customer Reconciliation",
@@ -738,6 +769,7 @@ Create a new reconciliation job (also available through project-scoped path).
 Get reconciliation job details.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -776,6 +808,7 @@ Delete job.
 Start processing.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -788,6 +821,7 @@ Start processing.
 Halt processing.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -800,12 +834,14 @@ Halt processing.
 Review matches, confidence, approval status.
 
 **Query Parameters:**
+
 - `page` (optional): Page number
 - `per_page` (optional): Items per page
 - `match_type` (optional): Filter by match type
 - `confidence_min` (optional): Minimum confidence score
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -861,6 +897,7 @@ Summary metrics for a single job.
 Approve a result.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -873,6 +910,7 @@ Approve a result.
 Reject with reason.
 
 **Request Body:**
+
 ```json
 {
   "reason": "Data quality issues"
@@ -884,6 +922,7 @@ Reject with reason.
 Export reconciliation results.
 
 **Query Parameters:**
+
 - `format` (optional): Export format (csv, excel, json)
 - `status` (optional): Filter by status
 
@@ -896,6 +935,7 @@ Aggregated stats for a project.
 ### Matching Strategies
 
 Supported matching strategies:
+
 - **Exact match**: Amount/date/external ID
 - **Fuzzy matching**: Adjustable thresholds
 - **Machine-learning assisted**: Comparisons with anomaly detection and confidence scoring
@@ -909,6 +949,7 @@ Supported matching strategies:
 Get dashboard analytics data.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -937,6 +978,7 @@ Get dashboard analytics data.
 Get project analytics.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -986,6 +1028,7 @@ Generate scheduled or on-demand reports.
 Health check endpoint.
 
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -1011,6 +1054,7 @@ High-level system health JSON.
 Operational status summary.
 
 **Response:**
+
 ```json
 {
   "status": "operational",
@@ -1027,6 +1071,7 @@ Operational status summary.
 Detailed runtime metrics (JSON) - Admin only.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -1079,6 +1124,7 @@ The SQL sync endpoints allow you to manage table-to-table synchronization operat
 List all SQL sync configurations.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -1104,6 +1150,7 @@ List all SQL sync configurations.
 Create a new SQL sync configuration.
 
 **Request Body:**
+
 ```json
 {
   "name": "Users Sync",
@@ -1120,11 +1167,13 @@ Create a new SQL sync configuration.
 ```
 
 **Sync Strategies:**
+
 - `full`: Full table sync (replace all data)
 - `incremental`: Only sync changed records
 - `merge`: Merge source and target data
 
 **Conflict Resolution:**
+
 - `source_wins`: Source data takes precedence
 - `target_wins`: Target data takes precedence
 - `timestamp`: Use most recent timestamp
@@ -1147,6 +1196,7 @@ Delete a sync configuration.
 Manually trigger a sync execution.
 
 **Request Body:**
+
 ```json
 {
   "force_full_sync": false
@@ -1182,6 +1232,7 @@ Get synchronization statistics and metrics.
 Receive and process client-side log entries from the frontend.
 
 **Request Body:**
+
 ```json
 {
   "logs": [
@@ -1201,6 +1252,7 @@ Receive and process client-side log entries from the frontend.
 ```
 
 **Log Levels:**
+
 - `error`: Critical errors requiring attention
 - `warn`: Warning messages
 - `info`: Informational messages
@@ -1208,6 +1260,7 @@ Receive and process client-side log entries from the frontend.
 - `trace`: Detailed trace information
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -1262,6 +1315,81 @@ Install/configure integration.
   "signature": "sha256=..."
 }
 ```
+
+---
+
+## V2 API Endpoints
+
+The V2 API provides enhanced user management and advanced features. All V2 endpoints are prefixed with `/api/v2/`.
+
+### V2 User Management
+
+#### Get User by ID (V2)
+
+```http
+GET /api/v2/users/{user_id}
+Authorization: Bearer {token}
+```
+
+**Response:**
+
+```json
+{
+  "id": "uuid",
+  "username": "string",
+  "email": "string",
+  "first_name": "string",
+  "last_name": "string",
+  "status": "string",
+  "email_verified": true,
+  "last_login_at": "2025-01-01T00:00:00Z",
+  "created_at": "2025-01-01T00:00:00Z",
+  "roles": [
+    {
+      "id": "uuid",
+      "name": "string",
+      "description": "string",
+      "joined_at": "2025-01-01T00:00:00Z"
+    }
+  ]
+}
+```
+
+#### Get User Activity (V2)
+
+```http
+GET /api/v2/users/{user_id}/activity?limit=50&offset=0
+Authorization: Bearer {token}
+```
+
+**Response:**
+
+```json
+{
+  "user_id": "uuid",
+  "activities": [
+    {
+      "id": "uuid",
+      "action": "string",
+      "resource_type": "string",
+      "resource_id": "uuid",
+      "details": {},
+      "created_at": "2025-01-01T00:00:00Z"
+    }
+  ],
+  "limit": 50,
+  "offset": 0,
+  "total": 25
+}
+```
+
+### V2 Features
+
+- Enhanced role-based access control
+- Batch user operations
+- Advanced user analytics
+- Self-service profile management
+- Audit trail with detailed activity logs
 
 ---
 
@@ -1324,14 +1452,14 @@ All WebSocket messages follow this format:
 ```javascript
 const ws = new WebSocket('ws://localhost:2000/ws?token=your_jwt_token');
 
-ws.onopen = function() {
+ws.onopen = function () {
   console.log('Connected to WebSocket');
 };
 
-ws.onmessage = function(event) {
+ws.onmessage = function (event) {
   const message = JSON.parse(event.data);
-  
-  switch(message.type) {
+
+  switch (message.type) {
     case 'reconciliation:progress':
       console.log('Job progress:', message.data.progress);
       break;
@@ -1344,11 +1472,11 @@ ws.onmessage = function(event) {
   }
 };
 
-ws.onclose = function() {
+ws.onclose = function () {
   console.log('WebSocket connection closed');
 };
 
-ws.onerror = function(error) {
+ws.onerror = function (error) {
   console.error('WebSocket error:', error);
 };
 ```
@@ -1373,7 +1501,7 @@ import { ReconciliationClient } from '@378reconciliation/sdk';
 
 const client = new ReconciliationClient({
   baseUrl: 'http://localhost:2000',
-  token: process.env.API_TOKEN!
+  token: process.env.API_TOKEN!,
 });
 
 // Create a project
@@ -1387,7 +1515,7 @@ const job = await client.reconciliation.createJob({
   name: 'Reconciliation Job',
   projectId: project.id,
   sourceDataSourceId: sourceId,
-  targetDataSourceId: targetId
+  targetDataSourceId: targetId,
 });
 ```
 

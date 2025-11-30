@@ -64,10 +64,10 @@ impl DualAuthMiddleware {
         config: DualAuthConfig,
         legacy_auth_service: Arc<AuthService>,
         security_metrics: Arc<SecurityMetrics>,
-    ) -> Self {
+    ) -> Result<Self, String> {
         let better_auth_validator = Arc::new(BetterAuthValidator::new(
             config.better_auth_config.auth_server_url.clone(),
-        ));
+        ).map_err(|e| format!("Failed to create BetterAuthValidator: {}", e))?);
 
         let logger = StructuredLogging::new("dual_auth".to_string());
 

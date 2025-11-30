@@ -43,10 +43,10 @@ jobs:
           path: bundle-analysis/
           retention-days: 30
 
-       - name: Check bundle size against budget
-         run: npm run check-bundle-size
+      - name: Check bundle size against budget
+        run: npm run check-bundle-size
 
-       - name: Enforce performance budgets
+      - name: Enforce performance budgets
          run: npm run performance:budget:enforce
 
       - name: Bundle size monitor

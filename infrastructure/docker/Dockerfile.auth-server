@@ -1,0 +1,15 @@
+FROM node:18-alpine
+
+WORKDIR /app/auth-server
+
+COPY auth-server/package*.json ./
+
+RUN npm install
+
+COPY auth-server/ .
+
+RUN npm run build
+
+EXPOSE 4000
+
+CMD ["npm", "start"]

@@ -3,9 +3,15 @@
 //! Provides extended authentication features including session management,
 //! password reset, and email verification.
 
-use crate::database::Database;
+use crate::database::{Database, transaction::with_transaction};
 use crate::errors::{AppError, AppResult};
 use crate::services::auth::{password::PasswordManager, types::SessionInfo};
+use crate::models::{User, NewUserSession, UserSession, UpdateUserSession, TwoFactorAuth};
+use diesel::{ExpressionMethods, QueryDsl, RunQueryDsl};
+use crate::models::schema::user_sessions;
+use uuid::Uuid;
+use std::sync::Arc;
+use super::two_factor::TwoFactorAuthService;
 
 /// Enhanced authentication service with session management
 ///
@@ -21,16 +27,20 @@ pub struct EnhancedAuthService {
     #[allow(dead_code)]
     pub password_reset_timeout: i64,
     pub session_rotation_interval: i64,
+    db: Arc<Database>, // Add database field
+    two_factor_service: Arc<TwoFactorAuthService>, // Add 2FA service field
 }
 
 impl EnhancedAuthService {
-    pub fn new(jwt_secret: String, jwt_expiration: i64) -> Self {
+    pub fn new(jwt_secret: String, jwt_expiration: i64, db: Arc<Database>) -> Self {
         Self {
             jwt_secret,
             jwt_expiration,
             session_timeout: 3600,          // 1 hour
             password_reset_timeout: 1800,   // 30 minutes
             session_rotation_interval: 900, // Rotate session every 15 minutes
+            two_factor_service: Arc::new(TwoFactorAuthService::new(Arc::clone(&db))), // Initialize 2FA service
+            db,
         }
     }
 
@@ -41,32 +51,73 @@ impl EnhancedAuthService {
         elapsed.num_seconds() >= self.session_rotation_interval
     }
 
-    /// Create user session
+    /// Create user session and persist to database
     pub async fn create_session(
         &self,
-        user: &crate::models::User,
-        _db: &Database,
+        user: &User,
+        db: &Database,
+        ip_address: Option<String>,
+        user_agent: Option<String>,
     ) -> AppResult<SessionInfo> {
         let now = chrono::Utc::now();
         let expires_at = now + chrono::Duration::seconds(self.session_timeout);
 
+        // Generate secure session token and refresh token
+        let session_token = PasswordManager::generate_reset_token()?;
+        let refresh_token = PasswordManager::generate_reset_token()?;
+
+        let new_session = NewUserSession {
+            user_id: user.id,
+            session_token: session_token.clone(),
+            refresh_token: Some(refresh_token.clone()),
+            ip_address, // Pass the IP address
+            user_agent, // Pass the user agent
+            device_info: None, // Can be extended later
+            is_active: true,
+            expires_at,
+            last_activity: now,
+        };
+
+        let created_session = with_transaction(db.get_pool(), |tx| {
+            diesel::insert_into(user_sessions::table)
+                .values(new_session)
+                .get_result::<UserSession>(tx)
+                .map_err(AppError::Database)
+        })
+        .await?;
+
         Ok(SessionInfo {
             user_id: user.id,
             email: user.email.clone(),
-            role: user.status.clone(), // Role stored in status field
-            created_at: now,
-            expires_at,
-            last_activity: now,
+            role: user.status.clone(),
+            created_at: created_session.created_at,
+            expires_at: created_session.expires_at,
+            last_activity: created_session.last_activity,
+            session_token, // Return the actual session token
+            refresh_token: Some(refresh_token), // Return the actual refresh token
         })
     }
 
     /// Generate new session with rotation
     pub async fn create_rotated_session(
         &self,
-        user: &crate::models::User,
+        user: &User,
         db: &Database,
+        current_refresh_token: &str,
+        ip_address: Option<String>,
+        user_agent: Option<String>,
     ) -> AppResult<SessionInfo> {
-        self.create_session(user, db).await
+        // Invalidate the old refresh token (mark as used/inactive)
+        with_transaction(db.get_pool(), |tx| {
+            diesel::update(user_sessions::table)
+                .filter(user_sessions::refresh_token.eq(current_refresh_token))
+                .set((user_sessions::is_active.eq(false), user_sessions::updated_at.eq(chrono::Utc::now())))
+                .execute(tx)
+                .map_err(AppError::Database)
+        }).await?;
+
+        // Create a new session with new tokens
+        self.create_session(user, db, ip_address, user_agent).await
     }
 
     /// Generate password reset token
@@ -336,6 +387,89 @@ impl EnhancedAuthService {
         // No need to update email field
 
         Ok(())
+    }
+
+    /// Validate a refresh token and return the associated user session
+    pub async fn validate_refresh_token(&self, db: &Database, refresh_token: &str) -> AppResult<UserSession> {
+        let mut conn = db.get_connection()?;
+        let now = chrono::Utc::now();
+
+        let session = user_sessions::table
+            .filter(user_sessions::refresh_token.eq(refresh_token))
+            .filter(user_sessions::is_active.eq(true))
+            .filter(user_sessions::expires_at.gt(now))
+            .first::<UserSession>(&mut conn)
+            .map_err(|_| AppError::Authentication("Invalid or expired refresh token".to_string()))?;
+
+        Ok(session)
+    }
+
+    /// Invalidate a specific refresh token
+    pub async fn invalidate_refresh_token(&self, db: &Database, refresh_token: &str) -> AppResult<()> {
+        with_transaction(db.get_pool(), |tx| {
+            diesel::update(user_sessions::table)
+                .filter(user_sessions::refresh_token.eq(refresh_token))
+                .set((user_sessions::is_active.eq(false), user_sessions::updated_at.eq(chrono::Utc::now())))
+                .execute(tx)
+                .map_err(AppError::Database)
+        }).await?;
+        Ok(())
+    }
+
+    /// Invalidate all refresh tokens for a given user (e.g., on password change or logout all devices)
+    pub async fn invalidate_all_user_refresh_tokens(&self, db: &Database, user_id: Uuid) -> AppResult<()> {
+        with_transaction(db.get_pool(), |tx| {
+            diesel::update(user_sessions::table)
+                .filter(user_sessions::user_id.eq(user_id))
+                .set((user_sessions::is_active.eq(false), user_sessions::updated_at.eq(chrono::Utc::now())))
+                .execute(tx)
+                .map_err(AppError::Database)
+        }).await?;
+        Ok(())
+    }
+
+    /// Delegate to 2FA service - Get or create 2FA record
+    pub async fn get_or_create_2fa_record(&self, user_id: Uuid) -> AppResult<TwoFactorAuth> {
+        self.two_factor_service.get_or_create_2fa_record(user_id).await
+    }
+
+    /// Delegate to 2FA service - Generate TOTP secret and QR code
+    pub async fn generate_totp_secret_and_qr(
+        &self,
+        user_id: Uuid,
+        user_email: &str,
+    ) -> AppResult<(String, String)> {
+        self.two_factor_service.generate_totp_secret_and_qr(user_id, user_email).await
+    }
+
+    /// Delegate to 2FA service - Verify TOTP code
+    pub async fn verify_totp_code(&self, user_id: Uuid, code: &str) -> AppResult<bool> {
+        self.two_factor_service.verify_totp_code(user_id, code).await
+    }
+
+    /// Delegate to 2FA service - Enable 2FA
+    pub async fn enable_2fa(&self, user_id: Uuid) -> AppResult<()> {
+        self.two_factor_service.enable_2fa(user_id).await
+    }
+
+    /// Delegate to 2FA service - Disable 2FA
+    pub async fn disable_2fa(&self, user_id: Uuid) -> AppResult<()> {
+        self.two_factor_service.disable_2fa(user_id).await
+    }
+
+    /// Delegate to 2FA service - Generate recovery codes
+    pub async fn generate_recovery_codes(&self, user_id: Uuid) -> AppResult<Vec<String>> {
+        self.two_factor_service.generate_recovery_codes(user_id).await
+    }
+
+    /// Delegate to 2FA service - Verify recovery code
+    pub async fn verify_recovery_code(&self, user_id: Uuid, code: &str) -> AppResult<bool> {
+        self.two_factor_service.verify_recovery_code(user_id, code).await
+    }
+
+    /// Delegate to 2FA service - Check if 2FA is enabled
+    pub async fn is_2fa_enabled(&self, user_id: Uuid) -> AppResult<bool> {
+        self.two_factor_service.is_2fa_enabled(user_id).await
     }
 }
 

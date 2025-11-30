@@ -17,7 +17,7 @@ pub struct ApiResponse<T> {
 /// Paginated response wrapper
 /// 
 /// Uses `items` field name to match frontend expectations and common API patterns.
-#[derive(Serialize, utoipa::ToSchema)]
+#[derive(Serialize, Deserialize, utoipa::ToSchema)]
 #[schema(as = PaginatedResponse)]
 pub struct PaginatedResponse<T> {
     pub items: Vec<T>,

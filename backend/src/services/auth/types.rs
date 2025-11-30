@@ -108,4 +108,5 @@ pub struct SessionInfo {
     pub created_at: DateTime<Utc>,
     pub expires_at: DateTime<Utc>,
     pub last_activity: DateTime<Utc>,
+    pub refresh_token: Option<String>,
 }

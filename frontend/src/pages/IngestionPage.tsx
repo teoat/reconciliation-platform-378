@@ -1,350 +1,220 @@
-import React, { useState, useEffect } from 'react';
-import { Upload, FileText, Eye, Trash2 } from 'lucide-react';
-import { logger } from '@/services/logger';
-import { useData } from '@/components/DataProvider';
-import { useToast } from '@/hooks/useToast';
-import { UploadedFile } from '@/types/ingestion/index';
-import type { PageConfig, StatsCard, ActionConfig as PageActionConfig } from './index';
+import React, { useState, useCallback } from 'react';
 
-import { Modal } from '@/components/ui/Modal';
-import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { LoadingSpinnerComponent } from '@/components/LoadingComponents';
-import { BasePage } from '@/components/BasePage';
-import { ProgressBar } from '@/components/ui/ProgressBar';
+interface IngestionPageProps {
+  project: any;
+  onProgressUpdate: (step: string) => void;
+}
 
-import { usePageOrchestration } from '@/hooks/usePageOrchestration';
-import {
-  ingestionPageMetadata,
-  getIngestionOnboardingSteps,
-  getIngestionPageContext,
-  getIngestionWorkflowState,
-  registerIngestionGuidanceHandlers,
-  getIngestionGuidanceContent,
-} from '@/orchestration/pages/IngestionPageOrchestration';
-import { useIngestionUpload } from '@/hooks/ingestion/useIngestionUpload';
-import { useIngestionFileOperations } from '@/hooks/ingestion/useIngestionFileOperations';
+const IngestionPage: React.FC<IngestionPageProps> = ({ project, onProgressUpdate }) => {
+  const [files, setFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-const IngestionPageContent: React.FC = () => {
-  const { currentProject } = useData();
-  const [files, setFiles] = useState<UploadedFile[]>([]);
-  const [processingStatus, setProcessingStatus] = useState<
-    'idle' | 'processing' | 'completed' | 'error'
-  >('idle');
+  const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFiles = Array.from(event.target.files || []);
+    setFiles(selectedFiles);
+  }, []);
 
-  // Use custom hooks for upload and file operations
-  const { isUploading, uploadFiles } = useIngestionUpload({
-    projectId: currentProject?.id || null,
-    onUploadSuccess: (uploadedFiles) => {
-      setFiles((prev) => [...prev, ...uploadedFiles]);
-      setProcessingStatus('processing');
-    },
-  });
+  const handleUpload = async () => {
+    if (files.length === 0) return;
 
-  const {
-    previewFile,
-    previewContent,
-    isLoadingPreview,
-    deletingFileId,
-    handleFilePreview,
-    handleFileDelete,
-    setPreviewFile,
-    setPreviewContent,
-  } = useIngestionFileOperations({
-    projectId: currentProject?.id || null,
-    files,
-    setFiles,
-  });
+    setUploading(true);
+    setUploadProgress(0);
 
-  // Page Orchestration with Frenly AI
-  const { updatePageContext, trackFeatureUsage, trackFeatureError, trackUserAction } =
-    usePageOrchestration({
-      pageMetadata: ingestionPageMetadata,
-      getPageContext: () =>
-        getIngestionPageContext(
-          currentProject?.id,
-          files.length,
-          files.filter((f) => f.status === 'completed').length,
-          processingStatus,
-          currentProject?.name
-        ),
-      getOnboardingSteps: () =>
-        getIngestionOnboardingSteps(
-          files.length > 0,
-          files.filter((f) => f.status === 'completed').length > 0
-        ),
-      getWorkflowState: () =>
-        getIngestionWorkflowState(
-          files.length,
-          files.filter((f) => f.status === 'completed').length,
-          processingStatus
-        ),
-      registerGuidanceHandlers: () => registerIngestionGuidanceHandlers(),
-      getGuidanceContent: (topic) => getIngestionGuidanceContent(topic),
-      onContextChange: (changes) => {
-        logger.debug('Ingestion context changed', { changes });
-      },
-    });
+    // Simulate file upload
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
 
-  // Update context when files change
-  useEffect(() => {
-    updatePageContext({
-      uploadedFilesCount: files.length,
-      validatedFilesCount: files.filter((f) => f.status === 'completed').length,
-      processingStatus: files.some((f) => f.status === 'processing')
-        ? 'processing'
-        : files.every((f) => f.status === 'completed' || f.status === 'error')
-          ? 'completed'
-          : 'idle',
-    });
-  }, [files, updatePageContext]);
+      // Simulate processing time
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFiles = event.target.files;
-    if (!selectedFiles) return;
-
-    trackFeatureUsage('file-upload', 'upload-started', { fileCount: selectedFiles.length });
-    trackUserAction('file-upload', 'upload-button');
-
-    try {
-      const fileArray = Array.from(selectedFiles);
-      await uploadFiles(fileArray);
-      trackFeatureUsage('file-upload', 'upload-success', { fileCount: fileArray.length });
-    } catch (error) {
-      trackFeatureError('file-upload', error instanceof Error ? error : new Error('Upload failed'));
+      setUploadProgress(((i + 1) / files.length) * 100);
+      onProgressUpdate(`Processing ${file?.name}...`);
     }
+
+    setUploading(false);
+    onProgressUpdate('Data ingestion completed');
   };
 
-  const config = {
-    title: 'Data Ingestion',
-    description: 'Upload and process your data files for reconciliation',
-    icon: Upload,
-    path: '/ingestion',
-    showStats: true,
-    showActions: true,
-  } as PageConfig;
-
-  const stats = [
-    {
-      title: 'Total Files',
-      value: files.length,
-      icon: FileText,
-      color: 'bg-blue-100 text-blue-600',
-    },
-    {
-      title: 'Processed Files',
-      value: files.filter((f) => f.status === 'completed').length,
-      icon: () => <div>✓</div>,
-      color: 'bg-green-100 text-green-600',
-    },
-    {
-      title: 'Processing Files',
-      value: files.filter((f) => f.status === 'processing').length,
-      icon: () => <div>⟳</div>,
-      color: 'bg-yellow-100 text-yellow-600',
-    },
-    {
-      title: 'Failed Files',
-      value: files.filter((f) => f.status === 'error').length,
-      icon: () => <div>⚠️</div>,
-      color: 'bg-red-100 text-red-600',
-    },
-  ] as StatsCard[];
-
-  const actions = [
-    {
-      label: isUploading ? 'Uploading...' : 'Upload Files',
-      icon: Upload,
-      onClick: () => {
-        document.getElementById('file-upload')?.click();
-      },
-      variant: 'primary' as const,
-      loading: isUploading,
-    },
-  ] as PageActionConfig[];
+  const removeFile = (index: number) => {
+    setFiles(files.filter((_, i) => i !== index));
+  };
 
   return (
-    <BasePage config={config} stats={stats} actions={actions}>
-      {/* Upload Area */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6">
-          <div className="border-2 border-dashed border-gray-300 hover:border-gray-400 rounded-lg p-8 text-center transition-colors">
-            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              Drop files here or click to upload
-            </h3>
-            <p className="text-gray-600 mb-4">
-              Support for CSV, Excel (.xlsx, .xls), and other data formats
-            </p>
-            <input
-              type="file"
-              multiple
-              accept=".csv,.xlsx,.xls,.json"
-              className="hidden"
-              id="file-upload"
-              onChange={handleFileUpload}
-              disabled={isUploading}
-            />
-            <label
-              htmlFor="file-upload"
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 cursor-pointer"
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Data Ingestion</h1>
+          <p className="mt-2 text-gray-600">
+            Upload and process data files for project: <strong>{project?.name}</strong>
+          </p>
+        </div>
+
+        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Upload Files</h2>
+
+          <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+            <div className="mb-4">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400"
+                stroke="currentColor"
+                fill="none"
+                viewBox="0 0 48 48"
+                aria-hidden="true"
+              >
+                <path
+                  d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="file-upload" className="cursor-pointer">
+                <span className="mt-2 block text-sm font-medium text-gray-900">Upload files</span>
+                <span className="mt-1 block text-sm text-gray-500">
+                  CSV, Excel, or JSON files up to 10MB each
+                </span>
+              </label>
+              <input
+                id="file-upload"
+                name="file-upload"
+                type="file"
+                multiple
+                accept=".csv,.xlsx,.xls,.json"
+                className="sr-only"
+                onChange={handleFileSelect}
+              />
+            </div>
+
+            <button
+              type="button"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              onClick={() => document.getElementById('file-upload')?.click()}
             >
-              <Upload className="w-4 h-4 mr-2" />
-              Choose Files
-            </label>
+              Select Files
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* Files List */}
-      <div className="bg-white rounded-lg shadow-sm border">
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-            <FileText className="w-5 h-5 mr-2 text-blue-600" />
-            Uploaded Files ({files.length})
-          </h2>
-        </div>
-        <div className="p-6">
-          {files.length === 0 ? (
-            <div className="text-center py-8">
-              <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No files uploaded yet</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {files.map((file) => (
+        {files.length > 0 && (
+          <div className="bg-white rounded-lg shadow-md p-6 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Selected Files</h3>
+
+            <div className="space-y-3">
+              {files.map((file, index) => (
                 <div
-                  key={file.id}
-                  className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                  key={index}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <FileText className="w-5 h-5 text-gray-500" />
-                      <div>
-                        <h3 className="font-medium text-gray-900">{file.name}</h3>
-                        <p className="text-sm text-gray-600">
-                          {(file.size / 1024 / 1024).toFixed(2)} MB • {file.type}
-                        </p>
-                      </div>
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0">
+                      <svg
+                        className="h-8 w-8 text-gray-400"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
                     </div>
-
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleFilePreview(file.id)}
-                        className="p-2 text-gray-400 hover:text-gray-600"
-                        aria-label={`Preview file ${file.name}`}
-                        title={`Preview ${file.name}`}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleFileDelete(file.id)}
-                        disabled={deletingFileId === file.id}
-                        className="p-2 text-red-400 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {deletingFileId === file.id ? (
-                          <LoadingSpinnerComponent size="sm" color="primary" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </button>
+                    <div className="ml-3">
+                      <p className="text-sm font-medium text-gray-900">{file.name}</p>
+                      <p className="text-sm text-gray-500">
+                        {(file.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    className="text-red-600 hover:text-red-800"
+                    onClick={() => removeFile(index)}
+                  >
+                    <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </button>
                 </div>
               ))}
             </div>
-          )}
-        </div>
-      </div>
 
-      {/* File Preview Modal */}
-      <Modal
-        isOpen={!!previewFile}
-        onClose={() => {
-          setPreviewFile(null);
-          setPreviewContent(null);
-        }}
-        title={previewFile ? `Preview: ${previewFile.name}` : ''}
-        size="lg"
-      >
-        {previewFile && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-gray-600">File Name</p>
-                <p className="text-sm text-gray-900">{previewFile.name}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Size</p>
-                <p className="text-sm text-gray-900">
-                  {(previewFile.size / 1024 / 1024).toFixed(2)} MB
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Type</p>
-                <p className="text-sm text-gray-900">{previewFile.type}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-gray-600">Status</p>
-                <p className="text-sm text-gray-900">{previewFile.status}</p>
-              </div>
-              {previewFile.uploadedAt && (
-                <div>
-                  <p className="text-sm font-medium text-gray-600">Uploaded At</p>
-                  <p className="text-sm text-gray-900">
-                    {new Date(previewFile.uploadedAt).toLocaleString()}
-                  </p>
-                </div>
-              )}
-            </div>
-            <div className="pt-4 border-t border-gray-200">
-              {isLoadingPreview ? (
-                <div className="flex items-center justify-center py-8">
-                  <LoadingSpinnerComponent size="md" />
-                  <span className="ml-2 text-sm text-gray-600">Loading preview...</span>
-                </div>
-              ) : previewContent ? (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium text-gray-600">Content Preview</p>
-                    {(previewContent as { truncated?: boolean })?.truncated && (
-                      <span className="text-xs text-orange-600 bg-orange-100 px-2 py-1 rounded">
-                        Preview truncated
-                      </span>
-                    )}
-                  </div>
-                  <div className="bg-gray-50 border rounded-lg p-3 max-h-64 overflow-auto">
-                    <pre className="text-sm text-gray-800 whitespace-pre-wrap font-mono">
-                      {(previewContent as { preview?: string })?.preview || 'No preview available'}
-                    </pre>
-                  </div>
-                  <p className="text-xs text-gray-500">
-                    Showing first 10 lines or 1KB of content for security.
-                  </p>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-600">
-                  Click the preview button to load file content.
-                </p>
-              )}
+            <div className="mt-6">
+              <button
+                type="button"
+                onClick={handleUpload}
+                disabled={uploading}
+                className="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+              >
+                {uploading ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Processing... {uploadProgress.toFixed(0)}%
+                  </>
+                ) : (
+                  `Upload ${files.length} File${files.length > 1 ? 's' : ''}`
+                )}
+              </button>
             </div>
           </div>
         )}
-      </Modal>
-    </BasePage>
+
+        <div className="bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Supported File Types</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h4 className="font-medium text-gray-900 mb-2">CSV Files</h4>
+              <p className="text-sm text-gray-600">
+                Comma-separated values with headers. Supports various delimiters and encodings.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900 mb-2">Excel Files</h4>
+              <p className="text-sm text-gray-600">
+                .xlsx and .xls formats. Multiple sheets supported with automatic detection.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900 mb-2">JSON Files</h4>
+              <p className="text-sm text-gray-600">
+                Structured data in JSON format. Supports nested objects and arrays.
+              </p>
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900 mb-2">Database Exports</h4>
+              <p className="text-sm text-gray-600">SQL dumps and other database export formats.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
-export const IngestionPage: React.FC = () => (
-  <ErrorBoundary
-    fallback={
-      <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
-        <h3 className="text-lg font-medium text-red-800">Something went wrong</h3>
-        <p className="text-red-600 mt-2">
-          Unable to load the data ingestion page. Please refresh the page.
-        </p>
-      </div>
-    }
-  >
-    <IngestionPageContent />
-  </ErrorBoundary>
-);
+export default IngestionPage;

@@ -139,6 +139,8 @@ pub struct CreateOAuthUserRequest {
     pub last_name: String,
     pub role: Option<String>,
     pub picture: Option<String>,
+    pub provider_id: Option<String>, // Add this line
+    pub auth_provider: Option<String>, // Add this line
 }
 
 /// User update request
@@ -167,6 +169,17 @@ pub trait UserServiceTrait: Send + Sync {
 
     /// Get user by email
     async fn get_user_by_email(&self, email: &str) -> AppResult<crate::models::User>;
+
+    /// Get user by OAuth provider ID
+    async fn get_user_by_provider_id(&self, provider_id: &str) -> AppResult<crate::models::User>;
+
+    /// Link an existing user account to an OAuth provider
+    async fn link_oauth_to_user(
+        &self,
+        user_id: Uuid,
+        provider_id: &str,
+        auth_provider_name: &str,
+    ) -> AppResult<UserInfo>;
 
     /// Check if user exists by email
     async fn user_exists_by_email(&self, email: &str) -> AppResult<bool>;

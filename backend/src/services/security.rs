@@ -407,10 +407,7 @@ impl SecurityService {
         false
     }
 
-    pub fn validate_email(&self, email: &str) -> bool {
-        // Basic email validation
-        email.contains('@') && email.contains('.') && email.len() > 5
-    }
+
 
     // NOTE: Password validation is handled by services/auth/password.rs (PasswordManager)
     // Deprecated validate_password_strength method removed - use AuthService::validate_password_strength() instead

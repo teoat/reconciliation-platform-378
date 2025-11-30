@@ -1,1 +1,101 @@
-{"mcpServers":{"antigravity":{"command":"node","args":["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/index.js"],"env":{"NODE_ENV":"development","DATABASE_URL":"postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app","REDIS_URL":"redis://:redis_pass@localhost:6379","PROJECT_ROOT":"/Users/Arief/Documents/GitHub/reconciliation-platform-378","BACKEND_URL":"http://localhost:2000","ENABLE_DOCKER_TOOLS":"true","DEFAULT_TIMEOUT":"30000","HEALTH_CHECK_CACHE_TTL":"5000"}},"antigravity-coordination":{"command":"node","args":["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/dist/agent-coordination.js"],"env":{"NODE_ENV":"development","REDIS_URL":"redis://:redis_pass@localhost:6379","COORDINATION_TTL":"3600","PROJECT_ROOT":"/Users/Arief/Documents/GitHub/reconciliation-platform-378"}},"antigravity-playwright":{"command":"node","args":["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/playwright/dist/index.js"],"env":{"PROJECT_ROOT":"/Users/Arief/Documents/GitHub/reconciliation-platform-378","PLAYWRIGHT_CONFIG":"playwright.config.ts","PLAYWRIGHT_REPORT_DIR":"playwright-report","TEST_RESULTS_DIR":"test-results/playwright"}},"antigravity-frontend-diagnostics":{"command":"node","args":["/Users/Arief/Documents/GitHub/reconciliation-platform-378/mcp-server/frontend-diagnostics/dist/index.js"],"env":{"PROJECT_ROOT":"/Users/Arief/Documents/GitHub/reconciliation-platform-378","FRONTEND_BASE_URL":"http://localhost:3000"}},"filesystem":{"command":"npx","args":["-y","@modelcontextprotocol/server-filesystem","/Users/Arief/Documents/GitHub/reconciliation-platform-378"],"env":{}},"postgres":{"command":"npx","args":["-y","@modelcontextprotocol/server-postgres","postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app"],"env":{}},"redis":{"command":"npx","args":["-y","@modelcontextprotocol/server-redis","redis://:redis_pass@localhost:6379"],"env":{},"disabled":false,"alwaysAllow":[]},"prometheus":{"command":"npx","args":["-y","prometheus-mcp"],"env":{"PROMETHEUS_URL":"http://localhost:9090","PROMETHEUS_TIMEOUT":"10000","PROMETHEUS_RETRIES":"3"},"disabled":false,"alwaysAllow":[]},"chrome-devtools":{"command":"npx","args":["-y","@modelcontextprotocol/server-puppeteer"],"env":{}},"sequential-thinking":{"command":"npx","args":["-y","@modelcontextprotocol/server-sequential-thinking"],"env":{}},"memory":{"command":"npx","args":["-y","@modelcontextprotocol/server-memory"],"env":{}},"context7":{"command":"npx","args":["-y","@upstash/context7-mcp"],"env":{}}}}
+{
+  "mcpServers": {
+    "antigravity-coordination": {
+      "command": "node",
+      "args": [
+        "${PROJECT_ROOT}/mcp-server/dist/agent-coordination.js"
+      ],
+      "env": {
+        "NODE_ENV": "development",
+        "REDIS_URL": "redis://:redis_pass@localhost:6379",
+        "COORDINATION_TTL": "3600",
+        "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378"
+      }
+    },
+    "antigravity-frontend-diagnostics": {
+      "command": "node",
+      "args": [
+        "${PROJECT_ROOT}/mcp-server/frontend-diagnostics/dist/index.js"
+      ],
+      "env": {
+        "PROJECT_ROOT": "/Users/Arief/Documents/GitHub/reconciliation-platform-378",
+        "FRONTEND_BASE_URL": "http://localhost:3000"
+      }
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${PROJECT_ROOT}"
+      ],
+      "env": {}
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:postgres_pass@localhost:5432/reconciliation_app"
+      ],
+      "env": {}
+    },
+    "redis": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-redis",
+        "redis://:redis_pass@localhost:6379"
+      ],
+      "env": {},
+      "disabled": false,
+      "alwaysAllow": []
+    },
+    "prometheus": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "prometheus-mcp"
+      ],
+      "env": {
+        "PROMETHEUS_URL": "http://localhost:9090",
+        "PROMETHEUS_TIMEOUT": "10000",
+        "PROMETHEUS_RETRIES": "3"
+      },
+      "disabled": false,
+      "alwaysAllow": []
+    },
+    "chrome-devtools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-puppeteer"
+      ],
+      "env": {}
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "env": {}
+    },
+    "memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-memory"
+      ],
+      "env": {}
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@upstash/context7-mcp"
+      ],
+      "env": {}
+    }
+  }
+}

@@ -367,9 +367,7 @@ export function extractErrorFromApiResponse(
     // Check for ApiResponse structure (from API client)
     if ('success' in errorObj && !errorObj.success && ('error' in errorObj || 'code' in errorObj)) {
       return {
-        error: new Error(
-          (errorObj.error || errorObj.message || 'API request failed') as string
-        ),
+        error: new Error((errorObj.error || errorObj.message || 'API request failed') as string),
         errorCode: errorObj.code as string | undefined,
         correlationId: errorObj.correlationId as string | undefined,
         timestamp: new Date(),
@@ -387,12 +385,11 @@ export function extractErrorFromApiResponse(
         errorCode: (data.code || data.errorCode || extractErrorCodeFromError(errorObj)) as
           | string
           | undefined,
-        correlationId:
-          ((response.headers as Record<string, unknown>)?.['x-correlation-id'] ||
-            (response.headers as Record<string, unknown>)?.['X-Correlation-ID'] ||
-            data.correlationId ||
-            data.correlation_id ||
-            extractCorrelationIdFromError(errorObj)) as string | undefined,
+        correlationId: ((response.headers as Record<string, unknown>)?.['x-correlation-id'] ||
+          (response.headers as Record<string, unknown>)?.['X-Correlation-ID'] ||
+          data.correlationId ||
+          data.correlation_id ||
+          extractCorrelationIdFromError(errorObj)) as string | undefined,
         statusCode: response.status as number | undefined,
         timestamp: new Date(),
       };
@@ -411,11 +408,10 @@ export function extractErrorFromApiResponse(
             undefined;
         } else if (typeof errorObj.headers === 'object') {
           const headers = errorObj.headers as Record<string, unknown>;
-          correlationId =
-            (headers['x-correlation-id'] ||
-              headers['X-Correlation-ID'] ||
-              headers['X-Request-ID'] ||
-              undefined) as string | undefined;
+          correlationId = (headers['x-correlation-id'] ||
+            headers['X-Correlation-ID'] ||
+            headers['X-Request-ID'] ||
+            undefined) as string | undefined;
         }
       }
 
@@ -431,16 +427,16 @@ export function extractErrorFromApiResponse(
     // Handle generic object with error properties
     if (errorObj.message || errorObj.error) {
       return {
-        error:
-          (errorObj.message || errorObj.error || new Error('Error occurred')) as Error | string,
-        errorCode: (errorObj.code ||
-          errorObj.errorCode ||
-          extractErrorCodeFromError(errorObj)) as string | undefined,
-        correlationId:
-          (errorObj.correlationId ||
-            errorObj.correlation_id ||
-            errorObj.requestId ||
-            extractCorrelationIdFromError(errorObj)) as string | undefined,
+        error: (errorObj.message || errorObj.error || new Error('Error occurred')) as
+          | Error
+          | string,
+        errorCode: (errorObj.code || errorObj.errorCode || extractErrorCodeFromError(errorObj)) as
+          | string
+          | undefined,
+        correlationId: (errorObj.correlationId ||
+          errorObj.correlation_id ||
+          errorObj.requestId ||
+          extractCorrelationIdFromError(errorObj)) as string | undefined,
         statusCode: (errorObj.statusCode || errorObj.status) as number | undefined,
         timestamp: new Date(),
       };
@@ -589,10 +585,7 @@ export function sanitizeErrorMessage(message: string): string {
   );
 
   // Remove IP addresses
-  sanitized = sanitized.replace(
-    /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g,
-    '[IP_REDACTED]'
-  );
+  sanitized = sanitized.replace(/\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, '[IP_REDACTED]');
 
   // Remove long hex strings (potential tokens/keys)
   sanitized = sanitized.replace(/\b[a-fA-F0-9]{32,}\b/g, '[HEX_REDACTED]');
@@ -704,9 +697,7 @@ export async function extractErrorFromFetchResponseAsync(
         (dataRecord.errorMessage as string) ||
         errorMessage;
       bodyErrorCode =
-        (dataRecord.code as string) ||
-        (dataRecord.errorCode as string) ||
-        bodyErrorCode;
+        (dataRecord.code as string) || (dataRecord.errorCode as string) || bodyErrorCode;
       bodyCorrelationId =
         (dataRecord.correlationId as string) ||
         (dataRecord.correlation_id as string) ||
@@ -724,10 +715,7 @@ export async function extractErrorFromFetchResponseAsync(
             (data.error as string) ||
             (data.errorMessage as string) ||
             errorMessage;
-          bodyErrorCode =
-            (data.code as string) ||
-            (data.errorCode as string) ||
-            bodyErrorCode;
+          bodyErrorCode = (data.code as string) || (data.errorCode as string) || bodyErrorCode;
           bodyCorrelationId =
             bodyCorrelationId ||
             (data.correlationId as string) ||
@@ -808,3 +796,35 @@ export function createFetchErrorHandler(defaultError?: Error | string) {
   };
 }
 
+/**
+ * Handle crypto operation errors with standardized logging and error throwing.
+ * Consolidates error handling for encryption/decryption operations.
+ *
+ * @param operation - The operation that failed (e.g., 'encrypt data', 'decrypt data')
+ * @param error - The error that occurred
+ * @throws Always throws an Error with a standardized message
+ */
+export function handleCryptoError(operation: string, error: unknown): never {
+  // Use the unified error handler
+  const appError = {
+    id: `crypto_error_${Date.now()}`,
+    type: 'CLIENT' as const,
+    category: 'CLIENT' as const,
+    severity: 'HIGH' as const,
+    message: `${operation} failed`,
+    code: 'CRYPTO_ERROR',
+    userMessage: `Failed to ${operation.toLowerCase()}`,
+    recoverable: false,
+    retryable: false,
+    timestamp: new Date(),
+    correlationId: `crypto_${Date.now()}`,
+  };
+
+  // Log the error (would use proper logger in production)
+  console.error(`[CRYPTO ERROR] ${operation} failed:`, {
+    error: error instanceof Error ? error.message : String(error),
+    correlationId: appError.correlationId,
+  });
+
+  throw new Error(appError.userMessage);
+}

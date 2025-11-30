@@ -12,6 +12,7 @@ import { SERVER_NAME, SERVER_VERSION, PROJECT_ROOT, BACKEND_URL } from './config
 import { getTools, handleTool } from './tools.js';
 import { clearHealthCache } from './health.js';
 import { cleanupGit } from './git.js';
+import { logger } from './logger.js'; // Import the new logger
 
 /**
  * Setup and start MCP server
@@ -51,6 +52,7 @@ export async function startServer(): Promise<void> {
         ],
       };
     } catch (error: any) {
+      logger.error(`Error handling tool '${name}': ${error.message}`, { tool: name, error });
       return {
         content: [
           {
@@ -75,20 +77,20 @@ export async function startServer(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   
-  console.error(`[${SERVER_NAME}] Server v${SERVER_VERSION} running on stdio`);
-  console.error(`[${SERVER_NAME}] Project root: ${PROJECT_ROOT}`);
-  console.error(`[${SERVER_NAME}] Backend URL: ${BACKEND_URL}`);
-  console.error(`[${SERVER_NAME}] Tools enabled: ${tools.length}`);
+  logger.info(`Server v${SERVER_VERSION} running on stdio`);
+  logger.info(`Project root: ${PROJECT_ROOT}`);
+  logger.info(`Backend URL: ${BACKEND_URL}`);
+  logger.info(`Tools enabled: ${tools.length}`);
 
   // Handle graceful shutdown
   process.on('SIGINT', async () => {
-    console.error(`[${SERVER_NAME}] Shutting down...`);
+    logger.info(`Shutting down...`);
     await cleanup();
     process.exit(0);
   });
 
   process.on('SIGTERM', async () => {
-    console.error(`[${SERVER_NAME}] Shutting down...`);
+    logger.info(`Shutting down...`);
     await cleanup();
     process.exit(0);
   });
@@ -102,7 +104,7 @@ async function cleanup(): Promise<void> {
     clearHealthCache();
     cleanupGit();
   } catch (_error) {
-    // Ignore cleanup errors
+    logger.warn(`Error during cleanup: ${(_error as Error).message}`, { error: _error });
   }
 }
 

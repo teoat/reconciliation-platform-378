@@ -2,8 +2,10 @@
 //!
 //! Example implementations of command and query handlers
 
-use crate::cqrs::command::{CommandHandler, CommandResult, CreateProjectCommand, UpdateProjectCommand, DeleteProjectCommand};
-use crate::cqrs::query::{QueryHandler, QueryResult, GetProjectQuery, ListProjectsQuery};
+use crate::cqrs::command::{
+    CommandHandler, CommandResult, CreateProjectCommand, DeleteProjectCommand, UpdateProjectCommand,
+};
+use crate::cqrs::query::{GetProjectQuery, ListProjectsQuery, QueryHandler, QueryResult};
 use crate::database::Database;
 use crate::services::project::ProjectService;
 use std::sync::Arc;
@@ -50,8 +52,11 @@ impl CommandHandler<CreateProjectCommand> for ProjectCommandHandler {
     ///
     /// Returns `AppError` if project creation fails
     async fn handle(&self, command: CreateProjectCommand) -> CommandResult {
-        log::info!("Handling command: CreateProject for user {}", command.owner_id);
-        
+        log::info!(
+            "Handling command: CreateProject for user {}",
+            command.owner_id
+        );
+
         // Convert command to service request
         let request = crate::services::project::CreateProjectRequest {
             name: command.name,
@@ -64,7 +69,11 @@ impl CommandHandler<CreateProjectCommand> for ProjectCommandHandler {
         // Execute command using project service
         match self.project_service.create_project(request).await {
             Ok(project) => {
-                log::info!("Project created successfully: {} ({})", project.name, project.id);
+                log::info!(
+                    "Project created successfully: {} ({})",
+                    project.name,
+                    project.id
+                );
                 Ok(())
             }
             Err(e) => {
@@ -77,8 +86,11 @@ impl CommandHandler<CreateProjectCommand> for ProjectCommandHandler {
 
 impl CommandHandler<UpdateProjectCommand> for ProjectCommandHandler {
     async fn handle(&self, command: UpdateProjectCommand) -> CommandResult {
-        log::info!("Handling command: UpdateProject for project {}", command.project_id);
-        
+        log::info!(
+            "Handling command: UpdateProject for project {}",
+            command.project_id
+        );
+
         let request = crate::services::project::UpdateProjectRequest {
             name: command.name,
             description: command.description,
@@ -86,9 +98,17 @@ impl CommandHandler<UpdateProjectCommand> for ProjectCommandHandler {
             settings: None,
         };
 
-        match self.project_service.update_project(command.project_id, request).await {
+        match self
+            .project_service
+            .update_project(command.project_id, request)
+            .await
+        {
             Ok(project) => {
-                log::info!("Project updated successfully: {} ({})", project.name, project.id);
+                log::info!(
+                    "Project updated successfully: {} ({})",
+                    project.name,
+                    project.id
+                );
                 Ok(())
             }
             Err(e) => {
@@ -101,9 +121,16 @@ impl CommandHandler<UpdateProjectCommand> for ProjectCommandHandler {
 
 impl CommandHandler<DeleteProjectCommand> for ProjectCommandHandler {
     async fn handle(&self, command: DeleteProjectCommand) -> CommandResult {
-        log::info!("Handling command: DeleteProject for project {}", command.project_id);
-        
-        match self.project_service.delete_project(command.project_id).await {
+        log::info!(
+            "Handling command: DeleteProject for project {}",
+            command.project_id
+        );
+
+        match self
+            .project_service
+            .delete_project(command.project_id)
+            .await
+        {
             Ok(_) => {
                 log::info!("Project deleted successfully: {}", command.project_id);
                 Ok(())
@@ -161,10 +188,17 @@ pub type ProjectQueryResult = QueryResult<serde_json::Value>;
 
 impl QueryHandler<GetProjectQuery, serde_json::Value> for ProjectQueryHandler {
     async fn handle(&self, query: GetProjectQuery) -> QueryResult<serde_json::Value> {
-        log::info!("Handling query: GetProject for project {}", query.project_id);
-        
+        log::info!(
+            "Handling query: GetProject for project {}",
+            query.project_id
+        );
+
         // Execute query using project service
-        match self.project_service.get_project_by_id(query.project_id).await {
+        match self
+            .project_service
+            .get_project_by_id(query.project_id)
+            .await
+        {
             Ok(project) => {
                 // Convert project to JSON
                 let json = serde_json::json!({
@@ -204,19 +238,17 @@ impl QueryHandler<ListProjectsQuery, serde_json::Value> for ProjectQueryHandler 
     /// Returns `AppError` if query fails
     async fn handle(&self, query: ListProjectsQuery) -> QueryResult<serde_json::Value> {
         log::info!("Handling query: ListProjects");
-        
+
         let page = query.page.map(|p| p as i64);
         let per_page = query.per_page.map(|p| p as i64);
-        
+
         // Execute query using project service
         let result = if let Some(owner_id) = query.owner_id {
             self.project_service
                 .list_projects_by_owner(owner_id, page, per_page)
                 .await?
         } else {
-            self.project_service
-                .list_projects(page, per_page)
-                .await?
+            self.project_service.list_projects(page, per_page).await?
         };
 
         // Convert result to JSON
@@ -225,7 +257,7 @@ impl QueryHandler<ListProjectsQuery, serde_json::Value> for ProjectQueryHandler 
         } else {
             0
         };
-        
+
         let json = serde_json::json!({
             "projects": result.projects,
             "total": result.total,
@@ -233,7 +265,7 @@ impl QueryHandler<ListProjectsQuery, serde_json::Value> for ProjectQueryHandler 
             "per_page": result.per_page,
             "total_pages": total_pages,
         });
-        
+
         Ok(json)
     }
 }
@@ -241,12 +273,14 @@ impl QueryHandler<ListProjectsQuery, serde_json::Value> for ProjectQueryHandler 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::TestUser;
+    use crate::cqrs::command::{
+        Command, CreateProjectCommand, DeleteProjectCommand, UpdateProjectCommand,
+    };
+    use crate::cqrs::query::{GetProjectAnalyticsQuery, GetProjectQuery, ListProjectsQuery, Query};
     use crate::database::Database;
-    use crate::cqrs::command::{Command, CreateProjectCommand, UpdateProjectCommand, DeleteProjectCommand};
-    use crate::cqrs::query::{Query, GetProjectQuery, ListProjectsQuery, GetProjectAnalyticsQuery};
-    use uuid::Uuid;
+    use crate::test_utils::TestUser;
     use mockall::mock;
+    use uuid::Uuid;
 
     // Mock Database for testing
     mock! {
@@ -259,7 +293,6 @@ mod tests {
     async fn create_test_db() -> Database {
         // Use test database URL - in real tests this would be a test database
         Database::new("postgresql://test:test@localhost/reconciliation_test")
-            .await
             .expect("Failed to create test database")
     }
 
@@ -347,7 +380,9 @@ mod tests {
         let handler = ProjectQueryHandler::new(db);
 
         // Test with nil UUID
-        let query = GetProjectQuery { project_id: Uuid::nil() };
+        let query = GetProjectQuery {
+            project_id: Uuid::nil(),
+        };
         let result = handler.handle(query).await;
         // Should fail gracefully
         assert!(result.is_err());
@@ -422,7 +457,12 @@ mod tests {
             };
 
             let result = handler.handle(query).await;
-            assert!(result.is_ok(), "Failed for page={:?}, per_page={:?}", page, per_page);
+            assert!(
+                result.is_ok(),
+                "Failed for page={:?}, per_page={:?}",
+                page,
+                per_page
+            );
 
             if let Ok(json) = result {
                 assert!(json.get("projects").is_some());
@@ -527,7 +567,9 @@ mod tests {
         let handler = ProjectCommandHandler::new(db);
 
         // Test with nil project ID
-        let command = DeleteProjectCommand { project_id: Uuid::nil() };
+        let command = DeleteProjectCommand {
+            project_id: Uuid::nil(),
+        };
         let result = handler.handle(command).await;
         // Should fail validation
         assert!(result.is_err());
@@ -664,13 +706,9 @@ mod tests {
         let handler2 = ProjectQueryHandler::new(db2);
 
         // Spawn concurrent tasks
-        let task1 = tokio::spawn(async move {
-            handler1.handle(query1).await
-        });
+        let task1 = tokio::spawn(async move { handler1.handle(query1).await });
 
-        let task2 = tokio::spawn(async move {
-            handler2.handle(query2).await
-        });
+        let task2 = tokio::spawn(async move { handler2.handle(query2).await });
 
         // Wait for both to complete
         let (result1, result2) = tokio::try_join!(task1, task2).unwrap();
@@ -760,4 +798,3 @@ mod tests {
         assert!(true); // Should create successfully
     }
 }
-

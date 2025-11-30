@@ -17,7 +17,7 @@ interface CSPNoncePluginOptions {
 
 export function cspNoncePlugin(options: CSPNoncePluginOptions = {}): Plugin {
   const { enabled = process.env.NODE_ENV === 'production' } = options;
-
+  
   return {
     name: 'csp-nonce-injection',
     enforce: 'pre',

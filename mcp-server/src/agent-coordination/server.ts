@@ -11,6 +11,7 @@ import {
 import { SERVER_NAME, SERVER_VERSION, REDIS_URL, COORDINATION_TTL } from './config.js';
 import { getTools, handleTool } from './tools.js';
 import { cleanupRedis } from './redis.js';
+import { logger } from '../lib/logger.js'; // Import the new logger
 
 /**
  * Setup and start Agent Coordination MCP server
@@ -50,6 +51,7 @@ export async function startServer(): Promise<void> {
         ],
       };
     } catch (error: any) {
+      logger.error(`Error handling tool '${name}': ${error.message}`, { tool: name, error });
       return {
         content: [
           {
@@ -74,20 +76,19 @@ export async function startServer(): Promise<void> {
   const transport = new StdioServerTransport();
   await server.connect(transport);
   
-  console.error(`[${SERVER_NAME}] Server v${SERVER_VERSION} running on stdio`);
-  console.error(`[${SERVER_NAME}] Redis URL: ${REDIS_URL}`);
-  console.error(`[${SERVER_NAME}] Coordination TTL: ${COORDINATION_TTL}s`);
-  console.error(`[${SERVER_NAME}] Tools enabled: ${tools.length}`);
+  logger.info(`Server v${SERVER_VERSION} running on stdio`);
+  // Removed logging of sensitive REDIS_URL and COORDINATION_TTL
+  logger.info(`Tools enabled: ${tools.length}`);
 
   // Handle graceful shutdown
   process.on('SIGINT', async () => {
-    console.error(`[${SERVER_NAME}] Shutting down...`);
+    logger.warn(`Shutting down...`);
     await cleanup();
     process.exit(0);
   });
 
   process.on('SIGTERM', async () => {
-    console.error(`[${SERVER_NAME}] Shutting down...`);
+    logger.warn(`Shutting down...`);
     await cleanup();
     process.exit(0);
   });
@@ -97,7 +98,7 @@ async function cleanup(): Promise<void> {
   try {
     await cleanupRedis();
   } catch (_error) {
-    // ignore shutdown errors
+    logger.warn(`Error during cleanup: ${(_error as Error).message}`, { error: _error });
   }
 }
 
