@@ -8,6 +8,11 @@ RUN apt-get update && apt-get install -y \
     libssl-dev \
     && rm -rf /var/lib/apt/lists/*
 
+# Update Cargo to ensure compatibility with Cargo.lock
+RUN rustup update stable
+RUN rustup default stable
+RUN cargo install cargo-edit # install cargo-edit as it may be needed.
+
 COPY Cargo.toml Cargo.lock ./
 
 # Build dependencies first to leverage caching
