@@ -8,7 +8,7 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useRef, useCallback } from 'react';
 import { authClient, getCurrentSession, type AuthUser } from '@/lib/auth-client';
 import { logger } from '@/services/logger';
-import { rateLimiter, SessionTimeoutManager, TokenRefreshManager } from '@/services/authSecurity';
+import { SessionTimeoutManager } from '@/services/authSecurity';
 import { validatePasswordStrength } from '@/utils/security';
 import { getUserFriendlyError } from '@/utils/errorMessages';
 
@@ -51,7 +51,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const sessionTimeoutRef = useRef<SessionTimeoutManager | null>(null);
-  const tokenRefreshRef = useRef<TokenRefreshManager | null>(null);
 
   const isAuthenticated = !!user;
 
@@ -81,13 +80,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setUser(null);
       sessionTimeoutRef.current?.destroy();
-      tokenRefreshRef.current?.stop();
     }
   }, []);
 
   // Setup session timeout and token refresh when authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
+      // Check for password expiry and show warning
+      if ((user as any).password_expires_at) {
+        const expiryDate = new Date((user as any).password_expires_at);
+        const now = new Date();
+        const daysRemaining = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+        
+        // If password expired, redirect to force change
+        if ((user as any).password_expired || daysRemaining < 0) {
+          logger.logSecurity('Password expired, forcing change', { userId: user.id });
+          window.location.href = '/force-password-change';
+          return;
+        }
+        
+        // Show warning if expiring within 7 days
+        const warningThreshold = parseInt(import.meta.env.VITE_PASSWORD_WARNING_DAYS || '7', 10);
+        if (daysRemaining <= warningThreshold && daysRemaining >= 0) {
+          const event = new CustomEvent('password-expiry-warning', {
+            detail: { daysRemaining },
+          });
+          window.dispatchEvent(event);
+        }
+      }
+      
       // Start session timeout tracking with warning
       sessionTimeoutRef.current = new SessionTimeoutManager(
         () => {
@@ -101,7 +122,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             detail: { remainingMinutes },
           });
           window.dispatchEvent(event);
-        }
+        },
+        5 * 60 * 1000 // Warning at 5 minutes before timeout
       );
 
       // Listen for extend-session events
@@ -110,26 +132,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       };
       window.addEventListener('extend-session', handleExtendSession);
 
-      // Start token refresh manager
-      const refreshFn = async (): Promise<string | null> => {
-        try {
-          // Better Auth handles token refresh internally
-          const session = await authClient.getSession();
-          // Cast to any to access token if it exists in the session object
-          return (session as any)?.token || localStorage.getItem('better-auth-token') || null;
-        } catch (error) {
-          logger.error('Token refresh failed in manager', { error });
-          return null;
-        }
-      };
-
-      tokenRefreshRef.current = new TokenRefreshManager(refreshFn, () => {
-        logger.error('Token refresh manager failed, logging out');
-        logout();
-        window.location.href = '/login';
-      });
-      tokenRefreshRef.current.start();
-
+      // Note: Better Auth handles token refresh internally - no custom refresh manager needed
+      
       // Listen for logout events from interceptor
       const handleLogoutRequired = () => {
         logout();
@@ -139,46 +143,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       return () => {
         sessionTimeoutRef.current?.destroy();
-        tokenRefreshRef.current?.stop();
         window.removeEventListener('auth:logout-required', handleLogoutRequired);
         window.removeEventListener('extend-session', handleExtendSession);
       };
     } else {
       // Clean up when not authenticated
       sessionTimeoutRef.current?.destroy();
-      tokenRefreshRef.current?.stop();
     }
-  }, [isAuthenticated, logout]);
+  }, [isAuthenticated, user, logout]);
 
   const login = async (email: string, password: string) => {
-    // Rate limiting - 5 attempts per 15 minutes
-    const rateLimitKey = `login:${email}`;
-    const maxAttempts = 5;
-    const windowMs = 15 * 60 * 1000; // 15 minutes
-
-    if (!rateLimiter.canMakeRequest(rateLimitKey, maxAttempts, windowMs)) {
-      const timeUntilReset = rateLimiter.getTimeUntilReset(rateLimitKey, maxAttempts, windowMs);
-
-      logger.logSecurity('Login rate limit exceeded', { email, timeUntilReset });
-
-      // Calculate user-friendly time message
-      const remainingMinutes = Math.ceil(timeUntilReset / (60 * 1000));
-      const remainingSeconds = Math.ceil((timeUntilReset % (60 * 1000)) / 1000);
-
-      let timeMessage: string;
-      if (remainingMinutes > 0) {
-        timeMessage = `${remainingMinutes} minute${remainingMinutes > 1 ? 's' : ''}`;
-      } else if (remainingSeconds > 0) {
-        timeMessage = `${remainingSeconds} second${remainingSeconds > 1 ? 's' : ''}`;
-      } else {
-        timeMessage = 'a moment';
-      }
-
-      return {
-        success: false,
-        error: `Too many login attempts. Please try again in ${timeMessage}.`,
-      };
-    }
+    // Note: Rate limiting now handled server-side by Better Auth
+    // Client-side rate limiting removed to avoid redundancy
 
     // Input validation
     if (!email || !password) {
@@ -195,33 +171,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       if (response.error) {
-        // Record failed attempt for warning
-        const failedCount = rateLimiter.recordFailedAttempt(rateLimitKey);
-
-        // Show warning after 3 failed attempts
-        if (failedCount >= 3 && failedCount < maxAttempts) {
-          const remaining = maxAttempts - failedCount;
-          const errorMsg = response.error.message || 'Invalid credentials';
-          return {
-            success: false,
-            error: `${errorMsg} (${remaining} attempt${remaining !== 1 ? 's' : ''} remaining before account lockout)`,
-          };
-        }
-
         return { success: false, error: response.error.message || 'Login failed' };
       }
 
       if (response.data?.user) {
         setUser(response.data.user);
-
-        // Reset rate limit on successful login
-        rateLimiter.reset(rateLimitKey);
-
         return { success: true };
       }
 
-      // Record failed attempt
-      rateLimiter.recordFailedAttempt(rateLimitKey);
       return { success: false, error: 'Login failed' };
     } catch (error) {
       logger.error('Login failed', { error, email });
@@ -336,13 +293,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const resetRateLimit = useCallback((email?: string) => {
-    if (email) {
-      rateLimiter.resetForEmail(email);
-      logger.logSecurity('Rate limit reset for email', { email });
-    } else {
-      rateLimiter.clearAll();
-      logger.logSecurity('All rate limits cleared');
-    }
+    // Rate limiting now handled server-side - this is a no-op for compatibility
+    logger.logSecurity('Rate limit reset requested (server-side only)', { email });
   }, []);
 
   const value: AuthContextType = {

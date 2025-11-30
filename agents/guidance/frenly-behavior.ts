@@ -2,7 +2,7 @@
  * Frenly Guidance Agent - User Behavior and Learning
  */
 
-import { UserBehavior, MessageContext } from './frenly-interfaces';
+import { UserBehavior } from './frenly-interfaces';
 import { logger } from '../../frontend/src/services/logger';
 
 export class BehaviorTracker {

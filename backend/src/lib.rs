@@ -9,20 +9,24 @@ pub mod config;
 pub mod cqrs;
 pub mod database;
 pub mod database_migrations;
+pub mod errors;
 pub mod handlers;
+pub mod integrations;
+pub mod middleware;
 pub mod models;
 pub mod monitoring;
 pub mod services;
-pub mod errors;
-pub mod integrations;
-pub mod middleware;
+pub mod startup;
 pub mod utils;
 pub mod websocket;
-pub mod startup;
 
 // Test utilities module - always available for test code
 // Note: This is safe to always include as it's only used in test contexts
 mod test_utils;
+
+// Test infrastructure module
+#[cfg(test)]
+mod tests;
 
 // Export test utilities for use in tests
 // Note: Made always available since test files in tests/ directory are separate crates

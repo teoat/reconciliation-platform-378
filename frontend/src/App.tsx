@@ -48,6 +48,7 @@ import { APP_CONFIG } from './config/AppConfig';
 import KeyboardShortcuts from './components/pages/KeyboardShortcuts';
 import { SessionTimeoutHandler } from './components/SessionTimeoutHandler';
 import { SmartTipProvider } from './components/ui/SmartTipProvider';
+import { PasswordExpiryListener } from './components/auth/PasswordExpiryListener';
 // Note: useFeatureRegistryInit is available but not currently used in App component
 // import { useFeatureRegistryInit } from './features/integration';
 
@@ -68,6 +69,7 @@ const FileUpload = lazy(() => import('./components/pages/FileUpload'));
 const Settings = lazy(() => import('./components/pages/Settings'));
 const Profile = lazy(() => import('./components/pages/Profile'));
 const NotFound = lazy(() => import('./components/pages/NotFound'));
+const ForcePasswordChange = lazy(() => import('./pages/auth/ForcePasswordChange').then(module => ({ default: module.ForcePasswordChange })));
 // Additional page components
 const IngestionPage = lazy(() => import('./pages/IngestionPage').then(module => ({ default: module.IngestionPage })));
 const AdjudicationPage = lazy(() => import('./pages/AdjudicationPage').then(module => ({ default: module.AdjudicationPage })));
@@ -143,9 +145,15 @@ function App() {
                     <KeyboardShortcuts />
                     <ToastContainer />
                     <SessionTimeoutHandler />
+                    <PasswordExpiryListener />
                     <Routes>
                       <Route path="/login" element={<AuthPage />} />
                       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                      <Route path="/force-password-change" element={
+                        <Suspense fallback={<LoadingSpinner />}>
+                          <ForcePasswordChange />
+                        </Suspense>
+                      } />
                       <Route
                         path="/"
                         element={

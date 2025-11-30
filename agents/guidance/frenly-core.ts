@@ -54,11 +54,11 @@ export class FrenlyGuidanceAgent implements MetaAgent {
   private cleanupTimer: NodeJS.Timeout | null = null;
   private pendingRequests: Map<string, Promise<GeneratedMessage>> = new Map(); // Request deduplication
   private mcpMonitoringTimer: NodeJS.Timeout | null = null;
-  private lastMCPCheck: Date | null = null;
-  private readonly mcpCheckInterval: number = parseInt(
-    process.env.FRENLY_MCP_CHECK_INTERVAL || '300000',
-    10
-  ); // Default: 5 minutes, configurable via env
+  // private lastMCPCheck: Date | null = null; // Unused
+  // private readonly mcpCheckInterval: number = parseInt(
+  //   process.env.FRENLY_MCP_CHECK_INTERVAL || '300000',
+  //   10
+  // ); // Unused - Default: 5 minutes, configurable via env
 
   /**
    * Initialize the agent

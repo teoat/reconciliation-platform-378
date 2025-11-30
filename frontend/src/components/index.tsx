@@ -135,7 +135,7 @@ export { default as IntegrationSettings } from './IntegrationSettings';
 // ============================================================================
 // DASHBOARD COMPONENTS
 // ============================================================================
-export { Dashboard, AnalyticsDashboard, SmartDashboard } from './dashboard';
+export { Dashboard, AnalyticsDashboard, SmartDashboard } from './Dashboard';
 
 // ============================================================================
 // RECONCILIATION COMPONENTS

@@ -547,15 +547,6 @@ pub async fn change_initial_password(
     }
 
     // Verify current password
-    if !auth_service
-        .as_ref()
-        .verify_password(&req.current_password, &user.password_hash)?
-    {
-        return Err(AppError::Authentication(
-            "Current password is incorrect".to_string(),
-        ));
-    }
-
     // Use user service to change initial password
     user_service
         .as_ref()

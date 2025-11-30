@@ -72,7 +72,6 @@ move_to_archive "fix-frontend-imports.sh" "$ARCHIVE_SCRIPTS" "Duplicate of scrip
 move_to_archive "fix-use-toast.sh" "$ARCHIVE_SCRIPTS" "Duplicate of scripts/fix-frontend-lint-errors.sh"
 move_to_archive "ssot-cleanup.sh" "$ARCHIVE_SCRIPTS" "Duplicate of scripts/manage-ssot.sh"
 move_to_archive "ssot-enforcement.sh" "$ARCHIVE_SCRIPTS" "Duplicate of scripts/manage-ssot.sh"
-move_to_archive "consolidate-all.sh" "$ARCHIVE_SCRIPTS" "Duplicate of scripts/consolidate-documentation.sh"
 move_to_archive "consolidate-phase2.sh" "$ARCHIVE_SCRIPTS" "Duplicate of scripts/consolidate-documentation.sh"
 move_to_archive "consolidate-final.sh" "$ARCHIVE_SCRIPTS" "Duplicate of scripts/consolidate-documentation.sh"
 move_to_archive "setup-monitoring.sh" "$ARCHIVE_SCRIPTS" "Duplicate of scripts/setup-monitoring.sh"

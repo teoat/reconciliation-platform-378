@@ -81,19 +81,9 @@ impl UserService {
     /// Create a new user
     pub async fn create_user(&self, request: CreateUserRequest) -> AppResult<UserInfo> {
         use crate::services::user::operations::create;
-        use std::future::Future;
-        use std::pin::Pin;
-        let db = Arc::clone(&self.db);
-        let auth_service = self.auth_service.clone();
-        let get_user_by_id = move |id: Uuid| {
-            let db = Arc::clone(&db);
-            let auth_service = auth_service.clone();
-            Box::pin(async move {
-                let temp_service = UserService::new(Arc::clone(&db), auth_service);
-                temp_service.get_user_by_id(id).await
-            }) as Pin<Box<dyn Future<Output = AppResult<UserInfo>> + Send>>
-        };
-        create::create_user(&self.db, &self.auth_service, request, get_user_by_id).await
+        let created_user_id =
+            create::create_user_logic(&self.db, &self.auth_service, request).await?;
+        self.get_user_by_id(created_user_id).await
     }
 
     /// Create a new user with an initial password (for testing/pre-production)
@@ -105,37 +95,19 @@ impl UserService {
         request: CreateUserRequest,
     ) -> AppResult<(UserInfo, String)> {
         use crate::services::user::operations::create;
-        use std::future::Future;
-        use std::pin::Pin;
-        let db = Arc::clone(&self.db);
-        let auth_service = self.auth_service.clone();
-        let get_user_by_id = move |id: Uuid| {
-            let db = Arc::clone(&db);
-            let auth_service = auth_service.clone();
-            Box::pin(async move {
-                let temp_service = UserService::new(Arc::clone(&db), auth_service);
-                temp_service.get_user_by_id(id).await
-            }) as Pin<Box<dyn Future<Output = AppResult<UserInfo>> + Send>>
-        };
-        create::create_user_with_initial_password(&self.db, &self.auth_service, request, get_user_by_id).await
+        let (created_user_id, initial_password) =
+            create::create_user_with_initial_password(&self.db, &self.auth_service, request)
+                .await?;
+        let user_info = self.get_user_by_id(created_user_id).await?;
+        Ok((user_info, initial_password))
     }
 
     /// Create a new OAuth user (no password validation)
     pub async fn create_oauth_user(&self, request: CreateOAuthUserRequest) -> AppResult<UserInfo> {
         use crate::services::user::operations::create;
-        use std::future::Future;
-        use std::pin::Pin;
-        let db = Arc::clone(&self.db);
-        let auth_service = self.auth_service.clone();
-        let get_user_by_id = move |id: Uuid| {
-            let db = Arc::clone(&db);
-            let auth_service = auth_service.clone();
-            Box::pin(async move {
-                let temp_service = UserService::new(Arc::clone(&db), auth_service);
-                temp_service.get_user_by_id(id).await
-            }) as Pin<Box<dyn Future<Output = AppResult<UserInfo>> + Send>>
-        };
-        create::create_oauth_user(&self.db, &self.auth_service, request, get_user_by_id).await
+        let user_id =
+            create::create_oauth_user(&self.db, &self.auth_service, request).await?;
+        self.get_user_by_id(user_id).await
     }
 
     /// Get user by ID

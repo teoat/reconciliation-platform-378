@@ -32,7 +32,35 @@ const getEnvVar = (key: string, fallback: string): string => {
 // APP CONFIGURATION
 // ============================================================================
 
-export const APP_CONFIG = {
+import { z } from 'zod';
+
+// Strict config schema to fail fast on invalid env at startup
+const AppConfigSchema = z.object({
+  API_URL: z.string().url().min(1),
+  WS_URL: z.string().url().min(1),
+  API_BASE_URL: z.string().url().min(1),
+  WS_BASE_URL: z.string().url().min(1),
+  APP_NAME: z.string().min(1),
+  APP_VERSION: z.string().min(1),
+  VERSION: z.string().min(1),
+  ENVIRONMENT: z.enum(['development', 'test', 'production']).default('development'),
+  DEBUG: z.boolean(),
+  LOG_LEVEL: z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
+  MAX_FILE_SIZE: z.number().int().positive(),
+  SESSION_TIMEOUT: z.number().int().positive(),
+  AUTO_SAVE_INTERVAL: z.number().int().positive(),
+  DEBOUNCE_DELAY: z.number().int().nonnegative(),
+  RETRY_ATTEMPTS: z.number().int().positive(),
+  RETRY_DELAY: z.number().int().positive(),
+  CIRCUIT_BREAKER: z.object({
+    FAILURE_THRESHOLD: z.number().int().nonnegative(),
+    SUCCESS_THRESHOLD: z.number().int().nonnegative(),
+    TIMEOUT: z.number().int().positive(),
+    RESET_TIMEOUT: z.number().int().positive(),
+  }),
+});
+
+export const APP_CONFIG = AppConfigSchema.passthrough().parse({
   // Unified API Configuration (SSOT)
   API_URL: getEnvVar('VITE_API_URL', 'http://localhost:2000/api/v1'),
   WS_URL: getEnvVar('VITE_WS_URL', 'ws://localhost:2000'),
@@ -70,7 +98,7 @@ export const APP_CONFIG = {
     TIMEOUT: Number(getEnvVar('VITE_CB_TIMEOUT', '60000')), // 1 minute
     RESET_TIMEOUT: Number(getEnvVar('VITE_CB_RESET_TIMEOUT', '30000')), // 30 seconds
   },
-};
+});
 
 // ============================================================================
 // API ENDPOINTS

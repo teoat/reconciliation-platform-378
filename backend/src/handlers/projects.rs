@@ -1097,10 +1097,22 @@ pub async fn get_project_settings(
     let user_id = extract_user_id(&req)?;
     check_project_permission(data.get_ref(), user_id, project_id_val)?;
     
-    // TODO: Implement settings retrieval from database
+    // Query project settings from database
+    let query = "SELECT settings FROM projects WHERE id = $1";
+    let row = data.pool.query_one(query, &[&project_id_val]).await.map_err(|e| {
+        AppError::DatabaseError(format!("Failed to fetch project settings: {}", e))
+    })?;
+    
+    let settings: serde_json::Value = row.try_get("settings")
+        .unwrap_or_else(|_| serde_json::json!({
+            "auto_match_threshold": 0.95,
+            "require_approval": true,
+            "notification_enabled": true
+        }));
+    
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
-        data: Some(serde_json::json!({})),
+        data: Some(settings),
         message: None,
         error: None,
     }))
@@ -1117,10 +1129,17 @@ pub async fn update_project_settings(
     let user_id = extract_user_id(&http_req)?;
     check_project_permission(data.get_ref(), user_id, project_id_val)?;
     
-    // TODO: Implement settings update in database
+    let settings = req.into_inner();
+    
+    // Update settings in database
+    let query = "UPDATE projects SET settings = $1, updated_at = NOW() WHERE id = $2";
+    data.pool.execute(query, &[&settings, &project_id_val]).await.map_err(|e| {
+        AppError::DatabaseError(format!("Failed to update project settings: {}", e))
+    })?;
+    
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
-        data: Some(req.into_inner()),
+        data: Some(settings),
         message: Some("Settings updated successfully".to_string()),
         error: None,
     }))
@@ -1136,13 +1155,29 @@ pub async fn get_project_analytics(
     let user_id = extract_user_id(&req)?;
     check_project_permission(data.get_ref(), user_id, project_id_val)?;
     
-    // TODO: Implement analytics retrieval (can use existing analytics service)
+    // Query analytics from database
+    let jobs_query = "SELECT COUNT(*) as count FROM jobs WHERE project_id = $1";
+    let jobs_row = data.pool.query_one(jobs_query, &[&project_id_val]).await
+        .map_err(|e| AppError::DatabaseError(format!("Failed to count jobs: {}", e)))?;
+    let jobs_count: i64 = jobs_row.get("count");
+    
+    let files_query = "SELECT COUNT(*) as count FROM files WHERE project_id = $1";
+    let files_row = data.pool.query_one(files_query, &[&project_id_val]).await
+        .map_err(|e| AppError::DatabaseError(format!("Failed to count files: {}", e)))?;
+    let files_count: i64 = files_row.get("count");
+    
+    let matches_query = "SELECT COUNT(*) as count FROM matches WHERE project_id = $1";
+    let matches_row = data.pool.query_one(matches_query, &[&project_id_val]).await
+        .map_err(|e| AppError::DatabaseError(format!("Failed to count matches: {}", e)))?;
+    let matches_count: i64 = matches_row.get("count");
+    
     Ok(HttpResponse::Ok().json(ApiResponse {
         success: true,
         data: Some(serde_json::json!({
-            "jobs_count": 0,
-            "files_count": 0,
-            "matches_count": 0
+            "jobs_count": jobs_count,
+            "files_count": files_count,
+            "matches_count": matches_count,
+            "total_records": jobs_count + files_count + matches_count
         })),
         message: None,
         error: None,

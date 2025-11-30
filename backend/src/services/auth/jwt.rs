@@ -39,6 +39,8 @@ impl JwtManager {
             role: user.status.clone(), // Role stored in status field
             exp,
             iat: now,
+            iss: Some("reconciliation-platform".to_string()),
+            aud: Some("reconciliation-platform-users".to_string()),
         };
 
         encode(
@@ -51,7 +53,9 @@ impl JwtManager {
 
     /// Validate and decode a JWT token
     pub fn validate_token(&self, token: &str) -> AppResult<Claims> {
-        let validation = Validation::default();
+        let mut validation = Validation::default();
+        validation.set_issuer(&["reconciliation-platform"]);
+        validation.set_audience(&["reconciliation-platform-users"]);
 
         decode::<Claims>(
             token,

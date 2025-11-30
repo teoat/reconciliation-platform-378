@@ -70,6 +70,8 @@ pub async fn verify_identity_with_dual_auth(
                 .duration_since(std::time::UNIX_EPOCH)
                 .unwrap_or_default()
                 .as_secs() as usize,
+            iss: None,
+            aud: None,
         }
     };
     

@@ -72,6 +72,7 @@
     "lighthouse": "^13.0.1",
     "lucide-react": "^0.554.0",
     "next": "16.0.3",
+    "playwright": "^1.56.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-dropzone": "^14.2.3",
@@ -99,16 +100,16 @@
     "@types/recharts": "^2.0.1",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.0.3",
+    "eslint-plugin-import": "^2.29.1",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
     "k6": "^0.0.0",
     "lighthouse": "^13.0.1",
+    "madge": "^7.0.0",
     "prettier": "^3.2.4",
     "tailwindcss": "^4.1.17",
     "ts-jest": "^29.4.5",
     "typescript": "^5.2.2",
-    "webpack-bundle-analyzer": "^5.0.1",
-    "madge": "^7.0.0",
-    "eslint-plugin-import": "^2.29.1"
+    "webpack-bundle-analyzer": "^5.0.1"
   }
 }

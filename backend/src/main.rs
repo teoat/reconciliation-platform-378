@@ -469,6 +469,8 @@ async fn async_main() -> std::io::Result<()> {
             Cors::permissive()
         };
 
+        let auth_rate_limit_config = reconciliation_backend::middleware::AuthRateLimitConfig::default();
+
         actix_web::App::new()
             // Add correlation ID middleware (must be first to propagate IDs)
             .wrap(CorrelationIdMiddleware)
@@ -477,19 +479,16 @@ async fn async_main() -> std::io::Result<()> {
             // Add CORS middleware (MUST be before zero-trust to ensure error responses have CORS headers)
             // This ensures that when zero-trust or other middleware return errors, CORS headers are present
             .wrap(cors)
-            // Add compression middleware (gzip, deflate, br)
-            .wrap(Compress::default())
             // Add security headers middleware (CSP, HSTS, X-Frame-Options, etc.)
             .wrap(SecurityHeadersMiddleware::new(SecurityHeadersConfig::default()))
-            // Add auth rate limiting middleware (applies to /api/auth/* endpoints)
-            .wrap(AuthRateLimitMiddleware::default())
-            // Add per-endpoint rate limiting middleware
-            .wrap(PerEndpointRateLimitMiddleware::new())
-            // Add zero-trust security middleware (if enabled)
             // Note: CORS is applied before this so error responses include CORS headers
             .wrap(ZeroTrustMiddleware::new(zero_trust_config.clone()))
             // Add API versioning middleware (adds version headers and deprecation warnings)
             .wrap(ApiVersioningMiddleware::new(ApiVersioningConfig::default()))
+            // Add per-endpoint rate limiting middleware
+            .wrap(PerEndpointRateLimitMiddleware::default())
+            // Add authentication rate limiting middleware
+            .wrap(AuthRateLimitMiddleware::new(auth_rate_limit_config))
             // Configure app data with resilience-protected services
             .app_data(web::Data::new(database.clone()))
             .app_data(web::Data::new(cache.clone()))

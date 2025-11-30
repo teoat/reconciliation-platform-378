@@ -1,8 +1,30 @@
-import React from 'react';
 import { screen, fireEvent } from '@testing-library/react';
 import { vi } from 'vitest';
 import { Dashboard } from '../Dashboard';
 import { renderWithProviders } from '../../__tests__/utils/testHelpers';
+
+// Mock required props
+const mockWidgets = [
+  {
+    id: 'widget-1',
+    type: 'metric' as const,
+    title: 'Total Records',
+    config: {},
+    layout: { x: 0, y: 0, w: 1, h: 1 },
+  },
+  {
+    id: 'widget-2',
+    type: 'chart' as const,
+    title: 'Status Overview',
+    config: {},
+    layout: { x: 1, y: 0, w: 1, h: 1 },
+  },
+];
+
+const defaultProps = {
+  projectId: 'test-project-1',
+  widgets: mockWidgets,
+};
 
 // Mock the hooks and services
 vi.mock('@/hooks/useApi', () => ({
@@ -26,13 +48,13 @@ vi.mock('react-router-dom', () => ({
 
 describe('Dashboard', () => {
   it('should render dashboard title', () => {
-    renderWithProviders(<Dashboard />);
+    renderWithProviders(<Dashboard {...defaultProps} />);
 
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
   });
 
   it('should display projects list', () => {
-    renderWithProviders(<Dashboard />);
+    renderWithProviders(<Dashboard {...defaultProps} />);
 
     expect(screen.getByText('Project 1')).toBeInTheDocument();
     expect(screen.getByText('Project 2')).toBeInTheDocument();
@@ -41,7 +63,7 @@ describe('Dashboard', () => {
   });
 
   it('should render project cards with proper accessibility', () => {
-    renderWithProviders(<Dashboard />);
+    renderWithProviders(<Dashboard {...defaultProps} />);
 
     const projectCards = screen.getAllByRole('button');
     expect(projectCards).toHaveLength(2);
@@ -52,11 +74,11 @@ describe('Dashboard', () => {
     });
   });
 
-  it('should navigate to project when clicked', async () => {
+  it('should navigate to project when clicked', () => {
     const mockNavigate = vi.fn();
-    vi.mocked(await import('react-router-dom')).useNavigate.mockReturnValue(mockNavigate);
+    vi.mocked(vi.importMock('react-router-dom')).useNavigate = vi.fn(() => mockNavigate);
 
-    renderWithProviders(<Dashboard />);
+    renderWithProviders(<Dashboard {...defaultProps} />);
 
     const firstProjectCard = screen.getByText('Project 1').closest('div');
     fireEvent.click(firstProjectCard!);
@@ -64,11 +86,11 @@ describe('Dashboard', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/projects/1');
   });
 
-  it('should navigate to project when Enter key is pressed', async () => {
+  it('should navigate to project when Enter key is pressed', () => {
     const mockNavigate = vi.fn();
-    vi.mocked(await import('react-router-dom')).useNavigate.mockReturnValue(mockNavigate);
+    vi.mocked(vi.importMock('react-router-dom')).useNavigate = vi.fn(() => mockNavigate);
 
-    renderWithProviders(<Dashboard />);
+    renderWithProviders(<Dashboard {...defaultProps} />);
 
     const firstProjectCard = screen.getByText('Project 1').closest('div');
     fireEvent.keyDown(firstProjectCard!, { key: 'Enter' });
@@ -76,11 +98,11 @@ describe('Dashboard', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/projects/1');
   });
 
-  it('should navigate to project when Space key is pressed', async () => {
+  it('should navigate to project when Space key is pressed', () => {
     const mockNavigate = vi.fn();
-    vi.mocked(await import('react-router-dom')).useNavigate.mockReturnValue(mockNavigate);
+    vi.mocked(vi.importMock('react-router-dom')).useNavigate = vi.fn(() => mockNavigate);
 
-    renderWithProviders(<Dashboard />);
+    renderWithProviders(<Dashboard {...defaultProps} />);
 
     const firstProjectCard = screen.getByText('Project 1').closest('div');
     fireEvent.keyDown(firstProjectCard!, { key: ' ' });
@@ -99,7 +121,7 @@ describe('Dashboard', () => {
       deleteProject: vi.fn(),
     });
 
-    renderWithProviders(<Dashboard />);
+    renderWithProviders(<Dashboard {...defaultProps} />);
 
     expect(screen.getByText('Loading projects...')).toBeInTheDocument();
   });
@@ -115,7 +137,7 @@ describe('Dashboard', () => {
       deleteProject: vi.fn(),
     });
 
-    renderWithProviders(<Dashboard />);
+    renderWithProviders(<Dashboard {...defaultProps} />);
 
     expect(screen.getByText('Error loading projects: Failed to load projects')).toBeInTheDocument();
   });
@@ -131,14 +153,14 @@ describe('Dashboard', () => {
       deleteProject: vi.fn(),
     });
 
-    renderWithProviders(<Dashboard />);
+    renderWithProviders(<Dashboard {...defaultProps} />);
 
     expect(screen.getByText('No projects found')).toBeInTheDocument();
     expect(screen.getByText('Create your first project to get started')).toBeInTheDocument();
   });
 
   it('should render create project button', () => {
-    renderWithProviders(<Dashboard />);
+    renderWithProviders(<Dashboard {...defaultProps} />);
 
     const createButton = screen.getByText('Create Project');
     expect(createButton).toBeInTheDocument();
@@ -146,13 +168,13 @@ describe('Dashboard', () => {
   });
 
   it('should render recent activity section', () => {
-    renderWithProviders(<Dashboard />);
+    renderWithProviders(<Dashboard {...defaultProps} />);
 
     expect(screen.getByText('Recent Activity')).toBeInTheDocument();
   });
 
   it('should render quick actions section', () => {
-    renderWithProviders(<Dashboard />);
+    renderWithProviders(<Dashboard {...defaultProps} />);
 
     expect(screen.getByText('Quick Actions')).toBeInTheDocument();
   });

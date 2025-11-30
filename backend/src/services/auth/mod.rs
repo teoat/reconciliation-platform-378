@@ -99,9 +99,7 @@ mod tests {
     use uuid::Uuid;
 
     async fn create_test_db() -> Database {
-        Database::new("postgresql://test:test@localhost/reconciliation_test")
-            .await
-            .expect("Failed to create test database")
+        Database::new("postgresql://test:test@localhost/reconciliation_test").await.unwrap()
     }
 
     #[tokio::test]

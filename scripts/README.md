@@ -106,7 +106,6 @@ This directory contains the **canonical, actively maintained scripts** for the r
 - **`manage-ssot.sh`** - SSOT management
 - **`execute-aggressive-consolidation.sh`** - Execute consolidation
 - **`migrate-imports.sh`** - Migrate imports to SSOT paths
-- **`consolidate-docs.sh`** - Consolidate documentation
 - **`consolidate-docs-phase2.sh`** - Phase 2 documentation consolidation
 - **`consolidate-documentation.sh`** - Documentation consolidation
 - **`consolidate-folders.sh`** - Folder consolidation

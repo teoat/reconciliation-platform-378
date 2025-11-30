@@ -2,7 +2,7 @@
  * Frenly Guidance Agent - Service Integration
  */
 
-import { logger } from '../../frontend/src/services/logger';
+// import { logger } from '../../frontend/src/services/logger'; // Unused
 
 // Import services for integration
 let helpContentService: any = null;

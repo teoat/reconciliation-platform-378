@@ -199,6 +199,8 @@ pub async fn verify_identity_better_auth(
         role: claims.role.clone(),
         exp: claims.exp,
         iat: claims.iat,
+        iss: None,
+        aud: None,
     };
 
     // Store claims in request extensions for use in handlers
@@ -245,6 +247,8 @@ pub async fn verify_identity_dual(
                 role: claims.role.clone(),
                 exp: claims.exp,
                 iat: claims.iat,
+                iss: None,
+                aud: None,
             };
 
             req.extensions_mut().insert(internal_claims);

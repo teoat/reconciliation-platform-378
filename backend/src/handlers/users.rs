@@ -548,19 +548,56 @@ pub async fn get_user_activity(
     user_id: web::Path<Uuid>,
     query: web::Query<SearchQueryParams>,
     _http_req: actix_web::HttpRequest,
-    _data: web::Data<Database>,
+    data: web::Data<Database>,
 ) -> Result<HttpResponse, AppError> {
-    let _user_id_val = user_id.into_inner();
+    let user_id_val = user_id.into_inner();
+    let page = query.page.unwrap_or(1);
+    let per_page = query.per_page.unwrap_or(20);
+    let offset = (page - 1) * per_page;
     
-    // TODO: Implement activity log retrieval from database
-    let activities: Vec<serde_json::Value> = vec![];
-    let total_pages = 0;
+    // Query user activity from audit logs
+    let activities_query = r#"
+        SELECT id, action, resource_type, resource_id, 
+               ip_address, user_agent, created_at, details
+        FROM audit_logs
+        WHERE user_id = $1
+        ORDER BY created_at DESC
+        LIMIT $2 OFFSET $3
+    "#;
+    
+    let rows = data.pool.query(
+        activities_query, 
+        &[&user_id_val, &(per_page as i64), &(offset as i64)]
+    ).await.map_err(|e| {
+        AppError::DatabaseError(format!("Failed to fetch user activity: {}", e))
+    })?;
+    
+    let activities: Vec<serde_json::Value> = rows.iter().map(|row| {
+        serde_json::json!({
+            "id": row.get::<_, uuid::Uuid>("id"),
+            "action": row.get::<_, String>("action"),
+            "resource_type": row.get::<_, Option<String>>("resource_type"),
+            "resource_id": row.get::<_, Option<uuid::Uuid>>("resource_id"),
+            "ip_address": row.get::<_, Option<String>>("ip_address"),
+            "user_agent": row.get::<_, Option<String>>("user_agent"),
+            "created_at": row.get::<_, chrono::NaiveDateTime>("created_at"),
+            "details": row.get::<_, Option<serde_json::Value>>("details")
+        })
+    }).collect();
+    
+    // Get total count for this user
+    let count_query = "SELECT COUNT(*) as count FROM audit_logs WHERE user_id = $1";
+    let count_row = data.pool.query_one(count_query, &[&user_id_val])
+        .await
+        .map_err(|e| AppError::DatabaseError(format!("Failed to count user activity: {}", e)))?;
+    let total: i64 = count_row.get("count");
+    let total_pages = ((total as f64) / (per_page as f64)).ceil() as i32;
     
     let paginated = crate::handlers::types::PaginatedResponse {
         items: activities,
-        total: 0,
-        page: query.page.unwrap_or(1),
-        per_page: query.per_page.unwrap_or(20),
+        total: total as i32,
+        page,
+        per_page,
         total_pages,
     };
     

@@ -10,12 +10,11 @@ use uuid::Uuid;
 use super::super::traits::{CreateOAuthUserRequest, CreateUserRequest, UserInfo};
 
 /// Create a new user
-pub async fn create_user(
+pub async fn create_user_logic(
     db: &Database,
     auth_service: &AuthService,
     request: CreateUserRequest,
-    get_user_by_id: impl Fn(Uuid) -> std::pin::Pin<Box<dyn std::future::Future<Output = AppResult<UserInfo>> + Send>>,
-) -> AppResult<UserInfo> {
+) -> AppResult<Uuid> {
     // Validate input
     ValidationUtils::validate_email(&request.email)?;
     auth_service.validate_password_strength(&request.password)?;
@@ -56,7 +55,7 @@ pub async fn create_user(
         auth_provider: Some("password".to_string()),
     };
 
-    let created_user_id = with_transaction(db.get_pool(), |tx| {
+    with_transaction(db.get_pool(), |tx| {
         // Check if user already exists inside transaction (atomic check)
         let count = users::table
             .filter(users::email.eq(&sanitized_email))
@@ -71,7 +70,7 @@ pub async fn create_user(
         }
 
         // Insert user
-        let result = diesel::insert_into(users::table)
+        diesel::insert_into(users::table)
             .values(&new_user)
             .returning(users::id)
             .get_result::<Uuid>(tx)
@@ -82,14 +81,9 @@ pub async fn create_user(
                 } else {
                     AppError::Database(e)
                 }
-            })?;
-
-        Ok(result)
+            })
     })
-    .await?;
-
-    // Get created user with project count
-    get_user_by_id(created_user_id).await
+    .await
 }
 
 /// Create a new user with an initial password (for testing/pre-production)
@@ -97,8 +91,7 @@ pub async fn create_user_with_initial_password(
     db: &Database,
     auth_service: &AuthService,
     request: CreateUserRequest,
-    get_user_by_id: impl Fn(Uuid) -> std::pin::Pin<Box<dyn std::future::Future<Output = AppResult<UserInfo>> + Send>>,
-) -> AppResult<(UserInfo, String)> {
+) -> AppResult<(Uuid, String)> {
     use crate::services::auth::password::PasswordManager;
     
     // Generate initial password
@@ -157,7 +150,7 @@ pub async fn create_user_with_initial_password(
         }
         
         // Insert user
-        let result = diesel::insert_into(users::table)
+        diesel::insert_into(users::table)
             .values(&new_user)
             .returning(users::id)
             .get_result::<Uuid>(tx)
@@ -167,17 +160,11 @@ pub async fn create_user_with_initial_password(
                 } else {
                     AppError::Database(e)
                 }
-            })?;
-        
-        Ok(result)
+            })
     })
     .await?;
     
-    // Get created user
-    let user_info = get_user_by_id(created_user_id).await?;
-    
-    // Return user info and initial password (for testing/pre-production only)
-    Ok((user_info, initial_password))
+    Ok((created_user_id, initial_password))
 }
 
 /// Create a new OAuth user (no password validation)
@@ -185,8 +172,7 @@ pub async fn create_oauth_user(
     db: &Database,
     _auth_service: &AuthService,
     request: CreateOAuthUserRequest,
-    get_user_by_id: impl Fn(Uuid) -> std::pin::Pin<Box<dyn std::future::Future<Output = AppResult<UserInfo>> + Send>>,
-) -> AppResult<UserInfo> {
+) -> AppResult<Uuid> {
     // Validate input
     ValidationUtils::validate_email(&request.email)?;
 
@@ -277,7 +263,7 @@ pub async fn create_oauth_user(
 
     // Get user (new or existing) with project count
     match result {
-        Some(user_id) => get_user_by_id(user_id).await,
+        Some(user_id) => Ok(user_id),
         None => Err(AppError::Internal(
             "Failed to create or retrieve user".to_string(),
         )),

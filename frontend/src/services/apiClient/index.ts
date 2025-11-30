@@ -14,6 +14,8 @@ import {
   ResponseInterceptor,
   ErrorInterceptor,
 } from './interceptors';
+// Also include project-level default interceptors to avoid duplication and ensure SSOT
+import { defaultRequestInterceptors, defaultResponseInterceptors } from '../interceptors';
 import { Tier4Interceptor } from './tier4Interceptor';
 import { ConfigBuilder, PerformanceMonitor, CacheKeyGenerator } from './utils';
 import { WebSocketClient } from '../websocket';
@@ -147,7 +149,8 @@ export class ApiClient {
 
   async healthCheck(): Promise<ApiResponse<{ status: string; timestamp: string }>> {
     const config = this.requestBuilder.method('GET').skipAuth().noCache().timeout(5000).build();
-    return this.makeRequest<{ status: string; timestamp: string }>('/api/health', config);
+    // Align with backend OpenAPI: /api/v1 base + /health path
+    return this.makeRequest<{ status: string; timestamp: string }>('/health', config);
   }
 
   async getDashboardData(): Promise<ApiResponse<DashboardData>> {
@@ -784,7 +787,12 @@ export class ApiClient {
       tier4Interceptor.error(error, config)
     );
 
-    // Auth interceptor
+    // Project-level request interceptors from SSOT (e.g., request ID, offline detection, auth)
+    for (const reqInterceptor of defaultRequestInterceptors) {
+      this.interceptorManager.addRequestInterceptor(reqInterceptor);
+    }
+
+    // Auth interceptor (ensures better-auth token propagation and refresh handling)
     this.interceptorManager.addRequestInterceptor((config) => authInterceptor.request(config));
     this.interceptorManager.addResponseInterceptor((response, config) =>
       authInterceptor.response(response, config)
@@ -792,6 +800,11 @@ export class ApiClient {
     this.interceptorManager.addErrorInterceptor((error, config) =>
       authInterceptor.error(error, config)
     );
+
+    // Project-level response interceptors (e.g., rate limit, timing, error reporting)
+    for (const respInterceptor of defaultResponseInterceptors) {
+      this.interceptorManager.addResponseInterceptor(respInterceptor);
+    }
 
     // Logging interceptor (dev only)
     if (import.meta.env.DEV) {

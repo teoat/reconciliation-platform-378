@@ -87,7 +87,7 @@ cd "$PROJECT_ROOT"
 if [ "${SKIP_SSOT_VALIDATION:-false}" != "true" ]; then
     if [ -f "$SCRIPT_DIR/validate-docker-ssot.sh" ]; then
         log_info "Validating Docker SSOT compliance..."
-        "$SCRIPT_DIR/validate-docker-ssot.sh" || log_warning "SSOT validation found issues (continuing anyway)"
+        "$SCRIPT_DIR/validate-docker-ssot.sh" --fix || log_warning "SSOT validation found issues (continuing anyway)"
     fi
 fi
 

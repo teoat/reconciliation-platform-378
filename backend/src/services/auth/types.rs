@@ -13,6 +13,10 @@ pub struct Claims {
     pub role: String,
     pub exp: usize,
     pub iat: usize,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub iss: Option<String>, // Issuer
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub aud: Option<String>, // Audience
 }
 
 /// Login request
