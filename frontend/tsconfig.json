@@ -59,11 +59,16 @@
     "src/App.optimizely.tsx",
     "src/services/testingService.ts",
     "src/services/uiService.ts",
-    "src/services/ui/uiService.ts",
-    "src/services/utils/dataService.ts",
-    "src/services/utils/errorService.ts",
+    "src/services/ui/**",
+    "src/services/utils/**",
     "src/services/unifiedErrorService.ts",
-    "src/services/workflow-sync/tests/**"
+    "src/services/unifiedFetchInterceptor.ts",
+    "src/services/workflow-sync/**",
+    "src/services/websocket.ts",
+    "src/services/websocket/**",
+    "src/services/visualization/**",
+    "src/store/asyncThunkUtils.ts",
+    "src/store/NotificationSystem.tsx"
   ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

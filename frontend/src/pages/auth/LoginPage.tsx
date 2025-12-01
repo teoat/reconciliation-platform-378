@@ -15,7 +15,7 @@ export const LoginPage: React.FC = () => {
       // console.log('Attempting login with:', { email, password, twoFactorCode });
 
       // Simulate API call
-      const _response = await new Promise<unknown>((resolve, reject) => {
+      await new Promise<unknown>((resolve, reject) => {
         setTimeout(() => {
           if (email === 'test@example.com' && password === 'password') {
             resolve({ token: 'mock_jwt_token', user: { id: '1', email, role: 'user' } });

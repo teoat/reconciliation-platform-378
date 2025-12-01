@@ -70,24 +70,24 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <div className="flex items-center justify-between">
         {onForgotPassword && (
           <div className="text-sm">
-            <a
-              href="#"
+            <button
+              type="button"
               onClick={onForgotPassword}
-              className="font-medium text-indigo-600 hover:text-indigo-500"
+              className="font-medium text-indigo-600 hover:text-indigo-500 bg-transparent border-none cursor-pointer"
             >
               Forgot your password?
-            </a>
+            </button>
           </div>
         )}
         <div className="text-sm">
           Don't have an account?{' '}
-          <a
-            href="#"
+          <button
+            type="button"
             onClick={onRegisterClick}
-            className="font-medium text-indigo-600 hover:text-indigo-500"
+            className="font-medium text-indigo-600 hover:text-indigo-500 bg-transparent border-none cursor-pointer"
           >
             Register
-          </a>
+          </button>
         </div>
       </div>
 

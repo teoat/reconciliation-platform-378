@@ -3,7 +3,7 @@
 // ============================================================================
 
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { AuthState, User, AuthTokens, LoginCredentials, RegisterCredentials, TwoFactorSetupResponse, RecoveryCodesResponse } from '@/types/auth';
+import { AuthState, User, AuthTokens, LoginCredentials, RegisterCredentials } from '@/types/auth';
 import { AuthApiService } from '@/services/api/authService'; // Import AuthApiService
 import axios from 'axios'; // Import axios for error handling
 
@@ -243,13 +243,13 @@ const authSlice = createSlice({
         state.isLoading = true;
         state.error = null;
       })
-      .addCase(registerUser.fulfilled, (state, action) => {
+      .addCase(registerUser.fulfilled, (state, _action) => {
         state.isLoading = false;
         state.error = null; // Clear error on successful registration
       })
-      .addCase(registerUser.rejected, (state, action: any) => {
+      .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
-        state.error = action.payload || 'Registration failed.';
+        state.error = (action.payload as string) || 'Registration failed.';
       })
       // Logout User
       .addCase(logoutUser.pending, (state) => {
