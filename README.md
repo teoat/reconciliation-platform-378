@@ -294,7 +294,7 @@ furnished to do so.
 ## 📞 Support
 
 - Check the [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
-- Review [Docker logs](docker-compose logs -f)
+- Review Docker logs: `docker-compose logs -f`
 - Verify health endpoints: `curl http://localhost:8080/health`
 - Contact repository administrators for additional support
 
