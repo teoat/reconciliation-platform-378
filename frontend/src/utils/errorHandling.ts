@@ -54,8 +54,8 @@ export class ApplicationError extends Error {
     this.context = context;
     this.timestamp = new Date();
 
-    // Capture stack trace
-    if (Error.captureStackTrace) {
+    // Capture stack trace (V8 specific)
+    if (typeof Error.captureStackTrace === 'function') {
       Error.captureStackTrace(this, ApplicationError);
     }
   }
@@ -186,7 +186,7 @@ export class ErrorHandler {
         logger.error(`High severity error: ${error.message}`, logData);
         break;
       case ErrorSeverity.MEDIUM:
-        logger.warning(`Medium severity error: ${error.message}`, logData);
+        logger.warn(`Medium severity error: ${error.message}`, logData);
         break;
       case ErrorSeverity.LOW:
       default:
