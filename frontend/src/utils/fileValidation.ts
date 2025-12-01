@@ -22,13 +22,18 @@ export async function sampleFileLines(file: File, maxBytes = 64 * 1024): Promise
   return text.replace(/\r\n?/g, '\n').split('\n').filter(Boolean);
 }
 
-export function parseCsvSample(
-  lines: string[],
-  maxRows = 100
-): { headers: string[]; rows: string[][] } {
-  if (lines.length === 0) return { headers: [], rows: [] };
+export type ParseCsvResult = {
+  headers: string[];
+  rows: string[][];
+  parseIssues: ProgressiveValidationIssue[];
+};
 
-  const parseLine = (line: string): string[] => {
+export function parseCsvSample(lines: string[], maxRows = 100): ParseCsvResult {
+  if (lines.length === 0) return { headers: [], rows: [], parseIssues: [] };
+
+  const parseIssues: ProgressiveValidationIssue[] = [];
+
+  const parseLine = (line: string): { fields: string[]; hasUnclosedQuote: boolean } => {
     const result: string[] = [];
     let current = '';
     let inQuotes = false;
@@ -58,12 +63,33 @@ export function parseCsvSample(
       }
     }
     result.push(isQuotedField ? current : current.trim());
-    return result;
+    return { fields: result, hasUnclosedQuote: inQuotes };
   };
 
-  const headers = parseLine(lines[0]);
-  const rows = lines.slice(1, 1 + maxRows).map(parseLine);
-  return { headers, rows };
+  const headerResult = parseLine(lines[0]);
+  if (headerResult.hasUnclosedQuote) {
+    parseIssues.push({
+      row: 0,
+      code: 'unclosed_quote',
+      message: 'Header row has an unclosed quote',
+    });
+  }
+
+  const rows: string[][] = [];
+  const dataLines = lines.slice(1, 1 + maxRows);
+  dataLines.forEach((line, index) => {
+    const result = parseLine(line);
+    rows.push(result.fields);
+    if (result.hasUnclosedQuote) {
+      parseIssues.push({
+        row: index + 1,
+        code: 'unclosed_quote',
+        message: `Row ${index + 1} has an unclosed quote`,
+      });
+    }
+  });
+
+  return { headers: headerResult.fields, rows, parseIssues };
 }
 
 export function validateCsvStructure(
@@ -106,8 +132,9 @@ export async function progressiveValidateCsv(
   sampleRows = 100
 ): Promise<ProgressiveValidationResult> {
   const lines = await sampleFileLines(file);
-  const { headers, rows } = parseCsvSample(lines, sampleRows);
-  const issues = validateCsvStructure(headers, rows);
+  const { headers, rows, parseIssues } = parseCsvSample(lines, sampleRows);
+  const structureIssues = validateCsvStructure(headers, rows);
+  const issues = [...parseIssues, ...structureIssues];
   return {
     valid: issues.length === 0,
     issues,
