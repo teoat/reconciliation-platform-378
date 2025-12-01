@@ -19,7 +19,8 @@ source "$ROOT_DIR/scripts/lib/common-functions.sh"
 PROMETHEUS_URL="${PROMETHEUS_URL:-http://localhost:9090}"
 GRAFANA_URL="${GRAFANA_URL:-http://localhost:3001}"
 KIBANA_URL="${KIBANA_URL:-http://localhost:5601}"
-BACKEND_METRICS_URL="${BACKEND_METRICS_URL:-http://localhost:2000/api/metrics}"
+BACKEND_URL="${BACKEND_URL:-http://localhost:2000}"
+BACKEND_METRICS_URL="${BACKEND_URL}/api/metrics"
 
 # ==============================================================================
 # Help
@@ -92,10 +93,10 @@ check_status() {
     fi
     
     # Check Backend Metrics
-    if check_endpoint "$BACKEND_METRICS_URL/health" "200" 3; then
-        log_success "Backend Metrics: ✓ Available at $BACKEND_METRICS_URL"
+    if check_endpoint "${BACKEND_URL}/api/metrics/health" "200" 3; then
+        log_success "Backend Metrics: ✓ Available at ${BACKEND_URL}/api/metrics"
     else
-        log_warning "Backend Metrics: ✗ Not available at $BACKEND_METRICS_URL"
+        log_warning "Backend Metrics: ✗ Not available at ${BACKEND_URL}/api/metrics"
     fi
     
     echo ""
@@ -169,7 +170,7 @@ show_metrics() {
     
     # Try to get metrics from backend
     local metrics_response
-    metrics_response=$(curl -sf "${BACKEND_METRICS_URL}/summary" 2>/dev/null) || true
+    metrics_response=$(curl -sf "${BACKEND_URL}/api/metrics/summary" 2>/dev/null) || true
     
     if [ -n "$metrics_response" ]; then
         echo "$metrics_response" | python3 -m json.tool 2>/dev/null || echo "$metrics_response"

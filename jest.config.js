@@ -19,9 +19,10 @@ module.exports = {
   },
 
   // Test patterns - Centralized in /tests directory
+  // TODO: Remove legacy __tests__ pattern after migration is complete
   testMatch: [
     '<rootDir>/tests/**/*.test.{js,jsx,ts,tsx}',
-    '<rootDir>/__tests__/**/*.test.{js,jsx,ts,tsx}', // Legacy support
+    '<rootDir>/__tests__/**/*.test.{js,jsx,ts,tsx}', // Legacy - remove after full migration
     '<rootDir>/services/__tests__/**/*.test.{js,jsx,ts,tsx}',
   ],
 

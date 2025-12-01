@@ -55,10 +55,10 @@ npx playwright test tests/e2e/reconciliation.spec.ts
 
 ```bash
 # Run load tests (requires k6)
-k6 run tests/load/load-test.js
+k6 run tests/performance/load-test.js
 
 # Run with custom options
-k6 run --vus 10 --duration 30s tests/load/load-test.js
+k6 run --vus 10 --duration 30s tests/performance/load-test.js
 ```
 
 ### Security Tests
