@@ -4,6 +4,13 @@
 import React from 'react';
 import { logger } from '@/services/logger';
 
+// Type declaration for V8's captureStackTrace
+declare global {
+  interface ErrorConstructor {
+    captureStackTrace?(targetObject: object, constructorOpt?: (...args: unknown[]) => unknown): void;
+  }
+}
+
 // ============================================================================
 // ERROR CLASSIFICATION
 // ============================================================================

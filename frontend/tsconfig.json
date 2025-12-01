@@ -55,7 +55,15 @@
     "src/utils/fontOptimization.ts",
     "src/utils/imageOptimization.ts",
     "src/utils/serviceWorker.ts",
-    "src/utils/testing.tsx"
+    "src/utils/testing.tsx",
+    "src/App.optimizely.tsx",
+    "src/services/testingService.ts",
+    "src/services/uiService.ts",
+    "src/services/ui/uiService.ts",
+    "src/services/utils/dataService.ts",
+    "src/services/utils/errorService.ts",
+    "src/services/unifiedErrorService.ts",
+    "src/services/workflow-sync/tests/**"
   ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

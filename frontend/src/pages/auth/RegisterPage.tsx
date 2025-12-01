@@ -7,7 +7,7 @@ export const RegisterPage: React.FC = () => {
 
   const handleRegister = async (
     email: string,
-    password: string,
+    _password: string,
     firstName: string,
     lastName: string,
     role?: string,
@@ -20,7 +20,7 @@ export const RegisterPage: React.FC = () => {
       // console.log('Attempting registration with:', { email, password, firstName, lastName, role });
 
       // Simulate API call
-      const response = await new Promise((resolve, reject) => {
+      const _response = await new Promise((resolve, reject) => {
         setTimeout(() => {
           if (email === 'existing@example.com') {
             reject({ message: 'User with this email already exists' });

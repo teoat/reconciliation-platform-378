@@ -346,8 +346,8 @@ export function useLazyLoad(options: IntersectionObserverInit = {}) {
     if (!element) return;
 
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        const visible = entry.isIntersecting;
+      (entries) => { const entry = entries[0];
+        const visible = entry?.isIntersecting ?? false;
         setIsVisible(visible);
         if (visible && !hasBeenVisible) {
           setHasBeenVisible(true);
