@@ -63,13 +63,14 @@ export function parseCsvSample(
 
     // Detect unclosed quotes at end of line
     if (inQuotes) {
+      const displayRow = rowIndex + 1; // Convert to 1-based indexing for display
       parsingIssues.push({
-        row: rowIndex,
+        row: displayRow,
         code: 'unclosed_quote',
         message:
           rowIndex === 0
-            ? 'Header row contains unclosed quote'
-            : `Row ${rowIndex} contains unclosed quote`,
+            ? 'Header row (row 1) contains unclosed quote'
+            : `Row ${displayRow} contains unclosed quote`,
       });
     }
 
