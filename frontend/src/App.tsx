@@ -3,12 +3,14 @@ import { Routes, Route, useNavigate } from 'react-router-dom';
 import { useAppSelector, useAppDispatch, setAuthTokens, refreshAccessToken, clearAuth } from './store/unifiedStore';
 import { AuthTokens, User } from './types/auth';
 
-import { LoginPage } from './pages/auth/LoginPage';
-import { RegisterPage } from './pages/auth/RegisterPage';
-import { UserProfilePage } from './pages/auth/UserProfilePage';
-import { TwoFactorAuthPage } from './pages/auth/TwoFactorAuthPage';
-
+import { Suspense, lazy } from 'react';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+
+// Lazy loaded components for Code Splitting
+const LoginPage = lazy(() => import('./pages/auth/LoginPage').then(module => ({ default: module.LoginPage })));
+const RegisterPage = lazy(() => import('./pages/auth/RegisterPage').then(module => ({ default: module.RegisterPage })));
+const UserProfilePage = lazy(() => import('./pages/auth/UserProfilePage').then(module => ({ default: module.UserProfilePage })));
+const TwoFactorAuthPage = lazy(() => import('./pages/auth/TwoFactorAuthPage').then(module => ({ default: module.TwoFactorAuthPage })));
 
 // Placeholder for a Dashboard page
 const DashboardPage = () => (
@@ -22,6 +24,12 @@ const UnauthorizedPage = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
     <h1 className="text-3xl font-extrabold text-red-600">Unauthorized Access</h1>
     <p className="text-gray-600">You do not have permission to view this page.</p>
+  </div>
+);
+
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen">
+    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
   </div>
 );
 
@@ -76,24 +84,26 @@ function App() {
   }, [isAuthenticated, user, isLoading, navigate, dispatch]);
 
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/unauthorized" element={<UnauthorizedPage />} />
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      {/* Protected Routes */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/profile" element={<UserProfilePage />} />
-        {/* Example of role-based protection */}
-        <Route path="/admin-settings" element={<ProtectedRoute requiredRoles={['admin']}><>Admin Settings</></ProtectedRoute>} />
-        <Route path="/2fa-management" element={<UserProfilePage />} /> {/* 2FA management is part of UserProfilePage */}
-      </Route>
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/profile" element={<UserProfilePage />} />
+          {/* Example of role-based protection */}
+          <Route path="/admin-settings" element={<ProtectedRoute requiredRoles={['admin']}><>Admin Settings</></ProtectedRoute>} />
+          <Route path="/2fa-management" element={<UserProfilePage />} /> {/* 2FA management is part of UserProfilePage */}
+        </Route>
 
-      {/* Default redirect (handled by useEffect for more robust initial load behavior) */}
-      <Route path="*" element={null} /> {/* Catch-all route to prevent unmatched path errors, actual redirect handled by useEffect */}
-    </Routes>
+        {/* Default redirect (handled by useEffect for more robust initial load behavior) */}
+        <Route path="*" element={null} /> {/* Catch-all route to prevent unmatched path errors, actual redirect handled by useEffect */}
+      </Routes>
+    </Suspense>
   );
 }
 

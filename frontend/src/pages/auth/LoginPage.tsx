@@ -12,7 +12,6 @@ export const LoginPage: React.FC = () => {
 
     try {
       // Here you would typically make an API call to your backend /api/v2/auth/login
-      // console.log('Attempting login with:', { email, password, twoFactorCode });
 
       // Simulate API call
       const response = await new Promise<any>((resolve, reject) => {
@@ -40,7 +39,6 @@ export const LoginPage: React.FC = () => {
         }, 1000);
       });
 
-      // console.log('Login successful', response);
       // Store token (e.g., in Redux, local storage, or context)
       // Redirect to dashboard
     } catch (error: any) {
@@ -65,12 +63,10 @@ export const LoginPage: React.FC = () => {
   };
 
   const handleForgotPassword = () => {
-    // console.log('Forgot password clicked');
     // Implement navigation to forgot password page
   };
 
   const handleRegisterClick = () => {
-    // console.log('Register clicked');
     // Implement navigation to registration page
   };
 
