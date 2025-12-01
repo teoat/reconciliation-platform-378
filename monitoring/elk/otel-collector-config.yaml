@@ -1,0 +1,112 @@
+# OpenTelemetry Collector Configuration
+# For distributed tracing and metrics collection in the Reconciliation Platform
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  # Collect Prometheus metrics
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'otel-collector'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['localhost:8888']
+        - job_name: 'reconciliation-backend'
+          scrape_interval: 15s
+          static_configs:
+            - targets: ['host.docker.internal:2000']
+          metrics_path: '/metrics'
+
+processors:
+  batch:
+    timeout: 1s
+    send_batch_size: 1024
+
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  # Add resource attributes
+  resource:
+    attributes:
+      - key: service.namespace
+        value: reconciliation-platform
+        action: upsert
+      - key: deployment.environment
+        from_attribute: ENVIRONMENT
+        action: insert
+
+  # Filter out health check spans
+  filter/health:
+    spans:
+      exclude:
+        match_type: strict
+        attributes:
+          - key: http.route
+            value: /health
+
+exporters:
+  # Export to Jaeger for tracing visualization
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+  # Export metrics to Prometheus
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: reconciliation
+    const_labels:
+      service: reconciliation-platform
+
+  # Export logs to Elasticsearch
+  elasticsearch:
+    endpoints:
+      - http://elasticsearch:9200
+    logs_index: otel-logs
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 1000
+
+  # Debug exporter for development
+  logging:
+    loglevel: info
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, zpages]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, filter/health, resource]
+      exporters: [otlp/jaeger, logging]
+    
+    metrics:
+      receivers: [otlp, prometheus]
+      processors: [memory_limiter, batch, resource]
+      exporters: [prometheus, logging]
+    
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [elasticsearch, logging]
+
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8888
