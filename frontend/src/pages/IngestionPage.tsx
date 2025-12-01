@@ -21,15 +21,23 @@ const IngestionPage: React.FC<IngestionPageProps> = ({ project, onProgressUpdate
     setUploading(true);
     setUploadProgress(0);
 
-    // Simulate file upload
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    // Simulate file upload with concurrency limit
+    const CONCURRENCY_LIMIT = 3;
+    let completedCount = 0;
 
+    const uploadFile = async (file: File) => {
       // Simulate processing time
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      setUploadProgress(((i + 1) / files.length) * 100);
+      completedCount++;
+      setUploadProgress((completedCount / files.length) * 100);
       onProgressUpdate(`Processing ${file?.name}...`);
+    };
+
+    // Process files in batches
+    for (let i = 0; i < files.length; i += CONCURRENCY_LIMIT) {
+      const batch = files.slice(i, i + CONCURRENCY_LIMIT);
+      await Promise.all(batch.map(file => uploadFile(file)));
     }
 
     setUploading(false);
