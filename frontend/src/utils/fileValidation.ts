@@ -36,18 +36,14 @@ export function parseCsvSample(
 
     for (let i = 0; i < line.length; i++) {
       const char = line[i];
-      if (!inQuotes && char === '"' && current === '') {
-        // Start of quoted field
-        inQuotes = true;
-        isQuotedField = true;
-      } else if (inQuotes && char === '"') {
-        if (line[i + 1] === '"') {
-          // Escaped quote
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          // Handle escaped quote
           current += '"';
           i++; // Skip next quote
         } else {
-          // End of quoted field
-          inQuotes = false;
+          inQuotes = !inQuotes;
+          if (inQuotes) isQuotedField = true;
         }
       } else if (char === ',' && !inQuotes) {
         result.push(isQuotedField ? current : current.trim());
