@@ -28,7 +28,7 @@ impl UserServiceV2 {
     /// Create a new user
     pub async fn create_user(&self, request: CreateUserRequest) -> Result<UserResponse, AppError> {
         let mut conn = self.pool.get().map_err(|e| {
-            AppError::Database(format!("Failed to get database connection: {}", e))
+            AppError::Internal(format!("Failed to get database connection: {}", e))
         })?;
 
         // Check if user already exists
@@ -58,12 +58,17 @@ impl UserServiceV2 {
         let new_user = crate::models::NewUser {
             email: request.email.clone(),
             password_hash: password_hash.clone(),
-            first_name: Some(request.first_name.clone()),
-            last_name: Some(request.last_name.clone()),
+            first_name: request.first_name.clone(),
+            last_name: request.last_name.clone(),
             status: role.clone(),
             email_verified: false,
             password_expires_at: Some(Utc::now() + chrono::Duration::days(90)),
             password_last_changed: Some(Utc::now()),
+            is_initial_password: Some(false),
+            initial_password_set_at: None,
+            auth_provider: None,
+            provider_id: None,
+            password_history: None,
         };
 
         let created_user: crate::models::User = diesel::insert_into(schema::users::table)
@@ -77,7 +82,7 @@ impl UserServiceV2 {
     /// Get user by ID
     pub async fn get_user_by_id(&self, user_id: Uuid) -> Result<UserResponse, AppError> {
         let mut conn = self.pool.get().map_err(|e| {
-            AppError::Database(format!("Failed to get database connection: {}", e))
+            AppError::Internal(format!("Failed to get database connection: {}", e))
         })?;
 
         let user: crate::models::User = schema::users::table
@@ -92,7 +97,7 @@ impl UserServiceV2 {
     /// Update user
     pub async fn update_user(&self, user_id: Uuid, request: UpdateUserRequest) -> Result<UserResponse, AppError> {
         let mut conn = self.pool.get().map_err(|e| {
-            AppError::Database(format!("Failed to get database connection: {}", e))
+            AppError::Internal(format!("Failed to get database connection: {}", e))
         })?;
 
         let mut update_values = diesel::helper_types::EqAny::<schema::users::id, _>::new(schema::users::id, user_id);
@@ -109,9 +114,14 @@ impl UserServiceV2 {
             update_values = update_values.set(schema::users::last_name.eq(last_name));
         }
 
-        if let Some(is_active) = request.is_active {
-            let status = if is_active { "active" } else { "inactive" };
-            update_values = update_values.set(schema::users::status.eq(status));
+        if let Some(ref status) = request.status {
+            match status {
+                UserStatus::Active => update_values = update_values.set(schema::users::status.eq("active")),
+                UserStatus::Inactive => update_values = update_values.set(schema::users::status.eq("inactive")),
+                UserStatus::PendingVerification => update_values = update_values.set(schema::users::status.eq("pending_verification")),
+                UserStatus::Suspended => update_values = update_values.set(schema::users::status.eq("suspended")),
+                UserStatus::Deactivated => update_values = update_values.set(schema::users::status.eq("deactivated")),
+            }
         }
 
         if let Some(password) = &request.password {
@@ -137,7 +147,7 @@ impl UserServiceV2 {
     /// Delete user
     pub async fn delete_user(&self, user_id: Uuid) -> Result<(), AppError> {
         let mut conn = self.pool.get().map_err(|e| {
-            AppError::Database(format!("Failed to get database connection: {}", e))
+            AppError::Internal(format!("Failed to get database connection: {}", e))
         })?;
 
         diesel::delete(schema::users::table.find(user_id))
@@ -153,11 +163,11 @@ impl UserServiceV2 {
         use diesel::prelude::*;
 
         let mut conn = self.pool.get().map_err(|e| {
-            AppError::Database(format!("Failed to get database connection: {}", e))
+            AppError::Internal(format!("Failed to get database connection: {}", e))
         })?;
 
         // Check if role exists
-        let role_id = crate::models::schema::roles::table
+        let target_role_id = crate::models::schema::roles::table
             .filter(crate::models::schema::roles::name.eq(role_name))
             .select(crate::models::schema::roles::id)
             .first::<Uuid>(&mut conn)
@@ -166,7 +176,7 @@ impl UserServiceV2 {
         // Check if user-role relationship already exists
         let existing_count = user_roles
             .filter(user_id.eq(user_id))
-            .filter(role_id.eq(role_id))
+            .filter(role_id.eq(target_role_id))
             .count()
             .get_result::<i64>(&mut conn)
             .map_err(AppError::Database)?;
@@ -179,7 +189,7 @@ impl UserServiceV2 {
         diesel::insert_into(user_roles)
             .values((
                 user_id.eq(user_id),
-                role_id.eq(role_id),
+                role_id.eq(target_role_id),
                 assigned_at.eq(diesel::dsl::now),
             ))
             .execute(&mut conn)
@@ -194,7 +204,7 @@ impl UserServiceV2 {
         use diesel::prelude::*;
 
         let mut conn = self.pool.get().map_err(|e| {
-            AppError::Database(format!("Failed to get database connection: {}", e))
+            AppError::Internal(format!("Failed to get database connection: {}", e))
         })?;
 
         // Get role ID
@@ -226,7 +236,7 @@ impl UserServiceV2 {
         use diesel::prelude::*;
 
         let mut conn = self.pool.get().map_err(|e| {
-            AppError::Database(format!("Failed to get database connection: {}", e))
+            AppError::Internal(format!("Failed to get database connection: {}", e))
         })?;
 
         let user_roles_data = user_roles::table
@@ -302,11 +312,12 @@ impl ToUserResponse for crate::models::User {
             email: self.email,
             first_name: self.first_name,
             last_name: self.last_name,
-            status: UserStatus::from_str(&self.status).unwrap_or(UserStatus::Inactive),
+            status: std::str::FromStr::from_str(&self.status).unwrap_or(UserStatus::Inactive),
             email_verified: self.email_verified,
             last_login_at: self.last_login_at,
             created_at: self.created_at,
-            roles,
+            updated_at: self.updated_at,
+            roles: Some(roles),
         }
     }
 }

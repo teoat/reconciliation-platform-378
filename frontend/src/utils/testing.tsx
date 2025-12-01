@@ -76,25 +76,25 @@ export const createMockInput = (props = {}) => <input {...props} />;
 
 // API testing helpers
 export const mockApiCall = (url: string, response: unknown) => {
-  global.fetch = vi.fn().mockImplementationOnce((requestUrl: string) => {
+  globalThis.fetch = vi.fn().mockImplementationOnce((requestUrl: string) => {
     if (requestUrl.includes(url)) {
       return Promise.resolve({
         ok: true,
         json: () => Promise.resolve(response),
-      });
+      } as Response);
     }
     return Promise.reject(new Error('Unexpected URL'));
   });
 };
 
 export const mockApiError = (url: string, error: unknown, status = 500) => {
-  global.fetch = vi.fn().mockImplementationOnce((requestUrl: string) => {
+  globalThis.fetch = vi.fn().mockImplementationOnce((requestUrl: string) => {
     if (requestUrl.includes(url)) {
       return Promise.resolve({
         ok: false,
         status,
         json: () => Promise.resolve(error),
-      });
+      } as Response);
     }
     return Promise.reject(new Error('Unexpected URL'));
   });

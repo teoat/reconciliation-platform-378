@@ -126,7 +126,7 @@ impl OAuthService {
             .add_scope(Scope::new("profile".to_string()))
             .url();
 
-        Ok(Redirect::to(authorize_url))
+        Ok(Redirect::to(authorize_url.to_string()))
     }
 
     /// Handle Google OAuth callback
@@ -201,7 +201,7 @@ impl OAuthService {
             .add_scope(Scope::new("user:email".to_string()))
             .url();
 
-        Ok(Redirect::to(authorize_url))
+        Ok(Redirect::to(authorize_url.to_string()))
     }
 
     /// Handle GitHub OAuth callback

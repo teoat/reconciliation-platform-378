@@ -80,6 +80,11 @@ impl AuthService {
         RoleManager::has_role(user_role, required_role)
     }
 
+    /// Check if user has permission to perform action on resource
+    pub fn check_permission(&self, user_role: &str, resource: &str, action: &str) -> bool {
+        RoleManager::check_permission(user_role, resource, action)
+    }
+
     /// Validate password strength
     pub fn validate_password_strength(&self, password: &str) -> AppResult<()> {
         PasswordManager::validate_password_strength(password)
