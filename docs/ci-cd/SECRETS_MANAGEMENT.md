@@ -40,18 +40,20 @@ DOCKER_USERNAME: your-docker-username
 DOCKER_PASSWORD: your-docker-password
 
 # SSH Deployment
+# ⚠️ WARNING: These are TEMPLATE values only. Never commit real SSH keys!
+# Generate keys using: ssh-keygen -t ed25519 -C "deploy@example.com"
 STAGING_HOST: staging.example.com
 STAGING_USERNAME: deploy
 STAGING_SSH_KEY: |
   -----BEGIN OPENSSH PRIVATE KEY-----
-  ...
+  <YOUR_STAGING_PRIVATE_KEY_HERE - NEVER COMMIT REAL KEYS>
   -----END OPENSSH PRIVATE KEY-----
 
 PRODUCTION_HOST: production.example.com
 PRODUCTION_USERNAME: deploy
 PRODUCTION_SSH_KEY: |
   -----BEGIN OPENSSH PRIVATE KEY-----
-  ...
+  <YOUR_PRODUCTION_PRIVATE_KEY_HERE - NEVER COMMIT REAL KEYS>
   -----END OPENSSH PRIVATE KEY-----
 
 # Database

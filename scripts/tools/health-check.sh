@@ -59,7 +59,7 @@ check_http() {
     local url="$2"
     local expected_status="${3:-200}"
     
-    local status=$(curl -s -o /dev/null -w "%{http_code}" "$url" --max-time 10 2>/dev/null || echo "000")
+    local status=$(curl -s -o /dev/null -w "%{http_code}" --fail-with-body "$url" --max-time 10 2>/dev/null || echo "000")
     
     if [ "$status" = "$expected_status" ]; then
         log_pass "$name (HTTP $status)"

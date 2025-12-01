@@ -55,6 +55,8 @@ http_request() {
     local url="${API_BASE_URL}${endpoint}"
     local auth_header=""
     
+    # Note: AUTH_TOKEN should be passed via environment variable, not command line
+    # to avoid exposing credentials in process listings
     if [ -n "$AUTH_TOKEN" ]; then
         auth_header="-H \"Authorization: Bearer $AUTH_TOKEN\""
     fi
