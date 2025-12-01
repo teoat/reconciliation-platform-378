@@ -1,0 +1,16 @@
+{
+  "threshold": 0,
+  "reporters": ["markdown", "html", "console"],
+  "ignore": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/build/**",
+    "**/.next/**",
+    "**/coverage/**",
+    "**/*.min.js",
+    "**/*.min.css",
+    "diagnostic-results/**",
+    "**/*.txt"
+  ],
+  "absolute": true
+}
