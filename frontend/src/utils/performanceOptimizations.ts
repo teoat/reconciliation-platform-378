@@ -73,8 +73,8 @@ export function useDebounce<T extends (...args: unknown[]) => unknown>(
   options: { immediate?: boolean; maxWait?: number } = {}
 ): T {
   const { immediate = false, maxWait } = options;
-  const timeoutRef = useRef<NodeJS.Timeout>();
-  const maxTimeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const maxTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const lastCallRef = useRef<number>();
   const lastResultRef = useRef<ReturnType<T>>();
 
@@ -133,7 +133,7 @@ export function useThrottle<T extends (...args: unknown[]) => unknown>(
 ): T {
   const { leading = true, trailing = true } = options;
   const lastCallRef = useRef<number>();
-  const timeoutRef = useRef<NodeJS.Timeout>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
   const lastResultRef = useRef<ReturnType<T>>();
 
   useEffect(() => {
@@ -346,8 +346,8 @@ export function useLazyLoad(options: IntersectionObserverInit = {}) {
     if (!element) return;
 
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        const visible = entry.isIntersecting;
+      (entries) => { const entry = entries[0];
+        const visible = entry?.isIntersecting ?? false;
         setIsVisible(visible);
         if (visible && !hasBeenVisible) {
           setHasBeenVisible(true);

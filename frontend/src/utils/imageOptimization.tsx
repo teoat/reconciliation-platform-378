@@ -173,8 +173,8 @@ export const OptimizedImage: React.FC<ImageOptimizationProps> = ({
     }
 
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
+      (entries) => { const entry = entries[0];
+        if (entry?.isIntersecting) {
           setInView(true);
           observer.disconnect();
         }
@@ -297,8 +297,8 @@ export const ResponsiveImage: React.FC<ResponsiveImageProps> = ({
     }
 
     const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
+      (entries) => { const entry = entries[0];
+        if (entry?.isIntersecting) {
           setInView(true);
           observer.disconnect();
         }

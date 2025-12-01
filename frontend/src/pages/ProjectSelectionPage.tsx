@@ -95,6 +95,13 @@ const ProjectSelectionPage: React.FC<ProjectSelectionPageProps> = ({ onProjectSe
               key={project.id}
               className="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
               onClick={() => onProjectSelect(project)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  onProjectSelect(project);
+                }
+              }}
+              role="button"
+              tabIndex={0}
             >
               <div className="p-6">
                 <div className="flex justify-between items-start mb-4">

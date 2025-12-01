@@ -217,7 +217,6 @@ export function useTier4Callback<T extends (...args: any[]) => Promise<any>>(
 ): T {
   return useCallback(
     withTier4ErrorHandling(callback, options),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     deps
   );
 }

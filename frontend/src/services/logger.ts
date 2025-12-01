@@ -9,24 +9,15 @@ export interface LogEntry {
 }
 
 class Logger {
-  private isDevelopment = process.env.NODE_ENV === 'development';
+  private isDevelopment = (typeof import.meta !== 'undefined' && import.meta.env?.DEV) || false;
 
   private log(level: LogEntry['level'], message: string, data?: Record<string, unknown>) {
-    const entry: LogEntry = {
-      level,
-      message,
-      data,
-      timestamp: new Date(),
-    };
-
     if (this.isDevelopment) {
       const prefix = `[${level.toUpperCase()}]`;
       const dataStr = data ? ` ${JSON.stringify(data)}` : '';
       console.log(`${prefix} ${message}${dataStr}`);
-    } else {
-      // In production, send to logging service
-      // this.sendToLoggingService(entry);
     }
+    // In production, logs could be sent to a logging service
   }
 
   debug(message: string, data?: Record<string, unknown>) {

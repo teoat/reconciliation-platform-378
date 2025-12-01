@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { useAppSelector, useAppDispatch, setAuthTokens, refreshAccessToken, clearAuth } from './store/unifiedStore';
+import { useAppSelector, useAppDispatch, setAuthTokens, clearAuth } from './store/unifiedStore';
 import { AuthTokens, User } from './types/auth';
 
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { UserProfilePage } from './pages/auth/UserProfilePage';
-import { TwoFactorAuthPage } from './pages/auth/TwoFactorAuthPage';
+
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 

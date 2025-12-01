@@ -169,7 +169,7 @@ export class ErrorHandler {
    * Collect comprehensive error context
    */
   private collectContext(
-    error: Error | AppError,
+    _error: Error | AppError,
     metadata?: Record<string, unknown>
   ): ErrorContext {
     const correlationId = this.generateCorrelationId();
