@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-05-23T12:00:00Z",
+  "status": "CRITICAL",
+  "summary": {
+    "total_files_analyzed": 500,
+    "critical_issues": 4,
+    "ssot_violations": 2,
+    "build_status": "FAILED"
+  },
+  "critical_issues": [
+    {
+      "type": "MISSING_FILE",
+      "path": "frontend/src/services/apiClient.ts",
+      "impact": "BLOCKER",
+      "description": "Core API client missing. Breaks all data fetching and auth."
+    },
+    {
+      "type": "MISSING_FILE",
+      "path": "frontend/src/config/AppConfig.ts",
+      "impact": "BLOCKER",
+      "description": "Central config missing. Breaks WebSocket and environmental config."
+    },
+    {
+      "type": "BROKEN_BACKEND_MODULE",
+      "path": "backend/src/services/mod.rs",
+      "impact": "BLOCKER",
+      "description": "References non-existent modules: backup_recovery, cache_warming."
+    },
+    {
+      "type": "MISSING_DIRECTORY",
+      "path": "frontend/src/components/frenly/",
+      "impact": "HIGH",
+      "description": "AI components missing but referenced in bundle optimizer."
+    }
+  ],
+  "tier4_status": {
+    "implemented": true,
+    "integrated": false,
+    "coverage": "0%"
+  },
+  "recommendations": [
+    "Restore apiClient.ts immediately.",
+    "Restore AppConfig.ts immediately.",
+    "Stub missing backend modules.",
+    "Remove broken import references."
+  ]
+}

@@ -1,20 +1,32 @@
 import React, { useEffect } from 'react';
 import { Routes, Route, useNavigate } from 'react-router-dom';
-import { useAppSelector, useAppDispatch, setAuthTokens, refreshAccessToken, clearAuth } from './store/unifiedStore';
+import { useAppSelector, useAppDispatch, setAuthTokens, clearAuth } from './store/unifiedStore';
 import { AuthTokens, User } from './types/auth';
 
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { UserProfilePage } from './pages/auth/UserProfilePage';
-import { TwoFactorAuthPage } from './pages/auth/TwoFactorAuthPage';
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import { Tier4ErrorBoundary } from './components/error/Tier4ErrorBoundary';
+
+// Import Disconnected Pages
+import IngestionPage from './pages/IngestionPage';
+import AdjudicationPage from './pages/AdjudicationPage';
+import ReconciliationPage from './pages/ReconciliationPage';
+import VisualizationPage from './pages/VisualizationPage';
 
 // Placeholder for a Dashboard page
 const DashboardPage = () => (
   <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
     <h1 className="text-3xl font-extrabold text-gray-900">Welcome to the Dashboard!</h1>
     <p>You are logged in.</p>
+    <div className="mt-8 grid grid-cols-2 gap-4">
+      <a href="/ingestion" className="p-4 bg-white shadow rounded hover:bg-gray-50">Data Ingestion</a>
+      <a href="/reconciliation" className="p-4 bg-white shadow rounded hover:bg-gray-50">Reconciliation</a>
+      <a href="/adjudication" className="p-4 bg-white shadow rounded hover:bg-gray-50">Adjudication</a>
+      <a href="/visualization" className="p-4 bg-white shadow rounded hover:bg-gray-50">Visualization</a>
+    </div>
   </div>
 );
 
@@ -62,9 +74,6 @@ function App() {
   useEffect(() => {
     if (!isLoading) { // Only redirect once loading is complete
         if (isAuthenticated && !user) {
-            // This case should ideally not happen if user is always set with tokens
-            // but as a safeguard, if isAuthenticated is true but user is null, it means partial state
-            // Try to fetch user or clear auth.
             dispatch(clearAuth()); // Force re-login
             navigate('/login');
         } else if (isAuthenticated && (window.location.pathname === '/login' || window.location.pathname === '/register')) {
@@ -76,24 +85,56 @@ function App() {
   }, [isAuthenticated, user, isLoading, navigate, dispatch]);
 
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/unauthorized" element={<UnauthorizedPage />} />
+    <Tier4ErrorBoundary componentName="AppRoot">
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      {/* Protected Routes */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/profile" element={<UserProfilePage />} />
-        {/* Example of role-based protection */}
-        <Route path="/admin-settings" element={<ProtectedRoute requiredRoles={['admin']}><>Admin Settings</></ProtectedRoute>} />
-        <Route path="/2fa-management" element={<UserProfilePage />} /> {/* 2FA management is part of UserProfilePage */}
-      </Route>
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={
+            <Tier4ErrorBoundary componentName="DashboardPage">
+              <DashboardPage />
+            </Tier4ErrorBoundary>
+          } />
+          <Route path="/profile" element={
+            <Tier4ErrorBoundary componentName="UserProfilePage">
+              <UserProfilePage />
+            </Tier4ErrorBoundary>
+          } />
 
-      {/* Default redirect (handled by useEffect for more robust initial load behavior) */}
-      <Route path="*" element={null} /> {/* Catch-all route to prevent unmatched path errors, actual redirect handled by useEffect */}
-    </Routes>
+          {/* New Connected Feature Pages */}
+          <Route path="/ingestion" element={
+            <Tier4ErrorBoundary componentName="IngestionPage">
+              <IngestionPage project={{ id: 'current', name: 'Current Project' }} onProgressUpdate={console.log} />
+            </Tier4ErrorBoundary>
+          } />
+          <Route path="/reconciliation" element={
+            <Tier4ErrorBoundary componentName="ReconciliationPage">
+              <ReconciliationPage />
+            </Tier4ErrorBoundary>
+          } />
+          <Route path="/adjudication" element={
+            <Tier4ErrorBoundary componentName="AdjudicationPage">
+              <AdjudicationPage />
+            </Tier4ErrorBoundary>
+          } />
+          <Route path="/visualization" element={
+            <Tier4ErrorBoundary componentName="VisualizationPage">
+              <VisualizationPage />
+            </Tier4ErrorBoundary>
+          } />
+
+          {/* Example of role-based protection */}
+          <Route path="/admin-settings" element={<ProtectedRoute requiredRoles={['admin']}><>Admin Settings</></ProtectedRoute>} />
+        </Route>
+
+        {/* Default redirect (handled by useEffect for more robust initial load behavior) */}
+        <Route path="*" element={null} />
+      </Routes>
+    </Tier4ErrorBoundary>
   );
 }
 
