@@ -676,6 +676,19 @@ impl traits::UserServiceTrait for UserService {
         UserService::get_user_statistics(self).await
     }
 
+    async fn get_user_by_provider_id(&self, provider_id: &str) -> AppResult<crate::models::User> {
+        UserService::get_user_by_provider_id(self, provider_id).await
+    }
+
+    async fn link_oauth_to_user(
+        &self,
+        user_id: Uuid,
+        provider_id: &str,
+        auth_provider_name: &str,
+    ) -> AppResult<UserInfo> {
+        UserService::link_oauth_to_user(self, user_id, provider_id, auth_provider_name).await
+    }
+
     fn profile(&self) -> Arc<dyn traits::ProfileServiceTrait> {
         Arc::clone(&self.profile_service)
     }

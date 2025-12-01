@@ -141,3 +141,5 @@ diesel::joinable!(two_factor_auth -> users (user_id));
 diesel::joinable!(user_roles -> users (user_id));
 diesel::joinable!(user_roles -> roles (role_id));
 diesel::joinable!(user_sessions -> users (user_id));
+
+diesel::allow_tables_to_appear_in_same_query!(user_roles, roles);
