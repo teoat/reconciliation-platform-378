@@ -4,18 +4,18 @@
  * Provides React hooks for easy feature flag integration in components.
  */
 
-import { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
-import type { ReactNode } from 'react';
-import { FeatureFlagProvider, getDefaultProvider, initializeFeatureFlags } from './provider';
-import { FeatureFlagConfig, FeatureFlagContext, FeatureFlag } from './types';
-import { FEATURE_FLAGS, getFeatureFlag, getExperimentalFlags } from './flags';
+import React, { useState, useEffect, useCallback, useMemo, createContext, useContext } from 'react';
+import type { ReactNode, ComponentType, FC } from 'react';
+import { FeatureFlagProvider, getDefaultProvider } from './provider';
+import type { FeatureFlagConfig, FeatureFlagContext as FeatureFlagContextType, FeatureFlag } from './types';
+import { getFeatureFlag, getExperimentalFlags } from './flags';
 
 // React context for feature flags
-const FeatureFlagContext = createContext<FeatureFlagProvider | null>(null);
+const FeatureFlagReactContext = createContext<FeatureFlagProvider | null>(null);
 
 interface FeatureFlagProviderProps {
   config?: FeatureFlagConfig;
-  context?: FeatureFlagContext;
+  context?: FeatureFlagContextType;
   children: ReactNode;
 }
 
@@ -26,7 +26,7 @@ export function FeatureFlagProviderComponent({
   config, 
   context, 
   children 
-}: FeatureFlagProviderProps): JSX.Element {
+}: FeatureFlagProviderProps): React.JSX.Element {
   const [provider] = useState(() => {
     const p = new FeatureFlagProvider(config);
     if (context) {
@@ -42,9 +42,9 @@ export function FeatureFlagProviderComponent({
   }, [context, provider]);
 
   return (
-    <FeatureFlagContext.Provider value={provider}>
+    <FeatureFlagReactContext.Provider value={provider}>
       {children}
-    </FeatureFlagContext.Provider>
+    </FeatureFlagReactContext.Provider>
   );
 }
 
@@ -52,7 +52,7 @@ export function FeatureFlagProviderComponent({
  * Hook to access the feature flag provider
  */
 export function useFeatureFlagProvider(): FeatureFlagProvider {
-  const provider = useContext(FeatureFlagContext);
+  const provider = useContext(FeatureFlagReactContext);
   if (!provider) {
     // Fall back to default provider if not in context
     return getDefaultProvider();
@@ -153,10 +153,10 @@ export function useFeatureFlagDefinition(flagKey: string): FeatureFlag | undefin
  * Higher-order component to conditionally render based on feature flag
  */
 export function withFeatureFlag<P extends object>(
-  WrappedComponent: React.ComponentType<P>,
+  WrappedComponent: ComponentType<P>,
   flagKey: string,
-  FallbackComponent?: React.ComponentType<P>
-): React.FC<P> {
+  FallbackComponent?: ComponentType<P>
+): FC<P> {
   return function FeatureFlaggedComponent(props: P) {
     const isEnabled = useFeatureFlag(flagKey);
 
@@ -188,7 +188,7 @@ export function Feature({
   flag: string; 
   children: ReactNode; 
   fallback?: ReactNode;
-}): JSX.Element | null {
+}): React.JSX.Element | null {
   const isEnabled = useFeatureFlag(flag);
   
   if (isEnabled) {

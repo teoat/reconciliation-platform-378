@@ -17,7 +17,6 @@
  */
 
 const http = require('http');
-const https = require('https');
 
 // Configuration - can be overridden via environment variables
 const config = {

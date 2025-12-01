@@ -13,6 +13,9 @@ import {
 } from './types';
 import { FEATURE_FLAGS, getFeatureFlag } from './flags';
 
+/** Default cache TTL in seconds */
+const DEFAULT_CACHE_TTL = 300;
+
 /**
  * Feature Flag Provider class
  * Manages feature flag evaluation with caching and override support
@@ -27,7 +30,7 @@ export class FeatureFlagProvider {
     this.config = {
       pollingInterval: 60,
       enableCache: true,
-      cacheTTL: 300,
+      cacheTTL: DEFAULT_CACHE_TTL,
       debug: false,
       ...config
     };
@@ -78,7 +81,8 @@ export class FeatureFlagProvider {
     if (this.config.enableCache) {
       const cached = this.cache.get(flagKey);
       if (cached) {
-        const isExpired = Date.now() - cached.timestamp > (this.config.cacheTTL ?? 300) * 1000;
+        const cacheTTL = this.config.cacheTTL ?? DEFAULT_CACHE_TTL;
+        const isExpired = Date.now() - cached.timestamp > cacheTTL * 1000;
         if (!isExpired) {
           return {
             flagKey,

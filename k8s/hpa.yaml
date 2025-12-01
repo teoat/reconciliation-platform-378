@@ -191,7 +191,9 @@ spec:
         # Alert on high CPU usage before scaling kicks in
         - alert: HighCPUBeforeScale
           expr: |
-            container_cpu_usage_seconds_total{namespace="reconciliation-platform"} / container_spec_cpu_quota > 0.85
+            (container_spec_cpu_quota{namespace="reconciliation-platform"} > 0)
+            and
+            (container_cpu_usage_seconds_total{namespace="reconciliation-platform"} / container_spec_cpu_quota > 0.85)
           for: 2m
           labels:
             severity: warning
