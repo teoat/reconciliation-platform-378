@@ -1,0 +1,49 @@
+# =============================================================================
+# Kibana Configuration
+# =============================================================================
+# Configuration for Kibana dashboards and log visualization
+# =============================================================================
+
+# Server settings
+server.host: "0.0.0.0"
+server.port: 5601
+server.name: "reconciliation-platform-kibana"
+server.publicBaseUrl: "http://localhost:5601"
+
+# Elasticsearch connection
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+elasticsearch.username: "${ELASTICSEARCH_USERNAME:kibana_system}"
+elasticsearch.password: "${ELASTICSEARCH_PASSWORD:changeme}"
+
+# Security settings
+xpack.security.enabled: true
+xpack.encryptedSavedObjects.encryptionKey: "change-this-to-a-32-character-string-or-more"
+xpack.reporting.encryptionKey: "change-this-to-a-32-character-string-or-more"
+xpack.security.encryptionKey: "change-this-to-a-32-character-string-or-more"
+
+# Logging
+logging.root.level: info
+logging.appenders.default:
+  type: console
+  layout:
+    type: pattern
+
+# Monitoring
+monitoring.ui.enabled: true
+
+# Fleet and agents (for log collection)
+xpack.fleet.enabled: true
+xpack.fleet.agents.enabled: true
+
+# Saved objects management
+xpack.savedObjectsManagement.maxImportPayloadBytes: 10485760
+
+# Index patterns
+# These are typically configured via UI but documented here
+# Default index pattern: logs-*
+
+# Dashboard settings
+uiSettings.overrides:
+  defaultRoute: "/app/logs/stream"
+  theme:darkMode: false
+  timepicker:timeDefaults: '{"from":"now-24h","to":"now"}'

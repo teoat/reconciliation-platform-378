@@ -1,0 +1,250 @@
+# =============================================================================
+# Blue-Green Deployment Strategy
+# =============================================================================
+# Kubernetes configuration for blue-green deployments with automated rollback
+# =============================================================================
+
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: backend-bluegreen
+  namespace: reconciliation-platform
+  labels:
+    app: reconciliation-platform
+    component: backend
+    strategy: bluegreen
+spec:
+  replicas: 3
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: reconciliation-platform
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: reconciliation-platform
+        component: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "2000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: backend
+        image: reconciliation-backend:latest
+        ports:
+        - containerPort: 2000
+          name: http
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 2000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          successThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 2000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        envFrom:
+        - secretRef:
+            name: reconciliation-secrets
+        - configMapRef:
+            name: reconciliation-config
+  strategy:
+    blueGreen:
+      # Active service (production traffic)
+      activeService: backend-active
+      
+      # Preview service (for testing before promotion)
+      previewService: backend-preview
+      
+      # Auto-promote after successful analysis
+      autoPromotionEnabled: false
+      
+      # Scale down delay for old ReplicaSet
+      scaleDownDelaySeconds: 30
+      
+      # Revision history limit
+      scaleDownDelayRevisionLimit: 2
+      
+      # Preview ReplicaSet configuration
+      previewReplicaCount: 1
+      
+      # Analysis before promotion
+      prePromotionAnalysis:
+        templates:
+        - templateName: bluegreen-analysis
+        args:
+        - name: service-name
+          value: backend-preview
+      
+      # Analysis after promotion
+      postPromotionAnalysis:
+        templates:
+        - templateName: bluegreen-post-analysis
+        args:
+        - name: service-name
+          value: backend-active
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: bluegreen-analysis
+  namespace: reconciliation-platform
+spec:
+  args:
+  - name: service-name
+  metrics:
+  # Health check
+  - name: health-check
+    interval: 30s
+    count: 10
+    successCondition: result == "healthy"
+    failureLimit: 3
+    provider:
+      job:
+        spec:
+          template:
+            spec:
+              containers:
+              - name: health-check
+                image: curlimages/curl:latest
+                command: ["/bin/sh", "-c"]
+                args:
+                - |
+                  STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://{{args.service-name}}:80/health)
+                  if [ "$STATUS" = "200" ]; then
+                    echo "healthy"
+                  else
+                    echo "unhealthy"
+                    exit 1
+                  fi
+              restartPolicy: Never
+          backoffLimit: 0
+
+  # Error rate check
+  - name: error-rate
+    interval: 1m
+    count: 5
+    successCondition: result[0] < 0.01
+    failureLimit: 2
+    provider:
+      prometheus:
+        address: http://prometheus:9090
+        query: |
+          sum(rate(http_requests_total{service="{{args.service-name}}", status=~"5.."}[2m])) /
+          sum(rate(http_requests_total{service="{{args.service-name}}"}[2m]))
+
+  # Latency check
+  - name: latency-check
+    interval: 1m
+    count: 5
+    successCondition: result[0] < 300
+    failureLimit: 2
+    provider:
+      prometheus:
+        address: http://prometheus:9090
+        query: |
+          histogram_quantile(0.99, sum(rate(http_request_duration_milliseconds_bucket{service="{{args.service-name}}"}[2m])) by (le))
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: bluegreen-post-analysis
+  namespace: reconciliation-platform
+spec:
+  args:
+  - name: service-name
+  metrics:
+  # Post-deployment health verification
+  - name: post-health
+    interval: 1m
+    count: 3
+    successCondition: result[0] > 0.99
+    failureLimit: 1
+    provider:
+      prometheus:
+        address: http://prometheus:9090
+        query: |
+          sum(rate(http_requests_total{service="{{args.service-name}}", status=~"2.."}[5m])) /
+          sum(rate(http_requests_total{service="{{args.service-name}}"}[5m]))
+
+---
+# Active Service (receives production traffic)
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-active
+  namespace: reconciliation-platform
+  labels:
+    app: reconciliation-platform
+    component: backend
+    role: active
+spec:
+  selector:
+    app: reconciliation-platform
+    component: backend
+  ports:
+  - port: 80
+    targetPort: 2000
+    name: http
+  type: ClusterIP
+
+---
+# Preview Service (for testing new version)
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-preview
+  namespace: reconciliation-platform
+  labels:
+    app: reconciliation-platform
+    component: backend
+    role: preview
+spec:
+  selector:
+    app: reconciliation-platform
+    component: backend
+  ports:
+  - port: 80
+    targetPort: 2000
+    name: http
+  type: ClusterIP
+
+---
+# Ingress for Preview environment (internal testing)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: backend-preview-ingress
+  namespace: reconciliation-platform
+  annotations:
+    nginx.ingress.kubernetes.io/auth-type: basic
+    nginx.ingress.kubernetes.io/auth-secret: preview-auth
+    nginx.ingress.kubernetes.io/auth-realm: "Preview Environment"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: preview.reconciliation-platform.local
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-preview
+            port:
+              number: 80

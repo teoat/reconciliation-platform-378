@@ -1,0 +1,152 @@
+{
+  "$schema": "./config/feature-flags-schema.json",
+  "version": "1.0.0",
+  "description": "Feature flags configuration for controlled feature rollouts and gradual deployments",
+  "lastUpdated": "2024-01-01T00:00:00Z",
+  "environments": {
+    "development": {
+      "enableAllFeatures": true,
+      "overrides": {}
+    },
+    "staging": {
+      "enableAllFeatures": false,
+      "overrides": {}
+    },
+    "production": {
+      "enableAllFeatures": false,
+      "overrides": {}
+    }
+  },
+  "features": {
+    "newReconciliationEngine": {
+      "enabled": true,
+      "description": "New high-performance reconciliation processing engine",
+      "rolloutPercentage": 100,
+      "enabledEnvironments": ["development", "staging", "production"],
+      "metadata": {
+        "owner": "reconciliation-team",
+        "createdAt": "2024-01-01T00:00:00Z",
+        "jiraTicket": "RECON-001"
+      }
+    },
+    "enhancedDashboard": {
+      "enabled": true,
+      "description": "Enhanced dashboard with real-time analytics",
+      "rolloutPercentage": 100,
+      "enabledEnvironments": ["development", "staging", "production"],
+      "metadata": {
+        "owner": "frontend-team",
+        "createdAt": "2024-01-01T00:00:00Z",
+        "jiraTicket": "RECON-002"
+      }
+    },
+    "advancedReporting": {
+      "enabled": true,
+      "description": "Advanced reporting with export capabilities",
+      "rolloutPercentage": 100,
+      "enabledEnvironments": ["development", "staging"],
+      "metadata": {
+        "owner": "analytics-team",
+        "createdAt": "2024-01-01T00:00:00Z",
+        "jiraTicket": "RECON-003"
+      }
+    },
+    "apiV3": {
+      "enabled": false,
+      "description": "API version 3 with GraphQL support",
+      "rolloutPercentage": 0,
+      "enabledEnvironments": ["development"],
+      "metadata": {
+        "owner": "api-team",
+        "createdAt": "2024-01-01T00:00:00Z",
+        "jiraTicket": "RECON-004"
+      }
+    },
+    "mlReconciliation": {
+      "enabled": false,
+      "description": "Machine learning-based reconciliation suggestions",
+      "rolloutPercentage": 10,
+      "enabledEnvironments": ["development"],
+      "userGroups": ["beta-testers", "internal"],
+      "metadata": {
+        "owner": "ml-team",
+        "createdAt": "2024-01-01T00:00:00Z",
+        "jiraTicket": "RECON-005"
+      }
+    },
+    "darkMode": {
+      "enabled": true,
+      "description": "Dark mode theme support",
+      "rolloutPercentage": 100,
+      "enabledEnvironments": ["development", "staging", "production"],
+      "metadata": {
+        "owner": "frontend-team",
+        "createdAt": "2024-01-01T00:00:00Z",
+        "jiraTicket": "RECON-006"
+      }
+    },
+    "realtimeNotifications": {
+      "enabled": true,
+      "description": "Real-time push notifications via WebSocket",
+      "rolloutPercentage": 100,
+      "enabledEnvironments": ["development", "staging"],
+      "metadata": {
+        "owner": "platform-team",
+        "createdAt": "2024-01-01T00:00:00Z",
+        "jiraTicket": "RECON-007"
+      }
+    },
+    "bulkOperations": {
+      "enabled": true,
+      "description": "Bulk operations for reconciliation items",
+      "rolloutPercentage": 100,
+      "enabledEnvironments": ["development", "staging", "production"],
+      "metadata": {
+        "owner": "reconciliation-team",
+        "createdAt": "2024-01-01T00:00:00Z",
+        "jiraTicket": "RECON-008"
+      }
+    },
+    "auditLogging": {
+      "enabled": true,
+      "description": "Enhanced audit logging for compliance",
+      "rolloutPercentage": 100,
+      "enabledEnvironments": ["development", "staging", "production"],
+      "metadata": {
+        "owner": "security-team",
+        "createdAt": "2024-01-01T00:00:00Z",
+        "jiraTicket": "RECON-009"
+      }
+    },
+    "ssoIntegration": {
+      "enabled": false,
+      "description": "Single Sign-On integration with enterprise providers",
+      "rolloutPercentage": 0,
+      "enabledEnvironments": ["staging"],
+      "metadata": {
+        "owner": "auth-team",
+        "createdAt": "2024-01-01T00:00:00Z",
+        "jiraTicket": "RECON-010"
+      }
+    }
+  },
+  "rolloutStrategies": {
+    "percentage": {
+      "description": "Gradual rollout based on user percentage"
+    },
+    "userGroup": {
+      "description": "Enable for specific user groups"
+    },
+    "environment": {
+      "description": "Enable per environment"
+    },
+    "timeBased": {
+      "description": "Enable during specific time windows"
+    }
+  },
+  "defaultConfig": {
+    "cacheTTL": 300,
+    "refreshInterval": 60,
+    "fallbackBehavior": "disabled"
+  }
+}

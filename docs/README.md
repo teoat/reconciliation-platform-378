@@ -326,6 +326,32 @@ App → ErrorBoundary → ReduxProvider → WebSocketProvider → AuthProvider �
 - **[docs/SECURITY_AUDIT_REPORT.md](./docs/SECURITY_AUDIT_REPORT.md)** - Security audit
 - **[docs/TROUBLESHOOTING.md](./docs/TROUBLESHOOTING.md)** - Comprehensive troubleshooting guide
 
+### CI/CD & DevOps
+
+- **[docs/ci-cd/README.md](./ci-cd/README.md)** - CI/CD pipeline documentation
+- **[docs/ci-cd/SECRETS_MANAGEMENT.md](./ci-cd/SECRETS_MANAGEMENT.md)** - Secrets management with GitHub Actions and AWS
+
+### Deployment
+
+- **[docs/deployment/HORIZONTAL_SCALING.md](./deployment/HORIZONTAL_SCALING.md)** - Kubernetes auto-scaling and stateless services
+- **[docs/deployment/DEPLOYMENT_GUIDE.md](./deployment/DEPLOYMENT_GUIDE.md)** - Production deployment instructions
+
+### Performance & Database
+
+- **[docs/performance/DATABASE_OPTIMIZATION.md](./performance/DATABASE_OPTIMIZATION.md)** - Query optimization, indexing, and Redis caching
+
+### Testing
+
+- **[docs/testing/TEST_STRUCTURE.md](./testing/TEST_STRUCTURE.md)** - Unified test structure and commands
+
+### Development
+
+- **[docs/development/REUSABLE_COMPONENTS.md](./development/REUSABLE_COMPONENTS.md)** - Reusable frontend and backend components
+
+### Rulesets
+
+- **[docs/rulesets/README.md](./rulesets/README.md)** - Reconciliation rulesets configuration
+
 ---
 
 ## 💻 Development

@@ -1,0 +1,243 @@
+# =============================================================================
+# OpenTelemetry Collector Configuration
+# =============================================================================
+# Distributed tracing configuration for the Reconciliation Platform
+# =============================================================================
+
+receivers:
+  # OTLP receiver for traces, metrics, and logs
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "http://localhost:3000"
+            - "http://localhost:5173"
+          allowed_headers:
+            - "*"
+
+  # Jaeger receiver for backward compatibility
+  jaeger:
+    protocols:
+      thrift_http:
+        endpoint: 0.0.0.0:14268
+      thrift_compact:
+        endpoint: 0.0.0.0:6831
+
+  # Zipkin receiver for backward compatibility
+  zipkin:
+    endpoint: 0.0.0.0:9411
+
+  # Prometheus receiver for metrics
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'otel-collector'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['localhost:8888']
+        
+        - job_name: 'reconciliation-backend'
+          scrape_interval: 15s
+          static_configs:
+            - targets: ['backend:2000']
+          metrics_path: /metrics
+
+        - job_name: 'reconciliation-frontend'
+          scrape_interval: 15s
+          static_configs:
+            - targets: ['frontend:80']
+          metrics_path: /metrics
+
+  # Host metrics receiver
+  hostmetrics:
+    collection_interval: 30s
+    scrapers:
+      cpu:
+        metrics:
+          system.cpu.utilization:
+            enabled: true
+      memory:
+        metrics:
+          system.memory.utilization:
+            enabled: true
+      disk:
+      filesystem:
+      network:
+      process:
+        mute_process_name_error: true
+      processes:
+
+processors:
+  # Batch processor for better performance
+  batch:
+    timeout: 10s
+    send_batch_size: 10000
+    send_batch_max_size: 11000
+
+  # Memory limiter to prevent OOM
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 1500
+    spike_limit_mib: 512
+
+  # Resource processor to add common attributes
+  resource:
+    attributes:
+      - key: service.namespace
+        value: reconciliation-platform
+        action: upsert
+      - key: deployment.environment
+        value: ${ENVIRONMENT:development}
+        action: upsert
+
+  # Attributes processor for trace enrichment
+  attributes:
+    actions:
+      - key: environment
+        value: ${ENVIRONMENT:development}
+        action: upsert
+      - key: cluster
+        value: ${CLUSTER_NAME:default}
+        action: upsert
+
+  # Span processor for trace sampling
+  probabilistic_sampler:
+    hash_seed: 22
+    sampling_percentage: 100
+
+  # Tail sampling for intelligent trace selection
+  tail_sampling:
+    decision_wait: 10s
+    num_traces: 100000
+    expected_new_traces_per_sec: 1000
+    policies:
+      # Always sample errors
+      - name: errors-policy
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      
+      # Sample slow traces
+      - name: latency-policy
+        type: latency
+        latency:
+          threshold_ms: 1000
+      
+      # Probabilistic sampling for normal traces
+      - name: probabilistic-policy
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+
+  # Filter processor to drop unwanted data
+  filter:
+    error_mode: ignore
+    traces:
+      span:
+        - 'attributes["http.target"] == "/health"'
+        - 'attributes["http.target"] == "/metrics"'
+        - 'attributes["http.target"] == "/ready"'
+
+  # Transform processor
+  transform:
+    trace_statements:
+      - context: span
+        statements:
+          - set(status.code, 1) where attributes["http.status_code"] >= 400
+
+exporters:
+  # Jaeger exporter for trace visualization
+  jaeger:
+    endpoint: jaeger:14250
+    tls:
+      insecure: true
+
+  # OTLP exporter to Tempo
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  # Prometheus exporter for metrics
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: reconciliation
+    resource_to_telemetry_conversion:
+      enabled: true
+
+  # Prometheus Remote Write
+  prometheusremotewrite:
+    endpoint: "http://prometheus:9090/api/v1/write"
+
+  # Elasticsearch exporter for logs
+  elasticsearch:
+    endpoints: ["http://elasticsearch:9200"]
+    traces_index: traces
+    logs_index: logs
+    user: ${ELASTICSEARCH_USER:elastic}
+    password: ${ELASTICSEARCH_PASSWORD:changeme}
+    flush:
+      bytes: 10485760
+      interval: 30s
+
+  # Logging exporter for debugging
+  logging:
+    verbosity: normal
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  # File exporter for local development
+  file:
+    path: /tmp/otel-traces.json
+    rotation:
+      max_megabytes: 100
+      max_days: 7
+      max_backups: 5
+
+extensions:
+  # Health check extension
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+  # Performance profiler
+  pprof:
+    endpoint: 0.0.0.0:1777
+
+  # zPages extension for debugging
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, pprof, zpages]
+  
+  pipelines:
+    # Traces pipeline
+    traces:
+      receivers: [otlp, jaeger, zipkin]
+      processors: [memory_limiter, batch, resource, attributes, tail_sampling, filter]
+      exporters: [jaeger, otlp/tempo, elasticsearch, logging]
+
+    # Metrics pipeline
+    metrics:
+      receivers: [otlp, prometheus, hostmetrics]
+      processors: [memory_limiter, batch, resource]
+      exporters: [prometheus, prometheusremotewrite, logging]
+
+    # Logs pipeline
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch, resource]
+      exporters: [elasticsearch, logging]
+
+  telemetry:
+    logs:
+      level: info
+      development: false
+      encoding: json
+    metrics:
+      level: detailed
+      address: 0.0.0.0:8888

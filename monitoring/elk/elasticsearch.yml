@@ -1,0 +1,49 @@
+# =============================================================================
+# Elasticsearch Configuration
+# =============================================================================
+# Configuration for Elasticsearch in the ELK stack for log aggregation
+# =============================================================================
+
+cluster.name: reconciliation-platform-logs
+node.name: es-node-1
+
+# Network settings
+network.host: 0.0.0.0
+http.port: 9200
+transport.port: 9300
+
+# Discovery settings (single node for development)
+discovery.type: single-node
+cluster.initial_master_nodes:
+  - es-node-1
+
+# Path settings
+path.data: /usr/share/elasticsearch/data
+path.logs: /usr/share/elasticsearch/logs
+
+# Security settings (X-Pack)
+xpack.security.enabled: true
+xpack.security.enrollment.enabled: true
+xpack.security.http.ssl.enabled: false
+xpack.security.transport.ssl.enabled: false
+
+# Memory settings
+bootstrap.memory_lock: true
+
+# Index lifecycle management
+xpack.ilm.enabled: true
+
+# Monitoring
+xpack.monitoring.collection.enabled: true
+
+# Index settings
+action.destructive_requires_name: true
+action.auto_create_index: +logs-*,+metrics-*,+audit-*,.monitoring-*,.security*
+
+# Logging
+logger.level: INFO
+logger.org.elasticsearch.discovery: DEBUG
+
+# Index templates for log data
+# These are typically managed via API but documented here for reference
+# Templates should be applied via Kibana or curl on startup
