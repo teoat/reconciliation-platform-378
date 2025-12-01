@@ -18,10 +18,10 @@ module.exports = {
     '^@/types/(.*)$': '<rootDir>/frontend/src/types/$1',
   },
 
-  // Test patterns
+  // Test patterns - Centralized in /tests directory
   testMatch: [
-    '<rootDir>/__tests__/**/*.test.{js,jsx,ts,tsx}',
     '<rootDir>/tests/**/*.test.{js,jsx,ts,tsx}',
+    '<rootDir>/__tests__/**/*.test.{js,jsx,ts,tsx}', // Legacy support
     '<rootDir>/services/__tests__/**/*.test.{js,jsx,ts,tsx}',
   ],
 
