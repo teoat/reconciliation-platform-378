@@ -252,17 +252,20 @@ function checkAuthenticationSecurity(): SecurityAuditResult[] {
   // Check for token expiration
   if (token) {
     try {
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const now = Math.floor(Date.now() / 1000);
-      const isExpired = payload.exp && payload.exp < now;
-      const expiresSoon = payload.exp && payload.exp - now < 3600; // 1 hour
+      const tokenParts = token.split('.');
+      const payloadPart = tokenParts[1];
+      if (payloadPart) {
+        const payload = JSON.parse(atob(payloadPart));
+        const now = Math.floor(Date.now() / 1000);
+        const isExpired = payload.exp && payload.exp < now;
+        const expiresSoon = payload.exp && payload.exp - now < 3600; // 1 hour
 
-      results.push({
-        category: 'Authentication',
-        check: 'Token Expiration',
-        status: isExpired ? 'fail' : expiresSoon ? 'warning' : 'pass',
-        message: isExpired
-          ? 'Token is expired'
+        results.push({
+          category: 'Authentication',
+          check: 'Token Expiration',
+          status: isExpired ? 'fail' : expiresSoon ? 'warning' : 'pass',
+          message: isExpired
+            ? 'Token is expired'
           : expiresSoon
             ? 'Token expires soon'
             : 'Token is valid',
@@ -272,6 +275,7 @@ function checkAuthenticationSecurity(): SecurityAuditResult[] {
             ? 'Consider refreshing token'
             : undefined,
       });
+      }
     } catch (error) {
       results.push({
         category: 'Authentication',

@@ -147,7 +147,7 @@ export function useDynamicVirtualScroll<T>(
     })
   }, [itemHeights])
 
-  const totalHeight = cumulativeHeights[cumulativeHeights.length - 1] + itemHeights[itemHeights.length - 1]
+  const totalHeight = (cumulativeHeights[cumulativeHeights.length - 1] ?? 0) + (itemHeights[itemHeights.length - 1] ?? 0)
 
   // Find visible range
   const visibleRange = useMemo(() => {
@@ -155,14 +155,14 @@ export function useDynamicVirtualScroll<T>(
     let endIndex = items.length - 1
 
     for (let i = 0; i < cumulativeHeights.length; i++) {
-      if (cumulativeHeights[i] + itemHeights[i] >= scrollTop) {
+      if ((cumulativeHeights[i] ?? 0) + (itemHeights[i] ?? 0) >= scrollTop) {
         startIndex = Math.max(0, i - overscan)
         break
       }
     }
 
     for (let i = startIndex; i < cumulativeHeights.length; i++) {
-      if (cumulativeHeights[i] >= scrollTop + containerHeight) {
+      if ((cumulativeHeights[i] ?? 0) >= scrollTop + containerHeight) {
         endIndex = Math.min(items.length - 1, i + overscan)
         break
       }
@@ -189,7 +189,7 @@ export function useDynamicVirtualScroll<T>(
 
   const scrollToIndex = useCallback((index: number) => {
     if (containerRef.current) {
-      const scrollTop = cumulativeHeights[index]
+      const scrollTop = cumulativeHeights[index] ?? 0
       containerRef.current.scrollTop = scrollTop
     }
   }, [cumulativeHeights])
