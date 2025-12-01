@@ -25,10 +25,12 @@ export async function sampleFileLines(file: File, maxBytes = 64 * 1024): Promise
 export function parseCsvSample(
   lines: string[],
   maxRows = 100
-): { headers: string[]; rows: string[][] } {
-  if (lines.length === 0) return { headers: [], rows: [] };
+): { headers: string[]; rows: string[][]; parsingIssues: ProgressiveValidationIssue[] } {
+  if (lines.length === 0) return { headers: [], rows: [], parsingIssues: [] };
 
-  const parseLine = (line: string): string[] => {
+  const parsingIssues: ProgressiveValidationIssue[] = [];
+
+  const parseLine = (line: string, rowIndex: number): string[] => {
     const result: string[] = [];
     let current = '';
     let inQuotes = false;
@@ -58,12 +60,25 @@ export function parseCsvSample(
       }
     }
     result.push(isQuotedField ? current : current.trim());
+
+    // Detect unclosed quotes at end of line
+    if (inQuotes) {
+      parsingIssues.push({
+        row: rowIndex,
+        code: 'unclosed_quote',
+        message:
+          rowIndex === 0
+            ? 'Header row contains unclosed quote'
+            : `Row ${rowIndex} contains unclosed quote`,
+      });
+    }
+
     return result;
   };
 
-  const headers = parseLine(lines[0]);
-  const rows = lines.slice(1, 1 + maxRows).map(parseLine);
-  return { headers, rows };
+  const headers = parseLine(lines[0], 0);
+  const rows = lines.slice(1, 1 + maxRows).map((line, i) => parseLine(line, i + 1));
+  return { headers, rows, parsingIssues };
 }
 
 export function validateCsvStructure(
@@ -106,8 +121,9 @@ export async function progressiveValidateCsv(
   sampleRows = 100
 ): Promise<ProgressiveValidationResult> {
   const lines = await sampleFileLines(file);
-  const { headers, rows } = parseCsvSample(lines, sampleRows);
-  const issues = validateCsvStructure(headers, rows);
+  const { headers, rows, parsingIssues } = parseCsvSample(lines, sampleRows);
+  const structureIssues = validateCsvStructure(headers, rows);
+  const issues = [...parsingIssues, ...structureIssues];
   return {
     valid: issues.length === 0,
     issues,
