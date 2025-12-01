@@ -69,9 +69,9 @@ export function parseCsvSample(lines: string[], maxRows = 100): ParseCsvResult {
   const headerResult = parseLine(lines[0]);
   if (headerResult.hasUnclosedQuote) {
     parseIssues.push({
-      row: 0,
+      row: 1,
       code: 'unclosed_quote',
-      message: 'Header row has an unclosed quote',
+      message: 'Row 1 (header) has an unclosed quote',
     });
   }
 
@@ -81,10 +81,11 @@ export function parseCsvSample(lines: string[], maxRows = 100): ParseCsvResult {
     const result = parseLine(line);
     rows.push(result.fields);
     if (result.hasUnclosedQuote) {
+      const rowNum = index + 2; // 1-based, accounting for header
       parseIssues.push({
-        row: index + 1,
+        row: rowNum,
         code: 'unclosed_quote',
-        message: `Row ${index + 1} has an unclosed quote`,
+        message: `Row ${rowNum} has an unclosed quote`,
       });
     }
   });
