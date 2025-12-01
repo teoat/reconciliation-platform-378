@@ -82,14 +82,11 @@ The 378 Reconciliation Platform is an enterprise-grade solution for data reconci
    - Frontend: http://localhost:80
    - Backend API: http://localhost:8080
 
-### Using Fast Deploy (Recommended for Development)
+### Using Quick Deploy (Recommended for Development)
 
 ```bash
 # One command to deploy everything safely
 ./.deployment/quick-deploy.sh
-
-# Or use fast compose for minimal services
-docker-compose -f docker-compose.fast.yml up -d --build
 ```
 
 ## 🔧 Development
@@ -143,7 +140,7 @@ For detailed deployment instructions, see the [Deployment Guide](.deployment/REA
 
 **Development:**
 ```bash
-docker-compose -f docker-compose.fast.yml up -d --build
+docker-compose up -d --build
 ```
 
 **Production:**
@@ -151,8 +148,8 @@ docker-compose -f docker-compose.fast.yml up -d --build
 docker-compose up -d --build
 
 # Check health endpoints
-curl http://localhost:2000/health  # Backend
-curl http://localhost:1000/health  # Frontend
+curl http://localhost:8080/health  # Backend
+curl http://localhost:80/health    # Frontend
 ```
 
 ### Performance Optimizations
@@ -237,8 +234,9 @@ The platform includes built-in monitoring and alerting:
 
 | Service | Port | Description |
 |---------|------|-------------|
-| Backend API | 2000/8080 | REST API endpoints |
-| Frontend | 1000/80 | Web UI |
+| Backend API | 8080 | REST API endpoints |
+| Frontend | 80 | Web UI |
+| Auth Server | 4000 | Authentication server |
 | PostgreSQL | 5432 | Database (dev only) |
 | Redis | 6379 | Cache (dev only) |
 | Prometheus | 9090 | Metrics |
@@ -297,7 +295,7 @@ furnished to do so.
 
 - Check the [Troubleshooting Guide](docs/TROUBLESHOOTING.md)
 - Review [Docker logs](docker-compose logs -f)
-- Verify health endpoints: `curl http://localhost:2000/health`
+- Verify health endpoints: `curl http://localhost:8080/health`
 - Contact repository administrators for additional support
 
 ---
