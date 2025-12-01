@@ -27,8 +27,38 @@ export function parseCsvSample(
   maxRows = 100
 ): { headers: string[]; rows: string[][] } {
   if (lines.length === 0) return { headers: [], rows: [] };
-  const headers = lines[0].split(',').map((h) => h.trim());
-  const rows = lines.slice(1, 1 + maxRows).map((l) => l.split(',').map((v) => v.trim()));
+
+  const parseLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    let isQuotedField = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          // Handle escaped quote
+          current += '"';
+          i++; // Skip next quote
+        } else {
+          inQuotes = !inQuotes;
+          if (inQuotes) isQuotedField = true;
+        }
+      } else if (char === ',' && !inQuotes) {
+        result.push(isQuotedField ? current : current.trim());
+        current = '';
+        isQuotedField = false;
+      } else {
+        current += char;
+      }
+    }
+    result.push(isQuotedField ? current : current.trim());
+    return result;
+  };
+
+  const headers = parseLine(lines[0]);
+  const rows = lines.slice(1, 1 + maxRows).map(parseLine);
   return { headers, rows };
 }
 
