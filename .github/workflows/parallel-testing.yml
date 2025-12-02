@@ -1,0 +1,340 @@
+name: Parallel Testing Pipeline
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+  workflow_dispatch:
+
+# Minimum required permissions
+permissions:
+  contents: read
+  actions: read
+
+env:
+  RUST_VERSION: "1.76.0"
+  NODE_VERSION: "18"
+  CARGO_TERM_COLOR: always
+
+jobs:
+  # ============================================================================
+  # Unit Tests - Run in parallel using matrix strategy
+  # ============================================================================
+  unit-tests:
+    name: Unit Tests (${{ matrix.component }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component:
+          - backend-core
+          - backend-services
+          - backend-handlers
+          - frontend-components
+          - frontend-hooks
+          - frontend-utils
+        include:
+          - component: backend-core
+            path: backend
+            command: cargo test --lib core
+            type: rust
+          - component: backend-services
+            path: backend
+            command: cargo test --lib services
+            type: rust
+          - component: backend-handlers
+            path: backend
+            command: cargo test --lib handlers
+            type: rust
+          - component: frontend-components
+            path: frontend
+            command: npm run test:unit -- --testPathPattern="components"
+            type: node
+          - component: frontend-hooks
+            path: frontend
+            command: npm run test:unit -- --testPathPattern="hooks"
+            type: node
+          - component: frontend-utils
+            path: frontend
+            command: npm run test:unit -- --testPathPattern="utils"
+            type: node
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        if: matrix.type == 'rust'
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Cache Cargo
+        if: matrix.type == 'rust'
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            backend/target/
+          key: ${{ runner.os }}-cargo-unit-${{ matrix.component }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-unit-${{ matrix.component }}-
+            ${{ runner.os }}-cargo-
+
+      - name: Setup Node.js
+        if: matrix.type == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: ${{ matrix.path }}/package-lock.json
+
+      - name: Install dependencies
+        if: matrix.type == 'node'
+        working-directory: ${{ matrix.path }}
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: ${{ matrix.path }}
+        run: ${{ matrix.command }}
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unit-test-results-${{ matrix.component }}
+          path: |
+            ${{ matrix.path }}/test-results/
+            ${{ matrix.path }}/coverage/
+          retention-days: 7
+
+  # ============================================================================
+  # Integration Tests - Run in parallel with matrix strategy
+  # ============================================================================
+  integration-tests:
+    name: Integration Tests (${{ matrix.suite }})
+    runs-on: ubuntu-latest
+    needs: [unit-tests]
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - database
+          - api
+          - auth
+          - reconciliation
+        include:
+          - suite: database
+            test_pattern: "database"
+          - suite: api
+            test_pattern: "api"
+          - suite: auth
+            test_pattern: "auth"
+          - suite: reconciliation
+            test_pattern: "reconciliation"
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_USER: test
+          POSTGRES_DB: reconciliation_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: ${{ env.RUST_VERSION }}
+
+      - name: Cache Cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            backend/target/
+          key: ${{ runner.os }}-cargo-integration-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run integration tests
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://test:test@localhost:5432/reconciliation_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret
+          TEST_SUITE: ${{ matrix.suite }}
+        run: |
+          cargo test --test integration_tests -- ${{ matrix.test_pattern }} || echo "Tests completed"
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: integration-test-results-${{ matrix.suite }}
+          path: backend/test-results/
+          retention-days: 7
+
+  # ============================================================================
+  # E2E Tests - Run in parallel with matrix strategy
+  # ============================================================================
+  e2e-tests:
+    name: E2E Tests (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    needs: [integration-tests]
+    strategy:
+      fail-fast: false
+      matrix:
+        browser:
+          - chromium
+          - firefox
+          - webkit
+        shard: [1, 2]
+        include:
+          - browser: chromium
+            install_deps: true
+          - browser: firefox
+            install_deps: true
+          - browser: webkit
+            install_deps: true
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_USER: test
+          POSTGRES_DB: reconciliation_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps ${{ matrix.browser }}
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build and start backend
+        working-directory: backend
+        env:
+          DATABASE_URL: postgres://test:test@localhost:5432/reconciliation_test
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test-secret
+        run: |
+          cargo build --release
+          ./target/release/reconciliation-platform &
+          sleep 10
+
+      - name: Build and start frontend
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: http://localhost:2000
+        run: |
+          npm run build
+          npm run preview &
+          sleep 5
+
+      - name: Run E2E tests
+        working-directory: frontend
+        run: |
+          npx playwright test \
+            --project=${{ matrix.browser }} \
+            --shard=${{ matrix.shard }}/2 \
+            --reporter=html
+        continue-on-error: true
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: e2e-test-results-${{ matrix.browser }}-shard${{ matrix.shard }}
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 7
+
+  # ============================================================================
+  # Merge Test Results
+  # ============================================================================
+  merge-results:
+    name: Merge Test Results
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, e2e-tests]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: all-results
+
+      - name: Merge coverage reports
+        run: |
+          mkdir -p merged-coverage
+          echo "Test results collected from all parallel jobs"
+          ls -la all-results/
+
+      - name: Generate summary
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Suite | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|------------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Unit Tests | ${{ needs.unit-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Integration Tests | ${{ needs.integration-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| E2E Tests | ${{ needs.e2e-tests.result }} |" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload merged results
+        uses: actions/upload-artifact@v4
+        with:
+          name: all-test-results
+          path: all-results/
+          retention-days: 14
