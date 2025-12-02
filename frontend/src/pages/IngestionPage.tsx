@@ -1,4 +1,7 @@
 import React, { useState, useCallback } from 'react';
+import { apiClient } from '@/services/apiClient';
+import { APP_CONFIG, API_ENDPOINTS } from '@/config/AppConfig';
+import { useTier4Callback } from '@/utils/tier4Helpers';
 
 interface IngestionPageProps {
   project: any;
@@ -12,29 +15,60 @@ const IngestionPage: React.FC<IngestionPageProps> = ({ project, onProgressUpdate
 
   const handleFileSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files || []);
-    setFiles(selectedFiles);
+    // Simple validation
+    const validFiles = selectedFiles.filter(file =>
+      file.size <= APP_CONFIG.MAX_FILE_SIZE &&
+      APP_CONFIG.ALLOWED_FILE_TYPES.some(ext => file.name.endsWith(ext))
+    );
+
+    if (validFiles.length !== selectedFiles.length) {
+      alert('Some files were rejected due to size or type restrictions.');
+    }
+
+    setFiles(validFiles);
   }, []);
 
-  const handleUpload = async () => {
+  // Tier 4 enabled upload handler
+  const handleUpload = useTier4Callback(async () => {
     if (files.length === 0) return;
 
     setUploading(true);
     setUploadProgress(0);
 
-    // Simulate file upload
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
+    const projectId = project?.id || 'default';
+    const uploadUrl = API_ENDPOINTS.INGESTION.UPLOAD(projectId);
 
-      // Simulate processing time
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        onProgressUpdate(`Uploading ${file.name}...`);
 
-      setUploadProgress(((i + 1) / files.length) * 100);
-      onProgressUpdate(`Processing ${file?.name}...`);
+        // Use the orchestrated apiClient which handles retries and error reporting
+        await apiClient.upload(uploadUrl, file, (percent) => {
+          // Calculate overall progress
+          const fileContribution = 100 / files.length;
+          const currentBase = i * fileContribution;
+          const currentProgress = currentBase + (percent * (1 / files.length));
+          setUploadProgress(currentProgress);
+        });
+
+        onProgressUpdate(`Processed ${file.name}`);
+      }
+
+      onProgressUpdate('Data ingestion completed successfully');
+      setFiles([]); // Clear queue on success
+    } catch (error) {
+      // Error is already logged to Tier 4 system by apiClient
+      // We just update local UI state
+      onProgressUpdate('Upload failed. Please try again.');
+      console.error('Upload failed:', error);
+    } finally {
+      setUploading(false);
     }
-
-    setUploading(false);
-    onProgressUpdate('Data ingestion completed');
-  };
+  }, [files, project, onProgressUpdate], {
+    componentName: 'IngestionPage_Upload',
+    timeout: 0, // Disable timeout for the wrapper, let individual requests handle it
+  });
 
   const removeFile = (index: number) => {
     setFiles(files.filter((_, i) => i !== index));
@@ -46,7 +80,7 @@ const IngestionPage: React.FC<IngestionPageProps> = ({ project, onProgressUpdate
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Data Ingestion</h1>
           <p className="mt-2 text-gray-600">
-            Upload and process data files for project: <strong>{project?.name}</strong>
+            Upload and process data files for project: <strong>{project?.name || 'Unknown Project'}</strong>
           </p>
         </div>
 
@@ -75,7 +109,7 @@ const IngestionPage: React.FC<IngestionPageProps> = ({ project, onProgressUpdate
               <label htmlFor="file-upload" className="cursor-pointer">
                 <span className="mt-2 block text-sm font-medium text-gray-900">Upload files</span>
                 <span className="mt-1 block text-sm text-gray-500">
-                  CSV, Excel, or JSON files up to 10MB each
+                  CSV, Excel, or JSON files up to {APP_CONFIG.MAX_FILE_SIZE / 1024 / 1024}MB each
                 </span>
               </label>
               <input
@@ -83,7 +117,7 @@ const IngestionPage: React.FC<IngestionPageProps> = ({ project, onProgressUpdate
                 name="file-upload"
                 type="file"
                 multiple
-                accept=".csv,.xlsx,.xls,.json"
+                accept={APP_CONFIG.ALLOWED_FILE_TYPES.join(',')}
                 className="sr-only"
                 onChange={handleFileSelect}
               />
