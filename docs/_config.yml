@@ -1,0 +1,61 @@
+# GitHub Pages Configuration
+# Documentation available at https://[username].github.io/reconciliation-platform-378/
+
+title: Reconciliation Platform Documentation
+description: Enterprise-grade data reconciliation platform with AI-powered matching
+theme: just-the-docs
+color_scheme: light
+
+# Navigation
+nav_external_links:
+  - title: Main Repository
+    url: https://github.com/teoat/reconciliation-platform-378
+    hide_icon: false
+
+# Enable search
+search_enabled: true
+search:
+  heading_level: 2
+  previews: 3
+  preview_words_before: 5
+  preview_words_after: 10
+  tokenizer_separator: /[\s\-/]+/
+  rel_url: true
+  button: false
+
+# Color customization
+color_scheme: nil
+
+# Footer content
+footer_content: "&copy; 2025 Reconciliation Platform. Distributed under the MIT license."
+
+# Collections for organizing documentation
+collections:
+  docs:
+    permalink: "/:collection/:path/"
+    output: true
+
+# Default layouts
+defaults:
+  - scope:
+      path: ""
+      type: "docs"
+    values:
+      layout: "default"
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+kramdown:
+  syntax_highlighter_opts:
+    block:
+      line_numbers: true
+
+# Exclude files from Jekyll build
+exclude:
+  - node_modules/
+  - coverage/
+  - .git/
+  - "*.sh"
+  - Gemfile
+  - Gemfile.lock

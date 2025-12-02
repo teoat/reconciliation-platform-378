@@ -1,4 +1,7 @@
 name: CI/CD Pipeline
+# Central testing paths: /tests (unit, e2e, performance, security, uat, load)
+# Config paths: /config (linting, formatting, tooling, mcp)
+# Deployment: ./deploy.sh --env <dev|staging|production>
 
 on:
   push:
