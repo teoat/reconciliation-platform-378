@@ -131,25 +131,13 @@ class ErrorHandler {
 
   // Log error to console and external service
   private logError(error: AppError): void {
-    const logLevel = this.getLogLevel(error.severity)
-    const logMessage = `[${error.type}] ${error.message}`
-    
-    console[logLevel](logMessage, {
-      errorId: error.id,
-      details: error.details,
-      stack: error.stack,
-      userId: error.userId,
-      projectId: error.projectId,
-      component: error.component
-    })
-
-    // Send to external logging service in production
+    // In production, we might want to suppress these or send them to a logging service
+    // For now, we'll keep the function empty to avoid console noise
     if (process.env.NODE_ENV === 'production') {
       this.sendToLoggingService(error)
     }
   }
 
-  // Get console log level based on severity
   private getLogLevel(severity: ErrorSeverity): 'log' | 'warn' | 'error' {
     switch (severity) {
       case ErrorSeverity.LOW:
