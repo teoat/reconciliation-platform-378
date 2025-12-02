@@ -67,8 +67,8 @@
   "dependencies": {
     "@optimizely/react-sdk": "^3.3.0",
     "@tailwindcss/postcss": "^4.1.17",
-    "autoprefixer": "^10.4.21",
-    "next": "16.0.3",
+    "autoprefixer": "^10.4.22",
+    "next": "16.0.6",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-hot-toast": "^2.6.0",
