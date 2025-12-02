@@ -58,11 +58,11 @@ impl BetterAuthValidator {
             .build()
             .map_err(|e| format!("Failed to create HTTP client: {}", e))?;
 
-        Self {
+        Ok(Self {
             auth_server_url,
             client,
             cache: Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
-        }
+        })
     }
 
     /// Validate token with Better Auth server

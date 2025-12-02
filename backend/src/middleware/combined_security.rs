@@ -117,7 +117,7 @@ where
         let service = Arc::clone(&self.service);
         let auth_service = self.auth_service.clone();
         let redis_client = self.redis_client.clone();
-        let config = self.config.clone(); // Clone config for use in async block
+        let _config = self.config.clone(); // Clone config for use in async block
 
         // 1. Security Headers Logic (Request side)
         let csp_nonce = if headers_config.enable_csp {
