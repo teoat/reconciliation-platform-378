@@ -22,7 +22,6 @@ class Logger {
     if (this.isDevelopment) {
       const prefix = `[${level.toUpperCase()}]`;
       const dataStr = data ? ` ${JSON.stringify(data)}` : '';
-      console.log(`${prefix} ${message}${dataStr}`);
     } else {
       // In production, send to logging service
       // this.sendToLoggingService(entry);

@@ -71,7 +71,7 @@ impl DualAuthMiddleware {
 
         let logger = StructuredLogging::new("dual_auth".to_string());
 
-        Self {
+        Ok(Self {
             state: DualAuthMiddlewareState {
                 config,
                 better_auth_validator,
@@ -79,7 +79,7 @@ impl DualAuthMiddleware {
                 security_metrics,
                 logger,
             },
-        }
+        })
     }
 
     /// Try Better Auth validation

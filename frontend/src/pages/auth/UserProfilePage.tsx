@@ -46,7 +46,6 @@ export const UserProfilePage: React.FC = () => {
     setError(null);
     try {
       // Simulate API call to update profile
-      // console.log('Updating profile with:', updates);
       await new Promise(resolve => setTimeout(resolve, 500));
       setUser(prevUser => {
         if (!prevUser) return null;
@@ -67,7 +66,6 @@ export const UserProfilePage: React.FC = () => {
     try {
       if (user.is2faEnabled) {
         // Simulate API call to disable 2FA
-        // console.log('Disabling 2FA');
         await new Promise(resolve => setTimeout(resolve, 500));
         setUser(prevUser => prevUser ? { ...prevUser, is2faEnabled: false } : null);
         alert('2FA disabled.');
