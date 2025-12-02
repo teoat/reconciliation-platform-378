@@ -1,5 +1,5 @@
 // API client for authentication
-const AUTH_SERVER_URL = process.env.NEXT_PUBLIC_AUTH_SERVER_URL || 'http://localhost:4000';
+const AUTH_SERVER_URL = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_AUTH_SERVER_URL) || 'http://localhost:4000';
 
 export interface LoginRequest {
   email: string;

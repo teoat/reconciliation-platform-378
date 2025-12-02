@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { authAPI, LoginRequest, RegisterRequest } from '../services/authAPI';
+import { authAPI } from '../services/authAPI';
 
 interface AuthPageProps {
-  onLogin: (user: any) => void;
+  onLogin: (user: unknown) => void;
 }
 
 const AuthPage: React.FC<AuthPageProps> = ({ onLogin }) => {

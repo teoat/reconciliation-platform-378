@@ -78,7 +78,7 @@ export function validateCsvStructure(
   headers.forEach((h) => {
     const key = h.toLowerCase();
     if (seen.has(key)) {
-      issues.push({ code: 'duplicate_header', field: h, message: `Duplicate header: ${h}` });
+      issues.push({ code: 'duplicate_header', field: h ?? '', message: `Duplicate header: ${h}` });
     }
     seen.add(key);
   });

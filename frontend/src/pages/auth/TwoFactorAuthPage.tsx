@@ -10,7 +10,7 @@ interface TwoFactorAuthPageProps {
 
 export const TwoFactorAuthPage: React.FC<TwoFactorAuthPageProps> = ({
   userId,
-  userEmail,
+  userEmail: _userEmail,
   onBack,
 }) => {
   const [currentSecret, setCurrentSecret] = useState<string | null>(null);
@@ -52,7 +52,6 @@ export const TwoFactorAuthPage: React.FC<TwoFactorAuthPageProps> = ({
     setError(null);
     try {
       // Simulate API call to backend to generate 2FA secret and QR code
-      // console.log('Generating 2FA secret for user:', userId);
       const response = await new Promise<{ secret: string; qrCodeImage: string }>((resolve) => {
         setTimeout(() => {
           // Mock response
@@ -74,7 +73,6 @@ export const TwoFactorAuthPage: React.FC<TwoFactorAuthPageProps> = ({
     setError(null);
     try {
       // Simulate API call to backend to verify 2FA code
-      // console.log('Verifying 2FA code:', code);
       const response = await new Promise<{ isValid: boolean }>((resolve, reject) => {
         setTimeout(() => {
           if (code === '123456') { // Mock correct code
@@ -99,7 +97,6 @@ export const TwoFactorAuthPage: React.FC<TwoFactorAuthPageProps> = ({
     setError(null);
     try {
       // Simulate API call to backend to enable 2FA
-      // console.log('Enabling 2FA for user:', userId);
       await new Promise(resolve => setTimeout(resolve, 500));
       setIs2faEnabled(true);
       alert('2FA enabled successfully!');
@@ -114,7 +111,6 @@ export const TwoFactorAuthPage: React.FC<TwoFactorAuthPageProps> = ({
     setError(null);
     try {
       // Simulate API call to backend to disable 2FA
-      // console.log('Disabling 2FA for user:', userId);
       await new Promise(resolve => setTimeout(resolve, 500));
       setIs2faEnabled(false);
       setCurrentSecret(null);
@@ -130,27 +126,29 @@ export const TwoFactorAuthPage: React.FC<TwoFactorAuthPageProps> = ({
     setError(null);
     try {
       // Simulate API call to backend to generate new recovery codes
-      // console.log('Generating recovery codes for user:', userId);
       const response = await new Promise<{ recoveryCodes: string[] }>((resolve) => {
         setTimeout(() => {
-          resolve([
-            'CODE-1',
-            'CODE-2',
-            'CODE-3',
-            'CODE-4',
-            'CODE-5',
-            'CODE-6',
-            'CODE-7',
-            'CODE-8',
-            'CODE-9',
-            'CODE-10',
-          ]);
+          resolve({
+            recoveryCodes: [
+              'CODE-1',
+              'CODE-2',
+              'CODE-3',
+              'CODE-4',
+              'CODE-5',
+              'CODE-6',
+              'CODE-7',
+              'CODE-8',
+              'CODE-9',
+              'CODE-10',
+            ],
+          });
         }, 1000);
       });
       setRecoveryCodes(response.recoveryCodes);
       alert('New recovery codes generated!');
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate recovery codes.');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate recovery codes.';
+      setError(errorMessage);
     }
   };
 

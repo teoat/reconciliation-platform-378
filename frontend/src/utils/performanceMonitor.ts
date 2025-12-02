@@ -42,7 +42,9 @@ class PerformanceMonitor {
           const entries = list.getEntries();
           const lastEntry = entries[entries.length - 1];
           // Store LCP for later retrieval
-          (window as Window & { __performanceLCP?: number }).__performanceLCP = lastEntry.startTime;
+          if (lastEntry) {
+            (window as Window & { __performanceLCP?: number }).__performanceLCP = lastEntry.startTime;
+          }
         });
         lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] });
         this.observers.push(lcpObserver);

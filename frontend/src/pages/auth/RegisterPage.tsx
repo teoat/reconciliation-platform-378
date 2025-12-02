@@ -7,7 +7,7 @@ export const RegisterPage: React.FC = () => {
 
   const handleRegister = async (
     email: string,
-    password: string,
+    _password: string,
     firstName: string,
     lastName: string,
     role?: string,
@@ -17,10 +17,9 @@ export const RegisterPage: React.FC = () => {
 
     try {
       // Here you would typically make an API call to your backend /api/v2/auth/register
-      // console.log('Attempting registration with:', { email, password, firstName, lastName, role });
 
       // Simulate API call
-      const response = await new Promise((resolve, reject) => {
+      await new Promise((resolve, reject) => {
         setTimeout(() => {
           if (email === 'existing@example.com') {
             reject({ message: 'User with this email already exists' });
@@ -36,7 +35,6 @@ export const RegisterPage: React.FC = () => {
         }, 1000);
       });
 
-      // console.log('Registration successful', response);
       setRegistrationSuccess('Registration successful! Please log in.');
       // Optionally redirect to login page
     } catch (error: any) {
@@ -46,7 +44,6 @@ export const RegisterPage: React.FC = () => {
   };
 
   const handleLoginClick = () => {
-    // console.log('Login clicked');
     // Implement navigation to login page
   };
 

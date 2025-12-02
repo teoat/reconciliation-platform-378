@@ -55,7 +55,7 @@ updates:
     commit-message:
       prefix: "chore(docker)"
 
-  # Enable version updates for Rust (Cargo)
+  # Enable version updates for Rust (Cargo) - Backend
   - package-ecosystem: "cargo"
     directory: "/backend"
     schedule:
@@ -67,4 +67,42 @@ updates:
       - "rust"
     commit-message:
       prefix: "chore(rust)"
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+
+  # Enable version updates for Rust (Cargo) - Reconciliation Rust
+  - package-ecosystem: "cargo"
+    directory: "/reconciliation-rust"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "rust"
+    commit-message:
+      prefix: "chore(rust)"
+    groups:
+      rust-dependencies:
+        patterns:
+          - "*"
+
+  # Enable version updates for npm - Frontend
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "daily"
+      time: "03:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "frontend"
+    commit-message:
+      prefix: "chore(deps-frontend)"
+    groups:
+      frontend-dependencies:
+        patterns:
+          - "*"
 

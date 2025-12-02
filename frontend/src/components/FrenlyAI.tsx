@@ -2,7 +2,7 @@ import React from 'react';
 import { useFrenly } from './FrenlyProvider';
 
 const FrenlyAI: React.FC = () => {
-  const { state, updateProgress, toggleActive } = useFrenly();
+  const { state, toggleActive } = useFrenly();
 
   if (!state.isActive) return null;
 

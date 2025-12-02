@@ -1,0 +1,202 @@
+# Kubernetes HorizontalPodAutoscaler configurations
+# For CPU-based auto-scaling of Reconciliation Platform services
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: backend-hpa
+  namespace: reconciliation-platform
+  labels:
+    app: reconciliation-platform
+    component: backend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: reconciliation-platform
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    # CPU-based scaling
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+    # Memory-based scaling  
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 80
+    # Custom metric for request rate
+    - type: Pods
+      pods:
+        metric:
+          name: http_requests_per_second
+        target:
+          type: AverageValue
+          averageValue: "1000"
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 300
+      policies:
+        - type: Percent
+          value: 25
+          periodSeconds: 60
+        - type: Pods
+          value: 2
+          periodSeconds: 60
+      selectPolicy: Min
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Percent
+          value: 100
+          periodSeconds: 15
+        - type: Pods
+          value: 4
+          periodSeconds: 15
+      selectPolicy: Max
+
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: frontend-hpa
+  namespace: reconciliation-platform
+  labels:
+    app: reconciliation-platform
+    component: frontend
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: frontend
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 75
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: 85
+  behavior:
+    scaleDown:
+      stabilizationWindowSeconds: 180
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 30
+
+---
+# PodDisruptionBudget for backend high availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: backend-pdb
+  namespace: reconciliation-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: reconciliation-platform
+      component: backend
+
+---
+# PodDisruptionBudget for frontend high availability
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: frontend-pdb
+  namespace: reconciliation-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: reconciliation-platform
+      component: frontend
+
+---
+# ServiceMonitor for Prometheus metrics collection
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: backend-metrics
+  namespace: reconciliation-platform
+  labels:
+    app: reconciliation-platform
+spec:
+  selector:
+    matchLabels:
+      app: reconciliation-platform
+      component: backend
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+
+---
+# Prometheus rules for auto-scaling alerts
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: autoscaling-alerts
+  namespace: reconciliation-platform
+spec:
+  groups:
+    - name: autoscaling.rules
+      rules:
+        # Alert when HPA is at max replicas
+        - alert: HPAAtMaxReplicas
+          expr: |
+            kube_horizontalpodautoscaler_status_current_replicas{namespace="reconciliation-platform"}
+            ==
+            kube_horizontalpodautoscaler_spec_max_replicas{namespace="reconciliation-platform"}
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "HPA {{ $labels.horizontalpodautoscaler }} is at max replicas"
+            description: "The HPA has been at max replicas for 10 minutes. Consider increasing max replicas."
+
+        # Alert when scaling events are frequent
+        - alert: FrequentScalingEvents
+          expr: |
+            rate(kube_horizontalpodautoscaler_status_current_replicas[5m]) > 0.1
+          for: 15m
+          labels:
+            severity: info
+          annotations:
+            summary: "Frequent scaling events detected"
+            description: "HPA {{ $labels.horizontalpodautoscaler }} is scaling frequently. Review scaling policies."
+
+        # Alert on high CPU usage before scaling kicks in
+        - alert: HighCPUBeforeScale
+          expr: |
+            (container_spec_cpu_quota{namespace="reconciliation-platform"} > 0)
+            and
+            (container_cpu_usage_seconds_total{namespace="reconciliation-platform"} / container_spec_cpu_quota > 0.85)
+          for: 2m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High CPU usage detected"
+            description: "Container {{ $labels.container }} is using {{ $value | humanizePercentage }} CPU."

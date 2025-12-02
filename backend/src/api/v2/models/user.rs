@@ -40,6 +40,23 @@ pub enum UserStatus {
     Suspended,
     #[serde(rename = "deactivated")]
     Deactivated,
+    #[serde(rename = "inactive")]
+    Inactive,
+}
+
+impl std::str::FromStr for UserStatus {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "active" => Ok(UserStatus::Active),
+            "pending_verification" => Ok(UserStatus::PendingVerification),
+            "suspended" => Ok(UserStatus::Suspended),
+            "deactivated" => Ok(UserStatus::Deactivated),
+            "inactive" => Ok(UserStatus::Inactive),
+            _ => Err(format!("Invalid user status: {}", s)),
+        }
+    }
 }
 
 // Implement FromSql and ToSql for UserStatus enum to allow Diesel to store it as TEXT
@@ -50,6 +67,7 @@ impl ToSql<Text, diesel::pg::Pg> for UserStatus {
             UserStatus::PendingVerification => out.write_all(b"pending_verification")?,
             UserStatus::Suspended => out.write_all(b"suspended")?,
             UserStatus::Deactivated => out.write_all(b"deactivated")?,
+            UserStatus::Inactive => out.write_all(b"inactive")?,
         }
         Ok(serialize::IsNull::No)
     }
@@ -64,6 +82,7 @@ impl FromSql<Text, diesel::pg::Pg> for UserStatus {
             "pending_verification" => Ok(UserStatus::PendingVerification),
             "suspended" => Ok(UserStatus::Suspended),
             "deactivated" => Ok(UserStatus::Deactivated),
+            "inactive" => Ok(UserStatus::Inactive),
             _ => Err("Unrecognized enum variant".into()),
         }
     }
@@ -76,6 +95,8 @@ pub struct CreateUserRequest {
     pub email: String,
     #[validate(length(min = 8, max = 128))] // Example: min 8 chars for password
     pub password: String,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
     pub roles: Option<Vec<Uuid>>, // Optional initial roles by ID
 }
 
@@ -103,6 +124,7 @@ pub struct UserResponse {
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub email_verified: bool,
+    pub last_login_at: Option<DateTime<Utc>>,
     pub roles: Option<Vec<UserRoleResponse>>, // Include roles for response
 }
 

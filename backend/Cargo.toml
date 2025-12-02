@@ -118,12 +118,12 @@ lettre = "0.11"
 
 # OpenAPI/Swagger documentation
 utoipa = { version = "4.2", features = ["actix_extras"] }
-utoipa-swagger-ui = { version = "7.1", features = ["actix-web"] }
+utoipa-swagger-ui = { version = "9.0", features = ["actix-web"] }
 
 # Monitoring
 prometheus = "0.14"  # Updated from 0.13 (fixes protobuf vulnerability)
 once_cell = "1.19"
-sentry = { version = "0.32", features = ["tower", "tracing", "log"] }
+sentry = { version = "0.46", features = ["tower", "tracing", "log"] }
 sentry-actix = "0.32"
 
 # Validation
@@ -155,9 +155,9 @@ ipnetwork = "0.21.1"
 # Testing
 [dev-dependencies]
 tokio-test = "0.4"
-mockall = "0.13"
+mockall = "0.14"
 actix-service = "2.0"
-criterion = { version = "0.5", features = ["html_reports"] }
+criterion = { version = "0.8", features = ["html_reports"] }
 
 # Test coverage (install with: cargo install cargo-tarpaulin)
 # Usage: cargo tarpaulin --out Html --output-dir coverage

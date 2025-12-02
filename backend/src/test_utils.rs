@@ -92,6 +92,7 @@ impl TestUser {
             is_initial_password: None,
             initial_password_set_at: None,
             auth_provider: Some("password".to_string()),
+            provider_id: None,
         }
     }
 }

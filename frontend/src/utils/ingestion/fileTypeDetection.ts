@@ -70,7 +70,8 @@ export const detectFileType = (fileName: string, mimeType: string): UploadedFile
  */
 export const getFileExtension = (fileName: string): string => {
   const parts = fileName.split('.');
-  return parts.length > 1 ? parts[parts.length - 1].toLowerCase() : '';
+  const lastPart = parts[parts.length - 1];
+  return parts.length > 1 && lastPart ? lastPart.toLowerCase() : '';
 };
 
 /**

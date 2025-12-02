@@ -118,7 +118,12 @@ export function validateJWT(token: string): {
       return { isValid: false, error: 'Invalid token format' };
     }
 
-    const payload = JSON.parse(atob(parts[1]));
+    const payloadPart = parts[1];
+    if (!payloadPart) {
+      return { isValid: false, error: 'Invalid token format' };
+    }
+
+    const payload = JSON.parse(atob(payloadPart));
     const now = Math.floor(Date.now() / 1000);
 
     if (payload.exp && payload.exp < now) {

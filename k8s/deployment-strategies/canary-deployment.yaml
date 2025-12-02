@@ -1,0 +1,191 @@
+# =============================================================================
+# Canary Deployment Strategy
+# =============================================================================
+# Kubernetes configuration for canary releases
+# =============================================================================
+
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: backend-canary
+  namespace: reconciliation-platform
+  labels:
+    app: reconciliation-platform
+    component: backend
+    strategy: canary
+spec:
+  replicas: 5
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: reconciliation-platform
+      component: backend
+  template:
+    metadata:
+      labels:
+        app: reconciliation-platform
+        component: backend
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "2000"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+      - name: backend
+        image: reconciliation-backend:latest
+        ports:
+        - containerPort: 2000
+          name: http
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "1000m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 2000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 2000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        envFrom:
+        - secretRef:
+            name: reconciliation-secrets
+        - configMapRef:
+            name: reconciliation-config
+  strategy:
+    canary:
+      # Initial canary step
+      maxSurge: "25%"
+      maxUnavailable: 0
+      
+      # Canary service for traffic routing
+      canaryService: backend-canary
+      stableService: backend-stable
+      
+      # Traffic routing
+      trafficRouting:
+        nginx:
+          stableIngress: backend-ingress
+          annotationPrefix: nginx.ingress.kubernetes.io
+        
+      # Canary analysis for automated rollback
+      analysis:
+        templates:
+        - templateName: canary-analysis
+        startingStep: 2
+        args:
+        - name: service-name
+          value: backend
+      
+      # Rollout steps
+      steps:
+      # Step 1: 5% traffic to canary
+      - setWeight: 5
+      - pause: {duration: 2m}
+      
+      # Step 2: 10% traffic with analysis
+      - setWeight: 10
+      - pause: {duration: 5m}
+      
+      # Step 3: 25% traffic
+      - setWeight: 25
+      - pause: {duration: 5m}
+      
+      # Step 4: 50% traffic
+      - setWeight: 50
+      - pause: {duration: 10m}
+      
+      # Step 5: 75% traffic
+      - setWeight: 75
+      - pause: {duration: 10m}
+      
+      # Step 6: Full rollout
+      - setWeight: 100
+
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: canary-analysis
+  namespace: reconciliation-platform
+spec:
+  args:
+  - name: service-name
+  metrics:
+  # Error rate analysis
+  - name: error-rate
+    interval: 1m
+    count: 5
+    successCondition: result[0] < 0.05
+    failureLimit: 3
+    provider:
+      prometheus:
+        address: http://prometheus:9090
+        query: |
+          sum(rate(http_requests_total{service="{{args.service-name}}", status=~"5.."}[5m])) /
+          sum(rate(http_requests_total{service="{{args.service-name}}"}[5m]))
+  
+  # Latency analysis (p95)
+  - name: latency-p95
+    interval: 1m
+    count: 5
+    successCondition: result[0] < 500
+    failureLimit: 3
+    provider:
+      prometheus:
+        address: http://prometheus:9090
+        query: |
+          histogram_quantile(0.95, sum(rate(http_request_duration_milliseconds_bucket{service="{{args.service-name}}"}[5m])) by (le))
+  
+  # Success rate analysis
+  - name: success-rate
+    interval: 1m
+    count: 5
+    successCondition: result[0] > 0.95
+    failureLimit: 3
+    provider:
+      prometheus:
+        address: http://prometheus:9090
+        query: |
+          sum(rate(http_requests_total{service="{{args.service-name}}", status=~"2.."}[5m])) /
+          sum(rate(http_requests_total{service="{{args.service-name}}"}[5m]))
+
+---
+# Blue-Green Deployment Service (Stable)
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-stable
+  namespace: reconciliation-platform
+spec:
+  selector:
+    app: reconciliation-platform
+    component: backend
+  ports:
+  - port: 80
+    targetPort: 2000
+    name: http
+
+---
+# Canary Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-canary
+  namespace: reconciliation-platform
+spec:
+  selector:
+    app: reconciliation-platform
+    component: backend
+  ports:
+  - port: 80
+    targetPort: 2000
+    name: http

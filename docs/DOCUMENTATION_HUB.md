@@ -60,6 +60,9 @@
 #### 🚀 Deployment
 - **[Deployment Guide](./deployment/DEPLOYMENT_GUIDE.md)** ⭐ - Complete deployment guide (SSOT)
 - **[Docker Deployment](./deployment/DOCKER_DEPLOYMENT_GUIDE.md)** - Docker-specific deployment
+- **[Docker Optimization](./deployment/docker-build-optimization.md)** - Docker build optimization
+- **[Docker Cleanup](./deployment/DOCKERFILE_CLEANUP_PROPOSAL.md)** - Dockerfile cleanup proposal
+- **[Port Configuration](./deployment/port-audit.md)** - Port configuration audit
 - **[Environment Variables](./deployment/ENVIRONMENT_VARIABLES.md)** - Environment configuration
 - **[Production Readiness](./deployment/PHASE_4_PRODUCTION_READINESS_GUIDE.md)** - Production checklist
 
