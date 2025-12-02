@@ -8,8 +8,6 @@ import { render } from '@testing-library/react';
 import { useAuth, AuthProvider, ProtectedRoute } from '../useAuth';
 import * as apiClient from '@/services/apiClient';
 import * as authSecurity from '@/services/authSecurity';
-import * as secureStorage from '@/services/secureStorage';
-import { Navigate } from 'react-router-dom';
 
 vi.mock('@/services/apiClient', () => ({
   apiClient: {
@@ -84,7 +82,7 @@ describe('useAuth (useAuth.tsx)', () => {
     vi.mocked(apiClient.apiClient.getCurrentUser).mockResolvedValue({
       success: true,
       data: { id: 'user-1', email: 'test@example.com' },
-    } as any);
+    } as unknown);
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
@@ -103,13 +101,13 @@ describe('useAuth (useAuth.tsx)', () => {
     vi.mocked(apiClient.apiClient.getCurrentUser).mockResolvedValue({
       success: false,
       error: { message: 'Not authenticated' },
-    } as any);
+    } as unknown);
     vi.mocked(apiClient.apiClient.login).mockResolvedValue({
       success: true,
       data: {
         user: { id: 'user-1', email: 'test@example.com' },
       },
-    } as any);
+    } as unknown);
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
@@ -132,7 +130,7 @@ describe('useAuth (useAuth.tsx)', () => {
     vi.mocked(apiClient.apiClient.getCurrentUser).mockResolvedValue({
       success: false,
       error: { message: 'Not authenticated' },
-    } as any);
+    } as unknown);
     vi.mocked(authSecurity.rateLimiter.canMakeRequest).mockReturnValue(false);
     vi.mocked(authSecurity.rateLimiter.getTimeUntilReset).mockReturnValue(900000); // 15 minutes
 
@@ -156,13 +154,13 @@ describe('useAuth (useAuth.tsx)', () => {
     vi.mocked(apiClient.apiClient.getCurrentUser).mockResolvedValue({
       success: false,
       error: { message: 'Not authenticated' },
-    } as any);
+    } as unknown);
     vi.mocked(apiClient.apiClient.register).mockResolvedValue({
       success: true,
       data: {
         user: { id: 'user-1', email: 'test@example.com' },
       },
-    } as any);
+    } as unknown);
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
@@ -190,8 +188,8 @@ describe('useAuth (useAuth.tsx)', () => {
     vi.mocked(apiClient.apiClient.getCurrentUser).mockResolvedValue({
       success: true,
       data: { id: 'user-1', email: 'test@example.com' },
-    } as any);
-    vi.mocked(apiClient.apiClient.logout).mockResolvedValue({ success: true } as any);
+    } as unknown);
+    vi.mocked(apiClient.apiClient.logout).mockResolvedValue({ success: true } as unknown);
 
     const { result } = renderHook(() => useAuth(), {
       wrapper: ({ children }) => <AuthProvider>{children}</AuthProvider>,
@@ -231,7 +229,7 @@ describe('useAuth (useAuth.tsx)', () => {
     vi.mocked(apiClient.apiClient.getCurrentUser).mockResolvedValue({
       success: false,
       error: { message: 'Not authenticated' },
-    } as any);
+    } as unknown);
 
     const { getByTestId } = render(
       <AuthProvider>

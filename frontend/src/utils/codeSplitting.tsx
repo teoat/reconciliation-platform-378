@@ -137,8 +137,7 @@ export const LazyComponent: React.FC<LazyComponentProps & { children: React.Reac
   const [error, setError] = React.useState<Error | null>(null);
   const [retryCount, setRetryCount] = React.useState(0);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleError = React.useCallback(
+  const _handleError = React.useCallback(
     (error: Error) => {
       setError(error);
       onError?.(error);

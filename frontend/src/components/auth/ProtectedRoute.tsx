@@ -2,11 +2,12 @@ import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAppSelector } from '@/store/unifiedStore';
 
-interface ProtectedRouteProps {
+export interface ProtectedRouteProps {
   requiredRoles?: string[];
+  children?: React.ReactNode;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRoles }) => {
+export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRoles, children }) => {
   const { isAuthenticated, user, isLoading } = useAppSelector((state) => state.auth);
 
   if (isLoading) {
@@ -24,5 +25,5 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ requiredRoles })
     return <Navigate to="/unauthorized" replace />;
   }
 
-  return <Outlet />;
+  return children ? <>{children}</> : <Outlet />;
 };

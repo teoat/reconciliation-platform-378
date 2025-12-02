@@ -10,7 +10,7 @@ interface TwoFactorAuthPageProps {
 
 export const TwoFactorAuthPage: React.FC<TwoFactorAuthPageProps> = ({
   userId,
-  userEmail,
+  userEmail: _userEmail,
   onBack,
 }) => {
   const [currentSecret, setCurrentSecret] = useState<string | null>(null);
@@ -133,24 +133,27 @@ export const TwoFactorAuthPage: React.FC<TwoFactorAuthPageProps> = ({
       // console.log('Generating recovery codes for user:', userId);
       const response = await new Promise<{ recoveryCodes: string[] }>((resolve) => {
         setTimeout(() => {
-          resolve([
-            'CODE-1',
-            'CODE-2',
-            'CODE-3',
-            'CODE-4',
-            'CODE-5',
-            'CODE-6',
-            'CODE-7',
-            'CODE-8',
-            'CODE-9',
-            'CODE-10',
-          ]);
+          resolve({
+            recoveryCodes: [
+              'CODE-1',
+              'CODE-2',
+              'CODE-3',
+              'CODE-4',
+              'CODE-5',
+              'CODE-6',
+              'CODE-7',
+              'CODE-8',
+              'CODE-9',
+              'CODE-10',
+            ],
+          });
         }, 1000);
       });
       setRecoveryCodes(response.recoveryCodes);
       alert('New recovery codes generated!');
-    } catch (err: any) {
-      setError(err.message || 'Failed to generate recovery codes.');
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate recovery codes.';
+      setError(errorMessage);
     }
   };
 

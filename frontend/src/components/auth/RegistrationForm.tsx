@@ -93,13 +93,13 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
       <div className="flex items-center justify-between">
         <div className="text-sm">
           Already have an account?{' '}
-          <a
-            href="#"
+          <button
+            type="button"
             onClick={onLoginClick}
-            className="font-medium text-indigo-600 hover:text-indigo-500"
+            className="font-medium text-indigo-600 hover:text-indigo-500 bg-transparent border-none cursor-pointer"
           >
             Login
-          </a>
+          </button>
         </div>
       </div>
       <div>

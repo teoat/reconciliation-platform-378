@@ -15,16 +15,10 @@ export const LoginPage: React.FC = () => {
       // console.log('Attempting login with:', { email, password, twoFactorCode });
 
       // Simulate API call
-      const response = await new Promise<any>((resolve, reject) => {
+      await new Promise<unknown>((resolve, reject) => {
         setTimeout(() => {
           if (email === 'test@example.com' && password === 'password') {
-            if (email === '2fa@example.com' && !twoFactorCode) {
-              reject({ message: '2FA required', status: '2fa_required' });
-            } else if (email === '2fa@example.com' && twoFactorCode !== '123456') {
-              reject({ message: 'Invalid 2FA code' });
-            } else {
-              resolve({ token: 'mock_jwt_token', user: { id: '1', email, role: 'user' } });
-            }
+            resolve({ token: 'mock_jwt_token', user: { id: '1', email, role: 'user' } });
           } else if (email === '2fa@example.com' && password === 'password123') {
             if (!twoFactorCode) {
               reject({ message: '2FA required', status: '2fa_required' });
