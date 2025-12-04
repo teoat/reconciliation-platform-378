@@ -67,10 +67,10 @@
   "dependencies": {
     "@optimizely/react-sdk": "^3.3.0",
     "@tailwindcss/postcss": "^4.1.17",
-    "autoprefixer": "^10.4.21",
-    "next": "16.0.3",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0",
+    "autoprefixer": "^10.4.22",
+    "next": "16.0.7",
+    "react": "^19.2.1",
+    "react-dom": "^19.2.1",
     "react-hot-toast": "^2.6.0",
     "redux-persist": "^6.0.0"
   },
@@ -81,7 +81,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.10.1",
-    "@types/react": "^19.2.6",
+    "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@types/recharts": "^2.0.1",
     "eslint": "^9.0.0",
