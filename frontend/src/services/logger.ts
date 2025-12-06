@@ -41,6 +41,10 @@ class Logger {
     this.log('warn', message, data);
   }
 
+  warning(message: string, data?: Record<string, unknown>) {
+    this.warn(message, data);
+  }
+
   error(message: string, data?: Record<string, unknown>) {
     this.log('error', message, data);
   }

@@ -29,6 +29,15 @@ class ErrorContextService {
   getAllContexts(): ErrorContext[] {
     return Array.from(this.contexts.values());
   }
+
+  trackError(errorId: string, context: ErrorContext): void {
+    this.setContext(errorId, context);
+  }
+
+  getCurrentContext(): ErrorContext | undefined {
+    const contexts = Array.from(this.contexts.values());
+    return contexts[contexts.length - 1];
+  }
 }
 
 export const errorContextService = new ErrorContextService();

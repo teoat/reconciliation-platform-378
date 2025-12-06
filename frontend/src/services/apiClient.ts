@@ -73,6 +73,26 @@ class ApiClient {
   async delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.client.delete<T>(url, config);
   }
+
+  async uploadFile<T = unknown>(file: File, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.client.post<T>('/upload', formData, {
+      ...config,
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        ...config?.headers,
+      },
+    });
+  }
+
+  async login<T = unknown>(credentials: { email: string; password: string }, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.post<T>('/auth/login', credentials, config);
+  }
+
+  async register<T = unknown>(data: { email: string; password: string; name?: string }, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.post<T>('/auth/register', data, config);
+  }
 }
 
 export const apiClient = new ApiClient();

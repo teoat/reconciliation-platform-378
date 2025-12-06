@@ -1,4 +1,3 @@
-import React from 'react';
 import { useExperiment, useFeature } from '@optimizely/react-sdk';
 
 function App() {

@@ -26,6 +26,10 @@ class ErrorTranslationService {
     };
   }
 
+  translateError(errorCode: string, locale = 'en'): ErrorTranslation {
+    return this.translate(errorCode, locale);
+  }
+
   setTranslation(translation: ErrorTranslation): void {
     const key = `${translation.code}_${translation.locale || 'en'}`;
     this.translations.set(key, translation);

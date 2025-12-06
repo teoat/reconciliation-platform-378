@@ -78,11 +78,23 @@ export class BaseService<T> {
   protected off(event: string, handler: EventHandler): void {
     this.eventHandlers.get(event)?.delete(handler);
   }
+
+  // Cleanup method for services
+  cleanup(): void {
+    this.clear();
+    this.eventHandlers.clear();
+  }
 }
 
 // Persistence service with additional functionality
 export class PersistenceService<T> extends BaseService<T> {
   constructor(config: Partial<ServiceConfig> = {}) {
     super({ ...config, persistence: true });
+  }
+
+  // Save data (stub implementation)
+  save(): void {
+    // In a real implementation, this would persist data to localStorage or backend
+    // For now, it's a no-op
   }
 }
