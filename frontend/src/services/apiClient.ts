@@ -85,7 +85,12 @@ class ApiClient {
     formData.append('projectId', projectId);
     if (metadata) {
       Object.keys(metadata).forEach(key => {
-        formData.append(key, String(metadata[key]));
+        const value = metadata[key];
+        if (typeof value === 'object' && value !== null) {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, String(value));
+        }
       });
     }
     return this.client.post<T>('/upload', formData, {
