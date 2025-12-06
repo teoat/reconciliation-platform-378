@@ -29,6 +29,10 @@ class AriaLiveRegionsService {
   announce(message: string, priority: 'polite' | 'assertive' = 'polite'): void {
     if (typeof document === 'undefined') return;
 
+    // Ensure regions exist even if initialize() wasn't called explicitly
+    if (!this.politeRegion || !this.assertiveRegion) {
+      this.initialize();
+    }
     const region = priority === 'assertive' ? this.assertiveRegion : this.politeRegion;
     if (region) {
       region.textContent = '';
