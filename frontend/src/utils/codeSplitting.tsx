@@ -270,6 +270,7 @@ export const analyzeBundleSize = async () => {
   if (import.meta.env.DEV) {
     try {
       // Dynamic import to avoid bundling in production
+      // @ts-expect-error - webpack-bundle-analyzer is dev dependency and may not be available
       const { BundleAnalyzerPlugin } = await import('webpack-bundle-analyzer');
       return BundleAnalyzerPlugin;
     } catch (error) {

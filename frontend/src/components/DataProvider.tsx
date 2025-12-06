@@ -17,7 +17,7 @@ interface DataProviderProps {
 export const DataProvider: React.FC<DataProviderProps> = ({ children }) => {
   const [projects, setProjects] = useState<any[]>([]);
   const [currentProject, setCurrentProject] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

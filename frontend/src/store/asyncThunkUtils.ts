@@ -62,10 +62,6 @@ export const createGetThunk = <TData = unknown>(
 
         const response = await apiClient.get(url, params);
 
-        if (response.error) {
-          return rejectWithValue(handleApiError(response.error));
-        }
-
         const data = transformResponse ? transformResponse(response.data) : response.data;
         return data;
       } catch (error) {
@@ -95,11 +91,6 @@ export const createPostThunk = <TData = unknown>(
       const requestData = transformRequest ? transformRequest(data) : data;
 
       const response = await apiClient.post(url, requestData);
-
-      if (response.error) {
-        return rejectWithValue(handleApiError(response.error));
-      }
-
       const result = transformResponse ? transformResponse(response.data) : response.data;
       return result;
     } catch (error) {
@@ -130,11 +121,6 @@ export const createPutThunk = <TData = unknown>(
         const requestData = transformRequest ? transformRequest(params.data) : params.data;
 
         const response = await apiClient.put(url, requestData);
-
-        if (response.error) {
-          return rejectWithValue(handleApiError(response.error));
-        }
-
         const result = transformResponse ? transformResponse(response.data) : response.data;
         return result;
       } catch (error) {
@@ -163,11 +149,6 @@ export const createDeleteThunk = <TData = unknown>(
       const url = typeof endpoint === 'function' ? endpoint(id) : endpoint;
 
       const response = await apiClient.delete(url);
-
-      if (response.error) {
-        return rejectWithValue(handleApiError(response.error));
-      }
-
       if (returnId) {
         return id;
       }
@@ -200,11 +181,6 @@ export const createAuthThunk = <TRequest, TResponse>(
       const requestData = transformRequest ? transformRequest(data) : data;
 
       const response = await apiClient.post(endpoint, requestData);
-
-      if (response.error) {
-        return rejectWithValue(handleApiError(response.error));
-      }
-
       const result = transformResponse ? transformResponse(response.data) : response.data;
       return result;
     } catch (error) {
@@ -246,13 +222,7 @@ export const createFileUploadThunk = (
             ...metadata,
           };
 
-        const uploadRequest: import('../services/apiClient/types').FileUploadRequest = uploadMetadata as unknown as import('../services/apiClient/types').FileUploadRequest;
-        const response = await apiClient.uploadFile(projectId, file, uploadRequest);
-
-        if (response.error) {
-          return rejectWithValue(handleApiError(response.error));
-        }
-
+        const response = await apiClient.uploadFile(projectId, file, uploadMetadata);
         return response.data;
       } catch (error) {
         return rejectWithValue(handleApiError(error));
@@ -295,11 +265,6 @@ export const createPaginatedListThunk = <TData = unknown>(
           typeof endpoint === 'function' ? endpoint(transformedParams) : endpoint,
           transformedParams
         );
-
-        if (response.error) {
-          return rejectWithValue(handleApiError(response.error));
-        }
-
         const result = transformResponse ? transformResponse(response.data) : response.data;
         return result;
       } catch (error) {
@@ -320,9 +285,6 @@ export const loginUser = createAsyncThunk(
   async (credentials: import('../services/apiClient/types').LoginRequest, { rejectWithValue }) => {
     try {
       const response = await apiClient.login(credentials);
-      if (response.error) {
-        return rejectWithValue(handleApiError(response.error));
-      }
       return response.data;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
@@ -335,9 +297,6 @@ export const registerUser = createAsyncThunk(
   async (userData: import('../services/apiClient/types').RegisterRequest, { rejectWithValue }) => {
     try {
       const response = await apiClient.register(userData);
-      if (response.error) {
-        return rejectWithValue(handleApiError(response.error));
-      }
       return response.data;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
@@ -350,9 +309,6 @@ export const getCurrentUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiClient.getCurrentUser();
-      if (response.error) {
-        return rejectWithValue(handleApiError(response.error));
-      }
       return response.data;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
@@ -365,9 +321,6 @@ export const logoutUser = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await apiClient.logout();
-      if (response.error) {
-        return rejectWithValue(handleApiError(response.error));
-      }
       return response.data;
     } catch (error) {
       return rejectWithValue(handleApiError(error));
