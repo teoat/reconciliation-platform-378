@@ -32,6 +32,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          autoComplete="email"
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
         />
       </div>
@@ -45,6 +46,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          autoComplete="new-password"
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
         />
       </div>
@@ -58,6 +60,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           value={firstName}
           onChange={(e) => setFirstName(e.target.value)}
           required
+          autoComplete="given-name"
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
         />
       </div>
@@ -71,6 +74,7 @@ export const RegistrationForm: React.FC<RegistrationFormProps> = ({
           value={lastName}
           onChange={(e) => setLastName(e.target.value)}
           required
+          autoComplete="family-name"
           className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
         />
       </div>
