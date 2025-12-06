@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconciliation App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50">
+    <div id="app"></div>
+    
+    <script>
+        const routes = {
+            '/': 'login',
+            '/login': 'login',
+            '/register': 'register',
+            '/dashboard': 'dashboard',
+            '/profile': 'profile',
+            '/unauthorized': 'unauthorized'
+        };
+        
+        const pages = {
+            login: '<div class="min-h-screen flex items-center justify-center"><div class="max-w-md w-full space-y-8"><h1 class="text-3xl font-bold">Welcome</h1><form onsubmit="navigate(\'/dashboard\'); return false;"><input type="email" placeholder="Email" class="w-full px-3 py-2 border rounded mb-2"><input type="password" placeholder="Password" class="w-full px-3 py-2 border rounded mb-4"><button type="submit" class="w-full bg-blue-600 text-white py-2 rounded">Sign in</button></form></div></div>',
+            register: '<div class="min-h-screen flex items-center justify-center"><div class="max-w-md w-full"><h1 class="text-3xl font-bold mb-4">Create Account</h1><form><input type="email" placeholder="Email" class="w-full px-3 py-2 border rounded mb-2"><input type="password" placeholder="Password" class="w-full px-3 py-2 border rounded mb-2"><button type="submit" class="w-full bg-green-600 text-white py-2 rounded">Register</button></form></div></div>',
+            dashboard: '<div class="min-h-screen"><h1 class="text-3xl font-bold p-8">Dashboard</h1><p class="px-8">You are logged in.</p></div>',
+            profile: '<div class="min-h-screen p-8"><h1 class="text-2xl font-bold mb-4">User Profile</h1><input type="text" value="user@example.com" class="w-full max-w-md px-3 py-2 border rounded mb-2"><button class="bg-blue-600 text-white px-6 py-2 rounded">Update</button></div>',
+            unauthorized: '<div class="min-h-screen flex items-center justify-center"><div class="text-center"><h1 class="text-6xl font-bold text-red-600">403</h1><h2 class="text-2xl font-bold">Unauthorized Access</h2></div></div>'
+        };
+        
+        function navigate(path) {
+            window.location.hash = path;
+            render();
+        }
+        
+        function render() {
+            const path = window.location.hash.slice(1) || '/';
+            const page = routes[path] || 'login';
+            document.getElementById('app').innerHTML = pages[page];
+        }
+        
+        window.addEventListener('hashchange', render);
+        render();
+    </script>
+</body>
+</html>
