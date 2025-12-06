@@ -18,10 +18,19 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
     lg: 'w-12 h-12',
   }[size];
 
+  const colorClassMap: Record<string, string> = {
+    blue: 'border-t-blue-600',
+    green: 'border-t-green-600',
+    red: 'border-t-red-600',
+    yellow: 'border-t-yellow-600',
+    gray: 'border-t-gray-600',
+  };
+  const colorClass = colorClassMap[color] ?? colorClassMap.blue;
+
   return (
     <div className="flex flex-col items-center justify-center p-4">
       <div 
-        className={`animate-spin rounded-full border-4 border-gray-200 border-t-${color}-600 ${sizeClass}`}
+        className={`animate-spin rounded-full border-4 border-gray-200 ${colorClass} ${sizeClass}`}
         role="status"
         aria-label="Loading"
       />
