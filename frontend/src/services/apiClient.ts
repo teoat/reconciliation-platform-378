@@ -97,6 +97,10 @@ class ApiClient {
   async getCurrentUser<T = unknown>(config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.client.get<T>('/auth/me', config);
   }
+
+  async logout<T = unknown>(config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.post<T>('/auth/logout', {}, config);
+  }
 }
 
 export const apiClient = new ApiClient();

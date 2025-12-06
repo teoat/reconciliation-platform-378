@@ -35,6 +35,28 @@ export class RequestManager {
   clearAll(): void {
     this.pendingRequests.clear();
   }
+
+  getQueueStatus() {
+    return {
+      pending: this.pendingRequests.size,
+      keys: Array.from(this.pendingRequests.keys()),
+    };
+  }
+
+  getCircuitState() {
+    return {
+      healthy: true,
+      failureCount: 0,
+    };
+  }
+
+  clearCache(): void {
+    // Stub implementation
+  }
+
+  resetCircuitBreaker(): void {
+    // Stub implementation
+  }
 }
 
 export const requestManager = new RequestManager();
