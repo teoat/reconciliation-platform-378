@@ -93,6 +93,10 @@ class ApiClient {
   async register<T = unknown>(data: { email: string; password: string; name?: string }, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
     return this.client.post<T>('/auth/register', data, config);
   }
+
+  async getCurrentUser<T = unknown>(config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return this.client.get<T>('/auth/me', config);
+  }
 }
 
 export const apiClient = new ApiClient();
