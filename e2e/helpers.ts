@@ -83,9 +83,11 @@ export async function navigateTo(page: Page, path: string) {
 /**
  * Create test file for upload testing
  */
+import os from 'os';
+import fs from 'fs';
+
 export function createTestFile(filename: string, content: string): string {
-  const fs = require('fs');
-  const testFilePath = path.join('/tmp', filename);
+  const testFilePath = path.join(os.tmpdir(), filename);
   fs.writeFileSync(testFilePath, content);
   return testFilePath;
 }
