@@ -74,9 +74,20 @@ class ApiClient {
     return this.client.delete<T>(url, config);
   }
 
-  async uploadFile<T = unknown>(file: File, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+  async uploadFile<T = unknown>(
+    projectId: string,
+    file: File,
+    metadata?: Record<string, unknown>,
+    config?: AxiosRequestConfig
+  ): Promise<AxiosResponse<T>> {
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('projectId', projectId);
+    if (metadata) {
+      Object.keys(metadata).forEach(key => {
+        formData.append(key, String(metadata[key]));
+      });
+    }
     return this.client.post<T>('/upload', formData, {
       ...config,
       headers: {

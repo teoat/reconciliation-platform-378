@@ -222,8 +222,7 @@ export const createFileUploadThunk = (
             ...metadata,
           };
 
-        const uploadRequest: import('../services/apiClient/types').FileUploadRequest = uploadMetadata as unknown as import('../services/apiClient/types').FileUploadRequest;
-        const response = await apiClient.uploadFile(projectId, file, uploadRequest);
+        const response = await apiClient.uploadFile(projectId, file, uploadMetadata);
         return response.data;
       } catch (error) {
         return rejectWithValue(handleApiError(error));

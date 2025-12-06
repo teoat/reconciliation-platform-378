@@ -39,6 +39,6 @@ export interface RegisterRequest {
 }
 
 export interface FileUploadRequest {
-  file: File;
+  projectId?: string;
   metadata?: Record<string, unknown>;
 }
