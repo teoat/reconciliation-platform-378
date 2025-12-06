@@ -56,7 +56,7 @@ export default defineConfig({
   // Shared settings for all the projects below (optimized)
   use: {
     // Base URL to use in actions like `await page.goto('/')`
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:1000',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8000',
     
     // Collect trace when retrying the failed test (optimized for debugging)
     trace: process.env.CI ? 'on-first-retry' : 'retain-on-failure', // Keep traces on local failures
@@ -127,12 +127,13 @@ export default defineConfig({
   ],
   
   // Run your local dev server before starting the tests
-  webServer: {
-    command: 'echo "Using existing Docker container"',
-    url: 'http://localhost:1000',
-    reuseExistingServer: true,
-    timeout: 120 * 1000,
-  },
+  // Commented out for now - app needs to be started manually
+  // webServer: {
+  //   command: 'echo "Using existing Docker container"',
+  //   url: 'http://localhost:1000',
+  //   reuseExistingServer: true,
+  //   timeout: 120 * 1000,
+  // },
   
   // Global setup
   globalSetup: require.resolve('./e2e/global-setup.ts'),
