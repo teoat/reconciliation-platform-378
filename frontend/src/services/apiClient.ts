@@ -32,9 +32,16 @@ class ApiClient {
     this.client.interceptors.request.use(
       (config) => {
         // Add authentication token if available
-        const token = localStorage.getItem('authToken');
-        if (token && config.headers) {
-          config.headers.Authorization = `Bearer ${token}`;
+        try {
+          if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+            const token = localStorage.getItem('authToken');
+            if (token) {
+              config.headers = config.headers ?? {};
+              (config.headers as Record<string, string>).Authorization = `Bearer ${token}`;
+            }
+          }
+        } catch (e) {
+          logger.warn('Unable to access localStorage for auth token', { error: e as Error });
         }
         return config;
       },
