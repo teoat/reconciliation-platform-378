@@ -212,6 +212,13 @@ const authSlice = createSlice({
         state.user.is2faEnabled = action.payload;
       }
     },
+    setUser: (state, action: PayloadAction<User | null>) => {
+      state.user = action.payload;
+      state.isAuthenticated = action.payload !== null;
+    },
+    clearError: (state) => {
+      state.error = null;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -330,7 +337,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { setAuthTokens, clearAuth, set2FARequired, setUser2FAStatus } = authSlice.actions;
+export const { setAuthTokens, clearAuth, set2FARequired, setUser2FAStatus, setUser, clearError } = authSlice.actions;
 
 export default authSlice.reducer;
 
