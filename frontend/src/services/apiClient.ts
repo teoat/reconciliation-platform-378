@@ -84,14 +84,44 @@ class ApiClient {
     formData.append('file', file);
     formData.append('projectId', projectId);
     if (metadata) {
-      Object.keys(metadata).forEach(key => {
-        const value = metadata[key];
-        if (typeof value === 'object' && value !== null) {
-          formData.append(key, JSON.stringify(value));
-        } else {
-          formData.append(key, String(value));
+      const appendValue = (key: string, val: unknown) => {
+        if (val === undefined || val === null) {
+          return;
         }
-      });
+        // Preserve File/Blob instances
+        if (val instanceof File || val instanceof Blob) {
+          formData.append(key, val);
+          return;
+        }
+        // Dates as ISO strings
+        if (val instanceof Date) {
+          formData.append(key, val.toISOString());
+          return;
+        }
+        // Arrays: append each entry with bracket notation
+        if (Array.isArray(val)) {
+          val.forEach((item, idx) => {
+            const itemKey = `${key}[${idx}]`;
+            appendValue(itemKey, item);
+          });
+          return;
+        }
+        // Plain objects: JSON stringify with safety
+        if (typeof val === 'object') {
+          try {
+            const json = JSON.stringify(val, (_k, v) => (v instanceof Date ? v.toISOString() : v));
+            formData.append(key, json);
+          } catch {
+            // Fallback to string to avoid throwing on circular refs
+            formData.append(key, String(val));
+          }
+          return;
+        }
+        // Primitives
+        formData.append(key, String(val));
+      };
+
+      Object.keys(metadata).forEach((k) => appendValue(k, metadata[k]));
     }
     return this.client.post<T>('/upload', formData, {
       ...config,
