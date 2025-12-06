@@ -21,7 +21,7 @@ export class DataService extends PersistenceService<DataItem> {
   }
 
   constructor() {
-    super({});
+    super('reconciliation_data');
   }
 
   public saveData(id: string, data: unknown, metadata?: Record<string, unknown>): void {
