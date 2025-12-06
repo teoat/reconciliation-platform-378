@@ -498,13 +498,17 @@ test.describe('Feature Testing - Accessibility', () => {
 
 test.describe('Feature Testing - Error States', () => {
   test('Feature: Network timeout', async ({ page }) => {
-    await page.route('**/*', route => {
+    const routeHandler = (route: any) => {
       setTimeout(() => route.continue(), 10000); // Delay all requests
-    });
-    
+    };
+    await page.route('**/*', routeHandler);
+  
     await page.goto('/login', { timeout: 5000 }).catch(() => {});
-    
+  
     await takePageScreenshot(page, 'feature-errors-01-timeout');
+
+    // Un-route to avoid affecting other tests
+    await page.unroute('**/*', routeHandler);
   });
 
   test('Feature: 500 server error', async ({ page }) => {
