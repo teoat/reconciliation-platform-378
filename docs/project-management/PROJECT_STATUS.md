@@ -85,7 +85,8 @@ The reconciliation platform has completed Phases 1-6, with Phase 7 (Production D
 ## Related Documentation
 
 - [FIVE_AGENTS_CONSOLIDATED_SUMMARY.md](./FIVE_AGENTS_CONSOLIDATED_SUMMARY.md) - Complete project overview
-- [ALL_TODOS_COMPLETE.md](./ALL_TODOS_COMPLETE.md) - Todos completion report
+- [TODO_STATUS_CONSOLIDATED.md](../testing/TODO_STATUS_CONSOLIDATED.md) - Test coverage and TODO completion status (SSOT)
+- [IMPLEMENTATION_STATUS_CONSOLIDATED.md](./IMPLEMENTATION_STATUS_CONSOLIDATED.md) - Implementation completion status (SSOT)
 - [PHASE_5_REFACTORING_PROGRESS.md](./PHASE_5_REFACTORING_PROGRESS.md) - Refactoring details
 - [REMAINING_WORK_IMPLEMENTATION_GUIDE.md](./REMAINING_WORK_IMPLEMENTATION_GUIDE.md) - Phase 7 guide
 
