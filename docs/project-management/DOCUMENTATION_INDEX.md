@@ -17,7 +17,8 @@
 
 ### Latest Updates
 
-- **[FINAL_SESSION_SUMMARY.md](./FINAL_SESSION_SUMMARY.md)** - Latest session accomplishments
+- **[IMPLEMENTATION_STATUS_CONSOLIDATED.md](./IMPLEMENTATION_STATUS_CONSOLIDATED.md)** ⭐ - Consolidated implementation status (SSOT)
+- **[TODO_STATUS_CONSOLIDATED.md](../testing/TODO_STATUS_CONSOLIDATED.md)** ⭐ - Consolidated test coverage and TODO status (SSOT)
 - **[WEEK1_PROGRESS.md](./WEEK1_PROGRESS.md)** - Current Week 1 progress
 - **[CLEANUP_TODO_COMPLETION_SUMMARY.md](./CLEANUP_TODO_COMPLETION_SUMMARY.md)** - Cleanup completion status
 
@@ -255,7 +256,7 @@ grep -r "keyword" docs/
 - **Deployment guide?** → `docs/deployment/`
 - **Troubleshooting?** → `docs/troubleshooting/`
 - **Next tasks?** → `CRITICAL_ACTION_PLAN_2025.md`
-- **Current status?** → `FINAL_SESSION_SUMMARY.md`
+- **Current status?** → `IMPLEMENTATION_STATUS_CONSOLIDATED.md`
 
 **Essential Reads:**
 
