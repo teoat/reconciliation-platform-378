@@ -20,7 +20,8 @@ This directory contains essential project management documentation. Duplicate an
 - **[FIVE_AGENTS_CONSOLIDATED_SUMMARY.md](./FIVE_AGENTS_CONSOLIDATED_SUMMARY.md)** - Complete project overview from all agents
 
 ### Completion Reports
-- **[ALL_TODOS_COMPLETE.md](./ALL_TODOS_COMPLETE.md)** - All todos completion report (Phases 5-6)
+- **[IMPLEMENTATION_STATUS_CONSOLIDATED.md](./IMPLEMENTATION_STATUS_CONSOLIDATED.md)** ⭐ - Implementation completion status (SSOT)
+- **[TODO_STATUS_CONSOLIDATED.md](../testing/TODO_STATUS_CONSOLIDATED.md)** ⭐ - Test coverage and TODO completion (SSOT)
 - **[CONSOLIDATION_COMPLETE.md](./CONSOLIDATION_COMPLETE.md)** - Documentation consolidation report
 
 ### Implementation Guides
@@ -85,6 +86,7 @@ See [CONSOLIDATION_COMPLETE.md](./CONSOLIDATION_COMPLETE.md) for details.
 ## Quick Links
 
 - [Project Status](./PROJECT_STATUS.md) ⭐
-- [All Todos Complete](./ALL_TODOS_COMPLETE.md)
+- [Implementation Status](./IMPLEMENTATION_STATUS_CONSOLIDATED.md) ⭐
+- [TODO Status](../testing/TODO_STATUS_CONSOLIDATED.md) ⭐
 - [Phase 7 Guide](./REMAINING_WORK_IMPLEMENTATION_GUIDE.md)
 - [Consolidation Report](./CONSOLIDATION_COMPLETE.md)

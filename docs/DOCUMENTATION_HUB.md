@@ -40,6 +40,8 @@
 
 #### 🎯 Project Status
 - **[PROJECT_STATUS.md](./project-management/PROJECT_STATUS.md)** ⭐ - Single source of truth for project health
+- **[Implementation Status Consolidated](./project-management/IMPLEMENTATION_STATUS_CONSOLIDATED.md)** ⭐ - Consolidated implementation status (SSOT)
+- **[Consolidation Record 2025-12](./CONSOLIDATION_RECORD_2025-12.md)** - December 2025 documentation consolidation
 
 #### 🚀 Getting Started
 - **[Quick Start Guide](./getting-started/QUICK_START.md)** - Get up and running quickly
@@ -84,6 +86,7 @@
 
 #### 🧪 Testing
 - **[Testing Guides](./testing/)** - Testing documentation
+- **[TODO Status Consolidated](./testing/TODO_STATUS_CONSOLIDATED.md)** ⭐ - Consolidated test coverage status (SSOT)
 - **[Run Tests Guide](./testing/RUN_TESTS_GUIDE.md)** - How to run tests
 - **[Test Utilities](./testing/TEST_UTILITIES_GUIDE.md)** - Testing utilities
 
@@ -121,10 +124,10 @@
 
 ## 📊 Documentation Statistics
 
-- **Total Active Docs**: ~120-130 essential guides
+- **Total Active Docs**: ~103 essential guides (17 redundant files removed in Dec 2025)
 - **Categories**: 10 main categories
-- **SSOT Documents**: 16 primary SSOT files
-- **Last Consolidation**: January 2025
+- **SSOT Documents**: 18 primary SSOT files (2 new consolidated files added)
+- **Last Consolidation**: December 2025
 - **Status**: ✅ Consolidated and Optimized
 
 ---
