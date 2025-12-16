@@ -9,6 +9,17 @@ import { UserProfilePage } from './pages/auth/UserProfilePage';
 import { TwoFactorAuthPage } from './pages/auth/TwoFactorAuthPage';
 
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
+import Navigation from './components/Navigation';
+
+// Import additional pages
+import ProjectSelectionPage from './pages/ProjectSelectionPage';
+import IngestionPage from './pages/IngestionPage';
+import ReconciliationPage from './pages/ReconciliationPage';
+import AdjudicationPage from './pages/AdjudicationPage';
+import VisualizationPage from './pages/VisualizationPage';
+import SummaryExportPage from './pages/SummaryExportPage';
+import CashflowEvaluationPage from './pages/CashflowEvaluationPage';
+import PresummaryPage from './pages/PresummaryPage';
 
 // Placeholder for a Dashboard page
 const DashboardPage = () => (
@@ -76,24 +87,39 @@ function App() {
   }, [isAuthenticated, user, isLoading, navigate, dispatch]);
 
   return (
-    <Routes>
-      {/* Public Routes */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/unauthorized" element={<UnauthorizedPage />} />
+    <>
+      <Navigation />
+      <Routes>
+        {/* Public Routes */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      {/* Protected Routes */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/profile" element={<UserProfilePage />} />
-        {/* Example of role-based protection */}
-        <Route path="/admin-settings" element={<ProtectedRoute requiredRoles={['admin']}><>Admin Settings</></ProtectedRoute>} />
-        <Route path="/2fa-management" element={<UserProfilePage />} /> {/* 2FA management is part of UserProfilePage */}
-      </Route>
+        {/* Protected Routes */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/profile" element={<UserProfilePage />} />
+          <Route path="/2fa-management" element={<UserProfilePage />} />
+          
+          {/* Project & Reconciliation Routes */}
+          <Route path="/projects" element={<ProjectSelectionPage onProjectSelect={(project) => console.log('Selected:', project)} />} />
+          <Route path="/ingestion" element={<IngestionPage project={{ name: 'Current Project' }} onProgressUpdate={(step) => console.log(step)} />} />
+          <Route path="/reconciliation" element={<ReconciliationPage />} />
+          <Route path="/adjudication" element={<AdjudicationPage />} />
+          <Route path="/visualization" element={<VisualizationPage />} />
+          <Route path="/summary" element={<SummaryExportPage />} />
+          <Route path="/cashflow-evaluation" element={<CashflowEvaluationPage />} />
+          <Route path="/presummary" element={<PresummaryPage />} />
+          
+          {/* Admin Routes */}
+          <Route path="/admin-settings" element={<ProtectedRoute requiredRoles={['admin']}><>Admin Settings</></ProtectedRoute>} />
+        </Route>
 
-      {/* Default redirect (handled by useEffect for more robust initial load behavior) */}
-      <Route path="*" element={null} /> {/* Catch-all route to prevent unmatched path errors, actual redirect handled by useEffect */}
-    </Routes>
+        {/* Default redirect (handled by useEffect for more robust initial load behavior) */}
+        <Route path="*" element={null} /> {/* Catch-all route to prevent unmatched path errors, actual redirect handled by useEffect */}
+      </Routes>
+    </>
   );
 }
 

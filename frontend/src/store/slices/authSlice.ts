@@ -332,5 +332,8 @@ const authSlice = createSlice({
 
 export const { setAuthTokens, clearAuth, set2FARequired, setUser2FAStatus } = authSlice.actions;
 
+// Export as authActions for compatibility
+export const authActions = authSlice.actions;
+
 export default authSlice.reducer;
 

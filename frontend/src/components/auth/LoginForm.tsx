@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 interface LoginFormProps {
   onSubmit: (email: string, password: string, twoFactorCode?: string) => void;
@@ -31,6 +32,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         <input
           type="email"
           id="email"
+          name="email"
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -44,6 +47,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         <input
           type="password"
           id="password"
+          name="password"
+          autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -70,24 +75,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       <div className="flex items-center justify-between">
         {onForgotPassword && (
           <div className="text-sm">
-            <a
-              href="#"
+            <button
+              type="button"
               onClick={onForgotPassword}
               className="font-medium text-indigo-600 hover:text-indigo-500"
             >
               Forgot your password?
-            </a>
+            </button>
           </div>
         )}
         <div className="text-sm">
           Don't have an account?{' '}
-          <a
-            href="#"
-            onClick={onRegisterClick}
+          <Link
+            to="/register"
             className="font-medium text-indigo-600 hover:text-indigo-500"
           >
             Register
-          </a>
+          </Link>
         </div>
       </div>
 
